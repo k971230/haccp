@@ -34,7 +34,7 @@ const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8081";
  * 일자: 2026-08-06
  * 코멘트:
  *   1) Axios 오류 본문에서 서버 업무 문구(message)를 꺼낸다
- *   2) responseType=blob 일 때(= 서명·HWP 다운로드) 400 JSON도 Blob으로 오므로 text 파싱한다
+ *   2) responseType=blob·arraybuffer 일 때(= 서명·HWP 다운로드) 오류 JSON도 바이너리로 오므로 text 파싱한다
  *   3) 문구를 못 찾으면 공통 안내를 반환한다
  */
 async function resolveErrorMessage(
@@ -57,6 +57,22 @@ async function resolveErrorMessage(
   if (data instanceof Blob) {
     try {
       const text = (await data.text()).trim();
+      if (text) {
+        const parsed = JSON.parse(text) as { message?: unknown };
+        if (typeof parsed.message === "string" && parsed.message.trim()) {
+          return parsed.message.trim();
+        }
+      }
+    } catch {
+      // JSON이 아니면 공통 문구
+    }
+  }
+
+  // arraybuffer 다운로드 실패 — HWP 원본 GET은 responseType=arraybuffer라 ErrorResponse JSON도 바이트로 온다.
+  // 이 분기가 없으면 사용자에게 "Request failed with status code 404" 원문이 그대로 보인다
+  if (data instanceof ArrayBuffer && data.byteLength > 0) {
+    try {
+      const text = new TextDecoder("utf-8").decode(data).trim();
       if (text) {
         const parsed = JSON.parse(text) as { message?: unknown };
         if (typeof parsed.message === "string" && parsed.message.trim()) {

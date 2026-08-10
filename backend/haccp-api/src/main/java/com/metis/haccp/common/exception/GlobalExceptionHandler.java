@@ -70,6 +70,25 @@ public class GlobalExceptionHandler {
 
     /**
      * 개발자: 박승우
+     * 일자: 2026-08-10
+     * 코멘트:
+     *   1) 대상 자원 부재를 404로 변환한다 — 입력 오류(400)와 구분해 프론트가 안내 문구를 고른다
+     *   2) 템플릿 원본 미업로드 등 NotFoundException이 전파되었을 때 호출한다
+     *   3) 사용자에게는 업무 문구만, 서버 로그에는 요청 맥락을 warn으로 남긴다
+     */
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(
+            // 발생 예외 — BizException 하위라 더 구체적인 이 핸들러가 먼저 매칭된다
+            NotFoundException e
+    ) {
+        // 스택은 남기지 않는다 — 정상 업무 흐름(파일 미업로드)에서도 발생하기 때문
+        log.warn("Resource not found: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(e.getCode(), e.getMessage()));
+    }
+
+    /**
+     * 개발자: 박승우
      * 일자: 2026-07-10
      * 코멘트:
      *   1) Bean Validation 오류를 표준 400 응답으로 변환한다.

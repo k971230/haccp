@@ -17,6 +17,8 @@ package com.metis.haccp.doc;
 import com.metis.haccp.common.context.LoginUserContext;
 // 역할 — 사용자 노출 업무 오류
 import com.metis.haccp.common.exception.BizException;
+// 역할 — 원본 미업로드를 404로 내리는 예외
+import com.metis.haccp.common.exception.NotFoundException;
 // 역할 — 템플릿 DB·공개 응답 DTO
 import com.metis.haccp.doc.dto.DocumentTemplateResponse;
 import com.metis.haccp.doc.dto.DocumentTemplateRow;
@@ -24,6 +26,9 @@ import com.metis.haccp.doc.dto.DocumentTemplateRow;
 import java.nio.file.Path;
 // 역할 — 목록 타입
 import java.util.List;
+// 역할 — 서버 로그(요청 맥락 상세)
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 // 역할 — 생성자 주입·서비스 등록
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,6 +40,9 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @RequiredArgsConstructor
 public class TemplateService {
+
+    // 서버 로그 — 사용자 응답에는 담지 않는 회사코드·양식코드·경로를 남긴다
+    private static final Logger log = LoggerFactory.getLogger(TemplateService.class);
 
     // 회사 사용 템플릿을 저장프로시저로 조회하는 경계
     private final DocumentMapper mapper;
@@ -62,7 +70,7 @@ public class TemplateService {
      * 코멘트:
      *   1) 요청 템플릿이 로그인 회사에서 사용 중인지 확인한 뒤 원본 경로를 연다
      *   2) TemplateController가 HWP 원본 스트림과 안전한 다운로드 헤더를 만들 때 호출한다
-     *   3) 코드가 없거나 원본 파일이 누락·루트 이탈이면 BizException으로 실패한다
+     *   3) 원본 미업로드·파일 누락은 404(NotFoundException), 루트 이탈은 400(BizException)
      */
     public TemplateForm form(
             // URL 템플릿 코드 — 공백·미등록이면 SP 결과가 없어 업무 오류
@@ -70,10 +78,29 @@ public class TemplateService {
     ) {
         DocumentTemplateRow template = requireTemplate(tmplCd);
         String formPath = template.getFormPath() == null ? "" : template.getFormPath().trim();
+        // form_path 공백일 때(= LAW 유형만 만들고 파일은 아직 안 올린 상태) 400이 아니라 404로 내린다.
+        // 잘못된 요청이 아니라 "대상이 아직 없다"이므로 프론트가 업로드 안내를 띄울 수 있어야 한다 — 09 G-05
         if (formPath.isBlank()) {
-            throw new BizException("등록된 템플릿 파일이 없습니다.");
+            log.warn(
+                    "Template form not uploaded — coCd={}, tmplCd={}, formPath=(blank)",
+                    LoginUserContext.coCd(),
+                    template.getTmplCd()
+            );
+            throw new NotFoundException(TemplateFileStorage.FORM_NOT_UPLOADED);
         }
-        Path path = storage.read(formPath);
+        // 경로는 있는데 실물이 없을 때도 storage.read가 같은 문구로 404를 던진다
+        Path path;
+        try {
+            path = storage.read(formPath);
+        } catch (NotFoundException e) {
+            log.warn(
+                    "Template form file missing — coCd={}, tmplCd={}, formPath={}",
+                    LoginUserContext.coCd(),
+                    template.getTmplCd(),
+                    formPath
+            );
+            throw e;
+        }
         // 실제 검증을 통과한 파일명만 다운로드 헤더에 써 DB 표시값 주입 가능성을 제거한다
         return new TemplateForm(path.getFileName().toString(), path);
     }
