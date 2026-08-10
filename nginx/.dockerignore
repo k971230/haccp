@@ -1,0 +1,4 @@
+# edge 이미지 컨텍스트 — conf.template + Dockerfile 만 필요
+*
+!Dockerfile
+!haccp.conf.template
