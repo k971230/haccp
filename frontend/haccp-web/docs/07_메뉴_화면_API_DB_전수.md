@@ -356,10 +356,10 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 
 ### 6.2 FE dead / 리다이렉트
 
-- MasterDataPage equipment/pest config → History로 우회되어 dead path
+- MasterDataPage equipment/pest config: **제거됨** (2026-08-10, STEP 01) — screenRegistry가 두 화면코드를 History 페이지로 매핑하므로 config는 도달 불가였다
 - template-check-item-management: 레지스트리 없음
-- ccpMetalApi/ccpVerificationApi: 페이지는 ccpFormsApi 경유
-- DocumentBoxPage.approvalMode deprecated
+- ccpMetalApi/ccpVerificationApi: **제거됨** (2026-08-10, STEP 01, `ccpFormsApi`로 통일)
+- DocumentBoxPage.approvalMode: **제거됨** (2026-08-10, STEP 01) — `mode` prop 필수로 전환
 
 ### 6.3 최근 반영
 
@@ -404,8 +404,6 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 - `src/api/ccpColdApi.ts`
 - `src/api/ccpFormsApi.ts`
 - `src/api/ccpGenericApi.ts`
-- `src/api/ccpMetalApi.ts`
-- `src/api/ccpVerificationApi.ts`
 - `src/api/codeApi.ts`
 - `src/api/documentApi.ts`
 - `src/api/equipmentHistApi.ts`

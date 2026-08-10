@@ -87,10 +87,12 @@ const DOC_KIND_OPTIONS = [
 export type DocumentBoxMode = "inbox" | "approval" | "history";
 
 interface DocumentBoxPageProps {
-  /** inbox=작성문서, approval=내 차례, history=내가 결재한 문서 */
-  mode?: DocumentBoxMode;
-  /** @deprecated mode="approval" 사용 */
-  approvalMode?: boolean;
+  /**
+   * inbox=작성문서, approval=내 차례, history=내가 결재한 문서.
+   * screenRegistry가 화면코드별로 반드시 지정하므로 선택값이 아니다.
+   * (구 approvalMode boolean prop은 사용처 0으로 2026-08-10 STEP 01 에서 제거)
+   */
+  mode: DocumentBoxMode;
 }
 
 type ListRow = DocumentListRow & {
@@ -111,11 +113,10 @@ type ApprRow = DocumentDetail["approvals"][number] & {
  * 일자: 2026-08-06
  * 코멘트:
  *   1) 문서함/결재함 공통 화면을 그린다
- *   2) screenRegistry가 approvalMode로 두 화면을 구분해 마운트한다
+ *   2) screenRegistry가 mode="inbox"|"approval"|"history" 로 세 화면을 구분해 마운트한다
  *   3) 조회·결재·파일 오류는 업무 문구 토스트로 처리한다
  */
-export default function DocumentBoxPage({ mode, approvalMode = false }: DocumentBoxPageProps) {
-  const boxMode: DocumentBoxMode = mode ?? (approvalMode ? "approval" : "inbox");
+export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps) {
   const navigate = useNavigate();
   // 홈 등에서 넘긴 문서 idx — 목록 로드 후 자동 선택
   const openDocIdx = useDocIdxQuery();

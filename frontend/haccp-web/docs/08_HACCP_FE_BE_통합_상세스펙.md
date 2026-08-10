@@ -238,11 +238,11 @@ IA 대메뉴: today-tasks + MWRK / MAPR / MFRM / MCOD / MSYS (migrate 36).
 | pages/ops | BizOpsFormPage |
 | pages/doc | HwpDocumentEditor · DocumentBox · LegalDocumentUpload · CorrectiveAction |
 
-### 4.2 FE api (21)
+### 4.2 FE api (19)
 
 authApi · menuApi · codeApi · prefApi · viewLogApi · http  
 systemApi · masterApi · equipmentHistApi · pestDeviceHistApi · workflowApi  
-documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGenericApi · ccpMetalApi · ccpVerificationApi · bizOpsApi · taskWorkflowApi
+documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGenericApi · bizOpsApi · taskWorkflowApi
 
 ### 4.3 BE java 패키지 ↔ mapper XML
 
@@ -588,7 +588,7 @@ flowchart LR
 |----|------|------|
 | G-01 | approval-history | FE O · DEMO 메뉴 leaf 없을 수 있음 |
 | G-03 | migrate 47 이중 파일 | 적용 순서 주의 |
-| G-13 | MasterData equipment/pest · ccpMetal/VerificationApi | dead/중복 path |
+| G-13 | MasterData equipment/pest · ccpMetal/VerificationApi | **완료** — 2026-08-10 STEP 01 삭제 |
 
 ### 12.3 교차 수치
 
@@ -596,7 +596,7 @@ flowchart LR
 |------|-----|
 | SCREEN_REGISTRY | 75 |
 | @RestController | 19 |
-| FE api 모듈 | 21 |
+| FE api 모듈 | 19 |
 | Mapper XML | 19 |
 | 활성 IA 대메뉴 | 5 + today-tasks |
 
