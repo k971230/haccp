@@ -1,0 +1,64 @@
+// ============================================================
+//  HACCP nightly 감시 파이프라인
+//
+//  개발자: 박승우
+//  일자: 2026-08-10
+//  코멘트:
+//    1) 매일 KST 03:00(UTC 18:00) 에 규약 drift·OPS_DELETE·파일크기·문서링크를 검사한다
+//    2) 소스를 고치지 않고 실패 시 GitHub 이슈만 만든다
+//    3) 실행 예산 5분 — 스크립트는 로컬 파일 검사만 한다
+// ============================================================
+pipeline {
+  agent any
+
+  options {
+    disableConcurrentBuilds()
+    timeout(time: 5, unit: 'MINUTES')
+    buildDiscarder(logRotator(numToKeepStr: '30'))
+  }
+
+  triggers {
+    // UTC 18:00 ≈ KST 03:00 (서머타임 없음)
+    cron('H 18 * * *')
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Audit scripts') {
+      steps {
+        sh '''
+          set -euo pipefail
+          bash scripts/audit_version_drift.sh
+          bash scripts/audit_ops_delete.sh
+          bash scripts/audit_file_size_alignment.sh
+          bash scripts/audit_docs_links.sh
+        '''
+      }
+    }
+  }
+
+  post {
+    failure {
+      withCredentials([string(credentialsId: 'haccp-github-token', variable: 'GH_TOKEN')]) {
+        sh '''
+          set -euo pipefail
+          if command -v gh >/dev/null 2>&1; then
+            TITLE="[nightly-audit] 실패 BUILD ${BUILD_NUMBER}"
+            BODY="Jenkins nightly audit 실패.\\n\\n- Job: ${JOB_NAME}\\n- Build: ${BUILD_URL}\\n- 시각: $(date -u +%Y-%m-%dT%H:%M:%SZ)\\n\\n콘솔 로그를 확인하세요."
+            GH_TOKEN="$GH_TOKEN" gh issue create --title "$TITLE" --body "$BODY" || true
+          else
+            echo "gh CLI 없음 — 이슈 생성을 건너뜁니다"
+          fi
+        '''
+      }
+    }
+    success {
+      echo 'nightly audit OK'
+    }
+  }
+}
