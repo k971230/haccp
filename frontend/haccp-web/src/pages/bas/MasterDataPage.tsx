@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-06
  * 코멘트:
- *   1) 제품부터 CCP 한계기준까지 10개 마스터를 인라인 편집 그리드로 제공한다
+ *   1) 제품부터 CCP 한계기준까지 8개 마스터를 인라인 편집 그리드로 제공한다
  *   2) 화면별 필드·선택값은 고정 설정에만 정의하며 하단 단건 폼은 사용하지 않는다
  *   3) 삭제는 validate-delete → 확인 → delete → 재조회 순서와 객체 배열 업무키를 지킨다
  *
@@ -105,6 +105,10 @@ const STORAGE_TYPE_OPTIONS = [
 /**
  * 기준정보 화면 고정 명세.
  * API에 전달하는 camelCase 키는 DDL 컬럼과 1:1 대응하며, 런타임 폼 생성 API는 사용하지 않는다.
+ *
+ * equipment-management / pest-device-management 는 여기에 두지 않는다(= 되살리지 말 것).
+ * screenRegistry가 두 화면코드를 EquipmentHistoryPage / PestDeviceHistoryPage 로 직접 매핑해
+ * 이 페이지에 도달하지 않으므로, 09 G-13 근거로 2026-08-10 STEP 01 에서 제거했다.
  */
 const MASTER_SCREEN_CONFIGS: Record<string, MasterScreenConfig> = {
   "product-management": {
@@ -152,21 +156,6 @@ const MASTER_SCREEN_CONFIGS: Record<string, MasterScreenConfig> = {
       { key: "sortNo", label: "정렬순서", input: "number", width: 80 }, { key: "useYn", label: "사용여부", input: "select", options: YES_NO_OPTIONS, width: 80 },
     ],
   },
-  "equipment-management": {
-    screenCode: "equipment-management", title: "시설·설비 관리", type: "equipment", keyField: "equipCd", nameField: "equipNm",
-    editFields: [
-      { key: "equipCd", label: "설비번호", required: true, width: 110 }, { key: "equipNm", label: "설비명", required: true, width: 140 },
-      { key: "equipKind", label: "설비종류", width: 100 }, { key: "purposeNm", label: "용도", width: 120 },
-      { key: "modelNm", label: "모델명", width: 110 },
-      { key: "specNm", label: "규격", width: 110 }, { key: "makerNm", label: "제조사", width: 100 }, { key: "madeCountry", label: "제조국", width: 80 },
-      { key: "buyDt", label: "구입일자", input: "date", width: 110 }, { key: "installDt", label: "설치일자", input: "date", width: 110 },
-      { key: "useRange", label: "사용범위", width: 100 }, { key: "placeNm", label: "설치 위치", width: 120 },
-      { key: "asMngNm", label: "A/S 담당자", width: 100 },
-      // 사진 경로는 업로드 버튼으로만 갱신 — 수기 편집 금지에 가깝게 표시용
-      { key: "photoPath", label: "사진경로", width: 140 },
-      { key: "useMethod", label: "사용방법", input: "textarea", width: 180 }, { key: "useYn", label: "사용여부", input: "select", options: YES_NO_OPTIONS, width: 80 },
-    ],
-  },
   "measuring-device-management": {
     screenCode: "measuring-device-management", title: "계측기 관리", type: "measuring-device", keyField: "deviceCd", nameField: "deviceNm",
     editFields: [
@@ -177,14 +166,6 @@ const MASTER_SCREEN_CONFIGS: Record<string, MasterScreenConfig> = {
       { key: "toleranceUnit", label: "허용오차 단위", input: "select", width: 100, options: [{ value: "PCT", label: "퍼센트" }, { value: "DEG", label: "섭씨도" }, { value: "SEC", label: "초" }] },
       { key: "calibCycleMonth", label: "검·교정 주기(개월)", input: "number", width: 120 }, { key: "placeNm", label: "설치 위치", width: 120 },
       { key: "sortNo", label: "정렬순서", input: "number", width: 80 }, { key: "useYn", label: "사용여부", input: "select", options: YES_NO_OPTIONS, width: 80 },
-    ],
-  },
-  "pest-device-management": {
-    screenCode: "pest-device-management", title: "포충등·트랩 관리", type: "pest-device", keyField: "pestCd", nameField: "pestNm",
-    editFields: [
-      { key: "pestCd", label: "설비 코드", required: true, width: 110 }, { key: "pestNm", label: "설비명", required: true, width: 140 },
-      { key: "pestType", label: "유형", input: "select", required: true, width: 100, options: [{ value: "LAMP", label: "포충등" }, { value: "ROACH", label: "바퀴트랩" }, { value: "RAT", label: "쥐트랩" }] },
-      { key: "placeNm", label: "설치 위치", width: 140 }, { key: "sortNo", label: "정렬순서", input: "number", width: 80 }, { key: "useYn", label: "사용여부", input: "select", options: YES_NO_OPTIONS, width: 80 },
     ],
   },
   "vehicle-management": {
