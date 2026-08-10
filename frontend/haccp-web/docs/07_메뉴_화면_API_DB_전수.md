@@ -103,6 +103,7 @@
 | **46** | 46_migrate_template_volume_ko.sql | 메뉴 equipment→history |
 | **47** | 47_migrate_check_item_admin_crud.sql | template-check-item-management N |
 | **48** | 48_migrate_legal_upload_type.sql | 법적서류 유형 SP (2026-08-10 47 → 48 재번호, G-03 해소) |
+| **49** | 49_migrate_menu_approval_history.sql | approval-history 화면·MAPR leaf·ADMIN 권한 활성 보증 (G-01) |
 
 ---
 
@@ -199,6 +200,7 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 |------|---------|--------|---------|------|--------|--------|---------|----------|--------|---------------|-----|--------|----|------|
 | `MAPR` | `approval-inbox` | 결재함 | `approval-inbox` | 210 | APR | — | DocumentBoxPage | MesEditableGrid·DocFormSearchToolbar·DocumentApprovalToolbar | documentApi·taskWorkflowApi | DocumentController | GET …/approval-inbox · PUT …/approval | DocumentMapper | sp_tbl_document_* | search |
 | `MAPR` | `document-inbox` | 문서함 | `document-inbox` | 220 | APR | — | DocumentBoxPage | MesEditableGrid·DocFormSearchToolbar·DocumentApprovalToolbar | documentApi·taskWorkflowApi | DocumentController | GET …/documents/list · PUT …/approval | DocumentMapper | sp_tbl_document_* | search·del |
+| `MAPR` | `approval-history` | 결재·변경이력 | `approval-history` | 230 | APR | — | DocumentBoxPage (mode=history) | MesEditableGrid·DocFormSearchToolbar·DocumentApprovalToolbar | documentApi | DocumentController | GET /api/v1/doc/documents/approval-history | DocumentMapper | sp_tbl_document_* | search |
 | `MAPR` | `legal-document-upload` | 법적서류 | `legal-document-upload` | 240 | APR | — | LegalDocumentUploadPage | MesEditableGrid·GridCrudButtons·PageCard·MesButton(download) | documentApi·workflowApi | TemplateController·DocumentController·WorkflowController | templates/list · legal-types/save · documents hwp/files | DocumentMapper·WorkflowMapper | legal_type · company_template · document | search(패널CRUD) |
 | `MAPR` | `corrective-action-management` | 이탈·개선조치 | `corrective-action-management` | 250 | APR | — | CorrectiveActionManagementPage | MesEditableGrid·DocFormSearchToolbar·MesButton | taskWorkflowApi | TaskController | /api/v1/doc/corrective-actions/* | TaskMapper | sp_tbl_corrective_action_* | add·save·del·search |
 
@@ -285,7 +287,7 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 
 | scrn_cd | 상태 |
 |---------|------|
-| approval-history | FE 구현 O · DEMO 활성 메뉴 X (메뉴관리/migrate 복구 대상) |
+| approval-history | **완료** — migrate 49로 화면·메뉴(MAPR 하위)·ADMIN 권한 활성 보증 (2026-08-10, STEP 03) |
 | equipment-management / pest-device-management | 화면 use_yn=N · 레지스트리는 History로 리다이렉트 · MFRM 메뉴는 history scrn 가리킴 |
 
 ---
