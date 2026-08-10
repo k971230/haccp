@@ -126,6 +126,50 @@ services:
       - web
     restart: unless-stopped
 
+  # ----------------------------------------------------------
+  # migrate — DB 스키마 one-shot (profile migrate)
+  # ----------------------------------------------------------
+  migrate:
+    build:
+      context: ./db_sasshaccp
+      dockerfile: Dockerfile.migrate
+    # api 와 같은 .env.docker 를 읽어 DB_* 를 PG* 로 넘긴다
+    env_file:
+      - ./.env.docker
+    environment:
+      # apply-all.sh 는 PG* 만 본다 — JDBC URL 이 아니라 호스트·계정을 직접 준다
+      PGHOST: ${DB_HOST:-db}
+      PGPORT: ${DB_PORT:-5432}
+      PGUSER: ${DB_USERNAME}
+      PGPASSWORD: ${DB_PASSWORD}
+      PGDATABASE: ${DB_NAME:-sasshaccp}
+    profiles: ["migrate"]
+    # 한 번 돌고 끝 — 재시작하지 않는다
+    restart: "no"
+
+  # ----------------------------------------------------------
+  # backup — pg_dump one-shot (profile backup) — 롤백 전 필수
+  # ----------------------------------------------------------
+  backup:
+    image: postgres:16
+    env_file:
+      - ./.env.docker
+    environment:
+      PGHOST: ${DB_HOST:-db}
+      PGPORT: ${DB_PORT:-5432}
+      PGUSER: ${DB_USERNAME}
+      PGPASSWORD: ${DB_PASSWORD}
+      PGDATABASE: ${DB_NAME:-sasshaccp}
+    volumes:
+      - haccp-db-backup:/backup
+    # 파일명에 시각을 넣어 덮어쓰지 않는다
+    entrypoint:
+      - /bin/bash
+      - -c
+      - pg_dump -h "$$PGHOST" -p "$$PGPORT" -U "$$PGUSER" -d "$$PGDATABASE" -Fc -f "/backup/sasshaccp_$$(date +%Y%m%d_%H%M%S).dump"
+    profiles: ["backup"]
+    restart: "no"
+
 # ------------------------------------------------------------
 # 볼륨 — name 을 명시해 프로젝트명 접두어(haccp_)가 붙지 않게 한다.
 # 앞의 3개는 scripts/*.sh 가 미리 만들어 내용까지 채우므로 external 이다.
@@ -147,6 +191,8 @@ volumes:
     name: haccp-db-data
   haccp-acme:
     name: haccp-acme
+  haccp-db-backup:
+    name: haccp-db-backup
 
 networks:
   default:

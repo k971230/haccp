@@ -22,6 +22,7 @@
 hs_err_pid*
 token.txt
 login_out.json
+.smoke-tmp-*/
 
 # ── Java / Spring ──────────────────────────────────────
 target/
