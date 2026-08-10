@@ -1,0 +1,19 @@
+# ============================================================
+#  줄바꿈 규약 — 리눅스 컨테이너·bash 스크립트가 CRLF 로 깨지지 않게 한다
+#
+#  개발자: 박승우
+#  일자: 2026-08-10
+#  코멘트:
+#    1) *.sh 는 항상 LF — Windows 체크아웃 후에도 shebang·set -o pipefail 이 죽지 않는다
+#    2) Dockerfile·nginx conf 도 LF — 이미지 빌드 스테이지의 sed/chmod 와 맞춘다
+#    3) SQL 은 텍스트이므로 LF 로 통일한다 (apply-all.sh 가 컨테이너 안에서 읽는다)
+# ============================================================
+
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+*.Dockerfile    text eol=lf
+*.conf          text eol=lf
+*.conf.template text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.sql           text eol=lf

@@ -6,6 +6,16 @@
 .env.docker
 !.env.docker.example
 
+# ── 로컬 TLS 검증용 자체 서명 인증서 ───────────────────
+/certs/
+
+# ── 루트 docs (로컬 전용) ──────────────────────────────
+# 01-project-core 규약대로 루트 docs/ 는 저장소에 넣지 않는다.
+# 표준 양식 원본 HWP 82MB 가 여기 있고, scripts/init_volumes.sh 가 컨테이너 볼륨으로 시드한다.
+# 배포 런북만 정본으로 추적한다 (파트별 문서는 frontend·backend 하위 docs 를 쓴다)
+/docs/*
+!/docs/12_배포_런북.md
+
 # ── 로그·임시·빌드 산출물 ─────────────────────────────
 *.log
 *.tsbuildinfo

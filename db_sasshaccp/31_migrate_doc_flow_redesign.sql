@@ -428,6 +428,10 @@ END$$;
 -- ------------------------------------------------------------
 -- 10. 감사자료 — 법적서류(LAW) 제외
 -- ------------------------------------------------------------
+-- 22 에서 만든 RETURNS TABLE 컬럼 수와 달라 CREATE OR REPLACE 가 거부된다.
+-- OUT 시그니처가 바뀌는 경우에만 DROP 이 필요하므로 여기서 먼저 지운다
+DROP FUNCTION IF EXISTS sp_tbl_audit_export_r_000(varchar, varchar, varchar, varchar);
+
 CREATE OR REPLACE FUNCTION sp_tbl_audit_export_r_000(
     p_co_cd varchar, p_from_dt varchar, p_to_dt varchar, p_status varchar
 )
