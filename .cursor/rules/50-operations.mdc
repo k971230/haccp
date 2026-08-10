@@ -1,0 +1,70 @@
+---
+description: MES 운영·아키텍처 규약 — 삭제, 타임아웃, 전역 env (정본 frontend/mes-web/docs/01_운영규칙.md)
+alwaysApply: true
+---
+
+# MES 운영 규약
+
+정본: [`frontend/mes-web/docs/01_운영규칙.md`](../../frontend/mes-web/docs/01_운영규칙.md)  
+인수인계 주석: `40-handoff-comments.mdc` (동일 밀도, 별도 정책)
+
+## [OPS_DELETE] 삭제 표준
+
+- HTTP **DELETE 금지** — 삭제는 `POST`만 사용
+- 경로: `POST /api/v1/{domain}/{resource}/validate-delete` → `POST .../delete`
+- Body: 복합키 객체 **배열** `[{ ... }]` (UI 단건이어도 1건 배열). 스칼라 배열 금지
+- BE: `validateDelete`·`delete` **양쪽** `assertDeletable(coCd, keys)` Double Check
+- BE: `@Transactional` + SP 루프, SP 내부 자율 COMMIT 금지
+- PG 검증: Tuple IN / IN 우선, Service 루프 COUNT 금지 — MyBatis `<foreach>` 단일 쿼리 → `DeleteBlocker`
+- FE: `validateDeleteApi` → `mesConfirm` → `deleteApi` → 재조회; `useAsyncAction.run(fn, "del")`
+- M-D: `masterDetailFocus.ts` `runMasterDelete` / `runDetailDelete`
+- 참조 차단 메시지: *"선택한 항목 중 {label} '{key}'이(가) {target}에서 참조 중이므로 삭제할 수 없습니다."* (`DeleteValidation.throwIfBlocked`)
+
+골드: `ClientController` + `ClientService.assertDeletable` + `BamMapper.selectClientDeleteBlocker`
+
+## [OPS_TIMEOUT_TIER] API 타임아웃 3계층
+
+하드코딩 금지 — `.env` `VITE_API_TIMEOUT_*` + [`envConfig.ts`](../../frontend/mes-web/src/config/envConfig.ts)
+
+| 인스턴스 | env | 기본 | 용도 |
+|----------|-----|------|------|
+| `http` | `VITE_API_TIMEOUT_DEFAULT` | 10s | 일반 CRUD, validate-delete |
+| `httpBatch` | `VITE_API_TIMEOUT_BATCH` | 60s | 월마감, 대량 BOM 전개 |
+| `httpFile` | `VITE_API_TIMEOUT_FILE` | 120s | SOP PDF, 대용량 파일 |
+
+신규 API는 체급에 맞는 인스턴스 선택. 기본은 `http`.
+
+## [OPS_TIMEOUT_DEFENSE] 4중 방어 (배치 60s 기준)
+
+1. **FE 60s** — Dim·스피너, 초과 시 연결 끊고 업무 안내 문구
+2. **Nginx 70s** — `proxy_read_timeout` (BE Grace 10s)
+3. **Spring 60s** — CUD `@Transactional(timeout=60)`
+4. **MyBatis 60s** — `default-statement-timeout: 60`
+
+60s 초과 동기 API는 비동기 전환 권장.
+
+## [OPS_GLOBAL_CONFIG] Zero Tolerance
+
+소스 내 시간·크기·횟수 매직 넘버 **전면 금지**. `.env` / `application.yml` / `envConfig.ts`로 통제.
+
+| env | 기본 | 용도 |
+|-----|------|------|
+| `VITE_GRID_DEFAULT_PAGE_SIZE` | 50 | 그리드 페이징 |
+| `VITE_GRID_VIRTUAL_THRESHOLD` | 100 | 그리드 행 가상화 임계 (이상이면 Virtual) |
+| `VITE_SEARCH_DEBOUNCE_MS` | 300 | SearchPickerModal |
+| `VITE_API_RETRY_COUNT` | 2 | GET 재시도 |
+| `VITE_DASHBOARD_POLLING_MS` | 10000 | Touch·대시보드 폴링 |
+
+`.env` 변경 후 Vite **재시작** 필수. `.env.example`만 커밋.
+
+## [OPS_AUTH_CROSSTAB] 멀티탭 로그아웃 (F174)
+
+- `clearAuthSession` → `broadcastAuthLogout` (`mes-auth-logout-signal` localStorage)
+- 타 탭 `storage` 리스너 → `handleUnauthorized` (자동로그인 OFF/sessionStorage여도 신호는 local)
+- 진단·향후 검토 표: 루트 `배포.md` §0 · Actuator(B139)는 `30-docker-deploy.mdc`
+
+## 에이전트 의무
+
+- 신규·수정 시 본 규약 + `10-backend-java` / `20-frontend-react` 교차
+- 부록 A 갭 여부 점검 — FE 선행·BE 미정합(validate-delete 404) 주의
+- 코드 Wave(1~4)는 별도 승인 후 일괄 마이그레이션

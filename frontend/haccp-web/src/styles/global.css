@@ -1,0 +1,911 @@
+/*
+global.css — Tailwind 레이어 + 남색 테마 + .mes-* 업무 UI 스타일.
+
+개발자: 박승우
+일자: 2026-08-05
+코멘트:
+  1) 사이드바·탭바·그리드처럼 여러 화면이 공유하는 UI는 .mes-* 클래스로 이 파일에 모은다
+  2) mes-web global.css를 가져왔다 — 클래스 이름을 그대로 두어 두 앱의 화면 코드가 호환된다
+  3) Tailwind 3.4 문법만 쓴다. @theme·@utility 같은 v4 문법은 사용하지 않는다
+
+PIPELINE[HF114] 전역 스타일
+PIPELINE[HF49] 연관 모듈
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { @apply box-border; }
+  body, button, dd, dl, dt, h1, h2, h3, h4, h5, h6, li, ol, pre, ul {
+    font-family: NotoSans, "Noto Sans KR", "MS PGothic", 돋움, Dotum, Helvetica, "Apple SD Gothic Neo", sans-serif;
+  }
+  body {
+    @apply m-0 bg-canvas text-black text-mes-ui;
+  }
+  button {
+    @apply cursor-pointer font-bold tracking-normal text-black;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #f1f5f9; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+}
+
+@layer components {
+  /* ── 페이지 ── */
+  .mes-page { @apply flex h-full min-h-0 flex-col gap-2; }
+
+  /* ── 사이드바 (밝은 아코디언, 검은 텍스트) ── */
+  .mes-sidebar {
+    @apply flex flex-col overflow-hidden border-r border-sidebar-border bg-sidebar-bg text-sidebar-text shadow-sm;
+  }
+  .mes-sidebar-brand {
+    @apply flex shrink-0 items-center gap-2 border-b border-sidebar-border px-2 py-1.5;
+  }
+  .mes-sidebar-brand-collapsed {
+    @apply flex-col items-center gap-1 px-1.5 py-1.5;
+  }
+  .mes-sidebar-logo-btn {
+    @apply cursor-pointer transition hover:opacity-80;
+  }
+  .mes-sidebar-brand-hit {
+    @apply min-w-0 flex-1 cursor-pointer border-0 bg-transparent p-0 text-left transition hover:opacity-80;
+  }
+  .mes-sidebar-brand-divider {
+    @apply h-px w-full bg-sidebar-border;
+  }
+  .mes-sidebar-brand-title {
+    @apply flex min-w-0 flex-1 items-center gap-2 text-sm font-bold tracking-tight text-sidebar-text;
+  }
+  .mes-sidebar-toggle {
+    @apply inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-sidebar-border bg-white font-bold text-sidebar-text transition hover:bg-neutral-100;
+  }
+  .mes-sidebar-foot {
+    @apply flex h-6 shrink-0 items-center justify-end overflow-hidden border-t border-sidebar-border bg-sidebar-bg px-2;
+  }
+  .mes-sidebar-toolbar {
+    @apply flex shrink-0 items-center justify-end border-b border-sidebar-border px-2 py-0.5;
+  }
+  .mes-sidebar-collapse-all {
+    @apply text-[10px] font-bold text-sidebar-muted transition hover:text-sidebar-text;
+  }
+  .mes-sidebar-scroll {
+    @apply flex-1 overflow-y-auto px-0 py-0;
+  }
+  .mes-sidebar-scroll::-webkit-scrollbar { width: 4px; }
+  .mes-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+  .mes-sidebar-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+  .mes-sidebar-scroll::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+  .mes-sidebar-rail {
+    @apply flex min-h-0 flex-1 flex-col items-center gap-0.5 overflow-y-auto px-1 py-1;
+  }
+  .mes-sidebar-rail-btn {
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-transparent text-sidebar-text transition hover:bg-black/5;
+  }
+  .mes-sidebar-rail-btn-active {
+    @apply border-blue-200 bg-blue-100 font-bold text-blue-700 shadow-none;
+  }
+
+  .mes-sidebar-group {
+    @apply space-y-0;
+  }
+  .mes-sidebar-grpa {
+    @apply relative flex w-full items-center gap-2 border-b border-sidebar-border px-3 py-2 text-left text-[13px] font-bold text-sidebar-text transition;
+  }
+  .mes-sidebar-grpa:hover { @apply bg-black/[0.03]; }
+  .mes-sidebar-grpa-open:not(.mes-sidebar-grpa-active) { @apply bg-transparent; }
+  .mes-sidebar-grpa-active {
+    @apply bg-blue-100 font-bold text-blue-700;
+  }
+  .mes-sidebar-grpa-chevron {
+    @apply ml-auto h-3.5 w-3.5 shrink-0 text-sidebar-muted transition-transform;
+  }
+  .mes-sidebar-grpa-active .mes-sidebar-grpa-chevron {
+    @apply text-blue-700;
+  }
+
+  .mes-sidebar-submenu {
+    @apply border-b border-sidebar-border bg-white pb-1 pt-0;
+  }
+  .mes-sidebar-menu-label {
+    @apply flex items-center gap-2 px-3 pb-0.5 pt-1.5 text-left text-[10px] font-bold text-sidebar-muted;
+  }
+  .mes-sidebar-menu-label::after {
+    content: "";
+    @apply h-px flex-1 bg-sidebar-border;
+  }
+  .mes-sidebar-menu-label span { @apply shrink-0; }
+
+  .mes-sidebar-leaf {
+    @apply relative flex w-full items-center gap-1.5 bg-white py-1.5 pl-7 pr-3 text-left text-[12px] font-medium text-sidebar-text transition;
+  }
+  .mes-sidebar-leaf::before {
+    content: "";
+    @apply absolute left-3 top-0 h-full w-3 border-b border-l border-dotted border-neutral-300;
+    border-bottom-left-radius: 2px;
+  }
+  .mes-sidebar-leaf:hover:not(:disabled) { @apply bg-white; }
+  .mes-sidebar-leaf-inactive { @apply bg-white text-sidebar-text; }
+  .mes-sidebar-leaf-active {
+    @apply bg-blue-100 font-bold text-blue-700;
+  }
+  .mes-sidebar-leaf-disabled {
+    @apply cursor-not-allowed font-medium text-sidebar-muted/50;
+  }
+
+  .mes-sidebar-loading { @apply text-sidebar-muted; }
+
+  /* ── 입력 ── */
+  .mes-input,
+  .mes-search-input {
+    @apply h-mes-input w-full min-w-[100px] max-w-[200px] rounded-md border border-slate-200 bg-slate-50 px-2 text-mes-ui text-black outline-none transition;
+    @apply placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100;
+    @apply disabled:bg-slate-100 disabled:text-slate-400;
+  }
+
+  /* ── 그리드 블록 헤더 ── */
+  .mes-grid-block { @apply flex min-h-0 flex-1 flex-col; }
+  .mes-grid-block-head { @apply flex min-h-9 flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/70 px-3 py-2.5; }
+  .mes-grid-block-head b { @apply text-mes-ui font-bold text-black; }
+  .mes-grid-crud-btns { @apply flex flex-wrap items-center gap-1.5; }
+
+  /* 그리드 타이틀 앞 accent — 기본 파란색 (활성 섹션은 아래 emerald) */
+  .mes-grid-head b::before,
+  .mes-grid-block-head b::before,
+  .mes-grid-title-only::before {
+    content: "";
+    @apply block h-3 w-1 shrink-0 rounded-full bg-blue-600;
+  }
+  .mes-grid-head b,
+  .mes-grid-block-head b {
+    @apply flex items-center gap-2;
+  }
+  .mes-grid-title-only {
+    @apply flex min-h-9 shrink-0 items-center gap-2 border-b border-slate-200 bg-slate-50/70 px-3 py-2 text-mes-ui font-bold text-black;
+  }
+
+  /* ── 패널 (ag.bind / sec.bind — 셸 단축키 대상 그리드) ── */
+  .mes-panel-card { @apply flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm; }
+  /* 활성 섹션 ring — CSV(excel) variant와 동일 emerald 틴트 */
+  .mes-sec-active.mes-panel-card,
+  .mes-sec-active.mes-grid-block {
+    @apply ring-1 ring-emerald-200;
+  }
+  /* 활성 그리드 헤더 — MesButton variant=excel (border-emerald-200 / bg-emerald-50 / text-emerald-700) */
+  .mes-sec-active .mes-grid-block-head,
+  .mes-sec-active .mes-grid-head,
+  .mes-sec-active .mes-grid-title-only {
+    @apply border-emerald-200 bg-emerald-50;
+  }
+  .mes-sec-active .mes-grid-block-head b,
+  .mes-sec-active .mes-grid-head b,
+  .mes-sec-active .mes-grid-title-only {
+    @apply text-emerald-700;
+  }
+  .mes-sec-active .mes-grid-block-head b::before,
+  .mes-sec-active .mes-grid-head b::before,
+  .mes-sec-active .mes-grid-title-only::before {
+    @apply bg-emerald-600;
+  }
+
+  /* ── 그리드 래퍼 ── */
+  .mes-grid-wrap { @apply relative flex flex-col overflow-hidden border border-slate-200 bg-white; }
+  .mes-grid-embedded { @apply rounded-none border-0 shadow-none; }
+  .mes-grid-fill { @apply min-h-0 flex-1; }
+  .mes-grid-scroll { @apply relative min-h-0 flex-1 overflow-auto bg-white; }
+
+  /* ── 테이블 ── */
+  /* ADR-032: table-layout:fixed + th/td colWidthStyle(width=min=max) —
+     열 너비는 pref/col.width/기본120만. 셀 데이터 글자수·가상스크롤과 무관하게 고정 */
+  .mes-grid { @apply w-max min-w-full border-separate border-spacing-0 text-mes-ui; table-layout: fixed; }
+  .mes-grid thead th {
+    @apply sticky top-0 z-[2] border-b border-r border-slate-200 bg-slate-50 p-0 text-center text-[11px] font-bold text-black last:border-r-0;
+  }
+  .mes-grid thead th.mes-rownum { @apply sticky left-0 z-[5] w-8 min-w-8 max-w-8 p-0; }
+  .mes-grid thead .mes-th-inner { @apply flex min-h-mes-head cursor-pointer items-center justify-center gap-1 px-2 py-1.5 text-center hover:bg-slate-100; }
+  .mes-th-sort { @apply text-[10px] text-blue-600; }
+  .mes-grid th.mes-col-pinned,
+  .mes-grid td.mes-col-pinned {
+    box-shadow: 1px 0 0 0 #e2e8f0;
+  }
+  .mes-grid thead th.mes-col-pinned { @apply bg-slate-50; }
+  .mes-grid tbody td.mes-col-pinned { @apply bg-white; }
+  .mes-grid tbody tr.mes-row-active td.mes-col-pinned { @apply bg-blue-100; }
+  .mes-grid tbody td.mes-cell-focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: -2px;
+    position: relative;
+    z-index: 1;
+  }
+  .mes-grid tbody td.mes-cell-locked.mes-cell-focus,
+  .mes-grid tbody td.mes-cell-required.mes-cell-focus,
+  .mes-grid tbody td.mes-cell-editable.mes-cell-focus {
+    z-index: 1;
+  }
+  .mes-grid tbody td {
+    @apply h-mes-row overflow-hidden text-ellipsis whitespace-nowrap border-b border-r border-slate-200 bg-white p-0 align-middle last:border-r-0;
+  }
+  /* 행 hover/active — 셀별 표면 클래스가 있으면 제외 */
+  .mes-grid tbody tr:hover td:not(.mes-cell-locked):not(.mes-cell-required):not(.mes-cell-editable) {
+    @apply bg-slate-50;
+  }
+  .mes-grid tbody tr.mes-row-active td:not(.mes-cell-locked):not(.mes-cell-required):not(.mes-cell-editable) {
+    @apply bg-blue-100;
+  }
+  .mes-grid tbody tr.mes-row-active:hover td:not(.mes-cell-locked):not(.mes-cell-required):not(.mes-cell-editable) {
+    @apply bg-blue-100;
+  }
+  .mes-grid tbody tr.mes-row-dirty td:first-child { @apply shadow-[inset_2px_0_0_0_#3b82f6]; }
+
+  /* 셀 표면 — td 직접 (잠금 > 필수 > 편집) */
+  .mes-grid tbody td.mes-cell-locked,
+  .mes-grid tbody tr:hover td.mes-cell-locked,
+  .mes-grid tbody tr.mes-row-active td.mes-cell-locked,
+  .mes-grid tbody tr.mes-row-active:hover td.mes-cell-locked {
+    @apply bg-slate-100;
+  }
+  .mes-grid tbody td.mes-cell-required,
+  .mes-grid tbody tr:hover td.mes-cell-required,
+  .mes-grid tbody tr.mes-row-active td.mes-cell-required,
+  .mes-grid tbody tr.mes-row-active:hover td.mes-cell-required {
+    @apply bg-red-50;
+  }
+  .mes-grid tbody td.mes-cell-editable,
+  .mes-grid tbody tr:hover td.mes-cell-editable,
+  .mes-grid tbody tr.mes-row-active td.mes-cell-editable,
+  .mes-grid tbody tr.mes-row-active:hover td.mes-cell-editable {
+    @apply bg-blue-100;
+  }
+
+  /* 활성 섹션 그리드 래퍼 — CSV excel 틴트와 동일 emerald */
+  .mes-sec-active .mes-grid-wrap { @apply ring-1 ring-emerald-200; }
+
+  .mes-rownum {
+    @apply sticky left-0 z-[3] w-8 min-w-8 max-w-8 bg-slate-50 px-0 py-1 text-center text-[11px] tabular-nums text-neutral-500;
+  }
+  .mes-rownum-active { @apply bg-blue-100; }
+  .mes-grid tbody td.mes-col-select {
+    @apply sticky z-[3] bg-slate-50;
+  }
+  .mes-grid tbody tr.mes-row-active td.mes-col-select { @apply bg-blue-100; }
+  .mes-rownum-index { @apply inline-block min-w-[1ch]; }
+
+  .mes-grid-badge {
+    @apply inline-flex max-w-full items-center truncate rounded-full px-2 py-0.5 text-[11px] font-semibold leading-none;
+  }
+  .mes-grid-badge-blue { @apply bg-blue-600 text-white; }
+  .mes-grid-badge-amber { @apply bg-amber-400 text-white; }
+  .mes-grid-badge-green { @apply bg-emerald-600 text-white; }
+  .mes-grid-badge-gray { @apply bg-neutral-500 text-white; }
+  .mes-grid-badge-red { @apply bg-rose-600 text-white; }
+
+  /* ── 셀 ── */
+  .mes-cell { @apply min-h-4 leading-snug; }
+  .mes-cellwrap { @apply flex min-h-full w-full items-center gap-0.5 px-2 py-1; }
+  /* ADR-031: 편집 중 — td와 동일 h-mes-row 고정(absolute 자식이 높이 기여 못해도 유지) */
+  .mes-cellwrap-editing {
+    @apply relative h-mes-row w-full gap-0 overflow-hidden p-0;
+  }
+  .mes-cell-checkbox { @apply justify-center; }
+  .mes-cell-text { @apply min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap; }
+  .mes-align-right .mes-cell-text { @apply text-right; }
+  .mes-align-center .mes-cell-text { @apply text-center; }
+  .mes-cell-editable { @apply cursor-text; }
+
+  /* ADR-031: 셀 덮개식 편집 — absolute inset로 표시 셀과 동일 박스, 바깥 ring 금지(행 높이 울렁임 방지) */
+  .mes-egrid-input {
+    @apply absolute inset-0 box-border h-full w-full min-h-0 min-w-0 rounded-none border border-blue-500 bg-white px-1.5 text-xs leading-none text-black outline-none;
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.45);
+  }
+  .mes-egrid-input:focus {
+    @apply border-blue-600;
+    box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.55);
+  }
+  .mes-egrid-input.mes-cell-invalid {
+    @apply border-rose-500 bg-rose-50;
+    box-shadow: inset 0 0 0 2px rgba(244, 63, 94, 0.4);
+  }
+  .mes-align-right.mes-egrid-input,
+  .mes-egrid-input.mes-align-right { @apply text-right; }
+  .mes-align-center.mes-egrid-input,
+  .mes-egrid-input.mes-align-center { @apply text-center; }
+  /* date/number/select — 브라우저 기본 높이로 행이 늘어나지 않게 */
+  .mes-egrid-input[type="date"],
+  .mes-egrid-input[type="number"],
+  select.mes-egrid-input {
+    @apply h-full max-h-full appearance-none;
+  }
+  /* 편집 셀에 버튼이 있을 때 — 버튼은 위에, input은 오른쪽 여백 */
+  .mes-cellwrap-editing .mes-cell-btn {
+    @apply absolute right-0.5 top-1/2 z-[2] -translate-y-1/2;
+  }
+  .mes-cellwrap-editing:has(.mes-cell-btn) .mes-egrid-input {
+    @apply pr-6;
+  }
+
+  .mes-cell-btn {
+    @apply inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border border-brand-700 bg-white text-brand-700 hover:bg-brand-700 hover:text-white;
+  }
+  .mes-cell-btn-required {
+    @apply border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-600;
+  }
+  .mes-cell-btn-locked { @apply cursor-not-allowed opacity-40 hover:bg-white hover:text-brand-700; }
+  .mes-cell-btn-required.mes-cell-btn-locked { @apply hover:bg-red-50 hover:text-red-600; }
+
+  /* ── 레거시 버튼 (모달·터치 잔여) ── */
+  .mes-btn { @apply inline-flex h-8 items-center justify-center gap-1.5 rounded-mes border border-slate-300 bg-white px-3 text-mes-ui font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50; }
+  .mes-btn-primary { @apply border-brand-700 bg-brand-700 text-white hover:bg-brand-800; }
+
+  /* ── 트리 ── */
+  .mes-tree-wrap { @apply flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-mes-ui shadow-sm; }
+  /* ADR-033: 검색 + 새로고침 한 줄 — 높이 36px(본문 calc와 맞춤) */
+  .mes-tree-toolbar { @apply flex h-9 shrink-0 items-center gap-0.5 border-b border-slate-200 bg-white; }
+  .mes-tree-search { @apply min-w-0 flex-1 border-0 bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-slate-400 focus:ring-0; }
+  .mes-tree-refresh {
+    @apply mr-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50;
+  }
+  .mes-tree { @apply min-h-0 flex-1 overflow-auto; }
+  .mes-tree-node { @apply cursor-pointer py-1 pr-2 text-mes-ui hover:bg-slate-50; }
+  .mes-tree-sel { @apply bg-blue-100 font-semibold text-blue-700; }
+  .mes-tree-toggle { @apply mr-1 inline-flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center text-slate-400 hover:text-slate-600; } /* chevron 접기/펼치기 클릭 영역 */
+  .mes-tree-match { @apply rounded bg-amber-100 px-0.5 text-inherit; } /* filterTreeNodes 매칭 구간 하이라이트 */
+  .mes-tree-table { @apply w-full border-collapse; } /* TanStack TreePanel 테이블 래퍼 */
+  .mes-tree-leaf { @apply inline-block h-3.5 w-3.5; } /* 자식 없는 리프 토글 자리 */
+
+  /* ── TouchPage ── */
+  .touch-page {
+    @apply flex h-full min-h-0 flex-1 flex-col gap-2 p-3 text-white;
+    background-color: #1a1f2c;
+  }
+  .touch-header {
+    @apply grid min-h-[44px] grid-cols-[1fr_auto_1fr] items-center rounded-lg border border-[#2d3748] bg-[#11151c] px-4 py-1.5 shadow-md;
+  }
+  .touch-logo { @apply text-xl font-extrabold tracking-widest text-sky-400; }
+  .touch-header h1 { @apply m-0 text-center text-xl font-bold text-white; }
+  .touch-header-right { @apply flex items-center justify-end gap-3; }
+  .touch-clock { @apply text-base font-semibold text-gray-400; }
+  .touch-close-btn {
+    @apply flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-red-600/20 text-lg font-bold text-red-400 transition hover:bg-red-600/35;
+  }
+  .touch-icon-bar { @apply grid grid-cols-7 gap-2; }
+  .touch-icon-btn {
+    @apply flex h-16 cursor-pointer flex-col items-center justify-center rounded-lg border border-[#374151] bg-[#242b3d] text-base font-semibold text-gray-200 transition active:scale-[0.98] hover:bg-[#2d3548] disabled:cursor-not-allowed disabled:opacity-35;
+    border-top-width: 4px;
+  }
+  .touch-icon-btn.badge-red { border-top-color: #f87171; }
+  .touch-icon-btn.badge-green { border-top-color: #4ade80; }
+  .touch-icon-btn.badge-blue { border-top-color: #60a5fa; }
+  .touch-icon-btn.badge-teal { border-top-color: #2dd4bf; }
+  .touch-icon-btn.badge-purple { border-top-color: #c084fc; }
+  .touch-icon-btn.badge-amber { border-top-color: #fbbf24; }
+  .touch-info-bar {
+    @apply flex shrink-0 items-stretch gap-4 rounded-lg border border-[#2d3748] bg-[#1e2538] px-4 py-3 shadow-lg;
+  }
+  .touch-info-pick {
+    @apply flex w-[140px] shrink-0 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-[#374151] bg-[#242b3d] px-2 text-lg font-semibold text-gray-200 transition active:scale-[0.98] hover:bg-[#2d3548];
+    min-height: 96px;
+    border-top-width: 4px;
+  }
+  .touch-info-pick.badge-blue { border-top-color: #60a5fa; }
+  .touch-info-grid {
+    @apply grid flex-1 gap-x-4 gap-y-2;
+    grid-template-columns: 1.2fr 0.8fr 0.9fr 1fr;
+    grid-template-rows: auto auto;
+  }
+  .touch-info-cell { @apply flex flex-col justify-center gap-1; }
+  .touch-info-cell-qty { grid-column: 4; grid-row: 1; }
+  .touch-info-lbl { @apply text-sm font-semibold text-gray-400; }
+  .touch-info-val {
+    @apply flex min-h-[44px] items-center rounded-md border border-[#2d3748] bg-[#111522] px-3 py-1.5 text-lg font-bold text-white;
+  }
+  .touch-info-val.highlight-work {
+    @apply border-amber-800 bg-[#2a2415] text-xl text-amber-300;
+  }
+  .touch-info-val.qty { @apply justify-end text-sky-400; }
+  .touch-info-val.muted { @apply text-gray-400; }
+  .touch-main { @apply grid min-h-0 flex-1 gap-2 overflow-hidden; grid-template-columns: 52% 48%; }
+  .touch-left { @apply grid min-h-0 min-w-0 grid-rows-2 gap-2 overflow-hidden; }
+  .touch-card {
+    @apply flex min-h-0 flex-col overflow-hidden rounded-lg border border-[#2d3748] bg-[#1e2538] p-2;
+  }
+  .touch-card-title {
+    @apply mb-1 border-b-2 border-[#2d3748] pb-1 text-base font-bold text-sky-400;
+  }
+  .touch-right { @apply flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-[#2d3748] bg-[#1e2538]; }
+  .touch-tabs { @apply flex border-b border-[#2d3748]; }
+  .touch-tab { @apply flex-1 cursor-pointer border-none bg-transparent py-4 text-lg font-bold text-gray-500; }
+  .touch-tab.active { @apply text-sky-400; border-bottom: 2px solid #38bdf8; margin-bottom: -1px; }
+  .touch-tab-body { @apply flex min-h-0 flex-1 flex-col overflow-hidden p-4; }
+  .touch-tab-body.touch-ctrl-layout { @apply h-full min-h-0 gap-3 p-3; }
+  .touch-ctrl-layout {
+    @apply grid h-full min-h-0 flex-1 gap-3 overflow-hidden;
+    grid-template-columns: 1fr 220px;
+  }
+  .touch-ctrl-panel {
+    @apply grid min-h-0 flex-1 gap-2 overflow-hidden;
+    grid-template-rows: 1fr 1fr 1.25fr 1fr 1fr 1fr;
+  }
+  .touch-ctrl-row {
+    @apply grid min-h-0 grid-cols-2 gap-2;
+  }
+  .touch-ctrl-row > .touch-form-cell,
+  .touch-ctrl-row > .touch-metric-box {
+    @apply rounded-md border border-[#2d3748] bg-[#11151c];
+  }
+  .touch-ctrl-row.touch-qty-row {
+    @apply grid items-stretch gap-2;
+    grid-template-columns: 1fr auto;
+  }
+  .touch-ctrl-row.touch-qty-row > .touch-form-cell-grow {
+    @apply rounded-md border border-[#2d3748] bg-[#11151c];
+  }
+  .touch-form-cell-grow { @apply min-w-0 flex-1; }
+  .touch-ctrl-actions { @apply flex h-full min-h-0 flex-col gap-3; }
+  .touch-form-fields { @apply grid grid-cols-2 gap-3; }
+  .touch-form-cell { @apply flex min-h-0 flex-col justify-center gap-1 px-3 py-2; }
+  .touch-ctrl-panel .touch-form-cell {
+    @apply gap-1 px-3 py-2;
+  }
+  .touch-ctrl-panel .touch-form-lbl {
+    @apply text-sm font-semibold text-gray-400;
+  }
+  .touch-form-lbl { @apply text-base font-semibold text-gray-400; }
+  .touch-qty-row .touch-form-lbl { @apply text-sky-400; }
+  .touch-form-value {
+    @apply flex min-h-0 flex-1 items-center rounded-md border-0 bg-transparent px-1 py-0 text-xl font-medium text-white;
+  }
+  .touch-ctrl-panel .touch-form-value,
+  .touch-ctrl-panel .touch-form-value.touch-form-highlight {
+    @apply min-h-[44px] items-center text-lg;
+  }
+  .touch-form-value.filled-orange { @apply border-amber-700 bg-amber-950/40 text-amber-300; }
+  .touch-form-value.touch-form-highlight {
+    @apply rounded-md border border-sky-600 bg-sky-950/40 px-2 py-1 font-bold text-sky-300;
+  }
+  .touch-form-value.filled-blue { @apply border-blue-700 bg-blue-950/40 text-sky-400; }
+  .touch-form-value.text-amber { @apply text-amber-300; }
+  .touch-form-value.text-sky { @apply text-sky-400; }
+  .touch-form-split { @apply flex flex-1 gap-2; }
+  .touch-form-split > * { @apply flex-1; }
+  .touch-form-input {
+    @apply flex min-h-[52px] flex-1 items-center rounded-md border border-[#374151] bg-[#11151c] px-3 text-xl text-white;
+  }
+  .touch-qty-row .touch-form-cell-grow {
+    @apply overflow-visible;
+  }
+  .touch-form-input-xl {
+    @apply w-full min-h-[2.5rem] flex-1 cursor-pointer overflow-visible rounded-md border-0 bg-transparent px-2 text-right font-bold leading-none text-sky-400 outline-none placeholder:text-sky-400/40;
+    font-size: clamp(1.35rem, 3vh, 2rem);
+  }
+  .touch-kb-btn {
+    @apply flex w-[80px] min-w-[80px] shrink-0 cursor-pointer flex-col items-center justify-center self-stretch rounded-md border border-blue-600 bg-blue-600 text-base font-bold leading-tight text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-35;
+  }
+  .touch-metric-row { @apply grid grid-cols-2 gap-3; }
+  .touch-metric-box {
+    @apply flex min-h-0 flex-col justify-center gap-1 px-3 py-2;
+  }
+  .touch-metric-lbl { @apply text-sm font-semibold text-gray-400; }
+  .touch-metric-val { @apply text-right text-2xl font-bold; }
+  .touch-metric-val.text-green { @apply text-emerald-500; }
+  .touch-metric-val.text-red { @apply text-red-500; }
+  .touch-action-btn {
+    @apply min-h-[72px] flex-1 cursor-pointer rounded-lg border-none px-2 text-2xl font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-35;
+  }
+  .touch-action-btn.btn-start { @apply bg-emerald-600 hover:bg-emerald-700; }
+  .touch-action-btn.btn-stop { @apply bg-amber-600 hover:bg-amber-700; }
+  .touch-action-btn.btn-complete { @apply bg-blue-600 hover:bg-blue-700; }
+  .touch-action-btn.btn-cancel { @apply bg-red-600 hover:bg-red-700; }
+  .touch-action-btn.btn-secondary { @apply bg-gray-600 hover:bg-gray-700; }
+  .touch-action-btn.btn-submit { @apply bg-blue-600 hover:bg-blue-700; }
+  .touch-detail-layout { @apply flex h-full min-h-0 flex-col gap-3; }
+  .touch-detail-card {
+    @apply flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-[#2d3748] bg-[#11151c];
+  }
+  .touch-detail-card.warn { @apply border-amber-700/60; }
+  .touch-detail-head {
+    @apply shrink-0 border-b border-[#2d3748] bg-[#1a2030] px-4 py-3 text-xl font-bold text-sky-400;
+  }
+  .touch-detail-card.warn .touch-detail-head { @apply text-amber-300; }
+  .touch-detail-body {
+    @apply min-h-0 flex-1 overflow-auto whitespace-pre-wrap p-5 text-xl leading-relaxed text-white;
+  }
+  .touch-detail-card.warn .touch-detail-body { @apply text-amber-100; }
+  .touch-grid-wrap .mes-grid-wrap { @apply border-white/15; }
+  .touch-card .mes-grid-wrap { @apply rounded-md border-0 shadow-none; }
+  .touch-grid-wrap .mes-grid-scroll { @apply flex h-full min-h-0 flex-1 flex-col overflow-hidden; }
+  .touch-grid-wrap .mes-grid {
+    @apply h-full w-full;
+    display: block;
+  }
+  .touch-grid-wrap .mes-grid thead {
+    @apply table w-full table-fixed;
+  }
+  .touch-grid-wrap .mes-grid tbody {
+    @apply block w-full overflow-hidden;
+    height: calc(100% - 3rem);
+  }
+  .touch-grid-wrap .mes-grid tbody tr {
+    @apply table w-full table-fixed;
+    height: calc(100% / var(--touch-rows, 1) * var(--touch-row-height-scale, 1));
+  }
+  .touch-grid-compact {
+    --touch-row-pct: 40%;
+  }
+  .touch-page .touch-grid-compact .mes-grid tbody {
+    @apply overflow-y-auto overflow-x-hidden;
+  }
+  .touch-page .touch-grid-compact .mes-grid tbody tr {
+    height: var(--touch-row-pct);
+    min-height: var(--touch-row-pct);
+  }
+  .touch-grid-wrap .mes-grid thead th { @apply px-3 py-3 text-xl; }
+  .touch-grid-wrap .mes-rownum { @apply w-12 text-center text-lg; }
+  .touch-msg { @apply px-2 py-1 text-lg text-sky-200; }
+  .touch-page .mes-grid-wrap,
+  .touch-page .mes-grid-scroll { @apply bg-[#11151c]; }
+  .touch-page .mes-grid thead th { @apply border-[#2d3748] bg-[#242b3d] text-gray-300; }
+  .touch-page .mes-grid thead th.mes-rownum { @apply bg-[#242b3d]; }
+  .touch-page .mes-grid tbody tr { @apply bg-[#11151c]; }
+  .touch-page .mes-grid tbody tr:nth-child(even) { @apply bg-[#1a2030]; }
+  .touch-page .mes-grid tbody tr:hover { @apply bg-[#242b3d]; }
+  .touch-page .mes-grid tbody tr.mes-row-active { @apply bg-sky-500/25 shadow-[inset_5px_0_0_0_#38bdf8]; }
+  .touch-page .mes-grid tbody td { @apply border-[#2d3748] px-3 text-xl text-white; }
+  .touch-page .mes-grid .mes-cell-text { @apply text-white; }
+  .touch-page .mes-rownum { @apply bg-[#242b3d] text-gray-400; }
+  .touch-page .mes-grid-scroll .pointer-events-none { @apply bg-[#11151c]/95; }
+  .touch-page .mes-grid-scroll .pointer-events-none .bg-slate-100 { @apply bg-[#242b3d] text-gray-400; }
+  .touch-page .mes-grid-scroll .pointer-events-none .text-slate-700 { @apply text-gray-200; }
+  .touch-page .mes-grid-scroll .pointer-events-none .text-slate-400 { @apply text-gray-400; }
+  .touch-page .touch-grid-compact .mes-grid thead th { @apply py-2 text-xl; }
+  .touch-page .touch-grid-compact .mes-grid tbody td { @apply py-1.5 text-xl; }
+  .touch-page .touch-grid-compact .mes-rownum { @apply text-lg; }
+
+  /* ── Touch 키오스크 모달 ── */
+  .touch-modal-backdrop { @apply fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 p-4; }
+  .touch-modal {
+    @apply flex flex-col overflow-hidden rounded-xl border border-[#2d3748] bg-[#1e2538] text-white shadow-2xl;
+    width: 900px;
+    height: 900px;
+    max-width: min(900px, 96vw);
+    max-height: min(900px, 92vh);
+  }
+  .touch-modal-date {
+    width: 600px;
+    height: 600px;
+    max-width: min(600px, 96vw);
+    max-height: min(600px, 92vh);
+  }
+  .touch-modal-select {
+    width: 450px;
+    height: 600px;
+    max-width: min(450px, 96vw);
+    max-height: min(600px, 92vh);
+  }
+  .touch-modal-pad {
+    width: 450px;
+    height: 600px;
+    max-width: min(450px, 96vw);
+    max-height: min(600px, 92vh);
+  }
+  .touch-modal-head {
+    @apply flex shrink-0 items-center justify-between border-b border-[#2d3748] bg-[#11151c] px-5 py-3 text-xl font-bold;
+  }
+  .touch-modal-x {
+    @apply flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent text-2xl text-gray-400 hover:bg-white/10 hover:text-white;
+  }
+  .touch-modal-search {
+    @apply flex shrink-0 flex-wrap items-center gap-2 border-b border-[#2d3748] bg-[#1a2030] px-4 py-2 text-lg text-gray-300;
+  }
+  .touch-modal-search label { @apply flex items-center gap-2; }
+  .touch-wo-search { @apply flex w-full flex-col gap-2; }
+  .touch-wo-search-row1 {
+    @apply grid items-stretch gap-2;
+    grid-template-columns: 1fr 1fr 168px;
+  }
+  .touch-wo-search-row2 {
+    @apply grid items-stretch gap-2;
+    grid-template-columns: 1fr 1fr 168px;
+  }
+  .touch-wo-search .touch-modal-search-item {
+    @apply flex min-w-0 flex-col justify-end gap-1;
+  }
+  .touch-wo-search .touch-modal-search-item > label {
+    @apply block text-base font-semibold text-gray-400;
+  }
+  .touch-search-control,
+  .touch-date-field-btn {
+    @apply flex h-[56px] min-h-[56px] w-full cursor-pointer items-center rounded-md border border-[#374151] bg-[#11151c] px-3 text-xl text-white;
+  }
+  .touch-date-field-btn { @apply justify-between hover:border-sky-500; }
+  .touch-search-select {
+    @apply h-[56px] min-h-[56px] w-full cursor-pointer appearance-none rounded-md border border-[#374151] bg-[#11151c] px-3 text-xl text-white;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 2.25rem;
+  }
+  .touch-modal-btn-search {
+    @apply min-h-[56px] w-full cursor-pointer self-end rounded-lg border-none bg-emerald-600 px-4 text-xl font-bold text-white hover:bg-emerald-700;
+  }
+  .touch-modal-check-lg {
+    @apply flex min-h-[56px] w-full cursor-pointer items-center justify-center gap-3 self-end rounded-lg border border-[#374151] bg-[#11151c] px-4 text-lg font-semibold text-white;
+  }
+  .touch-modal-checkbox {
+    @apply h-7 w-7 shrink-0 cursor-pointer accent-sky-500;
+  }
+  .touch-modal-body { @apply flex min-h-0 flex-1 flex-col overflow-hidden p-4; }
+  .touch-dual-grid { @apply grid min-h-0 flex-1 grid-cols-2 gap-4; }
+  .touch-dual-grid > div { @apply flex min-h-0 flex-col gap-2 overflow-hidden; }
+  .touch-dual-grid > div > b { @apply text-lg font-bold text-sky-400; }
+  .touch-modal-foot { @apply flex shrink-0 justify-end gap-3 border-t border-[#2d3748] bg-[#11151c] px-5 py-4; }
+  .touch-modal .mes-input,
+  .touch-modal select {
+    @apply min-h-[56px] rounded-md border border-[#374151] bg-[#11151c] px-3 text-xl text-white;
+  }
+  .touch-modal input[type="date"] {
+    min-height: 56px;
+    font-size: 1.25rem;
+  }
+  .touch-modal input[type="date"]::-webkit-calendar-picker-indicator {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    filter: invert(1);
+  }
+  .touch-modal .mes-input:focus { @apply border-sky-500 outline-none ring-1 ring-sky-500/40; }
+  .touch-modal .mes-grid-wrap > div.min-h-9,
+  .touch-modal .mes-grid-wrap > div.h-7 { @apply hidden; }
+  .touch-modal .mes-grid-wrap { @apply rounded-md border border-white/15 bg-[#11151c]; }
+  .touch-modal .mes-grid-scroll { @apply bg-[#11151c]; }
+  .touch-modal .mes-grid thead th { @apply border-[#2d3748] bg-[#242b3d] text-lg text-gray-300; }
+  .touch-modal .mes-grid thead th.mes-rownum { @apply bg-[#242b3d]; }
+  .touch-modal .mes-grid tbody tr { @apply bg-[#11151c]; }
+  .touch-modal .mes-grid tbody tr:nth-child(even) { @apply bg-[#1a2030]; }
+  .touch-modal .mes-grid tbody tr:hover { @apply bg-[#242b3d]; }
+  .touch-modal .mes-grid tbody tr.mes-row-active { @apply bg-sky-500/25 shadow-[inset_5px_0_0_0_#38bdf8]; }
+  .touch-modal .mes-grid tbody td { @apply h-[64px] border-[#2d3748] text-lg text-white; }
+  .touch-modal .mes-grid .mes-cell-text { @apply text-white; }
+  .touch-modal .mes-rownum { @apply bg-[#242b3d] text-gray-400; }
+  .touch-modal .mes-grid-scroll .pointer-events-none { @apply bg-[#11151c]/95; }
+  .touch-modal .mes-grid-scroll .pointer-events-none .bg-slate-100 { @apply bg-[#242b3d] text-gray-400; }
+  .touch-modal .mes-grid-scroll .pointer-events-none .text-slate-700 { @apply text-gray-200; }
+  .touch-modal .mes-grid-scroll .pointer-events-none .text-slate-400 { @apply text-gray-400; }
+  .touch-modal-pad-display {
+    @apply w-full shrink-0 rounded-md border border-blue-700/50 bg-[#11151c] px-4 py-4 text-center text-5xl font-bold tracking-wider text-sky-400;
+  }
+  .touch-modal-pad-hint {
+    @apply shrink-0 rounded-lg border border-[#374151] bg-[#11151c]/90 px-4 py-3 text-center text-base leading-relaxed text-gray-400;
+  }
+  .touch-modal-pad-extra {
+    @apply grid shrink-0 grid-cols-2 gap-2;
+  }
+  .touch-modal-pad-extra .touch-modal-pad-key {
+    @apply min-h-[56px] text-4xl;
+  }
+  .touch-modal-pad-grid { @apply grid grid-cols-3 gap-2; }
+  .touch-modal-pad-key {
+    @apply min-h-[72px] cursor-pointer rounded-lg border border-blue-700 bg-blue-600 text-3xl font-bold text-white transition hover:bg-blue-700 active:scale-[0.98];
+  }
+  .touch-modal-pad-ok {
+    @apply min-h-[64px] w-full shrink-0 cursor-pointer rounded-lg border-none bg-blue-600 text-xl font-bold text-white hover:bg-blue-700;
+  }
+  .touch-modal-btn-cancel {
+    @apply min-h-[64px] min-w-[140px] cursor-pointer rounded-lg border-none bg-red-600 px-6 text-xl font-bold text-white hover:bg-red-700;
+  }
+  .touch-modal-btn-save {
+    @apply min-h-[64px] min-w-[140px] cursor-pointer rounded-lg border-none bg-emerald-600 px-6 text-xl font-bold text-white hover:bg-emerald-700;
+  }
+  .touch-modal-search-grid { @apply grid w-full grid-cols-2 gap-3; }
+  .touch-modal-search-item { @apply flex flex-col justify-end gap-1; }
+  .touch-modal-search-item label { @apply text-base font-semibold text-gray-400; }
+  .touch-modal-toolbar {
+    @apply flex w-full justify-end;
+  }
+  .touch-modal-toolbar-actions { @apply flex shrink-0 items-center gap-2; }
+  .touch-modal-btn-add,
+  .touch-modal-btn-del {
+    @apply min-h-[52px] min-w-[96px] cursor-pointer rounded-lg border-none px-4 text-lg font-bold text-white;
+  }
+  .touch-modal-btn-add { @apply bg-blue-600 hover:bg-blue-700; }
+  .touch-modal-btn-del { @apply bg-red-600 hover:bg-red-700; }
+  .touch-modal-toolbar-actions .touch-modal-btn-save {
+    @apply min-h-[52px] min-w-[96px] px-4 text-lg;
+  }
+  .touch-modal-btn-close {
+    @apply min-h-[64px] min-w-[140px] cursor-pointer rounded-lg border-none bg-gray-600 px-6 text-xl font-bold text-white hover:bg-gray-700;
+  }
+  .touch-modal-nested-backdrop { /* z-index는 touchModalLayer가 인라인으로 부여 */ }
+
+  /* 모달 열림 시 하단 터치PC UI로 클릭 관통 방지 */
+  body.touch-modal-open .touch-page {
+    pointer-events: none;
+  }
+  body.touch-modal-open .touch-modal-backdrop {
+    pointer-events: auto;
+  }
+  .touch-modal .mes-cell-btn {
+    @apply h-10 w-10 shrink-0 text-lg;
+  }
+  .touch-cell-btn-icon { @apply text-lg leading-none; }
+  .touch-date-field-icon { @apply text-2xl; }
+  .touch-date-picker-nav {
+    @apply mb-2 flex items-center justify-between gap-2;
+  }
+  .touch-date-picker-nav-btn {
+    @apply flex h-12 min-w-[56px] cursor-pointer items-center justify-center rounded-lg border border-[#374151] bg-[#242b3d] text-2xl font-bold text-white hover:bg-[#2d3548];
+  }
+  .touch-date-picker-month { @apply text-xl font-bold text-sky-400; }
+  .touch-date-picker-week {
+    @apply mb-1 grid grid-cols-7 gap-1 text-center text-sm font-semibold text-gray-400;
+  }
+  .touch-date-picker-grid {
+    @apply mb-2 grid flex-1 grid-cols-7 gap-1;
+  }
+  .touch-date-picker-day {
+    @apply flex min-h-[48px] cursor-pointer items-center justify-center rounded-lg border border-[#374151] bg-[#242b3d] text-xl font-bold text-white hover:bg-[#2d3548];
+  }
+  .touch-date-picker-day.today { @apply border-sky-500 text-sky-400; }
+  .touch-date-picker-day.selected { @apply border-sky-500 bg-sky-600 text-white; }
+  .touch-date-picker-preview {
+    @apply mb-2 rounded-md border border-[#374151] bg-[#11151c] px-3 py-2 text-center text-xl font-bold text-sky-400;
+  }
+  .touch-modal-date .touch-modal-pad-ok {
+    @apply mt-2 min-h-[52px] text-lg;
+  }
+  .touch-select-list { @apply flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto; }
+  .touch-select-item {
+    @apply flex min-h-[56px] cursor-pointer items-center rounded-lg border border-[#374151] bg-[#242b3d] px-3 text-left text-lg font-semibold text-white hover:bg-[#2d3548];
+  }
+  .touch-select-item.selected { @apply border-sky-500 bg-sky-900/50 text-sky-300; }
+
+  /* ── 키오스크 메시지박스 (alert/confirm) ── */
+  .mes-dialog-kiosk-backdrop {
+    @apply fixed inset-0 z-[1200] flex items-center justify-center bg-black/70 p-4;
+  }
+  .mes-dialog-kiosk {
+    @apply flex flex-col overflow-hidden rounded-xl border border-[#2d3748] bg-[#1e2538] text-white shadow-2xl;
+    width: 450px;
+    height: 450px;
+    max-width: min(450px, 96vw);
+    max-height: min(450px, 92vh);
+  }
+  .mes-dialog-kiosk-head {
+    @apply flex shrink-0 items-center gap-3 border-b border-[#2d3748] bg-[#11151c] px-5 py-4 text-xl font-bold text-sky-400;
+  }
+  .mes-dialog-kiosk-body {
+    @apply flex min-h-0 flex-1 items-center justify-center overflow-auto whitespace-pre-line px-6 py-4 text-center text-xl leading-relaxed text-gray-200;
+  }
+  .mes-dialog-kiosk-foot {
+    @apply flex shrink-0 gap-3 border-t border-[#2d3748] bg-[#11151c] px-5 py-4;
+  }
+  .mes-dialog-kiosk-foot .touch-modal-btn-save,
+  .mes-dialog-kiosk-foot .touch-modal-btn-cancel {
+    @apply min-h-[56px] min-w-0 text-lg;
+  }
+  .touch-dialog-btn-warn { @apply bg-amber-600 hover:bg-amber-700; }
+  .mes-dialog-kiosk-toasts {
+    @apply fixed bottom-4 right-4 z-[1200] flex flex-col gap-2;
+  }
+  .mes-dialog-kiosk-toast {
+    @apply flex max-w-sm cursor-pointer items-center gap-2 rounded-lg px-4 py-3 text-lg font-semibold text-white shadow-lg;
+  }
+
+  /* ── 수량 키패드 (450×600) ── */
+  .touch-modal-pad .touch-modal-body {
+    @apply flex min-h-0 flex-col p-4;
+  }
+  .touch-pad-layout {
+    @apply flex min-h-0 flex-1 flex-col gap-3;
+  }
+  .touch-modal-pad .touch-modal-pad-display {
+    @apply py-5 text-5xl;
+  }
+  .touch-modal-pad .touch-modal-pad-grid {
+    @apply min-h-0 flex-1 gap-2;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+  }
+  .touch-modal-pad .touch-modal-pad-key {
+    @apply flex min-h-0 h-full items-center justify-center text-4xl;
+  }
+  .touch-modal-pad .touch-modal-pad-ok {
+    @apply min-h-[60px] text-lg;
+  }
+
+  /* DB형 문서 용지 — 목업(db형) 종이 서식 */
+  .doc-paper {
+    @apply mx-auto w-full max-w-5xl bg-white px-6 py-5 shadow-md;
+    border: 1px solid #d7dde8;
+  }
+  .doc-paper-head {
+    @apply mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3;
+  }
+  .doc-paper-titles { @apply min-w-0 flex-1; }
+  .doc-paper-title { @apply text-lg font-bold text-slate-900; }
+  .doc-paper-subtitle { @apply mt-1 text-xs leading-relaxed text-slate-500; }
+  .doc-paper-body { @apply space-y-4; }
+
+  .doc-stamp {
+    @apply border-collapse text-center text-[11px];
+    border: 1px solid #334155;
+  }
+  .doc-stamp th,
+  .doc-stamp td {
+    border: 1px solid #334155;
+    width: 4.5rem;
+  }
+  .doc-stamp th { @apply bg-slate-50 px-1 py-1 font-semibold text-slate-700; }
+  .doc-stamp td { @apply h-14 align-middle px-1; }
+  .doc-stamp-name { @apply block text-xs text-slate-800; }
+
+  .doc-table {
+    @apply w-full border-collapse text-xs text-slate-800;
+  }
+  .doc-table th,
+  .doc-table td {
+    border: 1px solid #64748b;
+    @apply px-1.5 py-1 align-middle;
+  }
+  .doc-table thead th {
+    @apply bg-slate-50 font-semibold text-slate-700;
+  }
+  .doc-meta-table th {
+    @apply w-24 bg-slate-50 text-left font-semibold text-slate-600;
+  }
+  .doc-meta-table td { @apply bg-white; }
+
+  .doc-cell-input,
+  .doc-cell-select {
+    @apply h-8 w-full min-w-0 border-0 bg-transparent px-1 text-xs text-slate-800 outline-none;
+    box-shadow: none;
+  }
+  .doc-cell-input:focus,
+  .doc-cell-select:focus {
+    @apply bg-sky-50/60;
+  }
+  .doc-cell-input:disabled,
+  .doc-cell-select:disabled {
+    @apply text-slate-600;
+  }
+  .doc-section-title {
+    @apply mb-1 text-xs font-semibold text-slate-700;
+  }
+  .doc-note-area {
+    @apply min-h-[4rem] w-full resize-y border-0 bg-transparent p-1 text-xs outline-none;
+  }
+  .doc-note-area:focus { @apply bg-sky-50/60; }
+
+  .doc-meta-bullet {
+    @apply mr-1 font-semibold text-slate-700;
+  }
+  .doc-limit-block th {
+    @apply w-24 align-top;
+  }
+  .doc-limit-block td {
+    @apply leading-relaxed;
+  }
+  .doc-footer-table th.doc-footer-narrow,
+  .doc-footer-table td.doc-footer-narrow {
+    width: 5.5rem;
+    min-width: 5.5rem;
+  }
+  .doc-footer-table td {
+    @apply align-top;
+    min-height: 4.5rem;
+  }
+  .doc-table thead th.doc-col-pass {
+    @apply max-w-[4.5rem] whitespace-normal px-1 text-center leading-tight;
+  }
+  .doc-row-selected {
+    @apply bg-sky-50;
+  }
+}
+
+@media print {
+  aside, header { display: none !important; }
+  body * { visibility: hidden; }
+  .mes-tab-active, .mes-tab-active * { visibility: visible; }
+  .doc-paper, .doc-paper * { visibility: visible; }
+}

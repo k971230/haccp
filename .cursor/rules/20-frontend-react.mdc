@@ -1,0 +1,126 @@
+---
+description: React / TypeScript 프론트엔드 컨벤션 — 구조·네이밍·DTO·DOM
+globs: frontend/mes-web/src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# 프론트엔드 (mes-web)
+
+## 디렉터리 구조
+
+| 경로 | 역할 |
+|------|------|
+| `api/` | 도메인별 `*Api.ts` → `http.ts` |
+| `pages/{모듈}/` | `{Name}Page.tsx` + `{Name}Page.rules.ts` |
+| `components/ui/` | 공통 원자 UI (Button, Input) — **generic 프롬프트의 `common/` 대응** |
+| `components/layout/` | PageCard, SearchArea, pageClasses |
+| `components/grid/` | MesEditableGrid, GridChrome, gridUtils |
+| `components/modal/` | SearchPickerModal 등 |
+| `components/touch/` | 키오스크 전용 (사무실 UI 규칙 제외) |
+| `components/tree/` | TreePanel, treeUtils |
+| `hooks/` | 재사용 훅 (`use` 접두사) |
+| `shell/` | 앱 인프라 (MesShell, dialog, errors, tabRoute, pageCommands) |
+| `lib/` | 스타일·아이콘 헬퍼 (`cn`, `buttonVariants`) |
+| `utils/` | 순수 함수 (`date.ts` 등) |
+| `types/` | 공통 TS 타입 |
+| `stores/` | Zustand |
+
+**규칙:**
+- 재사용 훅 → `hooks/` (그리드 전용 `useMesTable`는 `components/grid/`에 유지 — 이동 금지)
+- 셸·탭·다이얼로그 훅 → `shell/` (`usePageCommands`, `useActiveGrid` 등)
+- 도메인 순수 함수 → `*Utils.ts` (grid/tree) 또는 `utils/`
+- `components/common/` 폴더 **신설하지 않음** — `components/ui/` 사용
+
+## React·TypeScript 네이밍
+
+| 대상 | 규칙 | 예 |
+|------|------|-----|
+| 컴포넌트·페이지 파일 | PascalCase, 파일명 = export명 | `DeptPage.tsx`, `MesButton.tsx` |
+| 훅 | camelCase, `use` 접두사 | `useEditableRows.ts` |
+| 변수·함수·state | camelCase | `userData`, `handleClick` |
+| 상수 | UPPER_SNAKE_CASE | `MAX_TIMEOUT`, `SCRN_CD` |
+| 타입·인터페이스 | PascalCase, **`I`/`T` 접두사 금지** | `LoginParams`, `DeptRow` |
+| 컴포넌트 Props | **`[ComponentName]Props`** | `MesButtonProps`, `SearchAreaProps` |
+| default export | **사용하지 않음** — named export만 |
+
+**Props 명명 — 모든 컴포넌트 필수 (Touch 포함):**
+```typescript
+// OK
+interface TouchWorkerModalProps { open: boolean; ... }
+
+// 금지
+interface Props { ... }
+```
+
+## 주석·문구
+
+- 이모지 사용 금지 (`01-project-core.mdc`)
+- 파이프라인 주석: `① 변경행 → ② 검증` 형식 허용 (원형 숫자 + 화살표)
+
+## DTO 네이밍 — Two-Tier (백엔드와 동일)
+
+| 용도 | 네이밍 | 예 |
+|------|--------|-----|
+| Row/그리드/API JSON | **camelCase** | `deptCd`, `useYn`, `clientCd` |
+| Search/Delete body | **camelCase** | `deptCd`, `mainCd` |
+| 편집 메타 | `_rowState`, `_key` | 프론트 전용 |
+| 저장 payload | `pType` + camelCase 키 | `toSaveRows()` spread |
+| 로그인 콤보 | camelCase | `ComboItem.name`, `.code` |
+| 상수·화면코드 | **UPPER_SNAKE** | `MAX_TIMEOUT`, `SCRN_CD` |
+
+DB/Mapper SQL·SP명은 lower_snake — FE는 관여하지 않음. BE `10-backend-java.mdc` 참조.
+
+## HTML·DOM 속성
+
+| 속성 | 규칙 | 예 |
+|------|------|-----|
+| `id` | kebab-case, 컨텍스트 접두사, DOM 전역 유일 | `login-submit-btn` (필요 시만) |
+| `name` | camelCase, **API payload 키와 동일** | `name="userId"`, `name="password"` |
+| `className` | Tailwind 우선 + `.mes-*` / `.touch-*` | `21-frontend-ui.mdc` 참조 |
+| `data-*` | kebab-case 속성명 | `data-user-role="admin"` |
+
+`id`는 접근성·E2E 필요 시에만 부여. 과도한 `id` 남발 금지.
+
+## API 레이어
+
+```typescript
+const { data } = await http.get<CommonResponse<Row[]>>("/api/v1/bac/dept/list", { params });
+// 삭제: http.post("/api/v1/.../validate-delete", [{ ...pk }]) → confirm → http.post(".../delete", [{ ...pk }])
+// 배치: httpBatch — 장시간 SP. 파일: httpFile — SOP PDF 등
+return data.data;
+```
+
+- Axios 3계층: `http` / `httpBatch` / `httpFile` — 타임아웃은 `.env` `VITE_API_TIMEOUT_*` ([`envConfig.ts`](../../frontend/mes-web/src/config/envConfig.ts))
+- 운영 규약: [`.cursor/rules/50-operations.mdc`](50-operations.mdc), [`docs/01_운영규칙.md`](../../frontend/mes-web/docs/01_운영규칙.md)
+
+- 저장: `toSaveRows(rows)` → `PUT .../save` `{ rows: payload }`
+- 401: `http.ts` 인터셉터 → logout + `/login`
+
+## 페이지 패턴
+
+- `usePageCommands`, `useEditableRows`, `useGridAccess`
+- catch: `mesError(e)` + 저장/삭제 성공 `mesToast`
+- 로그인: `toUserMessage` (인라인 오류)
+- 업무 화면: `pageClasses.ts` + `SearchArea` 필수
+
+## UI·스타일
+
+레이아웃·Tailwind·반응형 → **`.cursor/rules/21-frontend-ui.mdc`**
+
+## 탭 keep-alive (MesShell)
+
+- 열린 탭은 `hidden` CSS로 DOM 유지(의도적) — 탭 전환 시 조회조건·그리드 상태 보존
+- 탭 10개 이상 시 React 트리·react-query 캐시·백그라운드 effect 부하 증가 가능
+- 비활성 탭의 `setInterval`·폴링은 각 Page에서 정리(`useEffect` cleanup) 필수
+- 필요 시: 탭 상한, 비활성 탭 `queryClient.cancelQueries`, 오래된 탭 lazy unmount 검토
+
+## 인수인계 주석
+
+BE와 **동일 밀도** — `.cursor/rules/40-handoff-comments.mdc` 준수.  
+JSX prop마다 여러 줄 `//` 설명. 골드: `pages/bas/CommonCodePage.tsx` (`MesEditableGrid`).
+
+## 표준 참조
+
+- CRUD: `pages/bac/DeptPage.tsx` + `DeptPage.rules.ts`
+- 공통 UI: `components/ui/MesButton.tsx`, `components/ui/Input.tsx`
+- 검색: `components/layout/SearchArea.tsx`

@@ -1,0 +1,96 @@
+/**
+ * docDateTime — DocForm 셀·메타용 날짜·시각 저장/표시 변환.
+ *
+ * 개발자: 박승우
+ * 일자: 2026-08-07
+ * 코멘트:
+ *   1) DB는 YYYYMMDD·HHMM, input type=date/time은 YYYY-MM-DD·HH:MM 이다
+ *   2) DocCellTime·DocForm 작성 화면이 같은 계약을 쓰도록 한곳에 모은다
+ *   3) React 의존 없는 순수 함수다
+ *
+ * PIPELINE[HF122] DocForm 날짜시각
+ */
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-07
+ * 코멘트:
+ *   1) YYYYMMDD → input type=date 값(YYYY-MM-DD)으로 바꾼다
+ *   2) DocFormMeta·목록 기준일 표시에 쓴다
+ *   3) 8자리가 아니면 빈 문자열을 반환한다
+ */
+export function toInputDate(ymd: string | null | undefined): string {
+  const raw = (ymd ?? "").replace(/\D/g, "");
+  if (raw.length !== 8) return "";
+  return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-07
+ * 코멘트:
+ *   1) input type=date 값 → YYYYMMDD로 바꾼다
+ *   2) 저장·목록 baseKey에 쓴다
+ *   3) 구분자를 제거하고 숫자만 남긴다
+ */
+export function fromInputDate(value: string | null | undefined): string {
+  return (value ?? "").replace(/\D/g, "").slice(0, 8);
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-07
+ * 코멘트:
+ *   1) HHMM(또는 HH:MM) → input type=time 값(HH:MM)으로 바꾼다
+ *   2) DocCellTime 표시에 쓴다
+ *   3) 4자리 미만이면 빈 문자열을 반환한다
+ */
+export function toInputTime(hhmmOrHm: string | null | undefined): string {
+  const raw = (hhmmOrHm ?? "").trim();
+  if (!raw) return "";
+  if (/^\d{2}:\d{2}/.test(raw)) return raw.slice(0, 5);
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length < 4) return "";
+  return `${digits.slice(0, 2)}:${digits.slice(2, 4)}`;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-07
+ * 코멘트:
+ *   1) input type=time 값 → HHMM(4자리)으로 바꾼다
+ *   2) Cold·Metal·Hygiene varchar(4) 저장에 쓴다
+ *   3) 숫자만 모아 최대 4자리로 자른다
+ */
+export function fromInputTimeHhmm(value: string | null | undefined): string {
+  return (value ?? "").replace(/\D/g, "").slice(0, 4);
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-07
+ * 코멘트:
+ *   1) input type=time 값 → HH:MM 문자열로 정규화한다
+ *   2) Generic CCP varchar(10) 저장에 쓴다
+ *   3) 비어 있으면 빈 문자열을 반환한다
+ */
+export function fromInputTimeHm(value: string | null | undefined): string {
+  const hm = toInputTime(value);
+  return hm;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-07
+ * 코멘트:
+ *   1) 오늘 날짜를 YYYYMMDD로 만든다
+ *   2) 신규 문서 baseKey 기본값에 쓴다
+ *   3) 로컬 타임존 기준이다
+ */
+export function todayYmd(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}${m}${day}`;
+}

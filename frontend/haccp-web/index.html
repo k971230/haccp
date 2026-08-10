@@ -1,0 +1,27 @@
+<!doctype html>
+<!--
+  index.html — haccp-web SPA 진입 문서
+
+  개발자: 박승우
+  일자: 2026-08-05
+  코멘트:
+    1) Vite가 /src/main.tsx 를 번들해 #root에 마운트한다
+    2) 본문 글꼴은 Noto Sans KR — HACCP 문서는 한글 표기가 대부분이라 한글 자체 품질을 우선한다
+    3) 정적 파일만 두고 로직은 넣지 않는다
+-->
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <title>HACCP 기록관리</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

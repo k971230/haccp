@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+DocumentMapper.xml — 문서 허브 sp_tbl_document_* 호출 매퍼.
+
+개발자: 박승우
+일자: 2026-08-06
+코멘트:
+  1) 목록·상세·결재·첨부·버전은 FUNCTION 조회로 통일한다
+  2) 파일 메타·결재 처리는 PROCEDURE/FUNCTION으로 DB 잠금·테넌트 조건을 강제한다
+  3) 삭제 차단은 문서 상태·보존기간을 IN 단일 쿼리로 검사한다
+
+PIPELINE[HB84] MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.metis.haccp.doc.DocumentMapper">
+
+    <!--
+      회사 사용 템플릿 목록 — sp_tbl_document_template_r_000이 impl/use/company use 조건을 모두 강제한다.
+      form_path는 서버 내부에서만 쓰고, Service가 인증된 form URL로 치환해 외부에 물리 경로를 노출하지 않는다.
+    -->
+    <select id="selectTemplates" resultType="com.metis.haccp.doc.dto.DocumentTemplateRow">
+        SELECT * FROM sp_tbl_document_template_r_000(
+            #{coCd, mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 회사 양식 form_path 갱신 — 법적서류 템플릿 1건 최초·교체 -->
+    <update id="updateCompanyTemplateFormPath" statementType="CALLABLE">
+        CALL sp_tbl_company_template_form_u_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{formPath, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!--
+      템플릿 원본 단건 — sp_tbl_document_template_r_001이 회사 사용여부와 구현여부를 다시 확인한다.
+      tmplCd는 URL 경로의 업무키이며 form_path는 TemplateFileStorage만 해석한다.
+    -->
+    <select id="selectTemplate" resultType="com.metis.haccp.doc.dto.DocumentTemplateRow">
+        SELECT * FROM sp_tbl_document_template_r_001(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{tmplCd, mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 문서함 목록 — DB형·HWP형·상태·기간·검색어를 한 번에 필터 -->
+    <select id="selectDocuments" resultType="map">
+        SELECT * FROM sp_tbl_document_r_000(
+            #{coCd,     mode=IN, jdbcType=VARCHAR},
+            #{fromDt,   mode=IN, jdbcType=VARCHAR},
+            #{toDt,     mode=IN, jdbcType=VARCHAR},
+            #{tmplCd,   mode=IN, jdbcType=VARCHAR},
+            #{status,   mode=IN, jdbcType=VARCHAR},
+            #{keyword,  mode=IN, jdbcType=VARCHAR},
+            #{writerId, mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 결재함 — 내 차례(대기) 문서 -->
+    <select id="selectApprovalInbox" resultType="map">
+        SELECT * FROM sp_tbl_document_appr_inbox_r_000(
+            #{coCd,    mode=IN, jdbcType=VARCHAR},
+            #{userId,  mode=IN, jdbcType=VARCHAR},
+            #{fromDt,  mode=IN, jdbcType=VARCHAR},
+            #{toDt,    mode=IN, jdbcType=VARCHAR},
+            #{keyword, mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 결재 이력 — 내가 승인·반려한 문서 -->
+    <select id="selectApprovalHistory" resultType="map">
+        SELECT * FROM sp_tbl_document_appr_hist_r_000(
+            #{coCd,    mode=IN, jdbcType=VARCHAR},
+            #{userId,  mode=IN, jdbcType=VARCHAR},
+            #{fromDt,  mode=IN, jdbcType=VARCHAR},
+            #{toDt,    mode=IN, jdbcType=VARCHAR},
+            #{keyword, mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 문서 공통 헤더 단건 — 테넌트 조건은 SP가 강제 -->
+    <select id="selectDocument" resultType="map">
+        SELECT * FROM sp_tbl_document_r_001(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{docIdx, mode=IN, jdbcType=BIGINT}
+        )
+    </select>
+
+    <!-- 결재 단계 목록 — 작성·검토·승인 순 -->
+    <select id="selectApprovals" resultType="map">
+        SELECT * FROM sp_tbl_document_approval_r_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{docIdx, mode=IN, jdbcType=BIGINT}
+        )
+    </select>
+
+    <!-- 첨부 목록 — 내부 filePath는 Service에서만 사용하고 API 응답에서는 제거 -->
+    <select id="selectFiles" resultType="com.metis.haccp.doc.dto.DocumentFileRow">
+        SELECT * FROM sp_tbl_document_file_r_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{docIdx, mode=IN, jdbcType=BIGINT}
+        )
+    </select>
+
+    <!-- 파일 단건 — 다운로드·물리 삭제 전에 회사 범위와 문서 존재를 함께 확인 -->
+    <select id="selectFile" resultType="com.metis.haccp.doc.dto.DocumentFileRow">
+        SELECT * FROM sp_tbl_document_file_r_001(
+            #{coCd,    mode=IN, jdbcType=VARCHAR},
+            #{fileIdx, mode=IN, jdbcType=BIGINT}
+        )
+    </select>
+
+    <!-- 버전 목록 — 파일 경로는 내부 다운로드에서만 사용 -->
+    <select id="selectVersions" resultType="map">
+        SELECT * FROM sp_tbl_document_version_r_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{docIdx, mode=IN, jdbcType=BIGINT}
+        )
+    </select>
+
+    <!-- 파일 물리 저장이 성공한 뒤 메타 행 등록 — 반환값은 파일 idx -->
+    <select id="insertFile" resultType="long">
+        SELECT sp_tbl_document_file_c_000(
+            #{coCd,     mode=IN, jdbcType=VARCHAR},
+            #{docIdx,   mode=IN, jdbcType=BIGINT},
+            #{fileKind, mode=IN, jdbcType=VARCHAR},
+            #{fileNm,   mode=IN, jdbcType=VARCHAR},
+            #{filePath, mode=IN, jdbcType=VARCHAR},
+            #{fileSize, mode=IN, jdbcType=BIGINT},
+            #{mimeType, mode=IN, jdbcType=VARCHAR},
+            #{userId,   mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- HWP 문서형 헤더 저장 — 문서번호·보존기간은 SP가 신규 시 자동 계산 -->
+    <select id="saveHwpDocument" resultType="long">
+        SELECT sp_tbl_hwp_document_c_000(
+            #{coCd,     mode=IN, jdbcType=VARCHAR},
+            #{docIdx,   mode=IN, jdbcType=BIGINT},
+            #{tmplCd,   mode=IN, jdbcType=VARCHAR},
+            #{baseDt,   mode=IN, jdbcType=VARCHAR},
+            #{baseDtTo, mode=IN, jdbcType=VARCHAR},
+            #{title,    mode=IN, jdbcType=VARCHAR},
+            #{userId,   mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 파일 삭제 — SP가 결재 잠금을 확인한 뒤 메타 행만 제거 -->
+    <update id="deleteFile" statementType="CALLABLE">
+        CALL sp_tbl_document_file_d_000(
+            #{coCd,    mode=IN, jdbcType=VARCHAR},
+            #{fileIdx, mode=IN, jdbcType=BIGINT},
+            #{userId,  mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!-- HWP_SRC 등 종류별 일괄 삭제 — 물리 파일은 Service가 먼저 지운 뒤 호출 -->
+    <update id="deleteFilesByKind" statementType="CALLABLE">
+        CALL sp_tbl_document_file_d_001(
+            #{coCd,     mode=IN, jdbcType=VARCHAR},
+            #{docIdx,   mode=IN, jdbcType=BIGINT},
+            #{fileKind, mode=IN, jdbcType=VARCHAR},
+            #{userId,   mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!-- 결재 상태 전이 — REQUEST/REVIEW/APPROVE/REJECT -->
+    <update id="processApproval" statementType="CALLABLE">
+        CALL sp_tbl_document_approval_c_000(
+            #{coCd,     mode=IN, jdbcType=VARCHAR},
+            #{docIdx,   mode=IN, jdbcType=BIGINT},
+            #{actionCd, mode=IN, jdbcType=VARCHAR},
+            #{opinion,  mode=IN, jdbcType=VARCHAR},
+            #{userId,   mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!--
+      문서 삭제 사전 차단 — 결재 진행/완료 또는 보존 만료 전 문서의 첫 건만 반환한다.
+      docIdxs는 객체 배열에서 추출한 대리키 목록이고, 서비스 루프 COUNT를 쓰지 않는다.
+    -->
+    <select id="selectDocumentDeleteBlocker" resultType="com.metis.haccp.common.validation.DeleteBlocker">
+        SELECT d.doc_no AS ref_key,
+               CASE
+                   WHEN d.status IN ('REQ', 'REV', 'APV') THEN '결재 진행 또는 완료 문서'
+                   WHEN d.retention_until IS NOT NULL
+                        AND d.retention_until >= to_char(current_date, 'YYYYMMDD') THEN '보존기간'
+                   ELSE '문서 잠금'
+               END AS target
+          FROM tbl_document d
+         WHERE d.co_cd = #{coCd}
+           AND d.del_yn = 'N'
+           AND d.idx IN
+           <foreach collection="docIdxs" item="docIdx" open="(" separator="," close=")">
+               #{docIdx}
+           </foreach>
+           AND (
+               d.status IN ('REQ', 'REV', 'APV')
+               OR (
+                   d.retention_until IS NOT NULL
+                   AND d.retention_until >= to_char(current_date, 'YYYYMMDD')
+               )
+           )
+         ORDER BY d.doc_no
+         LIMIT 1
+    </select>
+
+    <!-- 문서형 임시·반려 문서 삭제 — 파일 물리 삭제 전 메타·결재·버전을 제거 -->
+    <update id="deleteDocument" statementType="CALLABLE">
+        CALL sp_tbl_document_d_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{docIdx, mode=IN, jdbcType=BIGINT},
+            #{userId, mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!-- 변경 감사 — DB형·HWP형·결재·파일의 공통 이력 -->
+    <update id="insertAudit" statementType="CALLABLE">
+        CALL sp_tbl_audit_log_c_000(
+            #{coCd,       mode=IN, jdbcType=VARCHAR},
+            #{userId,     mode=IN, jdbcType=VARCHAR},
+            #{tblNm,      mode=IN, jdbcType=VARCHAR},
+            #{tgtIdx,     mode=IN, jdbcType=BIGINT},
+            #{actionCd,   mode=IN, jdbcType=VARCHAR},
+            #{beforeJson, mode=IN, jdbcType=LONGVARCHAR},
+            #{afterJson,  mode=IN, jdbcType=LONGVARCHAR},
+            #{reason,     mode=IN, jdbcType=VARCHAR},
+            #{ipAddr,     mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+</mapper>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+AuthMapper.xml — 인증·로그인 이력 sp_tbl_* 호출 매퍼.
+
+개발자: 박승우
+일자: 2026-08-05
+코멘트:
+  1) 조회는 FUNCTION(SELECT * FROM sp_...), 쓰기는 PROCEDURE(statementType=CALLABLE, CALL sp_...)
+  2) 파라미터 순서는 SP 시그니처와 정확히 일치해야 한다 — 순서가 어긋나면 타입이 맞는 값끼리 조용히 바뀐다
+  3) 직접 SQL은 쓰지 않는다. 테이블 접근은 전부 SP를 통한다(60-haccp-db 규약)
+
+PIPELINE[HB28] MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.metis.haccp.auth.AuthMapper">
+
+    <!--
+      로그인 사용자 조회 — sp_tbl_user_login_r_000
+      userId는 로그인 화면 입력 아이디로, 전 업체 통틀어 유일하기 때문에 회사코드 없이 단건 조회가 성립한다
+      회사(사용여부·서비스종료일)·권한그룹명·부서명을 LEFT JOIN 해 한 번에 받는다 — 로그인 판정에 필요한 값이 전부 이 한 행에 있다
+      결과: 아이디가 있으면 UserLoginRow 1건, 없으면 null (없음은 예외가 아니며 Service가 실패로 처리한다)
+    -->
+    <select id="selectUserForLogin" resultType="com.metis.haccp.auth.dto.UserLoginRow">
+        SELECT * FROM sp_tbl_user_login_r_000(
+            #{userId, mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      로그인 결과 반영 — sp_tbl_user_login_u_000
+      userId는 대상 계정, resultCd는 'S'(성공)/그 외(실패), maxFail은 잠금 임계 실패횟수
+      성공이면 login_fail_cnt=0·last_login_dt=now(), 실패면 login_fail_cnt+1 및 임계 도달 시 lock_yn='Y'
+      성공 경로에서도 호출해야 실패 카운터가 리셋된다 — 한쪽만 부르면 정상 사용자가 서서히 잠긴다
+    -->
+    <update id="updateLoginResult" statementType="CALLABLE">
+        CALL sp_tbl_user_login_u_000(
+            #{userId,   mode=IN, jdbcType=VARCHAR},
+            #{resultCd, mode=IN, jdbcType=VARCHAR},
+            #{maxFail,  mode=IN, jdbcType=INTEGER}
+        )
+    </update>
+
+    <!--
+      화면 권한 조회 — sp_tbl_role_screen_r_000
+      coCd는 JWT 회사코드(테넌트 범위), usrgrpCd는 로그인 사용자의 권한그룹코드
+      화면 마스터를 기준으로 LEFT JOIN 하므로 권한 미설정 화면도 전부 'N'으로 채워져 나온다
+      결과: 사용중(use_yn='Y') 화면 전체의 권한 목록. 프론트는 이 목록으로 버튼 활성 여부를 판정한다
+    -->
+    <select id="selectScreenAuths" resultType="com.metis.haccp.auth.dto.ScreenAuthRow">
+        SELECT * FROM sp_tbl_role_screen_r_000(
+            #{coCd,     mode=IN, jdbcType=VARCHAR},
+            #{usrgrpCd, mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      로그인 시도 기록 — sp_tbl_login_log_c_000
+      coCd는 확인된 소속 회사(아이디 자체가 없으면 null), userId는 시도한 아이디 원문
+      sid·tokenExpDt는 성공일 때만 값이 있고, failReason은 실패 원인 기술 문구(사용자에게 노출하지 않음)
+      성공·실패·잠금을 모두 남긴다 — 감사 대응 시 "누가 언제 어디서" 를 이 표로 답한다
+    -->
+    <update id="insertLoginLog" statementType="CALLABLE">
+        CALL sp_tbl_login_log_c_000(
+            #{coCd,       mode=IN, jdbcType=VARCHAR},
+            #{userId,     mode=IN, jdbcType=VARCHAR},
+            #{sid,        mode=IN, jdbcType=VARCHAR},
+            #{resultCd,   mode=IN, jdbcType=VARCHAR},
+            #{failReason, mode=IN, jdbcType=VARCHAR},
+            #{ipAddr,     mode=IN, jdbcType=VARCHAR},
+            #{userAgent,  mode=IN, jdbcType=VARCHAR},
+            #{deviceGbn,  mode=IN, jdbcType=VARCHAR},
+            #{tokenExpDt, mode=IN, jdbcType=TIMESTAMP}
+        )
+    </update>
+
+    <!--
+      로그아웃 시각 기록 — sp_tbl_login_log_u_000
+      sid는 JWT sid 클레임이며, 같은 sid의 미종료(logout_dt IS NULL) 최신 1행만 갱신한다
+      중복 로그아웃 요청이나 다중 탭 종료에도 과거 세션 기록이 훼손되지 않는다
+    -->
+    <update id="updateLogout" statementType="CALLABLE">
+        CALL sp_tbl_login_log_u_000(
+            #{sid, mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+</mapper>

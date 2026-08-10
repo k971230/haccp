@@ -1,0 +1,123 @@
+# application.yml — haccp-api Spring Boot 설정
+#
+# 개발자: 박승우
+# 일자: 2026-08-05
+# 코멘트:
+#   1) 외부 PostgreSQL sasshaccp DB(스키마 sasshaccp)에 접속하고 sp_tbl_* 저장프로시저만 호출한다
+#   2) mes-api와 포트·DB·스키마가 모두 다르다 — 두 API가 같은 커넥션 풀을 공유하지 않는다
+#   3) 접속정보·시크릿은 .env 에만 둔다. 이 파일에는 기본값과 env 키 이름만 적는다
+#
+# PIPELINE[HB2] 애플리케이션 설정
+server:
+  # mes-api가 8080을 쓰므로 충돌을 피해 8081을 기본값으로 둔다
+  port: ${SERVER_PORT:8081}
+
+spring:
+  application:
+    name: haccp-api
+  jackson:
+    # 필드명 그대로 직렬화 — Row DTO는 전부 camelCase(coCd, tmplCd)이므로 getter 명명 규칙을 타지 않게 한다
+    visibility:
+      field: any
+      getter: none
+      is-getter: none
+    deserialization:
+      # 프론트 편집그리드가 붙이는 _key/_rowState 등 추가 필드는 무시한다
+      fail-on-unknown-properties: false
+  # .env 를 환경변수로 로딩 (spring-dotenv) — DB 비밀번호·JWT 시크릿의 유일한 출처
+  config:
+    import: optional:dotenv:./.env
+  datasource:
+    # currentSchema=sasshaccp — SP 본문이 테이블을 스키마 없이 참조하므로 검색경로를 맞춘다
+    #   (DB 레벨에도 ALTER DATABASE ... SET search_path 로 이중 고정해 둠 — 00_schema.sql)
+    # escapeSyntaxCallMode=callIfNoReturn — MyBatis {call ...} 를 PG CALL 로 실행한다
+    driver-class-name: ${DB_DRIVER:org.postgresql.Driver}
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sasshaccp}?currentSchema=sasshaccp&escapeSyntaxCallMode=callIfNoReturn}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${HIKARI_MAXIMUM_POOL_SIZE:10}
+      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT:30000}
+  # HWPX·PDF·사진 multipart 임시 저장·요청 한도 — 파일 API(httpFile 120초)와 짝을 이룬다
+  servlet:
+    multipart:
+      max-file-size: ${APP_FILE_MAX_SIZE:20MB}
+      max-request-size: ${APP_FILE_MAX_REQUEST_SIZE:25MB}
+  # OPS_TIMEOUT_DEFENSE 3계층 — CUD @Transactional 기본 타임아웃(초)
+  transaction:
+    default-timeout: ${TX_DEFAULT_TIMEOUT_SECONDS:60}
+
+mybatis:
+  mapper-locations: classpath:/mapper/**/*.xml
+  type-aliases-package: com.metis.haccp
+  configuration:
+    # Two-Tier: DB lower_snake(co_cd) → Java/JSON camelCase(coCd)
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: 'NULL'
+    # OPS_TIMEOUT_DEFENSE 4계층 — 쿼리/SP 최대 실행 시간(초). FE·TX 60s와 정합
+    default-statement-timeout: ${MYBATIS_STATEMENT_TIMEOUT_SECONDS:60}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    # HACCP는 현장 키오스크가 없어 mes-api의 현장 계정 장기 TTL 분기를 두지 않는다
+    expire-minutes: ${JWT_EXPIRE_MINUTES:480}
+  # 로그인 브루트포스 잠금 — tbl_user.login_fail_cnt 임계값
+  login:
+    max-fail-count: ${LOGIN_MAX_FAIL_COUNT:5}
+  # 배치·집계 기준 타임존 — ViewStatDailyJob·LocalDate 계산에 사용
+  timezone: ${APP_TIMEZONE:Asia/Seoul}
+  # 오늘 할 일 생성 시각 — Spring cron 6필드, 환경변수로 운영 시간 조정
+  task-generation:
+    cron: ${TASK_GENERATION_CRON:0 5 0 * * *}
+  # 화면 UV/PV 일자 집계 — 과제 생성(00:05) 직후 전일·당일 업서트
+  view-stat-daily:
+    cron: ${VIEW_STAT_DAILY_CRON:0 15 0 * * *}
+    # true면(= 로컬 스모크) 기동 직후 전일·당일 1회 집계. 운영은 false 유지
+    run-on-startup: ${VIEW_STAT_DAILY_RUN_ON_STARTUP:false}
+  cors:
+    # 운영 배포 시 실제 프론트 도메인으로 교체 (콤마 구분). 기본은 로컬 Vite 개발 서버
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5174}
+  file:
+    # 문서·사진·HWPX·PDF 볼륨 루트 — Docker에서는 named volume 마운트 경로로 바꾼다
+    root: ${APP_FILE_ROOT:./data/haccp-files}
+    # 파일 1건 최대 byte — multipart 설정과 같은 env에서 운영 통제
+    max-bytes: ${APP_FILE_MAX_BYTES:20971520}
+  template:
+    # 템플릿 볼륨 하위 디렉터리명 — 기본 _template. S3 이전 전까지 경로 조립의 단일 출처
+    directory: ${APP_TEMPLATE_DIRECTORY:_template}
+    # classpath 또는 절대경로 매니페스트 TSV — 양식 추가 시 이 파일만 수정 (Java 하드코딩 금지)
+    manifest: ${APP_TEMPLATE_MANIFEST:templates/manifest.tsv}
+    # 배포 원본 HWP 디렉터리 — 비우면 초기화를 건너뛰고, 지정하면 시작 시 매니페스트대로 복사한다
+    import-root: ${APP_TEMPLATE_IMPORT_ROOT:}
+    # true일 때(= 새 배포본 반영) 기존 대상 파일을 교체하고, 기본 false는 운영 원본을 보존한다
+    import-overwrite: ${APP_TEMPLATE_IMPORT_OVERWRITE:false}
+  rhwp:
+    # 로컬 rhwp CLI 경로 — Windows rhwp.exe 또는 Linux rhwp 바이너리. 비우면 PDF 내보내기 API가 업무 오류를 반환한다
+    cli-path: ${APP_RHWP_CLI_PATH:}
+    # CLI 프로세스 최대 대기(초) — FE httpFile·Nginx Grace보다 짧게 둔다
+    timeout-seconds: ${APP_RHWP_TIMEOUT_SECONDS:110}
+    # 선택적 폰트 탐색 경로 — Nanum 등 시스템/볼륨 폰트 디렉터리
+    font-path: ${APP_RHWP_FONT_PATH:}
+    # 한컴 전용 세리프 대체 글꼴명 — 비우면 --fallback-serif를 붙이지 않는다
+    fallback-serif: ${APP_RHWP_FALLBACK_SERIF:NanumGothic}
+    # 산세리프 대체 글꼴명 — Windows NanumGothic.ttf 권장
+    fallback-sans: ${APP_RHWP_FALLBACK_SANS:NanumGothic}
+    # 고정폭 대체 글꼴명 — 비우면 옵션 생략
+    fallback-mono: ${APP_RHWP_FALLBACK_MONO:}
+    # CLI 임시 PDF 작업 디렉터리 — 비우면 java.io.tmpdir/haccp-rhwp
+    work-dir: ${APP_RHWP_WORK_DIR:}
+
+logging:
+  level:
+    com.metis.haccp: ${LOG_LEVEL:INFO}
+
+# Actuator — health·metrics만 웹 노출 (env/heapdump 비노출)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+  endpoint:
+    health:
+      show-details: always

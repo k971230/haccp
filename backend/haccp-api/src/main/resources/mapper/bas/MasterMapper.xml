@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+MasterMapper.xml — HACCP 기준정보 sp_tbl_master_* 호출.
+
+개발자: 박승우
+일자: 2026-08-06
+코멘트:
+  1) 목록은 JSONB FUNCTION, 저장·삭제는 PostgreSQL PROCEDURE를 호출한다
+  2) masterType은 Java MasterType 허용 목록에서만 전달되며 SQL 식별자로 조립하지 않는다
+  3) 삭제 차단은 idx 배열을 한 번에 전달해 validate-delete·delete Double Check에 쓴다
+
+PIPELINE[HB75] 기준정보 MyBatis XML
+PIPELINE[HB74, HB76, HB77] 연관 모듈
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.metis.haccp.bas.MasterMapper">
+
+    <!--
+      기준정보 목록 — SP가 허용 유형 CASE로 테이블을 선택하고 JSONB 행을 반환한다.
+      coCd는 JWT에서 온 테넌트 키, useYn 공백은 전체 행 조회다.
+    -->
+    <select id="selectList" resultType="string">
+        SELECT sp_tbl_master_r_000(
+            #{coCd,       mode=IN, jdbcType=VARCHAR},
+            #{masterType, mode=IN, jdbcType=VARCHAR},
+            #{useYn,      mode=IN, jdbcType=VARCHAR}
+        )::text
+    </select>
+
+    <!--
+      기준정보 저장 — payload는 유형별 camelCase JSON 행이다.
+      SP가 신규·수정을 판별하고 co_cd·감사 컬럼은 JWT 파라미터로만 기록한다.
+    -->
+    <update id="save" statementType="CALLABLE">
+        CALL sp_tbl_master_c_000(
+            #{coCd,       mode=IN, jdbcType=VARCHAR},
+            #{masterType, mode=IN, jdbcType=VARCHAR},
+            CAST(#{payload, mode=IN, jdbcType=VARCHAR} AS jsonb),
+            #{userId,     mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!--
+      삭제 참조 검사 — PostgreSQL bigint 배열 하나로 대상 전체를 조회한다.
+      foreach는 값만 바인딩하며 masterType을 SQL 식별자로 치환하지 않는다.
+    -->
+    <select id="selectDeleteBlocker" resultType="com.metis.haccp.common.validation.DeleteBlocker">
+        SELECT ref_key, target
+          FROM sp_tbl_master_delete_blocker_r_000(
+              #{coCd,       mode=IN, jdbcType=VARCHAR},
+              #{masterType, mode=IN, jdbcType=VARCHAR},
+              ARRAY[
+              <foreach collection="idxs" item="idx" separator=",">
+                  #{idx, mode=IN, jdbcType=BIGINT}
+              </foreach>
+              ]::bigint[]
+          )
+         ORDER BY ref_key, target
+         LIMIT 1
+    </select>
+
+    <!--
+      기준정보 삭제 — Service Double Check 뒤에 호출한다.
+      SP도 동일 참조 검사를 재수행하고 idx + co_cd로 테넌트 경계를 강제한다.
+    -->
+    <update id="delete" statementType="CALLABLE">
+        CALL sp_tbl_master_d_000(
+            #{coCd,       mode=IN, jdbcType=VARCHAR},
+            #{masterType, mode=IN, jdbcType=VARCHAR},
+            #{idx,        mode=IN, jdbcType=BIGINT},
+            #{userId,     mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+</mapper>

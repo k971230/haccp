@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CcpColdMapper.xml — CCP 냉장보관 모니터링 sp_tbl_* 호출.
+
+개발자: 박승우
+일자: 2026-08-06
+코멘트:
+  1) 조회는 FUNCTION SELECT *, 저장·삭제는 FUNCTION/PROCEDURE
+  2) coCd는 컨트롤러·서비스가 JWT에서만 채운다
+  3) 삭제 차단은 foreach IN 단일 쿼리 + LIMIT 1
+
+PIPELINE[HB70] MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.metis.haccp.ccp.CcpColdMapper">
+
+    <!-- 보관고 목록 — 일지 열 머리글. useYn='Y'로 호출하면 사용중만 -->
+    <select id="selectStorages" resultType="com.metis.haccp.ccp.dto.StorageRow">
+        SELECT * FROM sp_tbl_storage_r_000(
+            #{coCd,  mode=IN, jdbcType=VARCHAR},
+            #{ccpCd, mode=IN, jdbcType=VARCHAR},
+            #{useYn, mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- CCP 한계기준 — 화면 상단 문구·판정 안내 -->
+    <select id="selectLimits" resultType="com.metis.haccp.ccp.dto.CcpLimitRow">
+        SELECT * FROM sp_tbl_ccp_limit_r_000(
+            #{coCd,  mode=IN, jdbcType=VARCHAR},
+            #{ccpCd, mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 일지 목록 — 기간·CCP·문서번호·작성자 -->
+    <select id="selectList" resultType="com.metis.haccp.ccp.dto.ColdMonitorListRow">
+        SELECT * FROM sp_tbl_ccp_cold_monitor_r_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{fromDt, mode=IN, jdbcType=VARCHAR},
+            #{toDt,   mode=IN, jdbcType=VARCHAR},
+            #{ccpCd,  mode=IN, jdbcType=VARCHAR},
+            #{docNo,  mode=IN, jdbcType=VARCHAR},
+            #{writer, mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 헤더 단건 — 없으면 0행 -->
+    <select id="selectHeader" resultType="com.metis.haccp.ccp.dto.ColdMonitorHeader">
+        SELECT * FROM sp_tbl_ccp_cold_monitor_r_001(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{docIdx, mode=IN, jdbcType=BIGINT}
+        )
+    </select>
+
+    <!-- 점검행 — temps는 Service가 붙인다 -->
+    <select id="selectRows" resultType="com.metis.haccp.ccp.dto.ColdMonitorRowDto">
+        SELECT * FROM sp_tbl_ccp_cold_monitor_row_r_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{hdrIdx, mode=IN, jdbcType=BIGINT}
+        )
+    </select>
+
+    <!-- 온도 JOIN — row_idx로 그룹핑 -->
+    <select id="selectTempJoins" resultType="com.metis.haccp.ccp.dto.ColdMonitorTempJoinRow">
+        SELECT * FROM sp_tbl_ccp_cold_monitor_temp_r_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{hdrIdx, mode=IN, jdbcType=BIGINT}
+        )
+    </select>
+
+    <!--
+      저장 — FUNCTION이 doc_idx 반환.
+      rowsJson은 jsonb로 캐스팅한다. 빈 배열이면 SP가 업무 오류를 올린다.
+    -->
+    <select id="saveColdMonitor" resultType="long">
+        SELECT sp_tbl_ccp_cold_monitor_c_000(
+            #{coCd,      mode=IN, jdbcType=VARCHAR},
+            #{docIdx,    mode=IN, jdbcType=BIGINT},
+            #{baseDt,    mode=IN, jdbcType=VARCHAR},
+            #{ccpCd,     mode=IN, jdbcType=VARCHAR},
+            #{mngUserId, mode=IN, jdbcType=VARCHAR},
+            #{mngNm,     mode=IN, jdbcType=VARCHAR},
+            CAST(#{rowsJson, mode=IN, jdbcType=VARCHAR} AS jsonb),
+            #{userId,    mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      삭제 차단 — 결재 진행(REQ/REV)·완료(APV)면 막는다.
+      임시(TMP)·반려(RJT)만 삭제 가능.
+    -->
+    <select id="selectDeleteBlocker" resultType="com.metis.haccp.common.validation.DeleteBlocker">
+        SELECT d.doc_no AS ref_key,
+               CASE d.status
+                    WHEN 'REQ' THEN '결재요청'
+                    WHEN 'REV' THEN '결재검토'
+                    WHEN 'APV' THEN '결재완료'
+                    ELSE d.status
+               END AS target
+          FROM tbl_document d
+         WHERE d.co_cd = #{coCd}
+           AND d.tmpl_cd = 'CCP_COLD'
+           AND d.del_yn = 'N'
+           AND d.status NOT IN ('TMP', 'RJT')
+           AND d.idx IN
+           <foreach collection="docIdxs" item="id" open="(" separator="," close=")">
+               #{id}
+           </foreach>
+         ORDER BY d.doc_no
+         LIMIT 1
+    </select>
+
+    <!-- 삭제 — 임시·반려만. 잠금이면 SP 45000 -->
+    <update id="deleteColdMonitor" statementType="CALLABLE">
+        CALL sp_tbl_ccp_cold_monitor_d_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{docIdx, mode=IN, jdbcType=BIGINT},
+            #{userId, mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+</mapper>

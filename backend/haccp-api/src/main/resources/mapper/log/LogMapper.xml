@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+LogMapper.xml — 화면 조회 로그·일자 UV/PV 집계 sp_tbl_* 호출 매퍼.
+
+개발자: 박승우
+일자: 2026-08-10
+코멘트:
+  1) 이벤트 1건 적재와 일자별 집계 업서트를 담당한다
+  2) 적재 시 coCd·userId·sid는 컨트롤러가 JWT에서 채운다. 프론트가 보낸 값을 쓰면 통계가 조작될 수 있다
+  3) 체류시간은 SP가 진입·이탈 시각 차이로 계산한다 — 클라이언트 계산값을 신뢰하지 않는다
+
+PIPELINE[HB45] MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.metis.haccp.log.LogMapper">
+
+    <!--
+      화면 조회 이벤트 적재 — sp_tbl_view_log_c_000
+      coCd·userId·sid는 JWT 값이며, userId는 UV(순방문자), sid는 세션수 집계의 distinct 기준이 된다
+      enterDt는 필수이고 leaveDt가 NULL이면(= 아직 머무는 중) 체류시간도 NULL로 남는다
+      refScrnCd는 직전 화면으로 사용자 이동 경로를 재구성할 때 쓴다 — 첫 진입이면 비어 있다
+    -->
+    <update id="insertViewLog" statementType="CALLABLE">
+        CALL sp_tbl_view_log_c_000(
+            #{coCd,      mode=IN, jdbcType=VARCHAR},
+            #{userId,    mode=IN, jdbcType=VARCHAR},
+            #{sid,       mode=IN, jdbcType=VARCHAR},
+            #{scrnCd,    mode=IN, jdbcType=VARCHAR},
+            #{enterDt,   mode=IN, jdbcType=TIMESTAMP},
+            #{leaveDt,   mode=IN, jdbcType=TIMESTAMP},
+            #{refScrnCd, mode=IN, jdbcType=VARCHAR},
+            #{ipAddr,    mode=IN, jdbcType=VARCHAR},
+            #{userAgent, mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!--
+      화면별 일자 UV/PV 집계 업서트 — sp_tbl_view_stat_daily_c_000
+      coCd 공백이면(= 전체 업체) 전 테넌트를 한 번에 집계한다 — 배치 Job이 빈 문자열을 넘긴다
+      statDt(YYYYMMDD) 구간의 enter_dt만 대상으로 PV·UV·세션·체류를 다시 계산한다
+      userId는 배치 주체(system) — 감사 컬럼 ins_id/upd_id에 기록된다
+    -->
+    <update id="aggregateViewStatDaily" statementType="CALLABLE">
+        CALL sp_tbl_view_stat_daily_c_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{statDt, mode=IN, jdbcType=VARCHAR},
+            #{userId, mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+</mapper>

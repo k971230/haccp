@@ -1,0 +1,9 @@
+# mes-web 로컬·빌드 산출물 (루트 .gitignore 와 중복 허용 — 이 폴더만 워크스페이스로 열 때)
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+.env
+.env.*
+!.env.example

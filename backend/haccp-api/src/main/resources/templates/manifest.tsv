@@ -1,0 +1,46 @@
+# tmpl_cd	source_name	target_name	required  — docs 실존 파일명만. 대상은 번호접두 제거 한글명
+HANDOVER	1.업무_인수인계서.hwp	업무_인수인계서.hwp	Y
+CCP_COLD	2.중요관리점[CCP]_점검표_냉장보관.hwp	중요관리점[CCP]_점검표_냉장보관.hwp	Y
+CCP_METAL	2.중요관리점[CCP]_점검표_금속검출.hwp	중요관리점[CCP]_점검표_금속검출.hwp	Y
+CCP_VERIFY	3.중요관리점_검증점검표.hwp	중요관리점_검증점검표.hwp	Y
+VERIFY_PLAN	4.연간_검증계획서.hwp	연간_검증계획서.hwp	Y
+VERIFY_CHECK	5.검증_점검표.hwp	검증_점검표.hwp	Y
+VERIFY_REPORT	6.검증결과_보고서.hwp	검증결과_보고서.hwp	Y
+VERIFY_CA	7.검증_개선조치_결과보고서.hwp	검증_개선조치_결과보고서.hwp	Y
+EDU_PLAN	8.연간_교육_훈련_계획서.hwp	연간_교육_훈련_계획서.hwp	Y
+EDU_LOG	9.교육일지.hwp	교육일지.hwp	Y
+DAILY_HYG	10.일일_위생_점검일지.hwp	일일_위생_점검일지.hwp	Y
+PERSONAL_HYG	11.개인_위생관리_점검표.hwp	개인_위생관리_점검표.hwp	Y
+AREA_HYG	12.작업장_위생관리_점검표.hwp	작업장_위생관리_점검표.hwp	Y
+PEST	13.방충_방서_점검표.hwp	방충_방서_점검표.hwp	Y
+FACILITY	14.시설_설비_처리도구_점검표.hwp	시설_설비_처리도구_점검표.hwp	Y
+CALIB_TARGET	15.검_교정_대상.hwp	검_교정_대상.hwp	Y
+CALIB_LOG_TEMP	16.자체_검_교정_일지_1.hwp	자체_검_교정_일지_1.hwp	Y
+CALIB_LOG_WGT	16.자체_검_교정_일지_2.hwp	자체_검_교정_일지_2.hwp	Y
+CALIB_LOG_SCL	16.자체_검_교정_일지_3.hwp	자체_검_교정_일지_3.hwp	Y
+EQUIP_CARD	17.시설_설비_이력카드.hwp	시설_설비_이력카드.hwp	Y
+WASTE	18.폐기물_처리_점검표.hwp	폐기물_처리_점검표.hwp	Y
+INV_CHECK	19.입출고_및_재고_점검표.hwp	입출고_및_재고_점검표.hwp	Y
+RECV_INSP	20.입고검사_일지.hwp	입고검사_일지.hwp	Y
+PROD_TEST	21.제품검사_성적서.hwp	제품검사_성적서.hwp	Y
+SURFACE_TEST	22.표면오염도_검사_성적서.hwp	표면오염도_검사_성적서.hwp	Y
+BAD_PRODUCT	23.부적합제품_관리_점검표.hwp	부적합제품_관리_점검표.hwp	Y
+WATER	24.용수관리_점검표.hwp	용수관리_점검표.hwp	Y
+CLAIM	25.클레임_관리_일지.hwp	클레임_관리_일지.hwp	Y
+PROCESS	26.공정관리_점검표.hwp	공정관리_점검표.hwp	Y
+VEHICLE_LOG	27.차량운행일지.hwp	차량운행일지.hwp	Y
+VISITOR_LOG	3. 외부인출입기록부.hwp	외부인출입기록부.hwp	Y
+VISUAL_INSP	13. 원료부자재육안검사기준.hwp	원료부자재육안검사기준.hwp	Y
+SUBMAT_RECV	15. 부자재입고검수점검표.hwp	부자재입고검수점검표.hwp	Y
+CALIB_EXT	18. 외부 검교정기록부.hwp	외부 검교정기록부.hwp	Y
+SHIPMENT	20. 제품출고관리일지.hwp	제품출고관리일지.hwp	Y
+RECALL	25. 회수결과보고서.hwp	회수결과보고서.hwp	Y
+EVAL	26. 실시상황평가표.hwp	실시상황평가표.hwp	Y
+INV	19.입출고_및_재고_점검표.hwp	입출고_및_재고_점검표.hwp	Y
+LAW_HEALTH	LAW_HEALTH.hwp	LAW_HEALTH.hwp	N
+LAW_MATERIAL	LAW_MATERIAL.hwp	LAW_MATERIAL.hwp	N
+LAW_BUILDING	LAW_BUILDING.hwp	LAW_BUILDING.hwp	N
+LAW_PRODUCTION	LAW_PRODUCTION.hwp	LAW_PRODUCTION.hwp	N
+LAW_LICENSE	LAW_LICENSE.hwp	LAW_LICENSE.hwp	N
+LAW_SELF_TEST	LAW_SELF_TEST.hwp	LAW_SELF_TEST.hwp	N
+LAW_CERT	LAW_CERT.hwp	LAW_CERT.hwp	N

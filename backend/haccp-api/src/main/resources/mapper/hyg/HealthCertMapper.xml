@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+HealthCertMapper.xml — 건강진단관리기록부 sp_tbl_health_cert_* 호출.
+
+개발자: 박승우
+일자: 2026-08-07
+코멘트:
+  1) 목록은 JSONB FUNCTION, 저장·삭제는 PostgreSQL PROCEDURE를 호출한다
+  2) 테넌트 coCd는 JWT에서만 전달되며 SQL 식별자로 조립하지 않는다
+  3) 단건 조회는 첨부 업로드 병합용이며 SP가 아닌 테넌트 조건 SELECT다
+
+PIPELINE[HB95] 건강진단 MyBatis XML
+PIPELINE[HB94, HB96, HB97] 연관 모듈
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.metis.haccp.hyg.HealthCertMapper">
+
+    <!--
+      건강진단 목록 — SP가 성명·사용여부 필터로 JSONB 행을 반환한다.
+      coCd는 JWT 테넌트, personNm·useYn 공백은 전체 조회다.
+    -->
+    <select id="selectList" resultType="string">
+        SELECT sp_tbl_health_cert_r_000(
+            #{coCd,     mode=IN, jdbcType=VARCHAR},
+            #{personNm, mode=IN, jdbcType=VARCHAR},
+            #{useYn,    mode=IN, jdbcType=VARCHAR}
+        )::text
+    </select>
+
+    <!--
+      단건 조회 — 첨부 업로드 시 기존 성명·검진일·파일경로를 읽는다.
+      idx + co_cd로 테넌트 경계를 강제한다.
+    -->
+    <select id="selectByIdx" resultType="string">
+        SELECT (
+            to_jsonb(t) - 'ins_id' - 'ins_dt' - 'upd_id' - 'upd_dt'
+            || jsonb_build_object(
+                 'personNm', t.person_nm,
+                 'examDt', t.exam_dt,
+                 'expireDt', t.expire_dt,
+                 'filePath', t.file_path,
+                 'fileNm', t.file_nm,
+                 'useYn', t.use_yn
+               )
+        )::text
+          FROM tbl_health_cert t
+         WHERE t.co_cd = #{coCd, mode=IN, jdbcType=VARCHAR}
+           AND t.idx = #{idx, mode=IN, jdbcType=BIGINT}
+    </select>
+
+    <!--
+      건강진단 저장 — payload는 camelCase JSON 행이다.
+      SP가 idx 유무로 신규·수정을 판별하고 감사 컬럼은 JWT userId로만 기록한다.
+    -->
+    <update id="save" statementType="CALLABLE">
+        CALL sp_tbl_health_cert_c_000(
+            #{coCd,    mode=IN, jdbcType=VARCHAR},
+            CAST(#{payload, mode=IN, jdbcType=VARCHAR} AS jsonb),
+            #{userId,  mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!--
+      건강진단 삭제 — Service Double Check 뒤에 호출한다.
+      SP도 idx + co_cd로 테넌트 경계를 강제한다.
+    -->
+    <update id="delete" statementType="CALLABLE">
+        CALL sp_tbl_health_cert_d_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{idx,    mode=IN, jdbcType=BIGINT},
+            #{userId, mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+</mapper>

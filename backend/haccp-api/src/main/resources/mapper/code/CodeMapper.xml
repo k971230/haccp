@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CodeMapper.xml — 공통코드 조회 sp_tbl_* 호출 매퍼.
+
+개발자: 박승우
+일자: 2026-08-05
+코멘트:
+  1) 조회 1건만 담당한다 — 플랫폼 표준(0000) + 업체 코드 병합은 SP 안에서 끝난다
+  2) mainCd·useYn은 부분 일치 조건이라 공백을 넘기면 전체가 나온다(조건 없음과 같다)
+  3) 표준·업체에 같은 (대분류, 세부코드)가 있으면 업체 값만 남는다 — 병합 규칙을 앱에서 다시 구현하지 않는다
+
+PIPELINE[HB36] MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.metis.haccp.code.CodeMapper">
+
+    <!--
+      공통코드 목록 조회 — sp_tbl_code_r_000
+      coCd는 JWT 회사코드이며, SP가 이 회사와 플랫폼 표준('0000') 두 범위를 함께 읽는다
+      mainCd는 대분류 부분검색어로 공백이면 전체 그룹, useYn은 사용여부 필터로 공백이면 Y·N 모두 포함
+      같은 (대분류, 세부코드)가 표준·업체 양쪽에 있으면 업체 행만 남긴다 — 업체가 표준 문구를 덮어쓰는 방식
+      결과: 대분류 → 정렬순서 → 세부코드 순으로 정렬된 CodeRow 목록
+    -->
+    <select id="selectCodes" resultType="com.metis.haccp.code.dto.CodeRow">
+        SELECT * FROM sp_tbl_code_r_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{mainCd, mode=IN, jdbcType=VARCHAR},
+            #{useYn,  mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+</mapper>

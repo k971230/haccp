@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+PrefMapper.xml — 그리드 열 설정 sp_tbl_* 호출 매퍼.
+
+개발자: 박승우
+일자: 2026-08-05
+코멘트:
+  1) 조회는 FUNCTION, 업서트는 PROCEDURE — 60-haccp-db 규약 그대로다
+  2) coCd·userId는 컨트롤러가 JWT에서 채워 넘긴다. 요청 본문 값을 그대로 쓰는 경로는 없다
+  3) prefJson이 비면 SP가 행을 삭제한다 — 초기화 전용 API를 따로 만들지 않은 이유다
+
+PIPELINE[HB41] MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.metis.haccp.pref.PrefMapper">
+
+    <!--
+      그리드 열 설정 조회 — sp_tbl_grid_pref_r_000
+      coCd·userId는 JWT 값으로 테넌트와 사용자를 고정하고, scrnCd는 화면 부분검색어다
+      scrnCd가 공백이면 이 사용자의 전체 화면 설정이 나오므로, 화면 진입 시에는 정확한 화면코드를 넘긴다
+      결과: 화면코드 → 그리드 식별자 순으로 정렬된 GridPrefRow 목록. 저장 이력이 없으면 빈 목록
+    -->
+    <select id="selectGridPrefs" resultType="com.metis.haccp.pref.dto.GridPrefRow">
+        SELECT * FROM sp_tbl_grid_pref_r_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{userId, mode=IN, jdbcType=VARCHAR},
+            #{scrnCd, mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      그리드 열 설정 업서트 — sp_tbl_grid_pref_c_000
+      (userId, scrnCd, gridId) 유니크 키로 ON CONFLICT DO UPDATE 하므로 같은 요청을 반복해도 결과가 같다
+      prefJson이 공백이면 저장 행을 삭제해 다음 진입 시 컬럼 정의 기본값으로 돌아간다(= 설정 초기화)
+      prefJson은 text 타입으로 넘긴다 — 열이 많은 그리드는 JSON이 varchar 한계를 넘을 수 있다
+    -->
+    <update id="saveGridPref" statementType="CALLABLE">
+        CALL sp_tbl_grid_pref_c_000(
+            #{coCd,     mode=IN, jdbcType=VARCHAR},
+            #{userId,   mode=IN, jdbcType=VARCHAR},
+            #{scrnCd,   mode=IN, jdbcType=VARCHAR},
+            #{gridId,   mode=IN, jdbcType=VARCHAR},
+            #{prefJson, mode=IN, jdbcType=LONGVARCHAR}
+        )
+    </update>
+
+</mapper>

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+WorkflowMapper.xml — 결재선·업체 양식/점검항목·작성주기 관리 SP 호출.
+
+개발자: 박승우
+일자: 2026-08-06
+코멘트:
+  1) 관리 화면은 tbl_* 직접 DML 대신 platform/workflow/31_migrate SP만 호출한다
+  2) 모든 조회·수정·삭제에 JWT coCd를 첫 파라미터로 전달해 테넌트 경계를 강제한다
+  3) 삭제 검증은 결재선 참조 조회 후 Service Double Check와 삭제 SP 검증을 함께 적용한다
+
+PIPELINE[HB89] 워크플로 관리 MyBatis XML
+PIPELINE[HB88, HB90] 연관 모듈
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.metis.haccp.workflow.WorkflowMapper">
+    <!-- 결재선 헤더와 단계 배열 JSON 목록 -->
+    <select id="selectApprovalLines" resultType="string">
+        SELECT payload::text FROM sp_tbl_approval_line_r_000(#{coCd, jdbcType=VARCHAR})
+    </select>
+    <!-- 결재선 저장 — 헤더와 단계 배열을 동일 트랜잭션에서 교체 -->
+    <update id="saveApprovalLine" statementType="CALLABLE">
+        CALL sp_tbl_approval_line_c_000(#{coCd, jdbcType=VARCHAR}, CAST(#{payload, jdbcType=VARCHAR} AS jsonb), #{userId, jdbcType=VARCHAR})
+    </update>
+    <!-- 결재선 삭제 사전 차단 — 양식·문서 참조 중 첫 사유만 반환 -->
+    <select id="selectApprovalLineBlocker" resultType="map">
+        SELECT #{apprLineCd} AS ref_key, '사용양식 또는 문서' AS target
+         WHERE EXISTS (SELECT 1 FROM tbl_company_template WHERE co_cd = #{coCd} AND appr_line_cd = #{apprLineCd})
+            OR EXISTS (SELECT 1 FROM tbl_document WHERE co_cd = #{coCd} AND appr_line_cd = #{apprLineCd} AND del_yn = 'N')
+    </select>
+    <!-- 결재선 삭제 — SP도 참조 여부를 다시 확인 -->
+    <update id="deleteApprovalLine" statementType="CALLABLE">
+        CALL sp_tbl_approval_line_d_000(#{coCd, jdbcType=VARCHAR}, #{apprLineCd, jdbcType=VARCHAR}, #{userId, jdbcType=VARCHAR})
+    </update>
+
+    <!-- 업체 사용양식 — 기존 플랫폼 SP가 표준 양식과 업체 오버라이드를 결합 -->
+    <select id="selectTemplates" resultType="map">
+        SELECT * FROM sp_tbl_company_template_r_000(#{coCd, jdbcType=VARCHAR}, '', '')
+    </select>
+    <!-- 업체 양식 저장 — 표준 카탈로그는 수정하지 않고 업체 오버라이드만 업서트 -->
+    <update id="saveCompanyTemplate" statementType="CALLABLE">
+        CALL sp_tbl_company_template_c_000(#{coCd, jdbcType=VARCHAR}, #{tmplCd, jdbcType=VARCHAR}, #{tmplNmOvr, jdbcType=VARCHAR}, #{apprLineCd, jdbcType=VARCHAR}, #{cycleCd, jdbcType=VARCHAR}, #{retentionMonth, jdbcType=INTEGER}, #{useYn, jdbcType=VARCHAR}, #{userId, jdbcType=VARCHAR})
+    </update>
+    <!-- 표준 카탈로그 코드 존재 여부 — 법적서류 신규/명칭수정 분기 -->
+    <select id="countTemplateCatalog" resultType="int">
+        SELECT COUNT(*)::int
+          FROM tbl_template
+         WHERE tmpl_cd = #{tmplCd, jdbcType=VARCHAR}
+    </select>
+    <!-- 회사 전용 법적서류 유형 — 카탈로그 LAW + company_template(sys_yn=N) -->
+    <update id="createLegalType" statementType="CALLABLE">
+        CALL sp_tbl_legal_type_c_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{tmplNm, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+    <!-- 회사 양식 sys_yn — 시스템 배포분(Y) 삭제 선차단 -->
+    <select id="selectCompanyTemplateSysYn" resultType="string">
+        SELECT sys_yn
+          FROM tbl_company_template
+         WHERE co_cd = #{coCd, jdbcType=VARCHAR}
+           AND tmpl_cd = #{tmplCd, jdbcType=VARCHAR}
+    </select>
+    <!-- 자사 HWP 원본 등록 — form_path·sys_yn=N 업서트 -->
+    <update id="createCompanyTemplateCustom" statementType="CALLABLE">
+        CALL sp_tbl_company_template_custom_c_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{tmplNmOvr, jdbcType=VARCHAR},
+            #{formPath, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+    <!-- 회사 양식 삭제 차단 — 문서에서 참조 중인 tmpl_cd -->
+    <select id="selectCompanyTemplateDeleteBlockers" resultType="map">
+        SELECT * FROM sp_tbl_company_template_delete_blocker_r_000(
+            #{coCd, jdbcType=VARCHAR},
+            CAST(#{keysJson, jdbcType=VARCHAR} AS jsonb)
+        )
+    </select>
+    <!-- 회사 양식 삭제 — sys_yn=N 만 허용, SP가 시스템분 차단 -->
+    <update id="deleteCompanyTemplate" statementType="CALLABLE">
+        CALL sp_tbl_company_template_d_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+    <!-- 표준 항목과 업체 오버라이드 — 숨김 행까지 관리 화면에 반환 -->
+    <select id="selectCheckItems" resultType="map">
+        SELECT * FROM sp_tbl_company_check_item_manage_r_000(#{coCd, jdbcType=VARCHAR}, #{tmplCd, jdbcType=VARCHAR})
+    </select>
+    <!-- 업체 점검항목 저장 — 표준 오버라이드 또는 CUST 회사 전용 -->
+    <update id="saveCheckItem" statementType="CALLABLE">
+        CALL sp_tbl_company_check_item_c_000(#{coCd, jdbcType=VARCHAR}, #{tmplCd, jdbcType=VARCHAR}, #{itemCd, jdbcType=VARCHAR}, #{itemNmOvr, jdbcType=VARCHAR}, #{sortNo, jdbcType=INTEGER}, #{useYn, jdbcType=VARCHAR}, #{userId, jdbcType=VARCHAR})
+    </update>
+    <!-- 삭제 전 존재 확인 — 테넌트·양식·항목 복합키 COUNT (Service 루프 COUNT 금지용 단건) -->
+    <select id="countCompanyCheckItem" resultType="int">
+        SELECT COUNT(*)::int
+          FROM tbl_company_check_item
+         WHERE co_cd = #{coCd, jdbcType=VARCHAR}
+           AND tmpl_cd = #{tmplCd, jdbcType=VARCHAR}
+           AND item_cd = #{itemCd, jdbcType=VARCHAR}
+    </select>
+    <!-- 업체 전용 점검항목 삭제 — CUST*만 SP가 허용 -->
+    <update id="deleteCheckItem" statementType="CALLABLE">
+        CALL sp_tbl_company_check_item_d_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{itemCd, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+    <!-- 자사 양식 목록 — 기본 양식 사용 안 함으로 생성한 독립 복제본과 활성 여부 -->
+    <select id="selectCompanyForms" resultType="map">
+        SELECT * FROM sp_tbl_company_form_r_000(#{coCd, jdbcType=VARCHAR}, #{tmplCd, jdbcType=VARCHAR})
+    </select>
+    <!-- 자사 양식 점검항목 — 공통 tbl_check_item이 아닌 업체 복제본만 반환 -->
+    <select id="selectCompanyFormItems" resultType="map">
+        SELECT * FROM sp_tbl_company_form_item_r_000(#{coCd, jdbcType=VARCHAR}, #{coFormIdx, jdbcType=BIGINT})
+    </select>
+    <!-- 자사 양식 추가 — 선택 기본 양식과 표준 점검항목을 스냅샷 복제 -->
+    <update id="cloneCompanyForm" statementType="CALLABLE">
+        CALL sp_tbl_company_form_clone_c_000(#{coCd, jdbcType=VARCHAR}, #{tmplCd, jdbcType=VARCHAR}, #{formNm, jdbcType=VARCHAR}, #{userId, jdbcType=VARCHAR})
+    </update>
+    <!-- 자사 양식 항목 저장 — JSON payload로 항목 추가·수정만 허용 -->
+    <update id="saveCompanyFormItem" statementType="CALLABLE">
+        CALL sp_tbl_company_form_item_c_000(#{coCd, jdbcType=VARCHAR}, #{coFormIdx, jdbcType=BIGINT}, CAST(#{payload, jdbcType=VARCHAR} AS jsonb), #{userId, jdbcType=VARCHAR})
+    </update>
+    <!-- 작성 양식 전환 — null이면 기본 양식, 값이 있으면 지정 자사 복제본 -->
+    <update id="activateCompanyForm" statementType="CALLABLE">
+        CALL sp_tbl_company_form_activate_u_000(#{coCd, jdbcType=VARCHAR}, #{tmplCd, jdbcType=VARCHAR}, #{coFormIdx, jdbcType=BIGINT}, #{userId, jdbcType=VARCHAR})
+    </update>
+    <!-- 스마트 HACCP 기준일지 플랫폼 마스터 — 회사와 무관한 읽기 전용 카탈로그 -->
+    <select id="selectSmartDiaryTypes" resultType="map">
+        SELECT * FROM sp_tbl_smart_diary_type_r_000(#{diaryType, jdbcType=VARCHAR}, #{useYn, jdbcType=VARCHAR})
+    </select>
+    <!-- 공공 기준일지와 내부 표준 양식 매핑 — 갭 분석·관리 화면 표시용 -->
+    <select id="selectSmartDiaryMaps" resultType="map">
+        SELECT * FROM sp_tbl_smart_diary_map_r_000(#{diaryNo, jdbcType=VARCHAR}, #{tmplCd, jdbcType=VARCHAR})
+    </select>
+    <!-- 스마트일지 매핑 저장 — diary_no+tmpl_cd 업서트 -->
+    <update id="saveSmartDiaryMap" statementType="CALLABLE">
+        CALL sp_tbl_smart_diary_map_c_000(
+            #{coCd, jdbcType=VARCHAR}, #{diaryNo, jdbcType=VARCHAR}, #{tmplCd, jdbcType=VARCHAR},
+            #{matchLevel, jdbcType=VARCHAR}, #{implStatus, jdbcType=VARCHAR}, #{preferredYn, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+    <!-- 스마트일지 매핑 삭제 — 복합키 단건 -->
+    <update id="deleteSmartDiaryMap" statementType="CALLABLE">
+        CALL sp_tbl_smart_diary_map_d_000(
+            #{coCd, jdbcType=VARCHAR}, #{diaryNo, jdbcType=VARCHAR}, #{tmplCd, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!-- 양식 설정 내보내기 이력 목록 — payload 본문은 단건 조회에서만 -->
+    <select id="selectTemplateExportHist" resultType="map">
+        SELECT * FROM sp_tbl_template_export_hist_r_000(#{coCd, jdbcType=VARCHAR}, #{docKind, jdbcType=VARCHAR})
+    </select>
+    <!-- 양식 설정 내보내기 이력 단건 — payload를 text로 받아 Service가 JSON 파싱 -->
+    <select id="selectTemplateExportHistOne" resultType="map">
+        SELECT idx, pack_nm, doc_kind, payload::text AS payload, file_ref, remk
+          FROM sp_tbl_template_export_hist_r_001(#{coCd, jdbcType=VARCHAR}, #{idx, jdbcType=BIGINT})
+    </select>
+    <!-- 양식 설정 내보내기 이력 등록 — 함수 반환값(idx)을 바로 사용 -->
+    <select id="insertTemplateExportHist" resultType="long">
+        SELECT sp_tbl_template_export_hist_c_000(
+            #{coCd, jdbcType=VARCHAR}, #{packNm, jdbcType=VARCHAR}, #{docKind, jdbcType=VARCHAR},
+            CAST(#{payload, jdbcType=VARCHAR} AS jsonb), #{fileRef, jdbcType=VARCHAR},
+            #{remk, jdbcType=VARCHAR}, #{userId, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 작성주기 규칙과 업체 양식명을 함께 조회 -->
+    <select id="selectScheduleRules" resultType="map">
+        SELECT * FROM sp_tbl_schedule_rule_r_000(#{coCd, jdbcType=VARCHAR})
+    </select>
+    <!-- 작성주기 저장 — 신규·수정 구분은 payload.idx를 SP가 처리 -->
+    <update id="saveScheduleRule" statementType="CALLABLE">
+        CALL sp_tbl_schedule_rule_c_000(#{coCd, jdbcType=VARCHAR}, CAST(#{payload, jdbcType=VARCHAR} AS jsonb), #{userId, jdbcType=VARCHAR})
+    </update>
+    <!-- 작성주기 삭제 — idx와 coCd를 SP에서 함께 확인 -->
+    <update id="deleteScheduleRule" statementType="CALLABLE">
+        CALL sp_tbl_schedule_rule_d_000(#{coCd, jdbcType=VARCHAR}, #{idx, jdbcType=BIGINT}, #{userId, jdbcType=VARCHAR})
+    </update>
+</mapper>

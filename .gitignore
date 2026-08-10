@@ -1,0 +1,34 @@
+# ── Secrets (NEVER commit) ─────────────────────────────
+.env
+*.env
+!*.env.example
+!**/.env.example
+.env.docker
+!.env.docker.example
+
+# ── 로그·임시·빌드 산출물 ─────────────────────────────
+*.log
+*.tsbuildinfo
+hs_err_pid*
+token.txt
+login_out.json
+
+# ── Java / Spring ──────────────────────────────────────
+target/
+*.class
+*.war
+backend/haccp-api/data/
+
+# ── Node / React ───────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# ── IDE / OS ───────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

@@ -1,0 +1,17 @@
+# HACCP SaaS — 재현 빌드 버전·의존성 고정
+#
+# 프론트 (npm)     → frontend/haccp-web/package-lock.json  (npm ci)
+# 백엔드 (Maven)   → backend/haccp-api/pom.xml + mvnw
+#
+# ── 런타임 도구 ──
+# Node.js  20.x     (.nvmrc)
+# Java     17       (.java-version)
+# Maven    wrapper  (mvnw)
+#
+# ── 백엔드 ──
+# spring-boot-starter-parent 3.3.x (pom.xml 정본)
+# mybatis-spring-boot-starter
+# postgresql
+# jjwt
+#
+# pip 설치 항목 없음
