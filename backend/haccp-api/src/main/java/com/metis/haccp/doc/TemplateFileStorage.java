@@ -15,6 +15,8 @@ package com.metis.haccp.doc;
 
 // 역할 — 사용자 노출 업무 오류
 import com.metis.haccp.common.exception.BizException;
+// 역할 — 원본 파일 부재를 404로 내리는 예외
+import com.metis.haccp.common.exception.NotFoundException;
 // 역할 — 업로드 스트림
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +36,14 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @Component
 public class TemplateFileStorage {
+
+    /**
+     * 양식 원본이 아직 없을 때 쓰는 단일 문구.
+     * form_path 공백(= 유형만 등록)과 파일 실물 부재(= 경로는 있는데 파일이 지워짐)를
+     * 사용자 입장에서 같은 상황으로 보고 한 문구로 통일한다 — 09 G-05.
+     */
+    public static final String FORM_NOT_UPLOADED =
+            "양식 파일이 아직 업로드되지 않았습니다. 좌측 상단에서 파일을 업로드해 주세요.";
 
     // APP_FILE_ROOT 정규화 경로
     private final Path appFileRoot;
@@ -78,8 +88,9 @@ public class TemplateFileStorage {
             String formPath
     ) {
         Path target = resolveInsideTemplate(formPath, false);
+        // 경로는 유효한데 실물이 없을 때(= 다른 사용자가 지웠거나 볼륨 미마운트) 400이 아니라 404
         if (!Files.isRegularFile(target)) {
-            throw new BizException("템플릿 원본 파일을 찾을 수 없습니다.");
+            throw new NotFoundException(FORM_NOT_UPLOADED);
         }
         try {
             Path realTemplateRoot = templateRoot.toRealPath();

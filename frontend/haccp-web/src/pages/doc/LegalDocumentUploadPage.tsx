@@ -409,9 +409,10 @@ export default function LegalDocumentUploadPage({
       }
       const formUrl = String(row.formUrl ?? "").trim();
       const fileNm = String(row.formFileNm ?? "").trim();
-      // 서버에 등록된 템플릿이 없을 때(= formUrl·파일명 없음·선택만 표시) 요청하지 않는다
+      // 서버에 등록된 템플릿이 없을 때(= formUrl·파일명 없음·선택만 표시) 요청하지 않는다.
+      // 문구는 백엔드 404(TemplateFileStorage.FORM_NOT_UPLOADED)와 동일하게 MES.formNotUploaded로 통일
       if (!formUrl || !fileNm || fileNm.startsWith("선택:")) {
-        mesToast("등록된 템플릿 파일이 없습니다. 템플릿을 선택한 뒤 저장하세요.", "warn");
+        mesToast(MES.formNotUploaded, "warn");
         return;
       }
       try {
@@ -642,13 +643,20 @@ export default function LegalDocumentUploadPage({
                   variant="download"
                   size="sm"
                   icon="download"
-                  // 등록된 원본이 없을 때(= formUrl·파일명 없음) 다운로드 비활성 — 빈 GET /form 400 방지
+                  // 등록된 원본이 없을 때(= formUrl·파일명 없음) 다운로드 비활성 — 빈 GET /form 404 방지
                   disabled={
                     !tmplKey
                     || asyncAct.isBusy("dl")
                     || !String(selectedTmpl?.formUrl ?? "").trim()
                     || !String(selectedTmpl?.formFileNm ?? "").trim()
                     || String(selectedTmpl?.formFileNm ?? "").startsWith("선택:")
+                  }
+                  // 비활성 이유를 마우스오버로 알린다 — 버튼이 회색인 채로 이유를 못 찾는 상황을 없앤다.
+                  // 원본이 있을 때는 title을 비워 기본 커서 동작을 유지한다
+                  title={
+                    !String(selectedTmpl?.formUrl ?? "").trim()
+                      ? MES.formNotUploaded
+                      : undefined
                   }
                   loading={asyncAct.isBusy("dl")}
                   onClick={() => void handleDownloadTmpl()}
