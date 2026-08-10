@@ -102,7 +102,7 @@
 | **45** | 45_migrate_equip_pest_tmpl_admin.sql | 설비/방충 → history |
 | **46** | 46_migrate_template_volume_ko.sql | 메뉴 equipment→history |
 | **47** | 47_migrate_check_item_admin_crud.sql | template-check-item-management N |
-| **47** | 47_migrate_legal_upload_type.sql | 법적서류 유형 SP (번호 충돌 주의) |
+| **48** | 48_migrate_legal_upload_type.sql | 법적서류 유형 SP (2026-08-10 47 → 48 재번호, G-03 해소) |
 
 ---
 

@@ -1,12 +1,15 @@
 -- ============================================================
--- 47 — 법적서류 업로드 유형(LAW) 등록·목록 form_path NULL 허용
+-- 48 — 법적서류 업로드 유형(LAW) 등록·목록 form_path NULL 허용
 --
+-- 파일번호: 48
+-- 이전번호: 47 (2026-08-10 번호 충돌 정리로 이동 — 09 G-03)
 -- 개발자: 박승우
 -- 일자: 2026-08-10
 -- 코멘트:
---   1) LAW 카테고리는 템플릿 파일 없이도 회사 사용 목록에 노출한다
---   2) 회사 전용 법적서류 유형을 tbl_template + company_template(sys_yn=N)로 등록한다
---   3) 시스템 유형 삭제는 기존 company_template_d 가 차단한다
+--   1) LAW 카테고리는 템플릿 파일 없이도 회사 사용 목록에 노출한다 (legal-types SP 등록)
+--   2) 재실행 안전 — DROP FUNCTION IF EXISTS + CREATE / CREATE OR REPLACE PROCEDURE 유지
+--   3) 47 (check_item_admin_crud) 다음에 적용된다
+--      두 파일은 참조 객체가 겹치지 않는다(= 47은 tbl_check_item 계열, 48은 tbl_template 계열)
 -- ============================================================
 
 SET search_path TO sasshaccp;
