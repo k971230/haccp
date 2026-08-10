@@ -1,0 +1,155 @@
+# ============================================================
+#  HACCP 운영 스택 — api · web · edge (+ 선택 db)
+#
+#  개발자: 박승우
+#  일자: 2026-08-10
+#  코멘트:
+#    1) 브라우저에 열리는 포트는 edge 의 80/443 뿐이다 — api(8081)·web·db(5432)는 내부망에만 둔다
+#    2) DB는 외부 PostgreSQL이 기본이고, 내부 PG가 필요할 때만 profile "with-db" 로 켠다
+#    3) 이미지 태그·DB 계정 같은 치환값은 --env-file 로 읽는다 (env_file 과 다른 통로다)
+#
+#  실행 (외부 PG):
+#    docker compose --env-file .env.docker -f docker-compose.prod.yml up -d
+#  실행 (내부 PG):
+#    docker compose --env-file .env.docker -f docker-compose.prod.yml --profile with-db up -d
+#
+#  선행 필수: bash scripts/init_volumes.sh (표준 양식 원본 시드) — 빠뜨리면 api 가 기동 실패한다
+# ============================================================
+
+# 프로젝트명 고정 — 컨테이너·네트워크 접두어가 실행 디렉터리 이름에 따라 흔들리지 않게 한다
+name: haccp
+
+services:
+  # ----------------------------------------------------------
+  # db — 내부 PostgreSQL (선택)
+  # ----------------------------------------------------------
+  db:
+    # alpine 이 아니라 debian 판을 쓴다 — db_sasshaccp/apply-all.sh 가 bash 와 GNU ls -v 를 요구해서
+    # 이 컨테이너 안에서 스키마를 바로 적재할 수 있어야 하기 때문이다
+    image: postgres:16
+    # profiles 가 붙은 서비스는 --profile with-db 를 줄 때만 생성된다
+    profiles: ["with-db"]
+    environment:
+      # 스키마·DB 이름 모두 sasshaccp — metis(MES)와 완전히 분리된 DB다
+      POSTGRES_DB: sasshaccp
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Seoul
+    volumes:
+      # 컨테이너를 지워도 데이터가 남아야 하므로 named volume 을 쓴다
+      - haccp-db-data:/var/lib/postgresql/data
+      # 스키마 정본 — docker compose exec db bash /db_sasshaccp/apply-all.sh 로 적재한다.
+      # 읽기 전용이라 컨테이너가 SQL 원본을 건드릴 수 없다
+      - ./db_sasshaccp:/db_sasshaccp:ro
+    healthcheck:
+      # api 의 depends_on 이 이 판정을 기다린다 — 포트만 열린 상태로 붙으면 커넥션이 깨진다
+      test: ["CMD", "pg_isready", "-U", "${DB_USERNAME}", "-d", "sasshaccp"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    # 포트를 공개하지 않는다 — DB는 같은 네트워크의 api 만 접근한다
+    restart: unless-stopped
+
+  # ----------------------------------------------------------
+  # api — Spring Boot (8081, 내부 전용)
+  # ----------------------------------------------------------
+  api:
+    image: ${REGISTRY}/haccp-api:${TAG}
+    env_file:
+      # 배포 서버에만 두는 실제 값 파일 — DB 접속·JWT 시크릿의 유일한 출처. 커밋 금지
+      - ./.env.docker
+    environment:
+      # 아래 3개는 볼륨 마운트 지점과 반드시 일치해야 해서 .env.docker 가 아닌 여기에 고정한다
+      APP_FILE_ROOT: /var/haccp/files
+      # 기동 직후 매니페스트대로 표준 양식을 파일 볼륨에 복사한다.
+      # 이 디렉터리가 비어 있으면(= init_volumes.sh 미실행) 필수 양식 누락으로 기동이 중단된다
+      APP_TEMPLATE_IMPORT_ROOT: /var/haccp/templates
+      TZ: Asia/Seoul
+    volumes:
+      # 업로드 원본·생성 PDF — 유일하게 백업이 필요한 볼륨이다
+      - haccp-files:/var/haccp/files
+      # 표준 양식 원본 — 읽기 전용. 임포트가 끝나면 파일 볼륨 쪽 사본을 쓴다
+      - haccp-templates:/var/haccp/templates:ro
+      # rhwp CLI — 라이선스·버전 교체 편의상 이미지에 넣지 않고 볼륨으로 주입한다
+      - haccp-rhwp:/opt/rhwp:ro
+    depends_on:
+      db:
+        # 헬스체크 통과까지 기다린다
+        condition: service_healthy
+        # 외부 PG를 쓰는 기본 배포에서는 db 서비스 자체가 없으므로 이 의존을 무시한다
+        required: false
+    healthcheck:
+      # DB 인디케이터가 물려 있어 "앱 기동 + DB 연결"을 함께 본다
+      test: ["CMD", "curl", "-fsS", "http://localhost:8081/actuator/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+      # 커넥션 풀·MyBatis 초기화와 템플릿 임포트가 끝날 시간을 준다
+      start_period: 60s
+    restart: unless-stopped
+
+  # ----------------------------------------------------------
+  # web — 정적 SPA (8080, 내부 전용)
+  # ----------------------------------------------------------
+  web:
+    image: ${REGISTRY}/haccp-web:${TAG}
+    healthcheck:
+      # nginx-unprivileged 는 uid 101 로 돌아 80 을 열 수 없어 8080 을 쓴다.
+      # alpine 에서 localhost 가 ::1 로 풀리면 실패하므로 IPv4 루프백을 명시한다
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/"]
+      interval: 15s
+      timeout: 3s
+    restart: unless-stopped
+
+  # ----------------------------------------------------------
+  # edge — TLS 종단·리버스 프록시 (유일한 외부 노출)
+  # ----------------------------------------------------------
+  edge:
+    image: ${REGISTRY}/haccp-nginx:${TAG}
+    environment:
+      # conf 템플릿 치환값 — 도메인·인증서 경로를 이미지 재빌드 없이 배포마다 바꾼다
+      HACCP_SERVER_NAME: ${HACCP_SERVER_NAME}
+      HACCP_CERT_DIR: ${HACCP_CERT_DIR}
+      # /actuator 를 열어 줄 대역 하나 — 기본값은 루프백이라 사실상 차단이다
+      HACCP_ACTUATOR_ALLOW: ${HACCP_ACTUATOR_ALLOW}
+    ports:
+      # 컨테이너 안은 non-root 라 8080/8443, 바깥은 표준 포트로 노출한다
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      # 인증서는 이미지에 넣지 않는다 — 로컬 검증은 self-signed 디렉터리를 가리키게 한다
+      - ${HACCP_CERT_HOST_DIR}:/etc/letsencrypt:ro
+      # certbot webroot — 갱신 시 edge 를 내리지 않고 http-01 챌린지를 받기 위한 공유 지점
+      - haccp-acme:/var/www/certbot
+    depends_on:
+      - api
+      - web
+    restart: unless-stopped
+
+# ------------------------------------------------------------
+# 볼륨 — name 을 명시해 프로젝트명 접두어(haccp_)가 붙지 않게 한다.
+# 앞의 3개는 scripts/*.sh 가 미리 만들어 내용까지 채우므로 external 이다.
+# 이 선언 덕에 초기화를 건너뛰면 up 이 "volume not found" 로 즉시 멈춘다 —
+# 빈 볼륨으로 올라가 api 가 기동 도중 죽는 것보다 원인이 분명하다
+# ------------------------------------------------------------
+volumes:
+  haccp-files:
+    external: true
+    name: haccp-files
+  haccp-templates:
+    external: true
+    name: haccp-templates
+  haccp-rhwp:
+    external: true
+    name: haccp-rhwp
+  # 아래 2개는 compose 가 직접 만든다 — 초기 내용이 필요 없다
+  haccp-db-data:
+    name: haccp-db-data
+  haccp-acme:
+    name: haccp-acme
+
+networks:
+  default:
+    # edge conf 가 서비스명(api·web)으로 찾으므로 네트워크는 사용자 정의여야 한다.
+    # 기본 bridge 에는 도커 내장 DNS(127.0.0.11)가 없어 프록시가 502 가 된다
+    name: haccp-net

@@ -524,12 +524,13 @@ APP_FILE_ROOT/
 
 ### 9.2 타임아웃 4중 방어 (배치 60s 기준)
 
-1. FE httpBatch/File timeout (env)  
-2. Nginx proxy_read_timeout ~70s (배포 시)  
+1. FE httpBatch/File timeout (env) — 배치 60s · 파일 120s  
+2. Nginx `proxy_read_timeout` — 일반 `/api/` **70s**, 파일·PDF 경로 **130s**  
+   (`nginx/haccp.conf.template`, 배포 런북 §10.2)  
 3. Spring `@Transactional(timeout=60)`  
 4. MyBatis `default-statement-timeout: 60`  
 
-파일: FE 120s · rhwp CLI `APP_RHWP_TIMEOUT_SECONDS` 110.
+파일: FE 120s · rhwp CLI `APP_RHWP_TIMEOUT_SECONDS` 110 · Nginx Grace(파일) 130s.
 
 ### 9.3 MesButton variant (FE)
 
