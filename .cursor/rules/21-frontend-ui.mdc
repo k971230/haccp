@@ -1,109 +1,65 @@
 ---
-description: 업무 UI 마감 — 촘촘한 레이아웃, 검색영역·그리드 일관성, Tailwind v3 스타일 계층
-globs: frontend/{mes-web,haccp-web}/src/{components,shell,styles,pages}/**/*
+description: HACCP 업무 UI 마감 — 레이아웃·검색·그리드·Tailwind v3
+globs: frontend/haccp-web/src/{components,shell,styles,pages}/**/*
 alwaysApply: false
 ---
 
-# 프론트 UI 마감
+# 프론트 UI 마감 (haccp-web)
 
 ## 스택 (고정)
 
-- **Tailwind CSS 3.4** + 각 앱의 `tailwind.config.js` (`frontend/mes-web`, `frontend/haccp-web` 동일 설정)
-- **v4 마이그레이션 금지** — `@theme`, `@utility`, `bg-linear-to-r` 등 v4 문법 사용하지 않음
+- **Tailwind CSS 3.4** + `frontend/haccp-web/tailwind.config.js`
+- **v4 마이그레이션 금지** — `@theme`, `@utility`, `bg-linear-to-r` 등 사용 금지
 - 글로벌 CSS: `src/styles/global.css` — `@tailwind` + `@layer base|components|utilities`
 
 ## 방향
 
-- **촘촘한** 업무 시스템 UI — row/cell/header 높이 과도하게 크지 않게
-- 화면 전체가 정돈되어 보이도록 — 난잡한 여백·임의 크기 금지
-- 포인트 컬러: **남색 + 초록** (`brand-*`, `sidebar-*` tailwind 토큰)
-- **이모지 금지** — 버튼·라벨·주석에 Unicode Emoji 사용하지 않음. 아이콘은 Lucide 또는 `.touch-*` CSS
+- **촘촘한** 업무 시스템 UI
+- 포인트 컬러: **남색 + 초록** (`brand-*`, `sidebar-*`)
+- **이모지 금지** — 아이콘은 Lucide 또는 `.mes-*` CSS
 
-## 스타일 계층 (어디에 무엇을 쓸지)
+## 스타일 계층
 
 | 계층 | 파일 | 용도 |
 |------|------|------|
-| 1. 토큰 | `tailwind.config.js` | 색상, `mes-ui`/`mes-title` 폰트, `h-mes-row` 등 높이 |
-| 2. TS 상수 | `components/layout/pageClasses.ts` | 페이지·그리드·검색 레이아웃 클래스 |
-| 2. TS 상수 | `components/ui/Input.tsx` | `searchInputClass`, `gridInputClass`, `loginInputClass` |
-| 2. TS 상수 | `lib/buttonVariants.ts` | 버튼 variant/size |
-| 3. 글로벌 CSS | `styles/global.css` `@layer components` | `.mes-*` (셸·그리드·사이드바), `.touch-*` (키오스크) |
-| 4. 페이지 TSX | `pages/**/*.tsx` | 짧은 `cn()` 조합만 — 긴 유틸 나열 금지 |
+| 1. 토큰 | `tailwind.config.js` | 색·폰트·높이 |
+| 2. TS 상수 | `components/layout/pageClasses.ts` | 페이지·그리드·검색 레이아웃 |
+| 2. TS 상수 | `components/ui/Input.tsx` · `lib/buttonVariants.ts` | 입력·버튼 |
+| 3. 글로벌 CSS | `styles/global.css` `@layer components` | `.mes-*` |
+| 4. 페이지 TSX | `pages/**/*.tsx` | 짧은 `cn()` 만 |
 
-**우선순위:** 기존 공통 상수·`.mes-*`가 있으면 재사용. 없을 때만 페이지에 짧게 추가.
+**우선순위:** 기존 공통 상수·`.mes-*` 재사용. 없을 때만 페이지에 짧게.
 
-## 공통 클래스 (필수)
-
-화면별 임의 Tailwind 조합 대신 `pageClasses.ts` 사용:
+## 공통 클래스
 
 - `pageRootClass`, `gridBlockClass`, `gridHeadClass`, `gridPanelClass`
 - `searchFieldsClass`, `searchActionsClass`, `pageToolbarClass`
-- `panelMainClass`, `gridTitleOnlyClass`, `gridFootnoteClass`
-
-검색영역: `components/layout/SearchArea.tsx` + `PageHead` + `SearchField`
-
-입력 필드:
-
-- 업무 검색: `searchInputClass` (SearchArea)
-- 그리드 편집: `gridInputClass` 또는 `MesEditableGrid` 내장
-- 로그인: `loginInputClass` (emerald 포커스 — 업무 화면과 구분)
+- 검색: `SearchArea` + `PageHead` + `SearchField`
+- 입력: `searchInputClass` / `gridInputClass` / `loginInputClass`
 
 ## 마스터/디테일
 
-- 상하 구조 명확 — 분할 패널은 `PageCard` / `PageCardTree` / `PageCardSplit` / `mes-page-split`
-- 그리드 본문 배경·헤더 높이는 `MesEditableGrid` / `MesDataGrid` 기준 유지
-- 트리+그리드: `PageCardTree` — `grid-cols-[minmax(180px,10%)_1fr]`
+- `PageCard` / `PageCardTree` / `PageCardSplit` / `mes-page-split`
+- 그리드: `MesEditableGrid` / `MesDataGrid` 기준 높이 유지
 
-## 반응형 원칙
+## 반응형
 
-MES 사무실 UI는 **데스크톱 우선(1280px+)**. 셸·그리드에 `sm:/md:` 뷰포트 브레이크포인트를 강제 추가하지 않음.
+데스크톱 우선(1280px+). 셸에 불필요한 `sm:/md:` 강제 추가 금지.  
+패널 내부는 `min-h-0` / `min-w-0` / `flex-wrap` / `w-full`로 유동.
 
-대신 패널 **내부 유동**으로 좁은 콘텐츠 영역 대응:
+## 인라인 `style`
 
-- `min-h-0` / `min-w-0` — flex/grid 자식 overflow 방지
-- `flex-wrap` — 검색 조건 행 (`searchFieldsClass`)
-- `w-full` / `max-w-*` / `minmax()` — 고정 px 레이아웃 금지
-- 로그인만: `w-full max-w-md px-4` 카드 패턴
+동적 값만 허용(그리드 컬럼 너비, 트리 depth, 모달 z-index, 스켈레톤).  
+정적 레이아웃·색상은 Tailwind 또는 `.mes-*`.
 
-**이미 잘 동작 중이면 수정하지 않음** — MesShell 사이드바 접힘, PageCardTree 비율 등 유지.
+## 금지
 
-## 인라인 `style` 허용 (동적 값만)
-
-| 용도 | 파일 예 |
-|------|---------|
-| 그리드 컬럼 동적 너비 | `GridChrome.tsx`, `MesDataGrid.tsx`, `MesEditableGrid.tsx` |
-| Touch 행 수 CSS 변수 | `TouchPage.tsx` (`--touch-rows`) |
-| 모달 z-index | `TouchKioskModal.tsx` |
-| 트리 depth 들여쓰기·높이 | `TreePanel.tsx` |
-| 스켈레톤 랜덤 너비 | `GridSkeleton.tsx` |
-
-정적 레이아웃·색상에 `style="..."` 사용 금지 — Tailwind 또는 `.mes-*` 사용.
-
-## 금지·지양
-
-- 페이지 TSX에 긴 Tailwind 유틸 문자열 복붙 (`pageClasses` 우회)
-- arbitrary 값 남발 (`w-[500px]`, `bg-[#f3f3f3]`) — `tailwind.config.js` 토큰·`.mes-*` 우선
-- `global.css`에 화면 전용 일회성 클래스 추가 (반복 2회 이상일 때만)
-- Tailwind v4 문법·설정 방식
-
-## UI만 수정할 때
-
-- `activeGrid`, 저장/조회/삭제 로직, API 호출 **건드리지 않음**
-- 기능 개발이 아닌 마감 작업에 집중
-
-## 제외 영역
-
-현장 키오스크 UI — 별도 규칙:
-
-- `pages/pmp/Touch*`
-- `components/touch/*`
-- `global.css` Touch·키패드·키오스크 모달 섹션
-
-위 경로는 사무실 화면 UI 규칙을 강제 적용하지 않는다.
+- 페이지에 긴 Tailwind 복붙 (`pageClasses` 우회)
+- arbitrary 값 남발 — 토큰·`.mes-*` 우선
+- Tailwind v4 문법
 
 ## 표준 참조
 
-- CRUD 페이지: `pages/bac/DeptPage.tsx` + `DeptPage.rules.ts`
-- 검색영역: `components/layout/SearchArea.tsx`
-- 분할 레이아웃: `components/layout/PageCard.tsx`
-- 셸: `shell/MesShell.tsx`
+- CRUD: `pages/ccp/ColdMonitorPage.tsx`
+- 검색: `components/layout/SearchArea.tsx`
+- 셸: `shell/HaccpShell.tsx`

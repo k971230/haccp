@@ -1,6 +1,6 @@
 # HACCP 업무 CRUD · 갭 요약 (FE)
 
-> MES [`frontend/mes-web/docs/06_업무_CRUD.md`](13_업무_CRUD_BE.md) 대칭.  
+> BE 대칭: [`13_업무_CRUD_BE.md`](13_업무_CRUD_BE.md).  
 > BE: [`13_업무_CRUD_BE.md`](13_업무_CRUD_BE.md)  
 > 인덱스: [`00_문서인덱스_및_통합리뷰.md`](1_문서인덱스.md)
 

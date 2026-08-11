@@ -1,5 +1,5 @@
 ---
-description: MES 프로젝트 핵심 불변 조건 (DB, git, 시크릿, 의존성)
+description: HACCP 프로젝트 핵심 불변 조건 (스택, DB, git, 시크릿, 의존성)
 alwaysApply: true
 ---
 
@@ -7,49 +7,50 @@ alwaysApply: true
 
 ## 스택
 
-- 백엔드: Spring Boot 3.3.4, Java 17, MyBatis 3.0.3, JWT
-- 프론트: React 18, Vite 5, TypeScript, Tailwind, Zustand, React Query
-- 운영 DB: **외부 PostgreSQL** (DB·스키마 모두 `metis`). MyBatis 매퍼는 PG SP (`sp_sk_*` / `sp_new_*`, lower_snake) 전용
-- HACCP SaaS DB: 같은 서버의 **별도 DB·스키마 `sasshaccp`** — 정의는 `db_sasshaccp/`, 규약은 `60-haccp-db.mdc`.
-  metis와 상호 참조하지 않는다 (테이블·SP 명명 규약도 다름)
+- 백엔드: Spring Boot 3.3.4, Java 17, MyBatis 3.0.3, JWT — `backend/haccp-api/`
+- 프론트: React 18, Vite 5, TypeScript, Tailwind, Zustand, React Query — `frontend/haccp-web/`
+- DB: PostgreSQL **DB·스키마 `sasshaccp`** — 정본 `db_sasshaccp/`, 규약 `60-haccp-db.mdc`
+- SP: `sp_tbl_*` (lower_snake). MES(`metis` / `sp_sk_*`)와 **상호 참조·공유 금지**
+- 로컬 포트: API **7070** · Vite **4173** (CORS Origin `http://localhost:4173`)
 
 ## Git 범위
 
 로컬 전용(git 미포함) — 에이전트가 git에 추가·복원하지 않음:
 
-- `docs/templates/`(HWP), `sql/`, `db_migration/`, `tools/`
-- `*.log`, `frontend/mes-web/scripts/`, `frontend/mes-web/.claude/`
+- `docs/templates/*.hwp`, `sql/`, `db_migration/`, `tools/`, `.tools/`, `certs/`
+- `*.log`, `.playwright-mcp/`, `frontend/haccp-web/playwright-report/`, `test-results/`
 
-**예외(커밋 대상):**
+**커밋 대상(정본):**
 
-- 루트 `docs/[숫자]_*.md` · `docs/README.md` — HACCP 문서 정본 (`1_`~`n_`)
-- 각 디렉터리 `README.md` — 폴더 역할 안내 (빌드·vendor 제외)
-- `db_sasshaccp/` — HACCP SaaS 스키마 정본. 로컬 전용인 `db_migration/`·`sql/`과 혼동하지 말 것
+- 루트 `docs/[숫자]_*.md` · `docs/README.md` · `docs/templates/README.md`
+- 각 디렉터리 `README.md` (빌드·vendor 제외)
+- `db_sasshaccp/` · `backend/haccp-api/` · `frontend/haccp-web/` · `nginx/` · `scripts/`
+- `.cursor/rules/` · compose·Jenkinsfile 예제
 
 ## 시크릿
 
-- `.env`, `.env.docker`, `backend/mes-api/.env` **커밋 금지**
-- 예제만 `*.env.example` 사용
+- `.env`, `.env.docker`, `backend/haccp-api/.env` **커밋 금지**
+- 예제만 `*.env.example` · `.env.docker.example`
 
 ## 의존성
 
-- 프론트: `npm ci` + `frontend/mes-web/package-lock.json` (Node 20+, `.nvmrc`, `.npmrc`)
-- 백엔드: `backend/mes-api/pom.xml` + `mvnw` (Java 17, `.java-version`)
+- 프론트: `npm ci` + `frontend/haccp-web/package-lock.json` (Node 20+, `.nvmrc`)
+- 백엔드: `backend/haccp-api/pom.xml` + `mvnw` (Java 17, `.java-version`)
 - 버전 요약: 루트 `requirements.txt`
 
 ## 에러 메시지
 
 - **사용자**: 업무 문구만
-  - 백엔드: `backend/mes-api/src/main/java/com/metis/mes/common/exception/SqlUserMessage.java`
-  - 프론트: `frontend/mes-web/src/shell/errors.ts` (`stripDbTechnicalMessage`)
+  - BE: `backend/haccp-api/.../common/exception/SqlUserMessage.java`
+  - FE: `frontend/haccp-web/src/shell/errors.ts` (`stripDbTechnicalMessage`)
 - **서버 로그**: 기술 상세 전체 (`GlobalExceptionHandler`)
 
-## 작성 규칙 (전 프로젝트)
+## 작성 규칙
 
-- **이모지 사용 금지** — Unicode Emoji 및 장식용 특수문자(예: 체크·달력·일시정지 이모지)를 소스 주석, 규칙 문서, 커밋 메시지, **사용자 UI 문구**에 넣지 않음
-- UI 아이콘은 **Lucide React** 등 아이콘 컴포넌트 또는 `.mes-*` CSS로 표현
-- 허용: 업무 흐름 화살표 `→`, 단계 표기 `①②`, 곱셈 기호 닫기 `×`(U+00D7), ASCII 텍스트
+- **이모지 금지** — 소스 주석, 규칙, 커밋, **사용자 UI 문구**
+- UI 아이콘: Lucide React 또는 `.mes-*` CSS (접두사 유지)
+- 허용: `→`, `①②`, `×`(U+00D7), ASCII
 
 ## 의도적 미구현
 
-ERP 연동, 바코드, PDF — 요청 없이 추가하지 않음.
+ERP 연동, 바코드 — 요청 없이 추가하지 않음.

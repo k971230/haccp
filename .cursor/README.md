@@ -1,9 +1,6 @@
 # .cursor
 
-Cursor 에이전트·프로젝트 규칙(`.mdc`)을 둔다. 작업 전 부트스트랩 순서로 읽는다.
+Cursor 에이전트용 프로젝트 규칙.
 
-## 하위
-- `rules/` — alwaysApply·scoped 규칙 파일
-
-## 관련
-- 부트스트랩: `.cursor/rules/00-bootstrap.mdc`
+- 규칙 정본: [`rules/`](rules/) (`README.md`에 목록)
+- 부트스트랩: `rules/00-bootstrap.mdc`

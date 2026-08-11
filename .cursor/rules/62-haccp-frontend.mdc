@@ -1,68 +1,65 @@
 ---
-description: HACCP SaaS 프론트엔드(haccp-web) 컨벤션 — mes-web과 다른 점 중심
+description: HACCP 프론트엔드(haccp-web) 컨벤션
 globs: frontend/haccp-web/src/**/*.{ts,tsx}
 alwaysApply: false
 ---
 
 # 프론트엔드 (haccp-web)
 
-MES(`mes-web`)와 **별개 앱**이다. 네이밍·Two-Tier DTO·API 레이어 규칙은 [`20-frontend-react.mdc`](20-frontend-react.mdc),
-스타일은 [`21-frontend-ui.mdc`](21-frontend-ui.mdc)를 그대로 따르고, 아래 차이만 추가로 지킨다.
+| 항목 | 값 |
+|------|-----|
+| Vite | **4173** (`strictPort`) |
+| API | `VITE_API_BASE_URL` → **7070** |
+| 셸 | `HaccpShell` 단일 (터치PC 없음) |
+| 로그인 | 아이디만 |
+| 권한 | `readYn`·`writeYn`·`modifyYn`·`deleteYn`·`printYn` |
+| storage | `haccp-*` (`authKeys.ts`) |
+| 메뉴 | 대분류·화면 2단 (`h_menu_cd`) |
 
-| 구분 | mes-web | haccp-web |
-|------|---------|-----------|
-| dev 포트 | 5173 | 4173 |
-| API 대상 | 8080 (mes-api) | 7070 (haccp-api) |
-| 셸 | `MesShell` + `TouchShell` | `HaccpShell` 단일 (터치PC 없음) |
-| 로그인 | 회사 콤보 + 아이디 | 아이디만 |
-| 권한 | `preTp` RW/R | `readYn`·`writeYn`·`modifyYn`·`deleteYn`·`printYn` |
-| storage 키 | `mes-*` | `haccp-*` (`authKeys.ts`) |
-| 메뉴 트리 | 대·중·화면 3단 | 대분류·화면 2단 (`h_menu_cd`) |
+UI 마감: [`21-frontend-ui.mdc`](21-frontend-ui.mdc) · 운영: [`50-operations.mdc`](50-operations.mdc)
 
 ## 이름 접두사
 
-`.mes-*` CSS 클래스와 `MesButton`·`mesToast`·`mesConfirm`·`mesError`·`MES` 문구 상수는 **이름을 유지**한다.
-두 앱이 같은 셸 규약을 쓰므로 화면 코드를 옮길 때 수정 없이 통하게 하고, 규칙 문서의 표현도 그대로 쓰인다.
-새로 만드는 제품 고유 컴포넌트는 `Haccp*` 접두사(`HaccpShell`, `HaccpLogo`).
+`.mes-*` · `MesButton` · `mesToast` · `mesConfirm` · `MES` 문구 상수는 **유지**한다.  
+앱 고유 셸·로고만 `Haccp*` (`HaccpShell`, `HaccpLogo`).
 
 ## 디렉터리
 
 | 경로 | 역할 |
 |------|------|
-| `api/` | `authApi`, `menuApi`, `codeApi`, `prefApi`, `viewLogApi` → `http.ts` |
-| `shell/` | `HaccpShell`, `SideMenu`, `ShellFooter`, `HomeView`, `screenRegistry`, `tabRoute`, `dialog`, `errors`, `messages`, `authSession`, `authCrossTab`, `useViewLog` |
-| `pages/{모듈}/` | 화면 — 모듈은 화면코드의 3자(`ccp`, `hyg`, `doc`, `bas`, `sys` …) |
-| `components/ui/` | 공통 원자 UI |
-| `lib/` | `cn`, `buttonVariants`, `icons`, `sanitize`, `datetime` |
-| `hooks/`, `stores/`, `types/`, `config/`, `styles/` | mes-web과 동일 |
+| `api/` | 도메인 API → `http.ts` (Axios 3계층) |
+| `shell/` | `HaccpShell`, 메뉴·탭·세션·에러·레지스트리 |
+| `pages/{모듈}/` | 화면 (ccp, hyg, doc, bas, sys …) |
+| `components/{ui,grid,layout,form,document}/` | 공용 UI |
+| `config/` | `envConfig.ts` — 매직넘버 금지 |
+| `hooks/`, `stores/`, `types/`, `lib/`, `styles/`, `utils/` | 공통 |
+
+## 네이밍
+
+| 대상 | 규칙 |
+|------|------|
+| 컴포넌트·페이지 파일 | PascalCase = export명 |
+| 훅 | `use` 접두사 |
+| Props | `[ComponentName]Props` — `Props` 단독 금지 |
+| default export | **금지** — named export만 |
+| Row/API JSON | camelCase |
+| 편집 메타 | `_rowState`, `_key` |
+| 상수·화면코드 | UPPER_SNAKE |
+
+## API 레이어
+
+- `http` / `httpBatch` / `httpFile` — `VITE_API_TIMEOUT_*` + `envConfig.ts`
+- 삭제: validate-delete → `mesConfirm` → delete
+- 401: 인터셉터 → 세션 정리 → `/login`
 
 ## 화면 등록
 
-화면 식별자는 DB `tbl_screen.scrn_cd`의 역할 기반 kebab-case 값과 **문자 그대로** 같아야 한다.
+1. `shell/screenRegistry.tsx`에 `scrn_cd`와 **동일** kebab-case 키 등록
+2. 라우트는 `tabRoute`가 자동 생성
+3. 레지스트리 누락 화면을 메뉴에서 숨기지 말 것(비활성 표시)
 
-1. `shell/screenRegistry.tsx`에 `ccp-cold-monitor: CcpColdMonitorPage`처럼 역할 기반 키를 추가
-2. 라우트는 자동 — `tabRoute.routeOf`가 `/{moduleCd}/{screenCode}`를 만든다
-3. 레지스트리에 없는 화면은 사이드 메뉴에서 비활성으로 보인다. 메뉴에서 감추지 말 것
-   (담당자가 기능 유무를 오해한다)
+## 인수인계·PIPELINE
 
-## 전역 설정
-
-시간·크기·횟수 매직 넘버 금지 — `config/envConfig.ts` + `.env`(`VITE_*`).
-새 상수는 `envConfig.ts`와 `src/vite-env.d.ts`에 함께 추가한다. `.env.example`만 커밋.
-
-## 인수인계 주석
-
-BE와 **동일 밀도** — [`40-handoff-comments.mdc`](40-handoff-comments.mdc). 의미 있는 JSX prop마다 여러 줄 `//`.
-골드: `shell/HaccpShell.tsx`(`SideMenu` prop), `pages/auth/LoginPage.tsx`
-
-## PIPELINE 태그
-
-MES는 `F`/`B`, HACCP는 **`HF`(프론트)·`HB`(백엔드)** 를 쓴다. 번호가 겹치면 어느 앱 파일인지 알 수 없으므로 접두사를 섞지 않는다.
-파일 상단에 자기 번호 1줄 + 연관 번호 1줄:
-
-```ts
- * PIPELINE[HF66] 셸 인프라
- * PIPELINE[HF38, HF49, HF51] 연관 모듈
-```
-
-새 번호는 루트 [`ReadMe.md`](../../ReadMe.md) `HACCP PIPELINE` 표 끝에 함께 추가한다.
+- 주석: [`40-handoff-comments.mdc`](40-handoff-comments.mdc)
+- 골드: `shell/HaccpShell.tsx` · `pages/ccp/ColdMonitorPage.tsx` · `pages/auth/LoginPage.tsx`
+- 태그 접두 **`HF`**. 루트 `README.md` PIPELINE 표와 동기화

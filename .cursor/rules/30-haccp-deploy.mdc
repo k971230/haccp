@@ -1,0 +1,30 @@
+---
+description: HACCP 배포·compose·edge 포트 규약 (정본 docs/20_배포_런북.md)
+alwaysApply: false
+globs: docker-compose*.yml,nginx/**/*,Jenkinsfile*,scripts/{deploy,build,init,prod,install}*.sh
+---
+
+# 배포 (HACCP)
+
+정본: [`docs/20_배포_런북.md`](../../docs/20_배포_런북.md) · 브랜치 규약: [`30-branching.mdc`](30-branching.mdc)
+
+## 포트
+
+| 구분 | 값 |
+|------|-----|
+| 컨테이너 내부 (api·web·edge) | **7070** |
+| 호스트 edge publish | `127.0.0.1:17070:7070` ([`docker-compose.override.example.yml`](../../docker-compose.override.example.yml)) |
+| 공인 입구 | 호스트 Apache 80/443 → Path `/haccp/` · `/api/` · `/rhwp/` |
+| 로컬 개발 | API 7070 · Vite 4173 (배포 포트와 역할이 다름) |
+
+## Compose
+
+- 정본: [`docker-compose.prod.yml`](../../docker-compose.prod.yml)
+- 서버 override: `docker-compose.override.yml` (example을 복사, **커밋 금지**)
+- `.env.docker`는 서버 전용 — git 금지
+
+## 시크릿·이미지
+
+- Jenkins Credentials · 서버 `/opt/haccp/.env.docker` 만 실값
+- 이미지 빌드/배포: `scripts/build_images.sh` · `scripts/deploy_remote.sh`
+- 볼륨 시드: `scripts/init_volumes.sh` (선행 필수)

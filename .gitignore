@@ -9,6 +9,10 @@
 # ── 로컬 TLS 검증용 자체 서명 인증서 ───────────────────
 /certs/
 
+# ── 로컬 전용 도구·MCP 산출 ───────────────────────────
+/.tools/
+/.playwright-mcp/
+
 # ── 루트 docs ─────────────────────────────────────────
 # 정본 md 는 docs/1_~n_ (추적). 양식 HWP 는 docs/templates/ (로컬 전용).
 # templates 안 README 만 추적 — HWP 는 계속 ignore.
@@ -40,6 +44,8 @@ dist/
 dist-ssr/
 *.local
 .vite/
+frontend/haccp-web/playwright-report/
+frontend/haccp-web/test-results/
 
 # ── IDE / OS ───────────────────────────────────────────
 .idea/
