@@ -191,7 +191,10 @@ COMMENT ON FUNCTION sp_tbl_ccp_cold_monitor_r_001(varchar, bigint) IS 'CCP 냉�
 
 -- ------------------------------------------------------------
 -- 5. sp_tbl_ccp_cold_monitor_row_r_000 — 점검행 목록
+-- 39 에서 writer_id/nm·sign_path 가 추가되어 OUT 시그니처가 달라진다.
+-- 재실행 시 CREATE OR REPLACE 가 거부되므로 선행 DROP 한다.
 -- ------------------------------------------------------------
+DROP FUNCTION IF EXISTS sp_tbl_ccp_cold_monitor_row_r_000(varchar, bigint);
 CREATE OR REPLACE FUNCTION sp_tbl_ccp_cold_monitor_row_r_000(
     -- p_co_cd: JWT 회사코드
     p_co_cd   varchar,
@@ -727,6 +730,8 @@ LANGUAGE sql STABLE AS $$
      WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.tmpl_cd = 'CCP_METAL' AND d.del_yn = 'N';
 $$;
 
+-- 39 에서 place_nm 컬럼이 추가되어 OUT 시그니처가 달라진다 — 재실행 안전 DROP
+DROP FUNCTION IF EXISTS sp_tbl_ccp_metal_monitor_r_002(varchar, bigint);
 CREATE OR REPLACE FUNCTION sp_tbl_ccp_metal_monitor_r_002(
     -- p_co_cd: JWT 회사코드
     p_co_cd varchar,

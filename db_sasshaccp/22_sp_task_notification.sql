@@ -189,6 +189,8 @@ BEGIN
     INSERT INTO tbl_document_relation(co_cd, src_doc_idx, rel_type, tgt_doc_idx, ins_id) VALUES(p_co_cd, p_src_doc_idx, p_rel_type, p_tgt_doc_idx, p_id) ON CONFLICT DO NOTHING;
 END$$;
 
+-- 31 에서 doc_kind·tmpl_cd·category_cd 가 추가되어 OUT 시그니처가 달라진다 — 재실행 안전 DROP
+DROP FUNCTION IF EXISTS sp_tbl_audit_export_r_000(varchar, varchar, varchar, varchar);
 CREATE OR REPLACE FUNCTION sp_tbl_audit_export_r_000(p_co_cd varchar, p_from_dt varchar, p_to_dt varchar, p_status varchar)
 RETURNS TABLE(doc_idx bigint, doc_no varchar, tmpl_nm varchar, base_dt varchar, status varchar, writer_id varchar, approve_dt timestamp, file_cnt int, relation_cnt int, open_ca_cnt int)
 LANGUAGE sql STABLE AS $$

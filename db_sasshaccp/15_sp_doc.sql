@@ -835,6 +835,8 @@ END$$;
 COMMENT ON PROCEDURE sp_tbl_document_approval_c_000(varchar, bigint, varchar, varchar, varchar) IS '문서 결재 처리 — 상신·상신취소·검토·승인·반려·결재선 스냅샷';
 
 -- 표준양식 목록 — 회사에서 사용으로 설정한 원본만 rhwp 편집기에 노출
+-- 46·48 에서 sys_yn 등 OUT 컬럼이 늘어나 재실행 시 선행 DROP 필요
+DROP FUNCTION IF EXISTS sp_tbl_document_template_r_000(varchar);
 CREATE OR REPLACE FUNCTION sp_tbl_document_template_r_000(
     -- p_co_cd: JWT 회사코드 — 회사별 사용 양식만 반환
     p_co_cd varchar
@@ -868,6 +870,8 @@ $$;
 COMMENT ON FUNCTION sp_tbl_document_template_r_000(varchar) IS '회사 사용양식 목록 — 표준 HWP 원본의 내부 경로 포함';
 
 -- 표준양식 원본 단건 — 스트림 다운로드 전에 회사 사용여부를 확인
+-- 46·48 에서 OUT 시그니처가 바뀌므로 재실행 안전 DROP
+DROP FUNCTION IF EXISTS sp_tbl_document_template_r_001(varchar, varchar);
 CREATE OR REPLACE FUNCTION sp_tbl_document_template_r_001(
     -- p_co_cd: JWT 회사코드
     p_co_cd varchar,
