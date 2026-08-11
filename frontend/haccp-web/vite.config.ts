@@ -3,7 +3,7 @@
 // 개발자: 박승우
 // 일자: 2026-08-11
 // 코멘트:
-//   1) mes-web과 같은 구성이며, 포트만 5174로 바꿨다 — 두 프론트를 동시에 띄워도 충돌하지 않는다
+//   1) 로컬 Vite 포트 4173 — mes-web(5173)과 구분. server.port 는 npm run dev 전용(배포 무관)
 //   2) 운영 Docker 빌드는 VITE_BASE=/haccp/ — Apache Path 분기와 BrowserRouter basename 정합
 //   3) /rhwp 는 edwardkim.github.io 스튜디오 프록시 — 동일출처로 도구상자(#icon-toolbar)를 접기 위함
 import react from "@vitejs/plugin-react";
@@ -21,10 +21,11 @@ export default defineConfig({
     alias: { "@": path.resolve(__dirname, "./src") },
   },
   server: {
-    // mes-web(5173)과 구분 — haccp-api CORS 허용 출처도 5174로 맞춰져 있다
-    port: 5174,
+    // mes-web(5173)과 구분 — CORS(CORS_ALLOWED_ORIGINS)도 http://localhost:4173 과 맞춘다
+    // strictPort true: 점유 시 다른 포트로 조용히 빠지지 않게 해 Origin/CORS 불일치를 막는다
+    port: 4173,
     host: "localhost",
-    strictPort: false,
+    strictPort: true,
     // rhwp-studio 동일출처 프록시 — createEditor studioUrl=/rhwp/ 후 iframe contentDocument로 도구상자 접기
     // GitHub Pages 배포본 경로가 /rhwp/* 이므로 rewrite 없이 origin만 바꾼다
     proxy: {
