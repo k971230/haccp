@@ -31,6 +31,9 @@ pipeline {
     SMOKE_BASE_URL = 'https://180.71.58.87:8443'
     // self-signed 인증서라 curl -k 필요 — Let's Encrypt 전환 후 0 으로 둔다
     SMOKE_INSECURE = '1'
+    // Windows Git Bash 가 /home/... 를 C:/Program Files/Git/home/... 로 바꾸지 않게 한다
+    MSYS_NO_PATHCONV = '1'
+    MSYS2_ARG_CONV_EXCL = '*'
   }
 
   triggers {
@@ -111,15 +114,21 @@ pipeline {
             usernameVariable: 'SSH_USER')]) {
           sh '''
             set -euo pipefail
+            export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
             # DEPLOY_HOST 가 user@host 형이면 호스트만 뽑고, 아니면 SSH_USER 를 쓴다
             HOST="$DEPLOY_HOST"
             USER="$SSH_USER"
             case "$DEPLOY_HOST" in
               *@*) USER="${DEPLOY_HOST%%@*}"; HOST="${DEPLOY_HOST#*@}" ;;
             esac
+            # 원격 cd 경로는 //home/... 형태로 넘겨 Git Bash 경로 변환을 피한다
+            case "$DEPLOY_DIR" in
+              /*) REMOTE_DIR="/$DEPLOY_DIR" ;;
+              *)  REMOTE_DIR="$DEPLOY_DIR" ;;
+            esac
             ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
               "$USER@$HOST" \
-              "cd '$DEPLOY_DIR' && docker compose --env-file .env.docker -f docker-compose.prod.yml --profile migrate run --rm migrate"
+              "cd ${REMOTE_DIR} && docker compose --env-file .env.docker -f docker-compose.prod.yml --profile migrate run --rm migrate"
           '''
         }
       }
