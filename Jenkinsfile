@@ -27,7 +27,10 @@ pipeline {
     DEPLOY_DIR  = '/home/ubuntu/haccp'
     // Secret text: user@host 또는 host 만 — deploy 스크립트가 USER/HOST 로 나눈다
     DEPLOY_HOST = credentials('haccp-deploy-host')
-    SMOKE_BASE_URL = 'https://haccp.example.com'
+    // 호스트 apache 가 :80 점유 중이라 edge 는 8443 우회 — 표준 443 확보 후 포트 없이 되돌린다
+    SMOKE_BASE_URL = 'https://180.71.58.87:8443'
+    // self-signed 인증서라 curl -k 필요 — Let's Encrypt 전환 후 0 으로 둔다
+    SMOKE_INSECURE = '1'
   }
 
   triggers {
