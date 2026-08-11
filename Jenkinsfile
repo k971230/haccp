@@ -27,9 +27,9 @@ pipeline {
     DEPLOY_DIR  = '/home/ubuntu/haccp'
     // Secret text: user@host 또는 host 만 — deploy 스크립트가 USER/HOST 로 나눈다
     DEPLOY_HOST = credentials('haccp-deploy-host')
-    // Apache Path 분기 — origin 만 (포트·/haccp 없음). FE는 prod_smoke 의 SMOKE_WEB_PREFIX=/haccp
-    SMOKE_BASE_URL = 'https://180.71.58.87'
-    // Apache self-signed 이면 1 — 공인 인증서 전환 후 0
+    // Apache :443 Path 전환 전 임시 — temp Path GW(:8443). Apache sudo 적용 후 포트 없이 되돌린다
+    SMOKE_BASE_URL = 'https://180.71.58.87:8443'
+    // self-signed(temp GW / 향후 Apache) — 공인 인증서 전환 후 0
     SMOKE_INSECURE = '1'
     // Apache /haccp/ → edge. 루프백 직행 스모크만 빈 값으로 덮는다
     SMOKE_WEB_PREFIX = '/haccp'
