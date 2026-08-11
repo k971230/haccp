@@ -45,7 +45,7 @@ npm run dev
 
 문서 정본: [`docs/`](docs/) (`1_`~`21_` · [`docs/README.md`](docs/README.md)).
 배포 런북: [`docs/20_배포_런북.md`](docs/20_배포_런북.md).
-FE/BE `*/docs/` 는 옛 경로 스텁. 양식 HWP(로컬): `docs/templates/`.
+양식 HWP(로컬): `docs/templates/`. 폴더 역할은 각 디렉터리 `README.md`.
 운영 edge 호스트 publish는 `127.0.0.1:17070:7070` (로컬 Vite 포트와 무관).
 
 ## 시크릿 (필수)

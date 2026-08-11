@@ -1,7 +1,7 @@
 # docs/ — 정본 문서 모음 (`1_`~`n_`)
 
-파트별 옛 경로(`frontend/haccp-web/docs/`, `backend/haccp-api/docs/`)는 **스텁**만 남긴다.  
-본문은 모두 여기 `docs/N_….md` 가 정본이다.
+HACCP 문서 본문은 모두 여기 `docs/N_….md` 가 정본이다.  
+폴더별 역할 안내는 각 디렉터리 `README.md` 를 본다.
 
 | # | 파일 | 출처 |
 |---|------|------|
@@ -35,4 +35,7 @@
 
 ## git
 
-`docs/[숫자]_*.md` · `README.md` 는 추적. `templates/` 는 로컬 전용.
+`docs/[숫자]_*.md` · `README.md` · `templates/README.md` 는 추적.  
+`templates/*.hwp` 는 로컬 전용(gitignore).
+
+폴더별 역할 안내는 각 디렉터리 `README.md`를 참고한다.

@@ -23,7 +23,7 @@ alwaysApply: true
 **예외(커밋 대상):**
 
 - 루트 `docs/[숫자]_*.md` · `docs/README.md` — HACCP 문서 정본 (`1_`~`n_`)
-- `frontend/haccp-web/docs/`, `backend/haccp-api/docs/` — 옛 경로 **스텁**만 (본문은 루트 `docs/`)
+- 각 디렉터리 `README.md` — 폴더 역할 안내 (빌드·vendor 제외)
 - `db_sasshaccp/` — HACCP SaaS 스키마 정본. 로컬 전용인 `db_migration/`·`sql/`과 혼동하지 말 것
 
 ## 시크릿

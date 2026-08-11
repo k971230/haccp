@@ -11,11 +11,14 @@
 
 # ── 루트 docs ─────────────────────────────────────────
 # 정본 md 는 docs/1_~n_ (추적). 양식 HWP 는 docs/templates/ (로컬 전용).
-# FE/BE 하위 docs/ 는 스텁만 남긴다 — 본문은 루트 docs/ 로 모았다.
+# templates 안 README 만 추적 — HWP 는 계속 ignore.
 /docs/*
 !/docs/README.md
 !/docs/[0-9]*_*.md
 !/docs/[0-9][0-9]*_*.md
+!/docs/templates/
+/docs/templates/*
+!/docs/templates/README.md
 
 # ── 로그·임시·빌드 산출물 ─────────────────────────────
 *.log

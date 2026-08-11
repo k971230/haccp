@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ============================================================
-#  문서 상대 링크 무결성 — 추적 대상 docs 만 검사
+#  문서 상대 링크 무결성 — 루트 docs/ 정본만 검사
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-11
 #  코멘트:
-#    1) 루트 docs/1_~n_ 정본 md 와 FE/BE 스텁 링크를 본다
-#    2) mes-web·루트 로컬 md 로의 링크는 경고만 (모노레포 분리 잔존)
+#    1) 루트 docs/1_~n_ · docs/README.md 링크를 본다
+#    2) mes-web·분리 잔존 md 로의 링크는 경고만
 #    3) 존재하지 않는 저장소 내 링크만 FAIL
 # ============================================================
 set -euo pipefail
@@ -20,24 +20,16 @@ root = os.getcwd()
 fail = 0
 link_re = re.compile(r'\]\((\.\.?/[^)]+)\)')
 skip_prefix = ("http://", "https://", "mailto:")
-# 저장소 밖·로컬 전용·분리된 MES 문서
-warn_parts = ("mes-web", "구동.md", "배포.md")
 
 files = []
-# 정본: 루트 docs/1_~n_ · 호환 스텁: FE/BE docs
-for base in (
-    os.path.join(root, "docs"),
-    os.path.join(root, "frontend", "haccp-web", "docs"),
-    os.path.join(root, "backend", "haccp-api", "docs"),
-):
-    if os.path.isdir(base):
-        for dp, _, fns in os.walk(base):
-            # templates 등 비-md 디렉터리는 walk 해도 md 없으면 스킵
-            if os.path.basename(dp) == "templates":
-                continue
-            for n in fns:
-                if n.endswith(".md"):
-                    files.append(os.path.join(dp, n))
+base = os.path.join(root, "docs")
+if os.path.isdir(base):
+    for dp, _, fns in os.walk(base):
+        if os.path.basename(dp) == "templates":
+            continue
+        for n in fns:
+            if n.endswith(".md"):
+                files.append(os.path.join(dp, n))
 
 for path in files:
     text = open(path, encoding="utf-8", errors="replace").read()
@@ -51,7 +43,7 @@ for path in files:
         if os.path.isfile(resolved):
             continue
         rel_posix = resolved.replace("\\", "/")
-        if any(p.replace("\\", "/") in rel_posix or p in rel for p in ("mes-web", "구동.md", "배포.md")):
+        if any(p in rel_posix or p in rel for p in ("mes-web", "구동.md", "배포.md")):
             print(f"WARN: {os.path.relpath(path, root)} → {rel}")
             continue
         print(f"깨진 링크: {os.path.relpath(path, root)} → {rel}")

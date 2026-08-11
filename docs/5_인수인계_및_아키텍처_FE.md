@@ -129,7 +129,7 @@ cd backend/haccp-api
 - git commit/push는 사용자 요청 시에만
 - `.env` · `.env.docker` · `backend/haccp-api/.env` 커밋 금지
 - 로컬 전용(에이전트가 git 추가 금지): 루트 `docs/`·`sql/`·`db_migration/`·`tools/` 등 (`01-project-core`)
-- **예외 커밋 대상:** 루트 `docs/[숫자]_*.md` · `docs/README.md` · FE/BE docs 스텁 · `db_sasshaccp/`
+- **예외 커밋 대상:** 루트 `docs/[숫자]_*.md` · `docs/README.md` · 각 폴더 `README.md` · `db_sasshaccp/`
 
 ---
 
