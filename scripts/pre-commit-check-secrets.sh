@@ -3,11 +3,13 @@
 #  시크릿 커밋 차단 — JWT_SECRET 실값이 staged/인자 파일에 있으면 실패
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-11
 #  코멘트:
 #    1) public 저장소에 JWT·DB 비밀번호가 올라가는 것을 커밋 직전에 막는다
 #    2) .env.example / .env.docker.example 의 changeme·placeholder 는 허용한다
-#    3) 인자가 없으면 git staged 파일을 검사하고, 인자가 있으면 그 파일만 검사한다
+#    3) 인자 없으면 git staged, 있으면 그 파일만 검사한다
+#  호출처: README 권장 pre-commit hook · 수동 검사
+#  성공: 실값 없음 exit 0. 실패: 파일 경로 출력 + exit 1
 #
 #  사용:
 #    bash scripts/pre-commit-check-secrets.sh

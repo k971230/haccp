@@ -3,11 +3,13 @@
 #  파일 크기 3키 정합 — APP_FILE_MAX_BYTES / SIZE / REQUEST_SIZE
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-11
 #  코멘트:
 #    1) .env.example 값을 파싱해 byte·MB·request≥file 을 검사한다
-#    2) application.yml 의 multipart 기본값과 같은지 본다
+#    2) application.yml multipart 기본값과 같은지 본다
 #    3) 불일치 시 exit 1 — 소스는 수정하지 않는다
+#  호출처: Jenkinsfile.audit · 런북 §19
+#  성공: 3키 정합. 실패: 불일치 메시지 + exit 1
 # ============================================================
 set -euo pipefail
 

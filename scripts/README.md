@@ -1,23 +1,26 @@
-# scripts
+# scripts/
 
 HACCP 운영·검증 스크립트. 정본 절차는 [`docs/20_배포_런북.md`](../docs/20_배포_런북.md).
 
+**여기 파일을 임의로 지우면** Deploy·Prod smoke·nightly audit·로컬 compose 선행이 깨진다.  
+일회성 Path 전환용 `ops_path_gateway_cutover.sh` 는 제거됨 (재실행 대상 아님).
+
 ## 배포·기동
 
-| 스크립트 | 역할 |
-|----------|------|
-| `init_volumes.sh` | 파일·템플릿·rhwp 볼륨 시드 |
-| `build_images.sh` | api·web·nginx 이미지 빌드 |
-| `deploy_remote.sh` | 원격 rsync·compose up |
-| `install_rhwp.sh` | rhwp CLI 주입 |
-| `gen_selfsigned.sh` | 로컬 TLS 인증서 |
+| 스크립트 | 역할 | 호출처 |
+|----------|------|--------|
+| `init_volumes.sh` | 파일·템플릿·rhwp 볼륨 시드 | compose 선행 · 런북 §9 |
+| `build_images.sh` | api·web·nginx 이미지 빌드 | `Jenkinsfile` |
+| `deploy_remote.sh` | 원격 rsync·compose up | `Jenkinsfile` |
+| `install_rhwp.sh` | rhwp CLI 주입 | PDF 사용 시 · 런북 §11 |
+| `gen_selfsigned.sh` | 로컬 TLS 인증서 | 런북 §10 |
 
 ## 스모크·DB
 
 | 스크립트 | 역할 |
 |----------|------|
-| `prod_smoke.sh` | 배포 후 HTTP 스모크 |
-| `smoke_env.sh` | 스모크 공통 env |
+| `prod_smoke.sh` | 배포 후 HTTP 스모크 (`SMOKE_USER`/`SMOKE_PASS`는 env만) |
+| `smoke_env.sh` | 스모크 공통 env (`prod_smoke`가 source) |
 | `db_migrate_dryrun.sh` | (수동) SQL 문법 dry-run — Jenkins CI에서 제거됨 |
 
 ## 감사·훅
@@ -33,3 +36,4 @@ HACCP 운영·검증 스크립트. 정본 절차는 [`docs/20_배포_런북.md`]
 ## 관련
 
 - 배포 규칙: `.cursor/rules/04-deploy.mdc`
+- 시크릿·`.env.docker` 평문은 이 디렉터리에 두지 않는다

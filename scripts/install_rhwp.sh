@@ -3,11 +3,13 @@
 #  rhwp CLI 설치 — HWP/HWPX → PDF 변환기 (MIT, github.com/edwardkim/rhwp)
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-11
 #  코멘트:
-#    1) 바이너리를 이미지에 굽지 않고 haccp-rhwp 볼륨에 넣는다 — 버전 교체를 재빌드 없이 하기 위해서다
-#    2) 릴리스의 SHA256SUMS.txt 로 무결성을 검증한 뒤에만 설치한다
-#    3) api 컨테이너가 uid 1000 non-root 라 소유자를 1000:1000, 권한을 0755 로 맞춘다
+#    1) 바이너리를 이미지에 굽지 않고 haccp-rhwp 볼륨에 넣는다 — 버전 교체를 재빌드 없이
+#    2) 릴리스 SHA256SUMS.txt 로 무결성 검증 후에만 설치한다
+#    3) api uid 1000 non-root 라 소유자 1000:1000 · 권한 0755
+#  호출처: 런북 §11 · 서버/로컬 PDF 선행
+#  성공: 볼륨에 rhwp 실행 가능. 실패: 다운로드·SHA·docker 오류
 #
 #  사용:
 #    bash scripts/install_rhwp.sh            # 기본 v0.8.2

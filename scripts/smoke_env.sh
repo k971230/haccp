@@ -3,11 +3,12 @@
 #  prod 스모크 공통 상수 — prod_smoke.sh 가 source 한다
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-11
 #  코멘트:
-#    1) BASE_URL·curl 옵션·날짜 유틸을 한곳에 둔다
-#    2) SMOKE_USER·SMOKE_PASS 는 Jenkins Credentials 또는 셸에서만 주입한다
-#    3) 자체 서명 인증서 검증용으로 SMOKE_INSECURE=1 이면 curl -k
+#    1) curl 옵션·날짜 유틸을 한곳에 둔다 — 단독 실행 대상이 아니다
+#    2) SMOKE_USER·SMOKE_PASS 는 Jenkins Credentials 또는 셸에서만 주입한다 (git 금지)
+#    3) SMOKE_INSECURE=1 이면 curl -k (자체 서명). 실패 시 호출부(prod_smoke)가 exit 한다
+#  호출처: scripts/prod_smoke.sh (source) · Jenkins Prod smoke
 # ============================================================
 
 # 호출자가 넘긴 BASE_URL 이 우선 — 없으면 예시 도메인

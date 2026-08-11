@@ -3,11 +3,13 @@
 #  HACCP 이미지 3종 빌드 — api · web · nginx
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-11
 #  코멘트:
 #    1) Jenkins Build images 스테이지에서 TAG 인자를 받아 로컬에 태그를 단다
 #    2) REGISTRY·IMAGE_* 는 호출 환경(Jenkins environment)에서 받는다
-#    3) push 는 이 스크립트 밖(Jenkins Push 스테이지)에서 한다
+#    3) push 는 이 스크립트 밖(Jenkins Push 스테이지)에서 한다 — 여기선 build 만
+#  호출처: Jenkinsfile → bash scripts/build_images.sh $TAG
+#  성공: 3이미지 로컬 태그. 실패: docker build non-zero
 #
 #  사용: bash scripts/build_images.sh 1.0.12
 # ============================================================

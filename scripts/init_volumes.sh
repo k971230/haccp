@@ -8,8 +8,8 @@
 #    1) docker compose up 보다 먼저 돌려야 한다 — 양식 볼륨이 비면 api 가 기동 중단된다
 #    2) 매니페스트 required=Y 원본을 haccp-templates 볼륨에 원본 파일명 그대로 넣는다
 #    3) api uid 1000 non-root 라 볼륨 소유자를 1000:1000 으로 맞춘다
-#  호출처: 런북 §9 · compose 선행. 원본 기본 경로: docs/templates/
-#  성공: external 볼륨 시드. 실패: SRC·매니페스트 부재
+#  호출처: 런북 §9 · compose 선행 · 서버/로컬 수동. 원본 기본 경로: docs/templates/
+#  성공: external 볼륨 시드. 실패: SRC·매니페스트 부재 또는 docker 오류
 #
 #  사용:
 #    bash scripts/init_volumes.sh
