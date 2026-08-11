@@ -44,7 +44,8 @@ npm run dev
 ```
 
 문서: `frontend/haccp-web/docs/`, `backend/haccp-api/docs/`.
-배포 정본: [`docs/12_배포_런북.md`](docs/12_배포_런북.md).
+배포 정본: [`docs/12_배포_런북.md`](docs/12_배포_런북.md) · 루트 docs 구조: [`docs/README.md`](docs/README.md).
+양식 HWP 원본(로컬): `docs/templates/` (`init_volumes.sh` 시드).
 
 ## 시크릿 (필수)
 

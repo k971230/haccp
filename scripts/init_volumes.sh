@@ -3,15 +3,17 @@
 #  HACCP 볼륨 초기화 — 표준 양식 원본 시드 + 소유권 정렬
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-11
 #  코멘트:
 #    1) docker compose up 보다 먼저 돌려야 한다 — 양식 볼륨이 비면 api 가 기동 중단된다
-#    2) 매니페스트의 required=Y 원본을 haccp-templates 볼륨에 원본 파일명 그대로 넣는다
-#    3) api 컨테이너가 uid 1000 non-root 라 볼륨 소유자를 1000:1000 으로 맞춘다
+#    2) 매니페스트 required=Y 원본을 haccp-templates 볼륨에 원본 파일명 그대로 넣는다
+#    3) api uid 1000 non-root 라 볼륨 소유자를 1000:1000 으로 맞춘다
+#  호출처: 런북 §9 · compose 선행. 원본 기본 경로: docs/templates/
+#  성공: external 볼륨 시드. 실패: SRC·매니페스트 부재
 #
 #  사용:
 #    bash scripts/init_volumes.sh
-#    HACCP_TEMPLATE_SRC=/srv/haccp/templates bash scripts/init_volumes.sh
+#    HACCP_TEMPLATE_SRC=/srv/haccp/hwp bash scripts/init_volumes.sh
 # ============================================================
 set -euo pipefail
 
@@ -19,8 +21,8 @@ set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-# 원본 HWP 디렉터리 — 운영 서버는 업로드한 경로를 env 로 넘긴다
-SRC="${HACCP_TEMPLATE_SRC:-$ROOT/docs}"
+# 원본 HWP 디렉터리 — 기본은 docs/templates (매니페스트 required=Y 만 둔다). 서버는 HACCP_TEMPLATE_SRC 로 덮을 수 있다
+SRC="${HACCP_TEMPLATE_SRC:-$ROOT/docs/templates}"
 MANIFEST="$ROOT/backend/haccp-api/src/main/resources/templates/manifest.tsv"
 
 # 도커는 MSYS 형식(/d/haccp)을 모른다 — Windows 에서는 D:\haccp 형태로 바꿔 넘긴다

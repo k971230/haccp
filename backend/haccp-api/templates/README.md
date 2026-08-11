@@ -34,19 +34,19 @@ DB에는 `form_path` 문자열만 저장한다. 나중에 MinIO/S3로 옮길 때
 | `APP_FILE_ROOT` | `./data/haccp-files` | 볼륨 루트 |
 | `APP_TEMPLATE_DIRECTORY` | `_template` | 템플릿 하위 디렉터리명 |
 | `APP_TEMPLATE_MANIFEST` | `templates/manifest.tsv` | 매니페스트 경로 |
-| `APP_TEMPLATE_IMPORT_ROOT` | (비움) | 기동 시 복사할 원본 루트(예: `../../docs`) |
+| `APP_TEMPLATE_IMPORT_ROOT` | (비움) | 기동 시 복사할 원본 루트(예: `../../docs/templates`) |
 | `APP_TEMPLATE_IMPORT_OVERWRITE` | `false` | true면 기존 파일 교체 |
 
 로컬 예:
 
 ```text
-APP_TEMPLATE_IMPORT_ROOT=D:/SassHaccp/docs
+APP_TEMPLATE_IMPORT_ROOT=D:/haccp/docs/templates
 APP_TEMPLATE_IMPORT_OVERWRITE=true
 ```
 
 ## 운영 절차
 
-1. `docs/`에 한글 원본 배치 (번호 접두 포함 가능)
+1. `docs/templates/`에 매니페스트 source_name HWP 배치 (번호 접두 포함 가능)
 2. `manifest.tsv`에 tmpl_cd ↔ source_name 매핑
 3. migrate `46_migrate_template_volume_ko.sql`로 DB `form_path` 갱신
 4. API 기동 시 Import가 target_name으로 볼륨 복사 (또는 수동 복사)
