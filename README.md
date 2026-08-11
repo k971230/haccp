@@ -12,6 +12,7 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 | 문서 | 내용 |
 |------|------|
 | [`환경구축.md`](환경구축.md) | 도구·DB·로컬 4173/7070 · **Jenkins 설치·Credentials·Job** |
+| [`깃.md`](깃.md) | **팀 인수인계** — 일일위생점검표 예시로 Git Bash 전 구간 |
 | [`개발.md`](개발.md) | 브랜치·FE/BE 규약·인증·Path `/haccp` · 검증 |
 | [`운영.md`](운영.md) | `haccp-deploy` Build Now · 스테이지·스모크·장애 대응 |
 | [`완성.md`](완성.md) | 타 AI 리뷰용 종합 보고서 |
