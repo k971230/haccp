@@ -664,6 +664,7 @@ flowchart LR
 - 범용 template-check-item-management (use_yn=N)  
 - 단독 hwp-document-editor 메뉴  
 - LAW/EDU/TST 개별 leaf  
+- **법적서류 인페이지 PDF/HWP 미리보기** — **동결(의도)** (STEP 27 / G-25). 다운로드만 · [`11` §2.9](11_프레임워크_파일_보안_작성규칙.md)
 
 ### 12.2 알려진 갭
 
@@ -678,6 +679,7 @@ flowchart LR
 | G-22 | 멀티탭 로그아웃 | **완료** — 2026-08-11 STEP 24. §3.4 · `authPaths` Path basename |
 | G-23 | 그리드 pref·가상화 | **완료** — 2026-08-11 STEP 25. §3.5 · VIRTUAL_THRESHOLD 정본 |
 | G-24 | 서명 UX | **완료(문서)** — 2026-08-11 STEP 26. [`11` §2.8](11_프레임워크_파일_보안_작성규칙.md) |
+| G-25 | 법적서류 미리보기 | **동결(의도)** — 2026-08-11 STEP 27. [`11` §2.9](11_프레임워크_파일_보안_작성규칙.md) · 다운로드만 |
 
 ### 12.3 교차 수치
 
