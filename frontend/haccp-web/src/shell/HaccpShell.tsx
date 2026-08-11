@@ -28,6 +28,8 @@ import { useAuthStore } from "@/stores/authStore";
 import { useTabStore } from "@/stores/tabStore";
 // 역할 — 로그아웃 시 세션 일괄 정리
 import { clearAuthSession } from "@/shell/authSession";
+// 역할 — Vite base(/haccp/) 반영 로그인 절대 경로
+import { loginBrowserPath } from "@/shell/authPaths";
 // 역할 — 서버 로그아웃 기록
 import { logout as logoutApi } from "@/api/authApi";
 // 역할 — 권한 반영 메뉴 조회
@@ -104,7 +106,8 @@ export function HaccpShell() {
   const onLogout = async () => {
     await logoutApi();
     clearAuthSession();
-    nav("/login");
+    // 401·멀티탭과 동일 — basename 누락 시 /login 으로 떨어지는 것을 막는다 (/haccp/login)
+    location.replace(loginBrowserPath());
   };
 
   /** 사이드바 접기·펼치기 — 선택은 저장해 다음 진입에도 유지한다 */

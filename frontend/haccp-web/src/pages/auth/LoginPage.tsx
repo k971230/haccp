@@ -2,11 +2,11 @@
  * LoginPage — 아이디·비밀번호 로그인 화면.
  *
  * 개발자: 박승우
- * 일자: 2026-08-05
+ * 일자: 2026-08-11
  * 코멘트:
  *   1) 로그인 성공 시 선호값 저장 → 토큰 보관 위치 결정 → 캐시 초기화 → 세션 적재 → 원래 보던 화면으로 이동한다
  *   2) mes-web과 달리 회사 선택이 없다 — 아이디가 전 업체 통틀어 유일해서 서버가 소속 회사를 판정한다
- *   3) 이미 유효한 토큰이 있으면 입력 없이 홈으로 보낸다. 실패 문구는 서버가 준 업무 문구를 그대로 쓴다
+ *   3) UI는 MES 스플릿(좌측 login_bg + 우측 흰 폼)이며, 이미 유효한 토큰이 있으면 홈으로 보낸다
  *
  * PIPELINE[HF115] 로그인 화면
  * PIPELINE[HF4, HF29, HF160, HF161, HF162] 연관 모듈
@@ -33,8 +33,10 @@ import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { cn } from "@/lib/cn";
 // 역할 — 로그인 입력 공통 스타일
 import { loginInputClass } from "@/components/ui/Input";
-// 역할 — 제품 로고
-import { HaccpLogo } from "@/components/ui/HaccpLogo";
+// 역할 — 좌측 브랜드 배경 (MES login_bg와 동일 에셋)
+import loginBg from "@/static/img/login_bg.png";
+// 역할 — 우측 패널 상단 HACCP 공식 인증 마크
+import haccpLogo from "@/static/img/haccp_logo.png";
 
 /** 저장된 선호값으로 폼 초기값을 만든다 — 아이디 저장이 OFF면 빈 값으로 시작한다 */
 function initialLoginForm() {
@@ -49,9 +51,9 @@ function initialLoginForm() {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-05
+ * 일자: 2026-08-11
  * 코멘트:
- *   1) 로그인 폼을 그리고 인증 성공 시 세션을 적재한다
+ *   1) MES와 같은 스플릿 레이아웃으로 로그인 폼을 그리고 인증 성공 시 세션을 적재한다
  *   2) 인증이 없는 상태로 앱에 들어오면 라우터가 이 화면으로 보낸다
  *   3) 실패하면 폼 아래에 사유를 표시하고 비밀번호 입력을 유지한다 — 재입력 부담을 줄인다
  */
@@ -112,87 +114,128 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh] items-center justify-center bg-slate-100 px-6 py-10">
-      <section className="w-full max-w-[380px] rounded-mes-xl border border-slate-200 bg-white px-8 py-10 shadow-lg sm:px-10">
-        <header className="mb-8 flex flex-col items-center gap-1.5">
-          <HaccpLogo size="lg" />
-          <p className="text-xs text-slate-500">HACCP 기록·결재·보관 시스템</p>
-        </header>
+    <div className="flex min-h-screen min-h-[100dvh] flex-col lg:flex-row">
+      {/* 브랜드 이미지 — 넓은 화면 좌측, 좁은 화면 하단 */}
+      <section className="relative order-2 min-h-[200px] flex-1 overflow-hidden lg:order-1 lg:min-h-screen">
+        <img
+          // 로그인 브랜드 배경 — MES login_bg.png와 동일 리소스
+          src={loginBg}
+          // 접근성용 대체 텍스트 — HACCP 브랜드 배경
+          alt="HACCP"
+          // 섹션 전체를 채우는 cover 스타일
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      </section>
 
-        <form className="space-y-4" onSubmit={onSubmit}>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="login-user-id">
-              아이디
-            </label>
-            <input
-              id="login-user-id"
-              className={loginInputClass}
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              placeholder="아이디"
-              // 브라우저 비밀번호 관리자가 아이디 칸으로 인식하게 한다
-              autoComplete="username"
-              // 로그인 화면에 들어오면 바로 입력할 수 있게 커서를 둔다
-              autoFocus
-              required
+      {/* 로그인 패널 — 넓은 화면 우측 흰색, 좁은 화면 상단 */}
+      <section className="order-1 flex w-full shrink-0 items-center justify-center bg-white px-6 py-10 sm:px-10 lg:order-2 lg:w-[min(480px,46%)] lg:min-h-screen lg:px-12">
+        <div className="w-full max-w-[340px]">
+          <header className="mb-8 flex justify-center">
+            <img
+              // 우측 상단 HACCP 공식 인증 마크 — METIS 로고 자리 대체
+              src={haccpLogo}
+              // 접근성용 대체 텍스트
+              alt="HACCP"
+              // 원형 마크이므로 폭 대신 높이 기준으로 맞춤
+              className="mx-auto h-28 w-auto object-contain"
             />
-          </div>
+          </header>
 
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="login-password">
-              비밀번호
-            </label>
-            <input
-              id="login-password"
-              className={loginInputClass}
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="비밀번호"
-              autoComplete="current-password"
-              required
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
-            <label className="flex cursor-pointer items-center gap-2">
+          <form className="space-y-4" onSubmit={onSubmit}>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="login-user-id">
+                아이디
+              </label>
               <input
-                type="checkbox"
-                className="h-4 w-4 cursor-pointer accent-[#1a3676]"
-                checked={saveId}
-                // 아이디만 기억한다 — 비밀번호는 어떤 설정에서도 저장하지 않는다
-                onChange={(e) => setSaveId(e.target.checked)}
+                // 접근성·라벨 연결용 id
+                id="login-user-id"
+                // 로그인 입력 공통 스타일
+                className={loginInputClass}
+                // 제어 값 — prefs 복원·입력 state
+                value={userId}
+                // 입력 시 userId state 갱신
+                onChange={(e) => setUserId(e.target.value)}
+                // 미입력 안내 placeholder
+                placeholder="아이디"
+                // 브라우저 비밀번호 관리자가 아이디 칸으로 인식하게 한다
+                autoComplete="username"
+                // 로그인 화면에 들어오면 바로 입력할 수 있게 커서를 둔다
+                autoFocus
+                // 필수 입력
+                required
               />
-              <span className="text-sm text-slate-600">아이디 저장</span>
-            </label>
-            <label className="flex cursor-pointer items-center gap-2">
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700" htmlFor="login-password">
+                비밀번호
+              </label>
               <input
-                type="checkbox"
-                className="h-4 w-4 cursor-pointer accent-[#1a3676]"
-                checked={autoLogin}
-                // 켜면 토큰을 localStorage에 둬 브라우저를 닫아도 유지된다. 공용 PC에서는 끄는 것이 안전하다
-                onChange={(e) => setAutoLogin(e.target.checked)}
+                // 접근성·라벨 연결용 id
+                id="login-password"
+                // 로그인 입력 공통 스타일
+                className={loginInputClass}
+                // 비밀번호 마스킹 입력
+                type="password"
+                // 제어 값 — 매 로그인마다 빈 문자열로 시작
+                value={password}
+                // 입력 시 password state 갱신
+                onChange={(e) => setPassword(e.target.value)}
+                // 미입력 안내
+                placeholder="비밀번호"
+                // 브라우저 자동완성 current-password
+                autoComplete="current-password"
+                // 필수 입력
+                required
               />
-              <span className="text-sm text-slate-600">자동 로그인</span>
-            </label>
-          </div>
+            </div>
 
-          {err && <p className="text-sm font-medium text-rose-600">{err}</p>}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  // 아이디 저장 체크박스 — ON이면 다음 로그인에 userId 복원
+                  type="checkbox"
+                  // HACCP/MES 남색 accent 체크 UI
+                  className="h-4 w-4 cursor-pointer accent-[#1a3676]"
+                  checked={saveId}
+                  // 아이디만 기억한다 — 비밀번호는 어떤 설정에서도 저장하지 않는다
+                  onChange={(e) => setSaveId(e.target.checked)}
+                />
+                <span className="text-sm text-slate-600">아이디 저장</span>
+              </label>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  // 자동 로그인 체크박스 — local vs session 토큰 격리
+                  type="checkbox"
+                  // HACCP/MES 남색 accent 체크 UI
+                  className="h-4 w-4 cursor-pointer accent-[#1a3676]"
+                  checked={autoLogin}
+                  // 켜면 토큰을 localStorage에 둬 브라우저를 닫아도 유지된다. 공용 PC에서는 끄는 것이 안전하다
+                  onChange={(e) => setAutoLogin(e.target.checked)}
+                />
+                <span className="text-sm text-slate-600">자동 로그인</span>
+              </label>
+            </div>
 
-          <button
-            type="submit"
-            // 요청 중에는 비활성 — 같은 로그인 시도가 두 번 기록되지 않게 한다
-            disabled={busy}
-            className={cn(
-              "mt-2 flex h-12 w-full items-center justify-center rounded-lg bg-[#1a3676] text-sm font-semibold text-white transition",
-              "hover:bg-[#152d63] active:translate-y-px",
-              "focus:outline-none focus:ring-2 focus:ring-[#1a3676]/30",
-              "disabled:cursor-not-allowed disabled:opacity-60",
-            )}
-          >
-            {busy ? "로그인 중" : "로그인"}
-          </button>
-        </form>
+            {err && <p className="text-sm font-medium text-rose-600">{err}</p>}
+
+            <button
+              // form submit — onSubmit 로그인 API 흐름
+              type="submit"
+              // 요청 중에는 비활성 — 같은 로그인 시도가 두 번 기록되지 않게 한다
+              disabled={busy}
+              // 남색 CTA 버튼 스타일 — hover/focus/disabled
+              className={cn(
+                "mt-2 flex h-12 w-full items-center justify-center rounded-lg bg-[#1a3676] text-sm font-semibold text-white transition",
+                "hover:bg-[#152d63] active:translate-y-px",
+                "focus:outline-none focus:ring-2 focus:ring-[#1a3676]/30",
+                "disabled:cursor-not-allowed disabled:opacity-60",
+              )}
+            >
+              {busy ? "로그인 중" : "로그인"}
+            </button>
+          </form>
+        </div>
       </section>
     </div>
   );
