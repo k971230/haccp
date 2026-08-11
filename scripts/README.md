@@ -18,7 +18,7 @@ HACCP 운영·검증 스크립트. 정본 절차는 [`docs/20_배포_런북.md`]
 |----------|------|
 | `prod_smoke.sh` | 배포 후 HTTP 스모크 |
 | `smoke_env.sh` | 스모크 공통 env |
-| `db_migrate_dryrun.sh` | SQL 문법 dry-run |
+| `db_migrate_dryrun.sh` | (수동) SQL 문법 dry-run — Jenkins CI에서 제거됨 |
 
 ## 감사·훅
 

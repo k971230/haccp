@@ -28,8 +28,8 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 ## 로컬 기동 (요약)
 
 ```bash
-# DB: db_sasshaccp/ SQL을 운영·개발 DB에 적용 (순서대로)
-# 또는: bash scripts/db_migrate_dryrun.sh 로 문법만 검증
+# DB: 당분간 스키마 정본은 DBeaver(운영 DB). 저장소 SQL 자동 migrate는 CI에서 제외.
+# 필요 시 수동: bash scripts/db_migrate_dryrun.sh (문법) · compose --profile migrate (적용)
 
 # API — listen 7070 (운영 컨테이너와 동일). CORS Origin = Vite 4173
 cd backend/haccp-api

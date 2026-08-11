@@ -4,9 +4,11 @@
 //  개발자: 박승우
 //  일자: 2026-08-10
 //  코멘트:
-//    1) main push → 빌드·이미지 push·DB migrate·배포·스모크까지 한 줄로 돌린다
-//    2) 시크릿은 credentials() 만 사용한다 — 이 파일에 실값을 적지 않는다
-//    3) disableConcurrentBuilds 로 compose up 충돌을 막는다
+//    1) main push → 빌드·이미지 push·배포·스모크까지 한 줄로 돌린다
+//    2) DB migrate/dry-run 은 파이프라인에서 제외 — 당분간 스키마 정본은 DBeaver(운영 DB).
+//       저장소 SQL 자동 적용은 DBeaver 변경을 덮을 수 있어 수동으로만 한다
+//    3) 시크릿은 credentials() 만 사용한다 — 이 파일에 실값을 적지 않는다
+//    4) disableConcurrentBuilds 로 compose up 충돌을 막는다
 // ============================================================
 pipeline {
   agent any
@@ -34,7 +36,7 @@ pipeline {
     // Apache /haccp/ → edge. 루프백 직행 스모크만 빈 값으로 덮는다
     SMOKE_WEB_PREFIX = '/haccp'
     // MSYS_NO_PATHCONV 는 전역으로 켜지 않는다 — Windows mvnw 클래스패스가 깨진다.
-    // SSH 원격 경로만 migrate/deploy 스테이지에서 //home... + 지역 export 로 처리한다.
+    // SSH 원격 경로는 deploy 스테이지에서 //home... + 지역 export 로 처리한다.
   }
 
   triggers {
@@ -82,12 +84,6 @@ pipeline {
       }
     }
 
-    stage('DB migrate dry-run') {
-      steps {
-        sh 'bash scripts/db_migrate_dryrun.sh'
-      }
-    }
-
     stage('Build images') {
       steps {
         withCredentials([usernamePassword(
@@ -110,29 +106,6 @@ pipeline {
           docker tag $IMAGE_WEB:$TAG $IMAGE_WEB:latest && docker push $IMAGE_WEB:latest
           docker tag $IMAGE_NGX:$TAG $IMAGE_NGX:latest && docker push $IMAGE_NGX:latest
         '''
-      }
-    }
-
-    stage('Prod DB migrate') {
-      steps {
-        withCredentials([sshUserPrivateKey(
-            credentialsId: 'haccp-deploy-ssh-key',
-            keyFileVariable: 'SSH_KEY',
-            usernameVariable: 'SSH_USER')]) {
-          sh '''
-            set -euo pipefail
-            # DEPLOY_HOST 가 user@host 형이면 호스트만 뽑고, 아니면 SSH_USER 를 쓴다
-            HOST="$DEPLOY_HOST"
-            USER="$SSH_USER"
-            case "$DEPLOY_HOST" in
-              *@*) USER="${DEPLOY_HOST%%@*}"; HOST="${DEPLOY_HOST#*@}" ;;
-            esac
-            # 리터럴 //home/... — env DEPLOY_DIR 을 쓰면 Git Bash 가 이미 Windows 경로로 바꿔 둔다
-            ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
-              "$USER@$HOST" \
-              "cd //home/ubuntu/haccp && docker compose --env-file .env.docker -f docker-compose.prod.yml --profile migrate run --rm migrate"
-          '''
-        }
       }
     }
 
