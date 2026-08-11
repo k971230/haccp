@@ -1,0 +1,71 @@
+---
+description: HACCP 백엔드(haccp-api) 컨벤션
+globs: backend/haccp-api/**/*.{java,xml,yml}
+alwaysApply: false
+---
+
+# 백엔드 (haccp-api)
+
+| 항목 | 값 |
+|------|-----|
+| 패키지 | `com.metis.haccp.*` |
+| 포트 | **7070** (로컬·컨테이너 동일) |
+| DB / 스키마 | `sasshaccp` / `sasshaccp` |
+| SP | `sp_tbl_{명칭}_{r｜c｜d｜u}_{000}` |
+| 로그인 | **아이디만** (전역 유일, 서버가 회사 판정) |
+| 화면 권한 | 조회·등록·수정·삭제·출력 5개 Y/N |
+| JWT | 단일 TTL (`app.jwt.expire-minutes`) |
+
+DB 규약: [`07-haccp-db.mdc`](07-haccp-db.mdc) · 운영: [`06-operations.mdc`](06-operations.mdc)
+
+## 패키지
+
+`com.metis.haccp.{영역}` — `auth`, `menu`, `code`, `pref`, `log`, `common`,  
+업무: `tsk`, `ccp`, `hyg`, `doc`, `bas`, `sys`, `ops`, `workflow` …
+
+## 레이어
+
+```
+Controller (@RestController)
+  → Service (@Service, CUD에 @Transactional)
+    → Mapper (@Mapper + XML) → PG SP
+```
+
+- DI: `@RequiredArgsConstructor` + `private final`
+- 업무 검증은 **Service**에서 `BizException`
+- 셸 API(menu·code·pref·log)는 Controller → Mapper 직결 가능
+
+## 테넌트·사용자
+
+- `co_cd`·`user_id`는 요청 본문으로 받지 않는다 — `LoginUserContext`만
+- 관리자: `usrgrpCd == "ADMIN"`
+- `sid`: 화면조회 로그용 — 화면에 표시하지 않음
+
+## API 경로
+
+| 유형 | 패턴 |
+|------|------|
+| 목록 | `GET /api/v1/{영역}/{리소스}/list` |
+| 저장 | `PUT /api/v1/{영역}/{리소스}/save` |
+| 삭제 | `POST .../validate-delete` → `POST .../delete` (객체 배열 Body) |
+| 워크플로 | `POST /{리소스}/{action}` |
+| 파일 | `GET .../download`, `POST .../upload` |
+
+- HTTP DELETE 금지 · 필터는 query param
+- 공개: `POST /api/v1/auth/login`만 (`JwtFilter.isPublic`)
+
+## 응답
+
+- 성공: `CommonResponse<T>`
+- PG CALL 영향 행 수를 건수처럼 반환하지 말 것 — `CommonResponse<Void>` 권장
+- 바이너리: `ResponseEntity<byte[]>`
+
+## 로그인 이력
+
+`AuthService.login`에 `@Transactional` 금지 — 실패 이력이 롤백되면 안 된다.
+
+## 인수인계·PIPELINE
+
+- 주석: [`05-handoff-comments.mdc`](05-handoff-comments.mdc)
+- 골드: `auth/AuthService.java` · `doc/DocumentService.java` · `mapper/doc/*.xml`
+- 태그 접두 **`HB`** (프론트는 `HF`). 루트 `README.md` PIPELINE 표와 동기화

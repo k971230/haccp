@@ -63,7 +63,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      # edge upstream(api:7070) 과 맞춘다 — 로컬 mvnw 기본 8081 과 분리
+      # edge upstream(api:7070) · 로컬 mvnw 기본과 동일
       SERVER_PORT: "7070"
       # 아래 3개는 볼륨 마운트 지점과 반드시 일치해야 해서 .env.docker 가 아닌 여기에 고정한다
       APP_FILE_ROOT: /var/haccp/files

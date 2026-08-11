@@ -1,0 +1,64 @@
+---
+description: HACCP 운영 규약 — 삭제, 타임아웃, 전역 env (정본 docs/3_운영규칙_FE.md)
+alwaysApply: true
+---
+
+# HACCP 운영 규약
+
+정본: [`docs/3_운영규칙_FE.md`](../../docs/3_운영규칙_FE.md) · BE [`docs/4_운영규칙_BE.md`](../../docs/4_운영규칙_BE.md)  
+인수인계 주석: `05-handoff-comments.mdc`
+
+## [OPS_DELETE] 삭제 표준
+
+- HTTP **DELETE 금지** — 삭제는 `POST`만 사용
+- 경로: `POST /api/v1/{domain}/{resource}/validate-delete` → `POST .../delete`
+- Body: 복합키 객체 **배열** `[{ ... }]` (UI 단건이어도 1건 배열). 스칼라 배열 금지
+- BE: `validateDelete`·`delete` **양쪽** `assertDeletable(coCd, keys)` Double Check
+- BE: `@Transactional` + SP 루프, SP 내부 자율 COMMIT 금지
+- PG 검증: Tuple IN / IN 우선 — MyBatis `<foreach>` 단일 쿼리 → `DeleteBlocker`
+- FE: `validateDeleteApi` → `mesConfirm` → `deleteApi` → 재조회; `useAsyncAction.run(fn, "del")`
+- 참조 차단 메시지: *"선택한 항목 중 {label} '{key}'이(가) {target}에서 참조 중이므로 삭제할 수 없습니다."*
+
+골드: `doc/DocumentService` + `DeleteValidation` + `DocumentMapper.selectDocumentDeleteBlocker`
+
+## [OPS_TIMEOUT_TIER] API 타임아웃 3계층
+
+하드코딩 금지 — `.env` `VITE_API_TIMEOUT_*` + [`envConfig.ts`](../../frontend/haccp-web/src/config/envConfig.ts)
+
+| 인스턴스 | env | 기본 | 용도 |
+|----------|-----|------|------|
+| `http` | `VITE_API_TIMEOUT_DEFAULT` | 10s | 일반 CRUD, validate-delete |
+| `httpBatch` | `VITE_API_TIMEOUT_BATCH` | 60s | 대량·집계 |
+| `httpFile` | `VITE_API_TIMEOUT_FILE` | 120s | HWPX·PDF·대용량 파일 |
+
+## [OPS_TIMEOUT_DEFENSE] 4중 방어 (배치 60s 기준)
+
+1. **FE 60s** — Dim·스피너, 초과 시 업무 안내
+2. **Nginx 70s** — `proxy_read_timeout` (Grace 10s)
+3. **Spring 60s** — CUD `@Transactional(timeout=60)`
+4. **MyBatis 60s** — `default-statement-timeout: 60`
+
+## [OPS_GLOBAL_CONFIG] Zero Tolerance
+
+매직 넘버 금지 — `.env` / `application.yml` / `envConfig.ts`.
+
+| env | 기본 | 용도 |
+|-----|------|------|
+| `VITE_GRID_DEFAULT_PAGE_SIZE` | 50 | 그리드 페이징(예약) |
+| `VITE_GRID_VIRTUAL_THRESHOLD` | 100 | 가상화 임계 |
+| `VITE_SEARCH_DEBOUNCE_MS` | 300 | 검색 디바운스 |
+| `VITE_API_RETRY_COUNT` | 2 | GET 재시도 |
+| `VITE_DASHBOARD_POLLING_MS` | 10000 | 대시보드 폴링 |
+
+`.env` 변경 후 Vite **재시작**. `.env.example`만 커밋.
+
+## [OPS_AUTH_CROSSTAB] 멀티탭 로그아웃
+
+- `clearAuthSession` → `broadcastAuthLogout` (`haccp-auth-logout-signal` localStorage)
+- 타 탭 `storage` 리스너 → `handleUnauthorized`
+- 키 접두: `haccp-*` (`authKeys.ts`)
+
+## 에이전트 의무
+
+- 신규·수정 시 본 규약 + `08-haccp-backend` / `09-haccp-frontend` 교차
+- FE 선행·BE 미정합(validate-delete 404) 주의

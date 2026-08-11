@@ -5,7 +5,7 @@
  * 일자: 2026-08-05
  * 코멘트:
  *   1) com.metis.haccp 하위를 스캔해 Controller·Service·Mapper를 등록하고 내장 Tomcat을 기동한다
- *   2) mes-api와 완전히 독립된 프로세스다 — 포트(기본 8081)·DB(sasshaccp)·패키지가 모두 다르다
+ *   2) mes-api와 완전히 독립된 프로세스다 — 포트(기본 7070)·DB(sasshaccp)·패키지가 모두 다르다
  *   3) 업무 로직은 두지 않는다. 기동 실패는 대개 .env 누락(JWT_SECRET·DB_PASSWORD)이 원인이다
  *
  * PIPELINE[HB1] Spring Boot 진입

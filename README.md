@@ -14,8 +14,11 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 | [`환경구축.md`](환경구축.md) | 도구·DB·로컬 4173/7070 · **Jenkins 설치·Credentials·Job** |
 | [`개발.md`](개발.md) | 브랜치·FE/BE 규약·인증·Path `/haccp` · 검증 |
 | [`운영.md`](운영.md) | `haccp-deploy` Build Now · 스테이지·스모크·장애 대응 |
+| [`완성.md`](완성.md) | 타 AI 리뷰용 종합 보고서 |
 
-상세 스펙·런북: [`frontend/haccp-web/docs/`](frontend/haccp-web/docs/) · [`backend/haccp-api/docs/`](backend/haccp-api/docs/) · [`docs/12_배포_런북.md`](docs/12_배포_런북.md).
+상세 스펙·런북 정본: [`docs/`](docs/) (`1_`~`21_` · [`docs/README.md`](docs/README.md)).  
+배포 런북: [`docs/20_배포_런북.md`](docs/20_배포_런북.md).  
+양식 HWP(로컬): `docs/templates/`. 폴더 역할은 각 디렉터리 `README.md`.
 
 ## 구성
 
@@ -40,10 +43,10 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 포트: **API 7070** · **Vite 4173** (MES 5173/8080과 분리). 상세는 [`환경구축.md`](환경구축.md).
 
 ```bash
-# DB: db_sasshaccp/ SQL을 운영·개발 DB에 적용 (순서대로)
-# 또는: bash scripts/db_migrate_dryrun.sh 로 문법만 검증
+# DB: 당분간 스키마 정본은 DBeaver(운영 DB). 저장소 SQL 자동 migrate는 CI에서 제외.
+# 필요 시 수동: bash scripts/db_migrate_dryrun.sh (문법) · compose --profile migrate (적용)
 
-# API — listen 7070 · CORS Origin = http://localhost:4173
+# API — listen 7070 (운영 컨테이너와 동일). CORS Origin = Vite 4173
 cd backend/haccp-api
 cp .env.example .env   # 값 입력 후 — .env 는 git 금지
 ./mvnw spring-boot:run
@@ -54,6 +57,8 @@ cp .env.example .env
 npm ci
 npm run dev
 ```
+
+운영 edge 호스트 publish는 `127.0.0.1:17070:7070` (로컬 Vite 포트와 무관).
 
 ## 시크릿 (필수)
 
@@ -72,7 +77,7 @@ bash scripts/pre-commit-check-secrets.sh
 
 ## Docker / Jenkins
 
-- 이미지·compose·Nginx: [`docs/12_배포_런북.md`](docs/12_배포_런북.md) §8~§10 · [`운영.md`](운영.md)
+- 이미지·compose·Nginx: [`docs/20_배포_런북.md`](docs/20_배포_런북.md) §8~§10 · [`운영.md`](운영.md)
 - Job: `haccp-deploy` (`Jenkinsfile`) · `haccp-audit` (`Jenkinsfile.audit`)
 - 트리거(현재): localhost Jenkins → **Build Now** (webhook 없음). 설치는 [`환경구축.md`](환경구축.md) §11
 - 운영 Path: `/haccp/` · 로그아웃 URL은 `/haccp/login`

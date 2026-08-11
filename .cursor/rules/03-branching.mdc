@@ -1,0 +1,14 @@
+---
+description: 브랜치·커밋·PR·이슈 라벨·릴리스 태그 규약 (정본 docs/20_배포_런북.md)
+alwaysApply: true
+---
+
+# 브랜치·커밋·PR 규약 — 정본 [`docs/20_배포_런북.md`](../../docs/20_배포_런북.md)
+
+| 구분 | 규약 |
+|------|------|
+| 브랜치 | `main`(배포 대상) · `feature/<step-nn-slug>` · `hotfix/<slug>` — **main 직접 커밋 금지** |
+| 커밋 | `<type>(<scope>): <subject>` — type `feat`·`fix`·`chore`·`docs`·`refactor`·`build`·`ci`·`db` / scope `fe`·`be`·`db`·`infra`·`docs` |
+| PR | 제목 `[STEP nn] <type>(<scope>): <subject>` · 본문에 09 문서 G-ID(`closes G-13`) · 리뷰어 없는 self-merge 금지 |
+| 라벨 | priority `P0`~`P3` · area `fe`/`be`/`db`/`infra`/`docs`/`security` · status `blocked`/`in-progress`/`review`/`done` |
+| 태그 | `v1.0.0-rc.N` — Jenkins가 main push마다 SemVer patch 증가, 태그 push는 수동 |

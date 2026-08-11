@@ -25,9 +25,9 @@ import {
 
 /**
  * API 서버 베이스 주소.
- * 운영은 같은 출처에서 /api 를 프록시하므로 빈 문자열, 개발은 haccp-api 기본 포트 8081을 쓴다.
+ * 운영은 같은 출처에서 /api 를 프록시하므로 빈 문자열, 개발은 haccp-api 기본 포트 7070을 쓴다.
  */
-const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8081";
+const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:7070";
 
 /**
  * 개발자: 박승우

@@ -1,0 +1,65 @@
+---
+description: HACCP 업무 UI 마감 — 레이아웃·검색·그리드·Tailwind v3
+globs: frontend/haccp-web/src/{components,shell,styles,pages}/**/*
+alwaysApply: false
+---
+
+# 프론트 UI 마감 (haccp-web)
+
+## 스택 (고정)
+
+- **Tailwind CSS 3.4** + `frontend/haccp-web/tailwind.config.js`
+- **v4 마이그레이션 금지** — `@theme`, `@utility`, `bg-linear-to-r` 등 사용 금지
+- 글로벌 CSS: `src/styles/global.css` — `@tailwind` + `@layer base|components|utilities`
+
+## 방향
+
+- **촘촘한** 업무 시스템 UI
+- 포인트 컬러: **남색 + 초록** (`brand-*`, `sidebar-*`)
+- **이모지 금지** — 아이콘은 Lucide 또는 `.mes-*` CSS
+
+## 스타일 계층
+
+| 계층 | 파일 | 용도 |
+|------|------|------|
+| 1. 토큰 | `tailwind.config.js` | 색·폰트·높이 |
+| 2. TS 상수 | `components/layout/pageClasses.ts` | 페이지·그리드·검색 레이아웃 |
+| 2. TS 상수 | `components/ui/Input.tsx` · `lib/buttonVariants.ts` | 입력·버튼 |
+| 3. 글로벌 CSS | `styles/global.css` `@layer components` | `.mes-*` |
+| 4. 페이지 TSX | `pages/**/*.tsx` | 짧은 `cn()` 만 |
+
+**우선순위:** 기존 공통 상수·`.mes-*` 재사용. 없을 때만 페이지에 짧게.
+
+## 공통 클래스
+
+- `pageRootClass`, `gridBlockClass`, `gridHeadClass`, `gridPanelClass`
+- `searchFieldsClass`, `searchActionsClass`, `pageToolbarClass`
+- 검색: `SearchArea` + `PageHead` + `SearchField`
+- 입력: `searchInputClass` / `gridInputClass` / `loginInputClass`
+
+## 마스터/디테일
+
+- `PageCard` / `PageCardTree` / `PageCardSplit` / `mes-page-split`
+- 그리드: `MesEditableGrid` / `MesDataGrid` 기준 높이 유지
+
+## 반응형
+
+데스크톱 우선(1280px+). 셸에 불필요한 `sm:/md:` 강제 추가 금지.  
+패널 내부는 `min-h-0` / `min-w-0` / `flex-wrap` / `w-full`로 유동.
+
+## 인라인 `style`
+
+동적 값만 허용(그리드 컬럼 너비, 트리 depth, 모달 z-index, 스켈레톤).  
+정적 레이아웃·색상은 Tailwind 또는 `.mes-*`.
+
+## 금지
+
+- 페이지에 긴 Tailwind 복붙 (`pageClasses` 우회)
+- arbitrary 값 남발 — 토큰·`.mes-*` 우선
+- Tailwind v4 문법
+
+## 표준 참조
+
+- CRUD: `pages/ccp/ColdMonitorPage.tsx`
+- 검색: `components/layout/SearchArea.tsx`
+- 셸: `shell/HaccpShell.tsx`
