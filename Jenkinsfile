@@ -119,21 +119,16 @@ pipeline {
             usernameVariable: 'SSH_USER')]) {
           sh '''
             set -euo pipefail
-            export MSYS_NO_PATHCONV=1
             # DEPLOY_HOST 가 user@host 형이면 호스트만 뽑고, 아니면 SSH_USER 를 쓴다
             HOST="$DEPLOY_HOST"
             USER="$SSH_USER"
             case "$DEPLOY_HOST" in
               *@*) USER="${DEPLOY_HOST%%@*}"; HOST="${DEPLOY_HOST#*@}" ;;
             esac
-            # 원격 cd 경로는 //home/... 형태로 넘겨 Git Bash 경로 변환을 피한다
-            case "$DEPLOY_DIR" in
-              /*) REMOTE_DIR="/$DEPLOY_DIR" ;;
-              *)  REMOTE_DIR="$DEPLOY_DIR" ;;
-            esac
+            # 리터럴 //home/... — env DEPLOY_DIR 을 쓰면 Git Bash 가 이미 Windows 경로로 바꿔 둔다
             ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
               "$USER@$HOST" \
-              "cd ${REMOTE_DIR} && docker compose --env-file .env.docker -f docker-compose.prod.yml --profile migrate run --rm migrate"
+              "cd //home/ubuntu/haccp && docker compose --env-file .env.docker -f docker-compose.prod.yml --profile migrate run --rm migrate"
           '''
         }
       }
@@ -153,7 +148,8 @@ pipeline {
               *@*) USER="${DEPLOY_HOST%%@*}"; HOST="${DEPLOY_HOST#*@}" ;;
             esac
             export SSH_KEY
-            bash scripts/deploy_remote.sh "$USER" "$HOST" "$DEPLOY_DIR" "$TAG"
+            # 세 번째 인자도 리터럴 //home — DEPLOY_DIR env 치환을 피한다
+            bash scripts/deploy_remote.sh "$USER" "$HOST" //home/ubuntu/haccp "$TAG"
           '''
         }
       }

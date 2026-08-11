@@ -22,10 +22,12 @@ DIR="${3:?deploy_dir}"
 TAG="${4:?tag}"
 SSH_KEY="${SSH_KEY:?SSH_KEY not set}"
 
-# Git Bash 경로 변환 회피 — 원격 Linux 절대경로를 // 로 시작한다
+# Git Bash 가 /home 을 로컬로 바꿀 수 있어, 인자가 //home 또는 /home 이면 //home 으로 정규화한다
 REMOTE_DIR="$DIR"
 case "$REMOTE_DIR" in
+  //home/*|//opt/*) ;;
   /home/*|/opt/*) REMOTE_DIR="/${REMOTE_DIR}" ;;
+  *Git/home/*|*Git\\home\\*) REMOTE_DIR="//home/ubuntu/haccp" ;;
 esac
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
