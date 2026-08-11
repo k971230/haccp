@@ -1,0 +1,62 @@
+// ============================================================
+//  HACCP Playwright E2E (선택 Job — main 배포와 분리)
+//
+//  개발자: 박승우
+//  일자: 2026-08-11
+//  코멘트:
+//    1) G-21 최소 루프(로그인→냉장→상신). haccp-deploy 에는 넣지 않는다
+//    2) Credentials: haccp-write-user (Username/Password · 냉장 write) — 목록 Job 은 haccp-smoke-user 유지
+//    3) Jenkins 에 Job 을 새로 만들고 이 파일을 스크립트 경로로 지정한다
+// ============================================================
+pipeline {
+  agent any
+
+  options {
+    disableConcurrentBuilds()
+    timeout(time: 30, unit: 'MINUTES')
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+  }
+
+  environment {
+    // Path 운영 기본 — Job 파라미터로 덮을 수 있다 (trailing slash 는 playwright.config 가 보정)
+    E2E_BASE_URL = "${params.E2E_BASE_URL ?: 'https://180.71.58.87/haccp/'}"
+    E2E_INSECURE = '1'
+  }
+
+  parameters {
+    string(name: 'E2E_BASE_URL', defaultValue: 'https://180.71.58.87/haccp/', description: 'FE baseURL (Vite base 포함, trailing slash)')
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Playwright E2E') {
+      steps {
+        dir('frontend/haccp-web') {
+          withCredentials([usernamePassword(
+            // 작성·상신 실측 — Username 은 DEMO 로그인 아이디(예: write). 조회 전용 smoke 와 분리
+            credentialsId: 'haccp-write-user',
+            usernameVariable: 'E2E_USER',
+            passwordVariable: 'E2E_PASS'
+          )]) {
+            sh '''
+              set -euo pipefail
+              npm ci --no-audit --no-fund
+              npx playwright install chromium --with-deps || npx playwright install chromium
+              npm run test:e2e
+            '''
+          }
+        }
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'frontend/haccp-web/playwright-report/**', allowEmptyArchive: true
+        }
+      }
+    }
+  }
+}

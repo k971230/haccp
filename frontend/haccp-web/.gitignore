@@ -7,3 +7,9 @@ dist-ssr/
 .env
 .env.*
 !.env.example
+!e2e/.env.example
+# Playwright E2E (G-21) — 리포트·산출물
+/playwright-report/
+/test-results/
+/blob-report/
+/playwright/.cache/
