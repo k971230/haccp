@@ -370,6 +370,21 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 - 범용 점검항목관리 비활성
 - 설비/방충 → 이력 M-D
 
+### 6.4 BizOps 다중 base (G-15) — 07↔08 교차
+
+§6.1의 구 DB `scrn_cd`와 활성 HWP leaf를 BizOps API base와 한곳에 모은다. **계약·호출 검증 정본은 [`08` §5.7](08_HACCP_FE_BE_통합_상세스펙.md).**
+
+| 구 DB scrn_cd (use_yn=N 또는 숨김) | API base prefix | 활성 작성 UI |
+|----------------------------------|-----------------|--------------|
+| *(활성)* `facility-equipment-check` | `/api/v1/fac/facility-equipment-check` | `BizOpsFormPage` (use_yn=Y) |
+| `calibration-target-management` | `/api/v1/fac/calibration-target-management` | 없음(숨김) |
+| `waste-disposal-check` | `/api/v1/fac/waste-disposal-check` | `waste-hwp` |
+| `inventory-check` | `/api/v1/inv/inventory-check` | `inventory-hwp` |
+| `receiving-inspection` | `/api/v1/inv/receiving-inspection` | `receiving-insp-hwp` |
+| `process-control-check` | `/api/v1/prc/process-control-check` | `process-hwp` |
+
+HWP 이관 4종은 §4.7 `fixedTmplCd`·`documentApi` 경로만 사용한다. 구 BizOps URL을 HWP 화면에서 호출하지 않는다(STEP 23 검증).
+
 ---
 
 ## §7 FE 카탈로그

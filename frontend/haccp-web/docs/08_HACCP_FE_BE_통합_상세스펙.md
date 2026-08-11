@@ -15,7 +15,7 @@
 | 2 | 런타임 아키텍처·요청 파이프라인 |
 | 3 | 인증·권한·메뉴 로딩 |
 | 4 | 패키지·디렉터리 지도 (FE/BE/DB) |
-| 5 | FE API 함수 ↔ HTTP URL 전수 |
+| 5 | FE API 함수 ↔ HTTP URL 전수 (§5.7 BizOps G-15) |
 | 6 | BE Controller 엔드포인트 전수 |
 | 7 | 화면 유형별 통합 계약 (Page→API→Controller→Mapper→SP→Table) |
 | 8 | 문서·결재 상태 기계 |
@@ -334,8 +334,33 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 | ccpColdApi | list/detail/save/del | `/api/v1/ccp/cold-monitor/*` |
 | ccpFormsApi | list/detail/save/del | `/api/v1/ccp/{metal-monitor\|verification-check\|annual-verification-plan}/*` |
 | ccpGenericApi | templates · get · save · del | `/api/v1/ccp/generic-monitor/*` |
-| bizOpsApi | list/detail/save/del | `/api/v1/fac|inv|prc/{screen}/*` (작성 UI는 시설 위주, 다수는 HWP로 이전) |
+| bizOpsApi | list/detail/save/del | `/api/v1/fac|inv|prc/{screen}/*` — **작성 UI는 `facility-equipment-check`만**. 나머지 base는 API 잔존(§5.7) |
 | taskWorkflowApi | today-tasks · notifications · corrective · relations · audit-export(동결) | `/api/v1/tsk/*` · `/api/v1/doc/corrective-actions/*` |
+
+### 5.7 BizOps 다중 base — API 잔존 · UI HWP (G-15)
+
+`BizOpsController`는 아래 **6 base × (list/detail/save/validate-delete/delete)** 를 한 컨트롤러에 묶는다.
+메뉴·레지스트리와 혼동하지 말 것: **활성 작성 UI는 FACILITY DB 1건뿐**이고, 이관된 화면은 `documentApi`(+rhwp)만 호출한다.
+
+| screenCode (구 DB) | API base | BE 상태 | FE 작성 UI | 활성 scrn_cd / tmpl | 비고 |
+|--------------------|----------|---------|------------|---------------------|------|
+| `facility-equipment-check` | `/api/v1/fac/facility-equipment-check` | 잔존·사용 | `BizOpsFormPage` | `facility-equipment-check` / FACILITY | **유일 활성 BizOps DB 작성** |
+| `calibration-target-management` | `/api/v1/fac/calibration-target-management` | API 잔존 | 없음 (레지스트리 미등록) | use_yn=N | 숨김 · HWP 대체 leaf 없음(자체/외부 검교정은 `calib-*-hwp`) |
+| `waste-disposal-check` | `/api/v1/fac/waste-disposal-check` | API 잔존 | HWP 이전 | `waste-hwp` / WASTE | 구 DB 화면 use_yn=N |
+| `inventory-check` | `/api/v1/inv/inventory-check` | API 잔존 | HWP 이전 | `inventory-hwp` / INV_CHECK | 구 DB 화면 use_yn=N |
+| `receiving-inspection` | `/api/v1/inv/receiving-inspection` | API 잔존 | HWP 이전 | `receiving-insp-hwp` / RECV_INSP | 구 DB 화면 use_yn=N |
+| `process-control-check` | `/api/v1/prc/process-control-check` | API 잔존 | HWP 이전 | `process-hwp` / PROCESS | 구 DB 화면 use_yn=N |
+
+**FE 호출 검증 (STEP 23, 2026-08-11)**
+
+| 검사 | 결과 |
+|------|------|
+| `screenRegistry` → `BizOpsFormPage` | `facility-equipment-check` **1건만** |
+| HWP leaf (`waste-hwp` · `inventory-hwp` · `receiving-insp-hwp` · `process-hwp`) | `HwpDocumentEditorPage` → `documentApi` · `systemApi`(서명)만. `bizOpsApi` / `/api/v1/fac|inv|prc/` **호출 0** |
+| `BizOpsFormPage` meta에 남은 5 screenCode | 코드 잔존(재활성 대비)이나 **메뉴·레지스트리 경로 없음** → 운영 작성 경로에서 미도달 |
+| 불필요 API 삭제 | **미실시** — STEP 20과 동일하게 별도 승인 후(데이터·SP 의존). 현행은 문서 고정으로 혼동만 제거 |
+
+메뉴·이관 한 줄 표 교차: [`07` §6.1·§6.4](07_메뉴_화면_API_DB_전수.md). 판정: [`09` G-15](09_통합완성도_및_부족분.md).
 
 ---
 
@@ -407,9 +432,9 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 | I 냉장 CCP | ColdMonitorPage | ccpColdApi | CcpColdController | sp_tbl_ccp_cold_monitor_* |
 | J 금속/검증 CCP | CcpFormPage | ccpFormsApi | CcpFormsController | sp_tbl_ccp_form_* |
 | K 가열·멸균·여과 | CcpGenericMonitorPage | ccpGenericApi | CcpGenericController | generic monitor SP |
-| L 시설점검 DB | BizOpsFormPage | bizOpsApi | BizOpsController | sp_tbl_biz_ops_* FACILITY |
+| L 시설점검 DB | BizOpsFormPage | bizOpsApi | BizOpsController | sp_tbl_biz_ops_* FACILITY (**활성 1건**, §5.7) |
 | M 건강진단 | HealthCertPage | healthCertApi | HealthCertController | sp_tbl_health_cert_* |
-| N HWP leaf | HwpDocumentEditorPage | documentApi | Document+Template | document · hwp_document_c |
+| N HWP leaf | HwpDocumentEditorPage | documentApi | Document+Template | document · hwp_document_c (폐기물·재고·입고·공정 등 구 BizOps 이관 포함) |
 | O 문서함/결재 | DocumentBoxPage | documentApi | DocumentController | document list/inbox |
 | P 법적서류 M-D | LegalDocumentUploadPage | document+workflow | Template+Document+Workflow | legal_type · templates · documents |
 | Q 개선조치 | CorrectiveActionManagementPage | taskWorkflowApi | TaskController | corrective_action |
@@ -590,6 +615,7 @@ flowchart LR
 | G-01 | approval-history | FE O · DEMO 메뉴 leaf 없을 수 있음 |
 | G-03 | migrate 47 이중 파일 | 적용 순서 주의 |
 | G-13 | MasterData equipment/pest · ccpMetal/VerificationApi | **완료** — 2026-08-10 STEP 01 삭제 |
+| G-15 | BizOps 다중 base 혼동 | **완료(문서)** — 2026-08-11 STEP 23. §5.7 표 · HWP 경로 bizOps 호출 0 |
 
 ### 12.3 교차 수치
 

@@ -2,11 +2,16 @@
  * bizOpsApi — 시설·재고·공정 DB형 양식 6종 API.
  *
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-08-11
  * 코멘트:
  *   1) 역할 기반 screenCode가 API 경로와 양식 화면의 단일 식별자다
  *   2) 삭제는 POST validate-delete → 확인 → delete 순서이며 키는 객체 배열만 전송한다
  *   3) header·rows는 양식별 필드를 가진 JSON이지만 회사코드는 JWT에서 결정되어 보내지 않는다
+ *
+ * G-15(STEP 23): BE는 fac/inv/prc 6 base가 잔존한다. 활성 작성 UI는
+ * screenRegistry의 facility-equipment-check(BizOpsFormPage)뿐이다.
+ * waste/inventory/receiving/process는 HWP leaf(documentApi)로 이전되었고
+ * 이 모듈을 HWP 화면에서 import하지 않는다. 잔존 API 삭제는 별도 승인.
  *
  * PIPELINE[HF84] 시설·재고·공정 API
  * PIPELINE[HF3, HF85] 연관 모듈
