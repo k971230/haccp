@@ -31,8 +31,8 @@ pipeline {
     SMOKE_BASE_URL = 'https://180.71.58.87:8443'
     // self-signed 인증서라 curl -k 필요 — Let's Encrypt 전환 후 0 으로 둔다
     SMOKE_INSECURE = '1'
-    // Windows Git Bash 가 /home/... 를 C:/Program Files/Git/home/... 로 바꾸지 않게 한다
-    MSYS_NO_PATHCONV = '1'
+    // MSYS_NO_PATHCONV 는 전역으로 켜지 않는다 — Windows mvnw 클래스패스가 깨진다.
+    // SSH 원격 경로만 migrate/deploy 스테이지에서 //home... + 지역 export 로 처리한다.
   }
 
   triggers {
