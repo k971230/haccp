@@ -12,16 +12,21 @@
 #  인증서: /etc/ssl/haccp/fullchain.pem · privkey.pem (www-data 읽기 가능)
 # ============================================================
 
-# --- HTTP :80 — 레거시 유지 + HACCP Path (필요 시 HTTPS 로 리다이렉트해도 됨) ---
+# --- HTTP :80 ---
+# 주의: 기존 000-default 가 같은 ServerName 으로 *:80 을 먼저 잡으면
+# 이 VirtualHost 의 ProxyPass 는 무시된다 → 000-default 안에 Path 를 Include 할 것.
+# /haccp (슬래시 없음) 은 RedirectMatch ^/haccp$ /haccp/ 필요.
 <VirtualHost *:80>
     ServerName 180.71.58.87
 
     # 기존 사이트 DocumentRoot 는 서버 실제 경로로 맞춘다
-    DocumentRoot /var/www/html
+    DocumentRoot /var/www
 
     ProxyPreserveHost On
     RequestHeader set X-Forwarded-Proto "http"
     RequestHeader set X-Forwarded-Port "80"
+
+    RedirectMatch ^/haccp$ /haccp/
 
     # /haccp/ → edge 루트 (프리픽스 제거). FE Vite base=/haccp/ 자산 URL 과 정합
     ProxyPass        /haccp/ http://127.0.0.1:17070/
