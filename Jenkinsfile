@@ -50,9 +50,15 @@ pipeline {
     stage('BE test & compile') {
       steps {
         dir('backend/haccp-api') {
-          sh 'sed -i "s/\\r$//" mvnw && chmod +x mvnw'
-          sh './mvnw -q -B -DskipITs test'
-          sh './mvnw -q -B -DskipTests package'
+          // Windows 에이전트에 깨진 MAVEN_HOME/M2_HOME 이 있으면 only-script mvnw 가 Launcher 를 못 찾는다
+          sh '''
+            set -euo pipefail
+            unset MAVEN_HOME M2_HOME || true
+            sed -i "s/\\r$//" mvnw
+            chmod +x mvnw
+            ./mvnw -q -B -DskipITs test
+            ./mvnw -q -B -DskipTests package
+          '''
         }
       }
       post {
