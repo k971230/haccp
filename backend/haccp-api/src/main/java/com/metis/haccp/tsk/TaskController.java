@@ -91,19 +91,34 @@ public class TaskController {
         return CommonResponse.ok(null);
     }
 
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-11
+     * 코멘트:
+     *   1) 감사자료 목록 API — FE UI 미노출(G-14 동결 유지)
+     *   2) 규제·감사 대비로 엔드포인트는 남기고 @Deprecated 만 표시한다
+     *   3) tbl_audit_log(audit-log 화면)와는 다른 기능 — 절대 혼동·삭제하지 않는다
+     */
+    @Deprecated(since = "STEP-20-G14", forRemoval = false)
     @GetMapping("/api/v1/doc/audit-export/list")
-    public CommonResponse<List<Map<String, Object>>> auditExport(@RequestParam(required = false) String fromDt, @RequestParam(required = false) String toDt, @RequestParam(required = false) String status) {
+    public CommonResponse<List<Map<String, Object>>> auditExport(
+            // 기간·상태 필터 — 비어 있을 때(= 전체) SP 조건으로 전달
+            @RequestParam(required = false) String fromDt,
+            @RequestParam(required = false) String toDt,
+            @RequestParam(required = false) String status
+    ) {
         return CommonResponse.ok(service.auditExport(fromDt, toDt, status));
     }
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-06
+     * 일자: 2026-08-11
      * 코멘트:
-     *   1) 선택 문서의 PDF를 단일 또는 zip으로 내려준다
-     *   2) AuditExportPage PDF 미리보기가 httpFile로 호출한다
+     *   1) 선택 문서 PDF를 단일 또는 zip으로 내려준다 (G-14 동결 · FE 미호출)
+     *   2) 감사 대비 경로를 유지하므로 제거하지 않고 @Deprecated 만 단다
      *   3) HWP만 있고 PDF가 없으면 서버에서 export-pdf 후 포함한다
      */
+    @Deprecated(since = "STEP-20-G14", forRemoval = false)
     @PostMapping("/api/v1/doc/audit-export/preview-pdf")
     public ResponseEntity<FileSystemResource> auditPreviewPdf(
             // 선택 문서 키 배열 — [{ docIdx }]
