@@ -1,7 +1,7 @@
 # haccp-api 인수인계 · 아키텍처
 
 > FE 정본(작성규칙 포함): [`5_인수인계_및_아키텍처_FE.md`](5_인수인계_및_아키텍처_FE.md)  
-> Cursor: [`40-handoff-comments.mdc`](../.cursor/rules/40-handoff-comments.mdc) · [`61-haccp-backend.mdc`](../.cursor/rules/61-haccp-backend.mdc)
+> Cursor: [`05-handoff-comments.mdc`](../.cursor/rules/05-handoff-comments.mdc) · [`08-haccp-backend.mdc`](../.cursor/rules/08-haccp-backend.mdc)
 
 ## 패키지
 

@@ -6,7 +6,7 @@ globs: docker-compose*.yml,nginx/**/*,Jenkinsfile*,scripts/{deploy,build,init,pr
 
 # 배포 (HACCP)
 
-정본: [`docs/20_배포_런북.md`](../../docs/20_배포_런북.md) · 브랜치 규약: [`30-branching.mdc`](30-branching.mdc)
+정본: [`docs/20_배포_런북.md`](../../docs/20_배포_런북.md) · 브랜치 규약: [`03-branching.mdc`](03-branching.mdc)
 
 ## 포트
 

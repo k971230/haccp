@@ -2,7 +2,7 @@
 
 > BE 입구: [`00_문서인덱스.md`](2_문서인덱스_BE.md)  
 > FE: [`7_에이전트_가이드_FE.md`](7_에이전트_가이드_FE.md)  
-> Cursor: [`61-haccp-backend.mdc`](../.cursor/rules/61-haccp-backend.mdc) · [`60-haccp-db.mdc`](../.cursor/rules/60-haccp-db.mdc)
+> Cursor: [`08-haccp-backend.mdc`](../.cursor/rules/08-haccp-backend.mdc) · [`07-haccp-db.mdc`](../.cursor/rules/07-haccp-db.mdc)
 
 ## 스택
 

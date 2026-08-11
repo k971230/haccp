@@ -32,4 +32,4 @@ HACCP 운영·검증 스크립트. 정본 절차는 [`docs/20_배포_런북.md`]
 
 ## 관련
 
-- 배포 규칙: `.cursor/rules/30-haccp-deploy.mdc`
+- 배포 규칙: `.cursor/rules/04-deploy.mdc`

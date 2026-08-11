@@ -16,7 +16,7 @@ alwaysApply: false
 | 화면 권한 | 조회·등록·수정·삭제·출력 5개 Y/N |
 | JWT | 단일 TTL (`app.jwt.expire-minutes`) |
 
-DB 규약: [`60-haccp-db.mdc`](60-haccp-db.mdc) · 운영: [`50-operations.mdc`](50-operations.mdc)
+DB 규약: [`07-haccp-db.mdc`](07-haccp-db.mdc) · 운영: [`06-operations.mdc`](06-operations.mdc)
 
 ## 패키지
 
@@ -66,6 +66,6 @@ Controller (@RestController)
 
 ## 인수인계·PIPELINE
 
-- 주석: [`40-handoff-comments.mdc`](40-handoff-comments.mdc)
+- 주석: [`05-handoff-comments.mdc`](05-handoff-comments.mdc)
 - 골드: `auth/AuthService.java` · `doc/DocumentService.java` · `mapper/doc/*.xml`
 - 태그 접두 **`HB`** (프론트는 `HF`). 루트 `README.md` PIPELINE 표와 동기화

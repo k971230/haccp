@@ -2,7 +2,7 @@
 
 > 정본: `3_운영규칙_FE.md`  
 > 작성일: 2026-08-10 · 개발자: 박승우  
-> Cursor 요약: [`.cursor/rules/50-operations.mdc`](../.cursor/rules/50-operations.mdc)  
+> Cursor 요약: [`.cursor/rules/06-operations.mdc`](../.cursor/rules/06-operations.mdc)  
 > BE 대칭: [`4_운영규칙_BE.md`](4_운영규칙_BE.md)  
 > 파일·보안 심화: [`11_프레임워크_파일_보안_작성규칙.md`](18_프레임워크_파일_보안_작성규칙.md)
 

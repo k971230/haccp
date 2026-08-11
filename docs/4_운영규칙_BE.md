@@ -2,7 +2,7 @@
 
 > 정본: `4_운영규칙_BE.md`  
 > FE 상세 정본: [`3_운영규칙_FE.md`](3_운영규칙_FE.md)  
-> Cursor: [`50-operations.mdc`](../.cursor/rules/50-operations.mdc) · [`61-haccp-backend.mdc`](../.cursor/rules/61-haccp-backend.mdc)
+> Cursor: [`06-operations.mdc`](../.cursor/rules/06-operations.mdc) · [`08-haccp-backend.mdc`](../.cursor/rules/08-haccp-backend.mdc)
 
 FE 01과 **동일 계약**. 여기는 BE 적용 포인트만.
 

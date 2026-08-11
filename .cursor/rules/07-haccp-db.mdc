@@ -91,7 +91,7 @@ PGHOST=... PGPASSWORD=*** java -cp 'tools\out;<postgresql-42.7.4.jar>' ApplyHacc
 
 ## 주석
 
-`40-handoff-comments.mdc`와 동일 밀도를 SQL에도 적용한다.
+`05-handoff-comments.mdc`와 동일 밀도를 SQL에도 적용한다.
 
 - 파일 머리: 역할 / 개발자 / 일자 / 코멘트 3줄
 - 테이블마다 `COMMENT ON TABLE`, 의미가 자명하지 않은 컬럼마다 `COMMENT ON COLUMN`

@@ -2,7 +2,7 @@
 
 > 정본: `5_인수인계_및_아키텍처_FE.md`  
 > 작성일: 2026-08-10 · 개발자: 박승우  
-> Cursor: [`40-handoff-comments.mdc`](../.cursor/rules/40-handoff-comments.mdc) · [`62-haccp-frontend.mdc`](../.cursor/rules/62-haccp-frontend.mdc) · [`61-haccp-backend.mdc`](../.cursor/rules/61-haccp-backend.mdc)  
+> Cursor: [`05-handoff-comments.mdc`](../.cursor/rules/05-handoff-comments.mdc) · [`09-haccp-frontend.mdc`](../.cursor/rules/09-haccp-frontend.mdc) · [`08-haccp-backend.mdc`](../.cursor/rules/08-haccp-backend.mdc)  
 > BE 대칭: [`6_인수인계_및_아키텍처_BE.md`](6_인수인계_및_아키텍처_BE.md)  
 > 파일 지도: [`10`](17_파일구조_컴포넌트_함수지도.md) · 작성 체크: [`11`](18_프레임워크_파일_보안_작성규칙.md)
 

@@ -16,7 +16,7 @@ alwaysApply: false
 | storage | `haccp-*` (`authKeys.ts`) |
 | 메뉴 | 대분류·화면 2단 (`h_menu_cd`) |
 
-UI 마감: [`21-frontend-ui.mdc`](21-frontend-ui.mdc) · 운영: [`50-operations.mdc`](50-operations.mdc)
+UI 마감: [`02-frontend-ui.mdc`](02-frontend-ui.mdc) · 운영: [`06-operations.mdc`](06-operations.mdc)
 
 ## 이름 접두사
 
@@ -60,6 +60,6 @@ UI 마감: [`21-frontend-ui.mdc`](21-frontend-ui.mdc) · 운영: [`50-operations
 
 ## 인수인계·PIPELINE
 
-- 주석: [`40-handoff-comments.mdc`](40-handoff-comments.mdc)
+- 주석: [`05-handoff-comments.mdc`](05-handoff-comments.mdc)
 - 골드: `shell/HaccpShell.tsx` · `pages/ccp/ColdMonitorPage.tsx` · `pages/auth/LoginPage.tsx`
 - 태그 접두 **`HF`**. 루트 `README.md` PIPELINE 표와 동기화

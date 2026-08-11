@@ -650,7 +650,7 @@ flowchart LR
 | 응답 | CommonResponse · SP CALL 건수 미반환 |
 | 에러 | 사용자=업무문구 / 로그=기술상세 |
 | 매직넘버 | env / application.yml / envConfig만 |
-| 인수인계 주석 | FE=BE 동일 밀도 (40-handoff) |
+| 인수인계 주석 | FE=BE 동일 밀도 (05-handoff) |
 | 이모지 | 소스·UI·문서 금지 |
 
 ---

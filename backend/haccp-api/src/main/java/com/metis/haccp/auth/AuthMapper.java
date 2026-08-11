@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) sp_tbl_user_login_r_000 / _u_000, sp_tbl_role_screen_r_000, sp_tbl_login_log_c_000 / _u_000 을 호출한다
  *   2) SQL 본문은 mapper/auth/AuthMapper.xml 에 있다 — 이 인터페이스는 시그니처만 선언한다
- *   3) 직접 SQL을 쓰지 않는다. 조회는 FUNCTION, 쓰기는 PROCEDURE 규약(60-haccp-db)을 그대로 따른다
+ *   3) 직접 SQL을 쓰지 않는다. 조회는 FUNCTION, 쓰기는 PROCEDURE 규약(07-haccp-db)을 그대로 따른다
  *
  * PIPELINE[HB27] MyBatis 매퍼
  */

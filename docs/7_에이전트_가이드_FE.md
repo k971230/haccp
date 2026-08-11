@@ -2,7 +2,7 @@
 
 > 정본: `7_에이전트_가이드_FE.md`  
 > 작성일: 2026-08-10 · 개발자: 박승우  
-> 상속: 루트 `ReadMe.md` · `.cursor/rules/00-bootstrap` → `62-haccp-frontend` · `21-frontend-ui` · `40` · `50`  
+> 상속: 루트 `README.md` · `.cursor/rules/00-bootstrap` → `09-haccp-frontend` · `02-frontend-ui` · `05-handoff` · `06-operations`  
 > BE: [`8_에이전트_가이드_BE.md`](8_에이전트_가이드_BE.md)
 
 ---
@@ -47,7 +47,7 @@
 | 상단 버튼 | `usePageCommands` |
 | 오류 | `mesError` · `mesToast` · `MES` |
 | 숫자 | `envConfig` only |
-| 주석 | 02 · 40-handoff 밀도 |
+| 주석 | `05-handoff-comments` 밀도 |
 
 ---
 

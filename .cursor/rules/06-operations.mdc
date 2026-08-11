@@ -6,7 +6,7 @@ alwaysApply: true
 # HACCP 운영 규약
 
 정본: [`docs/3_운영규칙_FE.md`](../../docs/3_운영규칙_FE.md) · BE [`docs/4_운영규칙_BE.md`](../../docs/4_운영규칙_BE.md)  
-인수인계 주석: `40-handoff-comments.mdc`
+인수인계 주석: `05-handoff-comments.mdc`
 
 ## [OPS_DELETE] 삭제 표준
 
@@ -60,5 +60,5 @@ alwaysApply: true
 
 ## 에이전트 의무
 
-- 신규·수정 시 본 규약 + `61-haccp-backend` / `62-haccp-frontend` 교차
+- 신규·수정 시 본 규약 + `08-haccp-backend` / `09-haccp-frontend` 교차
 - FE 선행·BE 미정합(validate-delete 404) 주의

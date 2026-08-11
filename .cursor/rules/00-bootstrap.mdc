@@ -9,13 +9,13 @@ alwaysApply: true
 
 1. 루트 `README.md`
 2. `01-project-core.mdc`
-3. `40-handoff-comments.mdc` — FE·BE **동일 밀도** 인수인계 주석
-4. `50-operations.mdc` — 삭제·타임아웃·전역 env
+3. `05-handoff-comments.mdc` — FE·BE **동일 밀도** 인수인계 주석
+4. `06-operations.mdc` — 삭제·타임아웃·전역 env
 5. 작업 영역 scoped rule
-   - DB: `60-haccp-db.mdc`
-   - 백엔드: `61-haccp-backend.mdc`
-   - 프론트: `62-haccp-frontend.mdc` · UI: `21-frontend-ui.mdc`
-   - 배포: `30-haccp-deploy.mdc` · 런북 `docs/20_배포_런북.md`
+   - DB: `07-haccp-db.mdc`
+   - 백엔드: `08-haccp-backend.mdc`
+   - 프론트: `09-haccp-frontend.mdc` · UI: `02-frontend-ui.mdc`
+   - 배포: `04-deploy.mdc` · 런북 `docs/20_배포_런북.md`
 6. 에이전트 가이드 — `docs/7_에이전트_가이드_FE.md` · `docs/8_에이전트_가이드_BE.md`
 
 ## 필수 행동
@@ -25,7 +25,7 @@ alwaysApply: true
 - 기존 코드 스타일·패턴을 따른다
 - **git commit/push**는 사용자 명시 요청 시에만
 - **이모지 금지** — `01-project-core.mdc`
-- **인수인계 주석** — FE·BE 동일 밀도 (`40-handoff-comments.mdc`)
+- **인수인계 주석** — FE·BE 동일 밀도 (`05-handoff-comments.mdc`)
 - Windows: 명령 연결은 `;` (`&&` 지양)
 
 ## 작업 순서

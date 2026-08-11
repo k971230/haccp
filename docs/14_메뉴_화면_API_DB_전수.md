@@ -39,7 +39,7 @@
 | BE | JJWT | 0.12.6 | pom |
 | BE | spring-dotenv | 4.0.0 | pom |
 | DB | DB / schema | sasshaccp / sasshaccp | 규약 |
-| DB | SP 규약 | `sp_tbl_{의미}_{r|c|d|u}_000` | 60-haccp-db |
+| DB | SP 규약 | `sp_tbl_{의미}_{r|c|d|u}_000` | 07-haccp-db |
 | 런타임 | FE / BE 포트 | 4173 / 7070 | env |
 
 ### 0.2 라우팅·셸

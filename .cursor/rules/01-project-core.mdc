@@ -9,7 +9,7 @@ alwaysApply: true
 
 - 백엔드: Spring Boot 3.3.4, Java 17, MyBatis 3.0.3, JWT — `backend/haccp-api/`
 - 프론트: React 18, Vite 5, TypeScript, Tailwind, Zustand, React Query — `frontend/haccp-web/`
-- DB: PostgreSQL **DB·스키마 `sasshaccp`** — 정본 `db_sasshaccp/`, 규약 `60-haccp-db.mdc`
+- DB: PostgreSQL **DB·스키마 `sasshaccp`** — 정본 `db_sasshaccp/`, 규약 `07-haccp-db.mdc`
 - SP: `sp_tbl_*` (lower_snake). MES(`metis` / `sp_sk_*`)와 **상호 참조·공유 금지**
 - 로컬 포트: API **7070** · Vite **4173** (CORS Origin `http://localhost:4173`)
 
