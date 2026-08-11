@@ -136,10 +136,17 @@ pipeline {
 
     stage('Deploy to prod') {
       steps {
-        withCredentials([sshUserPrivateKey(
-            credentialsId: 'haccp-deploy-ssh-key',
-            keyFileVariable: 'SSH_KEY',
-            usernameVariable: 'SSH_USER')]) {
+        // SSH 키 + GHCR — 원격 pull 이 private 패키지라 서버 쪽 login 이 필요하다
+        withCredentials([
+            sshUserPrivateKey(
+              credentialsId: 'haccp-deploy-ssh-key',
+              keyFileVariable: 'SSH_KEY',
+              usernameVariable: 'SSH_USER'),
+            usernamePassword(
+              credentialsId: 'haccp-registry-cred',
+              usernameVariable: 'REG_USER',
+              passwordVariable: 'REG_PASS')
+        ]) {
           sh '''
             set -euo pipefail
             HOST="$DEPLOY_HOST"
@@ -147,7 +154,7 @@ pipeline {
             case "$DEPLOY_HOST" in
               *@*) USER="${DEPLOY_HOST%%@*}"; HOST="${DEPLOY_HOST#*@}" ;;
             esac
-            export SSH_KEY
+            export SSH_KEY REG_USER REG_PASS
             # 세 번째 인자도 리터럴 //home — DEPLOY_DIR env 치환을 피한다
             bash scripts/deploy_remote.sh "$USER" "$HOST" //home/ubuntu/haccp "$TAG"
           '''

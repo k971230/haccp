@@ -34,18 +34,35 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SSH=(ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -o BatchMode=yes)
 RSH="ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
 
-echo ">>> rsync compose · nginx template → $USER@$HOST:$REMOTE_DIR"
+echo ">>> sync compose · nginx template → $USER@$HOST:$REMOTE_DIR"
 "${SSH[@]}" "$USER@$HOST" "mkdir -p '${REMOTE_DIR}/nginx'"
-rsync -az -e "$RSH" \
-  "$ROOT/docker-compose.prod.yml" \
-  "$USER@$HOST:${REMOTE_DIR}/"
-rsync -az -e "$RSH" \
-  "$ROOT/nginx/haccp.conf.template" \
-  "$USER@$HOST:${REMOTE_DIR}/nginx/"
+# Windows Git Bash 에는 rsync 가 없는 경우가 많다 — 있으면 rsync, 없으면 scp
+if command -v rsync >/dev/null 2>&1; then
+  rsync -az -e "$RSH" \
+    "$ROOT/docker-compose.prod.yml" \
+    "$USER@$HOST:${REMOTE_DIR}/"
+  rsync -az -e "$RSH" \
+    "$ROOT/nginx/haccp.conf.template" \
+    "$USER@$HOST:${REMOTE_DIR}/nginx/"
+else
+  echo ">>> rsync 없음 — scp 로 전송"
+  scp -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+    "$ROOT/docker-compose.prod.yml" \
+    "$USER@$HOST:${REMOTE_DIR}/docker-compose.prod.yml"
+  scp -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+    "$ROOT/nginx/haccp.conf.template" \
+    "$USER@$HOST:${REMOTE_DIR}/nginx/haccp.conf.template"
+fi
 
 echo ">>> remote pull & up TAG=$TAG"
 # .env.docker 는 서버에 미리 배치한다(시크릿 미전송).
 # docker-compose.override.yml 이 있으면(= 호스트 :80 점유 우회 등) 함께 넘긴다 — 없으면 prod.yml 만.
+# GHCR private 패키지이면 REG_USER/REG_PASS 로 원격 login 후 pull 한다 (비밀번호는 stdin).
+if [ -n "${REG_USER:-}" ] && [ -n "${REG_PASS:-}" ]; then
+  echo ">>> remote docker login ghcr.io"
+  printf '%s' "$REG_PASS" | "${SSH[@]}" "$USER@$HOST" \
+    "docker login ghcr.io -u $(printf '%q' "$REG_USER") --password-stdin"
+fi
 "${SSH[@]}" "$USER@$HOST" "cd '${REMOTE_DIR}' && \
   export TAG='$TAG' && \
   COMPOSE_FILES='-f docker-compose.prod.yml' && \
@@ -53,5 +70,8 @@ echo ">>> remote pull & up TAG=$TAG"
   docker compose --env-file .env.docker \$COMPOSE_FILES pull && \
   docker compose --env-file .env.docker \$COMPOSE_FILES up -d && \
   docker image prune -f"
+if [ -n "${REG_USER:-}" ] && [ -n "${REG_PASS:-}" ]; then
+  "${SSH[@]}" "$USER@$HOST" "docker logout ghcr.io >/dev/null 2>&1 || true"
+fi
 
 echo "deploy_remote OK — $HOST TAG=$TAG"
