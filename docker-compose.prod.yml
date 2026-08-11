@@ -58,6 +58,10 @@ services:
     env_file:
       # 배포 서버에만 두는 실제 값 파일 — DB 접속·JWT 시크릿의 유일한 출처. 커밋 금지
       - ./.env.docker
+    # 호스트에 깐 PostgreSQL 로 붙을 때 DB_HOST=host.docker.internal 을 쓰기 위한 게이트웨이
+    # (Linux Docker — with-db 컨테이너 DB 를 쓰면 이 항목은 무시되어도 무방하다)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       # 아래 3개는 볼륨 마운트 지점과 반드시 일치해야 해서 .env.docker 가 아닌 여기에 고정한다
       APP_FILE_ROOT: /var/haccp/files
@@ -136,9 +140,11 @@ services:
     # api 와 같은 .env.docker 를 읽어 DB_* 를 PG* 로 넘긴다
     env_file:
       - ./.env.docker
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       # apply-all.sh 는 PG* 만 본다 — JDBC URL 이 아니라 호스트·계정을 직접 준다
-      PGHOST: ${DB_HOST:-db}
+      PGHOST: ${DB_HOST:-host.docker.internal}
       PGPORT: ${DB_PORT:-5432}
       PGUSER: ${DB_USERNAME}
       PGPASSWORD: ${DB_PASSWORD}
@@ -154,8 +160,10 @@ services:
     image: postgres:16
     env_file:
       - ./.env.docker
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      PGHOST: ${DB_HOST:-db}
+      PGHOST: ${DB_HOST:-host.docker.internal}
       PGPORT: ${DB_PORT:-5432}
       PGUSER: ${DB_USERNAME}
       PGPASSWORD: ${DB_PASSWORD}
