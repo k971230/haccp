@@ -23,7 +23,8 @@ pipeline {
     IMAGE_WEB   = "${REGISTRY}/haccp-web"
     IMAGE_NGX   = "${REGISTRY}/haccp-nginx"
     TAG         = "1.0.${env.BUILD_NUMBER}"
-    DEPLOY_DIR  = '/opt/haccp'
+    // sudo 없이 배포 계정 홈에 둔다 — /opt/haccp 는 root 소유 시 권한 문제로 막힌다
+    DEPLOY_DIR  = '/home/ubuntu/haccp'
     // Secret text: user@host 또는 host 만 — deploy 스크립트가 USER/HOST 로 나눈다
     DEPLOY_HOST = credentials('haccp-deploy-host')
     SMOKE_BASE_URL = 'https://haccp.example.com'
