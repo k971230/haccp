@@ -79,15 +79,17 @@ ENV APP_RHWP_FONT_PATH=/usr/share/fonts/truetype/nanum
 ENV APP_TEMPLATE_IMPORT_ROOT=""
 ENV APP_RHWP_CLI_PATH=""
 
+# 컨테이너 내부 통일 포트 — edge upstream(api:7070). 로컬 mvnw 는 application.yml 기본 8081
+ENV SERVER_PORT=7070
+
 USER haccp
 
-# mes-api(8080)와 분리된 기본 포트 — SERVER_PORT 로 바꾸면 HEALTHCHECK 도 함께 조정해야 한다
-EXPOSE 8081
+EXPOSE 7070
 
 # start-period 를 넉넉히 둔다 — DB 커넥션 풀·MyBatis 초기화까지 기다려야 첫 판정이 의미 있다.
 # DB 가 없으면 Actuator 가 DOWN(503) 을 주므로 이 헬스체크는 "앱+DB 준비"를 함께 본다
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD curl -fsS http://localhost:8081/actuator/health || exit 1
+    CMD curl -fsS http://localhost:7070/actuator/health || exit 1
 
 # MaxRAMPercentage: 컨테이너 메모리 제한의 75%를 힙 상한으로 — -Xmx 를 하드코딩하지 않기 위해서다
 ENTRYPOINT ["java","-XX:MaxRAMPercentage=75","-Duser.timezone=Asia/Seoul","-jar","/app/app.jar"]

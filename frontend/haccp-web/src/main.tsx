@@ -2,11 +2,11 @@
  * main — React 앱 진입점 (Provider·라우터 마운트).
  *
  * 개발자: 박승우
- * 일자: 2026-08-05
+ * 일자: 2026-08-11
  * 코멘트:
  *   1) 서버 상태 캐시(React Query)와 주소 기반 라우터를 깔고 라우트 트리를 #root에 붙인다
- *   2) 401·로그아웃 시 캐시를 비우는 콜백과 멀티탭 로그아웃 구독을 여기서 한 번만 등록한다
- *   3) 업무 로직은 두지 않는다 — 부트스트랩 전용 파일이다
+ *   2) basename 은 Vite base(운영 /haccp/) — Apache Path 분기와 자산 URL·클라이언트 라우트 정합
+ *   3) 401·로그아웃 시 캐시 비우기·멀티탭 로그아웃 구독을 여기서 한 번만 등록한다
  *
  * PIPELINE[HF1] React 진입점
  * PIPELINE[HF2, HF74, HF114] 연관 모듈
@@ -46,7 +46,13 @@ subscribeAuthCrossTab(() => {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <BrowserRouter
+        // Vite base 와 동일 — 운영 Docker 는 /haccp/ , 로컬 dev 는 /
+        basename={import.meta.env.BASE_URL}
+        // React Router v7 동작 미리 켜기 — 콘솔 경고 방지
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        {/* 업무 화면·가드·레이아웃 트리 */}
         <AppRoutes />
       </BrowserRouter>
     </QueryClientProvider>

@@ -3,16 +3,24 @@
 #  prod 스모크 — 배포 직후 9단계 (조회 전용, 결재·삭제 없음)
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-11
 #  코멘트:
-#    1) 외부 생존은 /healthz — /actuator 는 deny
-#    2) 로그인 body 는 password
+#    1) origin(https://IP) 기준 — FE/healthz 는 /haccp , API 는 /api (Apache Path)
+#    2) 루프백 edge 직접 검증 시 SMOKE_WEB_PREFIX= 빈값 + http://127.0.0.1:17070
 #    3) JSON 파싱은 python — jq 없이도 Windows/Jenkins 에서 돈다
 # ============================================================
 set -euo pipefail
 
 BASE_URL="${1:?usage: prod_smoke.sh <base_url>}"
 BASE_URL="${BASE_URL%/}"
+# Apache Path 분기 기본 프리픽스. edge 루프백 직행 시 SMOKE_WEB_PREFIX= 로 비운다
+WEB_PREFIX="${SMOKE_WEB_PREFIX-/haccp}"
+# 앞 슬래시만 남기고 끝 슬래시는 제거 — "${BASE}${WEB_PREFIX}/healthz" 조립용
+WEB_PREFIX="${WEB_PREFIX%/}"
+case "$WEB_PREFIX" in
+  ""|/*) ;;
+  *) WEB_PREFIX="/${WEB_PREFIX}" ;;
+esac
 USER="${SMOKE_USER:?SMOKE_USER not set}"
 PASS="${SMOKE_PASS:?SMOKE_PASS not set}"
 
@@ -77,12 +85,12 @@ else:
 PY
 }
 
-echo "==> 1) edge 헬스 (/healthz)"
-fetch "$TMP/healthz.txt" "$BASE_URL/healthz"
+echo "==> 1) edge 헬스 (${WEB_PREFIX}/healthz)"
+fetch "$TMP/healthz.txt" "${BASE_URL}${WEB_PREFIX}/healthz"
 grep -q ok "$TMP/healthz.txt"
 
-echo "==> 2) FE 정적"
-fetch "$TMP/index.html" "$BASE_URL/"
+echo "==> 2) FE 정적 (${WEB_PREFIX}/)"
+fetch "$TMP/index.html" "${BASE_URL}${WEB_PREFIX}/"
 grep -qiE '<title>|haccp|root' "$TMP/index.html"
 
 echo "==> 3) 로그인 (JWT)"

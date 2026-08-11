@@ -9,7 +9,7 @@
 #
 # PIPELINE[HB2] 애플리케이션 설정
 server:
-  # mes-api가 8080을 쓰므로 충돌을 피해 8081을 기본값으로 둔다
+  # 로컬 mvnw 기본 8081(mes-api 8080 회피). Docker compose 는 SERVER_PORT=7070 으로 덮는다
   port: ${SERVER_PORT:8081}
 
 spring:

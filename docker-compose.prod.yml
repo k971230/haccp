@@ -4,9 +4,9 @@
 #  개발자: 박승우
 #  일자: 2026-08-10
 #  코멘트:
-#    1) 브라우저에 열리는 포트는 edge 의 80/443 뿐이다 — api(8081)·web·db(5432)는 내부망에만 둔다
-#    2) DB는 외부 PostgreSQL이 기본이고, 내부 PG가 필요할 때만 profile "with-db" 로 켠다
-#    3) 이미지 태그·DB 계정 같은 치환값은 --env-file 로 읽는다 (env_file 과 다른 통로다)
+#    1) 공인 입구는 호스트 Apache(80/443) — edge 호스트 publish 는 override 의 127.0.0.1:17070 만
+#    2) api·web·edge 컨테이너 내부 listen 은 7070 통일 (호스트에 api/web 미노출)
+#    3) DB는 외부 PostgreSQL 기본 · 이미지 태그 치환은 --env-file (env_file 과 다른 통로)
 #
 #  실행 (외부 PG):
 #    docker compose --env-file .env.docker -f docker-compose.prod.yml up -d
@@ -51,7 +51,7 @@ services:
     restart: unless-stopped
 
   # ----------------------------------------------------------
-  # api — Spring Boot (8081, 내부 전용)
+  # api — Spring Boot (7070, 내부 전용 · 호스트 publish 없음)
   # ----------------------------------------------------------
   api:
     image: ${REGISTRY}/haccp-api:${TAG}
@@ -63,6 +63,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
+      # edge upstream(api:7070) 과 맞춘다 — 로컬 mvnw 기본 8081 과 분리
+      SERVER_PORT: "7070"
       # 아래 3개는 볼륨 마운트 지점과 반드시 일치해야 해서 .env.docker 가 아닌 여기에 고정한다
       APP_FILE_ROOT: /var/haccp/files
       # 기동 직후 매니페스트대로 표준 양식을 파일 볼륨에 복사한다.
@@ -84,7 +86,7 @@ services:
         required: false
     healthcheck:
       # DB 인디케이터가 물려 있어 "앱 기동 + DB 연결"을 함께 본다
-      test: ["CMD", "curl", "-fsS", "http://localhost:8081/actuator/health"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:7070/actuator/health"]
       interval: 15s
       timeout: 3s
       retries: 10
@@ -93,37 +95,34 @@ services:
     restart: unless-stopped
 
   # ----------------------------------------------------------
-  # web — 정적 SPA (8080, 내부 전용)
+  # web — 정적 SPA (7070, 내부 전용 · 호스트 publish 없음)
   # ----------------------------------------------------------
   web:
     image: ${REGISTRY}/haccp-web:${TAG}
     healthcheck:
-      # nginx-unprivileged 는 uid 101 로 돌아 80 을 열 수 없어 8080 을 쓴다.
-      # alpine 에서 localhost 가 ::1 로 풀리면 실패하므로 IPv4 루프백을 명시한다
-      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/"]
+      # 컨테이너 내부 listen 7070 — alpine localhost(::1) 회피로 IPv4 루프백 명시
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:7070/"]
       interval: 15s
       timeout: 3s
     restart: unless-stopped
 
   # ----------------------------------------------------------
-  # edge — TLS 종단·리버스 프록시 (유일한 외부 노출)
+  # edge — Apache 백엔드 프록시 (호스트 포트는 override 에서만 연다)
   # ----------------------------------------------------------
   edge:
     image: ${REGISTRY}/haccp-nginx:${TAG}
     environment:
-      # conf 템플릿 치환값 — 도메인·인증서 경로를 이미지 재빌드 없이 배포마다 바꾼다
+      # conf 템플릿 치환값 — 도메인·허용 대역을 이미지 재빌드 없이 배포마다 바꾼다
       HACCP_SERVER_NAME: ${HACCP_SERVER_NAME}
       HACCP_CERT_DIR: ${HACCP_CERT_DIR}
       # /actuator 를 열어 줄 대역 하나 — 기본값은 루프백이라 사실상 차단이다
       HACCP_ACTUATOR_ALLOW: ${HACCP_ACTUATOR_ALLOW}
-    ports:
-      # 컨테이너 안은 non-root 라 8080/8443, 바깥은 표준 포트로 노출한다
-      - "80:8080"
-      - "443:8443"
+    # 공인 80/443/8080/8443 publish 금지 — docker-compose.override.yml 만
+    #   ports: !override  - "127.0.0.1:17070:7070"
+    # 예시는 docker-compose.override.example.yml
     volumes:
-      # 인증서는 이미지에 넣지 않는다 — 로컬 검증은 self-signed 디렉터리를 가리키게 한다
+      # 인증서는 edge TLS 용이 아니다(Apache 종단). 기존 경로 호환·로컬 검증용으로 마운트만 유지
       - ${HACCP_CERT_HOST_DIR}:/etc/letsencrypt:ro
-      # certbot webroot — 갱신 시 edge 를 내리지 않고 http-01 챌린지를 받기 위한 공유 지점
       - haccp-acme:/var/www/certbot
     depends_on:
       - api
