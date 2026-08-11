@@ -1,0 +1,18 @@
+# ============================================================
+#  운영 서버 전용 override 예시 — 루프백 edge 단권화
+#
+#  개발자: 박승우
+#  일자: 2026-08-11
+#  코멘트:
+#    1) 이 파일을 서버에서 docker-compose.override.yml 로 복사한다 (커밋 금지·시크릿 없음)
+#    2) !override 로 prod.yml 의 80/443 publish 를 전량 치환한다
+#    3) 공인 8080·8443 는 CLOSE — Apache 만 80/443, Docker 는 127.0.0.1:17070 만
+#
+#  배치: /home/ubuntu/haccp/docker-compose.override.yml
+# ============================================================
+
+services:
+  edge:
+    ports: !override
+      # 호스트 루프백만 — Apache ProxyPass 대상
+      - "127.0.0.1:17070:7070"

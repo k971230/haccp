@@ -27,10 +27,12 @@ pipeline {
     DEPLOY_DIR  = '/home/ubuntu/haccp'
     // Secret text: user@host 또는 host 만 — deploy 스크립트가 USER/HOST 로 나눈다
     DEPLOY_HOST = credentials('haccp-deploy-host')
-    // 호스트 apache 가 :80 점유 중이라 edge 는 8443 우회 — 표준 443 확보 후 포트 없이 되돌린다
-    SMOKE_BASE_URL = 'https://180.71.58.87:8443'
-    // self-signed 인증서라 curl -k 필요 — Let's Encrypt 전환 후 0 으로 둔다
+    // Apache Path 분기 — origin 만 (포트·/haccp 없음). FE는 prod_smoke 의 SMOKE_WEB_PREFIX=/haccp
+    SMOKE_BASE_URL = 'https://180.71.58.87'
+    // Apache self-signed 이면 1 — 공인 인증서 전환 후 0
     SMOKE_INSECURE = '1'
+    // Apache /haccp/ → edge. 루프백 직행 스모크만 빈 값으로 덮는다
+    SMOKE_WEB_PREFIX = '/haccp'
     // MSYS_NO_PATHCONV 는 전역으로 켜지 않는다 — Windows mvnw 클래스패스가 깨진다.
     // SSH 원격 경로만 migrate/deploy 스테이지에서 //home... + 지역 export 로 처리한다.
   }

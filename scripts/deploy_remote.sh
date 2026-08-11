@@ -34,24 +34,28 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SSH=(ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -o BatchMode=yes)
 RSH="ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
 
-echo ">>> sync compose · nginx template → $USER@$HOST:$REMOTE_DIR"
+echo ">>> sync compose · nginx · override 예시 → $USER@$HOST:$REMOTE_DIR"
 "${SSH[@]}" "$USER@$HOST" "mkdir -p '${REMOTE_DIR}/nginx'"
 # Windows Git Bash 에는 rsync 가 없는 경우가 많다 — 있으면 rsync, 없으면 scp
 if command -v rsync >/dev/null 2>&1; then
   rsync -az -e "$RSH" \
     "$ROOT/docker-compose.prod.yml" \
+    "$ROOT/docker-compose.override.example.yml" \
     "$USER@$HOST:${REMOTE_DIR}/"
   rsync -az -e "$RSH" \
     "$ROOT/nginx/haccp.conf.template" \
+    "$ROOT/nginx/apache-haccp-gateway.conf.example" \
     "$USER@$HOST:${REMOTE_DIR}/nginx/"
 else
   echo ">>> rsync 없음 — scp 로 전송"
   scp -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
     "$ROOT/docker-compose.prod.yml" \
-    "$USER@$HOST:${REMOTE_DIR}/docker-compose.prod.yml"
+    "$ROOT/docker-compose.override.example.yml" \
+    "$USER@$HOST:${REMOTE_DIR}/"
   scp -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
     "$ROOT/nginx/haccp.conf.template" \
-    "$USER@$HOST:${REMOTE_DIR}/nginx/haccp.conf.template"
+    "$ROOT/nginx/apache-haccp-gateway.conf.example" \
+    "$USER@$HOST:${REMOTE_DIR}/nginx/"
 fi
 
 echo ">>> remote pull & up TAG=$TAG"

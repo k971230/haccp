@@ -1,10 +1,10 @@
 // vite.config.ts — haccp-web 개발 서버·빌드 설정
 //
 // 개발자: 박승우
-// 일자: 2026-08-06
+// 일자: 2026-08-11
 // 코멘트:
 //   1) mes-web과 같은 구성이며, 포트만 5174로 바꿨다 — 두 프론트를 동시에 띄워도 충돌하지 않는다
-//   2) @ 별칭은 src 루트를 가리킨다. tsconfig.json paths와 반드시 같은 값을 유지해야 한다
+//   2) 운영 Docker 빌드는 VITE_BASE=/haccp/ — Apache Path 분기와 BrowserRouter basename 정합
 //   3) /rhwp 는 edwardkim.github.io 스튜디오 프록시 — 동일출처로 도구상자(#icon-toolbar)를 접기 위함
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -14,6 +14,8 @@ import { defineConfig } from "vite";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  // 로컬 dev 기본 "/" · 이미지 빌드 시 Dockerfile ARG VITE_BASE=/haccp/
+  base: process.env.VITE_BASE || "/",
   plugins: [react()],
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },

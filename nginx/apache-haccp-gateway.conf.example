@@ -1,0 +1,57 @@
+# ============================================================
+#  Apache Path 분기 — 레거시 DocumentRoot + HACCP Docker edge
+#
+#  개발자: 박승우
+#  일자: 2026-08-11
+#  코멘트:
+#    1) / 는 기존 사이트 DocumentRoot 유지 · /haccp/ · /api/ · /rhwp/ 만 edge 로
+#    2) TLS 종단은 Apache — 백엔드는 http://127.0.0.1:17070 (루프백)
+#    3) 모듈: proxy proxy_http ssl headers (a2enmod)
+#
+#  배치 예: /etc/apache2/sites-available/haccp-gateway.conf
+#  인증서: /etc/ssl/haccp/fullchain.pem · privkey.pem (www-data 읽기 가능)
+# ============================================================
+
+# --- HTTP :80 — 레거시 유지 + HACCP Path (필요 시 HTTPS 로 리다이렉트해도 됨) ---
+<VirtualHost *:80>
+    ServerName 180.71.58.87
+
+    # 기존 사이트 DocumentRoot 는 서버 실제 경로로 맞춘다
+    DocumentRoot /var/www/html
+
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto "http"
+    RequestHeader set X-Forwarded-Port "80"
+
+    # /haccp/ → edge 루트 (프리픽스 제거). FE Vite base=/haccp/ 자산 URL 과 정합
+    ProxyPass        /haccp/ http://127.0.0.1:17070/
+    ProxyPassReverse /haccp/ http://127.0.0.1:17070/
+
+    # API·rhwp 는 origin 루트 경로 (FE 상대경로 /api · /rhwp)
+    ProxyPass        /api/  http://127.0.0.1:17070/api/
+    ProxyPassReverse /api/  http://127.0.0.1:17070/api/
+    ProxyPass        /rhwp/ http://127.0.0.1:17070/rhwp/
+    ProxyPassReverse /rhwp/ http://127.0.0.1:17070/rhwp/
+</VirtualHost>
+
+# --- HTTPS :443 — TLS 종단 후 동일 Path ---
+<VirtualHost *:443>
+    ServerName 180.71.58.87
+
+    DocumentRoot /var/www/html
+
+    SSLEngine on
+    SSLCertificateFile      /etc/ssl/haccp/fullchain.pem
+    SSLCertificateKeyFile   /etc/ssl/haccp/privkey.pem
+
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto "https"
+    RequestHeader set X-Forwarded-Port "443"
+
+    ProxyPass        /haccp/ http://127.0.0.1:17070/
+    ProxyPassReverse /haccp/ http://127.0.0.1:17070/
+    ProxyPass        /api/  http://127.0.0.1:17070/api/
+    ProxyPassReverse /api/  http://127.0.0.1:17070/api/
+    ProxyPass        /rhwp/ http://127.0.0.1:17070/rhwp/
+    ProxyPassReverse /rhwp/ http://127.0.0.1:17070/rhwp/
+</VirtualHost>
