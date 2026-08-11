@@ -2,11 +2,12 @@
  * envConfig — .env 값을 한곳에서 파싱하는 전역 설정 (OPS_GLOBAL_CONFIG).
  *
  * 개발자: 박승우
- * 일자: 2026-08-05
+ * 일자: 2026-08-11
  * 코멘트:
  *   1) 타임아웃·페이지 크기·폴링 주기처럼 운영 중 조정될 수 있는 숫자는 전부 여기로 모은다
  *   2) 소스 곳곳에 숫자를 박아두면 운영값을 바꿀 때 재배포가 필요해진다 — 그래서 매직 넘버를 금지한다
  *   3) 미설정·잘못된 값이면 권장 기본값으로 되돌린다. .env를 고친 뒤에는 Vite를 재시작해야 반영된다
+ *      G-23: GRID_VIRTUAL_THRESHOLD 는 Mes*Grid 가상화에 사용. GRID_DEFAULT_PAGE_SIZE 는 예약(클라 페이징 없음).
  *
  * PIPELINE[HF31] 전역 설정
  * PIPELINE[HF3] 연관 — http 타임아웃 3계층
@@ -52,13 +53,18 @@ export const API_TIMEOUT_FILE_MS = parsePositiveInt(
   120_000
 );
 
-/** 그리드·목록 기본 페이지 크기 */
+/**
+ * 그리드·목록 기본 페이지 크기 (OPS 키 정본 유지).
+ * HACCP 작성·목록 그리드는 클라이언트 페이지네이션을 쓰지 않고
+ * 전체 로드 + VITE_GRID_VIRTUAL_THRESHOLD 가상 스크롤이 정본이다 (G-23).
+ * 서버 페이지 API·픽커 등이 도입될 때 이 값을 소비한다 — 매직 넘버 금지용 예약.
+ */
 export const GRID_DEFAULT_PAGE_SIZE = parsePositiveInt(
   import.meta.env.VITE_GRID_DEFAULT_PAGE_SIZE,
   50
 );
 
-/** 그리드 행 가상화 임계 — 이 행 수 이상이면 가상 스크롤로 전환한다 */
+/** 그리드 행 가상화 임계 — 이 행 수 이상이면 가상 스크롤로 전환한다 (MesEditable/DataGrid) */
 export const GRID_VIRTUAL_THRESHOLD = parsePositiveInt(
   import.meta.env.VITE_GRID_VIRTUAL_THRESHOLD,
   100
