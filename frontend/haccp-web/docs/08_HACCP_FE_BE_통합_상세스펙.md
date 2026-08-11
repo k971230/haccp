@@ -19,7 +19,7 @@
 | 6 | BE Controller 엔드포인트 전수 |
 | 7 | 화면 유형별 통합 계약 (Page→API→Controller→Mapper→SP→Table) |
 | 8 | 문서·결재 상태 기계 |
-| 9 | 파일 볼륨·rhwp·타임아웃 4중 방어 |
+| 9 | 파일 볼륨·rhwp·타임아웃 4중 방어 (서명 UX는 **11 §2.8**) |
 | 10 | 배치 Job·UV/PV |
 | 11 | 운영 규약 (삭제·테넌트·응답) |
 | 12 | 동결·갭·교차검증 |
@@ -614,6 +614,8 @@ APP_FILE_ROOT/
 
 파일: FE 120s · rhwp CLI `APP_RHWP_TIMEOUT_SECONDS` 110 · Nginx Grace(파일) 130s.
 
+서명 등록·HWP 클립보드·CCP 행 적용·실패 안내는 **[`11` §2.8](11_프레임워크_파일_보안_작성규칙.md)** (G-24).
+
 ### 9.3 MesButton variant (FE)
 
 search(blue) · add(amber) · save(blue) · danger(red) · excel(emerald) · **download(indigo)** · secondary/ghost.
@@ -675,6 +677,7 @@ flowchart LR
 | G-15 | BizOps 다중 base 혼동 | **완료(문서)** — 2026-08-11 STEP 23. §5.7 표 · HWP 경로 bizOps 호출 0 |
 | G-22 | 멀티탭 로그아웃 | **완료** — 2026-08-11 STEP 24. §3.4 · `authPaths` Path basename |
 | G-23 | 그리드 pref·가상화 | **완료** — 2026-08-11 STEP 25. §3.5 · VIRTUAL_THRESHOLD 정본 |
+| G-24 | 서명 UX | **완료(문서)** — 2026-08-11 STEP 26. [`11` §2.8](11_프레임워크_파일_보안_작성규칙.md) |
 
 ### 12.3 교차 수치
 
