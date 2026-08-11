@@ -13,13 +13,24 @@ set -euo pipefail
 
 BASE_URL="${1:?usage: prod_smoke.sh <base_url>}"
 BASE_URL="${BASE_URL%/}"
-# Apache Path 분기 기본 프리픽스. edge 루프백 직행 시 SMOKE_WEB_PREFIX= 로 비운다
+# Apache Path 분기 기본 프리픽스. edge 루프백 직행 시 SMOKE_WEB_PREFIX= 로 비운다.
+# Git Bash(MSYS) 가 "/haccp" 를 Windows 경로로 바꿔 /C:/Program Files/Git/haccp 가 되는 경우가 있어
+# 환경값이 이상하면 기본 /haccp 로 되돌린다 (Jenkinsfile 에서도 MSYS_NO_PATHCONV=1).
 WEB_PREFIX="${SMOKE_WEB_PREFIX-/haccp}"
-# 앞 슬래시만 남기고 끝 슬래시는 제거 — "${BASE}${WEB_PREFIX}/healthz" 조립용
 WEB_PREFIX="${WEB_PREFIX%/}"
 case "$WEB_PREFIX" in
-  ""|/*) ;;
-  *) WEB_PREFIX="/${WEB_PREFIX}" ;;
+  ""|/haccp) ;;
+  /*[Hh][Aa][Cc][Cc][Pp]) WEB_PREFIX="/haccp" ;;
+  [Hh][Aa][Cc][Cc][Pp]) WEB_PREFIX="/haccp" ;;
+  /*) ;;
+  *)
+    # MSYS 깨짐·기타 — 운영 Path 기본값으로 복구
+    if [[ "$WEB_PREFIX" == *":"* ]] || [[ "$WEB_PREFIX" == *"Program Files"* ]]; then
+      WEB_PREFIX="/haccp"
+    else
+      WEB_PREFIX="/${WEB_PREFIX}"
+    fi
+    ;;
 esac
 USER="${SMOKE_USER:?SMOKE_USER not set}"
 PASS="${SMOKE_PASS:?SMOKE_PASS not set}"

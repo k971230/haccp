@@ -170,7 +170,11 @@ pipeline {
             credentialsId: 'haccp-smoke-user',
             usernameVariable: 'SMOKE_USER',
             passwordVariable: 'SMOKE_PASS')]) {
-          sh 'bash scripts/prod_smoke.sh "$SMOKE_BASE_URL"'
+          // Git Bash 가 SMOKE_WEB_PREFIX=/haccp 를 /C:/Program Files/Git/haccp 로 깨뜨린다
+          sh '''
+            export MSYS_NO_PATHCONV=1
+            bash scripts/prod_smoke.sh "$SMOKE_BASE_URL"
+          '''
         }
       }
     }
