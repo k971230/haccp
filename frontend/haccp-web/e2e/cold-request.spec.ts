@@ -29,8 +29,10 @@ async function login(page: Page, user: string, pass: string): Promise<void> {
   await page.locator("#login-user-id").fill(user);
   await page.locator("#login-password").fill(pass);
   await page.getByRole("button", { name: "로그인" }).click();
-  await expect(page.locator("#login-user-id")).toHaveCount(0, { timeout: 30_000 });
-  await expect(page).not.toHaveURL(/\/login\/?$/);
+  // 셸 푸터·로그아웃이 보이면 성공 — Path(/haccp/)에서 URL이 잠시 /login에 남을 수 있어 URL만으로 판정하지 않는다
+  await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible({
+    timeout: 30_000,
+  });
 }
 
 async function openColdMonitor(page: Page): Promise<void> {
@@ -74,15 +76,13 @@ test.describe("G-21 minimal loop", () => {
 
     await expect(page.getByText("모니터링 기록")).toBeVisible({ timeout: 20_000 });
 
-    const timeInput = page.locator("table.doc-table tbody tr").first().locator('input[type="time"]');
-    await expect(timeInput).toBeVisible();
+    // 점검시간 표만 대상 — 상단 메타 doc-table 과 구분한다
+    const monitorTable = page.locator("table.doc-table").filter({ hasText: "점검시간" });
+    const timeInput = monitorTable.locator('input[type="time"]').first();
+    await expect(timeInput).toBeVisible({ timeout: 20_000 });
     await timeInput.fill("09:00");
 
-    const tempInput = page
-      .locator("table.doc-table tbody tr")
-      .first()
-      .locator('input[type="number"]')
-      .first();
+    const tempInput = monitorTable.locator('input[type="number"]').first();
     if (await tempInput.count()) {
       await tempInput.fill("5");
     }

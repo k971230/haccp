@@ -44,3 +44,4 @@ dist-ssr/
 *.iml
 .DS_Store
 Thumbs.db
+docker-compose.e2e-local.yml
