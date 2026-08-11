@@ -1,12 +1,12 @@
-# HACCP 업무 CRUD · 갭 정본 (BE)
+# HACCP 업무 CRUD · 갭 요약 (BE)
 
 > FE: [`frontend/haccp-web/docs/06_업무_CRUD.md`](../../../frontend/haccp-web/docs/06_업무_CRUD.md)  
-> FE·BE 통합 상세: [`08_HACCP_FE_BE_통합_상세스펙.md`](../../../frontend/haccp-web/docs/08_HACCP_FE_BE_통합_상세스펙.md)  
-> 완성도·부족분: [`09_통합완성도_및_부족분.md`](../../../frontend/haccp-web/docs/09_통합완성도_및_부족분.md)  
-> 파일·컴포넌트·함수 지도: [`10`](../../../frontend/haccp-web/docs/10_파일구조_컴포넌트_함수지도.md)  
-> 프레임워크·파일·보안: [`11`](../../../frontend/haccp-web/docs/11_프레임워크_파일_보안_작성규칙.md)  
-> BE 01~04: [`01`](01_운영규칙.md) · [`02`](02_인수인계_및_아키텍처.md) · [`03`](03_에이전트_가이드.md) · [`04`](04_인증_보안_JWT.md)  
-> 인덱스 [`00`](../../../frontend/haccp-web/docs/00_문서인덱스_및_통합리뷰.md)
+> BE 인덱스: [`00_문서인덱스.md`](00_문서인덱스.md)  
+> **완성도·부족분 판정 정본**: [`09`](../../../frontend/haccp-web/docs/09_통합완성도_및_부족분.md) (STEP 21 / G-16)  
+> FE·BE URL·Job: [`08`](../../../frontend/haccp-web/docs/08_HACCP_FE_BE_통합_상세스펙.md)  
+> 프레임워크·파일·보안: [`11`](../../../frontend/haccp-web/docs/11_프레임워크_파일_보안_작성규칙.md)
+
+본 파일은 API·SP·env **요약**만 둔다. P0/P1·G-xx 판정은 09에만 갱신한다.
 
 ## 메뉴 IA
 
@@ -52,6 +52,10 @@ HWP leaf 양식·`doc_kind`·`scrn_cd` 1:1 (`37`).
 - MFRM 문서별 admin 메뉴 (`40`) · DEMO 시드 (`41`)
 - 갭보완 (`42`) — 일일위생 `grp_nm` · 시설 주1회 · 설비 사진 업로드 · 냉장 행 서명 경로
 
-## 동결 유지
+## 동결·폐기 (요약 — 판정은 09)
 
-스마트일지 CUD · 감사추출 UI · generic CCP 신규 leaf · 시스템관리 신규 기능.
+| 항목 | 상태 | 근거 |
+|------|------|------|
+| smart-diary API | **폐기** (STEP 20) | BE 엔드포인트 제거 · DB DROP 별도 |
+| audit-export | **동결** (STEP 20) | `@Deprecated` · FE 미노출 · audit-log와 별개 |
+| generic CCP 신규 leaf · 시스템관리 신규 | 동결 | 09 §12 |
