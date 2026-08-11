@@ -3,11 +3,13 @@
 #  자체 서명 인증서 발급 — 도메인·Let's Encrypt 없이 edge 를 띄우기 위한 임시 인증서
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-11
 #  코멘트:
-#    1) edge nginx 는 인증서 파일이 없으면 기동조차 못 한다 — 로컬 검증과 certbot 발급 전 서버가 대상이다
-#    2) certbot 과 같은 배치(live/{도메인}/fullchain.pem·privkey.pem)로 떨궈 conf 를 그대로 쓴다
-#    3) 브라우저 경고가 뜨는 것이 정상이다. 운영 도메인이 생기면 certbot 인증서로 교체한다
+#    1) edge 는 인증서 없으면 기동 불가 — 로컬 검증·certbot 전 서버용
+#    2) certbot 과 같은 live/{도메인}/fullchain.pem·privkey.pem 배치로 conf 재사용
+#    3) 브라우저 경고는 정상. 운영 도메인 생기면 certbot 으로 교체
+#  호출처: 런북 §10 · 로컬 compose 선행
+#  성공: CERT_ROOT 아래 pem 생성. 실패: openssl/경로 오류
 #
 #  사용:
 #    HACCP_CERT_HOST_DIR=./certs bash scripts/gen_selfsigned.sh

@@ -3,11 +3,13 @@
 #  prod 원격 배포 — rsync compose/nginx 후 pull && up
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-11
 #  코멘트:
 #    1) Jenkins Deploy 스테이지에서 SSH 키·호스트·TAG 를 받아 호출한다
-#    2) .env.docker 는 서버에만 둔다 — 이 스크립트가 시크릿을 전송하지 않는다
+#    2) .env.docker 는 서버에만 둔다 — 이 스크립트가 시크릿을 전송하지 않는다 (gitignore)
 #    3) conf 는 haccp.conf.template — 이미지 entrypoint 의 envsubst 가 치환한다
+#  호출처: Jenkinsfile Deploy → scripts/deploy_remote.sh
+#  성공: 원격 compose pull·up 완료. 실패: SSH/rsync/compose non-zero
 #
 #  사용:
 #    SSH_KEY=~/.ssh/id_rsa bash scripts/deploy_remote.sh deploy 10.0.0.10 /opt/haccp 1.0.12

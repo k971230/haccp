@@ -3,11 +3,13 @@
 #  버전 drift — 문서에 적힌 스택 버전 vs package.json / pom.xml
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-11
 #  코멘트:
 #    1) React·Vite·Spring Boot 메이저.마이너 가 문서와 코드에서 어긋나면 실패한다
-#    2) 소스는 고치지 않는다 — 경고만 내고 exit 1
-#    3) nightly Jenkinsfile.audit 에서 호출한다
+#    2) 소스는 고치지 않는다 — 불일치 시 메시지 후 exit 1
+#    3) nightly Jenkinsfile.audit · G-26 감시
+#  호출처: Jenkinsfile.audit stage Audit scripts
+#  성공: echo OK. 실패: drift 목록 + exit 1
 # ============================================================
 set -euo pipefail
 

@@ -3,11 +3,13 @@
 #  HACCP 볼륨 초기화 — 표준 양식 원본 시드 + 소유권 정렬
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-11
 #  코멘트:
 #    1) docker compose up 보다 먼저 돌려야 한다 — 양식 볼륨이 비면 api 가 기동 중단된다
-#    2) 매니페스트의 required=Y 원본을 haccp-templates 볼륨에 원본 파일명 그대로 넣는다
-#    3) api 컨테이너가 uid 1000 non-root 라 볼륨 소유자를 1000:1000 으로 맞춘다
+#    2) 매니페스트 required=Y 원본을 haccp-templates 볼륨에 원본 파일명 그대로 넣는다
+#    3) api 가 uid 1000 non-root 라 볼륨 소유자를 1000:1000 으로 맞춘다
+#  호출처: 런북 §9 · docker-compose.prod.yml 주석 선행 · 서버/로컬 수동
+#  성공: external 볼륨 시드 완료. 실패: SRC·매니페스트 부재 또는 docker 오류
 #
 #  사용:
 #    bash scripts/init_volumes.sh

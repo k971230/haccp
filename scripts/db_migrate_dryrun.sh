@@ -3,11 +3,13 @@
 #  DB 마이그레이션 dry-run — 임시 PG 에 apply-all.sh 를 돌려 오류만 확인
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-11
 #  코멘트:
-#    1) Jenkins 'DB migrate dry-run' 스테이지에서 호출한다 — prod 데이터를 건드리지 않는다
-#    2) 호스트 포트를 열지 않고 docker network 로만 붙인다 (55432 충돌·노출 방지)
+#    1) Jenkins 'DB migrate dry-run' 스테이지 — prod 데이터를 건드리지 않는다
+#    2) 호스트 포트 없이 docker network 로만 붙인다 (55432 충돌·노출 방지)
 #    3) postgres:16(debian) — apply-all.sh 가 bash 와 GNU ls -v 를 요구한다
+#  호출처: Jenkinsfile stage DB migrate dry-run
+#  성공: apply-all 종료 0. 실패: SQL/컨테이너 오류 + cleanup 후 exit 1
 # ============================================================
 set -euo pipefail
 

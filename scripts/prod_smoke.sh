@@ -6,8 +6,11 @@
 #  일자: 2026-08-11
 #  코멘트:
 #    1) origin(https://IP) 기준 — FE/healthz 는 /haccp , API 는 /api (Apache Path)
-#    2) 루프백 edge 직접 검증 시 SMOKE_WEB_PREFIX= 빈값 + http://127.0.0.1:17070
-#    3) JSON 파싱은 python — jq 없이도 Windows/Jenkins 에서 돈다
+#    2) 루프백 edge 직행 시 SMOKE_WEB_PREFIX= 빈값 + http://127.0.0.1:17070
+#    3) JSON 은 python — jq 없이도 Windows/Jenkins 에서 돈다. 단계 실패 시 즉시 exit 1
+#  호출처: Jenkinsfile Prod smoke · 런북 §15 · 수동: SMOKE_USER/PASS 주입 후 실행
+#  성공: 9단계 모두 HTTP/업무 조건 통과. 실패: 해당 단계 메시지 후 non-zero
+#  계정: haccp-smoke-user(조회 전용). 작성·상신은 Jenkinsfile.e2e + haccp-write-user
 # ============================================================
 set -euo pipefail
 
