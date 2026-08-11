@@ -2,11 +2,14 @@
  * authSession — JWT 유효성 판정·세션 정리·로그인 복귀 경로.
  *
  * 개발자: 박승우
- * 일자: 2026-08-05
+ * 일자: 2026-08-11
  * 코멘트:
  *   1) 토큰 만료 확인, 401 발생 시 세션 일괄 정리, 로그인 후 원래 화면으로 되돌리기를 담당한다
  *   2) http 인터셉터·ProtectedRoute·로그아웃 버튼이 공통으로 호출한다
  *   3) 서명 위변조는 검사하지 않는다 — 만료만 걸러 불필요한 호출을 줄이고, 최종 판정은 서버 JwtFilter가 한다
+ *
+ * G-22(STEP 24): handleUnauthorized 의 location.replace·로그인 판정은 authPaths 로
+ * Vite base(/haccp/)를 반영한다. window.location 에 "/login" 을 하드코딩하면 Path 배포에서 깨진다.
  *
  * PIPELINE[HF161] 셸 인프라
  * PIPELINE[HF74] 연관 — 멀티탭 로그아웃 신호
@@ -19,6 +22,8 @@ import { useTabStore } from "@/stores/tabStore";
 import { RETURN_URL_KEY } from "@/shell/authKeys";
 // 역할 — 타 탭에 로그아웃 알림
 import { broadcastAuthLogout } from "@/shell/authCrossTab";
+// 역할 — Path basename 정합 로그인·복귀 경로
+import { isLoginBrowserPath, loginBrowserPath, toRouterPath } from "@/shell/authPaths";
 
 /**
  * 401 전용 예외 — 화면의 catch에서 "로그인이 필요합니다" 토스트를 중복 표시하지 않도록 구분하는 용도.
@@ -145,21 +150,26 @@ export function clearAuthSession() {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-05
+ * 일자: 2026-08-11
  * 코멘트:
  *   1) 세션을 정리하고 로그인 화면으로 강제 이동시킨다
- *   2) http 인터셉터가 401을 받았을 때, 그리고 만료 토큰을 발견했을 때 호출한다
+ *   2) http 인터셉터가 401을 받았을 때, 멀티탭 로그아웃·만료 토큰 발견 시 호출한다
  *   3) 이미 로그인 화면이면 복귀 경로 저장과 이동을 모두 생략한다
+ *      browser pathname 은 /haccp/login 일 수 있으므로 authPaths 로 판정·이동한다
  */
 export function handleUnauthorized(
-  // 복귀할 경로 — 생략하면 현재 주소를 쓴다
+  // 복귀할 경로 — browser 전체 경로 또는 라우터 경로. 생략하면 현재 browser 주소
   redirectPath?: string
 ) {
-  const path = redirectPath ?? (location.pathname + location.search);
-  if (location.pathname !== "/login") saveReturnUrl(path);
+  // window.location 기준 — basename 포함 가능
+  const browserPath = redirectPath ?? `${location.pathname}${location.search}`;
+  // React Router nav 용으로 base 제거 (/haccp/ccp-... → /ccp-...)
+  const routerPath = toRouterPath(browserPath);
+  // 로그인 화면이 아닐 때(= 업무 화면에서 401·타 탭 로그아웃)
+  if (!isLoginBrowserPath(location.pathname)) saveReturnUrl(routerPath);
   clearAuthSession();
-  // React Router가 아닌 location.replace를 쓴다 — 컴포넌트 밖(인터셉터)에서도 동작해야 한다
-  if (location.pathname !== "/login") location.replace("/login");
+  // React Router가 아닌 location.replace — 컴포넌트 밖(인터셉터·storage)에서도 동작해야 한다
+  if (!isLoginBrowserPath(location.pathname)) location.replace(loginBrowserPath());
 }
 
 /**

@@ -39,7 +39,7 @@ MES와 차이: **아이디만 로그인**(회사 콤보 없음) · 권한 **5종
 | 8 | Protected | `AppRoutes` |
 | 9 | Bearer | `api/http.ts` 인터셉터 |
 | 10 | 로그아웃 | `clearAuthSession` · `authApi.logout` |
-| 10b | 멀티탭 | `authCrossTab` · `haccp-auth-logout-signal` |
+| 10b | 멀티탭 | `authCrossTab` · `haccp-auth-logout-signal` · **`authPaths`(base `/haccp/`)** — G-22 |
 
 **중요:** `AuthService.login`에 `@Transactional` 없음 — 실패 이력이 롤백되면 안 됨.
 
@@ -73,11 +73,24 @@ BE: 업무 API는 JWT 필수. 화면별 권한은 주로 FE 게이트 + SP/테�
 | 심볼 | 역할 |
 |------|------|
 | `clearAuthSession` | 토큰·스토어 정리 + 크로스탭 신호 |
-| `handleUnauthorized` | 401 → 로그인 |
+| `handleUnauthorized` | 401·타 탭 로그아웃 → 로그인 (`loginBrowserPath`) |
 | `saveReturnUrl` / `resolvePostLoginPath` | 복귀 |
 | `isSafeReturnPath` | open redirect 방지 (`/` 시작, `//` 금지) |
+| `loginBrowserPath` / `isLoginBrowserPath` / `toRouterPath` | Vite base 정합 (`authPaths.ts`) |
 
 키: `AUTH_STORAGE_KEY=haccp-auth` · `AUTH_LOGOUT_SIGNAL_KEY=haccp-auth-logout-signal`
+
+### 5.1 멀티탭 로그아웃 (G-22 · MES F174)
+
+| MES 규약 | HACCP |
+|----------|-------|
+| `clearAuthSession` → `broadcastAuthLogout` | 동일 |
+| 신호 키 `mes-auth-logout-signal` (localStorage) | `haccp-auth-logout-signal` |
+| 타 탭 `storage` → `handleUnauthorized` | 동일 (`main.tsx` 구독) |
+| 자동로그인 OFF(sessionStorage)여도 신호는 local | 동일 |
+
+수동 스모크: 탭 2개 로그인 → 탭1 로그아웃 → 탭2가 로그인 화면으로 이동. Path 운영 URL은 `…/haccp/login`.  
+단위: `src/shell/authPaths.test.ts` · `authCrossTab.test.ts`. 상세 시퀀스: [`08` §3.4](08_HACCP_FE_BE_통합_상세스펙.md).
 
 ---
 
