@@ -17,12 +17,13 @@ alwaysApply: true
 
 로컬 전용(git 미포함) — 에이전트가 git에 추가·복원하지 않음:
 
-- 루트 `docs/`, `sql/`, `db_migration/`, `tools/`
+- `docs/templates/`(HWP), `sql/`, `db_migration/`, `tools/`
 - `*.log`, `frontend/mes-web/scripts/`, `frontend/mes-web/.claude/`
 
 **예외(커밋 대상):**
 
-- `frontend/mes-web/docs/`, `backend/mes-api/docs/` — 파트별 한글 마크다운 정본. 루트 `docs/`와 혼동하지 말 것
+- 루트 `docs/[숫자]_*.md` · `docs/README.md` — HACCP 문서 정본 (`1_`~`n_`)
+- `frontend/haccp-web/docs/`, `backend/haccp-api/docs/` — 옛 경로 **스텁**만 (본문은 루트 `docs/`)
 - `db_sasshaccp/` — HACCP SaaS 스키마 정본. 로컬 전용인 `db_migration/`·`sql/`과 혼동하지 말 것
 
 ## 시크릿

@@ -91,7 +91,7 @@ return data.data;
 ```
 
 - Axios 3계층: `http` / `httpBatch` / `httpFile` — 타임아웃은 `.env` `VITE_API_TIMEOUT_*` ([`envConfig.ts`](../../frontend/mes-web/src/config/envConfig.ts))
-- 운영 규약: [`.cursor/rules/50-operations.mdc`](50-operations.mdc), [`docs/01_운영규칙.md`](../../frontend/mes-web/docs/01_운영규칙.md)
+- 운영 규약: [`.cursor/rules/50-operations.mdc`](50-operations.mdc), [`docs/3_운영규칙_FE.md`](../../docs/3_운영규칙_FE.md)
 
 - 저장: `toSaveRows(rows)` → `PUT .../save` `{ rows: payload }`
 - 401: `http.ts` 인터셉터 → logout + `/login`

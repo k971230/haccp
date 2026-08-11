@@ -1,25 +1,38 @@
-# docs/ — 루트 문서·양식 원본
+# docs/ — 정본 문서 모음 (`1_`~`n_`)
 
-파트별 설계·API 정본은 여기가 아니다.
+파트별 옛 경로(`frontend/haccp-web/docs/`, `backend/haccp-api/docs/`)는 **스텁**만 남긴다.  
+본문은 모두 여기 `docs/N_….md` 가 정본이다.
 
-| 위치 | 역할 |
+| # | 파일 | 출처 |
+|---|------|------|
+| 1 | [`1_문서인덱스.md`](1_문서인덱스.md) | FE 00 |
+| 2 | [`2_문서인덱스_BE.md`](2_문서인덱스_BE.md) | BE 00 |
+| 3 | [`3_운영규칙_FE.md`](3_운영규칙_FE.md) | FE 01 |
+| 4 | [`4_운영규칙_BE.md`](4_운영규칙_BE.md) | BE 01 |
+| 5 | [`5_인수인계_및_아키텍처_FE.md`](5_인수인계_및_아키텍처_FE.md) | FE 02 |
+| 6 | [`6_인수인계_및_아키텍처_BE.md`](6_인수인계_및_아키텍처_BE.md) | BE 02 |
+| 7 | [`7_에이전트_가이드_FE.md`](7_에이전트_가이드_FE.md) | FE 03 |
+| 8 | [`8_에이전트_가이드_BE.md`](8_에이전트_가이드_BE.md) | BE 03 |
+| 9 | [`9_인증_보안_JWT_FE.md`](9_인증_보안_JWT_FE.md) | FE 04 |
+| 10 | [`10_인증_보안_JWT_BE.md`](10_인증_보안_JWT_BE.md) | BE 04 |
+| 11 | [`11_메인_셸.md`](11_메인_셸.md) | FE 05 |
+| 12 | [`12_업무_CRUD_FE.md`](12_업무_CRUD_FE.md) | FE 06 |
+| 13 | [`13_업무_CRUD_BE.md`](13_업무_CRUD_BE.md) | BE 06 |
+| 14 | [`14_메뉴_화면_API_DB_전수.md`](14_메뉴_화면_API_DB_전수.md) | FE 07 |
+| 15 | [`15_HACCP_FE_BE_통합_상세스펙.md`](15_HACCP_FE_BE_통합_상세스펙.md) | FE 08 |
+| 16 | [`16_통합완성도_및_부족분.md`](16_통합완성도_및_부족분.md) | FE 09 |
+| 17 | [`17_파일구조_컴포넌트_함수지도.md`](17_파일구조_컴포넌트_함수지도.md) | FE 10 |
+| 18 | [`18_프레임워크_파일_보안_작성규칙.md`](18_프레임워크_파일_보안_작성규칙.md) | FE 11 |
+| 19 | [`19_스모크_매트릭스.md`](19_스모크_매트릭스.md) | FE 13 |
+| 20 | [`20_배포_런북.md`](20_배포_런북.md) | 구 12 |
+| 21 | [`21_후속_STEP_16이후.md`](21_후속_STEP_16이후.md) | 구 13 |
+
+## 기타
+
+| 경로 | 역할 |
 |------|------|
-| [`frontend/haccp-web/docs/`](../frontend/haccp-web/docs/) | FE 정본 |
-| [`backend/haccp-api/docs/`](../backend/haccp-api/docs/) | BE 정본 |
-| [`12_배포_런북.md`](12_배포_런북.md) | 배포·Jenkins·스모크 (git 추적) |
-| [`13_후속_STEP_16이후.md`](13_후속_STEP_16이후.md) | STEP 16–28 이력 (git 추적) |
-| `templates/*.hwp` | 표준 양식 원본 — **로컬 전용**(gitignore). `scripts/init_volumes.sh` 시드 |
+| `templates/*.hwp` | 표준 양식 원본 (gitignore · `init_volumes.sh`) |
 
-## 정리 규칙
+## git
 
-- 구 MES용 md·migration-plan·ui-stabilization·PDF 추출물·고아 HWP 는 두지 않는다
-- `templates/` 에는 `manifest.tsv` 의 `source_name`(required=Y)만 둔다
-- LAW_* 양식은 매니페스트 optional(N) — 없으면 시드 생략
-
-## 시드
-
-```bash
-bash scripts/init_volumes.sh
-# 또는
-HACCP_TEMPLATE_SRC=/path/to/hwp bash scripts/init_volumes.sh
-```
+`docs/[숫자]_*.md` · `README.md` 는 추적. `templates/` 는 로컬 전용.

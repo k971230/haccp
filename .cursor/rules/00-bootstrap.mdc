@@ -15,7 +15,7 @@ alwaysApply: true
    - MES(metis): 백엔드 `10-backend-java`, 프론트 `20-frontend-react`, UI `21-frontend-ui`
    - HACCP(sasshaccp): DB `60-haccp-db`, 백엔드 `61-haccp-backend`, 프론트 `62-haccp-frontend` (+ UI는 `21-frontend-ui` 공용)
    - 배포 `30-docker-deploy`, HACCP DB `60-haccp-db`
-6. 해당 하위 에이전트 가이드 — `backend/mes-api/docs/03_에이전트_가이드.md`, `frontend/mes-web/docs/03_에이전트_가이드.md`
+6. 해당 에이전트 가이드 — 루트 `docs/7_에이전트_가이드_FE.md` · `docs/8_에이전트_가이드_BE.md` (FE/BE `*/docs/03_*` 는 스텁)
 
 ## 필수 행동
 

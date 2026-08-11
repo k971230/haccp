@@ -9,14 +9,13 @@
 # ── 로컬 TLS 검증용 자체 서명 인증서 ───────────────────
 /certs/
 
-# ── 루트 docs (로컬 전용 + 런북만 추적) ────────────────
-# 01-project-core: 루트 docs/ 대부분 git 미포함.
-# 표준 양식 HWP 는 docs/templates/ — init_volumes.sh 가 볼륨으로 시드한다.
-# 파트별 문서는 frontend/haccp-web/docs · backend/haccp-api/docs 정본.
+# ── 루트 docs ─────────────────────────────────────────
+# 정본 md 는 docs/1_~n_ (추적). 양식 HWP 는 docs/templates/ (로컬 전용).
+# FE/BE 하위 docs/ 는 스텁만 남긴다 — 본문은 루트 docs/ 로 모았다.
 /docs/*
 !/docs/README.md
-!/docs/12_배포_런북.md
-!/docs/13_후속_STEP_16이후.md
+!/docs/[0-9]*_*.md
+!/docs/[0-9][0-9]*_*.md
 
 # ── 로그·임시·빌드 산출물 ─────────────────────────────
 *.log

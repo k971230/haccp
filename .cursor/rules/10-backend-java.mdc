@@ -37,7 +37,7 @@ Controller (@RestController)
 
 삭제 Body는 복합키 객체 배열(`[{ clientCd }]`, `[{ pioNo, seq }]`). HTTP DELETE+Body 금지. `@Transactional` SP 루프 + `assertDeletable` Double Check.
 
-운영 규약: [`.cursor/rules/50-operations.mdc`](../../.cursor/rules/50-operations.mdc), [`frontend/mes-web/docs/01_운영규칙.md`](../../frontend/mes-web/docs/01_운영규칙.md) — 타임아웃 4중 방어·env Zero Tolerance.
+운영 규약: [`.cursor/rules/50-operations.mdc`](../../.cursor/rules/50-operations.mdc), [`docs/4_운영규칙_BE.md`](../../docs/4_운영규칙_BE.md) — 타임아웃 4중 방어·env Zero Tolerance.
 
 **인프라 예외:** `POST /api/v1/auth/login`, auth 콤보(`/companies` 등) — REST 관례 유지
 

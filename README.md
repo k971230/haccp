@@ -31,21 +31,22 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 # DB: db_sasshaccp/ SQL을 운영·개발 DB에 적용 (순서대로)
 # 또는: bash scripts/db_migrate_dryrun.sh 로 문법만 검증
 
-# API
+# API — listen 7070 (운영 컨테이너와 동일). CORS Origin = Vite 4173
 cd backend/haccp-api
 cp .env.example .env   # 값 입력 후 — .env 는 git 금지
 ./mvnw spring-boot:run
 
-# Web
+# Web — http://localhost:4173  →  VITE_API_BASE_URL=http://localhost:7070
 cd frontend/haccp-web
 cp .env.example .env
 npm ci
 npm run dev
 ```
 
-문서: `frontend/haccp-web/docs/`, `backend/haccp-api/docs/`.
-배포 정본: [`docs/12_배포_런북.md`](docs/12_배포_런북.md) · 루트 docs 구조: [`docs/README.md`](docs/README.md).
-양식 HWP 원본(로컬): `docs/templates/` (`init_volumes.sh` 시드).
+문서 정본: [`docs/`](docs/) (`1_`~`21_` · [`docs/README.md`](docs/README.md)).
+배포 런북: [`docs/20_배포_런북.md`](docs/20_배포_런북.md).
+FE/BE `*/docs/` 는 옛 경로 스텁. 양식 HWP(로컬): `docs/templates/`.
+운영 edge 호스트 publish는 `127.0.0.1:17070:7070` (로컬 Vite 포트와 무관).
 
 ## 시크릿 (필수)
 

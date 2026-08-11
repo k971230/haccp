@@ -12,7 +12,7 @@ MES(`mes-api`)와 **별개 애플리케이션**이다. 코드 구조·응답 규
 | 구분 | mes-api | haccp-api |
 |------|---------|-----------|
 | 패키지 | `com.metis.mes.*` | `com.metis.haccp.*` |
-| 포트 | 8080 | 8081 |
+| 포트 | 8080 | 7070 |
 | DB / 스키마 | `metis` / `metis` | `sasshaccp` / `sasshaccp` |
 | SP | `sp_sk_*`, `sp_new_*` | `sp_tbl_{명칭}_{r｜c｜d｜u}_{000}` |
 | 로그인 | 회사 선택 + 아이디 | **아이디만** (전역 유일, 서버가 회사 판정) |

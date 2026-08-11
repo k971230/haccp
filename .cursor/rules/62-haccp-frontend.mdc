@@ -11,8 +11,8 @@ MES(`mes-web`)와 **별개 앱**이다. 네이밍·Two-Tier DTO·API 레이어 �
 
 | 구분 | mes-web | haccp-web |
 |------|---------|-----------|
-| dev 포트 | 5173 | 5174 |
-| API 대상 | 8080 (mes-api) | 8081 (haccp-api) |
+| dev 포트 | 5173 | 4173 |
+| API 대상 | 8080 (mes-api) | 7070 (haccp-api) |
 | 셸 | `MesShell` + `TouchShell` | `HaccpShell` 단일 (터치PC 없음) |
 | 로그인 | 회사 콤보 + 아이디 | 아이디만 |
 | 권한 | `preTp` RW/R | `readYn`·`writeYn`·`modifyYn`·`deleteYn`·`printYn` |

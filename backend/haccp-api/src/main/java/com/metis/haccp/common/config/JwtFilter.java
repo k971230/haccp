@@ -45,7 +45,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private final JwtProvider jwtProvider;
 
     /** CORS 허용 출처 — WebConfig와 같은 설정을 공유한다(401 응답에도 헤더를 붙이기 위함) */
-    @Value("${app.cors.allowed-origins:http://localhost:5174}")
+    @Value("${app.cors.allowed-origins:http://localhost:4173}")
     private String[] allowedOrigins;
 
     /**

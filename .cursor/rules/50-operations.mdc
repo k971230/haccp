@@ -1,11 +1,11 @@
 ---
-description: MES 운영·아키텍처 규약 — 삭제, 타임아웃, 전역 env (정본 frontend/mes-web/docs/01_운영규칙.md)
+description: HACCP 운영·아키텍처 규약 — 삭제, 타임아웃, 전역 env (정본 docs/3_운영규칙_FE.md)
 alwaysApply: true
 ---
 
-# MES 운영 규약
+# HACCP 운영 규약
 
-정본: [`frontend/mes-web/docs/01_운영규칙.md`](../../frontend/mes-web/docs/01_운영규칙.md)  
+정본: [`docs/3_운영규칙_FE.md`](../../docs/3_운영규칙_FE.md) · BE [`docs/4_운영규칙_BE.md`](../../docs/4_운영규칙_BE.md)  
 인수인계 주석: `40-handoff-comments.mdc` (동일 밀도, 별도 정책)
 
 ## [OPS_DELETE] 삭제 표준

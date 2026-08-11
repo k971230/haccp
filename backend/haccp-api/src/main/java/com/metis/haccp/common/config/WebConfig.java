@@ -23,8 +23,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    // CORS 허용 출처 배열 — 기본값 localhost:5174 (haccp-web Vite 개발 서버. mes-web 5173과 구분)
-    @Value("${app.cors.allowed-origins:http://localhost:5174}")
+    // CORS 허용 출처 배열 — 기본값 localhost:4173 (haccp-web Vite 개발 서버. mes-web 5173과 구분)
+    @Value("${app.cors.allowed-origins:http://localhost:4173}")
     private String[] allowedOrigins;
     /**
      * 개발자: 박승우

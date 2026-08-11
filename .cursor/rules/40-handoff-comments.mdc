@@ -7,7 +7,7 @@ alwaysApply: true
 
 **최우선 원칙:** 백엔드와 프론트엔드는 **같은 설명 밀도**다. FE JSX prop에 여러 줄을 다는 만큼, BE 파라미터·문장·Mapper XML 절에도 동일하게 단다. 한쪽만 상세하면 미완료.
 
-정본 가이드: `frontend/mes-web/docs/02_인수인계_및_아키텍처.md`  
+정본 가이드: `docs/5_인수인계_및_아키텍처_FE.md` · BE `docs/6_인수인계_및_아키텍처_BE.md`  
 골드 샘플: FE `pages/bas/CommonCodePage.tsx` (`MesEditableGrid` sg/ug/pg) · BE `bam/ClientController.java` + `ClientService.java` + `mapper/bam/BamMapper.xml` 거래처 절
 
 ## 공통 (항상)
