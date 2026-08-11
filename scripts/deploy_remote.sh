@@ -15,7 +15,6 @@
 set -euo pipefail
 # Windows Git Bash 가 /home/... 인자를 로컬 경로로 치환하지 않게 한다
 export MSYS_NO_PATHCONV=1
-export MSYS2_ARG_CONV_EXCL='*'
 
 USER="${1:?user}"
 HOST="${2:?host}"

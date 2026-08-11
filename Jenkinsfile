@@ -33,7 +33,6 @@ pipeline {
     SMOKE_INSECURE = '1'
     // Windows Git Bash 가 /home/... 를 C:/Program Files/Git/home/... 로 바꾸지 않게 한다
     MSYS_NO_PATHCONV = '1'
-    MSYS2_ARG_CONV_EXCL = '*'
   }
 
   triggers {
@@ -114,7 +113,7 @@ pipeline {
             usernameVariable: 'SSH_USER')]) {
           sh '''
             set -euo pipefail
-            export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
+            export MSYS_NO_PATHCONV=1
             # DEPLOY_HOST 가 user@host 형이면 호스트만 뽑고, 아니면 SSH_USER 를 쓴다
             HOST="$DEPLOY_HOST"
             USER="$SSH_USER"
