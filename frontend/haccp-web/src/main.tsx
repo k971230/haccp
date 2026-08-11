@@ -25,6 +25,8 @@ import { AppRoutes } from "@/routes/AppRoutes";
 import { handleUnauthorized, registerQueryCacheClear } from "@/shell/authSession";
 // 역할 — 타 탭 로그아웃 구독
 import { subscribeAuthCrossTab } from "@/shell/authCrossTab";
+// 역할 — Path basename 포함 로그인 경로 판정
+import { isLoginBrowserPath } from "@/shell/authPaths";
 // 역할 — 전역 스타일
 import "@/styles/global.css";
 
@@ -36,10 +38,10 @@ const queryClient = new QueryClient({
 // 세션이 끊길 때 이전 사용자 조회 결과가 남지 않도록 캐시 비우기 방법을 알려 둔다
 registerQueryCacheClear(() => queryClient.clear());
 
-// 다른 탭에서 로그아웃했을 때 이 탭도 함께 내려간다
+// 다른 탭에서 로그아웃했을 때 이 탭도 함께 내려간다 (G-22 · F174)
 subscribeAuthCrossTab(() => {
-  // 이미 로그인 화면이면 아무 것도 하지 않는다 — 불필요한 리다이렉트를 만들지 않는다
-  if (location.pathname === "/login") return;
+  // 이미 로그인 화면이면 생략 — Path 배포에서는 browser path 가 /haccp/login 이다
+  if (isLoginBrowserPath(location.pathname)) return;
   handleUnauthorized();
 });
 

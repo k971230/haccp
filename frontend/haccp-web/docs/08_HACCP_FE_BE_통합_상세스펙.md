@@ -221,6 +221,40 @@ sequenceDiagram
 
 IA 대메뉴: today-tasks + MWRK / MAPR / MFRM / MCOD / MSYS (migrate 36).
 
+### 3.4 멀티탭 로그아웃 (G-22 · MES F174)
+
+MES `OPS_AUTH_CROSSTAB`과 동일 패턴. 키 접두만 `haccp-*` (MES `mes-*`와 혼용 금지).
+
+```mermaid
+sequenceDiagram
+  participant T1 as 탭1
+  participant LS as localStorage
+  participant T2 as 탭2
+
+  T1->>T1: clearAuthSession
+  T1->>LS: setItem haccp-auth-logout-signal
+  T1->>T1: authStore.logout · tab reset · RQ clear
+  LS-->>T2: storage 이벤트
+  T2->>T2: subscribeAuthCrossTab → handleUnauthorized
+  T2->>T2: location.replace(loginBrowserPath)
+```
+
+| 단계 | 파일 · 심볼 | 비고 |
+|------|-------------|------|
+| 수동 로그아웃 | `HaccpShell.onLogout` → `logoutApi` → `clearAuthSession` → `nav("/login")` | Router basename 상대 |
+| 신호 송신 | `broadcastAuthLogout` | **항상 localStorage** (자동로그인 OFF·sessionStorage여도 신호는 local) |
+| 신호 키 | `AUTH_LOGOUT_SIGNAL_KEY=haccp-auth-logout-signal` | `authKeys.ts` |
+| 2차 감지 | `AUTH_STORAGE_KEY=haccp-auth` 삭제·토큰 공백 | 신호 유실 대비 |
+| 구독 | `main.tsx` → `subscribeAuthCrossTab` | 로그인 화면이면 no-op (`isLoginBrowserPath`) |
+| 타 탭 정리 | `handleUnauthorized` | `authPaths.loginBrowserPath` 로 replace — **Vite base `/haccp/` 정합** |
+| 복귀 URL | `toRouterPath` 후 `saveReturnUrl` | browser `/haccp/...` → 라우터 `/...` |
+
+**Path 갭(STEP 24 수정):** 하드코딩 `location.replace("/login")`·`pathname === "/login"` 은 Apache Path 배포에서 `/haccp/login` 과 불일치 → 타 탭이 잘못된 origin 경로로 튕기거나 중복 처리됨. `shell/authPaths.ts` 로 통일.
+
+**검증:** `npm test` — `authPaths.test.ts` · `authCrossTab.test.ts`. 수동 2탭: 동일 계정 로그인 → 탭1 로그아웃 → 탭2가 `/haccp/login`(또는 로컬 `/login`)으로 이동·이후 API는 미인증.
+
+판정: [`09` G-22](09_통합완성도_및_부족분.md).
+
 ---
 
 ## 4. 디렉터리 지도
@@ -616,6 +650,7 @@ flowchart LR
 | G-03 | migrate 47 이중 파일 | 적용 순서 주의 |
 | G-13 | MasterData equipment/pest · ccpMetal/VerificationApi | **완료** — 2026-08-10 STEP 01 삭제 |
 | G-15 | BizOps 다중 base 혼동 | **완료(문서)** — 2026-08-11 STEP 23. §5.7 표 · HWP 경로 bizOps 호출 0 |
+| G-22 | 멀티탭 로그아웃 | **완료** — 2026-08-11 STEP 24. §3.4 · `authPaths` Path basename |
 
 ### 12.3 교차 수치
 

@@ -2,12 +2,15 @@
  * authCrossTab — 다른 탭의 로그아웃을 storage 이벤트로 따라간다.
  *
  * 개발자: 박승우
- * 일자: 2026-08-05
+ * 일자: 2026-08-11
  * 코멘트:
  *   1) 한 탭에서 로그아웃하면 같은 브라우저의 나머지 탭도 즉시 로그인 화면으로 내려간다
  *   2) 현장 공용 PC에서 담당자가 교대할 때 이전 사용자 화면이 남아 있으면 기록 작성자가 뒤바뀐다 — 그 사고를 막는 장치다
  *   3) storage 이벤트는 localStorage 변경만 다른 탭에 전달된다. 그래서 세션 보관 위치와 무관하게
- *      로그아웃 신호만은 항상 localStorage에 쓴다
+ *      로그아웃 신호만은 항상 localStorage에 쓴다 (MES F174 · OPS_AUTH_CROSSTAB, 키만 haccp-*)
+ *
+ * G-22: 구독 콜백은 main.tsx 에서 handleUnauthorized 를 호출한다.
+ * 로그인 판정·replace 는 authPaths(Vite base)를 쓴다.
  *
  * PIPELINE[HF74] 셸 인프라
  * PIPELINE[HF160, HF161] 연관 모듈
