@@ -305,7 +305,7 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 | company-forms | list · clone · activate · form-items list/save |
 | schedule-rules | list/save/validate-delete/delete |
 | template-export-hist | list · get · export · import |
-| smart-diary (잔존) | types/maps list · map save/delete |
+| ~~smart-diary~~ | **폐기** (STEP 20 / G-14) — BE 엔드포인트 제거. DB DROP은 별도 승인 |
 
 ### 5.5 documentApi
 
@@ -335,7 +335,7 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 | ccpFormsApi | list/detail/save/del | `/api/v1/ccp/{metal-monitor\|verification-check\|annual-verification-plan}/*` |
 | ccpGenericApi | templates · get · save · del | `/api/v1/ccp/generic-monitor/*` |
 | bizOpsApi | list/detail/save/del | `/api/v1/fac|inv|prc/{screen}/*` (작성 UI는 시설 위주, 다수는 HWP로 이전) |
-| taskWorkflowApi | today-tasks · notifications · corrective · relations · audit-export | `/api/v1/tsk/*` · `/api/v1/doc/corrective-actions/*` |
+| taskWorkflowApi | today-tasks · notifications · corrective · relations · audit-export(동결) | `/api/v1/tsk/*` · `/api/v1/doc/corrective-actions/*` |
 
 ---
 
@@ -386,7 +386,7 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 
 - approval-lines · company-templates · **legal-types/save** · company-check-items  
 - company-forms / form-items / clone / activate  
-- schedule-rules · smart-diary-* · template-export-hist  
+- schedule-rules · ~~smart-diary-*~~(STEP 20 폐기) · template-export-hist · audit-export(동결)  
 
 ---
 
@@ -575,8 +575,8 @@ flowchart LR
 
 ### 12.1 동결 (의도적 미노출)
 
-- 스마트일지 유형 CUD UI (API 잔존)  
-- 감사추출 UI (TaskController audit-export 잔존)  
+- ~~스마트일지 유형~~ — **API 폐기 완료** (STEP 20). DB `tbl_smart_diary_*` DROP은 후속 승인  
+- 감사추출 UI (TaskController `audit-export` **동결 유지** · `@Deprecated` · FE 미노출) — `audit-log`와 별개  
 - 범용 template-check-item-management (use_yn=N)  
 - 단독 hwp-document-editor 메뉴  
 - LAW/EDU/TST 개별 leaf  

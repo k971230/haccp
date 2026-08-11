@@ -351,12 +351,13 @@ public class DocumentService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-06
+     * 일자: 2026-08-11
      * 코멘트:
-     *   1) 선택한 문서들의 PDF를 모아 미리보기용 파일을 만든다
-     *   2) 감사자료 출력 화면의 PDF 미리보기 버튼이 호출한다
+     *   1) 선택 문서 PDF를 모아 미리보기용 파일을 만든다 (G-14 audit-export 동결)
+     *   2) FE UI 미노출 — TaskController preview-pdf 전용 경로로만 남긴다
      *   3) 1건이면 PDF 단일, 2건 이상이면 zip — 기존 PDF 없으면 exportPdf로 생성
      */
+    @Deprecated(since = "STEP-20-G14", forRemoval = false)
     public DownloadFile previewAuditPdfs(
             // 선택 문서 복합키 목록 — UI 단건이어도 List
             List<DocumentDeleteItem> keys,

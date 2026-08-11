@@ -133,29 +133,7 @@ PIPELINE[HB88, HB90] 연관 모듈
     <update id="activateCompanyForm" statementType="CALLABLE">
         CALL sp_tbl_company_form_activate_u_000(#{coCd, jdbcType=VARCHAR}, #{tmplCd, jdbcType=VARCHAR}, #{coFormIdx, jdbcType=BIGINT}, #{userId, jdbcType=VARCHAR})
     </update>
-    <!-- 스마트 HACCP 기준일지 플랫폼 마스터 — 회사와 무관한 읽기 전용 카탈로그 -->
-    <select id="selectSmartDiaryTypes" resultType="map">
-        SELECT * FROM sp_tbl_smart_diary_type_r_000(#{diaryType, jdbcType=VARCHAR}, #{useYn, jdbcType=VARCHAR})
-    </select>
-    <!-- 공공 기준일지와 내부 표준 양식 매핑 — 갭 분석·관리 화면 표시용 -->
-    <select id="selectSmartDiaryMaps" resultType="map">
-        SELECT * FROM sp_tbl_smart_diary_map_r_000(#{diaryNo, jdbcType=VARCHAR}, #{tmplCd, jdbcType=VARCHAR})
-    </select>
-    <!-- 스마트일지 매핑 저장 — diary_no+tmpl_cd 업서트 -->
-    <update id="saveSmartDiaryMap" statementType="CALLABLE">
-        CALL sp_tbl_smart_diary_map_c_000(
-            #{coCd, jdbcType=VARCHAR}, #{diaryNo, jdbcType=VARCHAR}, #{tmplCd, jdbcType=VARCHAR},
-            #{matchLevel, jdbcType=VARCHAR}, #{implStatus, jdbcType=VARCHAR}, #{preferredYn, jdbcType=VARCHAR},
-            #{userId, jdbcType=VARCHAR}
-        )
-    </update>
-    <!-- 스마트일지 매핑 삭제 — 복합키 단건 -->
-    <update id="deleteSmartDiaryMap" statementType="CALLABLE">
-        CALL sp_tbl_smart_diary_map_d_000(
-            #{coCd, jdbcType=VARCHAR}, #{diaryNo, jdbcType=VARCHAR}, #{tmplCd, jdbcType=VARCHAR},
-            #{userId, jdbcType=VARCHAR}
-        )
-    </update>
+    <!-- STEP 20 / G-14: smart-diary Mapper SQL 제거. DB SP·테이블 DROP 은 별도 승인 STEP -->
 
     <!-- 양식 설정 내보내기 이력 목록 — payload 본문은 단건 조회에서만 -->
     <select id="selectTemplateExportHist" resultType="map">

@@ -367,68 +367,7 @@ public class WorkflowService {
         );
     }
 
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-06
-     * 코멘트:
-     *   1) 스마트 HACCP 기준일지 플랫폼 카탈로그를 유형별로 조회한다
-     *   2) 기준일지 유형 관리 화면은 이 목록을 읽기 전용으로 사용한다
-     *   3) 공공 표준 원문은 업체별로 수정하지 않으므로 JWT 회사 조건을 전달하지 않는다
-     */
-    public List<Map<String, Object>> smartDiaryTypes(String diaryType, String useYn) {
-        return toCamelMaps(mapper.selectSmartDiaryTypes(text(diaryType), text(useYn)));
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-06
-     * 코멘트:
-     *   1) 공공 기준일지와 내부 템플릿의 대응 수준·구현 상태를 조회한다
-     *   2) 관리 화면의 상세 패널이 기준일지 선택 뒤 호출한다
-     *   3) 매핑 조회는 필터만 받고 저장·삭제는 별도 경로로 분리한다
-     */
-    public List<Map<String, Object>> smartDiaryMaps(String diaryNo, String tmplCd) {
-        return toCamelMaps(mapper.selectSmartDiaryMaps(text(diaryNo), text(tmplCd)));
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-06
-     * 코멘트:
-     *   1) 기준일지 코드와 내부 양식 코드 매핑을 업서트한다
-     *   2) 스마트일지 유형 관리 화면의 매핑 그리드 저장에서 호출한다
-     *   3) 일지번호·양식코드가 비어 있을 때(= 키 미입력) 업무 예외로 차단한다
-     */
-    @Transactional
-    public void saveSmartDiaryMap(Map<String, Object> row) {
-        mapper.saveSmartDiaryMap(
-                LoginUserContext.coCd(),
-                requireText(row, "diaryNo", "기준일지 코드를 입력하세요."),
-                requireText(row, "tmplCd", "내부 양식 코드를 선택하세요."),
-                text(row.get("matchLevel")),
-                text(row.get("implStatus")),
-                defaultYn(row.get("preferredYn")),
-                LoginUserContext.userId()
-        );
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-06
-     * 코멘트:
-     *   1) 기준일지·양식 복합키로 매핑 1건을 삭제한다
-     *   2) 매핑 그리드 삭제 버튼이 확인 후 호출한다
-     *   3) 키가 비어 있을 때(= 선택 없음) 저장프로시저 전에 업무 문구로 막는다
-     */
-    @Transactional
-    public void deleteSmartDiaryMap(Map<String, Object> row) {
-        mapper.deleteSmartDiaryMap(
-                LoginUserContext.coCd(),
-                requireText(row, "diaryNo", "삭제할 기준일지 코드를 선택하세요."),
-                requireText(row, "tmplCd", "삭제할 내부 양식 코드를 선택하세요."),
-                LoginUserContext.userId()
-        );
-    }
+    // STEP 20 / G-14: smart-diary Service 경로 제거 (Controller·Mapper 동시 폐기)
 
     /**
      * 개발자: 박승우

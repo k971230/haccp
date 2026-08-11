@@ -242,65 +242,8 @@ public class WorkflowController {
         return CommonResponse.ok(null);
     }
 
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-06
-     * 코멘트:
-     *   1) 스마트 HACCP 기준일지 유형 플랫폼 카탈로그를 조회한다
-     *   2) 기준정보 관리 화면에서 유형·사용여부 조건으로 목록을 좁힌다
-     *   3) 공공 표준은 읽기 전용이므로 저장·삭제 경로를 제공하지 않는다
-     */
-    @GetMapping("/smart-diary-types/list")
-    public CommonResponse<List<Map<String, Object>>> smartDiaryTypes(
-            @RequestParam(required = false, defaultValue = "") String diaryType,
-            @RequestParam(required = false, defaultValue = "") String useYn
-    ) {
-        return CommonResponse.ok(service.smartDiaryTypes(diaryType, useYn));
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-06
-     * 코멘트:
-     *   1) 공공 기준일지와 우리 표준 양식의 매핑 상태를 조회한다
-     *   2) 기준일지 유형 관리의 상세 패널이 선택된 행 기준으로 호출한다
-     *   3) 조회 조건이 비어 있을 때(= 전체) 플랫폼 매핑을 반환한다
-     */
-    @GetMapping("/smart-diary-maps/list")
-    public CommonResponse<List<Map<String, Object>>> smartDiaryMaps(
-            @RequestParam(required = false, defaultValue = "") String diaryNo,
-            @RequestParam(required = false, defaultValue = "") String tmplCd
-    ) {
-        return CommonResponse.ok(service.smartDiaryMaps(diaryNo, tmplCd));
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-06
-     * 코멘트:
-     *   1) 기준일지·내부 양식 매핑 1건을 저장한다
-     *   2) 스마트일지 유형 관리의 매핑 그리드 저장이 호출한다
-     *   3) 회사코드는 JWT로 고정하고 본문에는 매핑 필드만 받는다
-     */
-    @PutMapping("/smart-diary-map/save")
-    public CommonResponse<Void> saveSmartDiaryMap(@RequestBody Map<String, Object> row) {
-        service.saveSmartDiaryMap(row);
-        return CommonResponse.ok(null);
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-06
-     * 코멘트:
-     *   1) 기준일지·양식 복합키로 매핑을 삭제한다
-     *   2) 매핑 그리드 삭제 확인 후 호출한다
-     *   3) HTTP DELETE 금지 규약에 따라 POST만 사용한다
-     */
-    @PostMapping("/smart-diary-map/delete")
-    public CommonResponse<Void> deleteSmartDiaryMap(@RequestBody Map<String, Object> row) {
-        service.deleteSmartDiaryMap(row);
-        return CommonResponse.ok(null);
-    }
+    // STEP 20 / G-14 (2026-08-11): smart-diary-* API 폐기 — FE 참조 0 · UI 미노출.
+    // DB tbl_smart_diary_* · SP 는 데이터 유실 방지를 위해 별도 승인 STEP 에서 DROP 한다.
 
     /**
      * 개발자: 박승우

@@ -111,12 +111,13 @@ public class TaskService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-06
+     * 일자: 2026-08-11
      * 코멘트:
-     *   1) 감사 출력 문서 묶음을 조회해 SQL snake_case를 프런트 camelCase 계약으로 변환한다
-     *   2) doc_idx가 docIdx로 전달돼 AuditExportPage 행 key가 undefined가 되지 않게 한다
-     *   3) 기간·상태는 비어 있을 때(= 전체) SP 조회 조건으로 그대로 전달한다
+     *   1) 감사 출력 문서 묶음 조회 — G-14 동결 유지(FE UI 없음)
+     *   2) snake_case → camelCase 변환으로 계약키(docIdx)를 유지한다
+     *   3) 기간·상태는 비어 있을 때(= 전체) SP 조건으로 그대로 전달한다
      */
+    @Deprecated(since = "STEP-20-G14", forRemoval = false)
     public List<Map<String, Object>> auditExport(String fromDt, String toDt, String status) {
         return camelRows(mapper.selectAuditExport(
                 LoginUserContext.coCd(), text(fromDt), text(toDt), text(status)));

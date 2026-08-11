@@ -328,7 +328,7 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 |---------|--------|--------|------|------|
 | `annual-verification-plan` | 연간 검증계획서 | CCP | VERIFY_PLAN | verify-plan-hwp |
 | `area-hygiene-check` | 작업장 환경위생 점검표 | HYG | AREA_HYG | area-hyg-hwp |
-| `audit-export` | 감사자료 출력 | DOC | — | IA 밖(API 잔존) |
+| `audit-export` | 감사자료 출력 | DOC | — | IA 밖 · **G-14 동결 유지**(STEP 20, `@Deprecated`) |
 | `calibration-target-management` | 검·교정 대상 점검표 | FAC | CALIB_TARGET | 숨김 |
 | `ccp-generic-monitor` | 공통 CCP 모니터링 | CCP | — | 유형별 ccp-*-monitor |
 | `ccp-iqf-monitor` | 급속냉동 CCP | CCP | CCP_IQF | 미사용 |
@@ -349,7 +349,7 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 | `pest-device-management` | 방충방서 설비·위치관리 | FRM | — | pest-device-history (45) |
 | `process-control-check` | 공정관리 점검표 | PRC | PROCESS | process-hwp |
 | `receiving-inspection` | 입고검사 일지 | INV | RECV_INSP | receiving-insp-hwp |
-| `smart-diary-type-management` | 스마트일지유형 관리 | SET | — | IA 밖(API 잔존) |
+| `smart-diary-type-management` | 스마트일지유형 관리 | SET | — | IA 밖 · **G-14 API 폐기**(STEP 20). DB DROP 후속 |
 | `template-check-item-management` | 점검항목관리 | FRM | — | 문서별 admin (47) |
 | `test-product-report` | 제품검사 성적서 | TST | PROD_TEST | prod-test-hwp |
 | `test-surface-report` | 표면오염도 검사 성적서 | TST | SURFACE_TEST | surface-test-hwp |

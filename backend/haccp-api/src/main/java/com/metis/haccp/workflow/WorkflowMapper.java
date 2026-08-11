@@ -133,30 +133,7 @@ public interface WorkflowMapper {
             @Param("userId") String userId
     );
 
-    // diaryType/useYn: 플랫폼 기준일지 목록 필터 — 공백이면 전체
-    // 성공 시 공공 기준일지 정제 카탈로그 행
-    List<Map<String, Object>> selectSmartDiaryTypes(@Param("diaryType") String diaryType, @Param("useYn") String useYn);
-
-    // diaryNo/tmplCd: 공공 코드·내부 템플릿 매핑 필터 — 공백이면 전체
-    // 성공 시 FULL/PARTIAL/NONE 및 화면 구현상태 목록
-    List<Map<String, Object>> selectSmartDiaryMaps(@Param("diaryNo") String diaryNo, @Param("tmplCd") String tmplCd);
-
-    // coCd: JWT 회사 — 매핑 SP가 테넌트 감사용으로만 받는다(매핑 테이블은 플랫폼 공통)
-    // diaryNo/tmplCd: 복합 업무키 — 공백이면 Service에서 차단
-    // matchLevel/implStatus/preferredYn: 매칭 수준·구현상태·우선여부
-    // userId: JWT 작업자 — 감사컬럼
-    void saveSmartDiaryMap(
-            @Param("coCd") String coCd, @Param("diaryNo") String diaryNo, @Param("tmplCd") String tmplCd,
-            @Param("matchLevel") String matchLevel, @Param("implStatus") String implStatus,
-            @Param("preferredYn") String preferredYn, @Param("userId") String userId
-    );
-
-    // coCd/userId: JWT 테넌트·작업자 — 삭제 감사 호환
-    // diaryNo/tmplCd: 삭제 대상 복합키 — 둘 다 필수
-    void deleteSmartDiaryMap(
-            @Param("coCd") String coCd, @Param("diaryNo") String diaryNo, @Param("tmplCd") String tmplCd,
-            @Param("userId") String userId
-    );
+    // STEP 20 / G-14: select/save/deleteSmartDiary* Mapper 제거 (XML·SP 호출 경로 폐기)
 
     // coCd: JWT 회사코드 — 타사 내보내기 이력이 섞이지 않도록 제한
     // docKind: DB/HWP 필터 — 공백이면 전체 이력
