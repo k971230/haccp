@@ -34,11 +34,14 @@ rsync -az -e "$RSH" \
   "$USER@$HOST:$DIR/nginx/"
 
 echo ">>> remote pull & up TAG=$TAG"
-# .env.docker 는 서버 /opt/haccp 에 root:root 0600 으로 미리 배치되어 있어야 한다
+# .env.docker 는 서버에 미리 배치한다(시크릿 미전송).
+# docker-compose.override.yml 이 있으면(= 호스트 :80 점유 우회 등) 함께 넘긴다 — 없으면 prod.yml 만.
 "${SSH[@]}" "$USER@$HOST" "cd '$DIR' && \
   export TAG='$TAG' && \
-  docker compose --env-file .env.docker -f docker-compose.prod.yml pull && \
-  docker compose --env-file .env.docker -f docker-compose.prod.yml up -d && \
+  COMPOSE_FILES='-f docker-compose.prod.yml' && \
+  if [ -f docker-compose.override.yml ]; then COMPOSE_FILES=\"\$COMPOSE_FILES -f docker-compose.override.yml\"; fi && \
+  docker compose --env-file .env.docker \$COMPOSE_FILES pull && \
+  docker compose --env-file .env.docker \$COMPOSE_FILES up -d && \
   docker image prune -f"
 
 echo "deploy_remote OK — $HOST TAG=$TAG"

@@ -20,11 +20,23 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=smoke_env.sh
 source "$ROOT/scripts/smoke_env.sh"
 
+# Ubuntu 등 python 미설치 환경 — python3 만 있을 때 PATH 에 python 별칭을 붙인다
+if ! command -v python >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+  PATH="$(dirname "$(command -v python3)"):${PATH}"
+  # 임시 래퍼 — 동일 디렉터리에 python 이 없으면 mkdir + ln
+  if ! command -v python >/dev/null 2>&1; then
+    _smoke_bin="${TMPDIR:-/tmp}/haccp-smoke-bin-$$"
+    mkdir -p "$_smoke_bin"
+    ln -sf "$(command -v python3)" "$_smoke_bin/python"
+    PATH="$_smoke_bin:${PATH}"
+  fi
+fi
+
 # Python(Windows) 이 /d/... MSYS 경로를 못 열므로 저장소 상대 경로만 쓴다
 cd "$ROOT"
 TMP=".smoke-tmp-$$"
 mkdir -p "$TMP"
-trap 'rm -rf "$TMP"' EXIT
+trap 'rm -rf "$TMP"; rm -rf "${_smoke_bin:-}"' EXIT
 
 fetch() {
   local out="$1"; shift
