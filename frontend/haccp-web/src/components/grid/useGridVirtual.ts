@@ -1,4 +1,13 @@
-/** 행 가상화 — GRID_VIRTUAL_THRESHOLD 미만이면 전체 렌더.
+/**
+ * useGridVirtual — 행 가상화. GRID_VIRTUAL_THRESHOLD 미만이면 전체 렌더.
+ *
+ * 개발자: 박승우
+ * 일자: 2026-08-11
+ * 코멘트:
+ *   1) MesEditableGrid·MesDataGrid 가 displayRows.length 로 호출한다
+ *   2) 임계는 VITE_GRID_VIRTUAL_THRESHOLD → envConfig (매직 넘버 금지)
+ *   3) G-23: 클라이언트 페이지네이션 대신 전체 로드 + 가상 스크롤이 HACCP 정본이다
+ *
  * PIPELINE[F91]
  * PIPELINE[F173] 활성 행 스크롤(가상화 시 scrollToIndex)
  */
@@ -11,14 +20,33 @@ import { GRID_VIRTUAL_THRESHOLD } from "@/config/envConfig";
 
 /**
  * 개발자: 박승우
- * 일자: 2026-07-10
+ * 일자: 2026-08-11
  * 코멘트:
  *   1) 가상화 활성 임계 행 수 — envConfig GRID_VIRTUAL_THRESHOLD 재export
- *   2) 모듈 import·화면/훅에서 호출될 때
+ *   2) 모듈 import·화면/훅·단위 테스트에서 참조한다
  *   3) .env VITE_GRID_VIRTUAL_THRESHOLD (기본 100), Vite 재시작 필요
  */
 // 설명 — 가상화 활성 임계 — OPS_GLOBAL_CONFIG (하드코딩 금지)
 export const VIRTUAL_THRESHOLD = GRID_VIRTUAL_THRESHOLD;
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-11
+ * 코멘트:
+ *   1) 행 수·임계·enabled 로 가상화 on/off 를 판정한다
+ *   2) useGridVirtual 내부와 G-23 단위 테스트가 호출한다
+ *   3) enabled 이고 rowCount >= threshold 이면 true
+ */
+export function shouldVirtualize(
+  // 필터·정렬 후 표시 행 수
+  rowCount: number,
+  // 임계 — 기본 VIRTUAL_THRESHOLD
+  threshold: number = VIRTUAL_THRESHOLD,
+  // 화면이 가상화를 끈 경우 false
+  enabled = true
+): boolean {
+  return enabled && rowCount >= threshold;
+}
 /**
  * 개발자: 박승우
  * 일자: 2026-07-10
@@ -95,7 +123,7 @@ export function useGridVirtual(
   enabled = true,
 ): GridVirtualApi {
   // 임계 미만이면 전체 렌더(active=false)
-  const active = enabled && rowCount >= VIRTUAL_THRESHOLD;
+  const active = shouldVirtualize(rowCount, VIRTUAL_THRESHOLD, enabled);
   const virtualizer = useVirtualizer({
     count: active ? rowCount : 0,
     getScrollElement: () => scrollRef.current,

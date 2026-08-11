@@ -13,7 +13,7 @@
 |----|------|
 | 1 | 스택·포트·환경변수 (버전 필수) |
 | 2 | 런타임 아키텍처·요청 파이프라인 |
-| 3 | 인증·권한·메뉴 로딩 |
+| 3 | 인증·권한·메뉴 · §3.4 멀티탭 · §3.5 그리드 pref/가상화 |
 | 4 | 패키지·디렉터리 지도 (FE/BE/DB) |
 | 5 | FE API 함수 ↔ HTTP URL 전수 (§5.7 BizOps G-15) |
 | 6 | BE Controller 엔드포인트 전수 |
@@ -68,8 +68,8 @@
 | VITE_API_TIMEOUT_DEFAULT | 10000 | http (일반 CRUD) |
 | VITE_API_TIMEOUT_BATCH | 60000 | httpBatch |
 | VITE_API_TIMEOUT_FILE | 120000 | httpFile (HWP/PDF) |
-| VITE_GRID_DEFAULT_PAGE_SIZE | 50 | 그리드 페이징 |
-| VITE_GRID_VIRTUAL_THRESHOLD | 100 | 가상화 임계 |
+| VITE_GRID_DEFAULT_PAGE_SIZE | 50 | **예약**(클라 페이징 미사용) — G-23 |
+| VITE_GRID_VIRTUAL_THRESHOLD | 100 | 가상화 임계 — Mes*Grid `shouldVirtualize` |
 | VITE_SEARCH_DEBOUNCE_MS | 300 | 검색 디바운스 |
 | VITE_API_RETRY_COUNT | 2 | GET 재시도 |
 | VITE_DASHBOARD_POLLING_MS | 10000 | 폴링 |
@@ -254,6 +254,29 @@ sequenceDiagram
 **검증:** `npm test` — `authPaths.test.ts` · `authCrossTab.test.ts`. 수동 2탭: 동일 계정 로그인 → 탭1 로그아웃 → 탭2가 `/haccp/login`(또는 로컬 `/login`)으로 이동·이후 API는 미인증.
 
 판정: [`09` G-22](09_통합완성도_및_부족분.md).
+
+### 3.5 그리드 pref · 가상화 (G-23)
+
+| 항목 | 정본 |
+|------|------|
+| 가상화 임계 | `VITE_GRID_VIRTUAL_THRESHOLD` → `GRID_VIRTUAL_THRESHOLD` → `shouldVirtualize` (`useGridVirtual`) |
+| 기본값 | **100**행 이상이면 TanStack Virtual 활성 (`MesEditableGrid` · `MesDataGrid`) |
+| 페이지 크기 env | `VITE_GRID_DEFAULT_PAGE_SIZE` — **클라 페이징 미사용(예약)**. 목록은 전체 조회 + 가상 스크롤 |
+| pref 저장 | `persistId` + `PageScrnContext.scrnCd` → `prefApi` (`/api/v1/pref/grid/*`) · JSON v2(hidden/order/sizing) |
+| pref 미저장 | `persistId` 없거나 셸 밖(scrnCd 공백) — 세션만 |
+
+**대량 화면 스모크(코드 경로 · STEP 25)**
+
+| 화면 | scrn_cd | persistId | 그리드 | 가상화 | pref |
+|------|---------|-----------|--------|--------|------|
+| 문서함 | `document-inbox` | `doc-document-inbox` | MesEditableGrid | displayRows≥100 | O (셸 Provider) |
+| 변경 감사 로그 | `audit-log` | `sys-audit-log` | MesEditableGrid | 동일 | O |
+| 설비 이력 | `equipment-history` | `bas-equipment-history-master` · `-detail` | MesEditableGrid×2 | 동일 | O |
+
+편차(허용): `ROW_ESTIMATE_PX=28` 은 estimateSize 고정(가상화 보정용) — env 미이관. 크리티컬 버그 없음.  
+단위: `useGridVirtual.test.ts` · `gridPref.test.ts`. 수동: 행≥100에서 스크롤 부드러움·열 숨김 후 재진입 유지.
+
+판정: [`09` G-23](09_통합완성도_및_부족분.md).
 
 ---
 
@@ -651,6 +674,7 @@ flowchart LR
 | G-13 | MasterData equipment/pest · ccpMetal/VerificationApi | **완료** — 2026-08-10 STEP 01 삭제 |
 | G-15 | BizOps 다중 base 혼동 | **완료(문서)** — 2026-08-11 STEP 23. §5.7 표 · HWP 경로 bizOps 호출 0 |
 | G-22 | 멀티탭 로그아웃 | **완료** — 2026-08-11 STEP 24. §3.4 · `authPaths` Path basename |
+| G-23 | 그리드 pref·가상화 | **완료** — 2026-08-11 STEP 25. §3.5 · VIRTUAL_THRESHOLD 정본 |
 
 ### 12.3 교차 수치
 
