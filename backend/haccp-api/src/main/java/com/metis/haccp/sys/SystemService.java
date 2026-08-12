@@ -141,6 +141,7 @@ public class SystemService {
     public String uploadSign(String userId, MultipartFile file) {
         String target = text(userId);
         if (target.isEmpty()) throw new BizException("사용자 ID가 올바르지 않습니다.");
+        assertSignImage(file);
         String existing = systemMapper.selectSignPath(LoginUserContext.coCd(), target);
         // 대상 사용자가 회사에 없을 때(= select null이면서 실제 미존재) 갱신 0건으로 판별
         String path = fileStorage.save(LoginUserContext.coCd(), file);
@@ -165,12 +166,120 @@ public class SystemService {
         return path;
     }
 
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-12
+     * 코멘트:
+     *   1) 사용자 서명 경로를 비우고 물리 파일을 삭제한다
+     *   2) 사용자관리 서명 팝업 「삭제」에서 호출한다
+     *   3) 미등록이면 업무 오류, 파일 정리 실패는 DB 클리어를 우선한다
+     */
+    @Transactional
+    public void deleteSign(String userId) {
+        String target = text(userId);
+        if (target.isEmpty()) throw new BizException("사용자 ID가 올바르지 않습니다.");
+        String existing = systemMapper.selectSignPath(LoginUserContext.coCd(), target);
+        if (existing == null || existing.isBlank()) {
+            throw new BizException("등록된 서명이 없습니다.");
+        }
+        int updated = systemMapper.updateSignPath(
+                LoginUserContext.coCd(), target, "", LoginUserContext.userId());
+        if (updated <= 0) {
+            throw new BizException("사용자를 찾을 수 없습니다.");
+        }
+        try {
+            fileStorage.delete(existing);
+        } catch (RuntimeException ignored) {
+            // DB 경로가 정본이므로 파일 정리 실패는 무시
+        }
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-12
+     * 코멘트:
+     *   1) 권한그룹의 화면별 권한 목록을 반환한다
+     *   2) 권한그룹 관리 우측 트리 로드 시 호출한다
+     *   3) 미설정 화면도 N으로 채워진다
+     */
+    public List<Map<String, Object>> listRoleScreens(String usrgrpCd) {
+        String grp = text(usrgrpCd);
+        if (grp.isEmpty()) throw new BizException("권한그룹코드를 선택하세요.");
+        return systemMapper.selectRoleScreens(LoginUserContext.coCd(), grp);
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-12
+     * 코멘트:
+     *   1) 화면 조회권한(read_yn) 변경을 저장한다 — 열림이면 5권한 Y, 닫힘이면 전부 N
+     *   2) 권한그룹 관리 트리 체크 저장 시 호출한다
+     *   3) 빈 목록이면 업무 오류
+     */
+    @Transactional(timeout = 60)
+    public void saveRoleScreens(String usrgrpCd, List<Map<String, Object>> rows) {
+        String grp = text(usrgrpCd);
+        if (grp.isEmpty()) throw new BizException("권한그룹코드를 선택하세요.");
+        DeleteValidation.requireItems(rows, "저장할 화면 권한이 없습니다.");
+        String actor = LoginUserContext.userId();
+        String co = LoginUserContext.coCd();
+        for (Map<String, Object> row : rows) {
+            if (row == null) throw new BizException("화면 권한 행이 올바르지 않습니다.");
+            String scrn = text(String.valueOf(row.getOrDefault("scrnCd", "")));
+            if (scrn.isEmpty()) throw new BizException("화면코드가 없습니다.");
+            String read = text(String.valueOf(row.getOrDefault("readYn", "N"))).toUpperCase();
+            if (!read.equals("Y")) read = "N";
+            // 열림(Y)이면 업무 사용 가능하도록 등록·수정·출력도 Y, 삭제는 N 유지 가능하나 1차는 전부 Y
+            String yn = read;
+            systemMapper.upsertRoleScreen(co, grp, scrn, yn, yn, yn, yn, yn, actor);
+        }
+    }
+
+    /** 공통코드 대분류 헤더 목록 */
+    public List<Map<String, Object>> listCodeGroups() {
+        return systemMapper.selectCodeGroups(LoginUserContext.coCd());
+    }
+
+    /** 공통코드 세부 — mainCd + sysYn(Y|N|sys|usr) */
+    public List<Map<String, Object>> listCodeDetails(String mainCd, String sysYn) {
+        String main = text(mainCd);
+        if (main.isEmpty()) throw new BizException("대분류 코드를 선택하세요.");
+        return systemMapper.selectCodeDetails(LoginUserContext.coCd(), main, text(sysYn));
+    }
+
+    /** 메뉴 관리 평면 목록 — 권한 트리 조립용 */
+    public List<Map<String, Object>> listMenusAdmin() {
+        return systemMapper.selectMenusAdmin(LoginUserContext.coCd());
+    }
+
+    /** 신규 사용자 기본 비밀번호 — 화면에서 비번 컬럼을 받지 않을 때 서버가 채운다 */
+    private static final String DEFAULT_NEW_USER_PW = "1234";
+    /** 서명 이미지 최대 크기 — 10MB */
+    private static final long SIGN_MAX_BYTES = 10L * 1024 * 1024;
+
     private void hashNewUserPassword(String type, Map<String, Object> payload) {
         if (!"user-management".equals(type)) return;
-        boolean isNew = payload.get("idx") == null;
+        boolean isNew = payload.get("idx") == null
+                || "".equals(String.valueOf(payload.get("idx")).trim())
+                || "null".equalsIgnoreCase(String.valueOf(payload.get("idx")));
         String password = String.valueOf(payload.getOrDefault("userPw", "")).trim();
-        if (isNew && password.isEmpty()) throw new BizException("신규 사용자의 비밀번호를 입력하세요.");
+        // 신규이고 비번 미입력 시(= 화면에서 비번 컬럼 제거) 기본값 1234
+        if (isNew && password.isEmpty()) password = DEFAULT_NEW_USER_PW;
         if (!password.isEmpty()) payload.put("userPw", BCrypt.hashpw(password, BCrypt.gensalt()));
+    }
+
+    private void assertSignImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) throw new BizException("서명 파일을 선택하세요.");
+        if (file.getSize() > SIGN_MAX_BYTES) {
+            throw new BizException("서명 이미지는 10MB 이하만 업로드할 수 있습니다.");
+        }
+        String contentType = text(file.getContentType()).toLowerCase();
+        String name = text(file.getOriginalFilename()).toLowerCase();
+        boolean okType = contentType.equals("image/png") || contentType.equals("image/jpeg");
+        boolean okExt = name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg");
+        if (!okType && !okExt) {
+            throw new BizException("PNG 또는 JPG 파일만 업로드할 수 있습니다.");
+        }
     }
 
     private String writeJson(Map<String, Object> payload) {

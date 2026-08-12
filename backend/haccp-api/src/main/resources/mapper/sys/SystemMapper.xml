@@ -40,8 +40,12 @@ PIPELINE[HB92] 시스템 관리 MyBatis XML
             <when test="type == 'screen-usage-statistics'">
                 SELECT * FROM sp_tbl_view_stat_daily_r_000(#{coCd, jdbcType=VARCHAR}, #{fromDt, jdbcType=VARCHAR}, #{toDt, jdbcType=VARCHAR}, #{keyword, jdbcType=VARCHAR})
             </when>
+            <when test="type == 'audit-log'">
+                <!-- keyword = 메뉴키(scrn_cd·menu_cd·tbl_nm) — p_menu_key -->
+                SELECT * FROM sp_tbl_audit_log_r_000(#{coCd, jdbcType=VARCHAR}, #{fromDt, jdbcType=VARCHAR}, #{toDt, jdbcType=VARCHAR}, #{keyword, jdbcType=VARCHAR}, '', '')
+            </when>
             <otherwise>
-                SELECT * FROM sp_tbl_audit_log_r_000(#{coCd, jdbcType=VARCHAR}, #{fromDt, jdbcType=VARCHAR}, #{toDt, jdbcType=VARCHAR}, '', #{keyword, jdbcType=VARCHAR}, '')
+                SELECT * FROM sp_tbl_audit_log_r_000(#{coCd, jdbcType=VARCHAR}, #{fromDt, jdbcType=VARCHAR}, #{toDt, jdbcType=VARCHAR}, '', '', '')
             </otherwise>
         </choose>
     </select>
@@ -96,4 +100,42 @@ PIPELINE[HB92] 시스템 관리 MyBatis XML
          WHERE co_cd = #{coCd, jdbcType=VARCHAR}
            AND user_id = #{userId, jdbcType=VARCHAR}
     </update>
+
+    <!-- 권한그룹별 화면 권한 — 미설정 화면도 N -->
+    <select id="selectRoleScreens" resultType="map">
+        SELECT * FROM sp_tbl_role_screen_r_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{usrgrpCd, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <update id="upsertRoleScreen" statementType="CALLABLE">
+        CALL sp_tbl_role_screen_c_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{usrgrpCd, jdbcType=VARCHAR},
+            #{scrnCd, jdbcType=VARCHAR},
+            #{readYn, jdbcType=VARCHAR},
+            #{writeYn, jdbcType=VARCHAR},
+            #{modifyYn, jdbcType=VARCHAR},
+            #{deleteYn, jdbcType=VARCHAR},
+            #{printYn, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <select id="selectCodeGroups" resultType="map">
+        SELECT * FROM sp_tbl_code_group_r_000(#{coCd, jdbcType=VARCHAR})
+    </select>
+
+    <select id="selectCodeDetails" resultType="map">
+        SELECT * FROM sp_tbl_code_detail_r_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{mainCd, jdbcType=VARCHAR},
+            #{sysYn, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <select id="selectMenusAdmin" resultType="map">
+        SELECT * FROM sp_tbl_menu_admin_r_000(#{coCd, jdbcType=VARCHAR})
+    </select>
 </mapper>

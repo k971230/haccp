@@ -221,7 +221,7 @@ export default function PestDeviceHistoryPage() {
         }
       }
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- pest.load·hist.load 안정 참조
   }, [selectedPestIdx]);
@@ -242,7 +242,7 @@ export default function PestDeviceHistoryPage() {
       setHistActiveKey(null);
       clearHistSel();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- hist.load 안정 참조
   }, []);
@@ -358,7 +358,7 @@ export default function PestDeviceHistoryPage() {
         await loadHist(lastIdx);
       }
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -396,7 +396,7 @@ export default function PestDeviceHistoryPage() {
       mesToast(MES.saveDone, "success");
       await loadHist(selectedPestIdx);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -448,7 +448,7 @@ export default function PestDeviceHistoryPage() {
       }
       await loadPest();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -489,7 +489,7 @@ export default function PestDeviceHistoryPage() {
       mesToast(MES.deleteDone, "success");
       await loadHist(selectedPestIdx);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -527,7 +527,7 @@ export default function PestDeviceHistoryPage() {
           />
         )}
       >
-        <PageCardSplit>
+        <PageCardSplit storageKey="haccp-split-pest-device-hist">
           <div {...sec.bind("h", gridPanelClass)}>
             <div className={gridHeadClass}>
               <b>방충설비</b>

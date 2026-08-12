@@ -5,7 +5,7 @@
 -- 일자: 2026-08-07
 -- 코멘트:
 --   1) 건강진단 그리드·설비이력 M-D·방충 체크플래그·협력업체·CCP 개선조치방법을 추가한다
---   2) EQUIP_CARD 는 HWP→DB 작성으로 바꾸고 화면 tmpl를 맞춘다
+--   2) tmpl_prp-equip-card 는 HWP→DB 작성으로 바꾸고 화면 tmpl를 맞춘다
 --   3) 재실행 안전 — IF NOT EXISTS / 컬럼 존재 시 스킵
 -- ============================================================
 
@@ -42,9 +42,9 @@ UPDATE tbl_template SET
     mng_no   = 'HA-HYG-02',
     upd_id   = 'system',
     upd_dt   = now()
- WHERE tmpl_cd = 'LAW_HEALTH';
+ WHERE tmpl_cd = 'tmpl_admin-law-health';
 
-UPDATE tbl_screen SET tmpl_cd = 'LAW_HEALTH', module_cd = 'WRK', use_yn = 'Y',
+UPDATE tbl_screen SET tmpl_cd = 'tmpl_admin-law-health', module_cd = 'WRK', use_yn = 'Y',
     scrn_nm = '건강진단관리기록부', upd_id = 'system', upd_dt = now()
  WHERE scrn_cd = 'health-cert-record';
 
@@ -129,9 +129,9 @@ UPDATE tbl_template SET
     mng_no   = 'HA-FAC-08',
     upd_id   = 'system',
     upd_dt   = now()
- WHERE tmpl_cd = 'EQUIP_CARD';
+ WHERE tmpl_cd = 'tmpl_prp-equip-card';
 
-UPDATE tbl_screen SET tmpl_cd = 'EQUIP_CARD', module_cd = 'WRK', use_yn = 'Y',
+UPDATE tbl_screen SET tmpl_cd = 'tmpl_prp-equip-card', module_cd = 'WRK', use_yn = 'Y',
     scrn_nm = '설비이력기록부', upd_id = 'system', upd_dt = now()
  WHERE scrn_cd = 'equipment-history';
 

@@ -292,7 +292,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
         (row) => String(row.docIdx),
       );
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, [form, replaceServerList, statusLabel]);
 
@@ -330,7 +330,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
         const data = await detailCcpForm(form, row.docIdx);
         return detailToBuf(form, data, user?.userNm);
       } catch (error) {
-        mesToast(mesError(error), "error");
+        mesError(error);
         return null;
       }
     });
@@ -381,7 +381,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
       setSelectedRow(null);
       setSelectedPass(null);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, "add");
 
@@ -464,7 +464,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
         if (err.rowKey) void handleSelect(err.rowKey);
       }
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, "save");
 
@@ -497,7 +497,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
       await loadList();
       await handleSelect(null);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, "del");
 
@@ -614,7 +614,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
                   status: value((data.header as CcpRow) ?? {}, "status") || null,
                   statusNm: statusLabel(value((data.header as CcpRow) ?? {}, "status"), value((data.header as CcpRow) ?? {}, "status")),
                 });
-              }).catch((error) => mesToast(mesError(error), "error"));
+              }).catch((error) => mesError(error));
             }
           }}
           // 상태 라벨

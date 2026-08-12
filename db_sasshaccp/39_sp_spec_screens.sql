@@ -334,7 +334,7 @@ LANGUAGE sql STABLE AS $$
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE h.co_cd = p_co_cd
        AND d.del_yn = 'N'
-       AND d.tmpl_cd = 'CCP_COLD'
+       AND d.tmpl_cd = 'tmpl_ccp-cold-log'
        AND (COALESCE(p_from_dt, '') = '' OR h.base_dt >= p_from_dt)
        AND (COALESCE(p_to_dt, '') = '' OR h.base_dt <= p_to_dt)
        AND (COALESCE(p_ccp_cd, '') = '' OR h.ccp_cd = p_ccp_cd)
@@ -409,7 +409,7 @@ BEGIN
       FROM tbl_template t
       LEFT JOIN tbl_company_template ct
         ON ct.co_cd = p_co_cd AND ct.tmpl_cd = t.tmpl_cd AND ct.use_yn = 'Y'
-     WHERE t.tmpl_cd = 'CCP_COLD' AND t.use_yn = 'Y';
+     WHERE t.tmpl_cd = 'tmpl_ccp-cold-log' AND t.use_yn = 'Y';
 
     IF v_tmpl_nm IS NULL THEN
         RAISE EXCEPTION 'CCP 냉장보관 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000';
@@ -419,14 +419,14 @@ BEGIN
                substr(p_base_dt, 1, 4) || '-' || substr(p_base_dt, 5, 2) || '-' || substr(p_base_dt, 7, 2) || ')';
 
     IF p_doc_idx IS NULL OR p_doc_idx = 0 THEN
-        v_doc_no := sp_tbl_doc_no_gen_c_000(p_co_cd, 'CCP_COLD', p_base_dt);
+        v_doc_no := sp_tbl_doc_no_gen_c_000(p_co_cd, 'tmpl_ccp-cold-log', p_base_dt);
         INSERT INTO tbl_document(
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status,
             appr_line_cd, writer_id, write_dt, ver_no,
             retention_until, del_yn, ins_id, ins_dt
         )
         VALUES (
-            p_co_cd, 'CCP_COLD', 'DB', v_doc_no, p_base_dt, v_title, 'WRK',
+            p_co_cd, 'tmpl_ccp-cold-log', 'DB', v_doc_no, p_base_dt, v_title, 'WRK',
             v_appr, p_id, now(), 1,
             to_char(
                 (to_date(p_base_dt, 'YYYYMMDD') + (COALESCE(v_retain_m, 24) || ' months')::interval)::date,
@@ -451,7 +451,7 @@ BEGIN
           JOIN tbl_ccp_cold_monitor h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
          WHERE d.co_cd = p_co_cd
            AND d.idx = p_doc_idx
-           AND d.tmpl_cd = 'CCP_COLD'
+           AND d.tmpl_cd = 'tmpl_ccp-cold-log'
            AND d.del_yn = 'N';
         IF v_doc_idx IS NULL THEN
             RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE = '45000';
@@ -594,14 +594,14 @@ BEGIN
     IF p_sens_rows_json IS NULL OR jsonb_typeof(p_sens_rows_json) <> 'array' THEN RAISE EXCEPTION '감도 점검 행 자료가 올바르지 않습니다.' USING ERRCODE = '45000'; END IF;
     SELECT COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm), COALESCE(ct.appr_line_cd, 'DEFAULT'), COALESCE(ct.retention_month, t.default_retention_month)
       INTO v_name, v_appr, v_retain FROM tbl_template t LEFT JOIN tbl_company_template ct ON ct.co_cd=p_co_cd AND ct.tmpl_cd=t.tmpl_cd AND ct.use_yn='Y'
-     WHERE t.tmpl_cd='CCP_METAL' AND t.use_yn='Y';
+     WHERE t.tmpl_cd='tmpl_ccp-metal-log' AND t.use_yn='Y';
     IF v_name IS NULL THEN RAISE EXCEPTION 'CCP 금속검출 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000'; END IF;
     IF p_doc_idx IS NULL OR p_doc_idx = 0 THEN
         INSERT INTO tbl_document(co_cd,tmpl_cd,doc_kind,doc_no,base_dt,title,status,appr_line_cd,writer_id,write_dt,ver_no,retention_until,del_yn,ins_id)
-        VALUES(p_co_cd,'CCP_METAL','DB',sp_tbl_doc_no_gen_c_000(p_co_cd,'CCP_METAL',p_base_dt),p_base_dt,v_name || ' (' || p_base_dt || ')','WRK',v_appr,p_id,now(),1,to_char((to_date(p_base_dt,'YYYYMMDD')+(COALESCE(v_retain,24)||' months')::interval)::date,'YYYYMMDD'),'N',p_id) RETURNING idx INTO v_doc_idx;
+        VALUES(p_co_cd,'tmpl_ccp-metal-log','DB',sp_tbl_doc_no_gen_c_000(p_co_cd,'tmpl_ccp-metal-log',p_base_dt),p_base_dt,v_name || ' (' || p_base_dt || ')','WRK',v_appr,p_id,now(),1,to_char((to_date(p_base_dt,'YYYYMMDD')+(COALESCE(v_retain,24)||' months')::interval)::date,'YYYYMMDD'),'N',p_id) RETURNING idx INTO v_doc_idx;
         INSERT INTO tbl_ccp_metal_monitor(co_cd,doc_idx,base_dt,ccp_cd,fe_size,sts_size,mng_user_id,mng_nm,ins_id) VALUES(p_co_cd,v_doc_idx,p_base_dt,p_ccp_cd,p_fe_size,p_sts_size,NULLIF(p_mng_user_id,''),NULLIF(p_mng_nm,''),p_id) RETURNING idx INTO v_hdr_idx;
     ELSE
-        SELECT d.idx,d.status,h.idx INTO v_doc_idx,v_status,v_hdr_idx FROM tbl_document d JOIN tbl_ccp_metal_monitor h ON h.doc_idx=d.idx AND h.co_cd=d.co_cd WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd='CCP_METAL' AND d.del_yn='N';
+        SELECT d.idx,d.status,h.idx INTO v_doc_idx,v_status,v_hdr_idx FROM tbl_document d JOIN tbl_ccp_metal_monitor h ON h.doc_idx=d.idx AND h.co_cd=d.co_cd WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd='tmpl_ccp-metal-log' AND d.del_yn='N';
         IF v_doc_idx IS NULL THEN RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE='45000'; END IF;
         IF v_status IN ('REQ','REV','APV') THEN RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 수정할 수 없습니다.' USING ERRCODE='45000'; END IF;
         UPDATE tbl_document SET base_dt=p_base_dt,title=v_name || ' (' || p_base_dt || ')',upd_id=p_id,upd_dt=now() WHERE idx=v_doc_idx AND co_cd=p_co_cd;

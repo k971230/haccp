@@ -103,7 +103,7 @@ LANGUAGE sql STABLE AS $$
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE h.co_cd = p_co_cd
        AND d.del_yn = 'N'
-       AND d.tmpl_cd = 'CCP_COLD'
+       AND d.tmpl_cd = 'tmpl_ccp-cold-log'
        AND (COALESCE(p_from_dt, '') = '' OR h.base_dt >= p_from_dt)
        AND (COALESCE(p_to_dt, '') = '' OR h.base_dt <= p_to_dt)
        AND (COALESCE(p_ccp_cd, '') = '' OR h.ccp_cd = p_ccp_cd)
@@ -138,31 +138,31 @@ RETURNS TABLE (
 LANGUAGE sql STABLE AS $$
     SELECT d.idx,
            CASE p_tmpl_cd
-             WHEN 'CCP_METAL' THEN m.idx
-             WHEN 'CCP_VERIFY' THEN v.idx
+             WHEN 'tmpl_ccp-metal-log' THEN m.idx
+             WHEN 'tmpl_ccp-verify-check' THEN v.idx
              ELSE p.idx
            END,
            d.doc_no,
            CASE p_tmpl_cd
-             WHEN 'CCP_METAL' THEN m.base_dt
-             WHEN 'CCP_VERIFY' THEN v.base_dt
+             WHEN 'tmpl_ccp-metal-log' THEN m.base_dt
+             WHEN 'tmpl_ccp-verify-check' THEN v.base_dt
              ELSE p.plan_year || '0101'
            END,
            d.title, d.status,
            CASE p_tmpl_cd
-             WHEN 'CCP_METAL' THEN (SELECT count(*)::int FROM tbl_ccp_metal_sens_row r WHERE r.co_cd = p_co_cd AND r.hdr_idx = m.idx)
-             WHEN 'CCP_VERIFY' THEN (SELECT count(*)::int FROM tbl_ccp_verify_item i WHERE i.co_cd = p_co_cd AND i.hdr_idx = v.idx)
+             WHEN 'tmpl_ccp-metal-log' THEN (SELECT count(*)::int FROM tbl_ccp_metal_sens_row r WHERE r.co_cd = p_co_cd AND r.hdr_idx = m.idx)
+             WHEN 'tmpl_ccp-verify-check' THEN (SELECT count(*)::int FROM tbl_ccp_verify_item i WHERE i.co_cd = p_co_cd AND i.hdr_idx = v.idx)
              ELSE (SELECT count(*)::int FROM tbl_verify_plan_item i WHERE i.co_cd = p_co_cd AND i.hdr_idx = p.idx)
            END,
            CASE p_tmpl_cd
-             WHEN 'CCP_METAL' THEN (SELECT count(*)::int FROM tbl_ccp_metal_sens_row r WHERE r.co_cd = p_co_cd AND r.hdr_idx = m.idx AND r.judge_cd = 'F')
-             WHEN 'CCP_VERIFY' THEN (SELECT count(*)::int FROM tbl_ccp_verify_item i WHERE i.co_cd = p_co_cd AND i.hdr_idx = v.idx AND i.answer_cd = 'N')
+             WHEN 'tmpl_ccp-metal-log' THEN (SELECT count(*)::int FROM tbl_ccp_metal_sens_row r WHERE r.co_cd = p_co_cd AND r.hdr_idx = m.idx AND r.judge_cd = 'F')
+             WHEN 'tmpl_ccp-verify-check' THEN (SELECT count(*)::int FROM tbl_ccp_verify_item i WHERE i.co_cd = p_co_cd AND i.hdr_idx = v.idx AND i.answer_cd = 'N')
              ELSE 0
            END
       FROM tbl_document d
-      LEFT JOIN tbl_ccp_metal_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd AND p_tmpl_cd = 'CCP_METAL'
-      LEFT JOIN tbl_ccp_verify_check v ON v.doc_idx = d.idx AND v.co_cd = d.co_cd AND p_tmpl_cd = 'CCP_VERIFY'
-      LEFT JOIN tbl_verify_plan p ON p.doc_idx = d.idx AND p.co_cd = d.co_cd AND p_tmpl_cd = 'VERIFY_PLAN'
+      LEFT JOIN tbl_ccp_metal_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd AND p_tmpl_cd = 'tmpl_ccp-metal-log'
+      LEFT JOIN tbl_ccp_verify_check v ON v.doc_idx = d.idx AND v.co_cd = d.co_cd AND p_tmpl_cd = 'tmpl_ccp-verify-check'
+      LEFT JOIN tbl_verify_plan p ON p.doc_idx = d.idx AND p.co_cd = d.co_cd AND p_tmpl_cd = 'tmpl_prp-verify-plan'
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd
        AND d.tmpl_cd = p_tmpl_cd
@@ -203,28 +203,28 @@ LANGUAGE sql STABLE AS $$
           SELECT h.idx hdr_idx, h.base_dt, NULL::varchar base_dt_to, h.checker_nm,
                  (SELECT count(*)::int FROM tbl_daily_hygiene_item i WHERE i.hdr_idx=h.idx AND i.co_cd=h.co_cd) row_cnt,
                  (SELECT count(*)::int FROM tbl_daily_hygiene_item i WHERE i.hdr_idx=h.idx AND i.co_cd=h.co_cd AND i.judge_cd='X') ng_cnt
-            FROM tbl_daily_hygiene h WHERE p_tmpl_cd='DAILY_HYG' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
+            FROM tbl_daily_hygiene h WHERE p_tmpl_cd='tmpl_prp-hygiene-daily' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
           UNION ALL
           SELECT h.idx, h.base_dt, NULL, h.checker_nm,
                  (SELECT count(*)::int FROM tbl_personal_hygiene_row r WHERE r.hdr_idx=h.idx AND r.co_cd=h.co_cd),
                  (SELECT count(*)::int FROM tbl_personal_hygiene_row r WHERE r.hdr_idx=h.idx AND r.co_cd=h.co_cd
                    AND 'X' IN (r.health_cd,r.cloth_cd,r.belongings_cd,r.worker_state_cd,r.anteroom_cd,r.handwash_cd))
-            FROM tbl_personal_hygiene h WHERE p_tmpl_cd='PERSONAL_HYG' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
+            FROM tbl_personal_hygiene h WHERE p_tmpl_cd='tmpl_prp-hygiene-personal' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
           UNION ALL
           SELECT h.idx, h.base_dt, h.base_dt_to, h.checker_nm,
                  (SELECT count(*)::int FROM tbl_area_hygiene_item i WHERE i.hdr_idx=h.idx AND i.co_cd=h.co_cd),
                  (SELECT count(*)::int FROM tbl_area_hygiene_result r JOIN tbl_area_hygiene_item i ON i.idx=r.item_idx AND i.co_cd=r.co_cd WHERE i.hdr_idx=h.idx AND r.co_cd=h.co_cd AND r.judge_cd='X')
-            FROM tbl_area_hygiene h WHERE p_tmpl_cd='AREA_HYG' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
+            FROM tbl_area_hygiene h WHERE p_tmpl_cd='tmpl_prp-hygiene-area' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
           UNION ALL
           SELECT h.idx, h.base_dt, NULL, h.checker_nm,
                  (SELECT count(*)::int FROM tbl_pest_check_row r WHERE r.hdr_idx=h.idx AND r.co_cd=h.co_cd),
                  (SELECT count(*)::int FROM tbl_pest_check_row r WHERE r.hdr_idx=h.idx AND r.co_cd=h.co_cd AND (r.device_ng_cd='X' OR r.rat_sum>0))
-            FROM tbl_pest_check h WHERE p_tmpl_cd='PEST' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
+            FROM tbl_pest_check h WHERE p_tmpl_cd='tmpl_prp-pest-check' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
           UNION ALL
           SELECT h.idx, h.base_dt, h.base_dt_to, NULL,
                  (SELECT count(*)::int FROM tbl_water_check_item i WHERE i.hdr_idx=h.idx AND i.co_cd=h.co_cd),
                  (SELECT count(*)::int FROM tbl_water_check_result r JOIN tbl_water_check_item i ON i.idx=r.item_idx AND i.co_cd=r.co_cd WHERE i.hdr_idx=h.idx AND r.co_cd=h.co_cd AND r.judge_cd='X')
-            FROM tbl_water_check h WHERE p_tmpl_cd='WATER' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
+            FROM tbl_water_check h WHERE p_tmpl_cd='tmpl_prp-water-check' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
       ) x ON true
      WHERE d.co_cd=p_co_cd AND d.tmpl_cd=p_tmpl_cd AND d.del_yn='N'
        AND (coalesce(p_from_dt,'')='' OR x.base_dt>=p_from_dt)
@@ -260,17 +260,17 @@ RETURNS TABLE (
 LANGUAGE sql STABLE AS $$
     SELECT d.idx, d.doc_no, d.base_dt, d.title, d.status, d.writer_id, d.write_dt,
            CASE p_tmpl_cd
-             WHEN 'FACILITY' THEN (SELECT count(*)::int FROM tbl_facility_check_item r JOIN tbl_facility_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
-             WHEN 'CALIB_TARGET' THEN (SELECT count(*)::int FROM tbl_calib_target_row r JOIN tbl_calib_target h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
-             WHEN 'WASTE' THEN (SELECT count(*)::int FROM tbl_waste_check_row r JOIN tbl_waste_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
-             WHEN 'INV_CHECK' THEN (SELECT count(*)::int FROM tbl_inv_txn r WHERE r.src_tmpl_cd = 'INV_CHECK' AND r.src_doc_idx = d.idx AND r.co_cd = d.co_cd)
-             WHEN 'RECV_INSP' THEN (SELECT count(*)::int FROM tbl_recv_inspect_item r JOIN tbl_recv_inspect h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
-             WHEN 'PROCESS' THEN (SELECT count(*)::int FROM tbl_process_check_item r JOIN tbl_process_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
+             WHEN 'tmpl_prp-facility-check' THEN (SELECT count(*)::int FROM tbl_facility_check_item r JOIN tbl_facility_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
+             WHEN 'tmpl_prp-calib-target' THEN (SELECT count(*)::int FROM tbl_calib_target_row r JOIN tbl_calib_target h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
+             WHEN 'tmpl_prp-waste-check' THEN (SELECT count(*)::int FROM tbl_waste_check_row r JOIN tbl_waste_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
+             WHEN 'tmpl_logis-inventory-check' THEN (SELECT count(*)::int FROM tbl_inv_txn r WHERE r.src_tmpl_cd = 'tmpl_logis-inventory-check' AND r.src_doc_idx = d.idx AND r.co_cd = d.co_cd)
+             WHEN 'tmpl_logis-receive-inspect' THEN (SELECT count(*)::int FROM tbl_recv_inspect_item r JOIN tbl_recv_inspect h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
+             WHEN 'tmpl_ccp-process-check' THEN (SELECT count(*)::int FROM tbl_process_check_item r JOIN tbl_process_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
              ELSE 0
            END,
            CASE p_tmpl_cd
-             WHEN 'FACILITY' THEN (SELECT count(*)::int FROM tbl_facility_check_item r JOIN tbl_facility_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd AND r.judge_cd = 'X')
-             WHEN 'RECV_INSP' THEN (SELECT count(*)::int FROM tbl_recv_inspect_item r JOIN tbl_recv_inspect h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd AND r.judge_cd = 'F')
+             WHEN 'tmpl_prp-facility-check' THEN (SELECT count(*)::int FROM tbl_facility_check_item r JOIN tbl_facility_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd AND r.judge_cd = 'X')
+             WHEN 'tmpl_logis-receive-inspect' THEN (SELECT count(*)::int FROM tbl_recv_inspect_item r JOIN tbl_recv_inspect h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd AND r.judge_cd = 'F')
              ELSE 0
            END
       FROM tbl_document d

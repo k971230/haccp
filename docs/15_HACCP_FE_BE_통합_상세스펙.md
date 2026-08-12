@@ -397,15 +397,15 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 ### 5.7 BizOps 다중 base — API 잔존 · UI HWP (G-15)
 
 `BizOpsController`는 아래 **6 base × (list/detail/save/validate-delete/delete)** 를 한 컨트롤러에 묶는다.
-메뉴·레지스트리와 혼동하지 말 것: **활성 작성 UI는 FACILITY DB 1건뿐**이고, 이관된 화면은 `documentApi`(+rhwp)만 호출한다.
+메뉴·레지스트리와 혼동하지 말 것: **활성 작성 UI는 tmpl_prp-facility-check DB 1건뿐**이고, 이관된 화면은 `documentApi`(+rhwp)만 호출한다.
 
 | screenCode (구 DB) | API base | BE 상태 | FE 작성 UI | 활성 scrn_cd / tmpl | 비고 |
 |--------------------|----------|---------|------------|---------------------|------|
-| `facility-equipment-check` | `/api/v1/fac/facility-equipment-check` | 잔존·사용 | `BizOpsFormPage` | `facility-equipment-check` / FACILITY | **유일 활성 BizOps DB 작성** |
+| `facility-equipment-check` | `/api/v1/fac/facility-equipment-check` | 잔존·사용 | `BizOpsFormPage` | `facility-equipment-check` / tmpl_prp-facility-check | **유일 활성 BizOps DB 작성** |
 | `calibration-target-management` | `/api/v1/fac/calibration-target-management` | API 잔존 | 없음 (레지스트리 미등록) | use_yn=N | 숨김 · HWP 대체 leaf 없음(자체/외부 검교정은 `calib-*-hwp`) |
 | `waste-disposal-check` | `/api/v1/fac/waste-disposal-check` | API 잔존 | HWP 이전 | `waste-hwp` / WASTE | 구 DB 화면 use_yn=N |
-| `inventory-check` | `/api/v1/inv/inventory-check` | API 잔존 | HWP 이전 | `inventory-hwp` / INV_CHECK | 구 DB 화면 use_yn=N |
-| `receiving-inspection` | `/api/v1/inv/receiving-inspection` | API 잔존 | HWP 이전 | `receiving-insp-hwp` / RECV_INSP | 구 DB 화면 use_yn=N |
+| `inventory-check` | `/api/v1/inv/inventory-check` | API 잔존 | HWP 이전 | `inventory-hwp` / tmpl_logis-inventory-check | 구 DB 화면 use_yn=N |
+| `receiving-inspection` | `/api/v1/inv/receiving-inspection` | API 잔존 | HWP 이전 | `receiving-insp-hwp` / tmpl_logis-receive-inspect | 구 DB 화면 use_yn=N |
 | `process-control-check` | `/api/v1/prc/process-control-check` | API 잔존 | HWP 이전 | `process-hwp` / PROCESS | 구 DB 화면 use_yn=N |
 
 **FE 호출 검증 (STEP 23, 2026-08-11)**
@@ -489,7 +489,7 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 | I 냉장 CCP | ColdMonitorPage | ccpColdApi | CcpColdController | sp_tbl_ccp_cold_monitor_* |
 | J 금속/검증 CCP | CcpFormPage | ccpFormsApi | CcpFormsController | sp_tbl_ccp_form_* |
 | K 가열·멸균·여과 | CcpGenericMonitorPage | ccpGenericApi | CcpGenericController | generic monitor SP |
-| L 시설점검 DB | BizOpsFormPage | bizOpsApi | BizOpsController | sp_tbl_biz_ops_* FACILITY (**활성 1건**, §5.7) |
+| L 시설점검 DB | BizOpsFormPage | bizOpsApi | BizOpsController | sp_tbl_biz_ops_* tmpl_prp-facility-check (**활성 1건**, §5.7) |
 | M 건강진단 | HealthCertPage | healthCertApi | HealthCertController | sp_tbl_health_cert_* |
 | N HWP leaf | HwpDocumentEditorPage | documentApi | Document+Template | document · hwp_document_c (폐기물·재고·입고·공정 등 구 BizOps 이관 포함) |
 | O 문서함/결재 | DocumentBoxPage | documentApi | DocumentController | document list/inbox |
@@ -724,7 +724,7 @@ flowchart LR
 
 ## 부록 C. HWP fixedTmplCd (27)
 
-visitor-log→VISITOR_LOG … surface-test-hwp→SURFACE_TEST — 07 §4.7 정본.
+visitor-log→tmpl_admin-visitor-log … surface-test-hwp→tmpl_prp-test-surface — 07 §4.7 정본.
 
 ---
 

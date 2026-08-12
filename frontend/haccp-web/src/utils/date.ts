@@ -15,6 +15,9 @@ export const fmtDate = (v?: string | null) => (v ? dayjs(v).format("YYYY-MM-DD")
 /** yyyy-MM-dd HH:mm:ss — 일시 컬럼 표시 */
 export const fmtDateTime = (v?: string | null) =>
   v ? dayjs(v).format("YYYY-MM-DD HH:mm:ss") : "";
+/** yyyy-MM-dd HH:mm — 로그인·감사 이력 표시 */
+export const fmtDateTimeMinute = (v?: string | null) =>
+  v ? dayjs(v).format("YYYY-MM-DD HH:mm") : "";
 /** 오늘 날짜(로컬) — 검색 기본값·신규행 기본일 */
 export const today = () => dayjs().format("YYYY-MM-DD");
 

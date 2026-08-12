@@ -114,7 +114,7 @@ export function DocumentApprovalToolbar({
       setRejectOpinion("");
       onApproved?.();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 

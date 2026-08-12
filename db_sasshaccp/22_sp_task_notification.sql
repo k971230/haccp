@@ -180,10 +180,10 @@ BEGIN
     SELECT tmpl_cd INTO v_src FROM tbl_document WHERE idx = p_src_doc_idx AND co_cd = p_co_cd AND del_yn = 'N';
     SELECT tmpl_cd INTO v_tgt FROM tbl_document WHERE idx = p_tgt_doc_idx AND co_cd = p_co_cd AND del_yn = 'N';
     IF v_src IS NULL OR v_tgt IS NULL THEN RAISE EXCEPTION '연결할 문서를 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
-    IF NOT ((p_rel_type = 'PLAN_REPORT' AND v_src = 'VERIFY_PLAN' AND v_tgt = 'VERIFY_REPORT')
-         OR (p_rel_type = 'EDU_PLAN_LOG' AND v_src = 'EDU_PLAN' AND v_tgt = 'EDU_LOG')
-         OR (p_rel_type = 'CALIB_TARGET_LOG' AND v_src = 'CALIB_TARGET' AND v_tgt IN ('CALIB_LOG_TEMP','CALIB_LOG_WGT','CALIB_LOG_SCL'))
-         OR (p_rel_type = 'RECV_INVENTORY' AND v_src = 'RECV_INSP' AND v_tgt IN ('INV', 'INV_CHECK'))) THEN
+    IF NOT ((p_rel_type = 'PLAN_REPORT' AND v_src = 'tmpl_prp-verify-plan' AND v_tgt = 'tmpl_prp-verify-report')
+         OR (p_rel_type = 'tmpl_admin-edu-plan_LOG' AND v_src = 'tmpl_admin-edu-plan' AND v_tgt = 'tmpl_admin-edu-log')
+         OR (p_rel_type = 'tmpl_prp-calib-target_LOG' AND v_src = 'tmpl_prp-calib-target' AND v_tgt IN ('tmpl_prp-calib-temp','tmpl_prp-calib-weight','tmpl_prp-calib-scale'))
+         OR (p_rel_type = 'RECV_INVENTORY' AND v_src = 'tmpl_logis-receive-inspect' AND v_tgt IN ('INV', 'tmpl_logis-inventory-check'))) THEN
         RAISE EXCEPTION '허용되지 않은 문서 관계입니다.' USING ERRCODE = '45000';
     END IF;
     INSERT INTO tbl_document_relation(co_cd, src_doc_idx, rel_type, tgt_doc_idx, ins_id) VALUES(p_co_cd, p_src_doc_idx, p_rel_type, p_tgt_doc_idx, p_id) ON CONFLICT DO NOTHING;

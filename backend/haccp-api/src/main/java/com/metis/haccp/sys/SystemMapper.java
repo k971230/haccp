@@ -95,4 +95,36 @@ public interface SystemMapper {
             @Param("signPath") String signPath,
             @Param("actorId") String actorId
     );
+
+    /** 권한그룹별 화면 권한 목록 — sp_tbl_role_screen_r_000 */
+    List<Map<String, Object>> selectRoleScreens(
+            @Param("coCd") String coCd,
+            @Param("usrgrpCd") String usrgrpCd
+    );
+
+    /** 화면 권한 1건 업서트 — sp_tbl_role_screen_c_000 */
+    void upsertRoleScreen(
+            @Param("coCd") String coCd,
+            @Param("usrgrpCd") String usrgrpCd,
+            @Param("scrnCd") String scrnCd,
+            @Param("readYn") String readYn,
+            @Param("writeYn") String writeYn,
+            @Param("modifyYn") String modifyYn,
+            @Param("deleteYn") String deleteYn,
+            @Param("printYn") String printYn,
+            @Param("userId") String userId
+    );
+
+    /** 공통코드 대분류 헤더 — sp_tbl_code_group_r_000 */
+    List<Map<String, Object>> selectCodeGroups(@Param("coCd") String coCd);
+
+    /** 공통코드 세부 — sp_tbl_code_detail_r_000 */
+    List<Map<String, Object>> selectCodeDetails(
+            @Param("coCd") String coCd,
+            @Param("mainCd") String mainCd,
+            @Param("sysYn") String sysYn
+    );
+
+    /** 관리용 메뉴 평면 목록 — 권한 트리 조립 */
+    List<Map<String, Object>> selectMenusAdmin(@Param("coCd") String coCd);
 }

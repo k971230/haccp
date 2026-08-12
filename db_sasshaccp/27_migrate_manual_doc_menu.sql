@@ -16,26 +16,26 @@ SET search_path TO sasshaccp;
 -- ------------------------------------------------------------
 INSERT INTO tbl_screen (scrn_cd, scrn_nm, module_cd, tmpl_cd, sort_no, use_yn, ins_id) VALUES
     -- 법적서류 (HWP)
-    ('law-health-cert',        '보건증관리',           'LAW', 'LAW_HEALTH',     1010, 'Y', 'system'),
-    ('law-material-ledger',    '원료수불대장관리',     'LAW', 'LAW_MATERIAL',   1020, 'Y', 'system'),
-    ('law-building-ledger',    '건축물대장관리',       'LAW', 'LAW_BUILDING',   1030, 'Y', 'system'),
-    ('law-production-ledger',  '생산대장관리',         'LAW', 'LAW_PRODUCTION', 1040, 'Y', 'system'),
-    ('law-business-license',   '영업등록증관리',       'LAW', 'LAW_LICENSE',    1050, 'Y', 'system'),
-    ('law-self-quality-test',  '자가품질검사관리',     'LAW', 'LAW_SELF_TEST',  1060, 'Y', 'system'),
-    ('law-completion-cert',    '수료증관리',           'LAW', 'LAW_CERT',       1070, 'Y', 'system'),
+    ('law-health-cert',        '보건증관리',           'LAW', 'tmpl_admin-law-health',     1010, 'Y', 'system'),
+    ('law-material-ledger',    '원료수불대장관리',     'LAW', 'tmpl_logis-material-ledger',   1020, 'Y', 'system'),
+    ('law-building-ledger',    '건축물대장관리',       'LAW', 'tmpl_admin-building-ledger',   1030, 'Y', 'system'),
+    ('law-production-ledger',  '생산대장관리',         'LAW', 'tmpl_admin-production-ledger', 1040, 'Y', 'system'),
+    ('law-business-license',   '영업등록증관리',       'LAW', 'tmpl_admin-license-manage',    1050, 'Y', 'system'),
+    ('law-self-quality-test',  '자가품질검사관리',     'LAW', 'tmpl_admin-self-test',  1060, 'Y', 'system'),
+    ('law-completion-cert',    '수료증관리',           'LAW', 'tmpl_admin-cert-manage',       1070, 'Y', 'system'),
     -- 교육 (HWP)
-    ('edu-annual-plan',        '연간 교육·훈련 계획서','EDU', 'EDU_PLAN',       1110, 'Y', 'system'),
-    ('edu-training-log',       '교육일지',             'EDU', 'EDU_LOG',        1120, 'Y', 'system'),
+    ('edu-annual-plan',        '연간 교육·훈련 계획서','EDU', 'tmpl_admin-edu-plan',       1110, 'Y', 'system'),
+    ('edu-training-log',       '교육일지',             'EDU', 'tmpl_admin-edu-log',        1120, 'Y', 'system'),
     -- 성적서 (HWP)
-    ('test-product-report',    '제품검사 성적서',      'TST', 'PROD_TEST',      1210, 'Y', 'system'),
-    ('test-surface-report',    '표면오염도 검사 성적서','TST','SURFACE_TEST',   1220, 'Y', 'system'),
+    ('test-product-report',    '제품검사 성적서',      'TST', 'tmpl_prp-test-product',      1210, 'Y', 'system'),
+    ('test-surface-report',    '표면오염도 검사 성적서','TST','tmpl_prp-test-surface',   1220, 'Y', 'system'),
     -- 일지설정 (기존 BAS 화면을 SET 모듈로도 묶을 leaf — 동일 화면코드 재사용은 불가하므로 설정 허브용 별칭 없이 이동)
     -- 기준정보의 설정성 화면은 메뉴만 SET 부모 아래로 재배치한다(scrn_cd 유지)
     -- CCP 유형별 공통 화면 (동일 CcpGenericMonitorPage, tmpl_cd로 고정)
-    ('ccp-heat-monitor',       '가열·삶기 CCP',        'CCP', 'CCP_HEAT',       151, 'Y', 'system'),
+    ('ccp-heat-monitor',       '가열·삶기 CCP',        'CCP', 'tmpl_ccp-heat-log',       151, 'Y', 'system'),
     ('ccp-wash-monitor',       '세척 CCP',             'CCP', 'CCP_WASH',       152, 'Y', 'system'),
-    ('ccp-sanitize-monitor',   '소독·헹굼 CCP',        'CCP', 'CCP_SANITIZE',   153, 'Y', 'system'),
-    ('ccp-filter-monitor',     '여과 CCP',             'CCP', 'CCP_FILTER',     154, 'Y', 'system'),
+    ('ccp-sanitize-monitor',   '소독·헹굼 CCP',        'CCP', 'tmpl_ccp-sanitize-log',   153, 'Y', 'system'),
+    ('ccp-filter-monitor',     '여과 CCP',             'CCP', 'tmpl_ccp-filter-log',     154, 'Y', 'system'),
     ('ccp-iqf-monitor',        '급속냉동 CCP',         'CCP', 'CCP_IQF',        155, 'Y', 'system')
 ON CONFLICT (scrn_cd) DO UPDATE SET
     scrn_nm = EXCLUDED.scrn_nm,
@@ -176,12 +176,12 @@ UPDATE tbl_template t
 
 UPDATE tbl_template
    SET scrn_cd = CASE tmpl_cd
-           WHEN 'CCP_HEAT' THEN 'ccp-heat-monitor'
+           WHEN 'tmpl_ccp-heat-log' THEN 'ccp-heat-monitor'
            WHEN 'CCP_WASH' THEN 'ccp-wash-monitor'
-           WHEN 'CCP_SANITIZE' THEN 'ccp-sanitize-monitor'
-           WHEN 'CCP_FILTER' THEN 'ccp-filter-monitor'
+           WHEN 'tmpl_ccp-sanitize-log' THEN 'ccp-sanitize-monitor'
+           WHEN 'tmpl_ccp-filter-log' THEN 'ccp-filter-monitor'
            WHEN 'CCP_IQF' THEN 'ccp-iqf-monitor'
            ELSE scrn_cd END,
        upd_id = 'system',
        upd_dt = now()
- WHERE tmpl_cd IN ('CCP_HEAT', 'CCP_WASH', 'CCP_SANITIZE', 'CCP_FILTER', 'CCP_IQF');
+ WHERE tmpl_cd IN ('tmpl_ccp-heat-log', 'CCP_WASH', 'tmpl_ccp-sanitize-log', 'tmpl_ccp-filter-log', 'CCP_IQF');

@@ -15,43 +15,43 @@ SET search_path TO sasshaccp;
 -- ------------------------------------------------------------
 -- 1. 표준 form_path → _template/{한글파일명}
 -- ------------------------------------------------------------
-UPDATE tbl_template SET form_path = '_template/업무_인수인계서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'HANDOVER';
-UPDATE tbl_template SET form_path = '_template/중요관리점[CCP]_점검표_냉장보관.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'CCP_COLD';
-UPDATE tbl_template SET form_path = '_template/중요관리점[CCP]_점검표_금속검출.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'CCP_METAL';
-UPDATE tbl_template SET form_path = '_template/중요관리점_검증점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'CCP_VERIFY';
-UPDATE tbl_template SET form_path = '_template/연간_검증계획서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'VERIFY_PLAN';
-UPDATE tbl_template SET form_path = '_template/검증_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'VERIFY_CHECK';
-UPDATE tbl_template SET form_path = '_template/검증결과_보고서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'VERIFY_REPORT';
-UPDATE tbl_template SET form_path = '_template/검증_개선조치_결과보고서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'VERIFY_CA';
-UPDATE tbl_template SET form_path = '_template/연간_교육_훈련_계획서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'EDU_PLAN';
-UPDATE tbl_template SET form_path = '_template/교육일지.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'EDU_LOG';
-UPDATE tbl_template SET form_path = '_template/일일_위생_점검일지.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'DAILY_HYG';
-UPDATE tbl_template SET form_path = '_template/개인_위생관리_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'PERSONAL_HYG';
-UPDATE tbl_template SET form_path = '_template/작업장_위생관리_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'AREA_HYG';
-UPDATE tbl_template SET form_path = '_template/방충_방서_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'PEST';
-UPDATE tbl_template SET form_path = '_template/시설_설비_처리도구_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'FACILITY';
-UPDATE tbl_template SET form_path = '_template/검_교정_대상.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'CALIB_TARGET';
-UPDATE tbl_template SET form_path = '_template/자체_검_교정_일지_1.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'CALIB_LOG_TEMP';
-UPDATE tbl_template SET form_path = '_template/자체_검_교정_일지_2.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'CALIB_LOG_WGT';
-UPDATE tbl_template SET form_path = '_template/자체_검_교정_일지_3.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'CALIB_LOG_SCL';
-UPDATE tbl_template SET form_path = '_template/시설_설비_이력카드.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'EQUIP_CARD';
-UPDATE tbl_template SET form_path = '_template/폐기물_처리_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'WASTE';
-UPDATE tbl_template SET form_path = '_template/입출고_및_재고_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'INV_CHECK';
-UPDATE tbl_template SET form_path = '_template/입고검사_일지.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'RECV_INSP';
-UPDATE tbl_template SET form_path = '_template/제품검사_성적서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'PROD_TEST';
-UPDATE tbl_template SET form_path = '_template/표면오염도_검사_성적서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'SURFACE_TEST';
-UPDATE tbl_template SET form_path = '_template/부적합제품_관리_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'BAD_PRODUCT';
-UPDATE tbl_template SET form_path = '_template/용수관리_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'WATER';
-UPDATE tbl_template SET form_path = '_template/클레임_관리_일지.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'CLAIM';
-UPDATE tbl_template SET form_path = '_template/공정관리_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'PROCESS';
-UPDATE tbl_template SET form_path = '_template/차량운행일지.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'VEHICLE_LOG';
-UPDATE tbl_template SET form_path = '_template/외부인출입기록부.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'VISITOR_LOG';
-UPDATE tbl_template SET form_path = '_template/원료부자재육안검사기준.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'VISUAL_INSP';
-UPDATE tbl_template SET form_path = '_template/부자재입고검수점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'SUBMAT_RECV';
-UPDATE tbl_template SET form_path = '_template/외부 검교정기록부.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'CALIB_EXT';
-UPDATE tbl_template SET form_path = '_template/제품출고관리일지.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'SHIPMENT';
-UPDATE tbl_template SET form_path = '_template/회수결과보고서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'RECALL';
-UPDATE tbl_template SET form_path = '_template/실시상황평가표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'EVAL';
+UPDATE tbl_template SET form_path = '_template/업무_인수인계서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_admin-handover-doc';
+UPDATE tbl_template SET form_path = '_template/중요관리점[CCP]_점검표_냉장보관.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_ccp-cold-log';
+UPDATE tbl_template SET form_path = '_template/중요관리점[CCP]_점검표_금속검출.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_ccp-metal-log';
+UPDATE tbl_template SET form_path = '_template/중요관리점_검증점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_ccp-verify-check';
+UPDATE tbl_template SET form_path = '_template/연간_검증계획서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-verify-plan';
+UPDATE tbl_template SET form_path = '_template/검증_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-verify-check';
+UPDATE tbl_template SET form_path = '_template/검증결과_보고서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-verify-report';
+UPDATE tbl_template SET form_path = '_template/검증_개선조치_결과보고서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-verify-action';
+UPDATE tbl_template SET form_path = '_template/연간_교육_훈련_계획서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_admin-edu-plan';
+UPDATE tbl_template SET form_path = '_template/교육일지.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_admin-edu-log';
+UPDATE tbl_template SET form_path = '_template/일일_위생_점검일지.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-hygiene-daily';
+UPDATE tbl_template SET form_path = '_template/개인_위생관리_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-hygiene-personal';
+UPDATE tbl_template SET form_path = '_template/작업장_위생관리_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-hygiene-area';
+UPDATE tbl_template SET form_path = '_template/방충_방서_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-pest-check';
+UPDATE tbl_template SET form_path = '_template/시설_설비_처리도구_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-facility-check';
+UPDATE tbl_template SET form_path = '_template/검_교정_대상.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-calib-target';
+UPDATE tbl_template SET form_path = '_template/자체_검_교정_일지_1.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-calib-temp';
+UPDATE tbl_template SET form_path = '_template/자체_검_교정_일지_2.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-calib-weight';
+UPDATE tbl_template SET form_path = '_template/자체_검_교정_일지_3.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-calib-scale';
+UPDATE tbl_template SET form_path = '_template/시설_설비_이력카드.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-equip-card';
+UPDATE tbl_template SET form_path = '_template/폐기물_처리_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-waste-check';
+UPDATE tbl_template SET form_path = '_template/입출고_및_재고_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_logis-inventory-check';
+UPDATE tbl_template SET form_path = '_template/입고검사_일지.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_logis-receive-inspect';
+UPDATE tbl_template SET form_path = '_template/제품검사_성적서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-test-product';
+UPDATE tbl_template SET form_path = '_template/표면오염도_검사_성적서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-test-surface';
+UPDATE tbl_template SET form_path = '_template/부적합제품_관리_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_admin-bad-product';
+UPDATE tbl_template SET form_path = '_template/용수관리_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-water-check';
+UPDATE tbl_template SET form_path = '_template/클레임_관리_일지.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_admin-claim-log';
+UPDATE tbl_template SET form_path = '_template/공정관리_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_ccp-process-check';
+UPDATE tbl_template SET form_path = '_template/차량운행일지.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_logis-vehicle-log';
+UPDATE tbl_template SET form_path = '_template/외부인출입기록부.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_admin-visitor-log';
+UPDATE tbl_template SET form_path = '_template/원료부자재육안검사기준.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-visual-inspect';
+UPDATE tbl_template SET form_path = '_template/부자재입고검수점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_logis-submat-receive';
+UPDATE tbl_template SET form_path = '_template/외부 검교정기록부.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_prp-calib-ext';
+UPDATE tbl_template SET form_path = '_template/제품출고관리일지.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_logis-shipment-log';
+UPDATE tbl_template SET form_path = '_template/회수결과보고서.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_admin-recall-report';
+UPDATE tbl_template SET form_path = '_template/실시상황평가표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'tmpl_admin-eval-check';
 UPDATE tbl_template SET form_path = '_template/입출고_및_재고_점검표.hwp', upd_id = 'system', upd_dt = now() WHERE tmpl_cd = 'INV';
 
 -- ------------------------------------------------------------
@@ -153,7 +153,7 @@ BEGIN
         tmpl_nm_ovr = COALESCE(EXCLUDED.tmpl_nm_ovr, tbl_company_template.tmpl_nm_ovr),
         form_path = EXCLUDED.form_path,
         use_yn = 'Y',
-        sys_yn = 'N',
+        sys_yn = 'usr',
         upd_id = p_id,
         upd_dt = now();
 END$$;

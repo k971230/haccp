@@ -29,17 +29,17 @@ RETURNS TABLE (
 LANGUAGE sql STABLE AS $$
     SELECT d.idx, d.doc_no, d.base_dt, d.title, d.status, d.writer_id, d.write_dt,
            CASE p_tmpl_cd
-             WHEN 'FACILITY' THEN (SELECT count(*)::int FROM tbl_facility_check_item r JOIN tbl_facility_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
-             WHEN 'CALIB_TARGET' THEN (SELECT count(*)::int FROM tbl_calib_target_row r JOIN tbl_calib_target h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
-             WHEN 'WASTE' THEN (SELECT count(*)::int FROM tbl_waste_check_row r JOIN tbl_waste_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
-             WHEN 'INV_CHECK' THEN (SELECT count(*)::int FROM tbl_inv_txn r WHERE r.src_tmpl_cd = 'INV_CHECK' AND r.src_doc_idx = d.idx AND r.co_cd = d.co_cd)
-             WHEN 'RECV_INSP' THEN (SELECT count(*)::int FROM tbl_recv_inspect_item r JOIN tbl_recv_inspect h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
-             WHEN 'PROCESS' THEN (SELECT count(*)::int FROM tbl_process_check_item r JOIN tbl_process_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
+             WHEN 'tmpl_prp-facility-check' THEN (SELECT count(*)::int FROM tbl_facility_check_item r JOIN tbl_facility_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
+             WHEN 'tmpl_prp-calib-target' THEN (SELECT count(*)::int FROM tbl_calib_target_row r JOIN tbl_calib_target h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
+             WHEN 'tmpl_prp-waste-check' THEN (SELECT count(*)::int FROM tbl_waste_check_row r JOIN tbl_waste_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
+             WHEN 'tmpl_logis-inventory-check' THEN (SELECT count(*)::int FROM tbl_inv_txn r WHERE r.src_tmpl_cd = 'tmpl_logis-inventory-check' AND r.src_doc_idx = d.idx AND r.co_cd = d.co_cd)
+             WHEN 'tmpl_logis-receive-inspect' THEN (SELECT count(*)::int FROM tbl_recv_inspect_item r JOIN tbl_recv_inspect h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
+             WHEN 'tmpl_ccp-process-check' THEN (SELECT count(*)::int FROM tbl_process_check_item r JOIN tbl_process_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd)
              ELSE 0
            END,
            CASE p_tmpl_cd
-             WHEN 'FACILITY' THEN (SELECT count(*)::int FROM tbl_facility_check_item r JOIN tbl_facility_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd AND r.judge_cd = 'X')
-             WHEN 'RECV_INSP' THEN (SELECT count(*)::int FROM tbl_recv_inspect_item r JOIN tbl_recv_inspect h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd AND r.judge_cd = 'F')
+             WHEN 'tmpl_prp-facility-check' THEN (SELECT count(*)::int FROM tbl_facility_check_item r JOIN tbl_facility_check h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd AND r.judge_cd = 'X')
+             WHEN 'tmpl_logis-receive-inspect' THEN (SELECT count(*)::int FROM tbl_recv_inspect_item r JOIN tbl_recv_inspect h ON h.idx = r.hdr_idx AND h.co_cd = r.co_cd WHERE h.doc_idx = d.idx AND r.co_cd = d.co_cd AND r.judge_cd = 'F')
              ELSE 0
            END
       FROM tbl_document d
@@ -75,7 +75,7 @@ DECLARE
     v_hdr_idx bigint;
 BEGIN
     IF coalesce(p_doc_idx, 0) = 0 THEN
-        IF p_tmpl_cd IN ('FACILITY', 'PROCESS', 'RECV_INSP') THEN
+        IF p_tmpl_cd IN ('tmpl_prp-facility-check', 'tmpl_ccp-process-check', 'tmpl_logis-receive-inspect') THEN
             -- 신규일 때(= docIdx 없음) 표준+오버라이드+회사 CUST로 전체 행을 채운다
             SELECT coalesce(jsonb_agg(jsonb_build_object(
                 'rowSeq', q.sort_no,
@@ -113,7 +113,7 @@ BEGIN
                         WHERE s.tmpl_cd = cci.tmpl_cd AND s.item_cd = cci.item_cd
                    )
               ) q;
-        ELSIF p_tmpl_cd = 'CALIB_TARGET' THEN
+        ELSIF p_tmpl_cd = 'tmpl_prp-calib-target' THEN
             SELECT coalesce(jsonb_agg(jsonb_build_object(
                 'rowSeq', q.row_seq, 'deviceCd', q.device_cd, 'deviceNm', q.device_nm,
                 'officialCalibDt', NULL, 'selfCalibDt', NULL, 'nextCalibDt', NULL,
@@ -129,7 +129,7 @@ BEGIN
         RETURN jsonb_build_object('header', NULL, 'rows', v_rows);
     END IF;
 
-    IF p_tmpl_cd = 'FACILITY' THEN
+    IF p_tmpl_cd = 'tmpl_prp-facility-check' THEN
         SELECT h.idx, jsonb_build_object('docIdx', d.idx, 'docNo', d.doc_no, 'status', d.status, 'baseDt', h.base_dt, 'checkerId', h.checker_id, 'checkerNm', h.checker_nm)
           INTO v_hdr_idx, v_header FROM tbl_facility_check h JOIN tbl_document d ON d.idx=h.doc_idx AND d.co_cd=h.co_cd WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx;
         SELECT coalesce(jsonb_agg(jsonb_build_object(
@@ -148,19 +148,19 @@ BEGIN
           INTO v_rows
           FROM tbl_facility_check_item r
          WHERE r.co_cd=p_co_cd AND r.hdr_idx=v_hdr_idx;
-    ELSIF p_tmpl_cd = 'CALIB_TARGET' THEN
+    ELSIF p_tmpl_cd = 'tmpl_prp-calib-target' THEN
         SELECT h.idx, jsonb_build_object('docIdx',d.idx,'docNo',d.doc_no,'status',d.status,'baseYear',h.base_year,'baseDt',h.base_dt,'checkerId',h.checker_id,'checkerNm',h.checker_nm) INTO v_hdr_idx,v_header FROM tbl_calib_target h JOIN tbl_document d ON d.idx=h.doc_idx AND d.co_cd=h.co_cd WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx;
         SELECT coalesce(jsonb_agg(jsonb_build_object('rowSeq',r.row_seq,'deviceCd',r.device_cd,'deviceNm',r.device_nm,'officialCalibDt',r.official_calib_dt,'selfCalibDt',r.self_calib_dt,'nextCalibDt',r.next_calib_dt,'doneDocIdx',r.done_doc_idx,'remark',r.remark) ORDER BY r.row_seq),'[]'::jsonb) INTO v_rows FROM tbl_calib_target_row r WHERE r.co_cd=p_co_cd AND r.hdr_idx=v_hdr_idx;
-    ELSIF p_tmpl_cd = 'WASTE' THEN
+    ELSIF p_tmpl_cd = 'tmpl_prp-waste-check' THEN
         SELECT h.idx,jsonb_build_object('docIdx',d.idx,'docNo',d.doc_no,'status',d.status,'baseDt',h.base_dt,'baseDtTo',h.base_dt_to) INTO v_hdr_idx,v_header FROM tbl_waste_check h JOIN tbl_document d ON d.idx=h.doc_idx AND d.co_cd=h.co_cd WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx;
         SELECT coalesce(jsonb_agg(jsonb_build_object('rowSeq',r.row_seq,'procDt',r.proc_dt,'wasteGbn',r.waste_gbn,'itemNm',r.item_nm,'makeDt',r.make_dt,'expireDt',r.expire_dt,'weightKg',r.weight_kg,'badDesc',r.bad_desc,'procDesc',r.proc_desc,'partnerCd',r.partner_cd,'partnerNm',r.partner_nm,'mngUserId',r.mng_user_id,'mngNm',r.mng_nm) ORDER BY r.row_seq),'[]'::jsonb) INTO v_rows FROM tbl_waste_check_row r WHERE r.co_cd=p_co_cd AND r.hdr_idx=v_hdr_idx;
-    ELSIF p_tmpl_cd = 'INV_CHECK' THEN
+    ELSIF p_tmpl_cd = 'tmpl_logis-inventory-check' THEN
         SELECT h.idx,jsonb_build_object('docIdx',d.idx,'docNo',d.doc_no,'status',d.status,'baseYm',h.base_ym) INTO v_hdr_idx,v_header FROM tbl_inv_check h JOIN tbl_document d ON d.idx=h.doc_idx AND d.co_cd=h.co_cd WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx;
-        SELECT coalesce(jsonb_agg(jsonb_build_object('rowSeq',row_number() over (ORDER BY r.txn_dt,r.idx),'txnDt',r.txn_dt,'txnGbn',r.txn_gbn,'itemGbn',r.item_gbn,'materialCd',r.material_cd,'productCd',r.product_cd,'itemNm',r.item_nm,'partnerCd',r.partner_cd,'partnerNm',r.partner_nm,'qty',r.qty,'unitNm',r.unit_nm,'lotNo',r.lot_no,'makeDt',r.make_dt,'expireDt',r.expire_dt,'storageCd',r.storage_cd,'remark',r.remark) ORDER BY r.txn_dt,r.idx),'[]'::jsonb) INTO v_rows FROM tbl_inv_txn r WHERE r.co_cd=p_co_cd AND r.src_tmpl_cd='INV_CHECK' AND r.src_doc_idx=p_doc_idx;
-    ELSIF p_tmpl_cd = 'RECV_INSP' THEN
+        SELECT coalesce(jsonb_agg(jsonb_build_object('rowSeq',row_number() over (ORDER BY r.txn_dt,r.idx),'txnDt',r.txn_dt,'txnGbn',r.txn_gbn,'itemGbn',r.item_gbn,'materialCd',r.material_cd,'productCd',r.product_cd,'itemNm',r.item_nm,'partnerCd',r.partner_cd,'partnerNm',r.partner_nm,'qty',r.qty,'unitNm',r.unit_nm,'lotNo',r.lot_no,'makeDt',r.make_dt,'expireDt',r.expire_dt,'storageCd',r.storage_cd,'remark',r.remark) ORDER BY r.txn_dt,r.idx),'[]'::jsonb) INTO v_rows FROM tbl_inv_txn r WHERE r.co_cd=p_co_cd AND r.src_tmpl_cd='tmpl_logis-inventory-check' AND r.src_doc_idx=p_doc_idx;
+    ELSIF p_tmpl_cd = 'tmpl_logis-receive-inspect' THEN
         SELECT h.idx,jsonb_build_object('docIdx',d.idx,'docNo',d.doc_no,'status',d.status,'baseDt',h.base_dt,'recvGbn',h.recv_gbn,'recvTime',h.recv_time,'partnerCd',h.partner_cd,'partnerNm',h.partner_nm,'materialCd',h.material_cd,'itemNm',h.item_nm,'recvQty',h.recv_qty,'unitNm',h.unit_nm,'lotNo',h.lot_no,'makeDt',h.make_dt,'expireDt',h.expire_dt,'coreTemp',h.core_temp,'carTemp',h.car_temp,'vehicleCd',h.vehicle_cd,'carNo',h.car_no,'haccpApplyCd',h.haccp_apply_cd,'judgeCd',h.judge_cd,'checkerId',h.checker_id,'checkerNm',h.checker_nm) INTO v_hdr_idx,v_header FROM tbl_recv_inspect h JOIN tbl_document d ON d.idx=h.doc_idx AND d.co_cd=h.co_cd WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx;
         SELECT coalesce(jsonb_agg(jsonb_build_object('rowSeq',r.row_seq,'grpCd',r.grp_cd,'itemCd',r.item_cd,'itemNm',r.item_nm,'judgeCd',r.judge_cd,'evalDesc',r.eval_desc) ORDER BY r.row_seq),'[]'::jsonb) INTO v_rows FROM tbl_recv_inspect_item r WHERE r.co_cd=p_co_cd AND r.hdr_idx=v_hdr_idx;
-    ELSIF p_tmpl_cd = 'PROCESS' THEN
+    ELSIF p_tmpl_cd = 'tmpl_ccp-process-check' THEN
         SELECT h.idx,jsonb_build_object('docIdx',d.idx,'docNo',d.doc_no,'status',d.status,'baseDt',h.base_dt,'baseDtTo',h.base_dt_to,'cycleNm',h.cycle_nm) INTO v_hdr_idx,v_header FROM tbl_process_check h JOIN tbl_document d ON d.idx=h.doc_idx AND d.co_cd=h.co_cd WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx;
         SELECT coalesce(jsonb_agg(jsonb_build_object('rowSeq',r.row_seq,'procCd',r.proc_cd,'procNm',r.proc_nm,'itemCd',r.item_cd,'itemNm',r.item_nm,'results',(SELECT coalesce(jsonb_agg(jsonb_build_object('checkDt',x.check_dt,'ampmCd',x.ampm_cd,'judgeCd',x.judge_cd) ORDER BY x.check_dt,x.ampm_cd),'[]'::jsonb) FROM tbl_process_check_result x WHERE x.co_cd=p_co_cd AND x.item_idx=r.idx)) ORDER BY r.row_seq),'[]'::jsonb) INTO v_rows FROM tbl_process_check_item r WHERE r.co_cd=p_co_cd AND r.hdr_idx=v_hdr_idx;
     END IF;
@@ -188,7 +188,7 @@ DECLARE
     v_base_dt varchar(8); v_base_ym varchar(6); v_tmpl_nm varchar(200); v_appr varchar(20); v_retain_m int;
     v_row jsonb; v_result jsonb; v_seq int; v_judge varchar(1); v_recv_judge varchar(1);
 BEGIN
-    IF p_tmpl_cd NOT IN ('FACILITY','CALIB_TARGET','WASTE','INV_CHECK','RECV_INSP','PROCESS') THEN RAISE EXCEPTION '지원하지 않는 양식입니다.' USING ERRCODE='45000'; END IF;
+    IF p_tmpl_cd NOT IN ('tmpl_prp-facility-check','tmpl_prp-calib-target','tmpl_prp-waste-check','tmpl_logis-inventory-check','tmpl_logis-receive-inspect','tmpl_ccp-process-check') THEN RAISE EXCEPTION '지원하지 않는 양식입니다.' USING ERRCODE='45000'; END IF;
     IF p_payload IS NULL OR jsonb_typeof(p_payload) <> 'object' OR jsonb_typeof(coalesce(p_payload->'rows','null'::jsonb)) <> 'array' THEN RAISE EXCEPTION '저장 자료가 올바르지 않습니다.' USING ERRCODE='45000'; END IF;
     v_base_dt := coalesce(nullif(p_payload->>'baseDt',''), to_char(current_date,'YYYYMMDD'));
     v_base_ym := coalesce(nullif(p_payload->>'baseYm',''), substr(v_base_dt,1,6));
@@ -206,7 +206,7 @@ BEGIN
         IF v_status IN ('REQ','REV','APV') THEN RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 수정할 수 없습니다.' USING ERRCODE='45000'; END IF;
         UPDATE tbl_document SET base_dt=v_base_dt,title=v_title,upd_id=p_id,upd_dt=now() WHERE idx=v_doc_idx AND co_cd=p_co_cd;
     END IF;
-    IF p_tmpl_cd='FACILITY' THEN
+    IF p_tmpl_cd='tmpl_prp-facility-check' THEN
         INSERT INTO tbl_facility_check(co_cd,doc_idx,base_dt,checker_id,checker_nm,ins_id) VALUES(p_co_cd,v_doc_idx,v_base_dt,nullif(p_payload->>'checkerId',''),nullif(p_payload->>'checkerNm',''),p_id) ON CONFLICT(doc_idx) DO UPDATE SET base_dt=excluded.base_dt,checker_id=excluded.checker_id,checker_nm=excluded.checker_nm,upd_id=p_id,upd_dt=now() RETURNING idx INTO v_hdr_idx;
         DELETE FROM tbl_facility_check_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx;
         FOR v_row IN SELECT * FROM jsonb_array_elements(p_payload->'rows') LOOP
@@ -235,24 +235,24 @@ BEGIN
                 p_id
             );
         END LOOP;
-    ELSIF p_tmpl_cd='CALIB_TARGET' THEN
+    ELSIF p_tmpl_cd='tmpl_prp-calib-target' THEN
         INSERT INTO tbl_calib_target(co_cd,doc_idx,base_year,base_dt,checker_id,checker_nm,ins_id) VALUES(p_co_cd,v_doc_idx,coalesce(nullif(p_payload->>'baseYear',''),substr(v_base_dt,1,4)),v_base_dt,nullif(p_payload->>'checkerId',''),nullif(p_payload->>'checkerNm',''),p_id) ON CONFLICT(doc_idx) DO UPDATE SET base_year=excluded.base_year,base_dt=excluded.base_dt,checker_id=excluded.checker_id,checker_nm=excluded.checker_nm,upd_id=p_id,upd_dt=now() RETURNING idx INTO v_hdr_idx;
         DELETE FROM tbl_calib_target_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx;
         FOR v_row IN SELECT * FROM jsonb_array_elements(p_payload->'rows') LOOP v_seq:=coalesce((v_row->>'rowSeq')::int,0); IF v_seq<=0 OR coalesce(v_row->>'deviceCd','')='' THEN RAISE EXCEPTION '계측기 코드와 행 순번은 필수입니다.' USING ERRCODE='45000'; END IF; INSERT INTO tbl_calib_target_row(co_cd,hdr_idx,row_seq,device_cd,device_nm,official_calib_dt,self_calib_dt,next_calib_dt,done_doc_idx,remark,ins_id) VALUES(p_co_cd,v_hdr_idx,v_seq,v_row->>'deviceCd',nullif(v_row->>'deviceNm',''),nullif(v_row->>'officialCalibDt',''),nullif(v_row->>'selfCalibDt',''),nullif(v_row->>'nextCalibDt',''),nullif(v_row->>'doneDocIdx','')::bigint,nullif(v_row->>'remark',''),p_id); END LOOP;
-    ELSIF p_tmpl_cd='WASTE' THEN
+    ELSIF p_tmpl_cd='tmpl_prp-waste-check' THEN
         INSERT INTO tbl_waste_check(co_cd,doc_idx,base_dt,base_dt_to,ins_id) VALUES(p_co_cd,v_doc_idx,v_base_dt,nullif(p_payload->>'baseDtTo',''),p_id) ON CONFLICT(doc_idx) DO UPDATE SET base_dt=excluded.base_dt,base_dt_to=excluded.base_dt_to,upd_id=p_id,upd_dt=now() RETURNING idx INTO v_hdr_idx;
-        DELETE FROM tbl_inv_txn WHERE co_cd=p_co_cd AND src_tmpl_cd='WASTE' AND src_doc_idx=v_doc_idx; DELETE FROM tbl_waste_check_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx;
-        FOR v_row IN SELECT * FROM jsonb_array_elements(p_payload->'rows') LOOP v_seq:=coalesce((v_row->>'rowSeq')::int,0); IF v_seq<=0 OR coalesce(v_row->>'procDt','')='' OR coalesce(v_row->>'itemNm','')='' THEN RAISE EXCEPTION '폐기일자·품명·행 순번은 필수입니다.' USING ERRCODE='45000'; END IF; INSERT INTO tbl_waste_check_row(co_cd,hdr_idx,row_seq,proc_dt,waste_gbn,item_nm,make_dt,expire_dt,weight_kg,bad_desc,proc_desc,partner_cd,partner_nm,mng_user_id,mng_nm,ins_id) VALUES(p_co_cd,v_hdr_idx,v_seq,v_row->>'procDt',nullif(v_row->>'wasteGbn',''),v_row->>'itemNm',nullif(v_row->>'makeDt',''),nullif(v_row->>'expireDt',''),nullif(v_row->>'weightKg','')::numeric,nullif(v_row->>'badDesc',''),nullif(v_row->>'procDesc',''),nullif(v_row->>'partnerCd',''),nullif(v_row->>'partnerNm',''),nullif(v_row->>'mngUserId',''),nullif(v_row->>'mngNm',''),p_id); INSERT INTO tbl_inv_txn(co_cd,txn_dt,txn_gbn,item_gbn,item_nm,qty,unit_nm,src_tmpl_cd,src_doc_idx,remark,ins_id) VALUES(p_co_cd,v_row->>'procDt','OUT','WASTE',v_row->>'itemNm',coalesce(nullif(v_row->>'weightKg','')::numeric,0),'kg','WASTE',v_doc_idx,nullif(v_row->>'procDesc',''),p_id); END LOOP;
-    ELSIF p_tmpl_cd='INV_CHECK' THEN
+        DELETE FROM tbl_inv_txn WHERE co_cd=p_co_cd AND src_tmpl_cd='tmpl_prp-waste-check' AND src_doc_idx=v_doc_idx; DELETE FROM tbl_waste_check_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx;
+        FOR v_row IN SELECT * FROM jsonb_array_elements(p_payload->'rows') LOOP v_seq:=coalesce((v_row->>'rowSeq')::int,0); IF v_seq<=0 OR coalesce(v_row->>'procDt','')='' OR coalesce(v_row->>'itemNm','')='' THEN RAISE EXCEPTION '폐기일자·품명·행 순번은 필수입니다.' USING ERRCODE='45000'; END IF; INSERT INTO tbl_waste_check_row(co_cd,hdr_idx,row_seq,proc_dt,waste_gbn,item_nm,make_dt,expire_dt,weight_kg,bad_desc,proc_desc,partner_cd,partner_nm,mng_user_id,mng_nm,ins_id) VALUES(p_co_cd,v_hdr_idx,v_seq,v_row->>'procDt',nullif(v_row->>'wasteGbn',''),v_row->>'itemNm',nullif(v_row->>'makeDt',''),nullif(v_row->>'expireDt',''),nullif(v_row->>'weightKg','')::numeric,nullif(v_row->>'badDesc',''),nullif(v_row->>'procDesc',''),nullif(v_row->>'partnerCd',''),nullif(v_row->>'partnerNm',''),nullif(v_row->>'mngUserId',''),nullif(v_row->>'mngNm',''),p_id); INSERT INTO tbl_inv_txn(co_cd,txn_dt,txn_gbn,item_gbn,item_nm,qty,unit_nm,src_tmpl_cd,src_doc_idx,remark,ins_id) VALUES(p_co_cd,v_row->>'procDt','OUT','tmpl_prp-waste-check',v_row->>'itemNm',coalesce(nullif(v_row->>'weightKg','')::numeric,0),'kg','tmpl_prp-waste-check',v_doc_idx,nullif(v_row->>'procDesc',''),p_id); END LOOP;
+    ELSIF p_tmpl_cd='tmpl_logis-inventory-check' THEN
         INSERT INTO tbl_inv_check(co_cd,doc_idx,base_ym,ins_id) VALUES(p_co_cd,v_doc_idx,v_base_ym,p_id) ON CONFLICT(doc_idx) DO UPDATE SET base_ym=excluded.base_ym,upd_id=p_id,upd_dt=now() RETURNING idx INTO v_hdr_idx;
-        DELETE FROM tbl_inv_txn WHERE co_cd=p_co_cd AND src_tmpl_cd='INV_CHECK' AND src_doc_idx=v_doc_idx;
-        FOR v_row IN SELECT * FROM jsonb_array_elements(p_payload->'rows') LOOP v_seq:=coalesce((v_row->>'rowSeq')::int,0); IF v_seq<=0 OR coalesce(v_row->>'txnDt','')='' OR coalesce(v_row->>'txnGbn','') NOT IN ('IN','OUT') OR coalesce(v_row->>'itemNm','')='' THEN RAISE EXCEPTION '수불 일자·구분·품명·행 순번은 필수입니다.' USING ERRCODE='45000'; END IF; INSERT INTO tbl_inv_txn(co_cd,txn_dt,txn_gbn,item_gbn,material_cd,product_cd,item_nm,partner_cd,partner_nm,qty,unit_nm,lot_no,make_dt,expire_dt,storage_cd,src_tmpl_cd,src_doc_idx,remark,ins_id) VALUES(p_co_cd,v_row->>'txnDt',v_row->>'txnGbn',coalesce(nullif(v_row->>'itemGbn',''),'SUB'),nullif(v_row->>'materialCd',''),nullif(v_row->>'productCd',''),v_row->>'itemNm',nullif(v_row->>'partnerCd',''),nullif(v_row->>'partnerNm',''),coalesce(nullif(v_row->>'qty','')::numeric,0),nullif(v_row->>'unitNm',''),nullif(v_row->>'lotNo',''),nullif(v_row->>'makeDt',''),nullif(v_row->>'expireDt',''),nullif(v_row->>'storageCd',''),'INV_CHECK',v_doc_idx,nullif(v_row->>'remark',''),p_id); END LOOP;
-    ELSIF p_tmpl_cd='RECV_INSP' THEN
+        DELETE FROM tbl_inv_txn WHERE co_cd=p_co_cd AND src_tmpl_cd='tmpl_logis-inventory-check' AND src_doc_idx=v_doc_idx;
+        FOR v_row IN SELECT * FROM jsonb_array_elements(p_payload->'rows') LOOP v_seq:=coalesce((v_row->>'rowSeq')::int,0); IF v_seq<=0 OR coalesce(v_row->>'txnDt','')='' OR coalesce(v_row->>'txnGbn','') NOT IN ('IN','OUT') OR coalesce(v_row->>'itemNm','')='' THEN RAISE EXCEPTION '수불 일자·구분·품명·행 순번은 필수입니다.' USING ERRCODE='45000'; END IF; INSERT INTO tbl_inv_txn(co_cd,txn_dt,txn_gbn,item_gbn,material_cd,product_cd,item_nm,partner_cd,partner_nm,qty,unit_nm,lot_no,make_dt,expire_dt,storage_cd,src_tmpl_cd,src_doc_idx,remark,ins_id) VALUES(p_co_cd,v_row->>'txnDt',v_row->>'txnGbn',coalesce(nullif(v_row->>'itemGbn',''),'SUB'),nullif(v_row->>'materialCd',''),nullif(v_row->>'productCd',''),v_row->>'itemNm',nullif(v_row->>'partnerCd',''),nullif(v_row->>'partnerNm',''),coalesce(nullif(v_row->>'qty','')::numeric,0),nullif(v_row->>'unitNm',''),nullif(v_row->>'lotNo',''),nullif(v_row->>'makeDt',''),nullif(v_row->>'expireDt',''),nullif(v_row->>'storageCd',''),'tmpl_logis-inventory-check',v_doc_idx,nullif(v_row->>'remark',''),p_id); END LOOP;
+    ELSIF p_tmpl_cd='tmpl_logis-receive-inspect' THEN
         v_recv_judge:=CASE WHEN EXISTS(SELECT 1 FROM jsonb_array_elements(p_payload->'rows') x WHERE x->>'judgeCd'='F') THEN 'F' ELSE 'P' END;
         INSERT INTO tbl_recv_inspect(co_cd,doc_idx,base_dt,recv_gbn,recv_time,partner_cd,partner_nm,material_cd,item_nm,recv_qty,unit_nm,lot_no,make_dt,expire_dt,core_temp,car_temp,vehicle_cd,car_no,haccp_apply_cd,judge_cd,checker_id,checker_nm,ins_id) VALUES(p_co_cd,v_doc_idx,v_base_dt,coalesce(nullif(p_payload->>'recvGbn',''),'SUB'),nullif(p_payload->>'recvTime',''),nullif(p_payload->>'partnerCd',''),nullif(p_payload->>'partnerNm',''),nullif(p_payload->>'materialCd',''),nullif(p_payload->>'itemNm',''),nullif(p_payload->>'recvQty','')::numeric,nullif(p_payload->>'unitNm',''),nullif(p_payload->>'lotNo',''),nullif(p_payload->>'makeDt',''),nullif(p_payload->>'expireDt',''),nullif(p_payload->>'coreTemp','')::numeric,nullif(p_payload->>'carTemp','')::numeric,nullif(p_payload->>'vehicleCd',''),nullif(p_payload->>'carNo',''),nullif(p_payload->>'haccpApplyCd',''),v_recv_judge,nullif(p_payload->>'checkerId',''),nullif(p_payload->>'checkerNm',''),p_id) ON CONFLICT(doc_idx) DO UPDATE SET base_dt=excluded.base_dt,recv_gbn=excluded.recv_gbn,recv_time=excluded.recv_time,partner_cd=excluded.partner_cd,partner_nm=excluded.partner_nm,material_cd=excluded.material_cd,item_nm=excluded.item_nm,recv_qty=excluded.recv_qty,unit_nm=excluded.unit_nm,lot_no=excluded.lot_no,make_dt=excluded.make_dt,expire_dt=excluded.expire_dt,core_temp=excluded.core_temp,car_temp=excluded.car_temp,vehicle_cd=excluded.vehicle_cd,car_no=excluded.car_no,haccp_apply_cd=excluded.haccp_apply_cd,judge_cd=excluded.judge_cd,checker_id=excluded.checker_id,checker_nm=excluded.checker_nm,upd_id=p_id,upd_dt=now() RETURNING idx INTO v_hdr_idx;
-        DELETE FROM tbl_recv_inspect_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_inv_txn WHERE co_cd=p_co_cd AND src_tmpl_cd='RECV_INSP' AND src_doc_idx=v_doc_idx;
-        FOR v_row IN SELECT * FROM jsonb_array_elements(p_payload->'rows') LOOP v_seq:=coalesce((v_row->>'rowSeq')::int,0); IF v_seq<=0 OR coalesce(v_row->>'itemCd','')='' THEN RAISE EXCEPTION '입고검사 항목과 행 순번은 필수입니다.' USING ERRCODE='45000'; END IF; INSERT INTO tbl_recv_inspect_item(co_cd,hdr_idx,row_seq,grp_cd,item_cd,item_nm,judge_cd,eval_desc,ins_id) VALUES(p_co_cd,v_hdr_idx,v_seq,coalesce(nullif(v_row->>'grpCd',''),'EVAL'),v_row->>'itemCd',nullif(v_row->>'itemNm',''),nullif(v_row->>'judgeCd',''),nullif(v_row->>'evalDesc',''),p_id); END LOOP;
-        IF v_recv_judge='P' AND coalesce(p_payload->>'itemNm','')<>'' THEN INSERT INTO tbl_inv_txn(co_cd,txn_dt,txn_gbn,item_gbn,material_cd,item_nm,partner_cd,partner_nm,qty,unit_nm,lot_no,make_dt,expire_dt,src_tmpl_cd,src_doc_idx,ins_id) VALUES(p_co_cd,v_base_dt,'IN',coalesce(nullif(p_payload->>'recvGbn',''),'SUB'),nullif(p_payload->>'materialCd',''),p_payload->>'itemNm',nullif(p_payload->>'partnerCd',''),nullif(p_payload->>'partnerNm',''),coalesce(nullif(p_payload->>'recvQty','')::numeric,0),nullif(p_payload->>'unitNm',''),nullif(p_payload->>'lotNo',''),nullif(p_payload->>'makeDt',''),nullif(p_payload->>'expireDt',''),'RECV_INSP',v_doc_idx,p_id); END IF;
+        DELETE FROM tbl_recv_inspect_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_inv_txn WHERE co_cd=p_co_cd AND src_tmpl_cd='tmpl_logis-receive-inspect' AND src_doc_idx=v_doc_idx;
+        FOR v_row IN SELECT * FROM jsonb_array_elements(p_payload->'rows') LOOP v_seq:=coalesce((v_row->>'rowSeq')::int,0); IF v_seq<=0 OR coalesce(v_row->>'itemCd','')='' THEN RAISE EXCEPTION '입고검사 항목과 행 순번은 필수입니다.' USING ERRCODE='45000'; END IF; INSERT INTO tbl_recv_inspect_item(co_cd,hdr_idx,row_seq,grp_cd,item_cd,item_nm,judge_cd,eval_desc,ins_id) VALUES(p_co_cd,v_hdr_idx,v_seq,coalesce(nullif(v_row->>'grpCd',''),'tmpl_admin-eval-check'),v_row->>'itemCd',nullif(v_row->>'itemNm',''),nullif(v_row->>'judgeCd',''),nullif(v_row->>'evalDesc',''),p_id); END LOOP;
+        IF v_recv_judge='P' AND coalesce(p_payload->>'itemNm','')<>'' THEN INSERT INTO tbl_inv_txn(co_cd,txn_dt,txn_gbn,item_gbn,material_cd,item_nm,partner_cd,partner_nm,qty,unit_nm,lot_no,make_dt,expire_dt,src_tmpl_cd,src_doc_idx,ins_id) VALUES(p_co_cd,v_base_dt,'IN',coalesce(nullif(p_payload->>'recvGbn',''),'SUB'),nullif(p_payload->>'materialCd',''),p_payload->>'itemNm',nullif(p_payload->>'partnerCd',''),nullif(p_payload->>'partnerNm',''),coalesce(nullif(p_payload->>'recvQty','')::numeric,0),nullif(p_payload->>'unitNm',''),nullif(p_payload->>'lotNo',''),nullif(p_payload->>'makeDt',''),nullif(p_payload->>'expireDt',''),'tmpl_logis-receive-inspect',v_doc_idx,p_id); END IF;
     ELSE
         INSERT INTO tbl_process_check(co_cd,doc_idx,base_dt,base_dt_to,cycle_nm,ins_id) VALUES(p_co_cd,v_doc_idx,v_base_dt,nullif(p_payload->>'baseDtTo',''),nullif(p_payload->>'cycleNm',''),p_id) ON CONFLICT(doc_idx) DO UPDATE SET base_dt=excluded.base_dt,base_dt_to=excluded.base_dt_to,cycle_nm=excluded.cycle_nm,upd_id=p_id,upd_dt=now() RETURNING idx INTO v_hdr_idx;
         DELETE FROM tbl_process_check_result x USING tbl_process_check_item r WHERE x.item_idx=r.idx AND x.co_cd=r.co_cd AND r.co_cd=p_co_cd AND r.hdr_idx=v_hdr_idx; DELETE FROM tbl_process_check_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx;
@@ -289,12 +289,12 @@ BEGIN
     SELECT status INTO v_status FROM tbl_document WHERE co_cd=p_co_cd AND idx=p_doc_idx AND tmpl_cd=p_tmpl_cd AND del_yn='N';
     IF v_status IS NULL THEN RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE='45000'; END IF;
     IF v_status NOT IN ('WRK','RJT') THEN RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 삭제할 수 없습니다.' USING ERRCODE='45000'; END IF;
-    IF p_tmpl_cd='FACILITY' THEN SELECT idx INTO v_hdr_idx FROM tbl_facility_check WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_facility_check_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_facility_check WHERE co_cd=p_co_cd AND idx=v_hdr_idx;
-    ELSIF p_tmpl_cd='CALIB_TARGET' THEN SELECT idx INTO v_hdr_idx FROM tbl_calib_target WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_calib_target_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_calib_target WHERE co_cd=p_co_cd AND idx=v_hdr_idx;
-    ELSIF p_tmpl_cd='WASTE' THEN SELECT idx INTO v_hdr_idx FROM tbl_waste_check WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_inv_txn WHERE co_cd=p_co_cd AND src_tmpl_cd='WASTE' AND src_doc_idx=p_doc_idx; DELETE FROM tbl_waste_check_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_waste_check WHERE co_cd=p_co_cd AND idx=v_hdr_idx;
-    ELSIF p_tmpl_cd='INV_CHECK' THEN DELETE FROM tbl_inv_txn WHERE co_cd=p_co_cd AND src_tmpl_cd='INV_CHECK' AND src_doc_idx=p_doc_idx; DELETE FROM tbl_inv_check WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx;
-    ELSIF p_tmpl_cd='RECV_INSP' THEN SELECT idx INTO v_hdr_idx FROM tbl_recv_inspect WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_inv_txn WHERE co_cd=p_co_cd AND src_tmpl_cd='RECV_INSP' AND src_doc_idx=p_doc_idx; DELETE FROM tbl_recv_inspect_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_recv_inspect WHERE co_cd=p_co_cd AND idx=v_hdr_idx;
-    ELSIF p_tmpl_cd='PROCESS' THEN SELECT idx INTO v_hdr_idx FROM tbl_process_check WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_process_check_result x USING tbl_process_check_item r WHERE x.item_idx=r.idx AND x.co_cd=r.co_cd AND r.co_cd=p_co_cd AND r.hdr_idx=v_hdr_idx; DELETE FROM tbl_process_check_signer WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_process_check_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_process_check WHERE co_cd=p_co_cd AND idx=v_hdr_idx;
+    IF p_tmpl_cd='tmpl_prp-facility-check' THEN SELECT idx INTO v_hdr_idx FROM tbl_facility_check WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_facility_check_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_facility_check WHERE co_cd=p_co_cd AND idx=v_hdr_idx;
+    ELSIF p_tmpl_cd='tmpl_prp-calib-target' THEN SELECT idx INTO v_hdr_idx FROM tbl_calib_target WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_calib_target_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_calib_target WHERE co_cd=p_co_cd AND idx=v_hdr_idx;
+    ELSIF p_tmpl_cd='tmpl_prp-waste-check' THEN SELECT idx INTO v_hdr_idx FROM tbl_waste_check WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_inv_txn WHERE co_cd=p_co_cd AND src_tmpl_cd='tmpl_prp-waste-check' AND src_doc_idx=p_doc_idx; DELETE FROM tbl_waste_check_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_waste_check WHERE co_cd=p_co_cd AND idx=v_hdr_idx;
+    ELSIF p_tmpl_cd='tmpl_logis-inventory-check' THEN DELETE FROM tbl_inv_txn WHERE co_cd=p_co_cd AND src_tmpl_cd='tmpl_logis-inventory-check' AND src_doc_idx=p_doc_idx; DELETE FROM tbl_inv_check WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx;
+    ELSIF p_tmpl_cd='tmpl_logis-receive-inspect' THEN SELECT idx INTO v_hdr_idx FROM tbl_recv_inspect WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_inv_txn WHERE co_cd=p_co_cd AND src_tmpl_cd='tmpl_logis-receive-inspect' AND src_doc_idx=p_doc_idx; DELETE FROM tbl_recv_inspect_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_recv_inspect WHERE co_cd=p_co_cd AND idx=v_hdr_idx;
+    ELSIF p_tmpl_cd='tmpl_ccp-process-check' THEN SELECT idx INTO v_hdr_idx FROM tbl_process_check WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_process_check_result x USING tbl_process_check_item r WHERE x.item_idx=r.idx AND x.co_cd=r.co_cd AND r.co_cd=p_co_cd AND r.hdr_idx=v_hdr_idx; DELETE FROM tbl_process_check_signer WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_process_check_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; DELETE FROM tbl_process_check WHERE co_cd=p_co_cd AND idx=v_hdr_idx;
     END IF;
     DELETE FROM tbl_corrective_action WHERE co_cd=p_co_cd AND src_doc_idx=p_doc_idx;
     DELETE FROM tbl_document_approval WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx;

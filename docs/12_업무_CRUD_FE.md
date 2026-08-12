@@ -55,7 +55,7 @@ smart-diary API는 STEP 20에서 폐기, audit-export는 동결(FE 미노출) �
 ## 문서번호·양식
 
 `tbl_template.mng_no` = `HA-*` (`36`). HWP leaf는 `fixedTmplCd` 1:1 (`37`, `screenRegistry`).  
-DB→HWP 전환분(`PERSONAL_HYG`·`WASTE` 등)은 `doc_kind=HWP` + 작성 `scrn_cd=*-hwp`.
+DB→HWP 전환분(`tmpl_prp-hygiene-personal`·`WASTE` 등)은 `doc_kind=HWP` + 작성 `scrn_cd=*-hwp`.
 
 ## 판정·갭을 찾을 때
 
@@ -65,6 +65,6 @@ DB→HWP 전환분(`PERSONAL_HYG`·`WASTE` 등)은 `doc_kind=HWP` + 작성 `scrn
 ## 에이전트 주의
 
 - 목록 SP는 6인자(`doc_no`,`writer`). 본문만 재적용해도 `14`/`19`/`20`이 정본이다.
-- 재고 양식코드는 `INV_CHECK` (구 `INV` 금지).
+- 재고 양식코드는 `tmpl_logis-inventory-check` (구 `INV` 금지).
 - 결재 SP는 `WRK` — `28`에 TMP 결재 정의를 다시 넣지 말 것. 보강은 `33`.
 - 신규 테넌트 메뉴 시드: `13_sp_platform.sql` `sp_tbl_company_init_c_000` (IA 5부모 + today-tasks).

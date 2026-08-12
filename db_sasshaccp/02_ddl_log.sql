@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS tbl_view_stat_daily (
     pv_cnt       int           NOT NULL DEFAULT 0,
     uv_cnt       int           NOT NULL DEFAULT 0,
     sess_cnt     int           NOT NULL DEFAULT 0,
+    ip_cnt       int           NOT NULL DEFAULT 0,
     avg_stay_sec numeric(10,1) NULL,
     max_stay_sec int           NULL,
     ins_id       varchar(20)   NULL,
@@ -108,6 +109,7 @@ COMMENT ON COLUMN tbl_view_stat_daily.scrn_cd      IS '화면코드 — tbl_scre
 COMMENT ON COLUMN tbl_view_stat_daily.pv_cnt       IS 'PV — 해당 일자·화면의 조회 이벤트 건수';
 COMMENT ON COLUMN tbl_view_stat_daily.uv_cnt       IS 'UV — 해당 일자·화면을 조회한 서로 다른 사용자 수(distinct user_id)';
 COMMENT ON COLUMN tbl_view_stat_daily.sess_cnt     IS '세션수 — 서로 다른 sid 수. 같은 사용자가 여러 번 로그인하면 분리 집계';
+COMMENT ON COLUMN tbl_view_stat_daily.ip_cnt       IS 'IP수 — 해당 일자·화면의 서로 다른 ip_addr 수';
 COMMENT ON COLUMN tbl_view_stat_daily.avg_stay_sec IS '평균 체류시간(초) — stay_sec이 있는 이벤트만 대상';
 COMMENT ON COLUMN tbl_view_stat_daily.max_stay_sec IS '최대 체류시간(초)';
 COMMENT ON COLUMN tbl_view_stat_daily.ins_id       IS '최초입력자 ID — 배치 실행 주체';

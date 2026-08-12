@@ -65,9 +65,83 @@ CREATE OR REPLACE FUNCTION sp_tbl_menu_admin_r_000(
 LANGUAGE sql AS $$
     SELECT m.idx, m.menu_cd, m.menu_nm, m.h_menu_cd, m.scrn_cd, m.sort_no, m.use_yn
       FROM tbl_menu m WHERE m.co_cd = p_co_cd
-     ORDER BY coalesce(m.h_menu_cd, ''), m.sort_no, m.menu_cd;
+     -- 대·중·소 인코딩 sort_no 순 (1001 → 2101 → …)
+     ORDER BY m.sort_no, m.menu_cd;
 $$;
-COMMENT ON FUNCTION sp_tbl_menu_admin_r_000(varchar) IS '관리자용 메뉴 전체 목록 — 권한 필터 없이 현재 테넌트 메뉴를 반환';
+COMMENT ON FUNCTION sp_tbl_menu_admin_r_000(varchar) IS '관리자용 메뉴 전체 목록 — sort_no(대중소 인코딩) 순';
+
+-- 메뉴 sort_no 인코딩 — migrate 53과 동일. 신규 업체 init·재정렬에 사용
+CREATE OR REPLACE PROCEDURE sp_tbl_menu_sort_encode_u_000(
+    -- p_co_cd: NULL이면 전 업체, 값이면 해당 업체만
+    p_co_cd varchar DEFAULT NULL
+)
+LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE tbl_menu m
+       SET sort_no = v.sn, upd_id = 'system', upd_dt = now()
+      FROM (VALUES
+        ('today-tasks', 1001),
+        ('menu-doc-write', 2000), ('menu-doc-flow', 3000), ('menu-doc-master', 4000),
+        ('menu-base', 5000), ('menu-sys', 6000),
+        ('menu-write-ccp', 2100), ('menu-write-prp', 2200),
+        ('menu-write-logis', 2300), ('menu-write-admin', 2400),
+        ('menu-flow-appr', 3100), ('menu-flow-box', 3200), ('menu-flow-ca', 3300),
+        ('menu-master-doc', 4100), ('menu-master-form', 4200),
+        ('menu-master-item', 4300), ('menu-master-appr', 4400),
+        ('menu-base-master', 5100),
+        ('menu-sys-auth', 6100), ('menu-sys-log', 6200)
+      ) AS v(menu_cd, sn)
+     WHERE m.menu_cd = v.menu_cd
+       AND m.use_yn = 'Y'
+       AND (p_co_cd IS NULL OR m.co_cd = p_co_cd);
+
+    -- menu-sys-auth leaf: 공통코드 → 메뉴 → 권한그룹 → 부서 → 사용자
+    UPDATE tbl_menu m
+       SET sort_no = v.ord, upd_id = 'system', upd_dt = now()
+      FROM (VALUES
+        ('common-code-management', 1),
+        ('menu-management', 2),
+        ('role-management', 3),
+        ('department-management', 4),
+        ('user-management', 5)
+      ) AS v(scrn_cd, ord)
+     WHERE m.scrn_cd = v.scrn_cd
+       AND m.h_menu_cd = 'menu-sys-auth'
+       AND m.use_yn = 'Y'
+       AND (p_co_cd IS NULL OR m.co_cd = p_co_cd);
+
+    WITH mid AS (
+        SELECT * FROM (VALUES
+            ('menu-write-ccp', 2, 1), ('menu-write-prp', 2, 2),
+            ('menu-write-logis', 2, 3), ('menu-write-admin', 2, 4),
+            ('menu-flow-appr', 3, 1), ('menu-flow-box', 3, 2), ('menu-flow-ca', 3, 3),
+            ('menu-master-doc', 4, 1), ('menu-master-form', 4, 2),
+            ('menu-master-item', 4, 3), ('menu-master-appr', 4, 4),
+            ('menu-base-master', 5, 1),
+            ('menu-sys-auth', 6, 1), ('menu-sys-log', 6, 2)
+        ) AS t(mid_cd, dae_no, jung_no)
+    ),
+    ranked AS (
+        SELECT m.co_cd, m.menu_cd,
+               (mid.dae_no * 1000 + mid.jung_no * 100
+                 + ROW_NUMBER() OVER (
+                       PARTITION BY m.co_cd, m.h_menu_cd
+                       ORDER BY m.sort_no, m.menu_cd
+                   ))::int AS sn
+          FROM tbl_menu m
+          JOIN mid ON mid.mid_cd = m.h_menu_cd
+         WHERE m.use_yn = 'Y'
+           AND m.scrn_cd IS NOT NULL
+           AND (p_co_cd IS NULL OR m.co_cd = p_co_cd)
+    )
+    UPDATE tbl_menu m
+       SET sort_no = r.sn, upd_id = 'system', upd_dt = now()
+      FROM ranked r
+     WHERE m.co_cd = r.co_cd AND m.menu_cd = r.menu_cd;
+END;
+$$;
+COMMENT ON PROCEDURE sp_tbl_menu_sort_encode_u_000(varchar) IS
+  '메뉴 sort_no 인코딩 — 대(1~9)*1000+중(0~9)*100+소(0~99). leaf는 sort_no 상대순. p_co_cd NULL=전업체';
 
 -- 관리자 메뉴 저장 — 코드 변경은 허용하지 않아 기존 트리 연결을 보호
 CREATE OR REPLACE PROCEDURE sp_tbl_menu_c_000(
@@ -90,21 +164,54 @@ CREATE OR REPLACE PROCEDURE sp_tbl_menu_c_000(
     -- p_id: JWT 작업자 ID
     p_id varchar
 ) LANGUAGE plpgsql AS $$
+DECLARE
+    -- 저장 후 자손 전파용 메뉴코드
+    v_menu_cd varchar;
+    -- 정규화한 사용여부
+    v_use_yn  varchar;
 BEGIN
+    v_use_yn := upper(coalesce(nullif(trim(p_use_yn), ''), 'Y'));
+    IF v_use_yn NOT IN ('Y', 'N') THEN v_use_yn := 'Y'; END IF;
+
     IF p_idx IS NULL THEN
         INSERT INTO tbl_menu(co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt)
         VALUES (p_co_cd, p_menu_cd, p_menu_nm, nullif(p_h_menu_cd, ''), nullif(p_scrn_cd, ''),
-                coalesce(p_sort_no, 0), coalesce(nullif(p_use_yn, ''), 'Y'), p_id, now());
+                coalesce(p_sort_no, 0), v_use_yn, p_id, now());
+        v_menu_cd := p_menu_cd;
     ELSE
         UPDATE tbl_menu
            SET menu_nm = p_menu_nm, h_menu_cd = nullif(p_h_menu_cd, ''), scrn_cd = nullif(p_scrn_cd, ''),
-               sort_no = coalesce(p_sort_no, sort_no), use_yn = coalesce(nullif(p_use_yn, ''), use_yn),
+               sort_no = coalesce(p_sort_no, sort_no), use_yn = v_use_yn,
                upd_id = p_id, upd_dt = now()
-         WHERE co_cd = p_co_cd AND idx = p_idx;
+         WHERE co_cd = p_co_cd AND idx = p_idx
+        RETURNING menu_cd INTO v_menu_cd;
         IF NOT FOUND THEN RAISE EXCEPTION '수정할 메뉴를 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
     END IF;
+
+    -- 사용여부 N일 때(= 메뉴관리에서 미사용) 모든 자손도 N — Y로 올릴 때는 하위 자동 변경 없음
+    IF v_use_yn = 'N' AND coalesce(v_menu_cd, '') <> '' THEN
+        WITH RECURSIVE descendants AS (
+            SELECT m.menu_cd
+              FROM tbl_menu m
+             WHERE m.co_cd = p_co_cd
+               AND m.h_menu_cd = v_menu_cd
+            UNION ALL
+            SELECT c.menu_cd
+              FROM tbl_menu c
+              JOIN descendants d ON c.co_cd = p_co_cd AND c.h_menu_cd = d.menu_cd
+        )
+        UPDATE tbl_menu t
+           SET use_yn = 'N',
+               upd_id = p_id,
+               upd_dt = now()
+          FROM descendants d
+         WHERE t.co_cd = p_co_cd
+           AND t.menu_cd = d.menu_cd
+           AND t.use_yn IS DISTINCT FROM 'N';
+    END IF;
 END$$;
-COMMENT ON PROCEDURE sp_tbl_menu_c_000(varchar, bigint, varchar, varchar, varchar, varchar, int, varchar, varchar) IS '관리자 메뉴 저장 — 기존 메뉴코드는 수정하지 않는다';
+COMMENT ON PROCEDURE sp_tbl_menu_c_000(varchar, bigint, varchar, varchar, varchar, varchar, int, varchar, varchar) IS
+  '관리자 메뉴 저장 — use_yn=N이면 하위 메뉴 전체 N 전파. 메뉴코드는 수정하지 않는다';
 
 -- 시스템 관리 저장 — 화면별 JSON을 고정 CASE로 기존 SP에 연결한다
 CREATE OR REPLACE PROCEDURE sp_tbl_system_c_000(
@@ -127,7 +234,7 @@ BEGIN
             coalesce(nullif(p_payload ->> 'retentionMonth', '')::int, 24), p_id);
     ELSIF p_type = 'user-management' THEN
         CALL sp_tbl_user_c_000(p_co_cd, v_idx, p_payload ->> 'userId', p_payload ->> 'empCd', p_payload ->> 'userNm',
-            p_payload ->> 'userPw', p_payload ->> 'usrgrpCd', p_payload ->> 'deptCd', p_payload ->> 'posCd',
+            p_payload ->> 'userPw', p_payload ->> 'usrgrpCd', p_payload ->> 'deptCd',
             p_payload ->> 'email', p_payload ->> 'mobile', p_payload ->> 'signPath', p_payload ->> 'lockYn',
             p_payload ->> 'useYn', p_id, CASE WHEN v_idx IS NULL THEN 'C' ELSE 'U' END);
     ELSIF p_type = 'department-management' THEN
@@ -151,6 +258,7 @@ END$$;
 COMMENT ON PROCEDURE sp_tbl_system_c_000(varchar, varchar, jsonb, varchar) IS '시스템 관리 저장 — 허용 유형만 기존 회사·사용자·부서·코드 SP로 고정 연결';
 
 -- 시스템 관리 삭제 가능 여부 — 삭제 전·삭제 직전 모두 같은 함수로 호출한다
+-- 부서: 사용자 직접 사용 > 하위트리 사용자 > 직속 하위 부서
 CREATE OR REPLACE FUNCTION sp_tbl_system_delete_blocker_r_000(
     -- p_co_cd: JWT 회사코드
     p_co_cd varchar,
@@ -161,23 +269,72 @@ CREATE OR REPLACE FUNCTION sp_tbl_system_delete_blocker_r_000(
 ) RETURNS TABLE(ref_key varchar, target varchar) LANGUAGE plpgsql AS $$
 BEGIN
     IF p_type = 'department-management' THEN
-        RETURN QUERY SELECT d.dept_cd, '하위 부서 또는 사용자'
-          FROM tbl_dept d WHERE d.co_cd = p_co_cd AND d.idx = ANY(p_idxs)
-           AND (EXISTS (SELECT 1 FROM tbl_dept c WHERE c.co_cd = p_co_cd AND c.h_dept_cd = d.dept_cd)
-             OR EXISTS (SELECT 1 FROM tbl_user u WHERE u.co_cd = p_co_cd AND u.dept_cd = d.dept_cd));
+        RETURN QUERY
+        SELECT d.dept_cd::varchar AS ref_key,
+               CASE
+                   WHEN EXISTS (
+                       SELECT 1 FROM tbl_user u
+                        WHERE u.co_cd = p_co_cd AND u.dept_cd = d.dept_cd
+                   ) THEN '사용자'::varchar
+                   WHEN EXISTS (
+                       WITH RECURSIVE sub AS (
+                           SELECT c.dept_cd
+                             FROM tbl_dept c
+                            WHERE c.co_cd = p_co_cd
+                              AND c.h_dept_cd = d.dept_cd
+                           UNION ALL
+                           SELECT c2.dept_cd
+                             FROM tbl_dept c2
+                             INNER JOIN sub s ON s.dept_cd = c2.h_dept_cd
+                            WHERE c2.co_cd = p_co_cd
+                       )
+                       SELECT 1
+                         FROM sub s
+                         INNER JOIN tbl_user u
+                                 ON u.co_cd = p_co_cd
+                                AND u.dept_cd = s.dept_cd
+                   ) THEN '하위 부서 사용자'::varchar
+                   WHEN EXISTS (
+                       SELECT 1 FROM tbl_dept c
+                        WHERE c.co_cd = p_co_cd AND c.h_dept_cd = d.dept_cd
+                   ) THEN '하위 부서'::varchar
+               END AS target
+          FROM tbl_dept d
+         WHERE d.co_cd = p_co_cd
+           AND d.idx = ANY(p_idxs)
+           AND (
+                EXISTS (SELECT 1 FROM tbl_user u WHERE u.co_cd = p_co_cd AND u.dept_cd = d.dept_cd)
+             OR EXISTS (
+                    WITH RECURSIVE sub AS (
+                        SELECT c.dept_cd
+                          FROM tbl_dept c
+                         WHERE c.co_cd = p_co_cd AND c.h_dept_cd = d.dept_cd
+                        UNION ALL
+                        SELECT c2.dept_cd
+                          FROM tbl_dept c2
+                          INNER JOIN sub s ON s.dept_cd = c2.h_dept_cd
+                         WHERE c2.co_cd = p_co_cd
+                    )
+                    SELECT 1 FROM sub s
+                    INNER JOIN tbl_user u ON u.co_cd = p_co_cd AND u.dept_cd = s.dept_cd
+                )
+             OR EXISTS (SELECT 1 FROM tbl_dept c WHERE c.co_cd = p_co_cd AND c.h_dept_cd = d.dept_cd)
+           );
     ELSIF p_type = 'role-management' THEN
-        RETURN QUERY SELECT r.usrgrp_cd, '사용자'
+        RETURN QUERY SELECT r.usrgrp_cd::varchar, '사용자'::varchar
           FROM tbl_role r WHERE r.co_cd = p_co_cd AND r.idx = ANY(p_idxs)
            AND EXISTS (SELECT 1 FROM tbl_user u WHERE u.co_cd = p_co_cd AND u.usrgrp_cd = r.usrgrp_cd);
     ELSIF p_type = 'menu-management' THEN
-        RETURN QUERY SELECT m.menu_cd, '하위 메뉴'
+        RETURN QUERY SELECT m.menu_cd::varchar, '하위 메뉴'::varchar
           FROM tbl_menu m WHERE m.co_cd = p_co_cd AND m.idx = ANY(p_idxs)
            AND EXISTS (SELECT 1 FROM tbl_menu c WHERE c.co_cd = p_co_cd AND c.h_menu_cd = m.menu_cd);
     END IF;
 END$$;
-COMMENT ON FUNCTION sp_tbl_system_delete_blocker_r_000(varchar, varchar, bigint[]) IS '시스템 관리 삭제 참조 차단 — 부서·권한·메뉴의 종속 행을 배열 단일 조회';
+COMMENT ON FUNCTION sp_tbl_system_delete_blocker_r_000(varchar, varchar, bigint[]) IS
+    '시스템 관리 삭제 참조 차단 — 부서는 사용자·하위트리 사용자·하위부서';
 
 -- 시스템 관리 삭제 — 회사는 가입 테넌트를 보존하기 위해 사용중지로 전환한다
+-- CALL 뒤 호출자 FOUND는 하위 DELETE를 반영하지 않으므로, CALL 분기에서는 NOT FOUND 검사를 하지 않는다
 CREATE OR REPLACE PROCEDURE sp_tbl_system_d_000(
     -- p_co_cd: JWT 회사코드
     p_co_cd varchar,
@@ -190,14 +347,92 @@ CREATE OR REPLACE PROCEDURE sp_tbl_system_d_000(
 ) LANGUAGE plpgsql AS $$
 BEGIN
     IF p_type = 'company-management' THEN
-        UPDATE tbl_company SET use_yn = 'N', upd_id = p_id, upd_dt = now() WHERE co_cd = p_co_cd AND idx = p_idx;
-    ELSIF p_type = 'user-management' THEN CALL sp_tbl_user_d_000(p_co_cd, p_idx);
-    ELSIF p_type = 'department-management' THEN CALL sp_tbl_dept_d_000(p_co_cd, p_idx);
-    ELSIF p_type = 'role-management' THEN DELETE FROM tbl_role WHERE co_cd = p_co_cd AND idx = p_idx;
-    ELSIF p_type = 'menu-management' THEN DELETE FROM tbl_menu WHERE co_cd = p_co_cd AND idx = p_idx;
-    ELSIF p_type = 'common-code-management' THEN CALL sp_tbl_code_d_000(p_co_cd, p_idx);
-    ELSE RAISE EXCEPTION '지원하지 않는 시스템 관리 삭제 유형입니다.' USING ERRCODE = '45000';
+        UPDATE tbl_company SET use_yn = 'N', upd_id = p_id, upd_dt = now()
+         WHERE co_cd = p_co_cd AND idx = p_idx;
+        IF NOT FOUND THEN
+            RAISE EXCEPTION '삭제할 시스템 관리 행을 찾을 수 없습니다.' USING ERRCODE = '45000';
+        END IF;
+    ELSIF p_type = 'user-management' THEN
+        -- 미존재는 sp_tbl_user_d_000이 RAISE — CALL 후 FOUND 검사 금지
+        CALL sp_tbl_user_d_000(p_co_cd, p_idx);
+    ELSIF p_type = 'department-management' THEN
+        CALL sp_tbl_dept_d_000(p_co_cd, p_idx);
+    ELSIF p_type = 'role-management' THEN
+        DELETE FROM tbl_role WHERE co_cd = p_co_cd AND idx = p_idx;
+        IF NOT FOUND THEN
+            RAISE EXCEPTION '삭제할 시스템 관리 행을 찾을 수 없습니다.' USING ERRCODE = '45000';
+        END IF;
+    ELSIF p_type = 'menu-management' THEN
+        DELETE FROM tbl_menu WHERE co_cd = p_co_cd AND idx = p_idx;
+        IF NOT FOUND THEN
+            RAISE EXCEPTION '삭제할 시스템 관리 행을 찾을 수 없습니다.' USING ERRCODE = '45000';
+        END IF;
+    ELSIF p_type = 'common-code-management' THEN
+        CALL sp_tbl_code_d_000(p_co_cd, p_idx);
+    ELSE
+        RAISE EXCEPTION '지원하지 않는 시스템 관리 삭제 유형입니다.' USING ERRCODE = '45000';
     END IF;
-    IF NOT FOUND THEN RAISE EXCEPTION '삭제할 시스템 관리 행을 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
 END$$;
-COMMENT ON PROCEDURE sp_tbl_system_d_000(varchar, varchar, bigint, varchar) IS '시스템 관리 삭제 — 회사는 비활성화, 나머지는 테넌트 범위에서 삭제';
+COMMENT ON PROCEDURE sp_tbl_system_d_000(varchar, varchar, bigint, varchar) IS
+    '시스템 관리 삭제 — 회사는 비활성화, CALL 분기는 하위 SP가 미존재 검사';
+
+-- 공통코드 대분류 헤더 — 3그리드 좌측 (sub_cd='*')
+CREATE OR REPLACE FUNCTION sp_tbl_code_group_r_000(
+    p_co_cd varchar
+)
+RETURNS TABLE(
+    idx     bigint,
+    co_cd   varchar,
+    main_cd varchar,
+    sub_cd  varchar,
+    code_nm varchar,
+    sort_no int,
+    sys_yn  varchar,
+    use_yn  varchar
+) LANGUAGE sql AS $$
+    SELECT c.idx, c.co_cd, c.main_cd, c.sub_cd, c.code_nm, c.sort_no, c.sys_yn, c.use_yn
+      FROM tbl_code c
+     WHERE c.co_cd IN (p_co_cd, '0000')
+       AND c.sub_cd = '*'
+       AND NOT (c.co_cd = '0000' AND EXISTS (
+                SELECT 1 FROM tbl_code o
+                 WHERE o.co_cd = p_co_cd AND o.main_cd = c.main_cd AND o.sub_cd = '*'))
+     ORDER BY c.main_cd, c.sort_no;
+$$;
+COMMENT ON FUNCTION sp_tbl_code_group_r_000(varchar) IS '공통코드 대분류(sub_cd=*) 목록 — 플랫폼+업체 병합';
+
+-- 공통코드 세부 — main_cd + sys_yn(Y/sys·N/usr) 필터
+CREATE OR REPLACE FUNCTION sp_tbl_code_detail_r_000(
+    p_co_cd   varchar,
+    p_main_cd varchar,
+    p_sys_yn  varchar
+)
+RETURNS TABLE(
+    idx     bigint,
+    co_cd   varchar,
+    main_cd varchar,
+    sub_cd  varchar,
+    code_nm varchar,
+    sort_no int,
+    ref1    varchar,
+    ref2    varchar,
+    sys_yn  varchar,
+    use_yn  varchar
+) LANGUAGE sql AS $$
+    SELECT c.idx, c.co_cd, c.main_cd, c.sub_cd, c.code_nm, c.sort_no, c.ref1, c.ref2, c.sys_yn, c.use_yn
+      FROM tbl_code c
+     WHERE c.co_cd IN (p_co_cd, '0000')
+       AND c.main_cd = p_main_cd
+       AND c.sub_cd <> '*'
+       AND (
+            COALESCE(p_sys_yn, '') = ''
+            OR c.sys_yn IN (p_sys_yn, CASE WHEN p_sys_yn = 'Y' THEN 'sys' WHEN p_sys_yn = 'N' THEN 'usr' ELSE p_sys_yn END)
+            OR (p_sys_yn IN ('Y', 'sys') AND c.sys_yn IN ('Y', 'sys'))
+            OR (p_sys_yn IN ('N', 'usr') AND c.sys_yn IN ('N', 'usr'))
+           )
+       AND NOT (c.co_cd = '0000' AND EXISTS (
+                SELECT 1 FROM tbl_code o
+                 WHERE o.co_cd = p_co_cd AND o.main_cd = c.main_cd AND o.sub_cd = c.sub_cd))
+     ORDER BY c.sort_no, c.sub_cd;
+$$;
+COMMENT ON FUNCTION sp_tbl_code_detail_r_000(varchar, varchar, varchar) IS '공통코드 세부 — main_cd 일치, sys_yn(Y/sys·N/usr) 필터';

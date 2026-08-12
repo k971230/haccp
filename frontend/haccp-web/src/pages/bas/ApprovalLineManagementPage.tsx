@@ -217,7 +217,7 @@ export default function ApprovalLineManagementPage() {
       clearSel();
       loadStepsFor(null);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- hg.load 안정 참조
   }, [loadStepsFor]);
@@ -291,7 +291,7 @@ export default function ApprovalLineManagementPage() {
       mesToast(MES.saveDone, "success");
       await load();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -331,7 +331,7 @@ export default function ApprovalLineManagementPage() {
       mesToast(MES.deleteDone, "success");
       await load();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -372,7 +372,7 @@ export default function ApprovalLineManagementPage() {
           />
         )}
       >
-        <PageCardSplit>
+        <PageCardSplit storageKey="haccp-split-approval-line">
           <div {...sec.bind("h", gridPanelClass)}>
             <div className={gridHeadClass}>
               <b>결재선</b>

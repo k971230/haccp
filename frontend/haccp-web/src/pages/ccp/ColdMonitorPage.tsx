@@ -348,7 +348,7 @@ export default function ColdMonitorPage() {
       patchRow(rowSeq, { signPath: path });
       mesToast("서명을 적용했습니다.", "success");
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, [editable]);
 
@@ -369,7 +369,7 @@ export default function ColdMonitorPage() {
       patchRow(rowSeq, { signPath: path });
       mesToast("서명을 등록·적용했습니다.", "success");
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, []);
 
@@ -404,7 +404,7 @@ export default function ColdMonitorPage() {
         (row) => String(row.docIdx),
       );
     } catch (e) {
-      mesToast(mesError(e), "error");
+      mesError(e);
     }
   }, [replaceServerList, statusLabel]);
 
@@ -415,7 +415,7 @@ export default function ColdMonitorPage() {
       setStorages(detail.storages ?? []);
       setLimits(detail.limits ?? []);
     } catch (e) {
-      mesToast(mesError(e), "error");
+      mesError(e);
     }
   }, []);
 
@@ -465,7 +465,7 @@ export default function ColdMonitorPage() {
         setLimits(detail.limits ?? []);
         return detailToBuf(detail, user?.userId || "", user?.userNm || "");
       } catch (e) {
-        mesToast(mesError(e), "error");
+        mesError(e);
         return null;
       }
     });
@@ -517,7 +517,7 @@ export default function ColdMonitorPage() {
         );
         setSelectedRowSeq(null);
       } catch (e) {
-        mesToast(mesError(e), "error");
+        mesError(e);
       }
     }, "add");
 
@@ -608,7 +608,7 @@ export default function ColdMonitorPage() {
           if (err.rowKey) void handleSelect(err.rowKey);
         }
       } catch (e) {
-        mesToast(mesError(e), "error");
+        mesError(e);
       }
     }, "save");
 
@@ -647,7 +647,7 @@ export default function ColdMonitorPage() {
         await loadList();
         await handleSelect(null);
       } catch (e) {
-        mesToast(mesError(e), "error");
+        mesError(e);
       }
     }, "del");
 

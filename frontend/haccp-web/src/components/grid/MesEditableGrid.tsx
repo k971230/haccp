@@ -28,10 +28,8 @@ import { exportCsv } from "./gridCsv";
 import { colAlign, colWidthStyle } from "./gridUtils";
 // 역할 — 툴바·헤더·필터·푸터 UI
 import { GridToolbar, GridHeadCell, GridFilterRow, GridFooter, GridSelectHeadCell, gridLeadLeftPx } from "./GridChrome";
-// 역할 — 데이터 갱신 중 오버레이
+// 역할 — 데이터 갱신 중 오버레이 — loading 중 테이블 유지(skeleton 교체 금지)
 import { GridLoadingOverlay } from "./GridLoadingOverlay";
-// 역할 — 초기 로딩 스켈레톤
-import { GridSkeleton } from "./GridSkeleton";
 // 역할 — 조회 결과 없음 표시
 import { GridEmptyState } from "./GridEmptyState";
 // 역할 — 행번호·셀 텍스트/배지 표시
@@ -64,6 +62,8 @@ interface MesEditableGridProps<T extends Record<string, any>> extends GridAccess
   touchKiosk?: boolean;
   /** pref v2 저장 키 (화면 내 그리드 id) */
   persistId?: string;
+  /** pref 저장용 화면코드 — 없으면 PageScrnContext */
+  scrnCd?: string;
   /** 행 다중선택 (__select; 데이터 Y/N checkbox와 별개) — ADR-026 삭제용 */
   selectable?: boolean;
   /** 체크 선택 변경 시 부모에 선택 행 전달 */
@@ -98,8 +98,9 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
   const { rows, height = 320, editable, activeKey, loading, showRowNum = true, access, onLockedAttempt, touchKiosk, selectable } = props;
   type ER = EditableRow<T>;
   const columns = props.columns as unknown as GridColumn<ER>[];
-// 설명 — pref 저장용 화면코드
-  const scrnCd = useContext(PageScrnContext);
+  // pref 저장용 화면코드 — prop 우선, 없으면 셸 PageScrnContext
+  const ctxScrnCd = useContext(PageScrnContext);
+  const scrnCd = props.scrnCd || ctxScrnCd;
 
   // Y/N 체크박스 값 판정
   const isYnChecked = (v: unknown) => {
@@ -665,11 +666,12 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
 
   return (
     <div
-      // 추가 Tailwind/CSS 클래스
-      // 기본 스타일 위에 병합(cn)
+      // grid 행: 툴바 / 본문(1fr) / 푸터 — 총 n건이 마지막 행을 가리지 않음
       className={cn(
         "mes-grid-wrap",
-        fill ? "mes-grid-embedded mes-grid-fill flex min-h-0 flex-1 flex-col" : "flex flex-col overflow-hidden rounded-xl border border-slate-200 shadow-sm",
+        fill
+          ? "mes-grid-embedded mes-grid-fill min-h-0"
+          : "overflow-hidden rounded-xl border border-slate-200 shadow-sm",
       )}
       style={fill ? undefined : { height }}
       onKeyDown={onGridKeyDown}
@@ -677,11 +679,9 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
     >
       <GridToolbar view={view} columns={columns}
         onExport={() => exportCsv(props.title ?? "grid", cols, view.displayRows, cellText)} />
-      <div className="relative min-h-0 flex-1">
-        <div ref={scrollRef} className="mes-grid-scroll absolute inset-0 overflow-auto">
-          {loading && rows.length === 0 ? (
-            <GridSkeleton />
-          ) : (
+      <div className="mes-grid-body">
+        <div ref={scrollRef} className="mes-grid-scroll">
+          {/* loading 중에도 table 유지 — skeleton 교체 시 깜박임 방지 */}
           <table className="mes-grid mes-egrid">
             <thead>
               <tr>
@@ -697,12 +697,11 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
               {renderBodyRows()}
             </tbody>
           </table>
-          )}
         </div>
         {!loading && view.displayRows.length === 0 && (
           <GridEmptyState variant="overlay" withFilter={view.showFilter} hint="조회 조건을 변경해 다시 조회하세요." />
         )}
-        <GridLoadingOverlay show={!!loading && rows.length > 0} />
+        <GridLoadingOverlay show={!!loading} />
       </div>
       <GridFooter cols={cols} total={view.totalCount} shown={view.shownCount} aggregates={view.aggregates} />
     </div>

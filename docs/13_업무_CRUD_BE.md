@@ -32,7 +32,7 @@ HWP leaf 양식·`doc_kind`·`scrn_cd` 1:1 (`37`).
 | `sp_tbl_document_approval_c_000` | `15_sp_doc.sql` + **`33` 재적용** | REQUEST=`WRK`/`RJT`, CANCEL→`WRK`, 서명 후 CANCEL 차단 |
 | `sp_tbl_ccp_cold_monitor_r_000` 등 목록 | `14`/`19`/`20` (6인자) | `30`과 동일 |
 | `sp_tbl_document_appr_inbox_r_000` | `31` | 결재함 |
-| 재고 양식 | `20` + `09`/`34`/`37` | `INV_CHECK` · 작성 화면 `inventory-hwp` |
+| 재고 양식 | `20` + `09`/`34`/`37` | `tmpl_logis-inventory-check` · 작성 화면 `inventory-hwp` |
 
 `28_migrate_wave1_remain.sql`은 **결재 SP를 덮어쓰지 않는다.**
 

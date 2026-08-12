@@ -52,7 +52,7 @@ public class SystemController {
 
     // 공개 화면코드와 실제 조회 SP 분기값의 고정 대응표
     private static final Set<String> ALLOWED_TYPES = Set.of(
-            "company-management", "user-management", "department-management",
+            "user-management", "department-management",
             "role-management", "menu-management", "common-code-management",
             "login-history", "screen-usage-statistics", "audit-log"
     );
@@ -134,6 +134,19 @@ public class SystemController {
 
     /**
      * 개발자: 박승우
+     * 일자: 2026-08-12
+     * 코멘트:
+     *   1) 지정 사용자 서명 이미지를 내려준다
+     *   2) 사용자 관리 서명 팝업 미리보기에서 호출한다
+     *   3) 미등록이면 업무 오류
+     */
+    @GetMapping("/users/{userId}/sign")
+    public ResponseEntity<FileSystemResource> userSign(@PathVariable String userId) {
+        return signResponse(systemService.loadSign(userId));
+    }
+
+    /**
+     * 개발자: 박승우
      * 일자: 2026-08-07
      * 코멘트:
      *   1) 로그인 사용자 서명 상대경로만 JSON으로 반환한다
@@ -176,6 +189,73 @@ public class SystemController {
     ) {
         String path = systemService.uploadSign(userId, file);
         return CommonResponse.ok(Map.of("signPath", path));
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-12
+     * 코멘트:
+     *   1) 지정 사용자 서명을 삭제한다 — sign_path 비움 + 파일 삭제
+     *   2) 사용자관리 서명 팝업 「삭제」가 호출한다 (HTTP DELETE 금지 → POST)
+     *   3) 미등록이면 업무 오류
+     */
+    @PostMapping("/users/{userId}/sign/delete")
+    public CommonResponse<Void> deleteUserSign(@PathVariable String userId) {
+        systemService.deleteSign(userId);
+        return CommonResponse.ok(null);
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-12
+     * 코멘트:
+     *   1) 권한그룹별 화면 권한 목록을 반환한다
+     *   2) 권한그룹 관리 우측 트리 로드 시 호출한다
+     *   3) usrgrpCd 필수
+     */
+    @GetMapping("/role-management/screens")
+    public CommonResponse<List<Map<String, Object>>> roleScreens(
+            @RequestParam String usrgrpCd
+    ) {
+        return CommonResponse.ok(systemService.listRoleScreens(usrgrpCd));
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-12
+     * 코멘트:
+     *   1) 화면 조회권한(readYn) 변경을 저장한다
+     *   2) 권한그룹 관리 트리 체크 저장 시 호출한다
+     *   3) body: { usrgrpCd, rows:[{ scrnCd, readYn }] }
+     */
+    @PutMapping("/role-management/screens")
+    public CommonResponse<Void> saveRoleScreens(@RequestBody Map<String, Object> body) {
+        Object grp = body == null ? null : body.get("usrgrpCd");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> rows = body == null ? null : (List<Map<String, Object>>) body.get("rows");
+        systemService.saveRoleScreens(grp == null ? "" : String.valueOf(grp), rows);
+        return CommonResponse.ok(null);
+    }
+
+    /** 권한 트리용 메뉴 평면 목록 */
+    @GetMapping("/role-management/menus")
+    public CommonResponse<List<Map<String, Object>>> roleMenus() {
+        return CommonResponse.ok(systemService.listMenusAdmin());
+    }
+
+    /** 공통코드 대분류 헤더 */
+    @GetMapping("/common-code-management/groups")
+    public CommonResponse<List<Map<String, Object>>> codeGroups() {
+        return CommonResponse.ok(systemService.listCodeGroups());
+    }
+
+    /** 공통코드 세부 — mainCd + sysYn */
+    @GetMapping("/common-code-management/details")
+    public CommonResponse<List<Map<String, Object>>> codeDetails(
+            @RequestParam String mainCd,
+            @RequestParam(required = false, defaultValue = "") String sysYn
+    ) {
+        return CommonResponse.ok(systemService.listCodeDetails(mainCd, sysYn));
     }
 
     private ResponseEntity<FileSystemResource> signResponse(SystemService.SignFile file) {

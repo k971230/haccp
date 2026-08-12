@@ -1,27 +1,28 @@
 /**
- * ScheduleCycleManagementPage — 작성주기 관리 (SoPage형 상·하).
+ * ScheduleCycleManagementPage — 작성 문서 관리 (SoPage형 상·하).
  *
  * 개발자: 박승우
- * 일자: 2026-08-10
+ * 일자: 2026-08-12
  * 코멘트:
- *   1) mes-web SoPage와 동일 — PageCardSplit 상·하 + 패널별 GridCrudButtons
- *   2) 상단 사용(Y) 문서 등록·선택, 하단 선택 문서의 주기 규칙 CRUD
- *   3) 셸 단축키만 useSection으로 라우팅한다
+ *   1) 상단 작성가능문서(양식코드·명·타입·시스템·사용) + 검색, 하단 작성주기
+ *   2) 공통코드 sys-yn/tmpl-ty/use-yn, 주기는 일·주·월·연·기준일·마감시각
+ *   3) 그리드 pref는 scrnCd+persistId로 저장한다
  *
- * PIPELINE[HF89] 작성주기 관리 화면
- * PIPELINE[HF86, HF29, HF39, HF96, HF101] 연관 모듈
+ * PIPELINE[HF89] 작성 문서 관리 화면
  */
 // 역할 — 상태·메모·초기 목록 조회
 import { useCallback, useEffect, useMemo, useState } from "react";
-// 역할 — 권한·비동기 처리·업무 UI
+// 역할 — 권한·비동기·그리드
 import { useAuthStore } from "@/stores/authStore";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useGridAccess } from "@/hooks/useGridAccess";
 import { useEditableRows } from "@/hooks/useEditableRows";
+import { useCommonCodes } from "@/hooks/useCommonCodes";
 import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
 import { GridCrudButtons } from "@/components/grid/GridCrudButtons";
 import { PageCard, PageCardSplit } from "@/components/layout/PageCard";
-import { PageHead, SearchArea, SearchButton } from "@/components/layout/SearchArea";
+import { PageHead, SearchArea, SearchButton, SearchField } from "@/components/layout/SearchArea";
+import { searchInputClass } from "@/components/ui/Input";
 import { gridHeadClass, gridPanelClass, pageRootClass } from "@/components/layout/pageClasses";
 import { mesConfirm, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
@@ -32,7 +33,6 @@ import { guardSaveWithKey } from "@/shell/gridRules";
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
 import type { GridColumn } from "@/types/grid";
 import type { EditableRow } from "@/types/editable";
-// 역할 — 사용양식·작성주기 API
 import {
   deleteScheduleRules,
   listCompanyTemplates,
@@ -43,34 +43,104 @@ import {
   type CompanyTemplate,
   type ScheduleRule,
 } from "@/api/workflowApi";
-// 역할 — 양식코드 newOnly 규칙
 import { SCHEDULE_CYCLE_GRID_RULES } from "./ScheduleCycleManagementPage.rules";
 
 const CYCLE_OPTIONS = [
-  { value: "D", label: "매일" },
-  { value: "W", label: "매주" },
-  { value: "M", label: "매월" },
-  { value: "Y", label: "매년" },
-  { value: "E", label: "수시" },
+  { value: "D", label: "일" },
+  { value: "W", label: "주" },
+  { value: "M", label: "월" },
+  { value: "Y", label: "연" },
 ] as const;
 
-const YN_OPTIONS = [
-  { value: "Y", label: "사용" },
-  { value: "N", label: "미사용" },
-] as const;
-
-type DocRow = CompanyTemplate & { _key?: string };
+type DocRow = Omit<CompanyTemplate, "useYn" | "sysYn" | "docKind"> & {
+  _key?: string;
+  // 화면용 공통코드 값 — sys/usr, html/hwp, y/n
+  sysYn?: string | null;
+  docKind?: string | null;
+  useYn?: string;
+};
 type RuleRow = ScheduleRule & { _key?: string };
+
+/** yyyyMMdd → yyyy-mm-dd (date input) */
+function ymdToInput(ymd?: string | null): string {
+  const s = String(ymd ?? "").replace(/\D/g, "");
+  if (s.length !== 8) return "";
+  return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
+}
+/** yyyy-mm-dd → yyyyMMdd */
+function inputToYmd(value: string): string {
+  return String(value ?? "").replace(/\D/g, "").slice(0, 8);
+}
+/** HHMM → HH:mm */
+function hhmmToTime(hhmm?: string | null): string {
+  const s = String(hhmm ?? "").replace(/\D/g, "").padStart(4, "0").slice(0, 4);
+  if (s.length < 4 || s === "0000" && !hhmm) return "";
+  return `${s.slice(0, 2)}:${s.slice(2, 4)}`;
+}
+/** HH:mm → HHMM */
+function timeToHhmm(value: string): string {
+  const s = String(value ?? "").replace(/\D/g, "").slice(0, 4);
+  return s.padStart(4, "0").slice(0, 4);
+}
+
+function toUiSys(v?: string | null): string {
+  const s = String(v ?? "").toLowerCase();
+  if (s === "usr" || s === "n") return "usr";
+  return "sys";
+}
+function toUiTy(v?: string | null): string {
+  const s = String(v ?? "").toLowerCase();
+  if (s === "hwp" || s === "hwpx") return "hwp";
+  if (s === "html" || s === "db") return "html";
+  return s || "hwp";
+}
+function toUiUse(v?: string | null): string {
+  const s = String(v ?? "y").toLowerCase();
+  return s === "n" ? "n" : "y";
+}
+function toDbUse(v?: string | null): "Y" | "N" {
+  return String(v ?? "y").toLowerCase() === "n" ? "N" : "Y";
+}
+
 function emptyRule(tmplCd: string): RuleRow {
-  return { tmplCd, cycleCd: "D", dueTime: "1800", useYn: "Y" };
+  return {
+    tmplCd,
+    cycleCd: "D",
+    baseDt: ymdToInput(new Date().toISOString().slice(0, 10).replace(/-/g, "")),
+    dueTime: "18:00",
+    deptCd: "",
+    userNm: "",
+    useYn: "y",
+  };
+}
+
+function mapDoc(form: CompanyTemplate): DocRow {
+  return {
+    ...form,
+    sysYn: toUiSys(form.sysYn),
+    docKind: toUiTy(form.docKind),
+    useYn: toUiUse(form.useYn),
+  };
+}
+
+function mapRule(row: ScheduleRule): RuleRow {
+  return {
+    ...row,
+    baseDt: ymdToInput(row.baseDt) || (row.monthDay != null
+      ? ymdToInput(`${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}${String(row.monthDay).padStart(2, "0")}`)
+      : ""),
+    dueTime: hhmmToTime(row.dueTime) || "18:00",
+    userNm: row.userNm ?? row.userId ?? "",
+    useYn: toUiUse(row.useYn),
+  };
 }
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-10
+ * 일자: 2026-08-12
  * 코멘트:
- *   1) 좌·우 분할로 작성 가능 문서와 선택 문서의 주기를 관리한다
- *   2) 메뉴에서 화면을 열면 양식·규칙 목록을 함께 읽는다
+ *   1) 작성가능문서·작성주기 상하 관리, 공통코드 연동
+ *   2) 메뉴에서 화면을 열면 목록을 읽고 검색·CRUD한다
  *   3) 권한·검증 실패는 업무 토스트로만 안내한다
  */
 export default function ScheduleCycleManagementPage() {
@@ -79,10 +149,15 @@ export default function ScheduleCycleManagementPage() {
   const canModify = useAuthStore((state) => state.can(screenCode, "modify"));
   const canDelete = useAuthStore((state) => state.can(screenCode, "delete"));
   const asyncAct = useAsyncAction();
-  // h=문서, d=주기 — SoPage sec 계약
   const sec = useSection();
+  const sysCodes = useCommonCodes("sys-yn");
+  const tyCodes = useCommonCodes("tmpl-ty");
+  const useCodes = useCommonCodes("use-yn");
+
   const [allTemplates, setAllTemplates] = useState<CompanyTemplate[]>([]);
   const [selectedTmplCd, setSelectedTmplCd] = useState("");
+  const [qTmplCd, setQTmplCd] = useState("");
+  const [qTmplNm, setQTmplNm] = useState("");
   const [docActiveKey, setDocActiveKey] = useState<string | null>(null);
   const [ruleActiveKey, setRuleActiveKey] = useState<string | null>(null);
   const [docSelKeys, setDocSelKeys] = useState<string[]>([]);
@@ -94,14 +169,12 @@ export default function ScheduleCycleManagementPage() {
 
   const docs = useEditableRows<DocRow>("tmplCd");
   const rules = useEditableRows<RuleRow>("idx");
-  // 상단 문서 — tmplCd newOnly
   const grid = useGridAccess(SCHEDULE_CYCLE_GRID_RULES, {
     scrnCd: screenCode,
     gridRole: "single",
     readOnly: !canModify && !canWrite,
     extra: { canWrite, canModify, canDelete },
   });
-  // 하단 작성주기 — 활성 그리드와 동일 access·onLockedAttempt
   const ruleGrid = useGridAccess({ newOnly: [] }, {
     scrnCd: screenCode,
     gridRole: "single",
@@ -109,10 +182,10 @@ export default function ScheduleCycleManagementPage() {
     extra: { canWrite, canModify, canDelete },
   });
 
-  // 미사용·미등록 양식 — 좌측 행추가 콤보
+  // 추가 가능 — 미사용 + hwp 타입만
   const unusedOptions = useMemo(
     () => allTemplates
-      .filter((form) => form.useYn !== "Y")
+      .filter((form) => toUiUse(form.useYn) !== "y" && toUiTy(form.docKind) === "hwp")
       .map((form) => ({ value: form.tmplCd, label: form.tmplNm ?? form.tmplCd })),
     [allTemplates],
   );
@@ -121,14 +194,32 @@ export default function ScheduleCycleManagementPage() {
     [unusedOptions],
   );
 
+  const sysOpts = useMemo(
+    () => (sysCodes.codes.length ? sysCodes.codes : [
+      { subCd: "sys", codeNm: "시스템" }, { subCd: "usr", codeNm: "사용자" },
+    ]).map((c) => ({ value: c.subCd, label: c.codeNm })),
+    [sysCodes.codes],
+  );
+  const tyOpts = useMemo(
+    () => (tyCodes.codes.length ? tyCodes.codes : [
+      { subCd: "html", codeNm: "HTML" }, { subCd: "hwp", codeNm: "HWP" },
+    ]).map((c) => ({ value: c.subCd, label: c.codeNm })),
+    [tyCodes.codes],
+  );
+  const useOpts = useMemo(
+    () => (useCodes.codes.length ? useCodes.codes : [
+      { subCd: "y", codeNm: "사용" }, { subCd: "n", codeNm: "미사용" },
+    ]).map((c) => ({ value: c.subCd, label: c.codeNm })),
+    [useCodes.codes],
+  );
+
   const docColumns = useMemo<GridColumn<DocRow>[]>(() => {
     const editable = canWrite || canModify;
     return [
       {
-        // 양식코드 — 신규(미사용 등록) 행에서만 선택
         field: "tmplCd",
-        header: "양식",
-        width: 160,
+        header: "양식코드",
+        width: 200,
         type: "code",
         required: true,
         editableOnNew: true,
@@ -138,20 +229,38 @@ export default function ScheduleCycleManagementPage() {
       {
         field: "tmplNm",
         header: "양식명",
-        width: 180,
+        width: 200,
+        editable,
+      },
+      {
+        field: "docKind",
+        header: "타입",
+        width: 90,
+        type: "code",
         editable: false,
+        codeOptions: tyOpts,
+        codeMap: Object.fromEntries(tyOpts.map((o) => [o.value, o.label])),
+      },
+      {
+        field: "sysYn",
+        header: "시스템유무",
+        width: 100,
+        type: "code",
+        editable: false,
+        codeOptions: sysOpts,
+        codeMap: Object.fromEntries(sysOpts.map((o) => [o.value, o.label])),
       },
       {
         field: "useYn",
-        header: "사용",
-        width: 80,
+        header: "사용여부",
+        width: 90,
         type: "code",
         editable,
-        codeOptions: [...YN_OPTIONS],
-        codeMap: { Y: "사용", N: "미사용" },
+        codeOptions: useOpts,
+        codeMap: Object.fromEntries(useOpts.map((o) => [o.value, o.label])),
       },
     ];
-  }, [canModify, canWrite, unusedMap, unusedOptions]);
+  }, [canModify, canWrite, unusedMap, unusedOptions, sysOpts, tyOpts, useOpts]);
 
   const ruleColumns = useMemo<GridColumn<RuleRow>[]>(() => {
     const editable = canWrite || canModify;
@@ -159,44 +268,57 @@ export default function ScheduleCycleManagementPage() {
       {
         field: "cycleCd",
         header: "주기",
-        width: 90,
+        width: 80,
         type: "code",
         required: true,
         editable,
         codeOptions: [...CYCLE_OPTIONS],
-        codeMap: Object.fromEntries(CYCLE_OPTIONS.map((opt) => [opt.value, opt.label])),
+        codeMap: Object.fromEntries(CYCLE_OPTIONS.map((o) => [o.value, o.label])),
       },
-      { field: "weekDays", header: "요일(1~7)", width: 100, editable },
-      { field: "monthDay", header: "기준일", width: 80, type: "number", editable },
-      { field: "monthNo", header: "기준월", width: 80, type: "number", editable },
-      { field: "dueTime", header: "마감시각", width: 90, editable },
-      { field: "deptCd", header: "담당부서", width: 100, editable },
-      { field: "userId", header: "담당자 ID", width: 110, editable },
+      {
+        // 기준일 — 화면 yyyy-mm-dd, 저장 yyyyMMdd
+        field: "baseDt",
+        header: "기준일",
+        width: 130,
+        type: "date",
+        editable,
+      },
+      {
+        // 마감시간 — HH:mm 텍스트(저장 시 HHMM)
+        field: "dueTime",
+        header: "마감시간",
+        width: 110,
+        editable,
+        kioskFormat: "time",
+      },
+      { field: "deptCd", header: "담당부서", width: 120, editable },
+      { field: "userNm", header: "담당자명", width: 120, editable },
       {
         field: "useYn",
-        header: "사용",
-        width: 80,
+        header: "사용여부",
+        width: 90,
         type: "code",
         editable,
-        codeOptions: [...YN_OPTIONS],
-        codeMap: { Y: "사용", N: "미사용" },
+        codeOptions: useOpts,
+        codeMap: Object.fromEntries(useOpts.map((o) => [o.value, o.label])),
       },
+      { field: "insId", header: "등록자", width: 100, editable: false },
+      { field: "insDt", header: "등록일시", width: 150, editable: false },
     ];
-  }, [canModify, canWrite]);
+  }, [canModify, canWrite, useOpts]);
 
-  /**
-   * 개발자: 박승우
-   * 일자: 2026-08-10
-   * 코멘트:
-   *   1) 전체 양식과 작성주기 규칙을 읽고 좌측은 사용 Y만 채운다
-   *   2) 최초 진입·조회·저장·삭제 뒤에 호출한다
-   *   3) 실패하면 토스트만 표시한다
-   */
   const load = useCallback(async (preferCd?: string) => {
     try {
       const [ruleRows, forms] = await Promise.all([listScheduleRules(), listCompanyTemplates()]);
       setAllTemplates(forms);
-      const used = forms.filter((form) => form.useYn === "Y");
+      const cdQ = qTmplCd.trim().toLowerCase();
+      const nmQ = qTmplNm.trim().toLowerCase();
+      const used = forms.filter((form) => {
+        if (toUiUse(form.useYn) !== "y") return false;
+        if (cdQ && !String(form.tmplCd ?? "").toLowerCase().includes(cdQ)) return false;
+        if (nmQ && !String(form.tmplNm ?? "").toLowerCase().includes(nmQ)) return false;
+        return true;
+      }).map(mapDoc);
       docs.load(used);
       const nextCd = preferCd
         || (used.some((row) => row.tmplCd === selectedTmplCd) ? selectedTmplCd : "")
@@ -204,17 +326,18 @@ export default function ScheduleCycleManagementPage() {
         || "";
       setSelectedTmplCd(nextCd);
       setDocActiveKey(nextCd || null);
-      rules.load(ruleRows.filter((row) => row.tmplCd === nextCd));
+      // 동일 양식은 API가 최신순 — 화면에도 그대로
+      rules.load(ruleRows.filter((row) => row.tmplCd === nextCd).map(mapRule));
       setRuleActiveKey(null);
       clearDocSel();
       clearRuleSel();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- docs/rules.load 안정 참조
-  }, [selectedTmplCd]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qTmplCd, qTmplNm, selectedTmplCd]);
 
-  useEffect(() => { void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps -- 최초 1회
+  useEffect(() => { void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectDoc = (tmplCd: string) => {
     setSelectedTmplCd(tmplCd);
@@ -224,24 +347,26 @@ export default function ScheduleCycleManagementPage() {
     void (async () => {
       try {
         const ruleRows = await listScheduleRules();
-        rules.load(ruleRows.filter((row) => row.tmplCd === tmplCd));
+        rules.load(ruleRows.filter((row) => row.tmplCd === tmplCd).map(mapRule));
         setRuleActiveKey(null);
         clearRuleSel();
       } catch (error) {
-        mesToast(mesError(error), "error");
+        mesError(error);
       }
     })();
   };
 
   const handleAddDoc = () => {
     if (!canWrite) return mesToast("등록 권한이 없습니다.", "warn");
-    if (unusedOptions.length === 0) return mesToast("등록할 미사용 양식이 없습니다.", "warn");
     sec.setSec("h");
+    // 추가 — 타입 hwp·시스템 usr 고정, 양식코드는 신규만 편집
     const first = unusedOptions[0];
     setDocActiveKey(docs.addRow({
-      tmplCd: first.value,
-      tmplNm: first.label,
-      useYn: "Y",
+      tmplCd: first?.value ?? "",
+      tmplNm: first?.label ?? "",
+      docKind: "hwp",
+      sysYn: "usr",
+      useYn: "y",
     }));
   };
 
@@ -252,21 +377,18 @@ export default function ScheduleCycleManagementPage() {
     setRuleActiveKey(rules.addRow(emptyRule(selectedTmplCd)));
   };
 
-  /**
-   * 개발자: 박승우
-   * 일자: 2026-08-10
-   * 코멘트:
-   *   1) 좌측 변경행을 saveCompanyTemplate으로 저장한다(useYn 등록·토글)
-   *   2) 좌측 GridCrudButtons·포커스 패인 저장에서 호출한다
-   *   3) 양식코드 필수·권한 실패는 토스트만
-   */
   const handleSaveDocs = async () => {
     if (!canWrite && !canModify) return mesToast("수정 권한이 없습니다.", "warn");
     const dirty = docs.getSaveRows();
     if (dirty.length === 0) return mesToast(MES.noChange, "warn");
     for (const row of dirty) {
       if (!String(row.tmplCd ?? "").trim()) {
-        mesToast(MES.required("양식"), "warn");
+        mesToast(MES.required("양식코드"), "warn");
+        setDocActiveKey(row._key);
+        return;
+      }
+      if (!String(row.tmplNm ?? "").trim()) {
+        mesToast(MES.required("양식명"), "warn");
         setDocActiveKey(row._key);
         return;
       }
@@ -277,35 +399,27 @@ export default function ScheduleCycleManagementPage() {
         const src = allTemplates.find((form) => form.tmplCd === row.tmplCd);
         await saveCompanyTemplate({
           tmplCd: String(row.tmplCd),
-          tmplNm: row.tmplNm ?? src?.tmplNm ?? String(row.tmplCd),
+          tmplNm: String(row.tmplNm ?? "").trim(),
           apprLineCd: src?.apprLineCd ?? null,
           cycleCd: src?.cycleCd ?? null,
           retentionMonth: src?.retentionMonth ?? null,
-          useYn: (row.useYn as "Y" | "N") ?? "Y",
+          useYn: toDbUse(row.useYn),
         });
       }
       mesToast(MES.saveDone, "success");
       const prefer = dirty[dirty.length - 1]?.tmplCd;
       await load(prefer ? String(prefer) : undefined);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
-  /**
-   * 개발자: 박승우
-   * 일자: 2026-08-10
-   * 코멘트:
-   *   1) 선택 문서의 작성주기 변경행만 저장한다
-   *   2) 우측 GridCrudButtons·포커스 패인 저장에서 호출한다
-   *   3) tmplCd는 좌측 선택값으로 고정한다
-   */
   const handleSaveRules = async () => {
     if (!canWrite && !canModify) return mesToast("수정 권한이 없습니다.", "warn");
     if (!selectedTmplCd) return mesToast("좌측에서 양식을 선택하세요.", "warn");
     const dirty = rules.getSaveRows();
     if (dirty.length === 0) return mesToast(MES.noChange, "warn");
-    const guard = guardSaveWithKey(grid.rules, grid.ctx, dirty, ruleColumns);
+    const guard = guardSaveWithKey(ruleGrid.rules, ruleGrid.ctx, dirty, ruleColumns);
     if (guard) {
       mesToast(guard.message, "warn");
       if (guard.rowKey) setRuleActiveKey(guard.rowKey);
@@ -321,39 +435,26 @@ export default function ScheduleCycleManagementPage() {
     if (!(await mesConfirm(MES.saveConfirm))) return;
     try {
       for (const row of dirty) {
-        const toNum = (value: unknown): number | null => {
-          if (value == null || value === "") return null;
-          const num = Number(value);
-          return Number.isFinite(num) ? num : null;
-        };
+        const baseYmd = inputToYmd(String(row.baseDt ?? ""));
         await saveScheduleRule({
           idx: row._rowState === "C" ? undefined : row.idx,
           tmplCd: selectedTmplCd,
           cycleCd: row.cycleCd,
-          weekDays: row.weekDays ?? null,
-          monthDay: toNum(row.monthDay),
-          monthNo: toNum(row.monthNo),
-          dueTime: row.dueTime ?? null,
+          baseDt: baseYmd || null,
+          dueTime: timeToHhmm(String(row.dueTime ?? "1800")),
           deptCd: row.deptCd ?? null,
-          userId: row.userId ?? null,
-          useYn: row.useYn ?? "Y",
+          userId: row.userNm ?? row.userId ?? null,
+          userNm: row.userNm ?? null,
+          useYn: toDbUse(row.useYn),
         });
       }
       mesToast(MES.saveDone, "success");
       await load(selectedTmplCd);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
-  /**
-   * 개발자: 박승우
-   * 일자: 2026-08-10
-   * 코멘트:
-   *   1) 좌측 삭제 — 신규행 제거 또는 useYn=N 저장(시스템 tmpl 물리 삭제 금지)
-   *   2) 좌측 GridCrudButtons·포커스 패인 삭제에서 호출한다
-   *   3) 확인 후 저장·재조회한다
-   */
   const handleDeleteDocs = async () => {
     if (!canDelete) return mesToast("삭제 권한이 없습니다.", "warn");
     const targets = resolveRowsForDelete(docs.rows, docActiveKey, setDocActiveKey, docSelKeys);
@@ -370,7 +471,7 @@ export default function ScheduleCycleManagementPage() {
       clearDocSel();
     }
     if (persisted.length === 0) return;
-    if (!(await mesConfirm("선택한 양식을 미사용으로 전환하시겠습니까? (시스템 양식은 물리 삭제하지 않습니다)"))) return;
+    if (!(await mesConfirm("선택한 양식을 미사용으로 전환하시겠습니까?"))) return;
     try {
       for (const row of persisted) {
         const src = allTemplates.find((form) => form.tmplCd === row.tmplCd) ?? row;
@@ -387,18 +488,10 @@ export default function ScheduleCycleManagementPage() {
       mesToast(MES.deleteDone, "success");
       await load();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
-  /**
-   * 개발자: 박승우
-   * 일자: 2026-08-10
-   * 코멘트:
-   *   1) 우측 선택행 삭제 — validate-delete·확인·delete·재조회
-   *   2) GridCrudButtons·셸 삭제 단축키에서 호출한다
-   *   3) 참조 차단·권한 실패는 업무 토스트로만 안내한다
-   */
   const handleDeleteRules = async () => {
     if (!canDelete) return mesToast("삭제 권한이 없습니다.", "warn");
     const targets = resolveRowsForDelete(rules.rows, ruleActiveKey, setRuleActiveKey, ruleSelKeys);
@@ -428,13 +521,12 @@ export default function ScheduleCycleManagementPage() {
       mesToast(MES.deleteDone, "success");
       await load(selectedTmplCd);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
   const doSearch = () => asyncAct.run(() => load(selectedTmplCd || undefined), "search");
 
-  // 셸 단축키 — 활성 섹션으로만 라우팅 (패널 버튼은 고정 타겟)
   usePageCommands({
     search: () => { void doSearch(); },
     add: () => { if (sec.is("d")) handleAddRule(); else handleAddDoc(); },
@@ -444,47 +536,47 @@ export default function ScheduleCycleManagementPage() {
 
   return (
     <div className={pageRootClass}>
-      <PageHead
-        // 화면 제목 — mes-web SoPage와 동일 슬롯
-        title="작성주기 관리"
-      />
+      <PageHead title="작성 문서 관리" />
       <PageCard
-        // 조회만 검색 카드 — CRUD는 각 그리드 헤더
         search={(
           <SearchArea
             onSearch={() => { void doSearch(); }}
-            actions={(
-              <SearchButton
-                // 조회 busy 스피너
-                loading={asyncAct.isBusy("search")}
+            actions={<SearchButton loading={asyncAct.isBusy("search")} />}
+          >
+            <SearchField label="양식코드">
+              <input
+                className={searchInputClass}
+                value={qTmplCd}
+                onChange={(event) => setQTmplCd(event.target.value)}
+                placeholder="tmpl_…"
               />
-            )}
-          />
+            </SearchField>
+            <SearchField label="양식명">
+              <input
+                className={searchInputClass}
+                value={qTmplNm}
+                onChange={(event) => setQTmplNm(event.target.value)}
+                placeholder="문서명"
+              />
+            </SearchField>
+          </SearchArea>
         )}
       >
-        <PageCardSplit>
+        <PageCardSplit storageKey="haccp-split-schedule-cycle">
           <div {...sec.bind("h", gridPanelClass)}>
             <div className={gridHeadClass}>
               <b>작성 가능 문서</b>
               <GridCrudButtons
-                // useAsyncAction.run — busy 키 래핑
                 run={asyncAct.run}
-                // 상단 문서 전용 행추가(미사용→사용 Y)
                 onAdd={canWrite ? handleAddDoc : undefined}
-                // 상단 문서 전용 저장
                 onSave={canWrite || canModify ? handleSaveDocs : undefined}
-                // 상단 문서 미사용 전환
                 onDel={canDelete ? handleDeleteDocs : undefined}
-                busy={{
-                  save: asyncAct.isBusy("save"),
-                  del: asyncAct.isBusy("del"),
-                }}
+                busy={{ save: asyncAct.isBusy("save"), del: asyncAct.isBusy("del") }}
               />
             </div>
             <MesEditableGrid
-              // 열 설정 저장 키 — 작성주기 상단 문서
               persistId="bas-schedule-cycle-docs"
-              // CSV·오류경계 라벨 — 패널 제목과 동일
+              scrnCd={screenCode}
               title="작성 가능 문서"
               rows={docs.rows as EditableRow<DocRow>[]}
               columns={docColumns}
@@ -504,7 +596,11 @@ export default function ScheduleCycleManagementPage() {
                 docs.updateCell(key, field as keyof DocRow, value);
                 if (field === "tmplCd") {
                   const hit = allTemplates.find((form) => form.tmplCd === value);
-                  if (hit) docs.updateCell(key, "tmplNm", hit.tmplNm);
+                  if (hit) {
+                    docs.updateCell(key, "tmplNm", hit.tmplNm);
+                    docs.updateCell(key, "docKind", "hwp");
+                    docs.updateCell(key, "sysYn", "usr");
+                  }
                 }
               }}
               access={grid.access}
@@ -522,22 +618,19 @@ export default function ScheduleCycleManagementPage() {
               <b>
                 작성주기
                 {selectedTmplCd ? ` (${selectedTmplCd})` : ""}
+                {" — 최신 규칙 적용"}
               </b>
               <GridCrudButtons
                 run={asyncAct.run}
                 onAdd={canWrite ? handleAddRule : undefined}
                 onSave={canWrite || canModify ? handleSaveRules : undefined}
                 onDel={canDelete ? handleDeleteRules : undefined}
-                busy={{
-                  save: asyncAct.isBusy("save"),
-                  del: asyncAct.isBusy("del"),
-                }}
+                busy={{ save: asyncAct.isBusy("save"), del: asyncAct.isBusy("del") }}
               />
             </div>
             <MesEditableGrid
-              // 열 설정 저장 키 — 작성주기 하단 규칙
               persistId="bas-schedule-cycle-rules"
-              // CSV·오류경계 라벨 — 패널 제목과 동일
+              scrnCd={screenCode}
               title="작성주기"
               rows={rules.rows as EditableRow<RuleRow>[]}
               columns={ruleColumns}
@@ -550,7 +643,6 @@ export default function ScheduleCycleManagementPage() {
                 setRuleActiveKey(row._key);
               }}
               onCellChange={(key, field, value) => rules.updateCell(key, field as keyof RuleRow, value)}
-              // 하단도 활성 그리드와 동일하게 잠금·권한 이벤트
               access={ruleGrid.access}
               onLockedAttempt={ruleGrid.onLockedAttempt}
               onSetActive={() => sec.setSec("d")}

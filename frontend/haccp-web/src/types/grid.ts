@@ -34,8 +34,8 @@ export interface GridColumn<T> {
   type?: GridColumnType;
   /** type==='code' 일 때 subCd→codeNm 표시용 코드맵 */
   codeMap?: Record<string, string>;
-  /** code 컬럼 상태 배지 — true: 라벨 기준 기본색, 객체: 코드/라벨별 색 */
-  badge?: boolean | Partial<Record<string, "blue" | "amber" | "green" | "gray" | "red">>;
+  /** code 컬럼 상태 배지 — true: 기본 purple(코드·팝업), 객체: 코드/라벨별 색 */
+  badge?: boolean | Partial<Record<string, "blue" | "amber" | "green" | "gray" | "red" | "purple">>;
   /** type==='code' 편집 시 <select> 옵션 */
   codeOptions?: { value: string; label: string }[];
   /** 터치 키오스크 NumPad 포맷 — time: HH:mm (4자리) */
@@ -49,7 +49,7 @@ export interface GridColumn<T> {
   /** 푸터 집계 (number/amount 기본 sum). getFilteredRowModel 기준 */
   aggregationFn?: "sum" | "avg" | "min" | "max" | "count";
   /**
-   * 셀 버튼 (WinForms UltraGrid "EBTN"/GridConBtn 대응) — 셀 안 우측에 "…" 버튼.
+   * 셀 버튼 (WinForms UltraGrid "EBTN"/GridConBtn 대응) — 셀 안 우측 고정 "…" 버튼.
    * 클릭 시 onClick(row) 호출(검색팝업·LOT선택 등). showOnNew=true 면 신규행만.
    * popupField: 잠금 규칙 적용 시 사용할 필드(기본 field).
    */
@@ -127,4 +127,6 @@ export interface MesDataGridProps<T> {
   onSelectionChange?: (rows: T[]) => void;
   /** pref v2(hidden/order/sizing) 저장 키 — 화면 내 그리드 id (예: "h"/"d") */
   persistId?: string;
+  /** pref 저장용 화면코드 — 없으면 PageScrnContext (MesEditableGrid와 동일) */
+  scrnCd?: string;
 }

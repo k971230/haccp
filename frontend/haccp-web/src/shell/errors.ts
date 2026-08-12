@@ -23,7 +23,7 @@ import { isUnauthorizedError } from "./authSession";
  * 일자: 2026-08-05
  * 코멘트:
  *   1) 예외를 사용자 문구로 바꿔 토스트로 띄우고 그 문구를 반환한다
- *   2) 화면의 catch 블록에서 호출한다 — catch (e) { setMsg(mesError(e)); }
+ *   2) 화면 catch에서는 mesError(e)만 호출한다 — mesToast(mesError(e), "error")는 토스트가 두 번 뜬다
  *   3) 401이면 토스트를 띄우지 않는다. 이미 로그인 화면으로 이동했기 때문에 안내가 겹친다
  */
 export function mesError(
@@ -34,6 +34,7 @@ export function mesError(
 ): string {
   if (isUnauthorizedError(e)) return (e as Error).message;
   const msg = toUserMessage(e, fallback);
+  // 여기서 이미 error 토스트를 띄운다 — 호출부에서 mesToast로 감싸지 말 것
   mesToast(msg, "error");
   return msg;
 }

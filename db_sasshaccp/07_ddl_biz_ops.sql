@@ -208,7 +208,7 @@ COMMENT ON COLUMN tbl_waste_check_row.co_cd       IS '회사코드 — 테넌트
 COMMENT ON COLUMN tbl_waste_check_row.hdr_idx     IS '헤더 idx — tbl_waste_check.idx';
 COMMENT ON COLUMN tbl_waste_check_row.row_seq     IS '행 순번';
 COMMENT ON COLUMN tbl_waste_check_row.proc_dt     IS '처리일자 YYYYMMDD';
-COMMENT ON COLUMN tbl_waste_check_row.waste_gbn   IS '구분 — BAD:부적합품, WASTE:일반 폐기물, EXPIRE:기한경과';
+COMMENT ON COLUMN tbl_waste_check_row.waste_gbn   IS '구분 — BAD:부적합품, tmpl_prp-waste-check:일반 폐기물, EXPIRE:기한경과';
 COMMENT ON COLUMN tbl_waste_check_row.item_nm     IS '품명';
 COMMENT ON COLUMN tbl_waste_check_row.make_dt     IS '제조일자 YYYYMMDD';
 COMMENT ON COLUMN tbl_waste_check_row.expire_dt   IS '소비기한 YYYYMMDD';
@@ -270,7 +270,7 @@ CREATE TABLE IF NOT EXISTS tbl_inv_txn (
     make_dt     varchar(8)    NULL,
     expire_dt   varchar(8)    NULL,
     storage_cd  varchar(30)   NULL,
-    src_tmpl_cd varchar(20)   NULL,
+    src_tmpl_cd varchar(40)   NULL,
     src_doc_idx bigint        NULL,
     remark      varchar(500)  NULL,
     ins_id      varchar(20)   NULL,
@@ -295,7 +295,7 @@ COMMENT ON COLUMN tbl_inv_txn.lot_no      IS '로트번호 — 회수 시 추적
 COMMENT ON COLUMN tbl_inv_txn.make_dt     IS '제조일자 YYYYMMDD';
 COMMENT ON COLUMN tbl_inv_txn.expire_dt   IS '소비기한 YYYYMMDD — 경과 임박 시 알림';
 COMMENT ON COLUMN tbl_inv_txn.storage_cd  IS '보관고 코드 — tbl_storage.storage_cd';
-COMMENT ON COLUMN tbl_inv_txn.src_tmpl_cd IS '출처 템플릿 코드 — RECV_INSP(입고검사), WASTE(폐기) 등. NULL이면(= 직접 입력)';
+COMMENT ON COLUMN tbl_inv_txn.src_tmpl_cd IS '출처 템플릿 코드 — tmpl_logis-receive-inspect(입고검사), WASTE(폐기) 등. NULL이면(= 직접 입력)';
 COMMENT ON COLUMN tbl_inv_txn.src_doc_idx IS '출처 문서 idx — tbl_document.idx. 자동 생성 내역의 원본 추적';
 COMMENT ON COLUMN tbl_inv_txn.remark      IS '비고';
 COMMENT ON COLUMN tbl_inv_txn.ins_id      IS '최초입력자 ID';
@@ -392,7 +392,7 @@ COMMENT ON COLUMN tbl_recv_inspect_item.idx       IS 'PK 자동 채번 대리키
 COMMENT ON COLUMN tbl_recv_inspect_item.co_cd     IS '회사코드 — 테넌트 키';
 COMMENT ON COLUMN tbl_recv_inspect_item.hdr_idx   IS '헤더 idx — tbl_recv_inspect.idx';
 COMMENT ON COLUMN tbl_recv_inspect_item.row_seq   IS '행 순번';
-COMMENT ON COLUMN tbl_recv_inspect_item.grp_cd    IS '항목 구분 — EVAL:관능검사, CAR:운반차량, DOC:구비서류, HACCP:HACCP 확인';
+COMMENT ON COLUMN tbl_recv_inspect_item.grp_cd    IS '항목 구분 — tmpl_admin-eval-check:관능검사, CAR:운반차량, DOC:구비서류, HACCP:HACCP 확인';
 COMMENT ON COLUMN tbl_recv_inspect_item.item_cd   IS '항목코드 — tbl_check_item.item_cd';
 COMMENT ON COLUMN tbl_recv_inspect_item.item_nm   IS '항목 문구 스냅샷';
 COMMENT ON COLUMN tbl_recv_inspect_item.judge_cd  IS '판정 — P:적합, F:부적합. 하나라도 F면 헤더 종합판정이 F';

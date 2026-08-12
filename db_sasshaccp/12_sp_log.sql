@@ -154,7 +154,7 @@ CREATE OR REPLACE PROCEDURE sp_tbl_view_stat_daily_c_000(
 )
 LANGUAGE plpgsql AS $$
 BEGIN
-    INSERT INTO tbl_view_stat_daily(co_cd, stat_dt, scrn_cd, pv_cnt, uv_cnt, sess_cnt,
+    INSERT INTO tbl_view_stat_daily(co_cd, stat_dt, scrn_cd, pv_cnt, uv_cnt, sess_cnt, ip_cnt,
                                     avg_stay_sec, max_stay_sec, ins_id, ins_dt)
     SELECT v.co_cd,
            p_stat_dt,
@@ -162,6 +162,7 @@ BEGIN
            COUNT(*),                        -- PV: 이벤트 건수
            COUNT(DISTINCT v.user_id),       -- UV: 서로 다른 사용자 수
            COUNT(DISTINCT v.sid),           -- 세션수: 서로 다른 sid 수
+           COUNT(DISTINCT NULLIF(TRIM(v.ip_addr), '')), -- IP수
            ROUND(AVG(v.stay_sec)::numeric, 1),
            MAX(v.stay_sec),
            p_id, now()
@@ -175,17 +176,19 @@ BEGIN
         pv_cnt       = EXCLUDED.pv_cnt,
         uv_cnt       = EXCLUDED.uv_cnt,
         sess_cnt     = EXCLUDED.sess_cnt,
+        ip_cnt       = EXCLUDED.ip_cnt,
         avg_stay_sec = EXCLUDED.avg_stay_sec,
         max_stay_sec = EXCLUDED.max_stay_sec,
         upd_id       = p_id,
         upd_dt       = now();
 END$$;
-COMMENT ON PROCEDURE sp_tbl_view_stat_daily_c_000(varchar, varchar, varchar) IS '화면별 일자 UV/PV 집계 업서트 — 재실행 안전';
+COMMENT ON PROCEDURE sp_tbl_view_stat_daily_c_000(varchar, varchar, varchar) IS '화면별 일자 UV/PV/IP 집계 업서트 — 재실행 안전';
 
 -- ------------------------------------------------------------
 -- 6. sp_tbl_view_stat_daily_r_000 — 화면 이용 통계 조회
 -- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION sp_tbl_view_stat_daily_r_000(
+DROP FUNCTION IF EXISTS sp_tbl_view_stat_daily_r_000(varchar, varchar, varchar, varchar);
+CREATE FUNCTION sp_tbl_view_stat_daily_r_000(
     -- p_co_cd: JWT 회사코드 — 테넌트 범위
     p_co_cd   varchar,
     -- p_from_dt: 조회 시작일 YYYYMMDD
@@ -198,25 +201,40 @@ CREATE OR REPLACE FUNCTION sp_tbl_view_stat_daily_r_000(
 RETURNS TABLE(
     stat_dt      varchar,
     scrn_cd      varchar,
+    menu_cd      varchar,
+    menu_nm      varchar,
     scrn_nm      varchar,
     module_cd    varchar,
     pv_cnt       int,
     uv_cnt       int,
     sess_cnt     int,
+    ip_cnt       int,
     avg_stay_sec numeric,
     max_stay_sec int
 ) LANGUAGE sql AS $$
-    SELECT t.stat_dt, t.scrn_cd, s.scrn_nm, s.module_cd,
-           t.pv_cnt, t.uv_cnt, t.sess_cnt, t.avg_stay_sec, t.max_stay_sec
+    SELECT t.stat_dt,
+           t.scrn_cd,
+           m.menu_cd,
+           COALESCE(m.menu_nm, s.scrn_nm, t.scrn_cd) AS menu_nm,
+           s.scrn_nm,
+           s.module_cd,
+           t.pv_cnt, t.uv_cnt, t.sess_cnt, t.ip_cnt,
+           t.avg_stay_sec, t.max_stay_sec
       FROM tbl_view_stat_daily t
-      -- 화면명: 마스터에서 삭제된 화면도 통계는 남으므로 LEFT JOIN
       LEFT JOIN tbl_screen s ON s.scrn_cd = t.scrn_cd
+      LEFT JOIN LATERAL (
+          SELECT mm.menu_cd, mm.menu_nm
+            FROM tbl_menu mm
+           WHERE mm.scrn_cd = t.scrn_cd
+           ORDER BY mm.sort_no NULLS LAST, mm.menu_cd
+           LIMIT 1
+      ) m ON TRUE
      WHERE t.co_cd = p_co_cd
        AND t.stat_dt BETWEEN p_from_dt AND p_to_dt
-       AND t.scrn_cd LIKE CONCAT('%', COALESCE(p_scrn_cd, ''), '%')
-     ORDER BY t.stat_dt DESC, t.pv_cnt DESC;
+       AND (COALESCE(p_scrn_cd, '') = '' OR t.scrn_cd = p_scrn_cd)
+     ORDER BY t.stat_dt DESC, t.scrn_cd;
 $$;
-COMMENT ON FUNCTION sp_tbl_view_stat_daily_r_000(varchar, varchar, varchar, varchar) IS '화면 이용 통계 조회 — 일자·화면별 UV/PV/체류';
+COMMENT ON FUNCTION sp_tbl_view_stat_daily_r_000(varchar, varchar, varchar, varchar) IS '화면 이용 통계 조회 — 집계일·메뉴·PV/UV/세션/IP';
 
 -- ------------------------------------------------------------
 -- 7. sp_tbl_view_log_d_000 — 원시 조회 로그 정리
@@ -277,15 +295,16 @@ COMMENT ON PROCEDURE sp_tbl_audit_log_c_000(varchar, varchar, varchar, bigint, v
 -- ------------------------------------------------------------
 -- 9. sp_tbl_audit_log_r_000 — 변경 감사 로그 조회
 -- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION sp_tbl_audit_log_r_000(
+DROP FUNCTION IF EXISTS sp_tbl_audit_log_r_000(varchar, varchar, varchar, varchar, varchar, varchar);
+CREATE FUNCTION sp_tbl_audit_log_r_000(
     -- p_co_cd: JWT 회사코드
     p_co_cd     varchar,
     -- p_from_dt: 조회 시작일 YYYYMMDD
     p_from_dt   varchar,
     -- p_to_dt: 조회 종료일 YYYYMMDD
     p_to_dt     varchar,
-    -- p_tbl_nm: 대상 테이블명 부분검색어. 공백이면 전체
-    p_tbl_nm    varchar,
+    -- p_menu_key: 메뉴/화면/테이블 키. 공백이면 전체
+    p_menu_key  varchar,
     -- p_user_id: 행위자 부분검색어. 공백이면 전체
     p_user_id   varchar,
     -- p_action_cd: 행위 필터. 공백이면 전체
@@ -295,6 +314,7 @@ RETURNS TABLE(
     idx         bigint,
     user_id     varchar,
     user_nm     varchar,
+    menu_nm     varchar,
     tbl_nm      varchar,
     tgt_idx     bigint,
     action_cd   varchar,
@@ -304,16 +324,36 @@ RETURNS TABLE(
     ip_addr     varchar,
     ins_dt      timestamp
 ) LANGUAGE sql AS $$
-    SELECT a.idx, a.user_id, u.user_nm, a.tbl_nm, a.tgt_idx, a.action_cd,
-           a.before_json, a.after_json, a.reason, a.ip_addr, a.ins_dt
+    SELECT a.idx,
+           a.user_id,
+           u.user_nm,
+           COALESCE(c.code_nm, a.tbl_nm) AS menu_nm,
+           a.tbl_nm,
+           a.tgt_idx,
+           a.action_cd,
+           a.before_json,
+           a.after_json,
+           a.reason,
+           a.ip_addr,
+           a.ins_dt
       FROM tbl_audit_log a
       LEFT JOIN tbl_user u ON u.user_id = a.user_id
+      LEFT JOIN tbl_code c
+             ON c.co_cd = '0000'
+            AND c.main_cd = 'audit-target'
+            AND c.sub_cd = a.tbl_nm
      WHERE a.co_cd = p_co_cd
        AND a.ins_dt >= to_timestamp(p_from_dt, 'YYYYMMDD')
        AND a.ins_dt <  to_timestamp(p_to_dt,   'YYYYMMDD') + interval '1 day'
-       AND a.tbl_nm    LIKE CONCAT('%', COALESCE(p_tbl_nm,    ''), '%')
+       AND (
+            COALESCE(p_menu_key, '') = ''
+            OR a.tbl_nm = p_menu_key
+            OR c.ref1 = p_menu_key
+            OR c.ref2 = p_menu_key
+            OR c.code_nm = p_menu_key
+       )
        AND a.user_id   LIKE CONCAT('%', COALESCE(p_user_id,   ''), '%')
        AND a.action_cd LIKE CONCAT('%', COALESCE(p_action_cd, ''), '%')
      ORDER BY a.ins_dt DESC;
 $$;
-COMMENT ON FUNCTION sp_tbl_audit_log_r_000(varchar, varchar, varchar, varchar, varchar, varchar) IS '변경 감사 로그 조회 — 기간·테이블·행위자·행위 필터';
+COMMENT ON FUNCTION sp_tbl_audit_log_r_000(varchar, varchar, varchar, varchar, varchar, varchar) IS '변경 감사 로그 조회 — 기간·메뉴키·행위자·행위 필터';

@@ -44,7 +44,7 @@ UPDATE tbl_ccp_limit SET
 UPDATE tbl_screen SET scrn_nm = '냉장·냉동 보관'
  WHERE scrn_cd = 'ccp-cold-monitor';
 UPDATE tbl_template SET tmpl_nm = 'CCP 냉장·냉동 보관 모니터링 일지'
- WHERE tmpl_cd = 'CCP_COLD';
+ WHERE tmpl_cd = 'tmpl_ccp-cold-log';
 UPDATE tbl_menu SET menu_nm = '냉장·냉동 보관'
  WHERE scrn_cd = 'ccp-cold-monitor'
     OR menu_cd = 'ccp-cold-monitor';

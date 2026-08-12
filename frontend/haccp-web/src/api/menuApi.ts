@@ -28,7 +28,7 @@ export interface MenuRow {
   scrnCd: string | null;
   /** 모듈 구분 — 화면이 붙은 메뉴만 값이 있다 */
   moduleCd: string | null;
-  /** 형제 노드 간 정렬 순서 */
+  /** 정렬코드 — 대(1~9)*1000+중(0~9)*100+소(0~99), 예: 1001·2101 */
   sortNo: number | null;
   readYn: string;
   writeYn: string;

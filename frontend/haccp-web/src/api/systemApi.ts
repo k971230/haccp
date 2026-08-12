@@ -18,9 +18,8 @@ import type { CommonResponse } from "@/types/common";
 // 역할 — MyBatis Map snake_case → 그리드 camelCase 정규화
 import { camelizeRows } from "@/lib/camelKeys";
 
-/** 역할 기반 시스템 관리 화면코드 — DB tbl_screen 값과 1:1 */
+/** 역할 기반 시스템 관리 화면코드 — DB tbl_screen 값과 1:1 (company-management 제외) */
 export type SystemScreenCode =
-  | "company-management"
   | "user-management"
   | "department-management"
   | "role-management"
@@ -84,16 +83,52 @@ export async function uploadUserSign(
   // 대상 사용자 ID — 본인이면 me와 동일 효과
   userId: string,
   // 서명 이미지 파일
-  file: File
+  file: File,
+  // 팝업 닫기·취소 시 요청 중단용
+  signal?: AbortSignal,
 ): Promise<string> {
   const form = new FormData();
   // 서명 이미지 파일 — 서버 MultipartFile name=file
   form.append("file", file);
   const { data } = await httpFile.post<CommonResponse<{ signPath: string }>>(
     `/api/v1/sys/users/${encodeURIComponent(userId)}/sign`,
-    form
+    form,
+    { signal },
   );
   return data.data?.signPath ?? "";
+}
+
+/**
+ * 지정 사용자 서명 삭제 — sign_path 비움 + 파일 삭제.
+ * HTTP DELETE 금지 규약에 따라 POST .../sign/delete.
+ */
+export async function deleteUserSign(
+  // 대상 사용자 ID
+  userId: string,
+  // 팝업 닫기·취소 시 요청 중단용
+  signal?: AbortSignal,
+): Promise<void> {
+  await http.post(
+    `/api/v1/sys/users/${encodeURIComponent(userId)}/sign/delete`,
+    {},
+    { signal },
+  );
+}
+
+/**
+ * 지정 사용자 서명 이미지 Blob — 사용자 관리 미리보기.
+ * 미등록·오류는 Axios 예외로 전파한다.
+ */
+export async function fetchUserSignBlob(
+  userId: string,
+  // 팝업 닫기 시 미리보기 요청 중단용
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const { data } = await httpFile.get<Blob>(
+    `/api/v1/sys/users/${encodeURIComponent(userId)}/sign`,
+    { responseType: "blob", signal },
+  );
+  return data;
 }
 
 /**
@@ -105,6 +140,87 @@ export async function fetchMySignPath(): Promise<string> {
     "/api/v1/sys/users/me/sign-path"
   );
   return (data.data?.signPath ?? "").trim();
+}
+
+/** 권한그룹 화면 권한 1행 */
+export type RoleScreenRow = {
+  idx?: number | null;
+  scrnCd: string;
+  scrnNm?: string;
+  moduleCd?: string;
+  readYn: string;
+  writeYn?: string;
+  modifyYn?: string;
+  deleteYn?: string;
+  printYn?: string;
+  sortNo?: number;
+};
+
+/** 메뉴 평면 행 — 권한 트리 */
+export type AdminMenuRow = {
+  idx?: number;
+  menuCd: string;
+  menuNm: string;
+  hMenuCd?: string | null;
+  scrnCd?: string | null;
+  sortNo?: number;
+  useYn?: string;
+};
+
+/** 공통코드 행 */
+export type CodeManageRow = {
+  idx?: number | null;
+  coCd?: string;
+  mainCd: string;
+  subCd: string;
+  codeNm: string;
+  sortNo?: number;
+  ref1?: string | null;
+  ref2?: string | null;
+  sysYn?: string;
+  useYn?: string;
+};
+
+/** 권한그룹별 화면 권한 목록 */
+export async function listRoleScreens(usrgrpCd: string): Promise<RoleScreenRow[]> {
+  const { data } = await http.get<CommonResponse<RoleScreenRow[]>>(
+    "/api/v1/sys/role-management/screens",
+    { params: { usrgrpCd } },
+  );
+  return camelizeRows<RoleScreenRow>(data.data as unknown as Record<string, unknown>[]);
+}
+
+/** 화면 조회권한 저장 — rows: { scrnCd, readYn }[] */
+export async function saveRoleScreens(
+  usrgrpCd: string,
+  rows: Array<{ scrnCd: string; readYn: string }>,
+): Promise<void> {
+  await http.put("/api/v1/sys/role-management/screens", { usrgrpCd, rows });
+}
+
+/** 권한 트리용 메뉴 목록 */
+export async function listAdminMenus(): Promise<AdminMenuRow[]> {
+  const { data } = await http.get<CommonResponse<AdminMenuRow[]>>(
+    "/api/v1/sys/role-management/menus",
+  );
+  return camelizeRows<AdminMenuRow>(data.data as unknown as Record<string, unknown>[]);
+}
+
+/** 공통코드 대분류 */
+export async function listCodeGroups(): Promise<CodeManageRow[]> {
+  const { data } = await http.get<CommonResponse<CodeManageRow[]>>(
+    "/api/v1/sys/common-code-management/groups",
+  );
+  return camelizeRows<CodeManageRow>(data.data as unknown as Record<string, unknown>[]);
+}
+
+/** 공통코드 세부 — sysYn: Y|N|sys|usr|빈값 */
+export async function listCodeDetails(mainCd: string, sysYn: string): Promise<CodeManageRow[]> {
+  const { data } = await http.get<CommonResponse<CodeManageRow[]>>(
+    "/api/v1/sys/common-code-management/details",
+    { params: { mainCd, sysYn } },
+  );
+  return camelizeRows<CodeManageRow>(data.data as unknown as Record<string, unknown>[]);
 }
 
 /**

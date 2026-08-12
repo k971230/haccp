@@ -4,9 +4,9 @@
 -- 개발자: 박승우
 -- 일자: 2026-08-07
 -- 코멘트:
---   1) DEMO 등 업체에서 CCP_HEAT/SANITIZE/FILTER 사용양식이 N이라 템플릿 API가 비었다
+--   1) DEMO 등 업체에서 tmpl_ccp-heat-log/SANITIZE/FILTER 사용양식이 N이라 템플릿 API가 비었다
 --   2) 멸균(LMTITMST)을 소독/헹굼(LMTITMCP)과 분리한 공공 기준일지를 추가한다
---   3) CCP_SANITIZE 대표 매핑을 멸균 일지로 바꾼다 (화면명 멸균관리)
+--   3) tmpl_ccp-sanitize-log 대표 매핑을 멸균 일지로 바꾼다 (화면명 멸균관리)
 -- ============================================================
 
 SET search_path TO sasshaccp;
@@ -37,16 +37,16 @@ ON CONFLICT (diary_no) DO UPDATE SET
     upd_id = 'system',
     upd_dt = now();
 
--- 2) CCP_SANITIZE → 멸균 매핑 (기존 소독 C0060 preferred 해제)
+-- 2) tmpl_ccp-sanitize-log → 멸균 매핑 (기존 소독 C0060 preferred 해제)
 UPDATE tbl_smart_diary_map
    SET preferred_yn = 'N', upd_id = 'system', upd_dt = now()
- WHERE tmpl_cd = 'CCP_SANITIZE'
+ WHERE tmpl_cd = 'tmpl_ccp-sanitize-log'
    AND diary_no IN ('W0060', 'C0060');
 
 INSERT INTO tbl_smart_diary_map (diary_no, tmpl_cd, match_level, impl_status, preferred_yn, ins_id)
 VALUES
-    ('W0061', 'CCP_SANITIZE', 'FULL', 'GENERIC_CCP', 'N', 'system'),
-    ('C0061', 'CCP_SANITIZE', 'FULL', 'GENERIC_CCP', 'Y', 'system')
+    ('W0061', 'tmpl_ccp-sanitize-log', 'FULL', 'GENERIC_CCP', 'N', 'system'),
+    ('C0061', 'tmpl_ccp-sanitize-log', 'FULL', 'GENERIC_CCP', 'Y', 'system')
 ON CONFLICT (diary_no, tmpl_cd) DO UPDATE SET
     match_level = EXCLUDED.match_level,
     impl_status = EXCLUDED.impl_status,
@@ -59,7 +59,7 @@ UPDATE tbl_template
    SET tmpl_nm = '멸균 모니터링 일지',
        upd_id = 'system',
        upd_dt = now()
- WHERE tmpl_cd = 'CCP_SANITIZE';
+ WHERE tmpl_cd = 'tmpl_ccp-sanitize-log';
 
 UPDATE tbl_screen
    SET scrn_nm = '멸균 CCP 모니터링 일지',
@@ -74,7 +74,7 @@ SELECT c.co_cd, t.tmpl_cd, coalesce(t.default_cycle_cd, 'D'), coalesce(t.default
   FROM tbl_company c
   CROSS JOIN tbl_template t
  WHERE c.use_yn = 'Y'
-   AND t.tmpl_cd IN ('CCP_HEAT', 'CCP_SANITIZE', 'CCP_FILTER')
+   AND t.tmpl_cd IN ('tmpl_ccp-heat-log', 'tmpl_ccp-sanitize-log', 'tmpl_ccp-filter-log')
    AND t.use_yn = 'Y'
 ON CONFLICT (co_cd, tmpl_cd) DO UPDATE SET
     use_yn = 'Y',

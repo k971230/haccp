@@ -161,13 +161,13 @@ COMMENT ON PROCEDURE sp_tbl_ccp_generic_monitor_d_000(varchar, bigint, varchar) 
 INSERT INTO tbl_template (
     tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd, default_cycle_cd, default_retention_month, impl_yn, sort_no, ins_id
 ) VALUES
-    ('LAW_HEALTH',   '보건증관리',       NULL, 'HWP', 'LAW', 'law-health-cert',        'E', 36, 'Y', 61, 'system'),
-    ('LAW_MATERIAL', '원료수불대장관리', NULL, 'HWP', 'LAW', 'law-material-ledger',    'M', 36, 'Y', 62, 'system'),
-    ('LAW_BUILDING', '건축물대장관리',   NULL, 'HWP', 'LAW', 'law-building-ledger',    'E', 36, 'Y', 63, 'system'),
-    ('LAW_PRODUCTION','생산대장관리',    NULL, 'HWP', 'LAW', 'law-production-ledger',  'D', 36, 'Y', 64, 'system'),
-    ('LAW_LICENSE',  '영업등록증관리',   NULL, 'HWP', 'LAW', 'law-business-license',   'E', 36, 'Y', 65, 'system'),
-    ('LAW_SELF_TEST','자가품질검사관리', NULL, 'HWP', 'LAW', 'law-self-quality-test',  'M', 36, 'Y', 66, 'system'),
-    ('LAW_CERT',     '수료증관리',       NULL, 'HWP', 'LAW', 'law-completion-cert',    'E', 36, 'Y', 67, 'system')
+    ('tmpl_admin-law-health',   '보건증관리',       NULL, 'HWP', 'LAW', 'law-health-cert',        'E', 36, 'Y', 61, 'system'),
+    ('tmpl_logis-material-ledger', '원료수불대장관리', NULL, 'HWP', 'LAW', 'law-material-ledger',    'M', 36, 'Y', 62, 'system'),
+    ('tmpl_admin-building-ledger', '건축물대장관리',   NULL, 'HWP', 'LAW', 'law-building-ledger',    'E', 36, 'Y', 63, 'system'),
+    ('tmpl_admin-production-ledger','생산대장관리',    NULL, 'HWP', 'LAW', 'law-production-ledger',  'D', 36, 'Y', 64, 'system'),
+    ('tmpl_admin-license-manage',  '영업등록증관리',   NULL, 'HWP', 'LAW', 'law-business-license',   'E', 36, 'Y', 65, 'system'),
+    ('tmpl_admin-self-test','자가품질검사관리', NULL, 'HWP', 'LAW', 'law-self-quality-test',  'M', 36, 'Y', 66, 'system'),
+    ('tmpl_admin-cert-manage',     '수료증관리',       NULL, 'HWP', 'LAW', 'law-completion-cert',    'E', 36, 'Y', 67, 'system')
 ON CONFLICT (tmpl_cd) DO UPDATE SET
     tmpl_nm = EXCLUDED.tmpl_nm,
     doc_kind = EXCLUDED.doc_kind,

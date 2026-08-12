@@ -2,7 +2,7 @@
  * documentNav — 문서 목록 행 → 작성/편집 화면 경로.
  *
  * 개발자: 박승우
- * 일자: 2026-08-07
+ * 일자: 2026-08-12
  * 코멘트:
  *   1) 홈·문서함에서 최근 문서를 열 때 tmplCd·docKind로 대상 화면을 고른다
  *   2) DB형·HWP문서만 모두 표에 등록된 scrn_cd로 보낸다
@@ -13,48 +13,48 @@
 // 역할 — 화면코드 → URL
 import { routeOf } from "@/shell/tabRoute";
 
-/** tmpl_cd → 작성 화면코드 (IA·36 migrate 정합) */
+/** tmpl_cd → 작성 화면코드 — kebab 양식코드는 따옴표 키 */
 const TMPL_SCREEN: Record<string, string> = {
-  CCP_COLD: "ccp-cold-monitor",
-  CCP_METAL: "ccp-metal-monitor",
-  CCP_HEAT: "ccp-heat-monitor",
-  CCP_SANITIZE: "ccp-sanitize-monitor",
-  CCP_FILTER: "ccp-filter-monitor",
-  CCP_VERIFY: "ccp-verification-check",
-  DAILY_HYG: "daily-hygiene-check",
-  PEST: "pest-control-check",
-  FACILITY: "facility-equipment-check",
-  LAW_HEALTH: "health-cert-record",
-  PERSONAL_HYG: "personal-hyg-hwp",
-  AREA_HYG: "area-hyg-hwp",
-  WATER: "water-hwp",
-  WASTE: "waste-hwp",
-  INV_CHECK: "inventory-hwp",
-  RECV_INSP: "receiving-insp-hwp",
-  PROCESS: "process-hwp",
-  VERIFY_PLAN: "verify-plan-hwp",
-  VERIFY_CHECK: "verify-check-hwp",
-  VERIFY_REPORT: "verify-report-hwp",
-  VERIFY_CA: "verify-ca-hwp",
-  EDU_PLAN: "edu-plan-hwp",
-  EDU_LOG: "edu-log-hwp",
-  BAD_PRODUCT: "bad-product-hwp",
-  CLAIM: "claim-hwp",
-  HANDOVER: "handover-hwp",
-  EQUIP_CARD: "equipment-history",
-  VEHICLE_LOG: "vehicle-hwp",
-  PROD_TEST: "prod-test-hwp",
-  SURFACE_TEST: "surface-test-hwp",
-  CALIB_LOG_TEMP: "calib-self-hwp",
-  CALIB_LOG_WGT: "calib-self-hwp",
-  CALIB_LOG_SCL: "calib-self-hwp",
-  VISITOR_LOG: "visitor-log",
-  VISUAL_INSP: "visual-insp-standard",
-  SUBMAT_RECV: "submaterial-recv-hwp",
-  CALIB_EXT: "calib-ext-hwp",
-  SHIPMENT: "shipment-log-hwp",
-  RECALL: "recall-hwp",
-  EVAL: "eval-hwp",
+  "tmpl_ccp-cold-log": "ccp-cold-monitor",
+  "tmpl_ccp-metal-log": "ccp-metal-monitor",
+  "tmpl_ccp-heat-log": "ccp-heat-monitor",
+  "tmpl_ccp-sanitize-log": "ccp-sanitize-monitor",
+  "tmpl_ccp-filter-log": "ccp-filter-monitor",
+  "tmpl_ccp-verify-check": "ccp-verification-check",
+  "tmpl_prp-hygiene-daily": "daily-hygiene-check",
+  "tmpl_prp-pest-check": "pest-control-check",
+  "tmpl_prp-facility-check": "facility-equipment-check",
+  "tmpl_admin-law-health": "health-cert-record",
+  "tmpl_prp-hygiene-personal": "personal-hyg-hwp",
+  "tmpl_prp-hygiene-area": "area-hyg-hwp",
+  "tmpl_prp-water-check": "water-hwp",
+  "tmpl_prp-waste-check": "waste-hwp",
+  "tmpl_logis-inventory-check": "inventory-hwp",
+  "tmpl_logis-receive-inspect": "receiving-insp-hwp",
+  "tmpl_ccp-process-check": "process-hwp",
+  "tmpl_prp-verify-plan": "verify-plan-hwp",
+  "tmpl_prp-verify-check": "verify-check-hwp",
+  "tmpl_prp-verify-report": "verify-report-hwp",
+  "tmpl_prp-verify-action": "verify-ca-hwp",
+  "tmpl_admin-edu-plan": "edu-plan-hwp",
+  "tmpl_admin-edu-log": "edu-log-hwp",
+  "tmpl_admin-bad-product": "bad-product-hwp",
+  "tmpl_admin-claim-log": "claim-hwp",
+  "tmpl_admin-handover-doc": "handover-hwp",
+  "tmpl_prp-equip-card": "equipment-history",
+  "tmpl_logis-vehicle-log": "vehicle-hwp",
+  "tmpl_prp-test-product": "prod-test-hwp",
+  "tmpl_prp-test-surface": "surface-test-hwp",
+  "tmpl_prp-calib-temp": "calib-self-hwp",
+  "tmpl_prp-calib-weight": "calib-self-hwp",
+  "tmpl_prp-calib-scale": "calib-self-hwp",
+  "tmpl_admin-visitor-log": "visitor-log",
+  "tmpl_prp-visual-inspect": "visual-insp-standard",
+  "tmpl_logis-submat-receive": "submaterial-recv-hwp",
+  "tmpl_prp-calib-ext": "calib-ext-hwp",
+  "tmpl_logis-shipment-log": "shipment-log-hwp",
+  "tmpl_admin-recall-report": "recall-hwp",
+  "tmpl_admin-eval-check": "eval-hwp",
 };
 
 export interface DocumentNavInput {
@@ -68,7 +68,7 @@ export interface DocumentNavInput {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-07
+ * 일자: 2026-08-12
  * 코멘트:
  *   1) 문서 행을 작성 화면 URL로 바꾼다 (?docIdx=)
  *   2) 홈 최근 문서·문서함 「작성화면」에서 호출한다

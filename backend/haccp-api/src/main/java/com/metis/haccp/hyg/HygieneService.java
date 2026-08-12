@@ -125,11 +125,11 @@ public class HygieneService {
     /** 의미 화면 ID만 허용하고 임의 템플릿 접근을 차단한다. */
     private static String templateOf(String screenCode) {
         return switch (screenCode) {
-            case "daily-hygiene-check" -> "DAILY_HYG";
-            case "personal-hygiene-check" -> "PERSONAL_HYG";
-            case "area-hygiene-check" -> "AREA_HYG";
-            case "pest-control-check" -> "PEST";
-            case "water-management-check" -> "WATER";
+            case "daily-hygiene-check" -> "tmpl_prp-hygiene-daily";
+            case "personal-hygiene-check" -> "tmpl_prp-hygiene-personal";
+            case "area-hygiene-check" -> "tmpl_prp-hygiene-area";
+            case "pest-control-check" -> "tmpl_prp-pest-check";
+            case "water-management-check" -> "tmpl_prp-water-check";
             default -> throw new BizException("지원하지 않는 위생 점검표입니다.");
         };
     }

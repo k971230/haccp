@@ -5,8 +5,8 @@
  * 일자: 2026-08-05
  * 코멘트:
  *   1) 로그인 후 모든 화면은 이 셸 안에서 열린다. 주소가 바뀌면 해당 화면 탭을 열고 활성화한다
- *   2) 탭을 여러 개 열어 둔 채 전환할 수 있다 — 기록을 작성하다 기준정보를 확인하는 흐름이 잦아서
- *      비활성 탭도 마운트를 유지(hidden)해 돌아왔을 때 입력값이 남아 있게 한다
+ *   2) 탭을 여러 개 열어 둔 채 전환할 수 있다 — 비활성·홈 전환 시에도 마운트 유지(hidden)로
+ *      입력값·그리드 상태가 남고 재진입 깜박임을 막는다
  *   3) 화면 조회 로그(UV/PV)는 활성 탭 화면코드를 useViewLog에 넘겨 자동 수집한다
  *
  * PIPELINE[HF49] 앱 셸
@@ -265,30 +265,33 @@ export function HaccpShell() {
         {/* 화면 영역 — 라우터 Outlet이 아니라 레지스트리로 탭마다 직접 마운트한다(입력값 유지) */}
         <section className={cn("relative min-h-0 flex-1 overflow-hidden", isHome ? "bg-slate-50" : "bg-canvas")}>
           {isHome && (
-            <div className="absolute inset-0">
+            <div className="absolute inset-0 z-[1]">
               <HomeView />
             </div>
           )}
-          {!isHome &&
-            tabs.map((t) => {
-              const Comp = SCREEN_REGISTRY[t.scrnCd];
-              // 레지스트리에 없는 화면은 그리지 않는다(준비 중 화면)
-              if (!Comp) return null;
-              const active = t.scrnCd === activeCd;
-              return (
-                <div
-                  key={t.scrnCd}
-                  // 비활성 탭은 hidden으로 감춘다 — 언마운트하면 입력 중이던 값이 사라진다
-                  className={cn("flex h-full min-h-0 flex-col p-5", active ? "mes-tab-active" : "hidden")}
-                  data-title={t.title}
-                >
-                  {/* 그리드 pref 저장 키 — MesEditableGrid가 PageScrnContext로 scrnCd를 읽는다 */}
-                  <PageScrnContext.Provider value={t.scrnCd}>
-                    <Comp />
-                  </PageScrnContext.Provider>
-                </div>
-              );
-            })}
+          {/* 홈에서도 탭 Comp를 유지한다 — !isHome일 때만 그리면 홈 왕복 시 언마운트·그리드 재조회 깜박임 */}
+          {tabs.map((t) => {
+            const Comp = SCREEN_REGISTRY[t.scrnCd];
+            // 레지스트리에 없는 화면은 그리지 않는다(준비 중 화면)
+            if (!Comp) return null;
+            const active = !isHome && t.scrnCd === activeCd;
+            return (
+              <div
+                key={t.scrnCd}
+                // 비활성·홈일 때는 hidden — 언마운트하면 입력·그리드 상태가 사라진다
+                className={cn(
+                  "flex h-full min-h-0 flex-col p-5",
+                  active ? "mes-tab-active" : "hidden",
+                )}
+                data-title={t.title}
+              >
+                {/* 그리드 pref 저장 키 — MesEditableGrid가 PageScrnContext로 scrnCd를 읽는다 */}
+                <PageScrnContext.Provider value={t.scrnCd}>
+                  <Comp />
+                </PageScrnContext.Provider>
+              </div>
+            );
+          })}
         </section>
 
         <ShellFooter user={user} />

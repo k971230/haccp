@@ -11,7 +11,7 @@ import type { GridColumn } from "@/types/grid";
 import { cn } from "@/lib/cn";
 
 // 설명 — 상태 배지 색상 톤
-export type GridBadgeTone = "blue" | "amber" | "green" | "gray" | "red";
+export type GridBadgeTone = "blue" | "amber" | "green" | "gray" | "red" | "purple";
 
 // 설명 — 한글 상태 라벨 → 기본 배지 톤 매핑
 const LABEL_TONES: Record<string, GridBadgeTone> = {
@@ -31,6 +31,8 @@ function resolveBadgeTone(
   value: unknown,
   label: string,
   badge?: boolean | Partial<Record<string, GridBadgeTone>>,
+  // code+badge:true 일 때(= 권한·부서·서명 팝업 코드) 기본 보라
+  preferPurple?: boolean,
 ): GridBadgeTone | null {
   if (!badge) return null;
   if (typeof badge === "object") {
@@ -39,7 +41,11 @@ function resolveBadgeTone(
     const byLabel = badge[label];
     if (byLabel) return byLabel;
   }
-  return LABEL_TONES[label] ?? "gray";
+  const byStatus = LABEL_TONES[label];
+  if (byStatus) return byStatus;
+  // 명시 badge:true 코드 컬럼 — 보라 / 그 외 회색
+  if (preferPurple || badge === true) return "purple";
+  return "gray";
 }
 
 /**
@@ -85,7 +91,11 @@ export function GridCellDisplay<T extends Record<string, unknown>>({
 }) {
   const autoBadge = col.type === "code" && (col.header.includes("상태") || /_(STAT|STATE)$/i.test(col.field));
   const useBadge = col.badge ?? autoBadge;
-  const tone = useBadge ? resolveBadgeTone(row[col.field], text, col.badge ?? true) : null;
+  // 명시 badge:true + code — 권한그룹·부서·서명 등 보라 뱃지
+  const preferPurple = col.badge === true && col.type === "code" && !autoBadge;
+  const tone = useBadge
+    ? resolveBadgeTone(row[col.field], text, col.badge ?? true, preferPurple)
+    : null;
   if (tone && text) return <GridBadge label={text} tone={tone} />;
   return <span className="mes-cell-text">{text}</span>;
 }

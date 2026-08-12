@@ -128,7 +128,7 @@ COMMENT ON COLUMN tbl_partner.idx         IS 'PK 자동 채번 대리키';
 COMMENT ON COLUMN tbl_partner.co_cd       IS '회사코드 — 테넌트 키';
 COMMENT ON COLUMN tbl_partner.partner_cd  IS '거래처 코드 — 업체 내 유일';
 COMMENT ON COLUMN tbl_partner.partner_nm  IS '거래처명';
-COMMENT ON COLUMN tbl_partner.partner_gbn IS '구분 — SUPPLY:공급처, SALES:판매처, WASTE:폐기물 수거업체, LAB:검사기관';
+COMMENT ON COLUMN tbl_partner.partner_gbn IS '구분 — SUPPLY:공급처, SALES:판매처, tmpl_prp-waste-check:폐기물 수거업체, LAB:검사기관';
 COMMENT ON COLUMN tbl_partner.biz_no      IS '사업자등록번호';
 COMMENT ON COLUMN tbl_partner.ceo_nm      IS '대표자명';
 COMMENT ON COLUMN tbl_partner.tel_no      IS '전화번호';

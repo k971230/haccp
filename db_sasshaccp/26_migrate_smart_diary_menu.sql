@@ -64,9 +64,9 @@ SELECT c.co_cd, t.tmpl_cd, t.default_cycle_cd, t.default_retention_month, 'N', '
   FROM tbl_company c
  CROSS JOIN tbl_template t
  WHERE t.tmpl_cd IN (
-    'CCP_HEAT', 'CCP_WASH', 'CCP_SANITIZE', 'CCP_FILTER', 'CCP_BOTTLE', 'CCP_IRON', 'CCP_AW', 'CCP_IQF', 'CCP_CO2',
-    'ILLUMINATION', 'TEMP_HUMIDITY', 'WASH_EFFICACY', 'CROSS_CONTAM', 'RECALL', 'EMERGENCY',
-    'LAW_HEALTH', 'LAW_MATERIAL', 'LAW_BUILDING', 'LAW_PRODUCTION', 'LAW_LICENSE', 'LAW_SELF_TEST', 'LAW_CERT',
+    'tmpl_ccp-heat-log', 'CCP_WASH', 'tmpl_ccp-sanitize-log', 'tmpl_ccp-filter-log', 'CCP_BOTTLE', 'CCP_IRON', 'CCP_AW', 'CCP_IQF', 'CCP_CO2',
+    'ILLUMINATION', 'TEMP_HUMIDITY', 'WASH_EFFICACY', 'CROSS_CONTAM', 'tmpl_admin-recall-report', 'EMERGENCY',
+    'tmpl_admin-law-health', 'tmpl_logis-material-ledger', 'tmpl_admin-building-ledger', 'tmpl_admin-production-ledger', 'tmpl_admin-license-manage', 'tmpl_admin-self-test', 'tmpl_admin-cert-manage',
     'AUTO_COLD', 'AUTO_ILLUM', 'AUTO_TEMP', 'AUTO_PEST'
  )
 ON CONFLICT (co_cd, tmpl_cd) DO NOTHING;
@@ -75,7 +75,7 @@ INSERT INTO tbl_doc_no_rule (co_cd, tmpl_cd, prefix, date_fmt, seq_len, reset_cy
 SELECT c.co_cd, t.tmpl_cd, t.tmpl_cd, 'YYYYMMDD', 3, 'D', 'system', now()
   FROM tbl_company c
  CROSS JOIN tbl_template t
- WHERE t.tmpl_cd IN ('CCP_HEAT', 'CCP_WASH', 'CCP_SANITIZE', 'CCP_FILTER', 'CCP_BOTTLE', 'CCP_IRON', 'CCP_AW', 'CCP_IQF', 'CCP_CO2',
+ WHERE t.tmpl_cd IN ('tmpl_ccp-heat-log', 'CCP_WASH', 'tmpl_ccp-sanitize-log', 'tmpl_ccp-filter-log', 'CCP_BOTTLE', 'CCP_IRON', 'CCP_AW', 'CCP_IQF', 'CCP_CO2',
                       'AUTO_COLD', 'AUTO_ILLUM', 'AUTO_TEMP', 'AUTO_PEST')
 ON CONFLICT (co_cd, tmpl_cd) DO NOTHING;
 

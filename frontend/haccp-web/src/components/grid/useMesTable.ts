@@ -119,9 +119,10 @@ function toColumnDefs<T extends GridRowBase>(
   if (opts?.enableRowSelection) {
     defs.push({
       id: "__select",
-      size: 36,
-      minSize: 36,
-      maxSize: 36,
+      // 행선택 체크 — 과대 폭 방지 (작성문서관리 등)
+      size: 28,
+      minSize: 28,
+      maxSize: 32,
       enableSorting: false,
       enableResizing: false,
       enableHiding: false,
@@ -339,22 +340,27 @@ export function useMesTable<T extends GridRowBase>(opts: UseMesTableOptions<T>):
     );
     const fromPref = parsed.order.filter((id) => known.has(id));
     const missing = [...known].filter((id) => !fromPref.includes(id));
+    // defaultHidden 열은 신규·미저장이어도 숨김 유지 — 「열」로 켠 뒤 pref에 남긴다
+    const defaultHiddenFields = new Set(
+      columns.filter((c) => c.defaultHidden).map((c) => c.field),
+    );
+    const showMissing = (id: string) => !defaultHiddenFields.has(id as typeof columns[number]["field"]);
     setColumnVisibility((prev) => {
       if (!hasSavedPref) {
-        // 저장 pref 없을 때(= 신규 persistId) — 정의에만 있는 필드도 표시 강제
+        // 저장 pref 없을 때 — defaultHidden은 숨김, 그 외 신규 필드는 표시
         if (!missing.length) return prev;
         const next: VisibilityState = { ...prev };
-        for (const id of missing) next[id] = true;
+        for (const id of missing) next[id] = showMissing(id);
         return next;
       }
       const next: VisibilityState = { ...prev };
       for (const c of columns) {
         if (c.hidden || c.field === "coCd") continue;
-        // pref.hidden에 있으면 숨김, 없으면 표시 — 정의에만 있는 신규 열도 메뉴·그리드에 포함
+        // pref.hidden에 있으면 숨김, 없으면 표시
         next[c.field] = parsed.hidden[c.field] !== true;
       }
-      // pref.order에 없던 신규 열(사용 등)은 숨김 저장이 있어도 최초 1회 표시 강제
-      for (const id of missing) next[id] = true;
+      // pref.order에 없던 신규 열 — defaultHidden이면 숨김, 아니면 표시
+      for (const id of missing) next[id] = showMissing(id);
       return next;
     });
     {

@@ -1,6 +1,13 @@
 /**
  * MesDataGrid — 읽기전용 그리드 (useMesTable + 가상스크롤 + pref).
- 
+ *
+ * 개발자: 박승우
+ * 일자: 2026-08-12
+ * 코멘트:
+ *   1) loading 중에도 table을 유지하고 GridLoadingOverlay만 띄운다
+ *   2) pref는 persistId + scrnCd(prop 또는 PageScrnContext)로 저장한다
+ *   3) 코드 룩업·로그 그리드도 scrnCd prop으로 열 너비·숨김을 DB에 남긴다
+ *
  * PIPELINE[F89] 읽기전용 데이터 그리드
  * PIPELINE[F90, F75, F173] 연관 모듈
  */
@@ -20,10 +27,8 @@ import { exportCsv } from "./gridCsv";
 import { colAlign, colWidthStyle } from "./gridUtils";
 // 역할 — 툴바·헤더·필터·푸터 UI
 import { GridToolbar, GridHeadCell, GridFilterRow, GridFooter, GridSelectHeadCell, gridLeadLeftPx } from "./GridChrome";
-// 역할 — 데이터 갱신 중 오버레이
+// 역할 — 데이터 갱신 중 오버레이 — loading 중 테이블 유지(skeleton 교체 금지)
 import { GridLoadingOverlay } from "./GridLoadingOverlay";
-// 역할 — 초기 로딩 스켈레톤
-import { GridSkeleton } from "./GridSkeleton";
 // 역할 — 조회 결과 없음 표시
 import { GridEmptyState } from "./GridEmptyState";
 // 역할 — 행번호·셀 텍스트/배지 표시
@@ -69,8 +74,9 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
     selectable = false,
     onSelectionChange,
   } = props;
-// 설명 — pref 저장용 화면코드
-  const scrnCd = useContext(PageScrnContext);
+  // pref 저장용 화면코드 — prop 우선, 없으면 셸 PageScrnContext
+  const ctxScrnCd = useContext(PageScrnContext);
+  const scrnCd = props.scrnCd || ctxScrnCd;
 
 // 설명 — rowKey 필드 또는 함수로 행 id 추출
   const getRowId = useCallback(
@@ -249,11 +255,14 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
 
   return (
     <div
-      // 추가 Tailwind/CSS 클래스
-      // 기본 스타일 위에 병합(cn)
+      // grid 행: 툴바 / 본문(1fr) / 푸터 — 총 n건이 마지막 행을 가리지 않음
       className={cn(
         "mes-grid-wrap",
-        fill ? "mes-grid-embedded mes-grid-fill flex min-h-0 flex-1 flex-col" : "flex flex-col overflow-hidden rounded-xl border border-slate-200 shadow-sm",
+        !showToolbar && "mes-grid-no-toolbar",
+        !showFooter && "mes-grid-no-footer",
+        fill
+          ? "mes-grid-embedded mes-grid-fill min-h-0"
+          : "overflow-hidden rounded-xl border border-slate-200 shadow-sm",
       )}
       style={fill ? undefined : { height }}
     >
@@ -261,11 +270,9 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
         <GridToolbar view={view} columns={columns}
           onExport={() => exportCsv(props.title ?? "grid", cols, view.displayRows, cellText)} />
       )}
-      <div className="relative min-h-0 flex-1">
-        <div ref={scrollRef} className="mes-grid-scroll absolute inset-0 overflow-auto">
-          {loading && rows.length === 0 ? (
-            <GridSkeleton />
-          ) : (
+      <div className="mes-grid-body">
+        <div ref={scrollRef} className="mes-grid-scroll">
+          {/* loading 중에도 table 유지 — skeleton 교체 시 깜박임 방지 */}
           <table className="mes-grid">
             <thead>
               <tr>
@@ -281,12 +288,11 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
               {renderBodyRows()}
             </tbody>
           </table>
-          )}
         </div>
         {!loading && view.displayRows.length === 0 && (
           <GridEmptyState variant="overlay" withFilter={view.showFilter} hint="조회 조건을 변경해 다시 조회하세요." />
         )}
-        <GridLoadingOverlay show={!!loading && rows.length > 0} />
+        <GridLoadingOverlay show={!!loading} />
       </div>
       {showFooter && (
         <GridFooter cols={cols} total={view.totalCount} shown={view.shownCount} aggregates={view.aggregates} />

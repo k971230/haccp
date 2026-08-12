@@ -33,6 +33,14 @@ import HealthCertPage from "@/pages/hyg/HealthCertPage";
 import HwpDocumentEditorPage from "@/pages/doc/HwpDocumentEditorPage";
 // 역할 — HWP 양식 파일 관리
 import HwpTemplateManagementPage from "@/pages/bas/HwpTemplateManagementPage";
+// 역할 — 권한그룹 좌 메뉴권한 트리 + 우 마스터 그리드
+import RoleManagementPage from "@/pages/sys/RoleManagementPage";
+// 역할 — 부서 좌 트리 + 우 그리드
+import DepartmentManagementPage from "@/pages/sys/DepartmentManagementPage";
+// 역할 — 메뉴 좌 트리 + 우 그리드
+import MenuManagementPage from "@/pages/sys/MenuManagementPage";
+// 역할 — 공통코드 대분류·시스템·사용자 3그리드
+import CommonCodeManagementPage from "@/pages/sys/CommonCodeManagementPage";
 // 역할 — 기초정보·한계기준 마스터
 import MasterDataPage from "@/pages/bas/MasterDataPage";
 // 역할 — 설비카드 이력 M-D
@@ -48,8 +56,10 @@ import BizOpsFormPage from "@/pages/ops/BizOpsFormPage";
 // 역할 — 오늘 할 일·개선조치
 import TodayTasksPage from "@/pages/tsk/TodayTasksPage";
 import CorrectiveActionManagementPage from "@/pages/doc/CorrectiveActionManagementPage";
-// 역할 — 시스템 관리
+// 역할 — 시스템 관리(사용자)
 import SystemManagementPage from "@/pages/sys/SystemManagementPage";
+// 역할 — 로그인·통계·감사 로그
+import LogManagementPage from "@/pages/sys/LogManagementPage";
 
 /**
  * 개발자: 박승우
@@ -76,18 +86,17 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   // 오늘 할 일 — 랜딩
   "today-tasks": TodayTasksPage,
 
-  // 시스템 관리
-  "company-management": () => <SystemManagementPage screenCode="company-management" />,
+  // 시스템 관리 — company-management 제거(온보딩 외 미노출)
   "user-management": () => <SystemManagementPage screenCode="user-management" />,
-  "department-management": () => <SystemManagementPage screenCode="department-management" />,
-  "role-management": () => <SystemManagementPage screenCode="role-management" />,
-  "menu-management": () => <SystemManagementPage screenCode="menu-management" />,
-  "login-history": () => <SystemManagementPage screenCode="login-history" />,
-  "screen-usage-statistics": () => <SystemManagementPage screenCode="screen-usage-statistics" />,
-  "audit-log": () => <SystemManagementPage screenCode="audit-log" />,
+  "department-management": DepartmentManagementPage,
+  "role-management": RoleManagementPage,
+  "menu-management": MenuManagementPage,
+  "common-code-management": CommonCodeManagementPage,
+  "login-history": () => <LogManagementPage screenCode="login-history" />,
+  "screen-usage-statistics": () => <LogManagementPage screenCode="screen-usage-statistics" />,
+  "audit-log": () => <LogManagementPage screenCode="audit-log" />,
 
   // 기초정보 관리
-  "common-code-management": () => <SystemManagementPage screenCode="common-code-management" />,
   "product-management": () => <MasterDataPage screenCode="product-management" />,
   "material-management": () => <MasterDataPage screenCode="material-management" />,
   "partner-management": () => <MasterDataPage screenCode="partner-management" />,
@@ -108,7 +117,7 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   "schedule-cycle-management": ScheduleCycleManagementPage,
   // 문서별 기준관리 (C3)
   "daily-hyg-item-admin": () => (
-    <TemplateCheckItemManagementPage screenCode="daily-hyg-item-admin" fixedTmplCd="DAILY_HYG" />
+    <TemplateCheckItemManagementPage screenCode="daily-hyg-item-admin" fixedTmplCd="tmpl_prp-hygiene-daily" />
   ),
   "ccp-cold-limit-admin": () => <MasterDataPage screenCode="ccp-cold-limit-admin" />,
   "ccp-heat-limit-admin": () => <MasterDataPage screenCode="ccp-heat-limit-admin" />,
@@ -116,10 +125,10 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   "ccp-filter-limit-admin": () => <MasterDataPage screenCode="ccp-filter-limit-admin" />,
   "ccp-metal-limit-admin": () => <MasterDataPage screenCode="ccp-metal-limit-admin" />,
   "ccp-verify-standard-admin": () => (
-    <TemplateCheckItemManagementPage screenCode="ccp-verify-standard-admin" fixedTmplCd="CCP_VERIFY" />
+    <TemplateCheckItemManagementPage screenCode="ccp-verify-standard-admin" fixedTmplCd="tmpl_ccp-verify-check" />
   ),
   "facility-check-item-admin": () => (
-    <TemplateCheckItemManagementPage screenCode="facility-check-item-admin" fixedTmplCd="FACILITY" />
+    <TemplateCheckItemManagementPage screenCode="facility-check-item-admin" fixedTmplCd="tmpl_prp-facility-check" />
   ),
 
   // 문서 작성 — DB
@@ -127,46 +136,46 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   "pest-control-check": () => <HygieneCheckPage screenCode="pest-control-check" title="방충방서관리점검표" kind="pest" />,
   "ccp-cold-monitor": ColdMonitorPage,
   "ccp-metal-monitor": MetalMonitorPage,
-  "ccp-heat-monitor": () => <CcpGenericMonitorPage screenCode="ccp-heat-monitor" defaultTmplCd="CCP_HEAT" />,
-  "ccp-sanitize-monitor": () => <CcpGenericMonitorPage screenCode="ccp-sanitize-monitor" defaultTmplCd="CCP_SANITIZE" />,
-  "ccp-filter-monitor": () => <CcpGenericMonitorPage screenCode="ccp-filter-monitor" defaultTmplCd="CCP_FILTER" />,
+  "ccp-heat-monitor": () => <CcpGenericMonitorPage screenCode="ccp-heat-monitor" defaultTmplCd="tmpl_ccp-heat-log" />,
+  "ccp-sanitize-monitor": () => <CcpGenericMonitorPage screenCode="ccp-sanitize-monitor" defaultTmplCd="tmpl_ccp-sanitize-log" />,
+  "ccp-filter-monitor": () => <CcpGenericMonitorPage screenCode="ccp-filter-monitor" defaultTmplCd="tmpl_ccp-filter-log" />,
   "ccp-verification-check": VerificationCheckPage,
   "facility-equipment-check": () => <BizOpsFormPage screenCode="facility-equipment-check" />,
   // 건강진단관리기록부 — 인원 그리드·첨부 (HA-HYG-02)
   "health-cert-record": HealthCertPage,
 
   // 문서 작성 — HWP 문서만 (양식 1:1 고정)
-  "visitor-log": hwpLeaf("VISITOR_LOG"),
-  // 설비 이력 — DB형 M-D (상단 설비·하단 이력). HWP EQUIP_CARD leaf 대체
+  "visitor-log": hwpLeaf("tmpl_admin-visitor-log"),
+  // 설비 이력 — DB형 M-D (상단 설비·하단 이력). HWP tmpl_prp-equip-card leaf 대체
   "equipment-history": EquipmentHistoryPage,
   // 방충설비 이력 — DB형 M-D (상단 포충등·트랩·하단 이력)
   "pest-device-history": PestDeviceHistoryPage,
-  "visual-insp-standard": hwpLeaf("VISUAL_INSP"),
-  "receiving-insp-hwp": hwpLeaf("RECV_INSP"),
-  "submaterial-recv-hwp": hwpLeaf("SUBMAT_RECV"),
-  "calib-self-hwp": hwpLeaf("CALIB_LOG_TEMP"),
-  "calib-ext-hwp": hwpLeaf("CALIB_EXT"),
-  "shipment-log-hwp": hwpLeaf("SHIPMENT"),
-  "waste-hwp": hwpLeaf("WASTE"),
-  "inventory-hwp": hwpLeaf("INV_CHECK"),
-  "edu-plan-hwp": hwpLeaf("EDU_PLAN"),
-  "edu-log-hwp": hwpLeaf("EDU_LOG"),
-  "bad-product-hwp": hwpLeaf("BAD_PRODUCT"),
-  "claim-hwp": hwpLeaf("CLAIM"),
-  "recall-hwp": hwpLeaf("RECALL"),
-  "eval-hwp": hwpLeaf("EVAL"),
-  "verify-ca-hwp": hwpLeaf("VERIFY_CA"),
-  "handover-hwp": hwpLeaf("HANDOVER"),
-  "process-hwp": hwpLeaf("PROCESS"),
-  "vehicle-hwp": hwpLeaf("VEHICLE_LOG"),
-  "personal-hyg-hwp": hwpLeaf("PERSONAL_HYG"),
-  "area-hyg-hwp": hwpLeaf("AREA_HYG"),
-  "water-hwp": hwpLeaf("WATER"),
-  "verify-plan-hwp": hwpLeaf("VERIFY_PLAN"),
-  "verify-check-hwp": hwpLeaf("VERIFY_CHECK"),
-  "verify-report-hwp": hwpLeaf("VERIFY_REPORT"),
-  "prod-test-hwp": hwpLeaf("PROD_TEST"),
-  "surface-test-hwp": hwpLeaf("SURFACE_TEST"),
+  "visual-insp-standard": hwpLeaf("tmpl_prp-visual-inspect"),
+  "receiving-insp-hwp": hwpLeaf("tmpl_logis-receive-inspect"),
+  "submaterial-recv-hwp": hwpLeaf("tmpl_logis-submat-receive"),
+  "calib-self-hwp": hwpLeaf("tmpl_prp-calib-temp"),
+  "calib-ext-hwp": hwpLeaf("tmpl_prp-calib-ext"),
+  "shipment-log-hwp": hwpLeaf("tmpl_logis-shipment-log"),
+  "waste-hwp": hwpLeaf("tmpl_prp-waste-check"),
+  "inventory-hwp": hwpLeaf("tmpl_logis-inventory-check"),
+  "edu-plan-hwp": hwpLeaf("tmpl_admin-edu-plan"),
+  "edu-log-hwp": hwpLeaf("tmpl_admin-edu-log"),
+  "bad-product-hwp": hwpLeaf("tmpl_admin-bad-product"),
+  "claim-hwp": hwpLeaf("tmpl_admin-claim-log"),
+  "recall-hwp": hwpLeaf("tmpl_admin-recall-report"),
+  "eval-hwp": hwpLeaf("tmpl_admin-eval-check"),
+  "verify-ca-hwp": hwpLeaf("tmpl_prp-verify-action"),
+  "handover-hwp": hwpLeaf("tmpl_admin-handover-doc"),
+  "process-hwp": hwpLeaf("tmpl_ccp-process-check"),
+  "vehicle-hwp": hwpLeaf("tmpl_logis-vehicle-log"),
+  "personal-hyg-hwp": hwpLeaf("tmpl_prp-hygiene-personal"),
+  "area-hyg-hwp": hwpLeaf("tmpl_prp-hygiene-area"),
+  "water-hwp": hwpLeaf("tmpl_prp-water-check"),
+  "verify-plan-hwp": hwpLeaf("tmpl_prp-verify-plan"),
+  "verify-check-hwp": hwpLeaf("tmpl_prp-verify-check"),
+  "verify-report-hwp": hwpLeaf("tmpl_prp-verify-report"),
+  "prod-test-hwp": hwpLeaf("tmpl_prp-test-product"),
+  "surface-test-hwp": hwpLeaf("tmpl_prp-test-surface"),
 
   // 문서 현황·결재
   "document-inbox": () => <DocumentBoxPage mode="inbox" />,
