@@ -11,10 +11,12 @@
  *
  * PIPELINE[HF92] UI 컴포넌트 — mes-web PageCard와 동일 계약
  */
-// 역할 — HTML div 속성·ReactNode
-import type { HTMLAttributes, ReactNode } from "react";
+// 역할 — HTML div 속성·ReactNode·Children
+import { Children, type HTMLAttributes, type ReactNode } from "react";
 // 역할 — className 병합
 import { cn } from "@/lib/cn";
+// 역할 — 2패널 드래그 분할
+import { ResizableSplit } from "@/components/layout/ResizableSplit";
 
 /**
  * 개발자: 박승우
@@ -47,42 +49,73 @@ export function PageCard({
 
 /**
  * 개발자: 박승우
- * 일자: 2026-07-11
+ * 일자: 2026-08-12
  * 코멘트:
- *   1) 좌 트리 10% · 우 본문 1fr (ADR-036)
- *   2) Tree+Grid 화면(Bom·단가·품목군·부서 등)
- *   3) grid 자식 사이 // 주석 금지 — 텍스트 노드로 열 깨짐
+ *   1) 좌 트리 · 우 본문 — 드래그로 좌폭 조절
+ *   2) Tree+Grid 화면에서 사용한다
+ *   3) storageKey로 비율을 저장한다
  */
 export function PageCardTree({
   // 좌측 트리 슬롯 — TreePanel
   tree,
   // 우측 본문 — 그리드·PageCardSplit
   children,
+  // localStorage 키 — 화면별 고유
+  storageKey = "haccp-split-page-tree",
 }: {
   tree: ReactNode;
   children: ReactNode;
+  storageKey?: string;
 }) {
+  const card =
+    "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm [&>*]:min-h-0 [&>*]:flex-1";
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-[minmax(180px,10%)_1fr] gap-4 overflow-hidden [&>*]:min-h-0">
-      <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">{tree}</div>
-      <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm [&>*]:min-h-0 [&>*]:flex-1">{children}</div>
-    </div>
+    <ResizableSplit
+      // 좌우 분할
+      orientation="horizontal"
+      storageKey={storageKey}
+      // 트리:본문 = 2:8 고정
+      defaultPrimaryPct={20}
+      minPct={20}
+      maxPct={20}
+      panelClassName={card}
+      primary={tree}
+      secondary={children}
+    />
   );
 }
 
 /**
  * 개발자: 박승우
- * 일자: 2026-07-11
+ * 일자: 2026-08-12
  * 코멘트:
- *   1) 세로 50/50 분할 — 마스터·디테일
- *   2) 단가 현행+이력, BOM 모품+자품 등
- *   3) mes-page-split 클래스로 균등 높이
+ *   1) 세로 마스터·디테일 — 드래그로 상단 높이 조절
+ *   2) 결재선·주기·이력 M-D 등에서 사용한다
+ *   3) storageKey 필수 — 화면별 비율 분리
  */
-export function PageCardSplit({ children }: { children: ReactNode }) {
+export function PageCardSplit({
+  // 상·하 두 패널(자식 정확히 2)
+  children,
+  // localStorage 키 — 화면별 고유
+  storageKey,
+}: {
+  children: ReactNode;
+  storageKey: string;
+}) {
+  const kids = Children.toArray(children);
+  const top = kids[0] ?? null;
+  const bottom = kids[1] ?? null;
   return (
-    <div className="mes-page-split flex min-h-0 flex-1 flex-col gap-4 overflow-hidden [&>*]:min-h-0 [&>*]:flex-1">
-      {children}
-    </div>
+    <ResizableSplit
+      orientation="vertical"
+      storageKey={storageKey}
+      defaultPrimaryPct={50}
+      minPct={25}
+      maxPct={75}
+      className="mes-page-split min-h-0 h-full flex-1 gap-0"
+      primary={top}
+      secondary={bottom}
+    />
   );
 }
 

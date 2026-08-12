@@ -332,7 +332,7 @@ export default function ScheduleCycleManagementPage() {
       clearDocSel();
       clearRuleSel();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qTmplCd, qTmplNm, selectedTmplCd]);
@@ -351,7 +351,7 @@ export default function ScheduleCycleManagementPage() {
         setRuleActiveKey(null);
         clearRuleSel();
       } catch (error) {
-        mesToast(mesError(error), "error");
+        mesError(error);
       }
     })();
   };
@@ -410,7 +410,7 @@ export default function ScheduleCycleManagementPage() {
       const prefer = dirty[dirty.length - 1]?.tmplCd;
       await load(prefer ? String(prefer) : undefined);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -451,7 +451,7 @@ export default function ScheduleCycleManagementPage() {
       mesToast(MES.saveDone, "success");
       await load(selectedTmplCd);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -488,7 +488,7 @@ export default function ScheduleCycleManagementPage() {
       mesToast(MES.deleteDone, "success");
       await load();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -521,7 +521,7 @@ export default function ScheduleCycleManagementPage() {
       mesToast(MES.deleteDone, "success");
       await load(selectedTmplCd);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -562,7 +562,7 @@ export default function ScheduleCycleManagementPage() {
           </SearchArea>
         )}
       >
-        <PageCardSplit>
+        <PageCardSplit storageKey="haccp-split-schedule-cycle">
           <div {...sec.bind("h", gridPanelClass)}>
             <div className={gridHeadClass}>
               <b>작성 가능 문서</b>

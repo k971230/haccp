@@ -348,7 +348,7 @@ export default function HwpTemplateManagementPage() {
       mesToast(MES.saveDone, "success");
       await loadList();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -404,7 +404,7 @@ export default function HwpTemplateManagementPage() {
       mesToast(MES.deleteDone, "success");
       await loadList();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -462,7 +462,7 @@ export default function HwpTemplateManagementPage() {
         const histIdx = await exportTemplateHist({ packNm, docKind: "HWP" });
         mesToast(`내보내기를 완료했습니다. (이력 ${histIdx})`, "success");
       } catch (error) {
-        mesToast(mesError(error), "error");
+        mesError(error);
       }
     }, "export");
 
@@ -483,7 +483,7 @@ export default function HwpTemplateManagementPage() {
           });
         }
       } catch (error) {
-        mesToast(mesError(error), "error");
+        mesError(error);
       }
       setImportRows(picks);
       setImportActiveKey("SERVER");
@@ -511,7 +511,7 @@ export default function HwpTemplateManagementPage() {
         await loadList();
         mesToast("불러오기를 완료했습니다.", "success");
       } catch (error) {
-        mesToast(mesError(error), "error");
+        mesError(error);
       }
     }, "import");
 

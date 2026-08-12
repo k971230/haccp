@@ -96,15 +96,23 @@ function findOpenKeysForScreen(tree: MenuGroup[], scrnCd: string | null): string
  *   3) 상위 없는 leaf는 기타 대분류로 모은다
  */
 export function buildTree(rows: MenuRow[]): MenuGroup[] {
+  // 대·중·소 인코딩 sort_no 순으로 맞춘 뒤 트리를 조립한다
+  const ordered = [...rows].sort((a, b) => {
+    const sa = Number(a.sortNo ?? 0);
+    const sb = Number(b.sortNo ?? 0);
+    if (sa !== sb) return sa - sb;
+    return a.menuCd.localeCompare(b.menuCd);
+  });
+
   const byCd = new Map<string, MenuRow>();
-  for (const r of rows) byCd.set(r.menuCd, r);
+  for (const r of ordered) byCd.set(r.menuCd, r);
 
   const groups: MenuGroup[] = [];
   const groupBy = new Map<string, MenuGroup>();
   const midBy = new Map<string, MenuMid>();
 
   // 1) 최상위 — 대분류 폴더 또는 단독 leaf
-  for (const r of rows) {
+  for (const r of ordered) {
     if (r.hMenuCd) continue;
     if (r.scrnCd) {
       const leaf: MenuLeaf = {
@@ -136,7 +144,7 @@ export function buildTree(rows: MenuRow[]): MenuGroup[] {
   }
 
   // 2) 중분류 — 부모가 대분류
-  for (const r of rows) {
+  for (const r of ordered) {
     if (!r.hMenuCd || !groupBy.has(r.hMenuCd)) continue;
     // 소분류(화면에 중 부모가 또 있는 경우)는 3단계에서
     const parentIsDae = !byCd.get(r.hMenuCd)?.hMenuCd;
@@ -167,7 +175,7 @@ export function buildTree(rows: MenuRow[]): MenuGroup[] {
   }
 
   // 3) 소분류 — 부모가 중분류
-  for (const r of rows) {
+  for (const r of ordered) {
     if (!r.hMenuCd || !r.scrnCd) continue;
     const mid = midBy.get(r.hMenuCd);
     if (!mid) {
@@ -388,17 +396,17 @@ export function SideMenu({
                       <div
                         // 중분류 메뉴코드 — React 목록 키
                         key={m.menuCd}
-                        // 중·소 간격
-                        className="mb-0.5"
+                        // 중분류 블록 — grpb + 소 leaf 묶음
+                        className="mes-sidebar-mid"
                       >
                         <button
                           // 버튼 역할 — 폼 submit 방지
                           type="button"
-                          // 중분류 헤더 — 활성/비활성 스타일
+                          // 중분류(GRPB) — 섹션 헤더. 소(leaf)와 다른 배경·accent
                           className={cn(
-                            "mes-sidebar-leaf w-full font-semibold",
-                            midActive && "mes-sidebar-leaf-active",
-                            !midActive && "mes-sidebar-leaf-inactive",
+                            "mes-sidebar-grpb",
+                            midOpen && !midActive && "mes-sidebar-grpb-open",
+                            midActive && "mes-sidebar-grpb-active",
                           )}
                           // 화면이 붙은 중이면 이동, 폴더면 소목록 접기/펼치기
                           onClick={() => {
@@ -412,21 +420,26 @@ export function SideMenu({
                             }
                             toggleKey(m.menuCd);
                           }}
+                          // 접근성 — 중분류 아코디언 펼침
+                          aria-expanded={!midIsSolo && midOpen}
                           // 툴팁 — 중분류명
                           title={m.name}
                         >
-                          <span className="truncate">{m.name}</span>
+                          <span className="min-w-0 flex-1 truncate">{m.name}</span>
                           {!midIsSolo && m.leaves.length > 0 ? (
                             <ChevronRight
                               // 중분류 펼침 화살표 — 열리면 90도
-                              className={cn("ml-auto h-3.5 w-3.5 shrink-0 transition-transform", midOpen && "rotate-90")}
+                              className={cn("mes-sidebar-grpb-chevron", midOpen && "rotate-90")}
                               // 장식 아이콘 — 스크린리더 제외
                               aria-hidden
                             />
                           ) : null}
                         </button>
                         {midOpen && !midIsSolo && m.leaves.length > 0 && (
-                          <ul className="m-0 list-none space-y-0.5 pl-2">
+                          <ul
+                            // 소분류 목록 — 중 아래 들여쓰기·점선 트리
+                            className="mes-sidebar-leaves"
+                          >
                             {m.leaves.map((leaf) => {
                               const active = activeCd === leaf.scrnCd;
                               return (

@@ -199,7 +199,6 @@ CREATE TABLE IF NOT EXISTS tbl_user (
     user_pw         varchar(300) NOT NULL,
     usrgrp_cd       varchar(20)  NOT NULL,
     dept_cd         varchar(20)  NULL,
-    pos_cd          varchar(20)  NULL,
     email           varchar(100) NULL,
     mobile          varchar(20)  NULL,
     sign_path       varchar(300) NULL,
@@ -225,7 +224,6 @@ COMMENT ON COLUMN tbl_user.user_nm        IS '사용자명 — 문서 작성자�
 COMMENT ON COLUMN tbl_user.user_pw        IS '비밀번호 해시 — PasswordHasher 산출값. 평문 저장 금지';
 COMMENT ON COLUMN tbl_user.usrgrp_cd      IS '권한그룹코드 — tbl_role.usrgrp_cd. PLATFORM일 때(= 플랫폼 관리자) 업체 전환 가능';
 COMMENT ON COLUMN tbl_user.dept_cd        IS '부서코드 — tbl_dept.dept_cd';
-COMMENT ON COLUMN tbl_user.pos_cd         IS '직위코드 — 문서 결재란 직위 표기 (tbl_code POS_CD)';
 COMMENT ON COLUMN tbl_user.email          IS '이메일 — 알림 발송 주소';
 COMMENT ON COLUMN tbl_user.mobile         IS '휴대전화번호';
 COMMENT ON COLUMN tbl_user.sign_path      IS '서명 이미지 파일 경로 — 결재·점검자 서명란에 삽입';

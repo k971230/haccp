@@ -344,7 +344,7 @@ export default function BizOpsFormPage({ screenCode }: BizOpsFormPageProps) {
         (row) => String(row.docIdx),
       );
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, [replaceServerList, screenCode, statusLabel]);
 
@@ -366,14 +366,14 @@ export default function BizOpsFormPage({ screenCode }: BizOpsFormPageProps) {
           next.header = applyBaseKey(screenCode, next.header, next.baseKey);
           return next;
         } catch (error) {
-          mesToast(mesError(error), "error");
+          mesError(error);
           return null;
         }
       }
       try {
         return detailToBuf(screenCode, await getBizOpsDetail(screenCode, row.docIdx), user?.userNm);
       } catch (error) {
-        mesToast(mesError(error), "error");
+        mesError(error);
         return null;
       }
     });
@@ -423,7 +423,7 @@ export default function BizOpsFormPage({ screenCode }: BizOpsFormPageProps) {
       );
       setSelectedRowSeq(null);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, "add");
 
@@ -472,7 +472,7 @@ export default function BizOpsFormPage({ screenCode }: BizOpsFormPageProps) {
         if (err.rowKey) void handleSelect(err.rowKey);
       }
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, "save");
 
@@ -497,7 +497,7 @@ export default function BizOpsFormPage({ screenCode }: BizOpsFormPageProps) {
       await loadList();
       await handleSelect(null);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, "del");
 
@@ -629,7 +629,7 @@ export default function BizOpsFormPage({ screenCode }: BizOpsFormPageProps) {
                   status: detail.header?.status ? String(detail.header.status) : null,
                   statusNm: statusLabel(String(detail.header?.status ?? ""), String(detail.header?.status ?? "")),
                 });
-              }).catch((error) => mesToast(mesError(error), "error"));
+              }).catch((error) => mesError(error));
             }
           }}
           // 상태 라벨

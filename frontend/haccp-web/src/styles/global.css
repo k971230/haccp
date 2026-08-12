@@ -110,6 +110,37 @@ PIPELINE[HF49] 연관 모듈
   .mes-sidebar-submenu {
     @apply border-b border-sidebar-border bg-white pb-1 pt-0;
   }
+  /* 중분류 블록 — 대(grpa)와 소(leaf) 사이 간격 */
+  .mes-sidebar-mid {
+    @apply mb-0.5;
+  }
+  /* 중분류(GRPB) — 섹션 헤더. 배경은 밝게, 글자는 선명(회색 톤 지양) */
+  .mes-sidebar-grpb {
+    @apply relative flex w-full items-center gap-1.5 border-0 bg-white py-1.5 pl-3.5 pr-3 text-left text-[12px] font-bold text-sidebar-text transition;
+  }
+  .mes-sidebar-grpb::before {
+    content: "";
+    @apply absolute bottom-1 left-1.5 top-1 w-0.5 rounded-full bg-blue-400;
+  }
+  .mes-sidebar-grpb:hover { @apply bg-blue-50/40 text-sidebar-text; }
+  .mes-sidebar-grpb-open:not(.mes-sidebar-grpb-active) {
+    @apply bg-white text-sidebar-text;
+  }
+  /* 하위 화면이 활성일 때 — 파란 fill은 소에만, 중은 accent·글자색만 */
+  .mes-sidebar-grpb-active {
+    @apply bg-white text-blue-700;
+  }
+  .mes-sidebar-grpb-active::before {
+    @apply bg-blue-600;
+  }
+  .mes-sidebar-grpb-chevron {
+    @apply ml-auto h-3.5 w-3.5 shrink-0 text-sidebar-text/50 transition-transform;
+  }
+  .mes-sidebar-grpb-active .mes-sidebar-grpb-chevron {
+    @apply text-blue-700;
+  }
+
+  /* 구 섹션 라벨(호환) — 가로선 라벨. 신규 3단은 grpb 사용 */
   .mes-sidebar-menu-label {
     @apply flex items-center gap-2 px-3 pb-0.5 pt-1.5 text-left text-[10px] font-bold text-sidebar-muted;
   }
@@ -119,15 +150,21 @@ PIPELINE[HF49] 연관 모듈
   }
   .mes-sidebar-menu-label span { @apply shrink-0; }
 
+  /* 소분류 목록 — 중 아래 한 단 들여쓰기 */
+  .mes-sidebar-leaves {
+    @apply m-0 list-none space-y-0.5 pb-0.5 pt-0;
+  }
+
+  /* 소분류(leaf) — 화면 항목. 점선 L + 깊은 들여쓰기 */
   .mes-sidebar-leaf {
-    @apply relative flex w-full items-center gap-1.5 bg-white py-1.5 pl-7 pr-3 text-left text-[12px] font-medium text-sidebar-text transition;
+    @apply relative flex w-full items-center gap-1.5 bg-white py-1.5 pl-9 pr-3 text-left text-[12px] font-medium text-sidebar-text transition;
   }
   .mes-sidebar-leaf::before {
     content: "";
-    @apply absolute left-3 top-0 h-full w-3 border-b border-l border-dotted border-neutral-300;
+    @apply absolute left-5 top-0 h-full w-3 border-b border-l border-dotted border-neutral-300;
     border-bottom-left-radius: 2px;
   }
-  .mes-sidebar-leaf:hover:not(:disabled) { @apply bg-white; }
+  .mes-sidebar-leaf:hover:not(:disabled) { @apply bg-neutral-50; }
   .mes-sidebar-leaf-inactive { @apply bg-white text-sidebar-text; }
   .mes-sidebar-leaf-active {
     @apply bg-blue-100 font-bold text-blue-700;
@@ -158,6 +195,10 @@ PIPELINE[HF49] 연관 모듈
   .mes-grid-title-only::before {
     content: "";
     @apply block h-3 w-1 shrink-0 rounded-full bg-blue-600;
+  }
+  /* 코드·서명 팝업 헤더 accent — 본화면 파란 배지와 구분(보라) */
+  .mes-modal-grid-head b::before {
+    @apply bg-violet-600;
   }
   .mes-grid-head b,
   .mes-grid-block-head b {
@@ -192,10 +233,25 @@ PIPELINE[HF49] 연관 모듈
   }
 
   /* ── 그리드 래퍼 ── */
-  .mes-grid-wrap { @apply relative flex flex-col overflow-hidden border border-slate-200 bg-white; }
+  /* grid: 툴바(auto) / 본문(1fr) / 푸터(auto) — flex-1+min-height:auto 때문에 푸터가 행을 가리던 문제 방지 */
+  .mes-grid-wrap {
+    @apply relative grid overflow-hidden border border-slate-200 bg-white;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .mes-grid-wrap.mes-grid-no-toolbar {
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .mes-grid-wrap.mes-grid-no-footer {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .mes-grid-wrap.mes-grid-no-toolbar.mes-grid-no-footer {
+    grid-template-rows: minmax(0, 1fr);
+  }
   .mes-grid-embedded { @apply rounded-none border-0 shadow-none; }
   .mes-grid-fill { @apply min-h-0 flex-1; }
-  .mes-grid-scroll { @apply relative min-h-0 flex-1 overflow-auto bg-white; }
+  /* 본문 스크롤 — grid 1fr 칸을 꽉 채우고 내부만 스크롤 */
+  .mes-grid-body { @apply relative min-h-0 overflow-hidden; }
+  .mes-grid-scroll { @apply h-full min-h-0 overflow-auto bg-white; }
 
   /* ── 테이블 ── */
   /* ADR-032: table-layout:fixed + th/td colWidthStyle(width=min=max) —
@@ -281,6 +337,8 @@ PIPELINE[HF49] 연관 모듈
   .mes-grid-badge-green { @apply bg-emerald-600 text-white; }
   .mes-grid-badge-gray { @apply bg-neutral-500 text-white; }
   .mes-grid-badge-red { @apply bg-rose-600 text-white; }
+  /* 권한그룹·부서·서명 등 코드 팝업 컬럼 */
+  .mes-grid-badge-purple { @apply bg-violet-600 text-white; }
 
   /* ── 셀 ── */
   .mes-cell { @apply min-h-4 leading-snug; }
@@ -289,10 +347,20 @@ PIPELINE[HF49] 연관 모듈
   .mes-cellwrap-editing {
     @apply relative h-mes-row w-full gap-0 overflow-hidden p-0;
   }
+  /* 셀 버튼 — 글자 길이와 무관하게 오른쪽 고정 */
+  .mes-cellwrap:has(.mes-cell-btn) {
+    @apply relative pr-6;
+  }
+  .mes-cellwrap:has(.mes-cell-btn) .mes-cell-btn {
+    @apply absolute right-0.5 top-1/2 z-[2] -translate-y-1/2;
+  }
   .mes-cell-checkbox { @apply justify-center; }
   .mes-cell-text { @apply min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap; }
   .mes-align-right .mes-cell-text { @apply text-right; }
   .mes-align-center .mes-cell-text { @apply text-center; }
+  /* 선택열·checkbox — flex 셀에서도 항상 가운데 */
+  .mes-align-center { @apply justify-center; }
+  .mes-align-right { @apply justify-end; }
   .mes-cell-editable { @apply cursor-text; }
 
   /* ADR-031: 셀 덮개식 편집 — absolute inset로 표시 셀과 동일 박스, 바깥 ring 금지(행 높이 울렁임 방지) */

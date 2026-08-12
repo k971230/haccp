@@ -204,7 +204,7 @@ export default function HealthCertPage() {
       setActiveKey(null);
       clearSel();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- g.load 안정 참조
   }, [personNm, useYn]);
@@ -257,7 +257,7 @@ export default function HealthCertPage() {
       mesToast(MES.saveDone, "success");
       await loadRows();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -305,7 +305,7 @@ export default function HealthCertPage() {
       mesToast(MES.deleteDone, "success");
       await loadRows();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -338,7 +338,7 @@ export default function HealthCertPage() {
         await loadRows();
       }, "upload");
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }

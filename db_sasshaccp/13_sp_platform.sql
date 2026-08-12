@@ -14,6 +14,82 @@
 SET search_path TO sasshaccp;
 
 -- ------------------------------------------------------------
+-- 0. sp_tbl_menu_sort_encode_u_000 — 메뉴 sort_no 대·중·소 인코딩
+--    company_init보다 먼저 정의해야 CALL이 가능하다 (21에도 동일 정의)
+-- ------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE sp_tbl_menu_sort_encode_u_000(
+    -- p_co_cd: NULL이면 전 업체, 값이면 해당 업체만
+    p_co_cd varchar DEFAULT NULL
+)
+LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE tbl_menu m
+       SET sort_no = v.sn, upd_id = 'system', upd_dt = now()
+      FROM (VALUES
+        ('today-tasks', 1001),
+        ('menu-doc-write', 2000), ('menu-doc-flow', 3000), ('menu-doc-master', 4000),
+        ('menu-base', 5000), ('menu-sys', 6000),
+        ('menu-write-ccp', 2100), ('menu-write-prp', 2200),
+        ('menu-write-logis', 2300), ('menu-write-admin', 2400),
+        ('menu-flow-appr', 3100), ('menu-flow-box', 3200), ('menu-flow-ca', 3300),
+        ('menu-master-doc', 4100), ('menu-master-form', 4200),
+        ('menu-master-item', 4300), ('menu-master-appr', 4400),
+        ('menu-base-master', 5100),
+        ('menu-sys-auth', 6100), ('menu-sys-log', 6200)
+      ) AS v(menu_cd, sn)
+     WHERE m.menu_cd = v.menu_cd
+       AND m.use_yn = 'Y'
+       AND (p_co_cd IS NULL OR m.co_cd = p_co_cd);
+
+    -- menu-sys-auth leaf: 공통코드 → 메뉴 → 권한그룹 → 부서 → 사용자
+    UPDATE tbl_menu m
+       SET sort_no = v.ord, upd_id = 'system', upd_dt = now()
+      FROM (VALUES
+        ('common-code-management', 1),
+        ('menu-management', 2),
+        ('role-management', 3),
+        ('department-management', 4),
+        ('user-management', 5)
+      ) AS v(scrn_cd, ord)
+     WHERE m.scrn_cd = v.scrn_cd
+       AND m.h_menu_cd = 'menu-sys-auth'
+       AND m.use_yn = 'Y'
+       AND (p_co_cd IS NULL OR m.co_cd = p_co_cd);
+
+    WITH mid AS (
+        SELECT * FROM (VALUES
+            ('menu-write-ccp', 2, 1), ('menu-write-prp', 2, 2),
+            ('menu-write-logis', 2, 3), ('menu-write-admin', 2, 4),
+            ('menu-flow-appr', 3, 1), ('menu-flow-box', 3, 2), ('menu-flow-ca', 3, 3),
+            ('menu-master-doc', 4, 1), ('menu-master-form', 4, 2),
+            ('menu-master-item', 4, 3), ('menu-master-appr', 4, 4),
+            ('menu-base-master', 5, 1),
+            ('menu-sys-auth', 6, 1), ('menu-sys-log', 6, 2)
+        ) AS t(mid_cd, dae_no, jung_no)
+    ),
+    ranked AS (
+        SELECT m.co_cd, m.menu_cd,
+               (mid.dae_no * 1000 + mid.jung_no * 100
+                 + ROW_NUMBER() OVER (
+                       PARTITION BY m.co_cd, m.h_menu_cd
+                       ORDER BY m.sort_no, m.menu_cd
+                   ))::int AS sn
+          FROM tbl_menu m
+          JOIN mid ON mid.mid_cd = m.h_menu_cd
+         WHERE m.use_yn = 'Y'
+           AND m.scrn_cd IS NOT NULL
+           AND (p_co_cd IS NULL OR m.co_cd = p_co_cd)
+    )
+    UPDATE tbl_menu m
+       SET sort_no = r.sn, upd_id = 'system', upd_dt = now()
+      FROM ranked r
+     WHERE m.co_cd = r.co_cd AND m.menu_cd = r.menu_cd;
+END;
+$$;
+COMMENT ON PROCEDURE sp_tbl_menu_sort_encode_u_000(varchar) IS
+  '메뉴 sort_no 인코딩 — 대(1~9)*1000+중(0~9)*100+소(0~99). leaf는 sort_no 상대순. p_co_cd NULL=전업체';
+
+-- ------------------------------------------------------------
 -- 1. sp_tbl_company_init_c_000 — 신규 업체(테넌트) 초기 생성
 --    이미 존재하는 회사코드로 다시 호출하면 부족한 데이터만 채운다(재실행 안전)
 -- ------------------------------------------------------------
@@ -69,40 +145,40 @@ BEGIN
       FROM tbl_screen s WHERE s.use_yn = 'Y' AND s.module_cd NOT IN ('SYS', 'COD', 'FRM')
     ON CONFLICT (co_cd, usrgrp_cd, scrn_cd) DO NOTHING;
 
-    -- (4) 메뉴 — 대·중·소 3단 kebab IA (52 migrate와 동일)
+    -- (4) 메뉴 — 대·중·소 3단 kebab IA. sort_no는 인코딩(대*1000+중*100+소) — 마지막에 reseq
     INSERT INTO tbl_menu(co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt)
     VALUES
-        (p_co_cd, 'menu-doc-write',  '문서 작성',      NULL, NULL, 100, 'Y', p_id, now()),
-        (p_co_cd, 'menu-doc-flow',   '문서 현황·결재', NULL, NULL, 200, 'Y', p_id, now()),
-        (p_co_cd, 'menu-doc-master', '문서 기준관리',  NULL, NULL, 300, 'Y', p_id, now()),
-        (p_co_cd, 'menu-base',       '기초정보',       NULL, NULL, 400, 'Y', p_id, now()),
-        (p_co_cd, 'menu-sys',        '시스템',         NULL, NULL, 900, 'Y', p_id, now())
+        (p_co_cd, 'menu-doc-write',  '문서 작성',      NULL, NULL, 2000, 'Y', p_id, now()),
+        (p_co_cd, 'menu-doc-flow',   '문서 현황·결재', NULL, NULL, 3000, 'Y', p_id, now()),
+        (p_co_cd, 'menu-doc-master', '문서 기준관리',  NULL, NULL, 4000, 'Y', p_id, now()),
+        (p_co_cd, 'menu-base',       '기초정보',       NULL, NULL, 5000, 'Y', p_id, now()),
+        (p_co_cd, 'menu-sys',        '시스템',         NULL, NULL, 6000, 'Y', p_id, now())
     ON CONFLICT (co_cd, menu_cd) DO UPDATE SET
         menu_nm = EXCLUDED.menu_nm, h_menu_cd = NULL, scrn_cd = NULL,
         use_yn = 'Y', sort_no = EXCLUDED.sort_no, upd_id = p_id, upd_dt = now();
 
     INSERT INTO tbl_menu(co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt)
-    VALUES (p_co_cd, 'today-tasks', '오늘 할 일', NULL, 'today-tasks', 10, 'Y', p_id, now())
+    VALUES (p_co_cd, 'today-tasks', '오늘 할 일', NULL, 'today-tasks', 1001, 'Y', p_id, now())
     ON CONFLICT (co_cd, menu_cd) DO UPDATE SET
         menu_nm = '오늘 할 일', h_menu_cd = NULL, scrn_cd = 'today-tasks',
-        sort_no = 10, use_yn = 'Y', upd_id = p_id, upd_dt = now();
+        sort_no = 1001, use_yn = 'Y', upd_id = p_id, upd_dt = now();
 
     INSERT INTO tbl_menu(co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt)
     VALUES
-        (p_co_cd, 'menu-write-ccp',   'CCP(공정)',       'menu-doc-write',  NULL, 110, 'Y', p_id, now()),
-        (p_co_cd, 'menu-write-prp',   'PRP(위생·설비)',  'menu-doc-write',  NULL, 120, 'Y', p_id, now()),
-        (p_co_cd, 'menu-write-logis', '물류',            'menu-doc-write',  NULL, 130, 'Y', p_id, now()),
-        (p_co_cd, 'menu-write-admin', '운영·법정',       'menu-doc-write',  NULL, 140, 'Y', p_id, now()),
-        (p_co_cd, 'menu-flow-appr',   '결재',            'menu-doc-flow',   NULL, 210, 'Y', p_id, now()),
-        (p_co_cd, 'menu-flow-box',    '문서함·법적서류', 'menu-doc-flow',   NULL, 220, 'Y', p_id, now()),
-        (p_co_cd, 'menu-flow-ca',     '이탈·개선조치',   'menu-doc-flow',   NULL, 230, 'Y', p_id, now()),
-        (p_co_cd, 'menu-master-doc',  '작성 문서·주기',  'menu-doc-master', NULL, 310, 'Y', p_id, now()),
-        (p_co_cd, 'menu-master-form', 'HWP·양식 원본',   'menu-doc-master', NULL, 320, 'Y', p_id, now()),
-        (p_co_cd, 'menu-master-item', '점검항목/한계',   'menu-doc-master', NULL, 330, 'Y', p_id, now()),
-        (p_co_cd, 'menu-master-appr', '결재선',          'menu-doc-master', NULL, 340, 'Y', p_id, now()),
-        (p_co_cd, 'menu-base-master', '기준정보',        'menu-base',       NULL, 410, 'Y', p_id, now()),
-        (p_co_cd, 'menu-sys-auth',    '권한·메뉴·코드',  'menu-sys',        NULL, 910, 'Y', p_id, now()),
-        (p_co_cd, 'menu-sys-log',     '이력·통계',       'menu-sys',        NULL, 920, 'Y', p_id, now())
+        (p_co_cd, 'menu-write-ccp',   'CCP(공정)',       'menu-doc-write',  NULL, 2100, 'Y', p_id, now()),
+        (p_co_cd, 'menu-write-prp',   'PRP(위생·설비)',  'menu-doc-write',  NULL, 2200, 'Y', p_id, now()),
+        (p_co_cd, 'menu-write-logis', '물류',            'menu-doc-write',  NULL, 2300, 'Y', p_id, now()),
+        (p_co_cd, 'menu-write-admin', '운영·법정',       'menu-doc-write',  NULL, 2400, 'Y', p_id, now()),
+        (p_co_cd, 'menu-flow-appr',   '결재',            'menu-doc-flow',   NULL, 3100, 'Y', p_id, now()),
+        (p_co_cd, 'menu-flow-box',    '문서함·법적서류', 'menu-doc-flow',   NULL, 3200, 'Y', p_id, now()),
+        (p_co_cd, 'menu-flow-ca',     '이탈·개선조치',   'menu-doc-flow',   NULL, 3300, 'Y', p_id, now()),
+        (p_co_cd, 'menu-master-doc',  '작성 문서·주기',  'menu-doc-master', NULL, 4100, 'Y', p_id, now()),
+        (p_co_cd, 'menu-master-form', 'HWP·양식 원본',   'menu-doc-master', NULL, 4200, 'Y', p_id, now()),
+        (p_co_cd, 'menu-master-item', '점검항목/한계',   'menu-doc-master', NULL, 4300, 'Y', p_id, now()),
+        (p_co_cd, 'menu-master-appr', '결재선',          'menu-doc-master', NULL, 4400, 'Y', p_id, now()),
+        (p_co_cd, 'menu-base-master', '기준정보',        'menu-base',       NULL, 5100, 'Y', p_id, now()),
+        (p_co_cd, 'menu-sys-auth',    '권한·사용자·코드', 'menu-sys',        NULL, 6100, 'Y', p_id, now()),
+        (p_co_cd, 'menu-sys-log',     '이력·통계',       'menu-sys',        NULL, 6200, 'Y', p_id, now())
     ON CONFLICT (co_cd, menu_cd) DO UPDATE SET
         menu_nm = EXCLUDED.menu_nm, h_menu_cd = EXCLUDED.h_menu_cd, scrn_cd = NULL,
         use_yn = 'Y', sort_no = EXCLUDED.sort_no, upd_id = p_id, upd_dt = now();
@@ -170,9 +246,6 @@ BEGIN
         ('equipment-management', 'menu-master-item', 360),
         ('pest-device-management', 'menu-master-item', 370),
         ('approval-line-management', 'menu-master-appr', 350),
-        ('company-management', 'menu-base-master', 401),
-        ('department-management', 'menu-base-master', 402),
-        ('user-management', 'menu-base-master', 403),
         ('partner-management', 'menu-base-master', 420),
         ('product-management', 'menu-base-master', 430),
         ('material-management', 'menu-base-master', 440),
@@ -180,15 +253,20 @@ BEGIN
         ('measuring-device-management', 'menu-base-master', 460),
         ('vehicle-management', 'menu-base-master', 470),
         ('work-area-management', 'menu-base-master', 480),
-        ('role-management', 'menu-sys-auth', 940),
-        ('menu-management', 'menu-sys-auth', 950),
-        ('common-code-management', 'menu-sys-auth', 960),
+        ('common-code-management', 'menu-sys-auth', 910),
+        ('menu-management', 'menu-sys-auth', 920),
+        ('role-management', 'menu-sys-auth', 930),
+        ('department-management', 'menu-sys-auth', 940),
+        ('user-management', 'menu-sys-auth', 950),
         ('login-history', 'menu-sys-log', 970),
         ('screen-usage-statistics', 'menu-sys-log', 980),
         ('audit-log', 'menu-sys-log', 990)
       ) AS v(scrn_cd, h_menu_cd, sort_no)
       JOIN tbl_screen s ON s.scrn_cd = v.scrn_cd AND s.use_yn = 'Y'
     ON CONFLICT (co_cd, menu_cd) DO NOTHING;
+
+    -- 메뉴 sort_no 대·중·소 인코딩(1001~9999) — sp는 21/53에 정의
+    CALL sp_tbl_menu_sort_encode_u_000(p_co_cd);
 
     -- (5) 사용양식 — 구현된 표준 템플릿(impl_yn=Y)만 복사한다
     INSERT INTO tbl_company_template(co_cd, tmpl_cd, cycle_cd, retention_month, use_yn, ins_id, ins_dt)

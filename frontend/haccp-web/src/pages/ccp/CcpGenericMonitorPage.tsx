@@ -388,7 +388,7 @@ export default function CcpGenericMonitorPage({
       const merged = mergeTemplates([], defaultTmplCd);
       setTemplates(merged);
       setPageTmplCd((current) => current || defaultTmplCd || merged[0]?.tmplCd || "");
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, [defaultTmplCd]);
 
@@ -430,7 +430,7 @@ export default function CcpGenericMonitorPage({
         (row) => String(row.docIdx),
       );
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, [defaultTmplCd, pageTmplCd, replaceServerList, statusLabel]);
 
@@ -480,7 +480,7 @@ export default function CcpGenericMonitorPage({
           limitItemKind: detailKind,
         };
       } catch (error) {
-        mesToast(mesError(error), "error");
+        mesError(error);
         return null;
       }
     });
@@ -595,7 +595,7 @@ export default function CcpGenericMonitorPage({
         if (err.rowKey) void handleSelect(err.rowKey);
       }
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, "save");
 
@@ -619,7 +619,7 @@ export default function CcpGenericMonitorPage({
       await loadList();
       await handleSelect(null);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, "del");
 
@@ -681,7 +681,7 @@ export default function CcpGenericMonitorPage({
       });
       mesToast("서명을 적용했습니다.", "success");
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -768,7 +768,7 @@ export default function CcpGenericMonitorPage({
                   status: d.status ?? null,
                   statusNm: statusLabel(d.status ?? "", d.status ?? ""),
                 });
-              }).catch((error) => mesToast(mesError(error), "error"));
+              }).catch((error) => mesError(error));
             }
           }}
           statusLabel={status ? statusLabel(status, status) : "신규"}

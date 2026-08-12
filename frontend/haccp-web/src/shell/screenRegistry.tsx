@@ -33,6 +33,14 @@ import HealthCertPage from "@/pages/hyg/HealthCertPage";
 import HwpDocumentEditorPage from "@/pages/doc/HwpDocumentEditorPage";
 // 역할 — HWP 양식 파일 관리
 import HwpTemplateManagementPage from "@/pages/bas/HwpTemplateManagementPage";
+// 역할 — 권한그룹 좌 메뉴권한 트리 + 우 마스터 그리드
+import RoleManagementPage from "@/pages/sys/RoleManagementPage";
+// 역할 — 부서 좌 트리 + 우 그리드
+import DepartmentManagementPage from "@/pages/sys/DepartmentManagementPage";
+// 역할 — 메뉴 좌 트리 + 우 그리드
+import MenuManagementPage from "@/pages/sys/MenuManagementPage";
+// 역할 — 공통코드 대분류·시스템·사용자 3그리드
+import CommonCodeManagementPage from "@/pages/sys/CommonCodeManagementPage";
 // 역할 — 기초정보·한계기준 마스터
 import MasterDataPage from "@/pages/bas/MasterDataPage";
 // 역할 — 설비카드 이력 M-D
@@ -48,8 +56,10 @@ import BizOpsFormPage from "@/pages/ops/BizOpsFormPage";
 // 역할 — 오늘 할 일·개선조치
 import TodayTasksPage from "@/pages/tsk/TodayTasksPage";
 import CorrectiveActionManagementPage from "@/pages/doc/CorrectiveActionManagementPage";
-// 역할 — 시스템 관리
+// 역할 — 시스템 관리(사용자)
 import SystemManagementPage from "@/pages/sys/SystemManagementPage";
+// 역할 — 로그인·통계·감사 로그
+import LogManagementPage from "@/pages/sys/LogManagementPage";
 
 /**
  * 개발자: 박승우
@@ -76,18 +86,17 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   // 오늘 할 일 — 랜딩
   "today-tasks": TodayTasksPage,
 
-  // 시스템 관리
-  "company-management": () => <SystemManagementPage screenCode="company-management" />,
+  // 시스템 관리 — company-management 제거(온보딩 외 미노출)
   "user-management": () => <SystemManagementPage screenCode="user-management" />,
-  "department-management": () => <SystemManagementPage screenCode="department-management" />,
-  "role-management": () => <SystemManagementPage screenCode="role-management" />,
-  "menu-management": () => <SystemManagementPage screenCode="menu-management" />,
-  "login-history": () => <SystemManagementPage screenCode="login-history" />,
-  "screen-usage-statistics": () => <SystemManagementPage screenCode="screen-usage-statistics" />,
-  "audit-log": () => <SystemManagementPage screenCode="audit-log" />,
+  "department-management": DepartmentManagementPage,
+  "role-management": RoleManagementPage,
+  "menu-management": MenuManagementPage,
+  "common-code-management": CommonCodeManagementPage,
+  "login-history": () => <LogManagementPage screenCode="login-history" />,
+  "screen-usage-statistics": () => <LogManagementPage screenCode="screen-usage-statistics" />,
+  "audit-log": () => <LogManagementPage screenCode="audit-log" />,
 
   // 기초정보 관리
-  "common-code-management": () => <SystemManagementPage screenCode="common-code-management" />,
   "product-management": () => <MasterDataPage screenCode="product-management" />,
   "material-management": () => <MasterDataPage screenCode="material-management" />,
   "partner-management": () => <MasterDataPage screenCode="partner-management" />,

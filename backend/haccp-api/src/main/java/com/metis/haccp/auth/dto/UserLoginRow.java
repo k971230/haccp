@@ -42,8 +42,6 @@ public class UserLoginRow {
     private String deptCd;
     /** 부서명 */
     private String deptNm;
-    /** 직위코드 */
-    private String posCd;
     /** 이메일 — 알림 발송 대상 */
     private String email;
     /** 서명 이미지 경로 — 전자결재 서명란에 사용 */

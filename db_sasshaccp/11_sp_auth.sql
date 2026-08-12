@@ -20,7 +20,8 @@ SET search_path TO sasshaccp;
 --    user_id가 전역 UNIQUE라 회사코드를 받지 않는다. 아이디 하나로 소속 회사가 결정된다
 --    반환 0행이면(= 존재하지 않는 아이디) 백엔드가 비밀번호 불일치와 같은 문구로 응답한다
 -- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION sp_tbl_user_login_r_000(
+DROP FUNCTION IF EXISTS sp_tbl_user_login_r_000(varchar);
+CREATE FUNCTION sp_tbl_user_login_r_000(
     -- p_user_id: 로그인 화면에서 입력한 아이디 (대소문자 구분)
     p_user_id varchar
 )
@@ -35,7 +36,6 @@ RETURNS TABLE(
     usrgrp_nm      varchar,
     dept_cd        varchar,
     dept_nm        varchar,
-    pos_cd         varchar,
     email          varchar,
     sign_path      varchar,
     gridsave_yn    varchar,
@@ -49,7 +49,7 @@ RETURNS TABLE(
            u.co_cd, c.co_nm,
            u.usrgrp_cd, r.usrgrp_nm,
            u.dept_cd, d.dept_nm,
-           u.pos_cd, u.email, u.sign_path, u.gridsave_yn,
+           u.email, u.sign_path, u.gridsave_yn,
            u.login_fail_cnt, u.lock_yn,
            u.use_yn, COALESCE(c.use_yn, 'N'), c.svc_fn_dt
       FROM tbl_user u
@@ -98,7 +98,8 @@ COMMENT ON PROCEDURE sp_tbl_user_login_u_000(varchar, varchar, int) IS '로그�
 -- 3. sp_tbl_user_r_000 — 사용자 목록 조회
 --    비밀번호 해시는 반환하지 않는다(로그인 SP 전용)
 -- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION sp_tbl_user_r_000(
+DROP FUNCTION IF EXISTS sp_tbl_user_r_000(varchar, varchar, varchar, varchar, varchar);
+CREATE FUNCTION sp_tbl_user_r_000(
     -- p_co_cd: JWT LoginUser 회사코드 — 테넌트 범위. 필수
     p_co_cd   varchar,
     -- p_user_id: 아이디 부분검색어. NULL이나 공백이면(= 조건 없음) 전체
@@ -120,7 +121,6 @@ RETURNS TABLE(
     usrgrp_nm      varchar,
     dept_cd        varchar,
     dept_nm        varchar,
-    pos_cd         varchar,
     email          varchar,
     mobile         varchar,
     sign_path      varchar,
@@ -131,7 +131,7 @@ RETURNS TABLE(
     use_yn         varchar
 ) LANGUAGE sql AS $$
     SELECT u.idx, u.user_id, u.co_cd, u.emp_cd, u.user_nm,
-           u.usrgrp_cd, r.usrgrp_nm, u.dept_cd, d.dept_nm, u.pos_cd,
+           u.usrgrp_cd, r.usrgrp_nm, u.dept_cd, d.dept_nm,
            u.email, u.mobile, u.sign_path, u.gridsave_yn,
            u.last_login_dt, u.login_fail_cnt, u.lock_yn, u.use_yn
       FROM tbl_user u
@@ -149,7 +149,8 @@ COMMENT ON FUNCTION sp_tbl_user_r_000(varchar, varchar, varchar, varchar, varcha
 -- ------------------------------------------------------------
 -- 4. sp_tbl_user_c_000 — 사용자 저장 (등록/수정)
 -- ------------------------------------------------------------
-CREATE OR REPLACE PROCEDURE sp_tbl_user_c_000(
+DROP PROCEDURE IF EXISTS sp_tbl_user_c_000(varchar, bigint, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar);
+CREATE PROCEDURE sp_tbl_user_c_000(
     -- p_co_cd: JWT 회사코드 — 등록 시 소속 회사, 수정 시 테넌트 검증 조건
     p_co_cd     varchar,
     -- p_idx: 대상 행 PK. p_type='C'일 때(= 신규 등록) 무시된다
@@ -166,8 +167,6 @@ CREATE OR REPLACE PROCEDURE sp_tbl_user_c_000(
     p_usrgrp_cd varchar,
     -- p_dept_cd: 부서코드
     p_dept_cd   varchar,
-    -- p_pos_cd: 직위코드
-    p_pos_cd    varchar,
     -- p_email: 알림 발송 주소
     p_email     varchar,
     -- p_mobile: 휴대전화번호
@@ -193,10 +192,10 @@ BEGIN
             RAISE EXCEPTION '이미 사용 중인 아이디입니다: %', p_user_id USING ERRCODE = '45000';
         END IF;
 
-        INSERT INTO tbl_user(user_id, co_cd, emp_cd, user_nm, user_pw, usrgrp_cd, dept_cd, pos_cd,
+        INSERT INTO tbl_user(user_id, co_cd, emp_cd, user_nm, user_pw, usrgrp_cd, dept_cd,
                              email, mobile, sign_path, lock_yn, use_yn, pw_upd_dt, ins_id, ins_dt)
         VALUES (p_user_id, p_co_cd, NULLIF(p_emp_cd, ''), p_user_nm, p_user_pw, p_usrgrp_cd,
-                NULLIF(p_dept_cd, ''), NULLIF(p_pos_cd, ''), p_email, p_mobile, p_sign_path,
+                NULLIF(p_dept_cd, ''), p_email, p_mobile, p_sign_path,
                 COALESCE(NULLIF(p_lock_yn, ''), 'N'), COALESCE(NULLIF(p_use_yn, ''), 'Y'),
                 now(), p_id, now());
     ELSE
@@ -208,10 +207,9 @@ BEGIN
                pw_upd_dt = CASE WHEN NULLIF(p_user_pw, '') IS NOT NULL THEN now() ELSE pw_upd_dt END,
                usrgrp_cd = p_usrgrp_cd,
                dept_cd   = NULLIF(p_dept_cd, ''),
-               pos_cd    = NULLIF(p_pos_cd, ''),
                email     = p_email,
                mobile    = p_mobile,
-               sign_path = p_sign_path,
+               sign_path = COALESCE(NULLIF(p_sign_path, ''), sign_path),
                lock_yn   = COALESCE(NULLIF(p_lock_yn, ''), lock_yn),
                -- 잠금을 푸는 저장이면 실패횟수도 함께 0으로 되돌린다
                login_fail_cnt = CASE WHEN p_lock_yn = 'N' THEN 0 ELSE login_fail_cnt END,
@@ -225,7 +223,8 @@ BEGIN
         END IF;
     END IF;
 END$$;
-COMMENT ON PROCEDURE sp_tbl_user_c_000(varchar, bigint, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar) IS '사용자 저장 — C:등록(아이디 전역 중복 검사), U:수정(비밀번호는 값이 있을 때만 교체)';
+COMMENT ON PROCEDURE sp_tbl_user_c_000(varchar, bigint, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar) IS
+  '사용자 저장 — C:등록(아이디 전역 중복 검사), U:수정(비밀번호는 값이 있을 때만 교체). pos_cd 제거';
 
 -- ------------------------------------------------------------
 -- 5. sp_tbl_user_d_000 — 사용자 삭제
@@ -253,8 +252,11 @@ END$$;
 COMMENT ON PROCEDURE sp_tbl_user_d_000(varchar, bigint) IS '사용자 삭제 — 개인 설정(알림·그리드)까지 정리. 작성 문서는 이력이라 보존';
 
 -- ------------------------------------------------------------
--- 6. sp_tbl_dept_r_000 — 부서 조회 (트리 정렬)
+-- 6. sp_tbl_dept_r_000 — 부서 조회 (트리 정렬 · 상위부서명)
 -- ------------------------------------------------------------
+-- RETURNS 시그니처 변경 시 DROP 후 재생성 (CREATE OR REPLACE만으로는 OUT 변경 불가)
+DROP FUNCTION IF EXISTS sp_tbl_dept_r_000(varchar, varchar, varchar);
+
 CREATE OR REPLACE FUNCTION sp_tbl_dept_r_000(
     -- p_co_cd: JWT 회사코드 — 테넌트 범위
     p_co_cd  varchar,
@@ -269,18 +271,26 @@ RETURNS TABLE(
     dept_cd   varchar,
     dept_nm   varchar,
     h_dept_cd varchar,
+    -- 상위부서명 — self LEFT JOIN (그리드 표시용, 코드는 h_dept_cd)
+    h_dept_nm varchar,
     sort_no   int,
     use_yn    varchar
 ) LANGUAGE sql AS $$
-    SELECT d.idx, d.co_cd, d.dept_cd, d.dept_nm, d.h_dept_cd, d.sort_no, d.use_yn
+    SELECT d.idx, d.co_cd, d.dept_cd, d.dept_nm, d.h_dept_cd,
+           p.dept_nm AS h_dept_nm,
+           d.sort_no, d.use_yn
       FROM tbl_dept d
+      -- 상위부서 — 없으면 h_dept_nm null
+      LEFT JOIN tbl_dept p
+        ON p.co_cd = d.co_cd
+       AND p.dept_cd = d.h_dept_cd
      WHERE d.co_cd = p_co_cd
        AND d.dept_nm LIKE CONCAT('%', COALESCE(p_dept_nm, ''), '%')
        AND d.use_yn  LIKE CONCAT('%', COALESCE(p_use_yn,  ''), '%')
      -- 최상위(상위코드 없음)를 먼저, 그다음 정렬순서·코드 순 — FE 트리 구성 순서와 동일
      ORDER BY CASE WHEN COALESCE(d.h_dept_cd, '') = '' THEN 0 ELSE 1 END, d.sort_no, d.dept_cd;
 $$;
-COMMENT ON FUNCTION sp_tbl_dept_r_000(varchar, varchar, varchar) IS '부서 조회 — 트리 구성 순서로 정렬해 반환';
+COMMENT ON FUNCTION sp_tbl_dept_r_000(varchar, varchar, varchar) IS '부서 조회 — 상위부서명(self JOIN)·트리 정렬';
 
 -- ------------------------------------------------------------
 -- 7. sp_tbl_dept_c_000 — 부서 저장 (등록/수정)
@@ -341,6 +351,7 @@ COMMENT ON PROCEDURE sp_tbl_dept_c_000(varchar, bigint, varchar, varchar, varcha
 
 -- ------------------------------------------------------------
 -- 8. sp_tbl_dept_d_000 — 부서 삭제
+--    사용자 직접 사용·하위트리 사용자·직속 하위 부서가 있으면 차단한다
 -- ------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE sp_tbl_dept_d_000(
     -- p_co_cd: JWT 회사코드
@@ -356,7 +367,33 @@ BEGIN
         RAISE EXCEPTION '삭제할 부서를 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
 
-    -- 하위 부서가 남아 있으면 트리가 끊기므로 막는다
+    -- 사용자관리에서 이 부서 사용 중
+    SELECT COUNT(*) INTO v_cnt
+      FROM tbl_user u
+     WHERE u.co_cd = p_co_cd AND u.dept_cd = v_dept_cd;
+    IF v_cnt > 0 THEN
+        RAISE EXCEPTION '사용자가 사용 중인 부서는 삭제할 수 없습니다: %', v_dept_cd USING ERRCODE = '45000';
+    END IF;
+
+    -- 하위 부서 트리에 사용자가 있으면 상위도 삭제 불가
+    WITH RECURSIVE sub AS (
+        SELECT c.dept_cd
+          FROM tbl_dept c
+         WHERE c.co_cd = p_co_cd AND c.h_dept_cd = v_dept_cd
+        UNION ALL
+        SELECT c2.dept_cd
+          FROM tbl_dept c2
+          INNER JOIN sub s ON s.dept_cd = c2.h_dept_cd
+         WHERE c2.co_cd = p_co_cd
+    )
+    SELECT COUNT(*) INTO v_cnt
+      FROM sub s
+      INNER JOIN tbl_user u ON u.co_cd = p_co_cd AND u.dept_cd = s.dept_cd;
+    IF v_cnt > 0 THEN
+        RAISE EXCEPTION '하위 부서에 사용자가 있어 삭제할 수 없습니다: %', v_dept_cd USING ERRCODE = '45000';
+    END IF;
+
+    -- 직속 하위 부서가 남아 있으면 트리가 끊기므로 막는다
     SELECT COUNT(*) INTO v_cnt FROM tbl_dept WHERE co_cd = p_co_cd AND h_dept_cd = v_dept_cd;
     IF v_cnt > 0 THEN
         RAISE EXCEPTION '하위 부서가 있어 삭제할 수 없습니다: %', v_dept_cd USING ERRCODE = '45000';
@@ -364,7 +401,8 @@ BEGIN
 
     DELETE FROM tbl_dept WHERE co_cd = p_co_cd AND idx = p_idx;
 END$$;
-COMMENT ON PROCEDURE sp_tbl_dept_d_000(varchar, bigint) IS '부서 삭제 — 하위 부서 존재 시 차단';
+COMMENT ON PROCEDURE sp_tbl_dept_d_000(varchar, bigint) IS
+    '부서 삭제 — 사용자·하위트리 사용자·하위 부서 존재 시 차단';
 
 -- ------------------------------------------------------------
 -- 9. sp_tbl_menu_r_000 — 권한 반영 메뉴 트리 조회
@@ -405,9 +443,10 @@ RETURNS TABLE(
        AND m.use_yn = 'Y'
        -- 화면이 붙지 않은 분류 노드(scrn_cd IS NULL)는 항상 통과, leaf는 조회권한이 있을 때만
        AND (m.scrn_cd IS NULL OR COALESCE(rs.read_yn, 'N') = 'Y')
-     ORDER BY CASE WHEN COALESCE(m.h_menu_cd, '') = '' THEN 0 ELSE 1 END, m.sort_no, m.menu_cd;
+     -- 대·중·소 인코딩 sort_no 순 (1001 → 2101 → …)
+     ORDER BY m.sort_no, m.menu_cd;
 $$;
-COMMENT ON FUNCTION sp_tbl_menu_r_000(varchar, varchar) IS '권한 반영 메뉴 트리 — 조회권한 없는 화면은 응답에서 제외(기본 거부)';
+COMMENT ON FUNCTION sp_tbl_menu_r_000(varchar, varchar) IS '권한 반영 메뉴 트리 — sort_no(대중소 인코딩) 순, 조회권한 없는 화면 제외';
 
 -- ------------------------------------------------------------
 -- 10. sp_tbl_role_screen_r_000 — 권한그룹별 화면 권한 조회
@@ -559,10 +598,14 @@ CREATE OR REPLACE PROCEDURE sp_tbl_code_c_000(
     p_type    varchar
 )
 LANGUAGE plpgsql AS $$
-DECLARE v_sys_yn varchar(1); v_cnt int;
+DECLARE
+    v_sys_yn varchar(10);
+    v_co     varchar(10);
+    v_cnt    int;
+    v_is_sys boolean;
 BEGIN
     IF p_co_cd = '0000' THEN
-        RAISE EXCEPTION '플랫폼 표준코드는 수정할 수 없습니다.' USING ERRCODE = '45000';
+        RAISE EXCEPTION '플랫폼 표준코드 회사로는 저장할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
 
     IF p_type = 'C' THEN
@@ -571,31 +614,53 @@ BEGIN
         IF v_cnt > 0 THEN
             RAISE EXCEPTION '이미 등록된 코드입니다: % / %', p_main_cd, p_sub_cd USING ERRCODE = '45000';
         END IF;
-
         INSERT INTO tbl_code(co_cd, main_cd, sub_cd, code_nm, sort_no, ref1, ref2, sys_yn, use_yn, ins_id, ins_dt)
         VALUES (p_co_cd, p_main_cd, p_sub_cd, p_code_nm, COALESCE(p_sort_no, 0),
                 p_ref1, p_ref2, 'N', COALESCE(NULLIF(p_use_yn, ''), 'Y'), p_id, now());
-    ELSE
-        SELECT sys_yn INTO v_sys_yn FROM tbl_code WHERE co_cd = p_co_cd AND idx = p_idx;
-        IF v_sys_yn IS NULL THEN
-            RAISE EXCEPTION '수정할 코드를 찾을 수 없습니다.' USING ERRCODE = '45000';
-        END IF;
-        IF v_sys_yn = 'Y' THEN
-            RAISE EXCEPTION '시스템 코드는 수정할 수 없습니다.' USING ERRCODE = '45000';
-        END IF;
-
-        UPDATE tbl_code
-           SET code_nm = p_code_nm,
-               sort_no = COALESCE(p_sort_no, sort_no),
-               ref1    = p_ref1,
-               ref2    = p_ref2,
-               use_yn  = COALESCE(NULLIF(p_use_yn, ''), use_yn),
-               upd_id  = p_id,
-               upd_dt  = now()
-         WHERE co_cd = p_co_cd AND idx = p_idx;
+        RETURN;
     END IF;
+
+    SELECT sys_yn, co_cd INTO v_sys_yn, v_co
+      FROM tbl_code
+     WHERE idx = p_idx AND co_cd IN (p_co_cd, '0000')
+     ORDER BY CASE WHEN co_cd = p_co_cd THEN 0 ELSE 1 END
+     LIMIT 1;
+    IF v_sys_yn IS NULL THEN
+        RAISE EXCEPTION '수정할 코드를 찾을 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    v_is_sys := v_sys_yn IN ('Y', 'y', 'sys');
+
+    IF v_is_sys THEN
+        IF v_co = '0000' THEN
+            INSERT INTO tbl_code(co_cd, main_cd, sub_cd, code_nm, sort_no, ref1, ref2, sys_yn, use_yn, ins_id, ins_dt)
+            SELECT p_co_cd, c.main_cd, c.sub_cd, COALESCE(NULLIF(p_code_nm, ''), c.code_nm),
+                   c.sort_no, c.ref1, c.ref2, c.sys_yn,
+                   COALESCE(NULLIF(p_use_yn, ''), c.use_yn), p_id, now()
+              FROM tbl_code c WHERE c.idx = p_idx
+            ON CONFLICT (co_cd, main_cd, sub_cd) DO UPDATE SET
+                code_nm = EXCLUDED.code_nm, use_yn = EXCLUDED.use_yn, upd_id = p_id, upd_dt = now();
+        ELSE
+            UPDATE tbl_code
+               SET code_nm = COALESCE(NULLIF(p_code_nm, ''), code_nm),
+                   use_yn  = COALESCE(NULLIF(p_use_yn, ''), use_yn),
+                   upd_id  = p_id, upd_dt = now()
+             WHERE co_cd = p_co_cd AND idx = p_idx;
+        END IF;
+        RETURN;
+    END IF;
+
+    IF v_co <> p_co_cd THEN
+        RAISE EXCEPTION '수정할 코드를 찾을 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    UPDATE tbl_code
+       SET code_nm = p_code_nm, sort_no = COALESCE(p_sort_no, sort_no),
+           ref1 = p_ref1, ref2 = p_ref2,
+           use_yn = COALESCE(NULLIF(p_use_yn, ''), use_yn),
+           upd_id = p_id, upd_dt = now()
+     WHERE co_cd = p_co_cd AND idx = p_idx;
 END$$;
-COMMENT ON PROCEDURE sp_tbl_code_c_000(varchar, bigint, varchar, varchar, varchar, int, varchar, varchar, varchar, varchar, varchar) IS '공통코드 저장 — 플랫폼 표준코드(0000·sys_yn=Y) 변경 차단';
+COMMENT ON PROCEDURE sp_tbl_code_c_000(varchar, bigint, varchar, varchar, varchar, int, varchar, varchar, varchar, varchar, varchar) IS
+  '공통코드 저장 — 사용자 CRUD, 시스템은 코드명·사용여부만(0000은 업체 오버라이드)';
 
 -- ------------------------------------------------------------
 -- 14. sp_tbl_code_d_000 — 공통코드 삭제

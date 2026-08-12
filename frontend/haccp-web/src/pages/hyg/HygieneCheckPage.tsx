@@ -283,7 +283,7 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
         (row) => String(row.docIdx),
       );
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, [replaceServerList, screenCode]);
 
@@ -330,14 +330,14 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
           next.baseKey = row.baseKey || todayYmd();
           return next;
         } catch (error) {
-          mesToast(mesError(error), "error");
+          mesError(error);
           return null;
         }
       }
       try {
         return detailToBuf(kind, await getHygieneDetail(screenCode, row.docIdx), user?.userNm);
       } catch (error) {
-        mesToast(mesError(error), "error");
+        mesError(error);
         return null;
       }
     });
@@ -385,7 +385,7 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
       );
       setSelectedEntry(null);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, "add");
 
@@ -448,7 +448,7 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
         if (err.rowKey) void handleSelect(err.rowKey);
       }
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, "save");
 
@@ -472,7 +472,7 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
       await loadList();
       await handleSelect(null);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   }, "del");
 
@@ -879,7 +879,7 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
                 putBuffer(activeKey, detailToBuf(kind, detail, user?.userNm), {
                   status: asText(detail.header?.status) || null,
                 });
-              }).catch((error) => mesToast(mesError(error), "error"));
+              }).catch((error) => mesError(error));
             }
           }}
           // 상태 라벨

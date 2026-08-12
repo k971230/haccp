@@ -372,7 +372,7 @@ export default function MasterDataPage({ screenCode }: MasterDataPageProps) {
       setActiveKey(null);
       clearSel();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- g.load 안정 참조
   }, [config, keyword, useYn]);
@@ -423,7 +423,7 @@ export default function MasterDataPage({ screenCode }: MasterDataPageProps) {
       mesToast(MES.saveDone, "success");
       await loadRows();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -471,7 +471,7 @@ export default function MasterDataPage({ screenCode }: MasterDataPageProps) {
       mesToast(MES.deleteDone, "success");
       await loadRows();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 

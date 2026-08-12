@@ -156,7 +156,7 @@ export default function TemplateCheckItemManagementPage({
       clearItemSel();
       clearRuleSel();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- load 안정 참조
   }, [fixedTmplCd]);
@@ -260,7 +260,7 @@ export default function TemplateCheckItemManagementPage({
       mesToast(MES.saveDone, "success");
       await loadAll();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -301,7 +301,7 @@ export default function TemplateCheckItemManagementPage({
       mesToast(MES.saveDone, "success");
       await loadAll();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -348,7 +348,7 @@ export default function TemplateCheckItemManagementPage({
       mesToast(MES.saveDone, "success");
       await loadAll();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -388,7 +388,7 @@ export default function TemplateCheckItemManagementPage({
       mesToast(MES.deleteDone, "success");
       await loadAll();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -429,7 +429,7 @@ export default function TemplateCheckItemManagementPage({
       mesToast(MES.deleteDone, "success");
       await loadAll();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -514,7 +514,7 @@ export default function TemplateCheckItemManagementPage({
           </SearchArea>
         )}
       >
-        <PageCardSplit>
+        <PageCardSplit storageKey="haccp-split-tmpl-check-item">
           <div {...sec.bind("h", gridPanelClass)}>
             <div className={gridHeadClass}>
               <b>점검항목</b>

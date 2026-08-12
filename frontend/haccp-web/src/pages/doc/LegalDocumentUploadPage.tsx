@@ -357,7 +357,7 @@ export default function LegalDocumentUploadPage({
       mesToast(MES.saveDone, "success");
       await loadTemplates();
     } catch (e) {
-      mesToast(mesError(e), "error");
+      mesError(e);
     }
   };
 
@@ -396,7 +396,7 @@ export default function LegalDocumentUploadPage({
       setTmplSelReset((n) => n + 1);
       await loadTemplates();
     } catch (e) {
-      mesToast(mesError(e), "error");
+      mesError(e);
     }
   };
 
@@ -425,7 +425,7 @@ export default function LegalDocumentUploadPage({
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), API_TIMEOUT_FILE_MS);
       } catch (e) {
-        mesToast(mesError(e), "error");
+        mesError(e);
       }
     }, "dl");
 
@@ -499,7 +499,7 @@ export default function LegalDocumentUploadPage({
       mesToast(MES.saveDone, "success");
       await loadDocs();
     } catch (e) {
-      mesToast(mesError(e), "error");
+      mesError(e);
     }
   };
 
@@ -536,7 +536,7 @@ export default function LegalDocumentUploadPage({
       setDocSelReset((n) => n + 1);
       await loadDocs();
     } catch (e) {
-      mesToast(mesError(e), "error");
+      mesError(e);
     }
   };
 
@@ -576,7 +576,7 @@ export default function LegalDocumentUploadPage({
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), API_TIMEOUT_FILE_MS);
       } catch (e) {
-        mesToast(mesError(e), "error");
+        mesError(e);
       }
     }, "dl-doc");
 

@@ -223,6 +223,24 @@ INSERT INTO tbl_code (co_cd, main_cd, sub_cd, code_nm, sort_no, ref1, sys_yn, in
     ('0000', 'use-yn',       '*',        '사용여부',               0, NULL, 'Y', 'system'),
     ('0000', 'use-yn',       'y',        '사용',                   1, NULL, 'Y', 'system'),
     ('0000', 'use-yn',       'n',        '미사용',                 2, NULL, 'Y', 'system'),
+    -- 로그인 결과 — tbl_login_log.result_cd
+    ('0000', 'login-result', '*',        '로그인 결과',            0, NULL, 'Y', 'system'),
+    ('0000', 'login-result', 'S',        '성공',                   1, NULL, 'Y', 'system'),
+    ('0000', 'login-result', 'F',        '실패',                   2, NULL, 'Y', 'system'),
+    ('0000', 'login-result', 'L',        '잠금',                   3, NULL, 'Y', 'system'),
+    -- 감사 행위 — tbl_audit_log.action_cd
+    ('0000', 'audit-result', '*',        '감사 행위',              0, NULL, 'Y', 'system'),
+    ('0000', 'audit-result', 'I',        '등록',                   1, NULL, 'Y', 'system'),
+    ('0000', 'audit-result', 'U',        '수정',                   2, NULL, 'Y', 'system'),
+    ('0000', 'audit-result', 'D',        '삭제',                   3, NULL, 'Y', 'system'),
+    ('0000', 'audit-result', 'APV',      '승인',                   4, NULL, 'Y', 'system'),
+    ('0000', 'audit-result', 'RJT',      '반려',                   5, NULL, 'Y', 'system'),
+    ('0000', 'audit-result', 'JUDGE_MOD','판정 수동변경',          6, NULL, 'Y', 'system'),
+    ('0000', 'audit-result', 'CO_SWITCH','업체 전환',              7, NULL, 'Y', 'system'),
+    -- 감사 대상 메뉴 — sub_cd=tbl_nm, ref1=scrn_cd
+    ('0000', 'audit-target', '*',        '감사 대상 메뉴',         0, NULL, 'Y', 'system'),
+    ('0000', 'audit-target', 'tbl_document',      '문서함',        1, 'document-inbox', 'Y', 'system'),
+    ('0000', 'audit-target', 'tbl_document_file', '문서 파일',     2, 'document-inbox', 'Y', 'system'),
     -- 법인구분 — tbl_company.co_gbn
     ('0000', 'CO_GBN',       '*',        '법인구분',               0, NULL, 'Y', 'system'),
     ('0000', 'CO_GBN',       '1',        '법인',                   1, NULL, 'Y', 'system'),

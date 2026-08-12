@@ -302,7 +302,7 @@ export default function EquipmentHistoryPage() {
         }
       }
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- equip.load·hist.load 안정 참조
   }, [selectedEquipIdx]);
@@ -331,7 +331,7 @@ export default function EquipmentHistoryPage() {
       setHistActiveKey(null);
       clearHistSel();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- hist.load 안정 참조
   }, []);
@@ -533,7 +533,7 @@ export default function EquipmentHistoryPage() {
         await loadHist(lastIdx);
       }
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -571,7 +571,7 @@ export default function EquipmentHistoryPage() {
       mesToast(MES.saveDone, "success");
       await loadHist(selectedEquipIdx);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -624,7 +624,7 @@ export default function EquipmentHistoryPage() {
       }
       await loadEquip();
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -665,7 +665,7 @@ export default function EquipmentHistoryPage() {
       mesToast(MES.deleteDone, "success");
       await loadHist(selectedEquipIdx);
     } catch (error) {
-      mesToast(mesError(error), "error");
+      mesError(error);
     }
   };
 
@@ -703,7 +703,7 @@ export default function EquipmentHistoryPage() {
           />
         )}
       >
-        <PageCardSplit>
+        <PageCardSplit storageKey="haccp-split-equipment-hist">
           <div {...sec.bind("h", gridPanelClass)}>
             <div className={gridHeadClass}>
               <b>설비</b>
