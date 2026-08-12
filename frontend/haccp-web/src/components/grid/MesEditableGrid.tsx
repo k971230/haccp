@@ -64,6 +64,8 @@ interface MesEditableGridProps<T extends Record<string, any>> extends GridAccess
   touchKiosk?: boolean;
   /** pref v2 저장 키 (화면 내 그리드 id) */
   persistId?: string;
+  /** pref 저장용 화면코드 — 없으면 PageScrnContext */
+  scrnCd?: string;
   /** 행 다중선택 (__select; 데이터 Y/N checkbox와 별개) — ADR-026 삭제용 */
   selectable?: boolean;
   /** 체크 선택 변경 시 부모에 선택 행 전달 */
@@ -98,8 +100,9 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
   const { rows, height = 320, editable, activeKey, loading, showRowNum = true, access, onLockedAttempt, touchKiosk, selectable } = props;
   type ER = EditableRow<T>;
   const columns = props.columns as unknown as GridColumn<ER>[];
-// 설명 — pref 저장용 화면코드
-  const scrnCd = useContext(PageScrnContext);
+  // pref 저장용 화면코드 — prop 우선, 없으면 셸 PageScrnContext
+  const ctxScrnCd = useContext(PageScrnContext);
+  const scrnCd = props.scrnCd || ctxScrnCd;
 
   // Y/N 체크박스 값 판정
   const isYnChecked = (v: unknown) => {

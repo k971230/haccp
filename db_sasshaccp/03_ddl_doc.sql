@@ -156,10 +156,11 @@ COMMENT ON COLUMN tbl_approval_line_step.upd_dt       IS '최종수정일시';
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tbl_template (
     idx                    bigint       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    tmpl_cd                varchar(20)  NOT NULL,
+    tmpl_cd                varchar(40)  NOT NULL,
     tmpl_nm                varchar(200) NOT NULL,
     mng_no                 varchar(20)  NULL,
-    doc_kind               varchar(3)   NOT NULL,
+    -- 문서 유형 — html(전용 화면+DB) / hwp(rhwp). 구 DB/HWP 는 migrate 51에서 치환
+    doc_kind               varchar(10)  NOT NULL,
     category_cd            varchar(20)  NULL,
     scrn_cd                varchar(30)  NULL,
     form_path              varchar(300) NULL,
@@ -177,10 +178,10 @@ CREATE TABLE IF NOT EXISTS tbl_template (
 );
 COMMENT ON TABLE  tbl_template                         IS '표준 템플릿 카탈로그 — 플랫폼이 배포하는 31종 + 추가 12종 메타. 업체는 복사해서 쓴다';
 COMMENT ON COLUMN tbl_template.idx                     IS 'PK 자동 채번 대리키';
-COMMENT ON COLUMN tbl_template.tmpl_cd                 IS '템플릿 코드 — CCP_COLD, CCP_METAL, DAILY_HYG 등';
+COMMENT ON COLUMN tbl_template.tmpl_cd                 IS '템플릿 코드 — tmpl_ccp-cold-log, tmpl_ccp-metal-log, tmpl_prp-hygiene-daily 등';
 COMMENT ON COLUMN tbl_template.tmpl_nm                 IS '표준 문서명 — CCP 냉장보관 모니터링 일지 등(회사별 CCP 코드는 포함하지 않음)';
 COMMENT ON COLUMN tbl_template.mng_no                  IS '표준기준서 관리번호 — HA-HYG-01, HA-CCP-06-01 등';
-COMMENT ON COLUMN tbl_template.doc_kind                IS '문서 유형 — DB:전용 HTML 화면 + DB 저장, HWP:rhwp 문서작성형';
+COMMENT ON COLUMN tbl_template.doc_kind                IS '문서 유형 — html:전용 HTML 화면 + DB 저장, hwp:rhwp 문서작성형';
 COMMENT ON COLUMN tbl_template.category_cd             IS '분류 — CCP, HYG, FAC, INV, VER, EDU, DOC';
 COMMENT ON COLUMN tbl_template.scrn_cd                 IS '연결 화면코드 — doc_kind=DB일 때(= 전용 화면 보유) tbl_screen.scrn_cd';
 COMMENT ON COLUMN tbl_template.form_path               IS '표준 원본 HWP 양식의 APP_FILE_ROOT 기준 상대 경로 — DB형은 참조본, HWP형은 rhwp 편집 시작 원본';
@@ -202,7 +203,7 @@ COMMENT ON COLUMN tbl_template.upd_dt                  IS '최종수정일시';
 CREATE TABLE IF NOT EXISTS tbl_company_template (
     idx              bigint       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     co_cd            varchar(10)  NOT NULL,
-    tmpl_cd          varchar(20)  NOT NULL,
+    tmpl_cd          varchar(40)  NOT NULL,
     tmpl_nm_ovr      varchar(200) NULL,
     appr_line_cd     varchar(20)  NULL,
     cycle_cd         varchar(10)  NULL,
@@ -223,6 +224,7 @@ COMMENT ON COLUMN tbl_company_template.appr_line_cd    IS '적용 결재선 코�
 COMMENT ON COLUMN tbl_company_template.cycle_cd        IS '작성주기 오버라이드 — NULL이면 표준 주기 사용';
 COMMENT ON COLUMN tbl_company_template.retention_month IS '보존 개월수 오버라이드 — NULL이면 표준값 사용';
 COMMENT ON COLUMN tbl_company_template.use_yn          IS '사용여부 Y/N — N일 때(= 우리 업체 미해당 양식) 메뉴·일정에서 제외';
+-- sys_yn 길이는 migrate 51에서 varchar(10)·값 sys/usr 로 확장한다
 COMMENT ON COLUMN tbl_company_template.ins_id          IS '최초입력자 ID';
 COMMENT ON COLUMN tbl_company_template.ins_dt          IS '최초입력일시';
 COMMENT ON COLUMN tbl_company_template.upd_id          IS '최종수정자 ID';
@@ -233,7 +235,7 @@ COMMENT ON COLUMN tbl_company_template.upd_dt          IS '최종수정일시';
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tbl_check_item (
     idx        bigint       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    tmpl_cd    varchar(20)  NOT NULL,
+    tmpl_cd    varchar(40)  NOT NULL,
     item_cd    varchar(20)  NOT NULL,
     grp_cd     varchar(20)  NULL,
     grp_nm     varchar(100) NULL,
@@ -275,7 +277,7 @@ COMMENT ON COLUMN tbl_check_item.upd_dt     IS '최종수정일시';
 CREATE TABLE IF NOT EXISTS tbl_company_check_item (
     idx         bigint       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     co_cd       varchar(10)  NOT NULL,
-    tmpl_cd     varchar(20)  NOT NULL,
+    tmpl_cd     varchar(40)  NOT NULL,
     item_cd     varchar(20)  NOT NULL,
     item_nm_ovr varchar(500) NULL,
     sort_no     int          NULL,
@@ -306,7 +308,7 @@ COMMENT ON COLUMN tbl_company_check_item.upd_dt      IS '최종수정일시';
 CREATE TABLE IF NOT EXISTS tbl_doc_no_rule (
     idx            bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     co_cd          varchar(10) NOT NULL,
-    tmpl_cd        varchar(20) NOT NULL,
+    tmpl_cd        varchar(40) NOT NULL,
     prefix         varchar(20) NULL,
     date_fmt       varchar(10) NULL DEFAULT 'YYYYMMDD',
     seq_len        int         NOT NULL DEFAULT 3,
@@ -341,8 +343,9 @@ COMMENT ON COLUMN tbl_doc_no_rule.upd_dt         IS '최종수정일시';
 CREATE TABLE IF NOT EXISTS tbl_document (
     idx             bigint       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     co_cd           varchar(10)  NOT NULL,
-    tmpl_cd         varchar(20)  NOT NULL,
-    doc_kind        varchar(3)   NOT NULL,
+    tmpl_cd         varchar(40)  NOT NULL,
+    -- 문서 유형 — html / hwp (구 DB/HWP 는 migrate 51에서 치환)
+    doc_kind        varchar(10)  NOT NULL,
     doc_no          varchar(50)  NOT NULL,
     base_dt         varchar(8)   NOT NULL,
     base_dt_to      varchar(8)   NULL,
@@ -369,7 +372,7 @@ COMMENT ON TABLE  tbl_document                 IS '문서 공통 관리정보 �
 COMMENT ON COLUMN tbl_document.idx             IS 'PK 자동 채번 대리키 — 업무 테이블이 doc_idx로 참조';
 COMMENT ON COLUMN tbl_document.co_cd           IS '회사코드 — 테넌트 키';
 COMMENT ON COLUMN tbl_document.tmpl_cd         IS '템플릿 코드 — tbl_template.tmpl_cd';
-COMMENT ON COLUMN tbl_document.doc_kind        IS '문서 유형 — DB:전용 화면, HWP:rhwp 문서작성형';
+COMMENT ON COLUMN tbl_document.doc_kind        IS '문서 유형 — html:전용 화면, hwp:rhwp 문서작성형';
 COMMENT ON COLUMN tbl_document.doc_no          IS '문서번호 — tbl_doc_no_rule로 채번한 사용자 표기용 번호';
 COMMENT ON COLUMN tbl_document.base_dt         IS '기준일자 YYYYMMDD — 작성일 또는 점검일. 일정·검색의 기준';
 COMMENT ON COLUMN tbl_document.base_dt_to      IS '기준종료일자 YYYYMMDD — 용수관리처럼 기간 단위 문서일 때만 사용';
@@ -477,7 +480,7 @@ COMMENT ON TABLE  tbl_document_relation             IS '문서 간 연결 — �
 COMMENT ON COLUMN tbl_document_relation.idx         IS 'PK 자동 채번 대리키';
 COMMENT ON COLUMN tbl_document_relation.co_cd       IS '회사코드 — 테넌트 키';
 COMMENT ON COLUMN tbl_document_relation.src_doc_idx IS '출발 문서 idx — tbl_document.idx';
-COMMENT ON COLUMN tbl_document_relation.rel_type    IS '관계 유형 — PLAN_CHECK(계획-점검), CHECK_RESULT(점검-결과), RESULT_CA(결과-개선조치), EDU_PLAN_LOG(교육계획-교육일지), CALIB_TARGET_LOG(검교정대상-일지)';
+COMMENT ON COLUMN tbl_document_relation.rel_type    IS '관계 유형 — PLAN_CHECK(계획-점검), CHECK_RESULT(점검-결과), RESULT_CA(결과-개선조치), tmpl_admin-edu-plan_LOG(교육계획-교육일지), tmpl_prp-calib-target_LOG(검교정대상-일지)';
 COMMENT ON COLUMN tbl_document_relation.tgt_doc_idx IS '도착 문서 idx — tbl_document.idx';
 COMMENT ON COLUMN tbl_document_relation.ins_id      IS '최초입력자 ID';
 COMMENT ON COLUMN tbl_document_relation.ins_dt      IS '최초입력일시';
@@ -515,7 +518,7 @@ COMMENT ON COLUMN tbl_document_version.ins_dt        IS '최초입력일시';
 CREATE TABLE IF NOT EXISTS tbl_schedule_rule (
     idx       bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     co_cd     varchar(10) NOT NULL,
-    tmpl_cd   varchar(20) NOT NULL,
+    tmpl_cd   varchar(40) NOT NULL,
     rule_seq  int         NOT NULL DEFAULT 1,
     cycle_cd  varchar(1)  NOT NULL,
     week_days varchar(20) NULL,
@@ -555,7 +558,7 @@ COMMENT ON COLUMN tbl_schedule_rule.upd_dt    IS '최종수정일시';
 CREATE TABLE IF NOT EXISTS tbl_schedule_task (
     idx      bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     co_cd    varchar(10) NOT NULL,
-    tmpl_cd  varchar(20) NOT NULL,
+    tmpl_cd  varchar(40) NOT NULL,
     base_dt  varchar(8)  NOT NULL,
     due_dt   varchar(8)  NOT NULL,
     due_time varchar(4)  NULL,
@@ -594,7 +597,7 @@ CREATE TABLE IF NOT EXISTS tbl_corrective_action (
     idx             bigint       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     co_cd           varchar(10)  NOT NULL,
     ca_no           varchar(50)  NOT NULL,
-    src_tmpl_cd     varchar(20)  NULL,
+    src_tmpl_cd     varchar(40)  NULL,
     src_doc_idx     bigint       NULL,
     src_row_idx     bigint       NULL,
     occur_dt        varchar(8)   NOT NULL,

@@ -137,7 +137,7 @@ const MASTER_SCREEN_CONFIGS: Record<string, MasterScreenConfig> = {
     screenCode: "partner-management", title: "거래처 관리", type: "partner", keyField: "partnerCd", nameField: "partnerNm",
     editFields: [
       { key: "partnerCd", label: "거래처 코드", required: true, width: 110 }, { key: "partnerNm", label: "거래처명", required: true, width: 150 },
-      { key: "partnerGbn", label: "구분", input: "select", required: true, width: 110, options: [{ value: "SUPPLY", label: "공급처" }, { value: "SALES", label: "판매처" }, { value: "WASTE", label: "폐기물 수거업체" }, { value: "LAB", label: "검사기관" }] },
+      { key: "partnerGbn", label: "구분", input: "select", required: true, width: 110, options: [{ value: "SUPPLY", label: "공급처" }, { value: "SALES", label: "판매처" }, { value: "tmpl_prp-waste-check", label: "폐기물 수거업체" }, { value: "LAB", label: "검사기관" }] },
       { key: "bizNo", label: "사업자등록번호", width: 120 }, { key: "ceoNm", label: "대표자명", width: 90 }, { key: "telNo", label: "전화번호", width: 110 }, { key: "faxNo", label: "팩스번호", width: 100 },
       { key: "mngNm", label: "담당자명", width: 90 }, { key: "mobile", label: "담당자 휴대폰", width: 120 }, { key: "email", label: "이메일", width: 150 },
       { key: "zipNo", label: "우편번호", width: 80 }, { key: "addrH", label: "주소", width: 160 }, { key: "addrD", label: "상세주소", width: 120 },

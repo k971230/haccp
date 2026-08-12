@@ -17,7 +17,7 @@ SET search_path TO sasshaccp;
 
 -- ------------------------------------------------------------
 -- 1. tbl_company — 회사(테넌트) 마스터
---    구 bas1200 재설계. 제거한 컬럼과 사유:
+--    제거한 컬럼과 사유:
 --      soc_no / ceo_tel_no / ceo_zip_no / ceo_addr_h / ceo_addr_d
 --        → 대표자 주민등록번호·자택정보. HACCP 문서 SaaS에 보관 근거 없는 개인정보
 --      co_seq / co_st_dt / co_fn_dt        → 회계기수·회계연도. 회계 모듈 없음
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS tbl_company (
     upd_dt          timestamp    NULL,
     CONSTRAINT ux_tbl_company_co_cd UNIQUE (co_cd)
 );
-COMMENT ON TABLE  tbl_company                 IS '회사(테넌트) 마스터 — SaaS 가입 업체 1행. 구 bas1200 재설계';
+COMMENT ON TABLE  tbl_company                 IS '회사(테넌트) 마스터 — SaaS 가입 업체 1행.';
 COMMENT ON COLUMN tbl_company.idx             IS 'PK 자동 채번 대리키';
 COMMENT ON COLUMN tbl_company.co_cd           IS '회사코드 — 테넌트 키. JWT LoginUser.coCd 및 전 SP p_co_cd 와 1:1';
 COMMENT ON COLUMN tbl_company.co_nm           IS '회사명 — 전 문서 A4 헤더에 출력';
@@ -277,7 +277,7 @@ CREATE TABLE IF NOT EXISTS tbl_screen (
     scrn_cd    varchar(30)  NOT NULL,
     scrn_nm    varchar(100) NOT NULL,
     module_cd  varchar(10)  NOT NULL,
-    tmpl_cd    varchar(20)  NULL,
+    tmpl_cd    varchar(40)  NULL,
     sort_no    int          NOT NULL DEFAULT 0,
     use_yn     varchar(1)   NOT NULL DEFAULT 'Y',
     ins_id     varchar(20)  NULL,
@@ -308,7 +308,8 @@ CREATE TABLE IF NOT EXISTS tbl_menu (
     co_cd      varchar(10)  NOT NULL,
     menu_cd    varchar(40)  NOT NULL,
     menu_nm    varchar(100) NOT NULL,
-    h_menu_cd  varchar(20)  NULL,
+    -- 상위 메뉴코드 — kebab 대·중 분류(예: menu-doc-write)까지 수용
+    h_menu_cd  varchar(40)  NULL,
     scrn_cd    varchar(30)  NULL,
     sort_no    int          NOT NULL DEFAULT 0,
     use_yn     varchar(1)   NOT NULL DEFAULT 'Y',
@@ -333,7 +334,7 @@ COMMENT ON COLUMN tbl_menu.upd_id     IS '최종수정자 ID';
 COMMENT ON COLUMN tbl_menu.upd_dt     IS '최종수정일시';
 
 -- ------------------------------------------------------------
--- 9. tbl_code — 공통코드 (구 cm_code 재설계)
+-- 9. tbl_code — 공통코드
 --    sub_cd = '*' 행이 대분류(그룹) 헤더, 그 외가 세부코드
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tbl_code (
@@ -353,7 +354,7 @@ CREATE TABLE IF NOT EXISTS tbl_code (
     upd_dt   timestamp    NULL,
     CONSTRAINT ux_tbl_code UNIQUE (co_cd, main_cd, sub_cd)
 );
-COMMENT ON TABLE  tbl_code          IS '공통코드 — 구 cm_code 재설계. sub_cd=* 행이 그룹 헤더';
+COMMENT ON TABLE  tbl_code          IS '공통코드 — sub_cd=* 행이 그룹 헤더';
 COMMENT ON COLUMN tbl_code.idx      IS 'PK 자동 채번 대리키';
 COMMENT ON COLUMN tbl_code.co_cd    IS '회사코드 — 테넌트 키. 0000일 때(= 플랫폼 표준코드) 전 업체 공용';
 COMMENT ON COLUMN tbl_code.main_cd  IS '대분류 코드';

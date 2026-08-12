@@ -294,7 +294,7 @@ COMMENT ON COLUMN tbl_ccp_verify_item.item_cd       IS '항목코드 — tbl_che
 COMMENT ON COLUMN tbl_ccp_verify_item.verify_desc   IS '검증 내용 — 표준기준서 질문 문구';
 COMMENT ON COLUMN tbl_ccp_verify_item.answer_cd     IS '응답 — Y:예, N:아니오. N일 때(= 미준수) 개선조치 필수';
 COMMENT ON COLUMN tbl_ccp_verify_item.record_desc   IS '기록 내용 — 확인 근거 서술. 자동 집계 항목은 SP가 문구를 생성해 채운다';
-COMMENT ON COLUMN tbl_ccp_verify_item.ref_tmpl_cd   IS '자동 집계 대상 템플릿 코드 — CCP_COLD, CCP_METAL 등. NULL이면(= 수동 입력 항목)';
+COMMENT ON COLUMN tbl_ccp_verify_item.ref_tmpl_cd   IS '자동 집계 대상 템플릿 코드 — tmpl_ccp-cold-log, tmpl_ccp-metal-log 등. NULL이면(= 수동 입력 항목)';
 COMMENT ON COLUMN tbl_ccp_verify_item.ref_from_dt   IS '집계 시작일 YYYYMMDD';
 COMMENT ON COLUMN tbl_ccp_verify_item.ref_to_dt     IS '집계 종료일 YYYYMMDD';
 COMMENT ON COLUMN tbl_ccp_verify_item.ref_total_cnt IS '집계 결과 총 작성 건수';

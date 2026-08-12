@@ -101,18 +101,25 @@ const MODULE_ICON: Readonly<Record<string, LucideIcon>> = {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-05
+ * 일자: 2026-08-12
  * 코멘트:
- *   1) 대분류 메뉴코드에서 모듈을 읽어 아이콘을 고른다
+ *   1) 대분류 메뉴코드(kebab 또는 구 M+모듈)로 아이콘을 고른다
  *   2) 사이드 메뉴가 최상위 노드를 그릴 때 호출한다
- *   3) 매칭되는 모듈이 없으면 폴더 아이콘을 쓴다 — 업체가 메뉴를 추가해도 빈칸이 생기지 않는다
+ *   3) 매칭이 없으면 폴더 아이콘 — 업체가 메뉴를 추가해도 빈칸이 없다
  */
 export function getModuleIcon(
-  // 대분류 메뉴코드 — 'M' + 모듈코드 형태다(예: MCCP). 접두 M을 떼어 모듈을 얻는다
+  // 대분류 메뉴코드 — menu-doc-write 등 kebab, 또는 구형 MWRK
   menuCd: string
 ): LucideIcon {
-  // 오늘 할 일 최상위 leaf 그룹
+  // 오늘 할 일 최상위 leaf
   if (menuCd === "today-tasks") return MODULE_ICON.TSK ?? Folder;
+  // 3단 IA 대분류 kebab
+  if (menuCd === "menu-doc-write") return MODULE_ICON.WRK ?? Folder;
+  if (menuCd === "menu-doc-flow") return MODULE_ICON.APR ?? Folder;
+  if (menuCd === "menu-doc-master") return MODULE_ICON.FRM ?? Folder;
+  if (menuCd === "menu-base") return MODULE_ICON.COD ?? Folder;
+  if (menuCd === "menu-sys") return MODULE_ICON.SYS ?? Folder;
+  // 구 대메뉴 M + 모듈코드
   const moduleCd = menuCd.startsWith("M") ? menuCd.slice(1) : menuCd;
   return MODULE_ICON[moduleCd] ?? Folder;
 }

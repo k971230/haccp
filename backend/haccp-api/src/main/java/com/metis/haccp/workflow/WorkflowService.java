@@ -184,7 +184,7 @@ public class WorkflowService {
         out.put("tmplCd", code);
         out.put("formPath", formPath);
         out.put("formFileNm", safeName);
-        out.put("sysYn", "N");
+        out.put("sysYn", "usr");
         return out;
     }
 
@@ -620,7 +620,9 @@ public class WorkflowService {
             if (sysYn == null || sysYn.isBlank()) {
                 throw new BizException("삭제할 양식을 찾을 수 없습니다.");
             }
-            if ("Y".equalsIgnoreCase(sysYn.trim())) {
+            // sys / Y = 시스템 배포분 — 삭제 차단 (usr / N 만 삭제)
+            String flag = sysYn.trim();
+            if ("Y".equalsIgnoreCase(flag) || "sys".equalsIgnoreCase(flag)) {
                 throw new BizException("시스템 배포 양식은 삭제할 수 없습니다.");
             }
         }

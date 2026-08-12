@@ -109,20 +109,20 @@ UPDATE tbl_screen
  );
 
 -- HWP 템플릿 scrn_cd → 문서작성으로 통일 (교육·성적서·검증 HWP만)
--- DB형 VERIFY_PLAN(연간 검증계획)은 category VER이어도 annual-verification-plan 유지
+-- DB형 tmpl_prp-verify-plan(연간 검증계획)은 category VER이어도 annual-verification-plan 유지
 UPDATE tbl_template
    SET scrn_cd = 'hwp-document-editor',
        upd_id = 'system',
        upd_dt = now()
- WHERE tmpl_cd IN ('EDU_PLAN', 'EDU_LOG', 'PROD_TEST', 'SURFACE_TEST')
+ WHERE tmpl_cd IN ('tmpl_admin-edu-plan', 'tmpl_admin-edu-log', 'tmpl_prp-test-product', 'tmpl_prp-test-surface')
     OR (category_cd IN ('EDU', 'VER') AND doc_kind = 'HWP');
 
--- 과거 migrate가 DB형 VERIFY_PLAN 화면코드를 덮었을 때 복구
+-- 과거 migrate가 DB형 tmpl_prp-verify-plan 화면코드를 덮었을 때 복구
 UPDATE tbl_template
    SET scrn_cd = 'annual-verification-plan',
        upd_id = 'system',
        upd_dt = now()
- WHERE tmpl_cd = 'VERIFY_PLAN'
+ WHERE tmpl_cd = 'tmpl_prp-verify-plan'
    AND doc_kind = 'DB';
 
 UPDATE tbl_template

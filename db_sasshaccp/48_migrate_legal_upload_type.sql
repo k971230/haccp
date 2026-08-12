@@ -146,7 +146,7 @@ BEGIN
     ON CONFLICT (co_cd, tmpl_cd) DO UPDATE SET
         tmpl_nm_ovr = EXCLUDED.tmpl_nm_ovr,
         use_yn = 'Y',
-        sys_yn = 'N',
+        sys_yn = 'usr',
         upd_id = p_id,
         upd_dt = now();
 END$$;

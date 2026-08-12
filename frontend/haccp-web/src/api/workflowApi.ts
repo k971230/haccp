@@ -41,7 +41,10 @@ export interface CompanyTemplate {
   apprLineCd?: string | null;
   cycleCd?: string | null;
   retentionMonth?: number | null;
-  useYn: "Y" | "N";
+  // 사용여부 — DB Y/N, 화면 use-yn(y/n)
+  useYn: "Y" | "N" | "y" | "n" | string;
+  // 시스템유무 — sys/usr (레거시 Y/N)
+  sysYn?: "Y" | "N" | "sys" | "usr" | string | null;
   // 기본 양식 사용여부 — Y이면 공통 양식, N이면 coFormIdx 자사 복제본
   baseUseYn?: "Y" | "N";
   // 활성 자사 양식 대리키 — 기본 양식 사용일 때 null
@@ -105,14 +108,24 @@ export interface ScheduleRule {
   idx?: number;
   tmplCd: string;
   tmplNm?: string;
-  cycleCd: "D" | "W" | "M" | "Y" | "E";
+  // 주기 — D일 W주 M월 Y연
+  cycleCd: "D" | "W" | "M" | "Y" | string;
   weekDays?: string | null;
   monthDay?: number | null;
   monthNo?: number | null;
+  // 기준일 yyyyMMdd
+  baseDt?: string | null;
+  // 마감시각 HHMM
   dueTime?: string | null;
+  // 담당부서·담당자명 — 텍스트
   deptCd?: string | null;
   userId?: string | null;
-  useYn: "Y" | "N";
+  userNm?: string | null;
+  useYn: "Y" | "N" | "y" | "n" | string;
+  insId?: string | null;
+  insDt?: string | null;
+  updId?: string | null;
+  updDt?: string | null;
 }
 
 export async function listApprovalLines(): Promise<ApprovalLine[]> {
@@ -223,7 +236,7 @@ export async function createCompanyTemplateCustom(params: {
  *   3) tmplCd가 비면 요청을 보내지 않고 업무 문구로 막는다(필수 쿼리 누락 500 방지)
  */
 export async function listCompanyCheckItems(
-  // 양식 코드 — DAILY_HYG / FACILITY / CCP_VERIFY 등
+  // 양식 코드 — tmpl_prp-hygiene-daily / tmpl_prp-facility-check / tmpl_ccp-verify-check 등
   tmplCd: string,
 ): Promise<CompanyCheckItem[]> {
   // 공백·미전달일 때(= 선택 전) 서버 MissingServletRequestParameterException 방지

@@ -13,14 +13,14 @@ SET search_path TO sasshaccp;
 
 INSERT INTO tbl_screen (scrn_cd, scrn_nm, module_cd, tmpl_cd, sort_no, use_yn, ins_id)
 VALUES
-    ('daily-hyg-item-admin',      '일일위생 점검항목관리',     'FRM', 'DAILY_HYG',  311, 'Y', 'system'),
-    ('ccp-cold-limit-admin',      '냉장냉동 CCP 기준관리',     'FRM', 'CCP_COLD',   321, 'Y', 'system'),
-    ('ccp-heat-limit-admin',      '가열 CCP 기준관리',         'FRM', 'CCP_HEAT',   322, 'Y', 'system'),
-    ('ccp-sanitize-limit-admin',  '멸균 CCP 기준관리',         'FRM', 'CCP_SANITIZE',323,'Y', 'system'),
-    ('ccp-filter-limit-admin',    '여과 CCP 기준관리',         'FRM', 'CCP_FILTER', 324, 'Y', 'system'),
-    ('ccp-metal-limit-admin',     '금속검출 CCP 기준관리',     'FRM', 'CCP_METAL',  325, 'Y', 'system'),
-    ('ccp-verify-standard-admin', 'CCP검증 기준·주기관리',     'FRM', 'CCP_VERIFY', 326, 'Y', 'system'),
-    ('facility-check-item-admin', '설비시설점검 항목·주기',    'FRM', 'FACILITY',   331, 'Y', 'system')
+    ('daily-hyg-item-admin',      '일일위생 점검항목관리',     'FRM', 'tmpl_prp-hygiene-daily',  311, 'Y', 'system'),
+    ('ccp-cold-limit-admin',      '냉장냉동 CCP 기준관리',     'FRM', 'tmpl_ccp-cold-log',   321, 'Y', 'system'),
+    ('ccp-heat-limit-admin',      '가열 CCP 기준관리',         'FRM', 'tmpl_ccp-heat-log',   322, 'Y', 'system'),
+    ('ccp-sanitize-limit-admin',  '멸균 CCP 기준관리',         'FRM', 'tmpl_ccp-sanitize-log',323,'Y', 'system'),
+    ('ccp-filter-limit-admin',    '여과 CCP 기준관리',         'FRM', 'tmpl_ccp-filter-log', 324, 'Y', 'system'),
+    ('ccp-metal-limit-admin',     '금속검출 CCP 기준관리',     'FRM', 'tmpl_ccp-metal-log',  325, 'Y', 'system'),
+    ('ccp-verify-standard-admin', 'CCP검증 기준·주기관리',     'FRM', 'tmpl_ccp-verify-check', 326, 'Y', 'system'),
+    ('facility-check-item-admin', '설비시설점검 항목·주기',    'FRM', 'tmpl_prp-facility-check',   331, 'Y', 'system')
 ON CONFLICT (scrn_cd) DO UPDATE SET
     scrn_nm = EXCLUDED.scrn_nm,
     module_cd = 'FRM',

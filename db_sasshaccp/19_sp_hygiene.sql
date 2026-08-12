@@ -3,7 +3,7 @@
 -- 개발자: 박승우
 -- 일자: 2026-08-06
 -- 코멘트:
---   1) DAILY_HYG, PERSONAL_HYG, AREA_HYG, PEST, WATER를 한 API 계약으로 저장한다
+--   1) tmpl_prp-hygiene-daily, tmpl_prp-hygiene-personal, tmpl_prp-hygiene-area, PEST, WATER를 한 API 계약으로 저장한다
 --   2) 행·판정은 JSON으로 받고 각 양식의 정규화 테이블에 전체 교체로 보관한다
 --   3) 문서 상태가 임시·반려가 아니면 저장·삭제를 차단한다
 -- ============================================================
@@ -30,28 +30,28 @@ LANGUAGE sql STABLE AS $$
           SELECT h.idx hdr_idx, h.base_dt, NULL::varchar base_dt_to, h.checker_nm,
                  (SELECT count(*)::int FROM tbl_daily_hygiene_item i WHERE i.hdr_idx=h.idx AND i.co_cd=h.co_cd) row_cnt,
                  (SELECT count(*)::int FROM tbl_daily_hygiene_item i WHERE i.hdr_idx=h.idx AND i.co_cd=h.co_cd AND i.judge_cd='X') ng_cnt
-            FROM tbl_daily_hygiene h WHERE p_tmpl_cd='DAILY_HYG' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
+            FROM tbl_daily_hygiene h WHERE p_tmpl_cd='tmpl_prp-hygiene-daily' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
           UNION ALL
           SELECT h.idx, h.base_dt, NULL, h.checker_nm,
                  (SELECT count(*)::int FROM tbl_personal_hygiene_row r WHERE r.hdr_idx=h.idx AND r.co_cd=h.co_cd),
                  (SELECT count(*)::int FROM tbl_personal_hygiene_row r WHERE r.hdr_idx=h.idx AND r.co_cd=h.co_cd
                    AND 'X' IN (r.health_cd,r.cloth_cd,r.belongings_cd,r.worker_state_cd,r.anteroom_cd,r.handwash_cd))
-            FROM tbl_personal_hygiene h WHERE p_tmpl_cd='PERSONAL_HYG' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
+            FROM tbl_personal_hygiene h WHERE p_tmpl_cd='tmpl_prp-hygiene-personal' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
           UNION ALL
           SELECT h.idx, h.base_dt, h.base_dt_to, h.checker_nm,
                  (SELECT count(*)::int FROM tbl_area_hygiene_item i WHERE i.hdr_idx=h.idx AND i.co_cd=h.co_cd),
                  (SELECT count(*)::int FROM tbl_area_hygiene_result r JOIN tbl_area_hygiene_item i ON i.idx=r.item_idx AND i.co_cd=r.co_cd WHERE i.hdr_idx=h.idx AND r.co_cd=h.co_cd AND r.judge_cd='X')
-            FROM tbl_area_hygiene h WHERE p_tmpl_cd='AREA_HYG' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
+            FROM tbl_area_hygiene h WHERE p_tmpl_cd='tmpl_prp-hygiene-area' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
           UNION ALL
           SELECT h.idx, h.base_dt, NULL, h.checker_nm,
                  (SELECT count(*)::int FROM tbl_pest_check_row r WHERE r.hdr_idx=h.idx AND r.co_cd=h.co_cd),
                  (SELECT count(*)::int FROM tbl_pest_check_row r WHERE r.hdr_idx=h.idx AND r.co_cd=h.co_cd AND (r.device_ng_cd='X' OR r.rat_sum>0))
-            FROM tbl_pest_check h WHERE p_tmpl_cd='PEST' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
+            FROM tbl_pest_check h WHERE p_tmpl_cd='tmpl_prp-pest-check' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
           UNION ALL
           SELECT h.idx, h.base_dt, h.base_dt_to, NULL,
                  (SELECT count(*)::int FROM tbl_water_check_item i WHERE i.hdr_idx=h.idx AND i.co_cd=h.co_cd),
                  (SELECT count(*)::int FROM tbl_water_check_result r JOIN tbl_water_check_item i ON i.idx=r.item_idx AND i.co_cd=r.co_cd WHERE i.hdr_idx=h.idx AND r.co_cd=h.co_cd AND r.judge_cd='X')
-            FROM tbl_water_check h WHERE p_tmpl_cd='WATER' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
+            FROM tbl_water_check h WHERE p_tmpl_cd='tmpl_prp-water-check' AND h.doc_idx=d.idx AND h.co_cd=d.co_cd
       ) x ON true
      WHERE d.co_cd=p_co_cd AND d.tmpl_cd=p_tmpl_cd AND d.del_yn='N'
        AND (coalesce(p_from_dt,'')='' OR x.base_dt>=p_from_dt)
@@ -123,7 +123,7 @@ BEGIN
                 WHERE s.tmpl_cd = cci.tmpl_cd AND s.item_cd = cci.item_cd
            )
       ) q;
-    IF p_tmpl_cd='PEST' THEN
+    IF p_tmpl_cd='tmpl_prp-pest-check' THEN
       -- 신규 스켈레톤 — 수량(Cnt) 대신 yn 체크 플래그. 미관리 유형은 '/' (FE·저장 SP와 동일 계약)
       SELECT coalesce(jsonb_agg(jsonb_build_object(
                'rowSeq', d.sort_no,
@@ -150,15 +150,15 @@ BEGIN
     RETURN jsonb_build_object('header',null,'entries',v_items,'signers','[]'::jsonb,'checkers','[]'::jsonb);
   END IF;
   SELECT CASE p_tmpl_cd
-    WHEN 'DAILY_HYG' THEN (SELECT h.idx FROM tbl_daily_hygiene h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
-    WHEN 'PERSONAL_HYG' THEN (SELECT h.idx FROM tbl_personal_hygiene h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
-    WHEN 'AREA_HYG' THEN (SELECT h.idx FROM tbl_area_hygiene h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
-    WHEN 'PEST' THEN (SELECT h.idx FROM tbl_pest_check h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
-    WHEN 'WATER' THEN (SELECT h.idx FROM tbl_water_check h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
+    WHEN 'tmpl_prp-hygiene-daily' THEN (SELECT h.idx FROM tbl_daily_hygiene h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
+    WHEN 'tmpl_prp-hygiene-personal' THEN (SELECT h.idx FROM tbl_personal_hygiene h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
+    WHEN 'tmpl_prp-hygiene-area' THEN (SELECT h.idx FROM tbl_area_hygiene h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
+    WHEN 'tmpl_prp-pest-check' THEN (SELECT h.idx FROM tbl_pest_check h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
+    WHEN 'tmpl_prp-water-check' THEN (SELECT h.idx FROM tbl_water_check h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
   END INTO v_hdr;
   IF v_hdr IS NULL THEN RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE='45000'; END IF;
   SELECT jsonb_build_object('docIdx',d.idx,'docNo',d.doc_no,'baseDt',d.base_dt,'status',d.status) INTO v_out FROM tbl_document d WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.del_yn='N';
-  IF p_tmpl_cd='DAILY_HYG' THEN
+  IF p_tmpl_cd='tmpl_prp-hygiene-daily' THEN
     -- 기존 문서 재조회 — FE NUM/NUM2 분기를 위해 inputType·unitNm을 표준항목과 JOIN한다
     SELECT jsonb_build_object(
              'header', v_out || jsonb_build_object('beforeTime',h.before_time,'duringTime',h.during_time,'checkerNm',h.checker_nm),
@@ -183,10 +183,10 @@ BEGIN
       INTO v_out
       FROM tbl_daily_hygiene h
       LEFT JOIN tbl_daily_hygiene_item i ON i.hdr_idx=h.idx AND i.co_cd=h.co_cd
-      LEFT JOIN tbl_check_item ci ON ci.tmpl_cd='DAILY_HYG' AND ci.item_cd=i.item_cd
+      LEFT JOIN tbl_check_item ci ON ci.tmpl_cd='tmpl_prp-hygiene-daily' AND ci.item_cd=i.item_cd
      WHERE h.idx=v_hdr AND h.co_cd=p_co_cd
      GROUP BY h.before_time, h.during_time, h.checker_nm;
-  ELSIF p_tmpl_cd='PERSONAL_HYG' THEN
+  ELSIF p_tmpl_cd='tmpl_prp-hygiene-personal' THEN
     -- camelCase — 저장 c_000·FE 스칼라 OX 키와 동일
     SELECT jsonb_build_object(
              'header', v_out || jsonb_build_object('checkerNm',h.checker_nm),
@@ -210,7 +210,7 @@ BEGIN
       LEFT JOIN tbl_personal_hygiene_row r ON r.hdr_idx=h.idx AND r.co_cd=h.co_cd
      WHERE h.idx=v_hdr AND h.co_cd=p_co_cd
      GROUP BY h.checker_nm;
-  ELSIF p_tmpl_cd='AREA_HYG' THEN
+  ELSIF p_tmpl_cd='tmpl_prp-hygiene-area' THEN
     SELECT jsonb_build_object(
              'header', v_out || jsonb_build_object('baseDtTo',h.base_dt_to,'areaCd',h.area_cd,'checkerNm',h.checker_nm),
              'entries', coalesce(jsonb_agg(jsonb_build_object(
@@ -235,7 +235,7 @@ BEGIN
       LEFT JOIN tbl_area_hygiene_item i ON i.hdr_idx=h.idx AND i.co_cd=h.co_cd
      WHERE h.idx=v_hdr AND h.co_cd=p_co_cd
      GROUP BY h.base_dt_to, h.area_cd, h.checker_nm, h.idx;
-  ELSIF p_tmpl_cd='PEST' THEN
+  ELSIF p_tmpl_cd='tmpl_prp-pest-check' THEN
     -- camelCase 카운트 열 — 신규 기본행·저장 payload와 동일
     SELECT jsonb_build_object(
              'header', v_out || jsonb_build_object('checkerNm',h.checker_nm),
@@ -324,7 +324,7 @@ BEGIN
    IF v_status NOT IN ('WRK','RJT') THEN RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 수정할 수 없습니다.' USING ERRCODE='45000'; END IF;
    UPDATE tbl_document SET base_dt=p_base_dt,base_dt_to=nullif(p_base_dt_to,''),title=v_name||' ('||substr(p_base_dt,1,4)||'-'||substr(p_base_dt,5,2)||'-'||substr(p_base_dt,7,2)||')',upd_id=p_id,upd_dt=now() WHERE idx=v_doc AND co_cd=p_co_cd;
  END IF;
- IF p_tmpl_cd='DAILY_HYG' THEN
+ IF p_tmpl_cd='tmpl_prp-hygiene-daily' THEN
    SELECT idx INTO v_hdr FROM tbl_daily_hygiene WHERE co_cd=p_co_cd AND doc_idx=v_doc;
    IF v_hdr IS NULL THEN INSERT INTO tbl_daily_hygiene(co_cd,doc_idx,base_dt,before_time,during_time,checker_id,checker_nm,ins_id) VALUES(p_co_cd,v_doc,p_base_dt,nullif(p_payload->>'beforeTime',''),nullif(p_payload->>'duringTime',''),p_id,nullif(p_checker_nm,''),p_id) RETURNING idx INTO v_hdr; ELSE UPDATE tbl_daily_hygiene SET base_dt=p_base_dt,before_time=nullif(p_payload->>'beforeTime',''),during_time=nullif(p_payload->>'duringTime',''),checker_nm=nullif(p_checker_nm,''),upd_id=p_id,upd_dt=now() WHERE idx=v_hdr AND co_cd=p_co_cd; DELETE FROM tbl_daily_hygiene_item WHERE hdr_idx=v_hdr AND co_cd=p_co_cd; END IF;
    FOR e IN SELECT * FROM jsonb_array_elements(p_payload->'entries') LOOP
@@ -344,10 +344,10 @@ BEGIN
        p_id
      );
    END LOOP;
- ELSIF p_tmpl_cd='PERSONAL_HYG' THEN
+ ELSIF p_tmpl_cd='tmpl_prp-hygiene-personal' THEN
    SELECT idx INTO v_hdr FROM tbl_personal_hygiene WHERE co_cd=p_co_cd AND doc_idx=v_doc; IF v_hdr IS NULL THEN INSERT INTO tbl_personal_hygiene(co_cd,doc_idx,base_dt,checker_id,checker_nm,ins_id) VALUES(p_co_cd,v_doc,p_base_dt,p_id,nullif(p_checker_nm,''),p_id) RETURNING idx INTO v_hdr; ELSE UPDATE tbl_personal_hygiene SET base_dt=p_base_dt,checker_nm=nullif(p_checker_nm,''),upd_id=p_id,upd_dt=now() WHERE idx=v_hdr AND co_cd=p_co_cd; DELETE FROM tbl_personal_hygiene_row WHERE hdr_idx=v_hdr AND co_cd=p_co_cd; END IF;
    FOR e IN SELECT * FROM jsonb_array_elements(p_payload->'entries') LOOP INSERT INTO tbl_personal_hygiene_row(co_cd,hdr_idx,row_seq,worker_user_id,worker_nm,health_cd,cloth_cd,belongings_cd,worker_state_cd,anteroom_cd,handwash_cd,remark,ins_id) VALUES(p_co_cd,v_hdr,(e->>'rowSeq')::int,nullif(e->>'workerUserId',''),coalesce(e->>'workerNm',''),nullif(e->>'healthCd',''),nullif(e->>'clothCd',''),nullif(e->>'belongingsCd',''),nullif(e->>'workerStateCd',''),nullif(e->>'anteroomCd',''),nullif(e->>'handwashCd',''),nullif(e->>'remark',''),p_id); END LOOP;
- ELSIF p_tmpl_cd='PEST' THEN
+ ELSIF p_tmpl_cd='tmpl_prp-pest-check' THEN
    SELECT idx INTO v_hdr FROM tbl_pest_check WHERE co_cd=p_co_cd AND doc_idx=v_doc; IF v_hdr IS NULL THEN INSERT INTO tbl_pest_check(co_cd,doc_idx,base_dt,checker_id,checker_nm,ins_id) VALUES(p_co_cd,v_doc,p_base_dt,p_id,nullif(p_checker_nm,''),p_id) RETURNING idx INTO v_hdr; ELSE UPDATE tbl_pest_check SET base_dt=p_base_dt,checker_nm=nullif(p_checker_nm,''),upd_id=p_id,upd_dt=now() WHERE idx=v_hdr AND co_cd=p_co_cd; DELETE FROM tbl_pest_check_row WHERE hdr_idx=v_hdr AND co_cd=p_co_cd; END IF;
    FOR e IN SELECT * FROM jsonb_array_elements(p_payload->'entries') LOOP
      INSERT INTO tbl_pest_check_row(
@@ -381,13 +381,13 @@ BEGIN
      );
    END LOOP;
  ELSE
-   IF p_tmpl_cd='AREA_HYG' THEN SELECT idx INTO v_hdr FROM tbl_area_hygiene WHERE co_cd=p_co_cd AND doc_idx=v_doc; IF v_hdr IS NULL THEN INSERT INTO tbl_area_hygiene(co_cd,doc_idx,base_dt,base_dt_to,area_cd,checker_id,checker_nm,ins_id) VALUES(p_co_cd,v_doc,p_base_dt,nullif(p_base_dt_to,''),nullif(p_payload->>'areaCd',''),p_id,nullif(p_checker_nm,''),p_id) RETURNING idx INTO v_hdr; ELSE DELETE FROM tbl_area_hygiene_result r USING tbl_area_hygiene_item i WHERE r.item_idx=i.idx AND r.co_cd=i.co_cd AND i.hdr_idx=v_hdr AND i.co_cd=p_co_cd; DELETE FROM tbl_area_hygiene_item WHERE hdr_idx=v_hdr AND co_cd=p_co_cd; DELETE FROM tbl_area_hygiene_signer WHERE hdr_idx=v_hdr AND co_cd=p_co_cd; UPDATE tbl_area_hygiene SET base_dt=p_base_dt,base_dt_to=nullif(p_base_dt_to,''),area_cd=nullif(p_payload->>'areaCd',''),checker_nm=nullif(p_checker_nm,''),upd_id=p_id,upd_dt=now() WHERE idx=v_hdr AND co_cd=p_co_cd; END IF;
+   IF p_tmpl_cd='tmpl_prp-hygiene-area' THEN SELECT idx INTO v_hdr FROM tbl_area_hygiene WHERE co_cd=p_co_cd AND doc_idx=v_doc; IF v_hdr IS NULL THEN INSERT INTO tbl_area_hygiene(co_cd,doc_idx,base_dt,base_dt_to,area_cd,checker_id,checker_nm,ins_id) VALUES(p_co_cd,v_doc,p_base_dt,nullif(p_base_dt_to,''),nullif(p_payload->>'areaCd',''),p_id,nullif(p_checker_nm,''),p_id) RETURNING idx INTO v_hdr; ELSE DELETE FROM tbl_area_hygiene_result r USING tbl_area_hygiene_item i WHERE r.item_idx=i.idx AND r.co_cd=i.co_cd AND i.hdr_idx=v_hdr AND i.co_cd=p_co_cd; DELETE FROM tbl_area_hygiene_item WHERE hdr_idx=v_hdr AND co_cd=p_co_cd; DELETE FROM tbl_area_hygiene_signer WHERE hdr_idx=v_hdr AND co_cd=p_co_cd; UPDATE tbl_area_hygiene SET base_dt=p_base_dt,base_dt_to=nullif(p_base_dt_to,''),area_cd=nullif(p_payload->>'areaCd',''),checker_nm=nullif(p_checker_nm,''),upd_id=p_id,upd_dt=now() WHERE idx=v_hdr AND co_cd=p_co_cd; END IF;
    ELSE SELECT idx INTO v_hdr FROM tbl_water_check WHERE co_cd=p_co_cd AND doc_idx=v_doc; IF v_hdr IS NULL THEN INSERT INTO tbl_water_check(co_cd,doc_idx,base_dt,base_dt_to,cycle_nm,ins_id) VALUES(p_co_cd,v_doc,p_base_dt,nullif(p_base_dt_to,''),nullif(p_payload->>'cycleNm',''),p_id) RETURNING idx INTO v_hdr; ELSE DELETE FROM tbl_water_check_result r USING tbl_water_check_item i WHERE r.item_idx=i.idx AND r.co_cd=i.co_cd AND i.hdr_idx=v_hdr AND i.co_cd=p_co_cd; DELETE FROM tbl_water_check_item WHERE hdr_idx=v_hdr AND co_cd=p_co_cd; DELETE FROM tbl_water_check_checker WHERE hdr_idx=v_hdr AND co_cd=p_co_cd; UPDATE tbl_water_check SET base_dt=p_base_dt,base_dt_to=nullif(p_base_dt_to,''),cycle_nm=nullif(p_payload->>'cycleNm',''),upd_id=p_id,upd_dt=now() WHERE idx=v_hdr AND co_cd=p_co_cd; END IF; END IF;
    FOR e IN SELECT * FROM jsonb_array_elements(p_payload->'entries') LOOP
-     IF p_tmpl_cd='AREA_HYG' THEN INSERT INTO tbl_area_hygiene_item(co_cd,hdr_idx,row_seq,item_cd,item_nm,remark,ins_id) VALUES(p_co_cd,v_hdr,(e->>'rowSeq')::int,coalesce(e->>'itemCd',''),nullif(e->>'itemNm',''),nullif(e->>'remark',''),p_id) RETURNING idx INTO v_item; FOR r IN SELECT * FROM jsonb_array_elements(coalesce(e->'results','[]'::jsonb)) LOOP INSERT INTO tbl_area_hygiene_result(co_cd,item_idx,check_dt,judge_cd,ins_id) VALUES(p_co_cd,v_item,coalesce(r->>'checkDt',''),nullif(r->>'judgeCd',''),p_id); END LOOP;
+     IF p_tmpl_cd='tmpl_prp-hygiene-area' THEN INSERT INTO tbl_area_hygiene_item(co_cd,hdr_idx,row_seq,item_cd,item_nm,remark,ins_id) VALUES(p_co_cd,v_hdr,(e->>'rowSeq')::int,coalesce(e->>'itemCd',''),nullif(e->>'itemNm',''),nullif(e->>'remark',''),p_id) RETURNING idx INTO v_item; FOR r IN SELECT * FROM jsonb_array_elements(coalesce(e->'results','[]'::jsonb)) LOOP INSERT INTO tbl_area_hygiene_result(co_cd,item_idx,check_dt,judge_cd,ins_id) VALUES(p_co_cd,v_item,coalesce(r->>'checkDt',''),nullif(r->>'judgeCd',''),p_id); END LOOP;
      ELSE INSERT INTO tbl_water_check_item(co_cd,hdr_idx,row_seq,grp_cd,grp_nm,item_cd,item_nm,ins_id) VALUES(p_co_cd,v_hdr,(e->>'rowSeq')::int,nullif(e->>'grpCd',''),nullif(e->>'grpNm',''),coalesce(e->>'itemCd',''),nullif(e->>'itemNm',''),p_id) RETURNING idx INTO v_item; FOR r IN SELECT * FROM jsonb_array_elements(coalesce(e->'results','[]'::jsonb)) LOOP INSERT INTO tbl_water_check_result(co_cd,item_idx,week_no,judge_cd,ins_id) VALUES(p_co_cd,v_item,(r->>'weekNo')::int,nullif(r->>'judgeCd',''),p_id); END LOOP; END IF;
    END LOOP;
-   IF p_tmpl_cd='AREA_HYG' THEN FOR s IN SELECT * FROM jsonb_array_elements(coalesce(p_payload->'signers','[]'::jsonb)) LOOP INSERT INTO tbl_area_hygiene_signer(co_cd,hdr_idx,check_dt,writer_nm,reviewer_nm,approver_nm,ins_id) VALUES(p_co_cd,v_hdr,coalesce(s->>'checkDt',''),nullif(s->>'writerNm',''),nullif(s->>'reviewerNm',''),nullif(s->>'approverNm',''),p_id); END LOOP; ELSE FOR s IN SELECT * FROM jsonb_array_elements(coalesce(p_payload->'checkers','[]'::jsonb)) LOOP INSERT INTO tbl_water_check_checker(co_cd,hdr_idx,week_no,check_dt,checker_id,checker_nm,ins_id) VALUES(p_co_cd,v_hdr,(s->>'weekNo')::int,nullif(s->>'checkDt',''),nullif(s->>'checkerId',''),nullif(s->>'checkerNm',''),p_id); END LOOP; END IF;
+   IF p_tmpl_cd='tmpl_prp-hygiene-area' THEN FOR s IN SELECT * FROM jsonb_array_elements(coalesce(p_payload->'signers','[]'::jsonb)) LOOP INSERT INTO tbl_area_hygiene_signer(co_cd,hdr_idx,check_dt,writer_nm,reviewer_nm,approver_nm,ins_id) VALUES(p_co_cd,v_hdr,coalesce(s->>'checkDt',''),nullif(s->>'writerNm',''),nullif(s->>'reviewerNm',''),nullif(s->>'approverNm',''),p_id); END LOOP; ELSE FOR s IN SELECT * FROM jsonb_array_elements(coalesce(p_payload->'checkers','[]'::jsonb)) LOOP INSERT INTO tbl_water_check_checker(co_cd,hdr_idx,week_no,check_dt,checker_id,checker_nm,ins_id) VALUES(p_co_cd,v_hdr,(s->>'weekNo')::int,nullif(s->>'checkDt',''),nullif(s->>'checkerId',''),nullif(s->>'checkerNm',''),p_id); END LOOP; END IF;
  END IF;
  RETURN v_doc;
 END$$;
@@ -405,10 +405,10 @@ BEGIN
  SELECT status INTO v_status FROM tbl_document WHERE co_cd=p_co_cd AND idx=p_doc_idx AND tmpl_cd=p_tmpl_cd AND del_yn='N';
  IF v_status IS NULL THEN RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE='45000'; END IF;
  IF v_status NOT IN ('WRK','RJT') THEN RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 삭제할 수 없습니다.' USING ERRCODE='45000'; END IF;
- IF p_tmpl_cd='DAILY_HYG' THEN SELECT idx INTO v_hdr FROM tbl_daily_hygiene WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_daily_hygiene_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr; DELETE FROM tbl_daily_hygiene WHERE co_cd=p_co_cd AND idx=v_hdr;
- ELSIF p_tmpl_cd='PERSONAL_HYG' THEN SELECT idx INTO v_hdr FROM tbl_personal_hygiene WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_personal_hygiene_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr; DELETE FROM tbl_personal_hygiene WHERE co_cd=p_co_cd AND idx=v_hdr;
- ELSIF p_tmpl_cd='AREA_HYG' THEN SELECT idx INTO v_hdr FROM tbl_area_hygiene WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_area_hygiene_result r USING tbl_area_hygiene_item i WHERE r.item_idx=i.idx AND r.co_cd=i.co_cd AND i.co_cd=p_co_cd AND i.hdr_idx=v_hdr; DELETE FROM tbl_area_hygiene_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr; DELETE FROM tbl_area_hygiene_signer WHERE co_cd=p_co_cd AND hdr_idx=v_hdr; DELETE FROM tbl_area_hygiene WHERE co_cd=p_co_cd AND idx=v_hdr;
- ELSIF p_tmpl_cd='PEST' THEN SELECT idx INTO v_hdr FROM tbl_pest_check WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_pest_check_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr; DELETE FROM tbl_pest_check WHERE co_cd=p_co_cd AND idx=v_hdr;
+ IF p_tmpl_cd='tmpl_prp-hygiene-daily' THEN SELECT idx INTO v_hdr FROM tbl_daily_hygiene WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_daily_hygiene_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr; DELETE FROM tbl_daily_hygiene WHERE co_cd=p_co_cd AND idx=v_hdr;
+ ELSIF p_tmpl_cd='tmpl_prp-hygiene-personal' THEN SELECT idx INTO v_hdr FROM tbl_personal_hygiene WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_personal_hygiene_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr; DELETE FROM tbl_personal_hygiene WHERE co_cd=p_co_cd AND idx=v_hdr;
+ ELSIF p_tmpl_cd='tmpl_prp-hygiene-area' THEN SELECT idx INTO v_hdr FROM tbl_area_hygiene WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_area_hygiene_result r USING tbl_area_hygiene_item i WHERE r.item_idx=i.idx AND r.co_cd=i.co_cd AND i.co_cd=p_co_cd AND i.hdr_idx=v_hdr; DELETE FROM tbl_area_hygiene_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr; DELETE FROM tbl_area_hygiene_signer WHERE co_cd=p_co_cd AND hdr_idx=v_hdr; DELETE FROM tbl_area_hygiene WHERE co_cd=p_co_cd AND idx=v_hdr;
+ ELSIF p_tmpl_cd='tmpl_prp-pest-check' THEN SELECT idx INTO v_hdr FROM tbl_pest_check WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_pest_check_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr; DELETE FROM tbl_pest_check WHERE co_cd=p_co_cd AND idx=v_hdr;
  ELSE SELECT idx INTO v_hdr FROM tbl_water_check WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx; DELETE FROM tbl_water_check_result r USING tbl_water_check_item i WHERE r.item_idx=i.idx AND r.co_cd=i.co_cd AND i.co_cd=p_co_cd AND i.hdr_idx=v_hdr; DELETE FROM tbl_water_check_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr; DELETE FROM tbl_water_check_checker WHERE co_cd=p_co_cd AND hdr_idx=v_hdr; DELETE FROM tbl_water_check WHERE co_cd=p_co_cd AND idx=v_hdr; END IF;
  DELETE FROM tbl_corrective_action WHERE co_cd=p_co_cd AND src_doc_idx=p_doc_idx;
  DELETE FROM tbl_document_approval WHERE co_cd=p_co_cd AND doc_idx=p_doc_idx;

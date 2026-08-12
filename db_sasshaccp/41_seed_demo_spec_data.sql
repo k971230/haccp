@@ -125,20 +125,20 @@ BEGIN
     -- 공통: 결재선 스냅샷 (없으면 NULL)
     SELECT appr_line_cd INTO v_line
       FROM tbl_company_template
-     WHERE co_cd = v_co AND tmpl_cd = 'DAILY_HYG'
+     WHERE co_cd = v_co AND tmpl_cd = 'tmpl_prp-hygiene-daily'
      LIMIT 1;
 
-    -- DAILY_HYG
+    -- tmpl_prp-hygiene-daily
     IF NOT EXISTS (
         SELECT 1 FROM tbl_document
-         WHERE co_cd = v_co AND tmpl_cd = 'DAILY_HYG' AND base_dt = v_today AND del_yn = 'N'
+         WHERE co_cd = v_co AND tmpl_cd = 'tmpl_prp-hygiene-daily' AND base_dt = v_today AND del_yn = 'N'
     ) THEN
-        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'DAILY_HYG', v_today);
+        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'tmpl_prp-hygiene-daily', v_today);
         INSERT INTO tbl_document(
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status,
             appr_line_cd, writer_id, write_dt, ver_no, del_yn, ins_id, ins_dt
         ) VALUES (
-            v_co, 'DAILY_HYG', 'DB', v_doc_no, v_today,
+            v_co, 'tmpl_prp-hygiene-daily', 'DB', v_doc_no, v_today,
             '일일 위생 점검일지(샘플)', 'WRK',
             v_line, 'admin', now(), 1, 'N', 'system', now()
         ) RETURNING idx INTO v_doc;
@@ -157,16 +157,16 @@ BEGIN
     -- PEST
     IF NOT EXISTS (
         SELECT 1 FROM tbl_document
-         WHERE co_cd = v_co AND tmpl_cd = 'PEST' AND base_dt = v_today AND del_yn = 'N'
+         WHERE co_cd = v_co AND tmpl_cd = 'tmpl_prp-pest-check' AND base_dt = v_today AND del_yn = 'N'
     ) THEN
         SELECT appr_line_cd INTO v_line FROM tbl_company_template
-         WHERE co_cd = v_co AND tmpl_cd = 'PEST' LIMIT 1;
-        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'PEST', v_today);
+         WHERE co_cd = v_co AND tmpl_cd = 'tmpl_prp-pest-check' LIMIT 1;
+        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'tmpl_prp-pest-check', v_today);
         INSERT INTO tbl_document(
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status,
             appr_line_cd, writer_id, write_dt, ver_no, del_yn, ins_id, ins_dt
         ) VALUES (
-            v_co, 'PEST', 'DB', v_doc_no, v_today,
+            v_co, 'tmpl_prp-pest-check', 'DB', v_doc_no, v_today,
             '방충·방서 점검표(샘플)', 'WRK',
             v_line, 'admin', now(), 1, 'N', 'system', now()
         ) RETURNING idx INTO v_doc;
@@ -195,21 +195,21 @@ BEGIN
          LIMIT 4;
     END IF;
 
-    -- CCP_COLD
+    -- tmpl_ccp-cold-log
     IF NOT EXISTS (
         SELECT 1 FROM tbl_document
-         WHERE co_cd = v_co AND tmpl_cd = 'CCP_COLD' AND base_dt = v_today AND del_yn = 'N'
+         WHERE co_cd = v_co AND tmpl_cd = 'tmpl_ccp-cold-log' AND base_dt = v_today AND del_yn = 'N'
     ) THEN
         SELECT appr_line_cd INTO v_line FROM tbl_company_template
-         WHERE co_cd = v_co AND tmpl_cd = 'CCP_COLD' LIMIT 1;
+         WHERE co_cd = v_co AND tmpl_cd = 'tmpl_ccp-cold-log' LIMIT 1;
         SELECT storage_cd INTO v_stor FROM tbl_storage
          WHERE co_cd = v_co AND use_yn = 'Y' ORDER BY sort_no NULLS LAST, storage_cd LIMIT 1;
-        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'CCP_COLD', v_today);
+        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'tmpl_ccp-cold-log', v_today);
         INSERT INTO tbl_document(
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status,
             appr_line_cd, writer_id, write_dt, ver_no, del_yn, ins_id, ins_dt
         ) VALUES (
-            v_co, 'CCP_COLD', 'DB', v_doc_no, v_today,
+            v_co, 'tmpl_ccp-cold-log', 'DB', v_doc_no, v_today,
             '냉장·냉동 보관 모니터링(샘플)', 'WRK',
             v_line, 'admin', now(), 1, 'N', 'system', now()
         ) RETURNING idx INTO v_doc;
@@ -238,19 +238,19 @@ BEGIN
         END IF;
     END IF;
 
-    -- CCP_METAL
+    -- tmpl_ccp-metal-log
     IF NOT EXISTS (
         SELECT 1 FROM tbl_document
-         WHERE co_cd = v_co AND tmpl_cd = 'CCP_METAL' AND base_dt = v_today AND del_yn = 'N'
+         WHERE co_cd = v_co AND tmpl_cd = 'tmpl_ccp-metal-log' AND base_dt = v_today AND del_yn = 'N'
     ) THEN
         SELECT appr_line_cd INTO v_line FROM tbl_company_template
-         WHERE co_cd = v_co AND tmpl_cd = 'CCP_METAL' LIMIT 1;
-        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'CCP_METAL', v_today);
+         WHERE co_cd = v_co AND tmpl_cd = 'tmpl_ccp-metal-log' LIMIT 1;
+        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'tmpl_ccp-metal-log', v_today);
         INSERT INTO tbl_document(
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status,
             appr_line_cd, writer_id, write_dt, ver_no, del_yn, ins_id, ins_dt
         ) VALUES (
-            v_co, 'CCP_METAL', 'DB', v_doc_no, v_today,
+            v_co, 'tmpl_ccp-metal-log', 'DB', v_doc_no, v_today,
             '금속검출 모니터링(샘플)', 'WRK',
             v_line, 'admin', now(), 1, 'N', 'system', now()
         ) RETURNING idx INTO v_doc;
@@ -270,19 +270,19 @@ BEGIN
         );
     END IF;
 
-    -- FACILITY
+    -- tmpl_prp-facility-check
     IF NOT EXISTS (
         SELECT 1 FROM tbl_document
-         WHERE co_cd = v_co AND tmpl_cd = 'FACILITY' AND base_dt = v_today AND del_yn = 'N'
+         WHERE co_cd = v_co AND tmpl_cd = 'tmpl_prp-facility-check' AND base_dt = v_today AND del_yn = 'N'
     ) THEN
         SELECT appr_line_cd INTO v_line FROM tbl_company_template
-         WHERE co_cd = v_co AND tmpl_cd = 'FACILITY' LIMIT 1;
-        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'FACILITY', v_today);
+         WHERE co_cd = v_co AND tmpl_cd = 'tmpl_prp-facility-check' LIMIT 1;
+        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'tmpl_prp-facility-check', v_today);
         INSERT INTO tbl_document(
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status,
             appr_line_cd, writer_id, write_dt, ver_no, del_yn, ins_id, ins_dt
         ) VALUES (
-            v_co, 'FACILITY', 'DB', v_doc_no, v_today,
+            v_co, 'tmpl_prp-facility-check', 'DB', v_doc_no, v_today,
             '시설·설비 점검표(샘플)', 'WRK',
             v_line, 'admin', now(), 1, 'N', 'system', now()
         ) RETURNING idx INTO v_doc;
@@ -303,46 +303,46 @@ BEGIN
     -- HWP 메타 문서 슬롯 (원본은 화면에서 일자별 업로드)
     IF NOT EXISTS (
         SELECT 1 FROM tbl_document
-         WHERE co_cd = v_co AND tmpl_cd = 'HANDOVER' AND base_dt = v_today AND del_yn = 'N'
+         WHERE co_cd = v_co AND tmpl_cd = 'tmpl_admin-handover-doc' AND base_dt = v_today AND del_yn = 'N'
     ) THEN
         SELECT appr_line_cd INTO v_line FROM tbl_company_template
-         WHERE co_cd = v_co AND tmpl_cd = 'HANDOVER' LIMIT 1;
-        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'HANDOVER', v_today);
+         WHERE co_cd = v_co AND tmpl_cd = 'tmpl_admin-handover-doc' LIMIT 1;
+        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'tmpl_admin-handover-doc', v_today);
         INSERT INTO tbl_document(
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status,
             appr_line_cd, writer_id, write_dt, ver_no, del_yn, ins_id, ins_dt
         ) VALUES (
-            v_co, 'HANDOVER', 'HWP', v_doc_no, v_today,
+            v_co, 'tmpl_admin-handover-doc', 'HWP', v_doc_no, v_today,
             '업무 인수인계서(샘플·업로드슬롯)', 'WRK',
             v_line, 'admin', now(), 1, 'N', 'system', now()
         ) RETURNING idx INTO v_doc;
 
         INSERT INTO tbl_document_file(co_cd, doc_idx, file_kind, file_nm, file_path, file_size, mime_type, sort_no, ins_id)
         VALUES (
-            v_co, v_doc, 'HWP_SRC', 'HANDOVER_DEMO.hwpx',
+            v_co, v_doc, 'HWP_SRC', 'tmpl_admin-handover-doc_DEMO.hwpx',
             '_template/DEMO_EMPTY.hwpx', 0, 'application/x-hwpx', 1, 'system'
         );
     END IF;
 
     IF NOT EXISTS (
         SELECT 1 FROM tbl_document
-         WHERE co_cd = v_co AND tmpl_cd = 'EDU_LOG' AND base_dt = v_today AND del_yn = 'N'
+         WHERE co_cd = v_co AND tmpl_cd = 'tmpl_admin-edu-log' AND base_dt = v_today AND del_yn = 'N'
     ) THEN
         SELECT appr_line_cd INTO v_line FROM tbl_company_template
-         WHERE co_cd = v_co AND tmpl_cd = 'EDU_LOG' LIMIT 1;
-        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'EDU_LOG', v_today);
+         WHERE co_cd = v_co AND tmpl_cd = 'tmpl_admin-edu-log' LIMIT 1;
+        v_doc_no := sp_tbl_doc_no_gen_c_000(v_co, 'tmpl_admin-edu-log', v_today);
         INSERT INTO tbl_document(
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status,
             appr_line_cd, writer_id, write_dt, ver_no, del_yn, ins_id, ins_dt
         ) VALUES (
-            v_co, 'EDU_LOG', 'HWP', v_doc_no, v_today,
+            v_co, 'tmpl_admin-edu-log', 'HWP', v_doc_no, v_today,
             '교육일지(샘플·업로드슬롯)', 'WRK',
             v_line, 'admin', now(), 1, 'N', 'system', now()
         ) RETURNING idx INTO v_doc;
 
         INSERT INTO tbl_document_file(co_cd, doc_idx, file_kind, file_nm, file_path, file_size, mime_type, sort_no, ins_id)
         VALUES (
-            v_co, v_doc, 'HWP_SRC', 'EDU_LOG_DEMO.hwpx',
+            v_co, v_doc, 'HWP_SRC', 'tmpl_admin-edu-log_DEMO.hwpx',
             '_template/DEMO_EMPTY.hwpx', 0, 'application/x-hwpx', 1, 'system'
         );
     END IF;

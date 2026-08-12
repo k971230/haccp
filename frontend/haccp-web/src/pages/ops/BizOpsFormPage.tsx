@@ -93,7 +93,7 @@ const formMeta: Record<BizOpsScreenCode, { title: string; headers: Field[]; colu
     title: "폐기물 처리 점검표",
     headers: [{ key: "baseDt", label: "시작일", type: "date" }, { key: "baseDtTo", label: "종료일", type: "date" }],
     columns: [
-      { key: "procDt", label: "처리일", type: "date" }, { key: "wasteGbn", label: "구분", type: "select", options: ["", "BAD", "WASTE", "EXPIRE"] },
+      { key: "procDt", label: "처리일", type: "date" }, { key: "wasteGbn", label: "구분", type: "select", options: ["", "BAD", "tmpl_prp-waste-check", "EXPIRE"] },
       { key: "itemNm", label: "품명" }, { key: "weightKg", label: "중량(kg)", type: "number" },
       { key: "badDesc", label: "부적합 내용" }, { key: "procDesc", label: "처리방법" },
       { key: "partnerNm", label: "수거업체" }, { key: "mngNm", label: "담당자" },

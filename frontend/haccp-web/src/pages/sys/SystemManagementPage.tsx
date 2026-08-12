@@ -144,6 +144,10 @@ function buildColumns(screenCode: SystemScreenCode, editable: boolean): GridColu
       ];
     case "menu-management":
       return [
+        // MES GRPA/B/C 참고 — 트리 depth로 산출한 대·중·소 (편집 불가)
+        { field: "grpANm", header: "대분류", width: 120, editable: false },
+        { field: "grpBNm", header: "중분류", width: 120, editable: false },
+        { field: "grpCNm", header: "소분류", width: 140, editable: false },
         { field: "menuCd", header: "메뉴코드", width: 140, required: true, editableOnNew: true },
         { field: "menuNm", header: "메뉴명", width: 160, editable, required: true },
         { field: "hMenuCd", header: "상위메뉴", width: 120, editable },
@@ -229,21 +233,62 @@ interface SystemManagementPageProps {
 }
 
 /**
+ * 메뉴 트리에서 대·중·소 표시명을 채운다 (MES GRPA/B/C 참고).
+ * depth0=대, depth1=중, depth2+=소. 이름은 경로상 메뉴명을 쓴다.
+ */
+function enrichMenuLevels(rows: SysRow[]): SysRow[] {
+  const byCd = new Map<string, SysRow>();
+  for (const row of rows) {
+    const cd = String(row.menuCd ?? "").trim();
+    if (cd) byCd.set(cd, row);
+  }
+  const pathOf = (row: SysRow): SysRow[] => {
+    const chain: SysRow[] = [];
+    let cur: SysRow | undefined = row;
+    const guard = new Set<string>();
+    while (cur) {
+      const cd = String(cur.menuCd ?? "").trim();
+      if (!cd || guard.has(cd)) break;
+      guard.add(cd);
+      chain.unshift(cur);
+      const parent = String(cur.hMenuCd ?? "").trim();
+      cur = parent ? byCd.get(parent) : undefined;
+    }
+    return chain;
+  };
+  return rows.map((row) => {
+    const path = pathOf(row);
+    const names = path.map((item) => String(item.menuNm ?? "").trim());
+    return {
+      ...row,
+      grpANm: names[0] || "",
+      grpBNm: names[1] || "",
+      grpCNm: names.length >= 3 ? names[names.length - 1] : "",
+      levelNm: path.length <= 1 ? "대분류" : path.length === 2 ? "중분류" : "소분류",
+    };
+  });
+}
+
+/**
  * 개발자: 박승우
- * 일자: 2026-08-10
+ * 일자: 2026-08-12
  * 코멘트:
  *   1) 화면코드별 고정 컬럼으로 시스템 관리·이력 그리드를 렌더링한다
- *   2) SideMenu에서 탭을 열면 목록을 조회하고 관리 화면만 CRUD를 허용한다
- *   3) 이력·통계는 기본 기간을 최근 HISTORY_DEFAULT_RANGE_DAYS일로 열어 빈 조회를 줄인다
+ *   2) 메뉴관리는 대·중·소·메뉴코드·메뉴명 검색을 제공한다
+ *   3) ProcessPage와 같은 useEditableRows·선택삭제·newOnly 잠금 흐름을 따른다
  */
 export default function SystemManagementPage({ screenCode }: SystemManagementPageProps) {
   const title = SCREEN_TITLE[screenCode];
   const isHistory = SYSTEM_HISTORY_SCREENS.has(screenCode);
+  const isMenu = screenCode === "menu-management";
   const canWrite = useAuthStore((state) => state.can(screenCode, "write"));
   const canModify = useAuthStore((state) => state.can(screenCode, "modify"));
   const canDelete = useAuthStore((state) => state.can(screenCode, "delete"));
   const asyncAct = useAsyncAction();
   const [keyword, setKeyword] = useState("");
+  // 메뉴관리 전용 검색 — 메뉴코드·메뉴명
+  const [qMenuCd, setQMenuCd] = useState("");
+  const [qMenuNm, setQMenuNm] = useState("");
   // 이력·통계만 최근 N일~오늘, 관리 화면은 기간 미사용(값은 무시)
   const [fromDt, setFromDt] = useState(() => (isHistory ? daysAgoYmd(HISTORY_DEFAULT_RANGE_DAYS) : todayYmd()));
   const [toDt, setToDt] = useState(todayYmd);
@@ -269,15 +314,28 @@ export default function SystemManagementPage({ screenCode }: SystemManagementPag
 
   const load = useCallback(async () => {
     try {
-      const rows = await listSystemRows(screenCode, { keyword: keyword.trim(), fromDt, toDt });
-      g.load(rows.map((row) => ({ ...row, userPw: "" })));
+      // 메뉴는 전체 조회 후 코드·명으로 필터 — 대·중·소 산출에 전체 트리 필요
+      const kw = isMenu ? "" : keyword.trim();
+      const rows = await listSystemRows(screenCode, { keyword: kw, fromDt, toDt });
+      let next: SysRow[] = rows.map((row) => ({ ...row, userPw: "" }));
+      if (isMenu) {
+        next = enrichMenuLevels(next);
+        const cdQ = qMenuCd.trim().toLowerCase();
+        const nmQ = qMenuNm.trim().toLowerCase();
+        next = next.filter((row) => {
+          if (cdQ && !String(row.menuCd ?? "").toLowerCase().includes(cdQ)) return false;
+          if (nmQ && !String(row.menuNm ?? "").toLowerCase().includes(nmQ)) return false;
+          return true;
+        });
+      }
+      g.load(next);
       setActiveKey(null);
       clearSel();
     } catch (error) {
       mesToast(mesError(error), "error");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- g.load 안정 참조
-  }, [fromDt, keyword, screenCode, toDt]);
+  }, [fromDt, isMenu, keyword, qMenuCd, qMenuNm, screenCode, toDt]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -364,6 +422,11 @@ export default function SystemManagementPage({ screenCode }: SystemManagementPag
         delete (next as { _key?: string })._key;
         delete (next as { _rowState?: string })._rowState;
         delete (next as { _original?: unknown })._original;
+        // 대·중·소 표시열 — 저장 payload에서 제외
+        delete next.grpANm;
+        delete next.grpBNm;
+        delete next.grpCNm;
+        delete next.levelNm;
         if (screenCode === "user-management" && !String(next.userPw ?? "").trim()) delete next.userPw;
         return next;
       });
@@ -430,10 +493,35 @@ export default function SystemManagementPage({ screenCode }: SystemManagementPag
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-3">
       <section className="flex flex-wrap items-end gap-2 rounded border border-slate-200 bg-white p-3">
-        <label className="flex flex-col gap-1 text-xs text-slate-600">
-          검색어
-          <Input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="검색어 입력" className="w-56" />
-        </label>
+        {isMenu ? (
+          <>
+            <label className="flex flex-col gap-1 text-xs text-slate-600">
+              메뉴코드
+              <Input
+                // 메뉴코드 부분검색 — kebab
+                value={qMenuCd}
+                onChange={(event) => setQMenuCd(event.target.value)}
+                placeholder="메뉴코드"
+                className="w-44"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-slate-600">
+              메뉴명
+              <Input
+                // 메뉴명 부분검색
+                value={qMenuNm}
+                onChange={(event) => setQMenuNm(event.target.value)}
+                placeholder="메뉴명"
+                className="w-44"
+              />
+            </label>
+          </>
+        ) : (
+          <label className="flex flex-col gap-1 text-xs text-slate-600">
+            검색어
+            <Input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="검색어 입력" className="w-56" />
+          </label>
+        )}
         {isHistory && (
           <>
             <label className="flex flex-col gap-1 text-xs text-slate-600">시작일

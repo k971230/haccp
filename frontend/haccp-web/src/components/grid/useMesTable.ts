@@ -119,9 +119,10 @@ function toColumnDefs<T extends GridRowBase>(
   if (opts?.enableRowSelection) {
     defs.push({
       id: "__select",
-      size: 36,
-      minSize: 36,
-      maxSize: 36,
+      // 행선택 체크 — 과대 폭 방지 (작성문서관리 등)
+      size: 28,
+      minSize: 28,
+      maxSize: 32,
       enableSorting: false,
       enableResizing: false,
       enableHiding: false,

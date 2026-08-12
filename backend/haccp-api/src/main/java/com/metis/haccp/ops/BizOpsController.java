@@ -99,12 +99,12 @@ public class BizOpsController {
     /** URL의 역할 기반 식별자를 DB templateCode로 고정 변환한다. */
     private static String templateCode(HttpServletRequest request) {
         String uri = request.getRequestURI();
-        if (uri.contains("facility-equipment-check")) return "FACILITY";
-        if (uri.contains("calibration-target-management")) return "CALIB_TARGET";
-        if (uri.contains("waste-disposal-check")) return "WASTE";
-        if (uri.contains("inventory-check")) return "INV_CHECK";
-        if (uri.contains("receiving-inspection")) return "RECV_INSP";
-        if (uri.contains("process-control-check")) return "PROCESS";
+        if (uri.contains("facility-equipment-check")) return "tmpl_prp-facility-check";
+        if (uri.contains("calibration-target-management")) return "tmpl_prp-calib-target";
+        if (uri.contains("waste-disposal-check")) return "tmpl_prp-waste-check";
+        if (uri.contains("inventory-check")) return "tmpl_logis-inventory-check";
+        if (uri.contains("receiving-inspection")) return "tmpl_logis-receive-inspect";
+        if (uri.contains("process-control-check")) return "tmpl_ccp-process-check";
         throw new IllegalArgumentException("지원하지 않는 양식 경로입니다.");
     }
 }

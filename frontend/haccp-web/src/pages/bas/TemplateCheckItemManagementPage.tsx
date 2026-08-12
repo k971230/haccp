@@ -5,7 +5,7 @@
  * 일자: 2026-08-10
  * 코멘트:
  *   1) mes-web SoPage와 동일 — PageCardSplit 상·하 + 패널별 GridCrudButtons
- *   2) fixedTmplCd(DAILY_HYG/FACILITY/CCP_VERIFY) 전용 — 범용 메뉴는 제거했다
+ *   2) fixedTmplCd(tmpl_prp-hygiene-daily/tmpl_prp-facility-check/tmpl_ccp-verify-check) 전용 — 범용 메뉴는 제거했다
  *   3) 셸 CRUD는 useSection(h=항목, d=주기)으로만 라우팅한다
  *
  * PIPELINE[HF88] 점검항목·작성주기 admin
@@ -77,7 +77,7 @@ const YN_OPTIONS = [
 export interface TemplateCheckItemManagementPageProps {
   // 권한·화면코드 — 문서별 admin leaf scrn_cd
   screenCode: string;
-  // 양식 고정 — DAILY_HYG / CCP_VERIFY / FACILITY
+  // 양식 고정 — tmpl_prp-hygiene-daily / tmpl_ccp-verify-check / tmpl_prp-facility-check
   fixedTmplCd: string;
 }
 

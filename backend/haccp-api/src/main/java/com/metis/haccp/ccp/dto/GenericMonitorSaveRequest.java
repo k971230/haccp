@@ -26,7 +26,7 @@ public class GenericMonitorSaveRequest {
     private Long docIdx;
     // 기준일 YYYYMMDD
     private String baseDt;
-    // 내부 공통 CCP 템플릿 코드 — CCP_HEAT 등
+    // 내부 공통 CCP 템플릿 코드 — tmpl_ccp-heat-log 등
     private String tmplCd;
     // 회사별 CCP 코드 — 미지정 허용
     private String ccpCd;

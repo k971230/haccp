@@ -69,16 +69,17 @@ BEGIN
       FROM tbl_screen s WHERE s.use_yn = 'Y' AND s.module_cd NOT IN ('SYS', 'COD', 'FRM')
     ON CONFLICT (co_cd, usrgrp_cd, scrn_cd) DO NOTHING;
 
-    -- (4) 메뉴 — IA 5대메뉴 + 오늘할일 최상위 + 화면 leaf (36 migrate와 동일)
+    -- (4) 메뉴 — 대·중·소 3단 kebab IA (52 migrate와 동일)
     INSERT INTO tbl_menu(co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt)
     VALUES
-        (p_co_cd, 'MWRK', '문서 작성', NULL, NULL, 100, 'Y', p_id, now()),
-        (p_co_cd, 'MAPR', '문서 현황·결재', NULL, NULL, 200, 'Y', p_id, now()),
-        (p_co_cd, 'MFRM', '문서 기준관리', NULL, NULL, 300, 'Y', p_id, now()),
-        (p_co_cd, 'MCOD', '기초정보 관리', NULL, NULL, 400, 'Y', p_id, now()),
-        (p_co_cd, 'MSYS', '시스템 관리', NULL, NULL, 900, 'Y', p_id, now())
+        (p_co_cd, 'menu-doc-write',  '문서 작성',      NULL, NULL, 100, 'Y', p_id, now()),
+        (p_co_cd, 'menu-doc-flow',   '문서 현황·결재', NULL, NULL, 200, 'Y', p_id, now()),
+        (p_co_cd, 'menu-doc-master', '문서 기준관리',  NULL, NULL, 300, 'Y', p_id, now()),
+        (p_co_cd, 'menu-base',       '기초정보',       NULL, NULL, 400, 'Y', p_id, now()),
+        (p_co_cd, 'menu-sys',        '시스템',         NULL, NULL, 900, 'Y', p_id, now())
     ON CONFLICT (co_cd, menu_cd) DO UPDATE SET
-        menu_nm = EXCLUDED.menu_nm, use_yn = 'Y', sort_no = EXCLUDED.sort_no, upd_id = p_id, upd_dt = now();
+        menu_nm = EXCLUDED.menu_nm, h_menu_cd = NULL, scrn_cd = NULL,
+        use_yn = 'Y', sort_no = EXCLUDED.sort_no, upd_id = p_id, upd_dt = now();
 
     INSERT INTO tbl_menu(co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt)
     VALUES (p_co_cd, 'today-tasks', '오늘 할 일', NULL, 'today-tasks', 10, 'Y', p_id, now())
@@ -87,19 +88,106 @@ BEGIN
         sort_no = 10, use_yn = 'Y', upd_id = p_id, upd_dt = now();
 
     INSERT INTO tbl_menu(co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt)
-    SELECT p_co_cd, s.scrn_cd, s.scrn_nm,
-           CASE s.module_cd
-                WHEN 'WRK' THEN 'MWRK'
-                WHEN 'APR' THEN 'MAPR'
-                WHEN 'FRM' THEN 'MFRM'
-                WHEN 'COD' THEN 'MCOD'
-                WHEN 'SYS' THEN 'MSYS'
-                ELSE NULL END,
-           s.scrn_cd, s.sort_no, 'Y', p_id, now()
-      FROM tbl_screen s
-     WHERE s.use_yn = 'Y'
-       AND s.scrn_cd <> 'today-tasks'
-       AND s.module_cd IN ('WRK', 'APR', 'FRM', 'COD', 'SYS')
+    VALUES
+        (p_co_cd, 'menu-write-ccp',   'CCP(공정)',       'menu-doc-write',  NULL, 110, 'Y', p_id, now()),
+        (p_co_cd, 'menu-write-prp',   'PRP(위생·설비)',  'menu-doc-write',  NULL, 120, 'Y', p_id, now()),
+        (p_co_cd, 'menu-write-logis', '물류',            'menu-doc-write',  NULL, 130, 'Y', p_id, now()),
+        (p_co_cd, 'menu-write-admin', '운영·법정',       'menu-doc-write',  NULL, 140, 'Y', p_id, now()),
+        (p_co_cd, 'menu-flow-appr',   '결재',            'menu-doc-flow',   NULL, 210, 'Y', p_id, now()),
+        (p_co_cd, 'menu-flow-box',    '문서함·법적서류', 'menu-doc-flow',   NULL, 220, 'Y', p_id, now()),
+        (p_co_cd, 'menu-flow-ca',     '이탈·개선조치',   'menu-doc-flow',   NULL, 230, 'Y', p_id, now()),
+        (p_co_cd, 'menu-master-doc',  '작성 문서·주기',  'menu-doc-master', NULL, 310, 'Y', p_id, now()),
+        (p_co_cd, 'menu-master-form', 'HWP·양식 원본',   'menu-doc-master', NULL, 320, 'Y', p_id, now()),
+        (p_co_cd, 'menu-master-item', '점검항목/한계',   'menu-doc-master', NULL, 330, 'Y', p_id, now()),
+        (p_co_cd, 'menu-master-appr', '결재선',          'menu-doc-master', NULL, 340, 'Y', p_id, now()),
+        (p_co_cd, 'menu-base-master', '기준정보',        'menu-base',       NULL, 410, 'Y', p_id, now()),
+        (p_co_cd, 'menu-sys-auth',    '권한·메뉴·코드',  'menu-sys',        NULL, 910, 'Y', p_id, now()),
+        (p_co_cd, 'menu-sys-log',     '이력·통계',       'menu-sys',        NULL, 920, 'Y', p_id, now())
+    ON CONFLICT (co_cd, menu_cd) DO UPDATE SET
+        menu_nm = EXCLUDED.menu_nm, h_menu_cd = EXCLUDED.h_menu_cd, scrn_cd = NULL,
+        use_yn = 'Y', sort_no = EXCLUDED.sort_no, upd_id = p_id, upd_dt = now();
+
+    -- 소 leaf — 화면별 중분류 매핑 (menu_cd = menu-{scrn_cd})
+    INSERT INTO tbl_menu(co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt)
+    SELECT p_co_cd, 'menu-' || v.scrn_cd, COALESCE(s.scrn_nm, v.scrn_cd),
+           v.h_menu_cd, v.scrn_cd, COALESCE(s.sort_no, v.sort_no), 'Y', p_id, now()
+      FROM (VALUES
+        ('ccp-cold-monitor', 'menu-write-ccp', 105),
+        ('ccp-heat-monitor', 'menu-write-ccp', 106),
+        ('ccp-sanitize-monitor', 'menu-write-ccp', 107),
+        ('ccp-filter-monitor', 'menu-write-ccp', 108),
+        ('ccp-metal-monitor', 'menu-write-ccp', 109),
+        ('ccp-verification-check', 'menu-write-ccp', 110),
+        ('process-hwp', 'menu-write-ccp', 129),
+        ('daily-hygiene-check', 'menu-write-prp', 101),
+        ('health-cert-record', 'menu-write-prp', 102),
+        ('pest-control-check', 'menu-write-prp', 104),
+        ('facility-equipment-check', 'menu-write-prp', 112),
+        ('equipment-history', 'menu-write-prp', 111),
+        ('pest-device-history', 'menu-write-prp', 113),
+        ('visual-insp-standard', 'menu-write-prp', 114),
+        ('calib-self-hwp', 'menu-write-prp', 116),
+        ('calib-ext-hwp', 'menu-write-prp', 117),
+        ('waste-hwp', 'menu-write-prp', 119),
+        ('personal-hyg-hwp', 'menu-write-prp', 131),
+        ('area-hyg-hwp', 'menu-write-prp', 132),
+        ('water-hwp', 'menu-write-prp', 133),
+        ('verify-plan-hwp', 'menu-write-prp', 134),
+        ('verify-check-hwp', 'menu-write-prp', 135),
+        ('verify-report-hwp', 'menu-write-prp', 136),
+        ('verify-ca-hwp', 'menu-write-prp', 127),
+        ('prod-test-hwp', 'menu-write-prp', 137),
+        ('surface-test-hwp', 'menu-write-prp', 138),
+        ('receiving-insp-hwp', 'menu-write-logis', 114),
+        ('submaterial-recv-hwp', 'menu-write-logis', 115),
+        ('shipment-log-hwp', 'menu-write-logis', 118),
+        ('inventory-hwp', 'menu-write-logis', 120),
+        ('vehicle-hwp', 'menu-write-logis', 130),
+        ('visitor-log', 'menu-write-admin', 103),
+        ('edu-plan-hwp', 'menu-write-admin', 121),
+        ('edu-log-hwp', 'menu-write-admin', 122),
+        ('bad-product-hwp', 'menu-write-admin', 123),
+        ('claim-hwp', 'menu-write-admin', 124),
+        ('recall-hwp', 'menu-write-admin', 125),
+        ('eval-hwp', 'menu-write-admin', 126),
+        ('handover-hwp', 'menu-write-admin', 128),
+        ('approval-inbox', 'menu-flow-appr', 210),
+        ('approval-history', 'menu-flow-appr', 230),
+        ('document-inbox', 'menu-flow-box', 220),
+        ('legal-document-upload', 'menu-flow-box', 240),
+        ('corrective-action-management', 'menu-flow-ca', 250),
+        ('schedule-cycle-management', 'menu-master-doc', 340),
+        ('hwp-template-management', 'menu-master-form', 310),
+        ('daily-hyg-item-admin', 'menu-master-item', 311),
+        ('ccp-cold-limit-admin', 'menu-master-item', 321),
+        ('ccp-heat-limit-admin', 'menu-master-item', 322),
+        ('ccp-sanitize-limit-admin', 'menu-master-item', 323),
+        ('ccp-filter-limit-admin', 'menu-master-item', 324),
+        ('ccp-metal-limit-admin', 'menu-master-item', 325),
+        ('ccp-verify-standard-admin', 'menu-master-item', 326),
+        ('facility-check-item-admin', 'menu-master-item', 331),
+        ('ccp-limit-management', 'menu-master-item', 330),
+        ('equipment-management', 'menu-master-item', 360),
+        ('pest-device-management', 'menu-master-item', 370),
+        ('approval-line-management', 'menu-master-appr', 350),
+        ('company-management', 'menu-base-master', 401),
+        ('department-management', 'menu-base-master', 402),
+        ('user-management', 'menu-base-master', 403),
+        ('partner-management', 'menu-base-master', 420),
+        ('product-management', 'menu-base-master', 430),
+        ('material-management', 'menu-base-master', 440),
+        ('storage-management', 'menu-base-master', 450),
+        ('measuring-device-management', 'menu-base-master', 460),
+        ('vehicle-management', 'menu-base-master', 470),
+        ('work-area-management', 'menu-base-master', 480),
+        ('role-management', 'menu-sys-auth', 940),
+        ('menu-management', 'menu-sys-auth', 950),
+        ('common-code-management', 'menu-sys-auth', 960),
+        ('login-history', 'menu-sys-log', 970),
+        ('screen-usage-statistics', 'menu-sys-log', 980),
+        ('audit-log', 'menu-sys-log', 990)
+      ) AS v(scrn_cd, h_menu_cd, sort_no)
+      JOIN tbl_screen s ON s.scrn_cd = v.scrn_cd AND s.use_yn = 'Y'
     ON CONFLICT (co_cd, menu_cd) DO NOTHING;
 
     -- (5) 사용양식 — 구현된 표준 템플릿(impl_yn=Y)만 복사한다
@@ -281,7 +369,7 @@ COMMENT ON PROCEDURE sp_tbl_company_template_c_000(varchar, varchar, varchar, va
 CREATE OR REPLACE FUNCTION sp_tbl_check_item_r_000(
     -- p_co_cd: JWT 회사코드
     p_co_cd  varchar,
-    -- p_tmpl_cd: 템플릿 코드 — DAILY_HYG, WATER 등
+    -- p_tmpl_cd: 템플릿 코드 — tmpl_prp-hygiene-daily, WATER 등
     p_tmpl_cd varchar,
     -- p_grp_cd: 항목 구분 필터. 공백이면 전체 구분
     p_grp_cd varchar

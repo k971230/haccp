@@ -59,7 +59,7 @@ alwaysApply: false
 | `20_sp_biz_ops.sql` | 시설·재고·공정 DB형 6종 |
 | `21_sp_system.sql` | 권한그룹·메뉴 관리 |
 | `22_sp_task_notification.sql` | 오늘 할 일·알림·개선조치 |
-| `28`~`34` migrate | Wave 잔여·목록검색·문서흐름·HWP_SRC·결재 WRK 정본·INV_CHECK |
+| `28`~`34` migrate | Wave 잔여·목록검색·문서흐름·HWP_SRC·결재 WRK 정본·tmpl_logis-inventory-check |
 | `35`~`42` migrate | 메뉴 IA · HA-* · HWP tmpl · 작성명세 DDL/SP · MFRM admin · DEMO 시드 · 갭보완 |
 
 번호는 의존 순서다. 새 파일은 **뒤 번호로 추가**하고 기존 번호를 재사용하지 않는다.

@@ -42,21 +42,21 @@ BEGIN
      WHERE ci.tmpl_cd = p_tmpl_cd
        AND ci.use_yn = 'Y'
        AND coalesce(cci.use_yn, 'Y') = 'Y';
-    IF p_tmpl_cd='PEST' THEN
+    IF p_tmpl_cd='tmpl_prp-pest-check' THEN
       SELECT coalesce(jsonb_agg(jsonb_build_object('rowSeq',d.sort_no,'pestCd',d.pest_cd,'pestNm',d.pest_nm,'placeNm',d.place_nm,'deviceNgCd','O','flyCnt',0,'mothCnt',0,'mosqCnt',0,'midgeCnt',0,'etcFlyCnt',0,'roachCnt',0,'spiderCnt',0,'antCnt',0,'etcWalkCnt',0,'ratCnt',0,'etcRatCnt',0) ORDER BY d.sort_no),'[]'::jsonb) INTO v_items FROM tbl_pest_device d WHERE d.co_cd=p_co_cd AND d.use_yn='Y';
     END IF;
     RETURN jsonb_build_object('header',null,'entries',v_items,'signers','[]'::jsonb,'checkers','[]'::jsonb);
   END IF;
   SELECT CASE p_tmpl_cd
-    WHEN 'DAILY_HYG' THEN (SELECT h.idx FROM tbl_daily_hygiene h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
-    WHEN 'PERSONAL_HYG' THEN (SELECT h.idx FROM tbl_personal_hygiene h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
-    WHEN 'AREA_HYG' THEN (SELECT h.idx FROM tbl_area_hygiene h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
-    WHEN 'PEST' THEN (SELECT h.idx FROM tbl_pest_check h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
-    WHEN 'WATER' THEN (SELECT h.idx FROM tbl_water_check h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
+    WHEN 'tmpl_prp-hygiene-daily' THEN (SELECT h.idx FROM tbl_daily_hygiene h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
+    WHEN 'tmpl_prp-hygiene-personal' THEN (SELECT h.idx FROM tbl_personal_hygiene h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
+    WHEN 'tmpl_prp-hygiene-area' THEN (SELECT h.idx FROM tbl_area_hygiene h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
+    WHEN 'tmpl_prp-pest-check' THEN (SELECT h.idx FROM tbl_pest_check h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
+    WHEN 'tmpl_prp-water-check' THEN (SELECT h.idx FROM tbl_water_check h WHERE h.co_cd=p_co_cd AND h.doc_idx=p_doc_idx)
   END INTO v_hdr;
   IF v_hdr IS NULL THEN RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE='45000'; END IF;
   SELECT jsonb_build_object('docIdx',d.idx,'docNo',d.doc_no,'baseDt',d.base_dt,'status',d.status) INTO v_out FROM tbl_document d WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.del_yn='N';
-  IF p_tmpl_cd='DAILY_HYG' THEN
+  IF p_tmpl_cd='tmpl_prp-hygiene-daily' THEN
     -- 기존 문서 재조회 — FE NUM/NUM2 분기를 위해 inputType·unitNm을 표준항목과 JOIN한다
     SELECT jsonb_build_object(
              'header', v_out || jsonb_build_object('beforeTime',h.before_time,'duringTime',h.during_time,'checkerNm',h.checker_nm),
@@ -79,10 +79,10 @@ BEGIN
       INTO v_out
       FROM tbl_daily_hygiene h
       LEFT JOIN tbl_daily_hygiene_item i ON i.hdr_idx=h.idx AND i.co_cd=h.co_cd
-      LEFT JOIN tbl_check_item ci ON ci.tmpl_cd='DAILY_HYG' AND ci.item_cd=i.item_cd
+      LEFT JOIN tbl_check_item ci ON ci.tmpl_cd='tmpl_prp-hygiene-daily' AND ci.item_cd=i.item_cd
      WHERE h.idx=v_hdr AND h.co_cd=p_co_cd
      GROUP BY h.before_time, h.during_time, h.checker_nm;
-  ELSIF p_tmpl_cd='PERSONAL_HYG' THEN
+  ELSIF p_tmpl_cd='tmpl_prp-hygiene-personal' THEN
     -- camelCase — 저장 c_000·FE 스칼라 OX 키와 동일
     SELECT jsonb_build_object(
              'header', v_out || jsonb_build_object('checkerNm',h.checker_nm),
@@ -106,7 +106,7 @@ BEGIN
       LEFT JOIN tbl_personal_hygiene_row r ON r.hdr_idx=h.idx AND r.co_cd=h.co_cd
      WHERE h.idx=v_hdr AND h.co_cd=p_co_cd
      GROUP BY h.checker_nm;
-  ELSIF p_tmpl_cd='AREA_HYG' THEN
+  ELSIF p_tmpl_cd='tmpl_prp-hygiene-area' THEN
     SELECT jsonb_build_object(
              'header', v_out || jsonb_build_object('baseDtTo',h.base_dt_to,'areaCd',h.area_cd,'checkerNm',h.checker_nm),
              'entries', coalesce(jsonb_agg(jsonb_build_object(
@@ -131,7 +131,7 @@ BEGIN
       LEFT JOIN tbl_area_hygiene_item i ON i.hdr_idx=h.idx AND i.co_cd=h.co_cd
      WHERE h.idx=v_hdr AND h.co_cd=p_co_cd
      GROUP BY h.base_dt_to, h.area_cd, h.checker_nm, h.idx;
-  ELSIF p_tmpl_cd='PEST' THEN
+  ELSIF p_tmpl_cd='tmpl_prp-pest-check' THEN
     -- camelCase 카운트 열 — 신규 기본행·저장 payload와 동일
     SELECT jsonb_build_object(
              'header', v_out || jsonb_build_object('checkerNm',h.checker_nm),
