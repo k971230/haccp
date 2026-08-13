@@ -12,7 +12,7 @@ PrefMapper.xml — 그리드 열 설정 sp_tbl_* 호출 매퍼.
 PIPELINE[HB41] MyBatis XML
 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.metis.haccp.pref.PrefMapper">
+<mapper namespace="com.haccp.pref.PrefMapper">
 
     <!--
       그리드 열 설정 조회 — sp_tbl_grid_pref_r_000
@@ -20,7 +20,7 @@ PIPELINE[HB41] MyBatis XML
       scrnCd가 공백이면 이 사용자의 전체 화면 설정이 나오므로, 화면 진입 시에는 정확한 화면코드를 넘긴다
       결과: 화면코드 → 그리드 식별자 순으로 정렬된 GridPrefRow 목록. 저장 이력이 없으면 빈 목록
     -->
-    <select id="selectGridPrefs" resultType="com.metis.haccp.pref.dto.GridPrefRow">
+    <select id="selectGridPrefs" resultType="com.haccp.pref.dto.GridPrefRow">
         SELECT * FROM sp_tbl_grid_pref_r_000(
             #{coCd,   mode=IN, jdbcType=VARCHAR},
             #{userId, mode=IN, jdbcType=VARCHAR},

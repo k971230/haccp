@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+RoleMgmtMapper.xml — 권한그룹 관리 화면 SP 호출 매퍼.
+
+개발자: 박승우
+일자: 2026-08-12
+코멘트:
+  1) sp_role_management_* 만 호출한다 — 네이티브 SQL 금지
+  2) selectScreens는 권한 관리 화면과 로그인 직후 버튼 권한이 공유하는 SP다
+  3) 삭제 차단 조회는 idx 배열 하나로 한 번에 검사하고 첫 건만 받는다
+
+PIPELINE[HB92] 권한그룹 관리 MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.sys.role.RoleMgmtMapper">
+
+    <!--
+      권한그룹 목록 — sp_role_management_r_000
+      헤더 코드·명·사용여부는 부분검색어라 공백이면 전체가 나온다
+    -->
+    <select id="selectRows" resultType="map">
+        SELECT * FROM sp_role_management_r_000(
+            #{coCd,     jdbcType=VARCHAR},
+            #{usrgrpCd, jdbcType=VARCHAR},
+            #{usrgrpNm, jdbcType=VARCHAR},
+            #{useYn,    jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      권한그룹 저장 — sp_role_management_c_000
+      idx가 null일 때(= 신규 행) SP가 코드 중복을 먼저 검사한다
+    -->
+    <update id="save" statementType="CALLABLE">
+        CALL sp_role_management_c_000(
+            #{coCd,     jdbcType=VARCHAR},
+            #{idx,      jdbcType=BIGINT},
+            #{usrgrpCd, jdbcType=VARCHAR},
+            #{usrgrpNm, jdbcType=VARCHAR},
+            #{descRmk,  jdbcType=VARCHAR},
+            #{useYn,    jdbcType=VARCHAR},
+            #{userId,   jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!--
+      삭제 차단 조회 — sp_role_management_delete_blocker_r_000
+      이 그룹을 쓰는 사용자가 있는 첫 행만 돌려받는다
+    -->
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
+        SELECT ref_key, target
+          FROM sp_role_management_delete_blocker_r_000(
+              #{coCd, jdbcType=VARCHAR},
+              ARRAY[<foreach collection="idxs" item="idx" separator=",">#{idx, jdbcType=BIGINT}</foreach>]::bigint[]
+          )
+         LIMIT 1
+    </select>
+
+    <!--
+      권한그룹 삭제 — sp_role_management_d_000
+      SP가 사용자 참조를 다시 확인하고 통과하면 화면권한 행까지 함께 지운다
+    -->
+    <update id="delete" statementType="CALLABLE">
+        CALL sp_role_management_d_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{idx,  jdbcType=BIGINT}
+        )
+    </update>
+
+    <!--
+      권한그룹별 화면 권한 — sp_role_management_screen_r_000
+      tbl_screen 기준 LEFT JOIN이라 아직 설정하지 않은 화면도 N으로 내려온다
+    -->
+    <select id="selectScreens" resultType="map">
+        SELECT * FROM sp_role_management_screen_r_000(
+            #{coCd,     jdbcType=VARCHAR},
+            #{usrgrpCd, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      화면 권한 업서트 — sp_role_management_screen_c_000
+      변경된 행만 모아 반복 호출하며 트랜잭션은 Service가 잡는다
+    -->
+    <update id="upsertScreen" statementType="CALLABLE">
+        CALL sp_role_management_screen_c_000(
+            #{coCd,     jdbcType=VARCHAR},
+            #{usrgrpCd, jdbcType=VARCHAR},
+            #{scrnCd,   jdbcType=VARCHAR},
+            #{readYn,   jdbcType=VARCHAR},
+            #{writeYn,  jdbcType=VARCHAR},
+            #{modifyYn, jdbcType=VARCHAR},
+            #{deleteYn, jdbcType=VARCHAR},
+            #{printYn,  jdbcType=VARCHAR},
+            #{userId,   jdbcType=VARCHAR}
+        )
+    </update>
+
+</mapper>

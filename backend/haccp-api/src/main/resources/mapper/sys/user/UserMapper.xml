@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+UserMapper.xml — 사용자 관리 화면 SP 호출 매퍼.
+
+개발자: 박승우
+일자: 2026-08-12
+코멘트:
+  1) sp_user_management_* 만 호출한다 — 과거 tbl_user 직접 SELECT/UPDATE 2건을 SP로 옮겼다
+  2) 목록에는 비밀번호 해시가 포함되지 않는다
+  3) 삭제 차단 조회는 idx 배열 하나로 한 번에 검사하고 첫 건만 받는다
+
+PIPELINE[HB92] 사용자 관리 MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.sys.user.UserMapper">
+
+    <!--
+      사용자 목록 — sp_user_management_r_000
+      deptCd는 좌측 부서 트리 선택값이며 공백이면 전체 부서가 나온다
+    -->
+    <select id="selectRows" resultType="map">
+        SELECT * FROM sp_user_management_r_000(
+            #{coCd,   jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR},
+            #{userNm, jdbcType=VARCHAR},
+            #{deptCd, jdbcType=VARCHAR},
+            #{useYn,  jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      사용자 저장 — sp_user_management_c_000
+      userPw는 Service가 BCrypt로 해시한 값이며, 수정에서 공백이면 SP가 기존 해시를 유지한다
+    -->
+    <update id="save" statementType="CALLABLE">
+        CALL sp_user_management_c_000(
+            #{coCd,     jdbcType=VARCHAR},
+            #{idx,      jdbcType=BIGINT},
+            #{userId,   jdbcType=VARCHAR},
+            #{empCd,    jdbcType=VARCHAR},
+            #{userNm,   jdbcType=VARCHAR},
+            #{userPw,   jdbcType=VARCHAR},
+            #{usrgrpCd, jdbcType=VARCHAR},
+            #{deptCd,   jdbcType=VARCHAR},
+            #{email,    jdbcType=VARCHAR},
+            #{mobile,   jdbcType=VARCHAR},
+            #{lockYn,   jdbcType=VARCHAR},
+            #{useYn,    jdbcType=VARCHAR},
+            #{actorId,  jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!--
+      삭제 차단 조회 — sp_user_management_delete_blocker_r_000
+      사용자는 작성 문서를 이력으로 남기므로 차단 사유가 없다. 다른 화면과 흐름을 맞추려 호출만 유지한다
+    -->
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
+        SELECT ref_key, target
+          FROM sp_user_management_delete_blocker_r_000(
+              #{coCd, jdbcType=VARCHAR},
+              ARRAY[<foreach collection="idxs" item="idx" separator=",">#{idx, jdbcType=BIGINT}</foreach>]::bigint[]
+          )
+         LIMIT 1
+    </select>
+
+    <!--
+      사용자 삭제 — sp_user_management_d_000
+      알림·그리드 개인 설정까지 SP가 함께 정리하고 작성 문서는 남긴다
+    -->
+    <update id="delete" statementType="CALLABLE">
+        CALL sp_user_management_d_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{idx,  jdbcType=BIGINT}
+        )
+    </update>
+
+    <!--
+      서명 메타데이터 조회 — sp_user_management_sign_info_r_000
+      bytea를 SELECT 목록에 넣지 않아 16KB급 이미지를 통째로 읽지 않는다
+      미등록이면 sign_yn='N', 다른 회사·없는 아이디면 0행이라 결과가 null이다
+    -->
+    <select id="selectSignInfo" resultType="map">
+        SELECT sign_yn, sign_nm, sign_mime FROM sp_user_management_sign_info_r_000(
+            #{coCd,   jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      서명 바이너리 조회 — sp_user_management_sign_r_000
+      이미지 실물이 필요한 경로(미리보기·클립보드 복사)만 호출한다
+      미등록이면 sign_img가 NULL인 1행, 다른 회사·없는 아이디면 0행이라 결과가 null이다
+    -->
+    <select id="selectSign" resultType="map">
+        SELECT sign_img, sign_mime, sign_nm FROM sp_user_management_sign_r_000(
+            #{coCd,   jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      서명 바이너리 저장·삭제 — sp_user_management_sign_u_000
+      signImg가 null이면 서명을 지운다. 대상이 없으면 SP가 45000으로 올려 업무 문구가 된다
+    -->
+    <update id="updateSign" statementType="CALLABLE">
+        CALL sp_user_management_sign_u_000(
+            #{coCd,     jdbcType=VARCHAR},
+            #{userId,   jdbcType=VARCHAR},
+            #{signImg,  jdbcType=BINARY},
+            #{signMime, jdbcType=VARCHAR},
+            #{signNm,   jdbcType=VARCHAR},
+            #{actorId,  jdbcType=VARCHAR}
+        )
+    </update>
+
+</mapper>

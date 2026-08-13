@@ -12,17 +12,17 @@ MenuMapper.xml — 메뉴 조회 sp_tbl_* 호출 매퍼.
 PIPELINE[HB32] MyBatis XML
 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.metis.haccp.menu.MenuMapper">
+<mapper namespace="com.haccp.menu.MenuMapper">
 
     <!--
-      권한 반영 메뉴 목록 조회 — sp_tbl_menu_r_000
+      권한 반영 메뉴 목록 조회 — sp_menu_nav_r_000 (사이드바 전용. 메뉴 관리 화면은 sp_menu_management_r_000)
       coCd는 JWT 회사코드로 업체별 메뉴 구성 범위를 정하고, usrgrpCd는 화면 권한(tbl_role_screen) 결합 기준이다
       화면이 붙지 않은 분류 노드는 항상 포함되고, 화면이 붙은 leaf는 조회권한(read_yn='Y')일 때만 포함된다 — 기본 거부
       정렬은 SP가 최상위 우선 → sort_no → menu_cd 순으로 마쳐서 보내므로 프론트는 순서를 다시 계산하지 않는다
       결과: MenuRow 평면 목록. 권한이 전혀 없으면 빈 목록
     -->
-    <select id="selectMenus" resultType="com.metis.haccp.menu.dto.MenuRow">
-        SELECT * FROM sp_tbl_menu_r_000(
+    <select id="selectMenus" resultType="com.haccp.menu.dto.MenuRow">
+        SELECT * FROM sp_menu_nav_r_000(
             #{coCd,     mode=IN, jdbcType=VARCHAR},
             #{usrgrpCd, mode=IN, jdbcType=VARCHAR}
         )

@@ -12,10 +12,10 @@ CcpColdMapper.xml — CCP 냉장보관 모니터링 sp_tbl_* 호출.
 PIPELINE[HB70] MyBatis XML
 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.metis.haccp.ccp.CcpColdMapper">
+<mapper namespace="com.haccp.ccp.CcpColdMapper">
 
     <!-- 보관고 목록 — 일지 열 머리글. useYn='Y'로 호출하면 사용중만 -->
-    <select id="selectStorages" resultType="com.metis.haccp.ccp.dto.StorageRow">
+    <select id="selectStorages" resultType="com.haccp.ccp.dto.StorageRow">
         SELECT * FROM sp_tbl_storage_r_000(
             #{coCd,  mode=IN, jdbcType=VARCHAR},
             #{ccpCd, mode=IN, jdbcType=VARCHAR},
@@ -24,7 +24,7 @@ PIPELINE[HB70] MyBatis XML
     </select>
 
     <!-- CCP 한계기준 — 화면 상단 문구·판정 안내 -->
-    <select id="selectLimits" resultType="com.metis.haccp.ccp.dto.CcpLimitRow">
+    <select id="selectLimits" resultType="com.haccp.ccp.dto.CcpLimitRow">
         SELECT * FROM sp_tbl_ccp_limit_r_000(
             #{coCd,  mode=IN, jdbcType=VARCHAR},
             #{ccpCd, mode=IN, jdbcType=VARCHAR}
@@ -32,7 +32,7 @@ PIPELINE[HB70] MyBatis XML
     </select>
 
     <!-- 일지 목록 — 기간·CCP·문서번호·작성자 -->
-    <select id="selectList" resultType="com.metis.haccp.ccp.dto.ColdMonitorListRow">
+    <select id="selectList" resultType="com.haccp.ccp.dto.ColdMonitorListRow">
         SELECT * FROM sp_tbl_ccp_cold_monitor_r_000(
             #{coCd,   mode=IN, jdbcType=VARCHAR},
             #{fromDt, mode=IN, jdbcType=VARCHAR},
@@ -44,7 +44,7 @@ PIPELINE[HB70] MyBatis XML
     </select>
 
     <!-- 헤더 단건 — 없으면 0행 -->
-    <select id="selectHeader" resultType="com.metis.haccp.ccp.dto.ColdMonitorHeader">
+    <select id="selectHeader" resultType="com.haccp.ccp.dto.ColdMonitorHeader">
         SELECT * FROM sp_tbl_ccp_cold_monitor_r_001(
             #{coCd,   mode=IN, jdbcType=VARCHAR},
             #{docIdx, mode=IN, jdbcType=BIGINT}
@@ -52,7 +52,7 @@ PIPELINE[HB70] MyBatis XML
     </select>
 
     <!-- 점검행 — temps는 Service가 붙인다 -->
-    <select id="selectRows" resultType="com.metis.haccp.ccp.dto.ColdMonitorRowDto">
+    <select id="selectRows" resultType="com.haccp.ccp.dto.ColdMonitorRowDto">
         SELECT * FROM sp_tbl_ccp_cold_monitor_row_r_000(
             #{coCd,   mode=IN, jdbcType=VARCHAR},
             #{hdrIdx, mode=IN, jdbcType=BIGINT}
@@ -60,7 +60,7 @@ PIPELINE[HB70] MyBatis XML
     </select>
 
     <!-- 온도 JOIN — row_idx로 그룹핑 -->
-    <select id="selectTempJoins" resultType="com.metis.haccp.ccp.dto.ColdMonitorTempJoinRow">
+    <select id="selectTempJoins" resultType="com.haccp.ccp.dto.ColdMonitorTempJoinRow">
         SELECT * FROM sp_tbl_ccp_cold_monitor_temp_r_000(
             #{coCd,   mode=IN, jdbcType=VARCHAR},
             #{hdrIdx, mode=IN, jdbcType=BIGINT}
@@ -88,7 +88,7 @@ PIPELINE[HB70] MyBatis XML
       삭제 차단 — 결재 진행(REQ/REV)·완료(APV)면 막는다.
       임시(TMP)·반려(RJT)만 삭제 가능.
     -->
-    <select id="selectDeleteBlocker" resultType="com.metis.haccp.common.validation.DeleteBlocker">
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
         SELECT d.doc_no AS ref_key,
                CASE d.status
                     WHEN 'REQ' THEN '결재요청'

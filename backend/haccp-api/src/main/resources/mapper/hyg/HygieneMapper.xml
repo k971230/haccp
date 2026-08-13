@@ -10,9 +10,9 @@ HygieneMapper.xml — 위생 DB형 5종 공통 SP 호출.
 PIPELINE[HB85] 위생 MyBatis XML
 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.metis.haccp.hyg.HygieneMapper">
+<mapper namespace="com.haccp.hyg.HygieneMapper">
     <!-- 목록 — 기준일 범위와 양식코드 -->
-    <select id="selectList" resultType="com.metis.haccp.hyg.dto.HygieneListRow">
+    <select id="selectList" resultType="com.haccp.hyg.dto.HygieneListRow">
         SELECT * FROM sp_tbl_hygiene_document_r_000(#{coCd}, #{tmplCd}, #{fromDt}, #{toDt}, #{docNo}, #{writer})
     </select>
     <!-- 상세/신규 기본행 — JSON 문자열 -->
@@ -27,7 +27,7 @@ PIPELINE[HB85] 위생 MyBatis XML
         )
     </select>
     <!-- 삭제 차단 — 결재 진행·완료 문서의 첫 항목만 반환 -->
-    <select id="selectDeleteBlocker" resultType="com.metis.haccp.common.validation.DeleteBlocker">
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
         SELECT d.doc_no AS ref_key,
                CASE d.status WHEN 'REQ' THEN '결재요청' WHEN 'REV' THEN '결재검토'
                              WHEN 'APV' THEN '결재완료' ELSE d.status END AS target

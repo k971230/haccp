@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+DepartmentMapper.xml — 부서 관리 화면 SP 호출 매퍼.
+
+개발자: 박승우
+일자: 2026-08-12
+코멘트:
+  1) sp_department_management_* 만 호출한다 — 네이티브 SQL 금지
+  2) 조회는 상위부서명(self LEFT JOIN)까지 SP가 붙여 보낸다
+  3) 삭제 차단 조회는 idx 배열 하나로 한 번에 검사하고 첫 건만 받는다
+
+PIPELINE[HB92] 부서 관리 MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.sys.department.DepartmentMapper">
+
+    <!--
+      부서 목록 — sp_department_management_r_000
+      최상위(상위코드 없음)를 먼저, 그다음 정렬순서·코드 순으로 내려와 FE 트리 조립 순서와 같다
+      좌측 트리가 전체 집합을 요구하므로 화면은 검색어를 공백으로 넘긴다
+    -->
+    <select id="selectRows" resultType="map">
+        SELECT * FROM sp_department_management_r_000(
+            #{coCd,   jdbcType=VARCHAR},
+            #{deptCd, jdbcType=VARCHAR},
+            #{deptNm, jdbcType=VARCHAR},
+            #{useYn,  jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      부서 저장 — sp_department_management_c_000
+      idx가 null일 때(= 신규 행) SP가 부서코드 중복을 먼저 검사한다
+    -->
+    <update id="save" statementType="CALLABLE">
+        CALL sp_department_management_c_000(
+            #{coCd,    jdbcType=VARCHAR},
+            #{idx,     jdbcType=BIGINT},
+            #{deptCd,  jdbcType=VARCHAR},
+            #{deptNm,  jdbcType=VARCHAR},
+            #{hDeptCd, jdbcType=VARCHAR},
+            #{sortNo,  jdbcType=INTEGER},
+            #{useYn,   jdbcType=VARCHAR},
+            #{userId,  jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!--
+      삭제 차단 조회 — sp_department_management_delete_blocker_r_000
+      사용자 > 하위 부서 사용자 > 하위 부서 순으로 사유를 정해 첫 건만 돌려받는다
+    -->
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
+        SELECT ref_key, target
+          FROM sp_department_management_delete_blocker_r_000(
+              #{coCd, jdbcType=VARCHAR},
+              ARRAY[<foreach collection="idxs" item="idx" separator=",">#{idx, jdbcType=BIGINT}</foreach>]::bigint[]
+          )
+         LIMIT 1
+    </select>
+
+    <!--
+      부서 삭제 — sp_department_management_d_000
+      SP가 세 가지 참조를 다시 확인하므로 앱·DB 두 겹으로 막힌다
+    -->
+    <update id="delete" statementType="CALLABLE">
+        CALL sp_department_management_d_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{idx,  jdbcType=BIGINT}
+        )
+    </update>
+
+</mapper>

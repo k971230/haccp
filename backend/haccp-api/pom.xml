@@ -22,7 +22,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.metis</groupId>
+    <groupId>com.haccp</groupId>
     <artifactId>haccp-api</artifactId>
     <version>1.0.0</version>
     <name>haccp-api</name>

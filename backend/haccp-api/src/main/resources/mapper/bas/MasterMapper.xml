@@ -13,7 +13,7 @@ PIPELINE[HB75] 기준정보 MyBatis XML
 PIPELINE[HB74, HB76, HB77] 연관 모듈
 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.metis.haccp.bas.MasterMapper">
+<mapper namespace="com.haccp.bas.MasterMapper">
 
     <!--
       기준정보 목록 — SP가 허용 유형 CASE로 테이블을 선택하고 JSONB 행을 반환한다.
@@ -44,7 +44,7 @@ PIPELINE[HB74, HB76, HB77] 연관 모듈
       삭제 참조 검사 — PostgreSQL bigint 배열 하나로 대상 전체를 조회한다.
       foreach는 값만 바인딩하며 masterType을 SQL 식별자로 치환하지 않는다.
     -->
-    <select id="selectDeleteBlocker" resultType="com.metis.haccp.common.validation.DeleteBlocker">
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
         SELECT ref_key, target
           FROM sp_tbl_master_delete_blocker_r_000(
               #{coCd,       mode=IN, jdbcType=VARCHAR},

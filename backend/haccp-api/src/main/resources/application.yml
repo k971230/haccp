@@ -49,7 +49,7 @@ spring:
 
 mybatis:
   mapper-locations: classpath:/mapper/**/*.xml
-  type-aliases-package: com.metis.haccp
+  type-aliases-package: com.haccp
   configuration:
     # Two-Tier: DB lower_snake(co_cd) → Java/JSON camelCase(coCd)
     map-underscore-to-camel-case: true
@@ -110,7 +110,7 @@ app:
 
 logging:
   level:
-    com.metis.haccp: ${LOG_LEVEL:INFO}
+    com.haccp: ${LOG_LEVEL:INFO}
 
 # Actuator — health·metrics만 웹 노출 (env/heapdump 비노출)
 management:

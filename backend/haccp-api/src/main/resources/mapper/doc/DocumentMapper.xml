@@ -12,13 +12,13 @@ DocumentMapper.xml — 문서 허브 sp_tbl_document_* 호출 매퍼.
 PIPELINE[HB84] MyBatis XML
 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.metis.haccp.doc.DocumentMapper">
+<mapper namespace="com.haccp.doc.DocumentMapper">
 
     <!--
       회사 사용 템플릿 목록 — sp_tbl_document_template_r_000이 impl/use/company use 조건을 모두 강제한다.
       form_path는 서버 내부에서만 쓰고, Service가 인증된 form URL로 치환해 외부에 물리 경로를 노출하지 않는다.
     -->
-    <select id="selectTemplates" resultType="com.metis.haccp.doc.dto.DocumentTemplateRow">
+    <select id="selectTemplates" resultType="com.haccp.doc.dto.DocumentTemplateRow">
         SELECT * FROM sp_tbl_document_template_r_000(
             #{coCd, mode=IN, jdbcType=VARCHAR}
         )
@@ -38,7 +38,7 @@ PIPELINE[HB84] MyBatis XML
       템플릿 원본 단건 — sp_tbl_document_template_r_001이 회사 사용여부와 구현여부를 다시 확인한다.
       tmplCd는 URL 경로의 업무키이며 form_path는 TemplateFileStorage만 해석한다.
     -->
-    <select id="selectTemplate" resultType="com.metis.haccp.doc.dto.DocumentTemplateRow">
+    <select id="selectTemplate" resultType="com.haccp.doc.dto.DocumentTemplateRow">
         SELECT * FROM sp_tbl_document_template_r_001(
             #{coCd,   mode=IN, jdbcType=VARCHAR},
             #{tmplCd, mode=IN, jdbcType=VARCHAR}
@@ -97,7 +97,7 @@ PIPELINE[HB84] MyBatis XML
     </select>
 
     <!-- 첨부 목록 — 내부 filePath는 Service에서만 사용하고 API 응답에서는 제거 -->
-    <select id="selectFiles" resultType="com.metis.haccp.doc.dto.DocumentFileRow">
+    <select id="selectFiles" resultType="com.haccp.doc.dto.DocumentFileRow">
         SELECT * FROM sp_tbl_document_file_r_000(
             #{coCd,   mode=IN, jdbcType=VARCHAR},
             #{docIdx, mode=IN, jdbcType=BIGINT}
@@ -105,7 +105,7 @@ PIPELINE[HB84] MyBatis XML
     </select>
 
     <!-- 파일 단건 — 다운로드·물리 삭제 전에 회사 범위와 문서 존재를 함께 확인 -->
-    <select id="selectFile" resultType="com.metis.haccp.doc.dto.DocumentFileRow">
+    <select id="selectFile" resultType="com.haccp.doc.dto.DocumentFileRow">
         SELECT * FROM sp_tbl_document_file_r_001(
             #{coCd,    mode=IN, jdbcType=VARCHAR},
             #{fileIdx, mode=IN, jdbcType=BIGINT}
@@ -181,7 +181,7 @@ PIPELINE[HB84] MyBatis XML
       문서 삭제 사전 차단 — 결재 진행/완료 또는 보존 만료 전 문서의 첫 건만 반환한다.
       docIdxs는 객체 배열에서 추출한 대리키 목록이고, 서비스 루프 COUNT를 쓰지 않는다.
     -->
-    <select id="selectDocumentDeleteBlocker" resultType="com.metis.haccp.common.validation.DeleteBlocker">
+    <select id="selectDocumentDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
         SELECT d.doc_no AS ref_key,
                CASE
                    WHEN d.status IN ('REQ', 'REV', 'APV') THEN '결재 진행 또는 완료 문서'

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- CCP DB형 양식 3종 — 공통 목록·상세·저장·삭제 SP 호출 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.metis.haccp.ccp.CcpFormsMapper">
+<mapper namespace="com.haccp.ccp.CcpFormsMapper">
     <select id="selectList" resultType="map">
         SELECT * FROM sp_tbl_ccp_form_list_r_000(#{coCd}, #{tmplCd}, #{fromDt}, #{toDt}, #{docNo}, #{writer})
     </select>
@@ -35,7 +35,7 @@
          WHERE co_cd = #{coCd}
            AND doc_idx = #{docIdx}
     </update>
-    <select id="selectDeleteBlocker" resultType="com.metis.haccp.common.validation.DeleteBlocker">
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
         SELECT d.doc_no AS ref_key,
                CASE d.status WHEN 'REQ' THEN '결재요청' WHEN 'REV' THEN '결재검토' WHEN 'APV' THEN '결재완료' ELSE d.status END AS target
           FROM tbl_document d
