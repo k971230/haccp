@@ -141,19 +141,23 @@ public class TemplateFileStorage {
      * 일자: 2026-08-06
      * 코멘트:
      *   1) 기존 form_path 위치에 HWP/HWPX 바이트를 덮어쓴다
-     *   2) 표준 양식 수정 저장 시 호출한다
-     *   3) 확장자·크기·루트 이탈이 있으면 쓰기 전에 차단한다
+     *   2) 표준 양식 수정 저장·원본 부재 후 로컬열기 저장에서 호출한다
+     *   3) 경로만 있고 실물이 없을 때(= 볼륨 미시드) 상위 폴더를 만들고 신규로 쓴다
      */
     public Path write(
-            // DB form_path — 이미 존재하는 파일만
+            // DB form_path — 표준·자사 루트 안이면 실물 유무와 상관없이 이 위치에 쓴다
             String formPath,
             // 브라우저가 올린 수정본
             MultipartFile file
     ) {
         validateUpload(file);
-        Path target = read(formPath);
-        try (InputStream input = file.getInputStream()) {
-            Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
+        // 실물이 없어도 같은 경로에 저장해야 한다 — 없으면 create 와 같다
+        Path target = resolveInsideTemplate(formPath, true);
+        try {
+            Files.createDirectories(target.getParent());
+            try (InputStream input = file.getInputStream()) {
+                Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
+            }
             return target;
         } catch (IOException e) {
             throw new BizException("템플릿 원본 파일을 저장하지 못했습니다.");
