@@ -1,42 +1,40 @@
 /**
- * CodeLookupDialog — 권한그룹·부서 등 코드 선택 팝업.
+ * CodeLookupModal — 권한그룹·부서 등 코드 선택 공통 팝업.
  *
  * 개발자: 박승우
  * 일자: 2026-08-12
  * 코멘트:
- *   1) 서명 팝업과 동일 모달 셸 — 보라 mes-grid-head·max-w-lg·280 바디·푸터 닫기 우측
- *   2) 코드·코드명 이중 검색 + 그리드 툴바(결과 내 검색·열)로 고른다
- *   3) scrnCd+persistId로 열 너비·숨김 pref를 DB에 저장한다
+ *   1) pages/sys/CodeLookupDialog에서 옮겨온 전역 모달 — 어느 도메인에서든 openModal("CodeLookup", ...)로 연다
+ *   2) 서명 팝업과 동일 셸 — 보라 mes-grid-head·max-w-lg·280 바디·푸터 닫기 우측
+ *   3) 열림 여부는 modalStore가 관리하므로 이 컴포넌트는 열렸을 때만 마운트된다
  *
  * PIPELINE[HF99] 코드 조회 팝업
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { MesDataGrid } from "@/components/grid/MesDataGrid";
 import { MesButton } from "@/components/ui/MesButton";
 import { searchInputClass } from "@/components/ui/Input";
 import { gridHeadClass } from "@/components/layout/pageClasses";
 import { cn } from "@/lib/cn";
 import type { GridColumn } from "@/types/grid";
+// 역할 — 모달 종류별 props 계약·공통 바디 높이
+import { COMMON_MODAL_BODY_H, type CodeLookupModalProps } from "./modalTypes";
+// 역할 — 전역 모달 닫기
+import { useModalStore } from "@/stores/modalStore";
 
-export type CodeLookupOption = { value: string; label: string };
-
-type LookupRow = CodeLookupOption & { _key: string };
-
-/** 룩업·서명 팝업 공통 바디 높이 — 그리드/미리보기 동일 */
-export const SYS_MODAL_BODY_H = 280;
+/** 그리드 행 — 빈 코드도 rowKey를 가질 수 있게 _key를 붙인다 */
+type LookupRow = { value: string; label: string; _key: string };
 
 /**
  * 개발자: 박승우
  * 일자: 2026-08-12
  * 코멘트:
  *   1) 코드 선택 UI를 MesDataGrid로 렌더한다
- *   2) 사용자·부서 관리 셀 버튼에서 연다
- *   3) 선택·닫기만 하며 목록 API는 호출하지 않는다
+ *   2) 사용자·부서 관리 등 셀 버튼에서 연다
+ *   3) 선택·닫기만 하며 목록 API는 호출하지 않는다 — 목록은 호출 화면이 넘긴다
  */
-export function CodeLookupDialog({
-  // 팝업 표시 여부
-  open,
-  // 제목 — 권한그룹·부서·상위부서 (보라 배지)
+export function CodeLookupModal({
+  // 모달 제목 — 권한그룹·부서·상위부서 (보라 배지)
   title,
   // 그리드 pref 화면코드 — 호출부 scrnCd (없으면 열 상태 미저장)
   scrnCd,
@@ -48,18 +46,9 @@ export function CodeLookupDialog({
   allowEmpty = false,
   // 코드·표시명 확정 — 빈 선택이면 label=""
   onSelect,
-  // 닫기
-  onClose,
-}: {
-  open: boolean;
-  title: string;
-  scrnCd: string;
-  options: CodeLookupOption[];
-  value?: string;
-  allowEmpty?: boolean;
-  onSelect: (code: string, label: string) => void;
-  onClose: () => void;
-}) {
+}: CodeLookupModalProps) {
+  // 역할 — 배경·닫기 버튼·선택 확정 후 모달 종료
+  const closeModal = useModalStore((s) => s.closeModal);
   // 입력 중 코드 검색어 — Enter·조회 전
   const [draftCode, setDraftCode] = useState("");
   // 입력 중 코드명 검색어
@@ -69,24 +58,13 @@ export function CodeLookupDialog({
   // 확정 코드명 검색어
   const [appliedName, setAppliedName] = useState("");
 
-  useEffect(() => {
-    // 팝업 열릴 때(= 새 선택) 검색어 초기화
-    if (!open) return;
-    setDraftCode("");
-    setDraftName("");
-    setAppliedCode("");
-    setAppliedName("");
-  }, [open]);
-
   const runSearch = () => {
     setAppliedCode(draftCode.trim());
     setAppliedName(draftName.trim());
   };
 
   const rows = useMemo((): LookupRow[] => {
-    const base = allowEmpty
-      ? [{ value: "", label: "(없음)" }, ...options]
-      : options;
+    const base = allowEmpty ? [{ value: "", label: "(없음)" }, ...options] : options;
     const mapped = base.map((o) => ({
       ...o,
       // 빈 코드 행 키 — MesDataGrid rowKey 안정용
@@ -127,10 +105,8 @@ export function CodeLookupDialog({
     // (없음) 행일 때(= 빈 코드) 표시명은 비운다
     const label = row.value ? row.label : "";
     onSelect(row.value, label);
-    onClose();
+    closeModal();
   };
-
-  if (!open) return null;
 
   const activeKey = value ? value : allowEmpty && value === "" ? "__empty__" : null;
 
@@ -142,7 +118,7 @@ export function CodeLookupDialog({
       aria-modal="true"
       aria-label={title}
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) closeModal();
       }}
     >
       <div
@@ -217,7 +193,7 @@ export function CodeLookupDialog({
             // 정렬 허용
             sortable
             // 서명 미리보기와 동일 높이
-            height={SYS_MODAL_BODY_H}
+            height={COMMON_MODAL_BODY_H}
             title={title}
             // 행 클릭 — 코드·명 확정
             onRowClick={pick}
@@ -230,7 +206,7 @@ export function CodeLookupDialog({
           <MesButton
             // 선택 없이 닫기
             variant="secondary"
-            onClick={onClose}
+            onClick={closeModal}
           >
             닫기
           </MesButton>

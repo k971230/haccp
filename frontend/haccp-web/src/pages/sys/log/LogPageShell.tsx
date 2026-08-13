@@ -1,32 +1,29 @@
 /**
- * LogManagementPage — 로그인 이력·화면 이용 통계·변경 감사 로그.
+ * LogPageShell — 로그 3화면(로그인 이력·감사 이력·화면 이용 통계) 공통 셸.
  *
  * 개발자: 박승우
  * 일자: 2026-08-12
  * 코멘트:
- *   1) 세 화면 모두 좌측 트리+기간 조회로 읽기 전용이다
- *   2) 로그인=사용자 트리, 감사·통계=메뉴관리와 동일 계층 트리를 쓴다
- *   3) CRUD 없이 listSystemRows만 호출한다
+ *   1) 기간 검색·좌측 트리·조회 전용 그리드라는 뼈대만 갖고, 컬럼·조회 API는 Rule이 주입한다
+ *   2) 인스턴스별 상태를 갖는 컴포넌트다 — 각 Page가 key={rule.scrnCd}로 렌더해 탭 간 상태가 섞이지 않게 한다
+ *   3) 모듈 레벨 캐시를 두지 않는다. 셸을 여러 개 동시에 마운트해도 서로 독립이다
  *
- * PIPELINE[HF99] 로그 관리
+ * PIPELINE[HF99] 로그 화면 공통 셸
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ChevronRight } from "lucide-react";
 import dayjs from "dayjs";
 import { MesDataGrid } from "@/components/grid/MesDataGrid";
 import { PageCard } from "@/components/layout/PageCard";
 import { ResizableSplit } from "@/components/layout/ResizableSplit";
 import {
+  TreeNodeRow,
   TreePanelSearch,
   treeNodeIdleClass,
+  treeNodeLabelClass,
   treeNodeSelectedClass,
   treePanelHeadClass,
 } from "@/components/layout/TreePanelSearch";
-import {
-  SearchArea,
-  SearchButton,
-  SearchDateRange,
-} from "@/components/layout/SearchArea";
+import { SearchArea, SearchButton, SearchDateRange } from "@/components/layout/SearchArea";
 import { pageRootClass } from "@/components/layout/pageClasses";
 import { cn } from "@/lib/cn";
 import { filterTreeByQuery } from "@/lib/treeFilter";
@@ -35,51 +32,83 @@ import { useCommonCodes } from "@/hooks/useCommonCodes";
 import { mesError } from "@/shell/errors";
 import { usePageCommands } from "@/shell/pageCommands";
 import type { GridColumn } from "@/types/grid";
-import { fmtDateTimeMinute } from "@/utils/date";
-import {
-  listAdminMenus,
-  listSystemRows,
-  type AdminMenuRow,
-  type SystemRow,
-  type SystemScreenCode,
-} from "@/api/systemApi";
+// 역할 — 좌측 사용자 트리 원본
+import { listUsers } from "@/api/sys/userApi";
+// 역할 — 좌측 메뉴 트리 원본
+import { listAdminMenus } from "@/api/sys/menuApi";
+import type { AdminMenuRow, SysRow } from "@/api/sys/sysTypes";
 
-const TREE_ALL = "__ALL__";
-const HISTORY_DEFAULT_RANGE_DAYS = 30;
+/** 트리 「전체」 가상 키 — 기간 조건만 적용한 전건 */
+export const TREE_ALL = "__ALL__";
 
+/** 로그 그리드 1행 — 화면마다 컬럼이 다르므로 느슨한 Record */
+export type LogRow = SysRow & { _key?: string };
+
+/** 사용자 트리 1행 — 계층 없이 평면 */
+export type FlatNode = { key: string; label: string };
+
+/** 메뉴 트리 노드 — scrnCd가 있으면 화면(리프) */
+export type HierNode = { key: string; label: string; scrnCd?: string | null; children: HierNode[] };
+
+/** 조회 파라미터 — Rule.fetchRows가 받는다 */
+export interface LogFetchArgs {
+  /** 조회 시작일 YYYYMMDD */
+  fromDt: string;
+  /** 조회 종료일 YYYYMMDD */
+  toDt: string;
+  /** 트리 선택 키 — 「전체」면 TREE_ALL */
+  selKey: string;
+  /** 선택된 메뉴 노드 — 사용자 트리 화면이거나 「전체」면 null */
+  selNode: HierNode | null;
+}
+
+/** 로그 화면 1개의 설정 — *Rule.ts가 이 모양으로 노출한다 */
+export interface LogRule {
+  /** 화면코드 — 권한·그리드 pref·탭 key */
+  scrnCd: string;
+  /** 그리드 열 설정 저장 키 */
+  persistId: string;
+  /** 그리드·패널 제목 */
+  title: string;
+  /** 좌측 패널 제목 */
+  treeHead: string;
+  /** 좌측 트리 종류 — 사용자 평면 목록 또는 메뉴 계층 */
+  treeKind: "user" | "menu";
+  /** 기간 기본값(일) — 오늘부터 며칠 전까지 */
+  rangeDays: number;
+  /** 코드 컬럼에 쓸 공통코드 대분류 — 없으면 빈 문자열 */
+  codeGroup: string;
+  /** 그리드 컬럼 — 코드 컬럼이 있으면 codeMap·codeOptions를 쓴다 */
+  buildColumns: (
+    codeMap: Record<string, string>,
+    codeOptions: Array<{ value: string; label: string }>,
+  ) => GridColumn<LogRow>[];
+  /** 조회 — 화면별 API 호출과 표시 가공(일시 포맷·하위 필터)을 모두 담당한다 */
+  fetchRows: (args: LogFetchArgs) => Promise<LogRow[]>;
+}
+
+/** 오늘 YYYYMMDD */
 function todayYmd(): string {
   return dayjs().format("YYYYMMDD");
 }
 
+/** n일 전 YYYYMMDD */
 function daysAgoYmd(days: number): string {
   return dayjs().subtract(days, "day").format("YYYYMMDD");
 }
 
+/** YYYYMMDD → input[type=date] 값 */
 function ymdToInput(ymd: string): string {
   return ymd.length === 8 ? `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6)}` : "";
 }
 
+/** input[type=date] 값 → YYYYMMDD */
 function inputToYmd(v: string): string {
   return v.replace(/-/g, "");
 }
 
-export type LogScreenCode =
-  | "login-history"
-  | "screen-usage-statistics"
-  | "audit-log";
-
-const SCREEN_TITLE: Record<LogScreenCode, string> = {
-  "login-history": "로그인 이력",
-  "screen-usage-statistics": "화면 이용 통계",
-  "audit-log": "변경 감사 로그",
-};
-
-type LogRow = SystemRow & { _key?: string };
-
-type FlatNode = { key: string; label: string };
-type HierNode = { key: string; label: string; scrnCd?: string | null; children: HierNode[] };
-
-function buildMenuTree(menus: AdminMenuRow[]): HierNode[] {
+/** 관리용 메뉴 목록 → 계층 트리 — 사용중지 메뉴는 제외한다 */
+export function buildMenuTree(menus: AdminMenuRow[]): HierNode[] {
   const ordered = [...menus]
     .filter((m) => String(m.useYn ?? "Y").toUpperCase() === "Y")
     .filter((m) => String(m.menuCd ?? "").trim())
@@ -106,7 +135,8 @@ function buildMenuTree(menus: AdminMenuRow[]): HierNode[] {
   return roots;
 }
 
-function collectScrnCds(node: HierNode): string[] {
+/** 노드 하위의 화면코드 전부 — 폴더 선택 시 통계 FE 필터용 */
+export function collectScrnCds(node: HierNode): string[] {
   const out: string[] = [];
   const walk = (n: HierNode) => {
     if (n.scrnCd) out.push(n.scrnCd);
@@ -117,7 +147,7 @@ function collectScrnCds(node: HierNode): string[] {
 }
 
 /** 감사 필터용 — 하위 메뉴코드·화면코드·메뉴명 키 집합 */
-function collectAuditKeys(node: HierNode): Set<string> {
+export function collectAuditKeys(node: HierNode): Set<string> {
   const keys = new Set<string>();
   const walk = (n: HierNode) => {
     keys.add(n.key);
@@ -129,7 +159,8 @@ function collectAuditKeys(node: HierNode): Set<string> {
   return keys;
 }
 
-function findHierNode(nodes: HierNode[], key: string): HierNode | null {
+/** 트리에서 키로 노드 찾기 — 선택 노드의 하위 정보를 Rule에 넘기기 위해 쓴다 */
+export function findHierNode(nodes: HierNode[], key: string): HierNode | null {
   for (const n of nodes) {
     if (n.key === key) return n;
     const c = findHierNode(n.children, key);
@@ -142,95 +173,48 @@ function findHierNode(nodes: HierNode[], key: string): HierNode | null {
  * 개발자: 박승우
  * 일자: 2026-08-12
  * 코멘트:
- *   1) 로그 3화면 조회 UI를 렌더한다
- *   2) screenRegistry에서 screenCode로 마운트한다
- *   3) 조회 실패 시 업무 토스트
+ *   1) 기간·트리 조회 UI를 렌더하고 Rule이 준 컬럼·조회 함수로 그리드를 채운다
+ *   2) 로그 3화면 Page가 각자 key={rule.scrnCd}로 마운트한다
+ *   3) 조회 실패는 업무 토스트, 겹친 요청은 마지막 응답만 반영한다
  */
-export default function LogManagementPage({
-  // 로그 화면코드 — login-history | screen-usage-statistics | audit-log
-  screenCode,
+export function LogPageShell({
+  // 화면 설정 — 컬럼·조회 API·트리 종류·pref 키
+  rule,
 }: {
-  screenCode: LogScreenCode;
+  rule: LogRule;
 }) {
-  const title = SCREEN_TITLE[screenCode];
   const asyncAct = useAsyncAction();
-  const loginCodes = useCommonCodes("login-result");
-  const auditCodes = useCommonCodes("audit-result");
+  // 코드 컬럼용 공통코드 — codeGroup이 빈 화면은 호출하지 않는다
+  const codes = useCommonCodes(rule.codeGroup);
   // 최신 조회만 반영 — 트리·기간 변경으로 load가 겹칠 때 이전 응답 무시
   const loadSeq = useRef(0);
   const [loading, setLoading] = useState(false);
 
-  const [fromDt, setFromDt] = useState(() => daysAgoYmd(HISTORY_DEFAULT_RANGE_DAYS));
+  const [fromDt, setFromDt] = useState(() => daysAgoYmd(rule.rangeDays));
   const [toDt, setToDt] = useState(todayYmd);
   const [rows, setRows] = useState<LogRow[]>([]);
   const [treeSel, setTreeSel] = useState(TREE_ALL);
   const [treeQuery, setTreeQuery] = useState("");
   const [openKeys, setOpenKeys] = useState<Set<string>>(new Set([TREE_ALL]));
-  // 로그인 트리 — 사용자
+  // 로그인 이력 트리 — 사용자 평면 목록
   const [users, setUsers] = useState<FlatNode[]>([]);
-  // 감사·통계 트리 — 메뉴
+  // 감사·통계 트리 — 관리자 메뉴 계층
   const [menus, setMenus] = useState<AdminMenuRow[]>([]);
 
-  const isLogin = screenCode === "login-history";
-  const isAudit = screenCode === "audit-log";
-  const isStats = screenCode === "screen-usage-statistics";
-  // 감사·통계 — 메뉴관리와 동일 계층 트리
-  const useMenuHier = isAudit || isStats;
+  const useMenuHier = rule.treeKind === "menu";
 
-  const columns: GridColumn<LogRow>[] = useMemo(() => {
-    if (isLogin) {
-      return [
-        { field: "loginDt", header: "로그인 일시", width: 140 },
-        { field: "logoutDt", header: "로그아웃 일시", width: 140 },
-        { field: "userId", header: "사용자 ID", width: 110 },
-        { field: "userNm", header: "사용자명", width: 110 },
-        {
-          field: "resultCd",
-          header: "결과",
-          width: 80,
-          type: "code",
-          codeMap: loginCodes.codeMap,
-          codeOptions: loginCodes.codes.map((c) => ({ value: c.subCd, label: c.codeNm })),
-        },
-        { field: "ipAddr", header: "접속 IP", width: 130 },
-      ];
-    }
-    if (isAudit) {
-      return [
-        { field: "insDt", header: "기록 일시", width: 140, required: true },
-        { field: "menuNm", header: "대상 메뉴", width: 140 },
-        {
-          field: "actionCd",
-          header: "행위",
-          width: 110,
-          type: "code",
-          codeMap: auditCodes.codeMap,
-          codeOptions: auditCodes.codes.map((c) => ({ value: c.subCd, label: c.codeNm })),
-        },
-        { field: "userId", header: "작업자 ID", width: 110 },
-        { field: "userNm", header: "작업자명", width: 110 },
-        { field: "ipAddr", header: "접속 IP", width: 130 },
-      ];
-    }
-    return [
-      { field: "statDt", header: "집계일", width: 100 },
-      { field: "menuCd", header: "메뉴코드", width: 140 },
-      { field: "menuNm", header: "메뉴명", width: 160 },
-      { field: "pvCnt", header: "페이지뷰(PV)", width: 100, type: "number" },
-      { field: "uvCnt", header: "유저뷰(UV)", width: 100, type: "number" },
-      { field: "sessCnt", header: "세션수", width: 80, type: "number" },
-      { field: "ipCnt", header: "IP 수", width: 80, type: "number" },
-    ];
-  }, [auditCodes.codeMap, auditCodes.codes, isAudit, isLogin, loginCodes.codeMap, loginCodes.codes]);
+  const columns = useMemo(
+    () => rule.buildColumns(
+      codes.codeMap,
+      codes.codes.map((c) => ({ value: c.subCd, label: c.codeNm })),
+    ),
+    [codes.codeMap, codes.codes, rule],
+  );
 
   const loadTree = useCallback(async () => {
     try {
-      if (isLogin) {
-        const list = await listSystemRows("user-management" as SystemScreenCode, {
-          keyword: "",
-          fromDt: "",
-          toDt: "",
-        });
+      if (!useMenuHier) {
+        const list = await listUsers();
         const next = list
           .map((r) => ({
             key: String(r.userId ?? "").trim(),
@@ -246,81 +230,26 @@ export default function LogManagementPage({
     } catch (e) {
       mesError(e);
     }
-  }, [isLogin]);
+  }, [useMenuHier]);
 
   const load = useCallback(async () => {
     // 겹친 요청 중 마지막만 setRows — useAsyncAction 잠금으로 조회가 스킵되지 않게 함
     const seq = ++loadSeq.current;
     setLoading(true);
     try {
-      let keyword = "";
       const hier = useMenuHier ? buildMenuTree(menus) : [];
-      const selNode = treeSel !== TREE_ALL && useMenuHier ? findHierNode(hier, treeSel) : null;
-      if (treeSel !== TREE_ALL) {
-        if (isLogin) keyword = treeSel;
-        else if (isStats) {
-          // 통계 — 리프(scrnCd)만 SP 필터, 폴더는 FE에서 하위 집계
-          keyword = String(selNode?.scrnCd ?? "").trim();
-        } else if (isAudit) {
-          // 감사 — 리프만 SP keyword, 폴더는 기간 전건 후 FE 하위 필터
-          keyword =
-            selNode && selNode.children.length === 0
-              ? String(selNode.scrnCd ?? selNode.key).trim()
-              : "";
-        }
-      }
-      const raw = await listSystemRows(screenCode, {
-        keyword,
-        fromDt,
-        toDt,
-      });
+      const selNode =
+        treeSel !== TREE_ALL && useMenuHier ? findHierNode(hier, treeSel) : null;
+      const next = await rule.fetchRows({ fromDt, toDt, selKey: treeSel, selNode });
       if (seq !== loadSeq.current) return;
-      let next: LogRow[] = raw.map((r, i) => ({
-        ...r,
-        _key: String(r.idx ?? `${screenCode}-${i}`),
-      }));
-      if (isLogin || isAudit) {
-        next = next.map((r) => ({
-          ...r,
-          loginDt: fmtDateTimeMinute(String(r.loginDt ?? "")) || r.loginDt,
-          logoutDt: fmtDateTimeMinute(String(r.logoutDt ?? "")) || r.logoutDt,
-          insDt: fmtDateTimeMinute(String(r.insDt ?? "")) || r.insDt,
-        }));
-      }
-      // 감사 — 폴더/전체 하위 메뉴키로 FE 필터 (tbl_nm·menu_nm·scrn)
-      if (isAudit && selNode && !keyword) {
-        const keys = collectAuditKeys(selNode);
-        next = next.filter((r) => {
-          const tbl = String(r.tblNm ?? "").trim();
-          const menuNm = String(r.menuNm ?? "").trim();
-          const scrn = String(r.scrnCd ?? "").trim();
-          return keys.has(tbl) || keys.has(menuNm) || (scrn && keys.has(scrn));
-        });
-      }
-      if (isStats) {
-        next = next.map((r) => ({
-          ...r,
-          // 집계일 YYYYMMDD → YYYY-MM-DD 표시
-          statDt: (() => {
-            const s = String(r.statDt ?? "");
-            return s.length === 8 ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6)}` : s;
-          })(),
-          menuCd: r.menuCd ?? r.scrnCd,
-        }));
-        // 폴더 선택 시(= 리프 아님·scrnCd 없음) FE에서 하위 화면코드로 추가 필터
-        if (selNode && !keyword) {
-          const cds = new Set(collectScrnCds(selNode));
-          next = next.filter((r) => cds.has(String(r.scrnCd ?? r.menuCd ?? "")));
-        }
-      }
-      setRows(next);
+      setRows(next.map((r, i) => ({ ...r, _key: String(r._key ?? r.idx ?? `${rule.scrnCd}-${i}`) })));
     } catch (e) {
       if (seq !== loadSeq.current) return;
       mesError(e);
     } finally {
       if (seq === loadSeq.current) setLoading(false);
     }
-  }, [fromDt, isAudit, isLogin, isStats, menus, screenCode, toDt, treeSel, useMenuHier]);
+  }, [fromDt, menus, rule, toDt, treeSel, useMenuHier]);
 
   useEffect(() => {
     void loadTree();
@@ -331,11 +260,6 @@ export default function LogManagementPage({
     void load();
   }, [load]);
 
-  useEffect(() => {
-    setTreeSel(TREE_ALL);
-    setTreeQuery("");
-  }, [screenCode]);
-
   const runSearch = useCallback(() => {
     void asyncAct.run(load, "search");
   }, [asyncAct, load]);
@@ -343,13 +267,13 @@ export default function LogManagementPage({
   usePageCommands({ search: runSearch });
 
   const flatFiltered = useMemo(() => {
-    if (!isLogin) return [];
+    if (useMenuHier) return [];
     const q = treeQuery.trim().toLowerCase();
     if (!q) return users;
     return users.filter(
       (u) => u.key.toLowerCase().includes(q) || u.label.toLowerCase().includes(q),
     );
-  }, [isLogin, treeQuery, users]);
+  }, [treeQuery, useMenuHier, users]);
 
   const hierTree = useMemo(() => {
     if (!useMenuHier) return { nodes: [] as HierNode[], openKeys: new Set<string>() };
@@ -389,45 +313,36 @@ export default function LogManagementPage({
     const selected = treeSel === node.key;
     return (
       <div key={node.key}>
-        <div
-          className="flex items-center gap-0.5"
-          style={{ paddingLeft: depth * 12 }}
+        <TreeNodeRow
+          // 깊이 — 공통 컴포넌트가 12px 단위로 들여쓴다
+          depth={depth}
+          hasChild={hasChild}
+          open={open}
+          onToggle={() =>
+            setOpenKeys((prev) => {
+              const next = new Set(prev);
+              if (next.has(node.key)) next.delete(node.key);
+              else next.add(node.key);
+              return next;
+            })
+          }
         >
-          {hasChild ? (
-            <button
-              type="button"
-              className="shrink-0 rounded p-0.5 text-slate-500 hover:bg-slate-100"
-              onClick={() =>
-                setOpenKeys((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(node.key)) next.delete(node.key);
-                  else next.add(node.key);
-                  return next;
-                })
-              }
-            >
-              <ChevronRight className={cn("h-3.5 w-3.5 transition", open && "rotate-90")} />
-            </button>
-          ) : (
-            <span className="inline-block w-4" />
-          )}
           <button
+            // 노드 선택 — 하위 포함 필터
             type="button"
             className={cn(
-              "min-w-0 flex-1 truncate rounded px-1 py-0.5 text-left text-[12px]",
+              treeNodeLabelClass,
               selected ? treeNodeSelectedClass : treeNodeIdleClass,
             )}
             onClick={() => selectHierNode(node)}
           >
             {node.label}
           </button>
-        </div>
+        </TreeNodeRow>
         {open && node.children.map((c) => renderHier(c, depth + 1))}
       </div>
     );
   };
-
-  const treeHead = isLogin ? "사용자" : "메뉴 트리";
 
   return (
     <div className={pageRootClass}>
@@ -449,18 +364,19 @@ export default function LogManagementPage({
         }
       >
         <ResizableSplit
+          // 좌 트리 · 우 그리드 (시스템 관리 화면과 동일 규칙)
           orientation="horizontal"
-          storageKey={`haccp-split-log-${screenCode}`}
+          storageKey={`haccp-split-log-${rule.scrnCd}`}
+          // 트리:그리드 기본 2:8 — 경계선을 끌면 20~80% 범위에서 조절되고 storageKey에 저장된다
           defaultPrimaryPct={20}
-          minPct={20}
-          maxPct={20}
           panelClassName="rounded-xl border border-slate-200 bg-white shadow-sm p-2"
           primary={
             <>
               <div className={treePanelHeadClass}>
-                <b>{treeHead}</b>
+                <b>{rule.treeHead}</b>
               </div>
               <TreePanelSearch
+                // 트리 결과 내 검색 — 사용자/메뉴 공통
                 value={treeQuery}
                 onChange={setTreeQuery}
                 onSearch={useMenuHier ? runTreeSearch : undefined}
@@ -468,6 +384,7 @@ export default function LogManagementPage({
               <div className="min-h-0 flex-1 overflow-y-auto rounded border border-slate-100 bg-white px-2 py-1">
                 <div className="py-0.5 text-[12px]">
                   <button
+                    // 「전체」 — 기간 조건만 적용한 전건
                     type="button"
                     className={cn(
                       "w-full rounded px-1 py-0.5 text-left font-bold",
@@ -480,17 +397,26 @@ export default function LogManagementPage({
                   {useMenuHier
                     ? hierTree.nodes.map((n) => renderHier(n, 0))
                     : flatFiltered.map((n) => (
-                      <button
+                      <TreeNodeRow
+                        // 평면 목록이라 항상 깊이 0·하위 없음 — 계층 트리와 행 높이를 맞추려고 같은 행을 쓴다
                         key={n.key}
-                        type="button"
-                        className={cn(
-                          "mt-0.5 w-full truncate rounded px-1 py-0.5 text-left",
-                          treeSel === n.key ? treeNodeSelectedClass : treeNodeIdleClass,
-                        )}
-                        onClick={() => setTreeSel(n.key)}
+                        depth={0}
+                        hasChild={false}
+                        open={false}
+                        onToggle={() => undefined}
                       >
-                        {n.label}
-                      </button>
+                        <button
+                          // 사용자 1명 — 해당 아이디만 조회
+                          type="button"
+                          className={cn(
+                            treeNodeLabelClass,
+                            treeSel === n.key ? treeNodeSelectedClass : treeNodeIdleClass,
+                          )}
+                          onClick={() => setTreeSel(n.key)}
+                        >
+                          {n.label}
+                        </button>
+                      </TreeNodeRow>
                     ))}
                 </div>
               </div>
@@ -499,13 +425,13 @@ export default function LogManagementPage({
           secondary={
             <>
               <div className={treePanelHeadClass}>
-                <b>{title}</b>
+                <b>{rule.title}</b>
               </div>
               <MesDataGrid
                 // 로그 그리드 — 열 설정 키 (패널 flex 직계 자식이어야 height 100% 채움)
-                persistId={`log-${screenCode}`}
+                persistId={rule.persistId}
                 // pref 저장 — persistId와 함께 필수
-                scrnCd={screenCode}
+                scrnCd={rule.scrnCd}
                 // 조회 결과 행
                 rows={rows}
                 columns={columns}
@@ -516,7 +442,7 @@ export default function LogManagementPage({
                 showFooter
                 showRowNum
                 sortable
-                title={title}
+                title={rule.title}
               />
             </>
           }

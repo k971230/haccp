@@ -6,12 +6,11 @@
  * 코멘트:
  *   1) 좌측 hMenuCd 트리(최상단 「전체」=전건), 우측 메뉴 편집 그리드
  *   2) 노드 클릭 시 직속 하위만 표시하고, 정렬은 sort_no(대중소 인코딩) 순이다
- *   3) 상단 메뉴코드·메뉴명·사용여부로 FE 필터한다(사용 기본 Y)
+ *   3) 컬럼·잠금·트리 산출은 MenuManagementRule이 갖고 이 파일은 렌더·상태·API만 담당한다
  *
  * PIPELINE[HF99] 메뉴 관리
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useGridAccess } from "@/hooks/useGridAccess";
@@ -21,8 +20,10 @@ import { GridCrudButtons } from "@/components/grid/GridCrudButtons";
 import { PageCard } from "@/components/layout/PageCard";
 import { ResizableSplit } from "@/components/layout/ResizableSplit";
 import {
+  TreeNodeRow,
   TreePanelSearch,
   treeNodeIdleClass,
+  treeNodeLabelClass,
   treeNodeSelectedClass,
   treePanelHeadClass,
 } from "@/components/layout/TreePanelSearch";
@@ -43,118 +44,30 @@ import { MES } from "@/shell/messages";
 import { usePageCommands } from "@/shell/pageCommands";
 import { guardSaveWithKey } from "@/shell/gridRules";
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
-import type { GridColumn } from "@/types/grid";
 import type { EditableRow } from "@/types/editable";
+// 역할 — 메뉴 관리 도메인 API
 import {
-  deleteSystemRows,
-  listSystemRows,
-  saveSystemRows,
-  validateDeleteSystemRows,
-  type SystemRow,
-} from "@/api/systemApi";
-import { SYSTEM_GRID_RULES } from "./SystemManagementPage.rules";
-
-const SCREEN = "menu-management" as const;
-/** 트리 「전체」 가상 키 — 전건 표시 */
-const TREE_ALL = "__ALL__";
-
-type MenuRow = SystemRow & {
-  _key?: string;
-  menuCd?: string;
-  menuNm?: string;
-  hMenuCd?: string;
-  scrnCd?: string;
-  sortNo?: number | null;
-  useYn?: string;
-  grpANm?: string;
-  grpBNm?: string;
-  grpCNm?: string;
-  idx?: number | null;
-};
-
-type TreeNode = {
-  menuCd: string;
-  name: string;
-  children: TreeNode[];
-};
-
-function matchMenu(row: MenuRow, menuCd: string, menuNm: string, useYn: string): boolean {
-  const qCd = menuCd.trim().toLowerCase();
-  const qNm = menuNm.trim().toLowerCase();
-  if (qCd && !String(row.menuCd ?? "").toLowerCase().includes(qCd)) return false;
-  if (qNm && !String(row.menuNm ?? "").toLowerCase().includes(qNm)) return false;
-  if (useYn && String(row.useYn ?? "").toUpperCase() !== useYn.toUpperCase()) return false;
-  return true;
-}
-
-/** sort_no(대중소 인코딩) → menuCd — 기존 메뉴관리 정렬 유지 */
-function sortByMenuOrder(a: MenuRow, b: MenuRow): number {
-  const sa = Number(a.sortNo ?? 0);
-  const sb = Number(b.sortNo ?? 0);
-  if (sa !== sb) return sa - sb;
-  return String(a.menuCd ?? "").localeCompare(String(b.menuCd ?? ""));
-}
-
-/**
- * 메뉴 트리에서 대·중·소 표시명을 채운다.
- * depth0=대, depth1=중, depth2+=소.
- */
-function enrichMenuLevels(rows: MenuRow[]): MenuRow[] {
-  const byCd = new Map<string, MenuRow>();
-  for (const row of rows) {
-    const cd = String(row.menuCd ?? "").trim();
-    if (cd) byCd.set(cd, row);
-  }
-  const pathOf = (row: MenuRow): MenuRow[] => {
-    const chain: MenuRow[] = [];
-    let cur: MenuRow | undefined = row;
-    const guard = new Set<string>();
-    while (cur) {
-      const cd = String(cur.menuCd ?? "").trim();
-      if (!cd || guard.has(cd)) break;
-      guard.add(cd);
-      chain.unshift(cur);
-      const parent = String(cur.hMenuCd ?? "").trim();
-      cur = parent ? byCd.get(parent) : undefined;
-    }
-    return chain;
-  };
-  return rows.map((row) => {
-    const path = pathOf(row);
-    const names = path.map((item) => String(item.menuNm ?? "").trim());
-    return {
-      ...row,
-      grpANm: names[0] || "",
-      grpBNm: names[1] || "",
-      grpCNm: names.length >= 3 ? names[names.length - 1] : "",
-    };
-  });
-}
-
-function buildMenuTree(rows: MenuRow[]): TreeNode[] {
-  const ordered = [...rows]
-    .filter((r) => String(r.menuCd ?? "").trim())
-    .sort(sortByMenuOrder);
-  const nodes = new Map<string, TreeNode>();
-  for (const r of ordered) {
-    const cd = String(r.menuCd);
-    nodes.set(cd, {
-      menuCd: cd,
-      name: String(r.menuNm ?? cd),
-      children: [],
-    });
-  }
-  const roots: TreeNode[] = [];
-  for (const r of ordered) {
-    const cd = String(r.menuCd);
-    const node = nodes.get(cd)!;
-    const parentCd = String(r.hMenuCd ?? "").trim();
-    const parent = parentCd ? nodes.get(parentCd) : undefined;
-    if (parent && parentCd !== cd) parent.children.push(node);
-    else roots.push(node);
-  }
-  return roots;
-}
+  deleteMenus,
+  listAdminMenus,
+  saveMenus,
+  validateDeleteMenus,
+} from "@/api/sys/menuApi";
+import type { SysRow } from "@/api/sys/sysTypes";
+// 역할 — 화면 규칙(컬럼·잠금·정렬·트리)
+import {
+  MENU_RULES,
+  PERSIST_ID,
+  REQUIRED_LABEL,
+  SCRN_CD,
+  TREE_ALL,
+  buildMenuColumns,
+  buildMenuTree,
+  enrichMenuLevels,
+  matchMenu,
+  sortByMenuOrder,
+  type MenuRow,
+  type MenuTreeNode,
+} from "./MenuManagementRule";
 
 /**
  * 개발자: 박승우
@@ -165,14 +78,15 @@ function buildMenuTree(rows: MenuRow[]): TreeNode[] {
  *   3) 행추가는 불가 — 시드·migrate로만 생성
  */
 export default function MenuManagementPage() {
-  const canWrite = useAuthStore((s) => s.can(SCREEN, "write"));
-  const canModify = useAuthStore((s) => s.can(SCREEN, "modify"));
-  const canDelete = useAuthStore((s) => s.can(SCREEN, "delete"));
+  const canWrite = useAuthStore((s) => s.can(SCRN_CD, "write"));
+  const canModify = useAuthStore((s) => s.can(SCRN_CD, "modify"));
+  const canDelete = useAuthStore((s) => s.can(SCRN_CD, "delete"));
   const asyncAct = useAsyncAction();
   const g = useEditableRows<MenuRow>("idx");
+  // 메뉴 전건 보관 — 트리·대중소 산출·헤더 필터가 모두 이 목록을 본다
   const allMenusRef = useRef<MenuRow[]>([]);
-  const grid = useGridAccess(SYSTEM_GRID_RULES[SCREEN], {
-    scrnCd: SCREEN,
+  const grid = useGridAccess(MENU_RULES, {
+    scrnCd: SCRN_CD,
     gridRole: "single",
     readOnly: !canModify,
     extra: { canWrite, canModify, canDelete },
@@ -193,70 +107,22 @@ export default function MenuManagementPage() {
   const ynLabels = useMemo(() => ynMap(), []);
   const editable = canWrite || canModify;
 
-  const columns: GridColumn<MenuRow>[] = useMemo(
-    () => [
-      {
-        // 대·중·소 — 트리 산출 표시열. 편집 불가
-        field: "grpANm",
-        header: "대분류",
-        width: 120,
-        editable: false,
-        required: true,
-      },
-      { field: "grpBNm", header: "중분류", width: 120, editable: false },
-      { field: "grpCNm", header: "소분류", width: 140, editable: false },
-      {
-        field: "menuCd",
-        header: "메뉴코드",
-        width: 140,
-        editable: false,
-        required: true,
-      },
-      {
-        field: "menuNm",
-        header: "메뉴명",
-        width: 160,
-        editable,
-        required: true,
-      },
-      { field: "hMenuCd", header: "상위메뉴", width: 120, editable: false },
-      { field: "scrnCd", header: "화면코드", width: 160, editable: false },
-      {
-        field: "sortNo",
-        header: "정렬코드",
-        width: 80,
-        type: "number",
-        editable: false,
-      },
-      {
-        field: "useYn",
-        header: "사용여부",
-        width: 80,
-        type: "code",
-        editable,
-        codeOptions: ynOpts,
-        codeMap: ynLabels,
-        required: true,
-      },
-    ],
+  const columns = useMemo(
+    () => buildMenuColumns(editable, ynOpts, ynLabels),
     [editable, ynLabels, ynOpts],
   );
 
   const fullTree = useMemo(
     () => buildMenuTree(allMenusRef.current),
+    // 저장·조회 후 g.rows 갱신 시 트리 재구성
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [g.rows],
   );
 
-  const tree = useMemo(() => {
-    const filtered = filterTreeByQuery(
-      fullTree,
-      treeQuery,
-      (n) => n.menuCd,
-      (n) => n.name,
-    );
-    return filtered;
-  }, [fullTree, treeQuery]);
+  const tree = useMemo(
+    () => filterTreeByQuery(fullTree, treeQuery, (n) => n.menuCd, (n) => n.name),
+    [fullTree, treeQuery],
+  );
 
   /** 트리 검색 확정 — 매칭 경로 펼침 */
   const runTreeSearch = useCallback(() => {
@@ -279,9 +145,7 @@ export default function MenuManagementPage() {
     );
     // 트리 노드 선택 시(= 「전체」 아님) 직속 하위만
     if (treeSel !== TREE_ALL) {
-      filtered = filtered.filter(
-        (r) => String(r.hMenuCd ?? "").trim() === treeSel,
-      );
+      filtered = filtered.filter((r) => String(r.hMenuCd ?? "").trim() === treeSel);
     }
     // 그리드 표시 순서 — sort_no 유지 (대·중·소는 전체 로드 시 이미 산출)
     filtered = [...filtered].sort(sortByMenuOrder);
@@ -293,7 +157,7 @@ export default function MenuManagementPage() {
   }, [qMenuCd, qMenuNm, qUseYn, treeSel]);
 
   const loadMenus = useCallback(async () => {
-    const rows = await listSystemRows(SCREEN, { keyword: "" });
+    const rows = await listAdminMenus();
     // 대·중·소 산출용 전체 보관 — 트리·필터 모두 동일 소스
     allMenusRef.current = enrichMenuLevels(rows.map((r) => ({ ...r })) as MenuRow[]);
     applyFilter();
@@ -338,20 +202,20 @@ export default function MenuManagementPage() {
     }
     for (const row of dirty) {
       if (!String(row.menuCd ?? "").trim() || !String(row.menuNm ?? "").trim()) {
-        mesToast(MES.required("메뉴코드/메뉴명"), "warn");
+        mesToast(MES.required(REQUIRED_LABEL), "warn");
         setActiveKey(row._key);
         return;
       }
     }
     if (!(await mesConfirm(MES.saveConfirm))) return;
     try {
-      await saveSystemRows(
-        SCREEN,
+      await saveMenus(
         dirty.map((row) => {
-          const next: SystemRow = { ...row };
+          const next: SysRow = { ...row };
           delete (next as { _key?: string })._key;
           delete (next as { _rowState?: string })._rowState;
           delete (next as { _original?: unknown })._original;
+          // 대·중·소 — 트리에서 산출한 표시열이라 저장 payload에서 제외
           delete (next as { grpANm?: string }).grpANm;
           delete (next as { grpBNm?: string }).grpBNm;
           delete (next as { grpCNm?: string }).grpCNm;
@@ -374,9 +238,9 @@ export default function MenuManagementPage() {
       .map((r) => ({ idx: Number(r.idx) }));
     if (keys.length === 0) return mesToast(MES.selectRow, "warn");
     try {
-      await validateDeleteSystemRows(SCREEN, keys);
+      await validateDeleteMenus(keys);
       if (!(await mesConfirm(MES.deleteConfirm()))) return;
-      await deleteSystemRows(SCREEN, keys);
+      await deleteMenus(keys);
       mesToast(MES.deleteDone, "success");
       await loadMenus();
     } catch (e) {
@@ -403,40 +267,30 @@ export default function MenuManagementPage() {
     del: canDelete ? () => { void asyncAct.run(handleDelete, "del"); } : undefined,
   });
 
-  const renderNode = (node: TreeNode, depth: number) => {
+  const renderNode = (node: MenuTreeNode, depth: number) => {
     const open = openKeys.has(node.menuCd);
     const selected = treeSel === node.menuCd;
     return (
-      <div key={node.menuCd} style={{ paddingLeft: depth * 12 }}>
-        <div className="flex items-center gap-1 py-0.5 text-[12px]">
-          {node.children.length > 0 ? (
-            <button
-              // 하위 펼침/접기
-              type="button"
-              className="inline-flex h-5 w-5 items-center justify-center text-slate-500"
-              onClick={() => toggleOpen(node.menuCd)}
-              aria-expanded={open}
-            >
-              <ChevronRight
-                className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-90")}
-                aria-hidden
-              />
-            </button>
-          ) : (
-            <span className="inline-block w-5" />
-          )}
+      <div key={node.menuCd}>
+        <TreeNodeRow
+          // 깊이 — 공통 컴포넌트가 12px 단위로 들여쓴다
+          depth={depth}
+          hasChild={node.children.length > 0}
+          open={open}
+          onToggle={() => toggleOpen(node.menuCd)}
+        >
           <button
             // 직속 하위만 그리드 필터
             type="button"
             className={cn(
-              "min-w-0 flex-1 truncate rounded px-1 py-0.5 text-left",
+              treeNodeLabelClass,
               selected ? treeNodeSelectedClass : treeNodeIdleClass,
             )}
             onClick={() => setTreeSel(node.menuCd)}
           >
             {node.name}
           </button>
-        </div>
+        </TreeNodeRow>
         {open && node.children.map((c) => renderNode(c, depth + 1))}
       </div>
     );
@@ -486,10 +340,8 @@ export default function MenuManagementPage() {
           // 좌 트리 · 우 그리드 (부서·권한그룹과 동일 규칙)
           orientation="horizontal"
           storageKey="haccp-split-menu-mgmt"
-          // 트리:그리드 = 2:8 고정
+          // 트리:그리드 기본 2:8 — 경계선을 끌면 20~80% 범위에서 조절되고 storageKey에 저장된다
           defaultPrimaryPct={20}
-          minPct={20}
-          maxPct={20}
           panelClassName="rounded-xl border border-slate-200 bg-white shadow-sm p-2"
           primary={
             <>
@@ -539,8 +391,8 @@ export default function MenuManagementPage() {
               </div>
               <MesEditableGrid
                 // 열 설정 저장 키 — 메뉴 마스터
-                persistId="menu-mgmt-master"
-                scrnCd={SCREEN}
+                persistId={PERSIST_ID}
+                scrnCd={SCRN_CD}
                 // 검색·트리 필터된 메뉴 행
                 rows={g.rows as EditableRow<MenuRow>[]}
                 columns={columns}

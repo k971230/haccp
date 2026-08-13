@@ -48,6 +48,8 @@ export function useCommonCodes(
     queryKey: ["common-codes", mainCd, onlyUseY ? "Y" : ""],
     queryFn: () => getCodes(mainCd, onlyUseY ? "Y" : ""),
     staleTime: CODE_STALE_MS,
+    // 대분류가 비면(= 코드 컬럼이 없는 화면) 서버가 거절하므로 호출 자체를 막는다
+    enabled: mainCd.trim().length > 0,
   });
 
   // 쿼리 data 기준 메모 — 매 렌더 새 배열이면 label·loadList effect가 무한 루프한다

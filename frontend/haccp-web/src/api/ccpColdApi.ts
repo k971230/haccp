@@ -92,8 +92,8 @@ export interface ColdMonitorRowDto {
   // 작성자 — 로그인 기본, 행별 수정
   writerId?: string;
   writerNm?: string;
-  // 행 서명 경로 — 있으면 서명 표시
-  signPath?: string | null;
+  // 행 서명 보유여부 Y/N — Y로 저장하면 SP가 점검자 서명 원본을 그 행에 복사한다
+  signYn?: string | null;
   temps: ColdMonitorTempCell[];
 }
 

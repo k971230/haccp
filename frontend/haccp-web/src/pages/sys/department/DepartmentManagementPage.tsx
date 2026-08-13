@@ -6,12 +6,11 @@
  * 코멘트:
  *   1) 좌측 hDeptCd 트리(최상단 「전체」=전건), 우측 부서 CRUD 그리드
  *   2) 노드 클릭 시 직속 하위만 표시하고, 목록·트리는 부서코드 순이다
- *   3) 상단 부서코드·부서명·사용여부로 FE 필터한다(사용 기본 Y)
+ *   3) 상위부서 선택은 전역 공통 모달(openModal("CodeLookup"))을 쓴다 — 화면이 팝업 JSX를 갖지 않는다
  *
  * PIPELINE[HF99] 부서 관리
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useGridAccess } from "@/hooks/useGridAccess";
@@ -21,8 +20,10 @@ import { GridCrudButtons } from "@/components/grid/GridCrudButtons";
 import { PageCard } from "@/components/layout/PageCard";
 import { ResizableSplit } from "@/components/layout/ResizableSplit";
 import {
+  TreeNodeRow,
   TreePanelSearch,
   treeNodeIdleClass,
+  treeNodeLabelClass,
   treeNodeSelectedClass,
   treePanelHeadClass,
 } from "@/components/layout/TreePanelSearch";
@@ -43,78 +44,32 @@ import { MES } from "@/shell/messages";
 import { usePageCommands } from "@/shell/pageCommands";
 import { guardSaveWithKey } from "@/shell/gridRules";
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
-import type { GridColumn } from "@/types/grid";
 import type { EditableRow } from "@/types/editable";
+// 역할 — 전역 공통 모달 열기(상위부서 룩업)
+import { useModalStore } from "@/stores/modalStore";
+// 역할 — 부서 도메인 API
 import {
-  deleteSystemRows,
-  listSystemRows,
-  saveSystemRows,
-  validateDeleteSystemRows,
-  type SystemRow,
-} from "@/api/systemApi";
-import { SYSTEM_GRID_RULES } from "./SystemManagementPage.rules";
-import { CodeLookupDialog } from "./CodeLookupDialog";
-
-const SCREEN = "department-management" as const;
-/** 트리 「전체」 가상 키 — 전건 표시 */
-const TREE_ALL = "__ALL__";
-
-type DeptRow = SystemRow & {
-  _key?: string;
-  deptCd?: string;
-  deptNm?: string;
-  hDeptCd?: string;
-  // 상위부서명 — SP self JOIN (h_dept_nm)
-  hDeptNm?: string;
-  sortNo?: number | null;
-  useYn?: string;
-  idx?: number | null;
-};
-
-type TreeNode = {
-  deptCd: string;
-  name: string;
-  children: TreeNode[];
-};
-
-function matchDept(row: DeptRow, deptCd: string, deptNm: string, useYn: string): boolean {
-  const qCd = deptCd.trim().toLowerCase();
-  const qNm = deptNm.trim().toLowerCase();
-  if (qCd && !String(row.deptCd ?? "").toLowerCase().includes(qCd)) return false;
-  if (qNm && !String(row.deptNm ?? "").toLowerCase().includes(qNm)) return false;
-  if (useYn && String(row.useYn ?? "").toUpperCase() !== useYn.toUpperCase()) return false;
-  return true;
-}
-
-function sortByDeptCd(a: DeptRow, b: DeptRow): number {
-  return String(a.deptCd ?? "").localeCompare(String(b.deptCd ?? ""), "ko");
-}
-
-function buildDeptTree(rows: DeptRow[]): TreeNode[] {
-  // 트리·형제 순서 — 부서코드
-  const ordered = [...rows]
-    .filter((r) => String(r.deptCd ?? "").trim())
-    .sort(sortByDeptCd);
-  const nodes = new Map<string, TreeNode>();
-  for (const r of ordered) {
-    const cd = String(r.deptCd);
-    nodes.set(cd, {
-      deptCd: cd,
-      name: String(r.deptNm ?? cd),
-      children: [],
-    });
-  }
-  const roots: TreeNode[] = [];
-  for (const r of ordered) {
-    const cd = String(r.deptCd);
-    const node = nodes.get(cd)!;
-    const parentCd = String(r.hDeptCd ?? "").trim();
-    const parent = parentCd ? nodes.get(parentCd) : undefined;
-    if (parent && parentCd !== cd) parent.children.push(node);
-    else roots.push(node);
-  }
-  return roots;
-}
+  deleteDepartments,
+  listDepartments,
+  saveDepartments,
+  validateDeleteDepartments,
+} from "@/api/sys/departmentApi";
+import type { SysRow } from "@/api/sys/sysTypes";
+// 역할 — 화면 규칙(컬럼·잠금·초기값·트리)
+import {
+  DEPT_RULES,
+  PERSIST_ID,
+  REQUIRED_LABEL,
+  SCRN_CD,
+  TREE_ALL,
+  buildDeptColumns,
+  buildDeptTree,
+  matchDept,
+  newDeptRow,
+  sortByDeptCd,
+  type DeptRow,
+  type DeptTreeNode,
+} from "./DepartmentManagementRule";
 
 /**
  * 개발자: 박승우
@@ -125,14 +80,16 @@ function buildDeptTree(rows: DeptRow[]): TreeNode[] {
  *   3) 권한·검증 실패는 업무 토스트
  */
 export default function DepartmentManagementPage() {
-  const canWrite = useAuthStore((s) => s.can(SCREEN, "write"));
-  const canModify = useAuthStore((s) => s.can(SCREEN, "modify"));
-  const canDelete = useAuthStore((s) => s.can(SCREEN, "delete"));
+  const canWrite = useAuthStore((s) => s.can(SCRN_CD, "write"));
+  const canModify = useAuthStore((s) => s.can(SCRN_CD, "modify"));
+  const canDelete = useAuthStore((s) => s.can(SCRN_CD, "delete"));
+  const openModal = useModalStore((s) => s.openModal);
   const asyncAct = useAsyncAction();
   const g = useEditableRows<DeptRow>("idx");
+  // 부서 전건 보관 — 트리·헤더 필터·상위부서 후보가 모두 이 목록을 본다
   const allDeptsRef = useRef<DeptRow[]>([]);
-  const grid = useGridAccess(SYSTEM_GRID_RULES[SCREEN], {
-    scrnCd: SCREEN,
+  const grid = useGridAccess(DEPT_RULES, {
+    scrnCd: SCRN_CD,
     gridRole: "single",
     readOnly: !canModify,
     extra: { canWrite, canModify, canDelete },
@@ -148,12 +105,6 @@ export default function DepartmentManagementPage() {
   const [openKeys, setOpenKeys] = useState<Set<string>>(new Set([TREE_ALL]));
   // 트리 결과 내 검색 — 부서코드·명
   const [treeQuery, setTreeQuery] = useState("");
-  // 상위부서 코드 팝업
-  const [hDeptLookup, setHDeptLookup] = useState<{
-    rowKey: string;
-    value: string;
-    selfCd: string;
-  } | null>(null);
 
   const ynOpts = useMemo(() => ynOptions(), []);
   const ynLabels = useMemo(() => ynMap(), []);
@@ -166,82 +117,37 @@ export default function DepartmentManagementPage() {
         label: String(r.deptNm ?? r.deptCd ?? ""),
       }))
       .filter((o) => o.value);
+    // 저장·조회 후 g.rows가 바뀌면 후보 목록도 다시 만든다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [g.rows]);
 
   const openHDeptLookup = useCallback((row: DeptRow) => {
     if (!row._key) return;
     if (!canWrite && !canModify) return;
-    setActiveKey(row._key);
-    setHDeptLookup({
-      rowKey: row._key,
+    const rowKey = row._key;
+    setActiveKey(rowKey);
+    // 자기 자신을 상위로 지정하지 못하게 후보에서 뺀다
+    const selfCd = String(row.deptCd ?? "").trim();
+    openModal("CodeLookup", {
+      title: "상위부서 선택",
+      scrnCd: SCRN_CD,
+      options: deptOptions.filter((o) => o.value !== selfCd),
       value: String(row.hDeptCd ?? ""),
-      selfCd: String(row.deptCd ?? "").trim(),
+      // 최상위 부서로 만들 수 있게 (없음) 행을 넣는다
+      allowEmpty: true,
+      onSelect: (code, label) => {
+        // 코드·명 동시 갱신 — (없음)이면 둘 다 빈 문자열
+        g.updateCell(rowKey, "hDeptCd", code);
+        g.updateCell(rowKey, "hDeptNm", label);
+      },
     });
-  }, [canModify, canWrite]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canModify, canWrite, deptOptions, openModal]);
 
-  const columns: GridColumn<DeptRow>[] = useMemo(
-    () => [
-      {
-        field: "deptCd",
-        header: "부서코드",
-        width: 100,
-        required: true,
-        editableOnNew: true,
-      },
-      {
-        field: "deptNm",
-        header: "부서명",
-        width: 140,
-        editable: canWrite || canModify,
-        required: true,
-      },
-      {
-        // 상위부서코드 — 기본 숨김, 「열」메뉴로 표시·pref 저장 가능
-        field: "hDeptCd",
-        header: "상위부서코드",
-        width: 100,
-        defaultHidden: true,
-        editable: false,
-      },
-      {
-        // 상위부서명 — self JOIN 표시 + 룩업 박스
-        field: "hDeptNm",
-        header: "상위부서",
-        width: 140,
-        editable: false,
-        cellButton: (canWrite || canModify)
-          ? {
-            title: "상위부서",
-            onClick: (row) => openHDeptLookup(row),
-          }
-          : undefined,
-      },
-      {
-        field: "sortNo",
-        header: "정렬",
-        width: 70,
-        type: "number",
-        editable: canWrite || canModify,
-      },
-      {
-        field: "useYn",
-        header: "사용여부",
-        width: 80,
-        type: "code",
-        editable: canWrite || canModify,
-        codeOptions: ynOpts,
-        codeMap: ynLabels,
-        required: true,
-      },
-    ],
+  const columns = useMemo(
+    () => buildDeptColumns(canWrite || canModify, openHDeptLookup, ynOpts, ynLabels),
     [canModify, canWrite, openHDeptLookup, ynLabels, ynOpts],
   );
-
-  // 상위부서 후보 — 자기 자신 제외
-  const hDeptOptions = useMemo(() => {
-    const self = hDeptLookup?.selfCd ?? "";
-    return deptOptions.filter((o) => o.value !== self);
-  }, [deptOptions, hDeptLookup?.selfCd]);
 
   const fullTree = useMemo(
     () => buildDeptTree(allDeptsRef.current),
@@ -270,14 +176,10 @@ export default function DepartmentManagementPage() {
   }, [runTreeSearch]);
 
   const applyFilter = useCallback(() => {
-    let filtered = allDeptsRef.current.filter((r) =>
-      matchDept(r, qDeptCd, qDeptNm, qUseYn),
-    );
+    let filtered = allDeptsRef.current.filter((r) => matchDept(r, qDeptCd, qDeptNm, qUseYn));
     // 트리 노드 선택 시(= 「전체」 아님) 직속 하위만
     if (treeSel !== TREE_ALL) {
-      filtered = filtered.filter(
-        (r) => String(r.hDeptCd ?? "").trim() === treeSel,
-      );
+      filtered = filtered.filter((r) => String(r.hDeptCd ?? "").trim() === treeSel);
     }
     // 그리드 표시 순서 — 부서코드
     filtered = [...filtered].sort(sortByDeptCd);
@@ -289,10 +191,9 @@ export default function DepartmentManagementPage() {
   }, [qDeptCd, qDeptNm, qUseYn, treeSel]);
 
   const loadDepts = useCallback(async () => {
-    const rows = await listSystemRows(SCREEN, { keyword: "" });
+    const rows = await listDepartments();
     allDeptsRef.current = rows.map((r) => ({ ...r })) as DeptRow[];
     applyFilter();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applyFilter]);
 
   useEffect(() => {
@@ -327,17 +228,7 @@ export default function DepartmentManagementPage() {
     // 행추가 시 이전 체크 해제
     setSelKeys([]);
     setSelReset((n) => n + 1);
-    const hDept =
-      treeSel !== TREE_ALL ? treeSel : "";
-    setActiveKey(
-      g.addRow({
-        deptCd: "",
-        deptNm: "",
-        hDeptCd: hDept,
-        sortNo: 0,
-        useYn: DEFAULT_USE_YN,
-      }),
-    );
+    setActiveKey(g.addRow(newDeptRow(treeSel !== TREE_ALL ? treeSel : "")));
   };
 
   const handleSave = async () => {
@@ -352,17 +243,16 @@ export default function DepartmentManagementPage() {
     }
     for (const row of dirty) {
       if (!String(row.deptCd ?? "").trim() || !String(row.deptNm ?? "").trim()) {
-        mesToast(MES.required("부서코드/부서명"), "warn");
+        mesToast(MES.required(REQUIRED_LABEL), "warn");
         setActiveKey(row._key);
         return;
       }
     }
     if (!(await mesConfirm(MES.saveConfirm))) return;
     try {
-      await saveSystemRows(
-        SCREEN,
+      await saveDepartments(
         dirty.map((row) => {
-          const next: SystemRow = { ...row };
+          const next: SysRow = { ...row };
           delete (next as { _key?: string })._key;
           delete (next as { _rowState?: string })._rowState;
           delete (next as { _original?: unknown })._original;
@@ -386,9 +276,9 @@ export default function DepartmentManagementPage() {
     const localOnly = targets.filter((r) => r._rowState === "C");
     if (keys.length === 0 && localOnly.length === 0) return mesToast(MES.selectRow, "warn");
     try {
-      if (keys.length > 0) await validateDeleteSystemRows(SCREEN, keys);
+      if (keys.length > 0) await validateDeleteDepartments(keys);
       if (!(await mesConfirm(MES.deleteConfirm()))) return;
-      if (keys.length > 0) await deleteSystemRows(SCREEN, keys);
+      if (keys.length > 0) await deleteDepartments(keys);
       // 체크된 신규행만 로컬 제거 — 나머지 미저장 행추가분은 유지
       let lastFocus = activeKey;
       for (const r of localOnly) {
@@ -424,40 +314,30 @@ export default function DepartmentManagementPage() {
     del: canDelete ? () => { void asyncAct.run(handleDelete, "del"); } : undefined,
   });
 
-  const renderNode = (node: TreeNode, depth: number) => {
+  const renderNode = (node: DeptTreeNode, depth: number) => {
     const open = openKeys.has(node.deptCd);
     const selected = treeSel === node.deptCd;
     return (
-      <div key={node.deptCd} style={{ paddingLeft: depth * 12 }}>
-        <div className="flex items-center gap-1 py-0.5 text-[12px]">
-          {node.children.length > 0 ? (
-            <button
-              // 하위 펼침/접기
-              type="button"
-              className="inline-flex h-5 w-5 items-center justify-center text-slate-500"
-              onClick={() => toggleOpen(node.deptCd)}
-              aria-expanded={open}
-            >
-              <ChevronRight
-                className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-90")}
-                aria-hidden
-              />
-            </button>
-          ) : (
-            <span className="inline-block w-5" />
-          )}
+      <div key={node.deptCd}>
+        <TreeNodeRow
+          // 깊이 — 공통 컴포넌트가 12px 단위로 들여쓴다
+          depth={depth}
+          hasChild={node.children.length > 0}
+          open={open}
+          onToggle={() => toggleOpen(node.deptCd)}
+        >
           <button
             // 직속 하위만 그리드 필터
             type="button"
             className={cn(
-              "min-w-0 flex-1 truncate rounded px-1 py-0.5 text-left",
+              treeNodeLabelClass,
               selected ? treeNodeSelectedClass : treeNodeIdleClass,
             )}
             onClick={() => setTreeSel(node.deptCd)}
           >
             {node.name}
           </button>
-        </div>
+        </TreeNodeRow>
         {open && node.children.map((c) => renderNode(c, depth + 1))}
       </div>
     );
@@ -507,10 +387,8 @@ export default function DepartmentManagementPage() {
           // 좌 트리 · 우 그리드 (메뉴·권한그룹과 동일 규칙)
           orientation="horizontal"
           storageKey="haccp-split-dept-mgmt"
-          // 트리:그리드 = 2:8 고정
+          // 트리:그리드 기본 2:8 — 경계선을 끌면 20~80% 범위에서 조절되고 storageKey에 저장된다
           defaultPrimaryPct={20}
-          minPct={20}
-          maxPct={20}
           panelClassName="rounded-xl border border-slate-200 bg-white shadow-sm p-2"
           primary={
             <>
@@ -559,9 +437,8 @@ export default function DepartmentManagementPage() {
               </div>
               <MesEditableGrid
                 // 열 설정 저장 키 — 부서 마스터
-                // v2 — hDeptCd defaultHidden·hDeptNm 표시열 전환 후 구 pref 무효화
-                persistId="dept-mgmt-master-v2"
-                scrnCd={SCREEN}
+                persistId={PERSIST_ID}
+                scrnCd={SCRN_CD}
                 // 검색·트리 필터된 부서 행
                 rows={g.rows as EditableRow<DeptRow>[]}
                 columns={columns}
@@ -584,26 +461,6 @@ export default function DepartmentManagementPage() {
           }
         />
       </PageCard>
-
-      {hDeptLookup ? (
-        <CodeLookupDialog
-          // 상위부서 코드 선택
-          open
-          title="상위부서 선택"
-          // pref 저장용 화면코드
-          scrnCd={SCREEN}
-          options={hDeptOptions}
-          value={hDeptLookup.value}
-          allowEmpty
-          onClose={() => setHDeptLookup(null)}
-          onSelect={(code, label) => {
-            // 코드·명 동시 갱신 — (없음)이면 둘 다 빈 문자열
-            g.updateCell(hDeptLookup.rowKey, "hDeptCd", code);
-            g.updateCell(hDeptLookup.rowKey, "hDeptNm", label);
-            setHDeptLookup(null);
-          }}
-        />
-      ) : null}
     </div>
   );
 }

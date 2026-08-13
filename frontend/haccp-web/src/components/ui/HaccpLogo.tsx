@@ -34,7 +34,7 @@ interface HaccpLogoProps {
  * 코멘트:
  *   1) 제품 로고를 텍스트로 그린다
  *   2) 사이드바 브랜드 영역과 로그인 화면 상단에서 사용한다
- *   3) compact면 "HC" 약어만, 아니면 "HACCP 기록관리" 전체를 보여준다
+ *   3) compact면 "HC" 약어만, 아니면 "HACCP 일지관리" 전체를 보여준다
  */
 export function HaccpLogo({
   // 추가 클래스 — 최대 폭 제한 등 배치 조정
@@ -52,12 +52,12 @@ export function HaccpLogo({
         className,
       )}
       // 약어만 보일 때도 무엇인지 알 수 있도록 도움말을 남긴다
-      title="HACCP 기록관리"
+      title="HACCP 일지관리"
     >
       {compact ? "HC" : (
         <>
           <span>HACCP</span>
-          <span className="font-medium text-slate-500">기록관리</span>
+          <span className="font-medium text-slate-500">일지관리</span>
         </>
       )}
     </span>

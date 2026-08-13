@@ -1,12 +1,12 @@
 /**
- * CommonCodeManagementPage — 공통코드 대분류 + 시스템/사용자 세부 3그리드.
+ * CommonCodePage — 공통코드 대분류 + 시스템/사용자 세부 3그리드.
  *
  * 개발자: 박승우
  * 일자: 2026-08-12
  * 코멘트:
  *   1) 좌 대분류(조회), 우상 시스템(조회 전용), 우하 사용자(CRUD)
  *   2) 상단 대분류코드·명·사용여부로 FE 필터 조회한다(사용 기본 Y)
- *   3) 시스템 메뉴 common-code-management 에서 마운트한다
+ *   3) 컬럼·잠금 규칙은 CommonCodeRule이 갖고 이 파일은 렌더·상태·API만 담당한다
  *
  * PIPELINE[HF99] 공통코드 관리
  */
@@ -34,53 +34,36 @@ import { MES } from "@/shell/messages";
 import { usePageCommands } from "@/shell/pageCommands";
 import { guardSaveWithKey } from "@/shell/gridRules";
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
-import type { GridColumn } from "@/types/grid";
 import type { EditableRow } from "@/types/editable";
-import type { ScreenGridRules } from "@/shell/gridRules/types";
+// 역할 — 공통코드 도메인 API
 import {
-  deleteSystemRows,
+  deleteCommonCodes,
   listCodeDetails,
   listCodeGroups,
-  saveSystemRows,
-  validateDeleteSystemRows,
-  type CodeManageRow,
-  type SystemRow,
-} from "@/api/systemApi";
+  saveCommonCodes,
+  validateDeleteCommonCodes,
+} from "@/api/sys/commonCodeApi";
+import type { CodeManageRow } from "@/api/sys/sysTypes";
+// 역할 — 화면 규칙(컬럼·잠금·초기값·pref 키)
+import {
+  GROUP_RULES,
+  PERSIST_ID,
+  SCRN_CD,
+  SYS_RULES,
+  USR_REQUIRED_LABEL,
+  USR_RULES,
+  buildGroupColumns,
+  buildSysColumns,
+  buildUsrColumns,
+  matchGroup,
+  newUsrRow,
+  type CodeRow,
+} from "./CommonCodeRule";
 
-const SCREEN = "common-code-management" as const;
-
-type CodeRow = CodeManageRow & {
-  _key?: string;
-  _rowState?: string;
-  _original?: unknown;
-  idx?: number | null;
-};
-
-const GROUP_RULES: ScreenGridRules = {
-  alwaysReadonly: ["mainCd", "subCd", "codeNm", "sortNo", "ref1", "ref2", "sysYn", "useYn"],
-};
-const SYS_RULES: ScreenGridRules = {
-  alwaysReadonly: ["mainCd", "subCd", "codeNm", "sortNo", "ref1", "ref2", "sysYn", "useYn"],
-};
-const USR_RULES: ScreenGridRules = { newOnly: ["mainCd", "subCd"] };
-
-function stripMeta(row: CodeRow): SystemRow {
+/** 저장 payload 정리 — 편집 메타(_key·_rowState·_original) 제거 */
+function stripMeta(row: CodeRow): CodeManageRow {
   const { _key: _k, _rowState: _rs, _original: _o, ...rest } = row;
-  return rest as SystemRow;
-}
-
-function matchGroup(
-  row: CodeManageRow,
-  mainCd: string,
-  codeNm: string,
-  useYn: string,
-): boolean {
-  const qMain = mainCd.trim().toLowerCase();
-  const qNm = codeNm.trim().toLowerCase();
-  if (qMain && !String(row.mainCd ?? "").toLowerCase().includes(qMain)) return false;
-  if (qNm && !String(row.codeNm ?? "").toLowerCase().includes(qNm)) return false;
-  if (useYn && String(row.useYn ?? "").toUpperCase() !== useYn.toUpperCase()) return false;
-  return true;
+  return rest as CodeManageRow;
 }
 
 /**
@@ -91,29 +74,30 @@ function matchGroup(
  *   2) common-code-management 화면에서 마운트한다
  *   3) 권한·검증 실패는 업무 토스트
  */
-export default function CommonCodeManagementPage() {
-  const canWrite = useAuthStore((s) => s.can(SCREEN, "write"));
-  const canModify = useAuthStore((s) => s.can(SCREEN, "modify"));
-  const canDelete = useAuthStore((s) => s.can(SCREEN, "delete"));
+export default function CommonCodePage() {
+  const canWrite = useAuthStore((s) => s.can(SCRN_CD, "write"));
+  const canModify = useAuthStore((s) => s.can(SCRN_CD, "modify"));
+  const canDelete = useAuthStore((s) => s.can(SCRN_CD, "delete"));
   const asyncAct = useAsyncAction();
 
   const groups = useEditableRows<CodeRow>("idx");
   const sysG = useEditableRows<CodeRow>("idx");
   const usrG = useEditableRows<CodeRow>("idx");
+  // 대분류 전건 보관 — 헤더 검색은 서버 왕복 없이 이 목록을 거른다
   const allGroupsRef = useRef<CodeManageRow[]>([]);
 
   const groupGrid = useGridAccess(GROUP_RULES, {
-    scrnCd: SCREEN,
+    scrnCd: SCRN_CD,
     gridRole: "single",
     readOnly: true,
   });
   const sysGrid = useGridAccess(SYS_RULES, {
-    scrnCd: SCREEN,
+    scrnCd: SCRN_CD,
     gridRole: "single",
     readOnly: true,
   });
   const usrGrid = useGridAccess(USR_RULES, {
-    scrnCd: SCREEN,
+    scrnCd: SCRN_CD,
     gridRole: "single",
     readOnly: !canModify && !canWrite,
     extra: { canWrite, canModify, canDelete },
@@ -133,77 +117,10 @@ export default function CommonCodeManagementPage() {
   const ynOpts = useMemo(() => ynOptions(), []);
   const ynLabels = useMemo(() => ynMap(), []);
 
-  const groupCols: GridColumn<CodeRow>[] = useMemo(
-    () => [
-      { field: "mainCd", header: "대분류코드", width: 110 },
-      { field: "codeNm", header: "대분류명", width: 160 },
-      {
-        field: "useYn",
-        header: "사용여부",
-        width: 80,
-        type: "code",
-        codeOptions: ynOpts,
-        codeMap: ynLabels,
-      },
-    ],
-    [ynLabels, ynOpts],
-  );
-
-  const sysCols: GridColumn<CodeRow>[] = useMemo(
-    () => [
-      { field: "subCd", header: "세부코드", width: 100 },
-      { field: "codeNm", header: "세부코드명", width: 160 },
-      { field: "sortNo", header: "정렬", width: 70, type: "number" },
-      { field: "ref1", header: "참조1", width: 100 },
-      { field: "ref2", header: "참조2", width: 100 },
-      {
-        field: "useYn",
-        header: "사용여부",
-        width: 80,
-        type: "code",
-        codeOptions: ynOpts,
-        codeMap: ynLabels,
-      },
-    ],
-    [ynLabels, ynOpts],
-  );
-
-  const usrCols: GridColumn<CodeRow>[] = useMemo(
-    () => [
-      {
-        field: "subCd",
-        header: "세부코드",
-        width: 100,
-        required: true,
-        editableOnNew: true,
-      },
-      {
-        field: "codeNm",
-        header: "코드명",
-        width: 160,
-        editable: canWrite || canModify,
-        required: true,
-      },
-      {
-        field: "sortNo",
-        header: "정렬",
-        width: 70,
-        type: "number",
-        editable: canWrite || canModify,
-      },
-      { field: "ref1", header: "참조1", width: 100, editable: canWrite || canModify },
-      { field: "ref2", header: "참조2", width: 100, editable: canWrite || canModify },
-      {
-        field: "useYn",
-        header: "사용여부",
-        width: 80,
-        type: "code",
-        editable: canWrite || canModify,
-        codeOptions: ynOpts,
-        codeMap: ynLabels,
-        required: true,
-      },
-    ],
+  const groupCols = useMemo(() => buildGroupColumns(ynOpts, ynLabels), [ynLabels, ynOpts]);
+  const sysCols = useMemo(() => buildSysColumns(ynOpts, ynLabels), [ynLabels, ynOpts]);
+  const usrCols = useMemo(
+    () => buildUsrColumns(canWrite || canModify, ynOpts, ynLabels),
     [canModify, canWrite, ynLabels, ynOpts],
   );
 
@@ -226,7 +143,6 @@ export default function CommonCodeManagementPage() {
     const rows = await listCodeGroups();
     allGroupsRef.current = rows;
     applyGroupFilter();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applyGroupFilter]);
 
   const loadDetails = useCallback(async (cd: string) => {
@@ -277,14 +193,7 @@ export default function CommonCodeManagementPage() {
     // 행추가 시 이전 체크 해제
     setUsrSel([]);
     setUsrSelReset((n) => n + 1);
-    setUsrKey(usrG.addRow({
-      mainCd,
-      subCd: "",
-      codeNm: "",
-      sortNo: 0,
-      useYn: DEFAULT_USE_YN,
-      sysYn: "N",
-    }));
+    setUsrKey(usrG.addRow(newUsrRow(mainCd)));
   };
 
   const handleSaveUsr = async () => {
@@ -299,7 +208,7 @@ export default function CommonCodeManagementPage() {
     }
     for (const row of dirty) {
       if (!String(row.subCd ?? "").trim() || !String(row.codeNm ?? "").trim()) {
-        mesToast(MES.required("세부코드/코드명"), "warn");
+        mesToast(MES.required(USR_REQUIRED_LABEL), "warn");
         setUsrKey(row._key);
         return;
       }
@@ -307,7 +216,7 @@ export default function CommonCodeManagementPage() {
     }
     if (!(await mesConfirm(MES.saveConfirm))) return;
     try {
-      await saveSystemRows(SCREEN, dirty.map(stripMeta));
+      await saveCommonCodes(dirty.map(stripMeta));
       mesToast(MES.saveDone, "success");
       await loadDetails(mainCd);
     } catch (e) {
@@ -325,9 +234,9 @@ export default function CommonCodeManagementPage() {
     const localOnly = targets.filter((r) => r._rowState === "C");
     if (keys.length === 0 && localOnly.length === 0) return mesToast(MES.selectRow, "warn");
     try {
-      if (keys.length > 0) await validateDeleteSystemRows(SCREEN, keys);
+      if (keys.length > 0) await validateDeleteCommonCodes(keys);
       if (!(await mesConfirm(MES.deleteConfirm()))) return;
-      if (keys.length > 0) await deleteSystemRows(SCREEN, keys);
+      if (keys.length > 0) await deleteCommonCodes(keys);
       // 체크된 신규행만 로컬 제거 — 나머지 미저장 행추가분은 유지
       let lastFocus = usrKey;
       for (const r of localOnly) {
@@ -419,9 +328,9 @@ export default function CommonCodeManagementPage() {
               </div>
               <MesEditableGrid
                 // 열 설정 저장 키 — 공통코드 대분류
-                persistId="code-mgmt-group"
+                persistId={PERSIST_ID.group}
                 title="대분류"
-                scrnCd={SCREEN}
+                scrnCd={SCRN_CD}
                 // 필터된 대분류(sub_cd=*) 행
                 rows={groups.rows as EditableRow<CodeRow>[]}
                 columns={groupCols}
@@ -446,9 +355,9 @@ export default function CommonCodeManagementPage() {
                 </div>
                 <MesEditableGrid
                   // 열 설정 저장 키 — 시스템 세부(조회 전용)
-                  persistId="code-mgmt-sys"
+                  persistId={PERSIST_ID.sys}
                   title="시스템 코드"
-                  scrnCd={SCREEN}
+                  scrnCd={SCRN_CD}
                   rows={sysG.rows as EditableRow<CodeRow>[]}
                   columns={sysCols}
                   // 시스템 코드 CUD 불가
@@ -479,9 +388,10 @@ export default function CommonCodeManagementPage() {
                   />
                 </div>
                 <MesEditableGrid
-                  persistId="code-mgmt-usr"
+                  // 열 설정 저장 키 — 사용자 세부(CRUD)
+                  persistId={PERSIST_ID.usr}
                   title="사용자 코드"
-                  scrnCd={SCREEN}
+                  scrnCd={SCRN_CD}
                   rows={usrG.rows as EditableRow<CodeRow>[]}
                   columns={usrCols}
                   editable={canWrite || canModify}

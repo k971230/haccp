@@ -1,11 +1,11 @@
 /**
- * UserSignDialog — 사용자 서명 미리보기·업로드·삭제 팝업.
+ * UserSignModal — 사용자 서명 미리보기·업로드·삭제 공통 팝업.
  *
  * 개발자: 박승우
  * 일자: 2026-08-12
  * 코멘트:
- *   1) 코드 룩업과 동일 모달 셸 — 보라 헤더·max-w-lg·280 미리보기·푸터
- *   2) 푸터 좌: 교체/업로드·삭제, 우: 닫기 고정
+ *   1) pages/sys/UserSignDialog에서 옮겨온 전역 모달 — openModal("UserSign", ...)로 연다
+ *   2) 코드 룩업과 동일 모달 셸 — 보라 헤더·max-w-lg·280 미리보기·푸터
  *   3) 파일 선택 취소·팝업 닫기 시 포커스·busy·요청을 반드시 해제한다
  *
  * PIPELINE[HF99] 사용자 서명 팝업
@@ -15,10 +15,14 @@ import { isCancel } from "axios";
 import { MesButton } from "@/components/ui/MesButton";
 import { gridHeadClass } from "@/components/layout/pageClasses";
 import { cn } from "@/lib/cn";
-import { deleteUserSign, fetchUserSignBlob, uploadUserSign } from "@/api/systemApi";
+// 역할 — 서명 조회·업로드·삭제 API (사용자 도메인 소유)
+import { deleteUserSign, fetchUserSignBlob, uploadUserSign } from "@/api/sys/userApi";
 import { mesError } from "@/shell/errors";
 import { mesConfirm, mesToast } from "@/shell/dialog";
-import { SYS_MODAL_BODY_H } from "./CodeLookupDialog";
+// 역할 — 모달 props 계약·공통 바디 높이
+import { COMMON_MODAL_BODY_H, type UserSignModalProps } from "./modalTypes";
+// 역할 — 전역 모달 닫기
+import { useModalStore } from "@/stores/modalStore";
 
 /** 서명 업로드 최대 크기 — 10MB */
 export const SIGN_MAX_BYTES = 10 * 1024 * 1024;
@@ -30,27 +34,19 @@ const ACCEPT = "image/png,image/jpeg";
  * 일자: 2026-08-12
  * 코멘트:
  *   1) 서명 미리보기·업로드·삭제 UI를 렌더한다
- *   2) open=true 이고 저장된 userId일 때 표시한다
+ *   2) 저장된 userId 행에서만 연다 — 신규 행은 호출부가 막는다
  *   3) 형식·용량·취소는 업무 토스트/무소음 처리
  */
-export function UserSignDialog({
-  // 팝업 표시 여부
-  open,
+export function UserSignModal({
   // 대상 사용자 ID — 저장된 행만
   userId,
-  // 기존 서명 상대경로 — 있으면 미리보기 시도
-  signPath,
-  // 닫기
-  onClose,
+  // 서명 등록 여부 — true면 미리보기 시도
+  hasSign: hasSignProp,
   // 업로드·삭제 성공 후 목록 재조회
   onUploaded,
-}: {
-  open: boolean;
-  userId: string;
-  signPath?: string | null;
-  onClose: () => void;
-  onUploaded: () => void;
-}) {
+}: UserSignModalProps) {
+  // 역할 — 닫기·업로드 완료 후 모달 종료
+  const closeModal = useModalStore((s) => s.closeModal);
   const fileRef = useRef<HTMLInputElement>(null);
   const previewAbortRef = useRef<AbortController | null>(null);
   const uploadAbortRef = useRef<AbortController | null>(null);
@@ -59,7 +55,7 @@ export function UserSignDialog({
   const [uploading, setUploading] = useState(false);
   // 삭제 진행 중 — 교체·닫기와 동시 클릭 방지
   const [deleting, setDeleting] = useState(false);
-  const hasSign = Boolean(String(signPath ?? "").trim());
+  const hasSign = Boolean(hasSignProp);
   const busy = uploading || deleting;
 
   const revokePreview = useCallback(() => {
@@ -88,15 +84,11 @@ export function UserSignDialog({
     requestAnimationFrame(() => {
       (document.activeElement as HTMLElement | null)?.blur?.();
     });
-    onClose();
-  }, [cleanupRequests, onClose, revokePreview]);
+    closeModal();
+  }, [cleanupRequests, closeModal, revokePreview]);
 
   useEffect(() => {
-    if (!open) {
-      cleanupRequests();
-      revokePreview();
-      return;
-    }
+    // 서명 미등록일 때(= hasSign false) 미리보기 요청 없이 안내만 띄운다
     if (!userId || !hasSign) {
       revokePreview();
       setLoading(false);
@@ -126,11 +118,18 @@ export function UserSignDialog({
     return () => {
       ac.abort();
     };
-  }, [cleanupRequests, hasSign, open, revokePreview, userId]);
+  }, [hasSign, revokePreview, userId]);
+
+  // 언마운트 정리 — 미리보기 objectURL 해제·잔여 요청 취소
+  useEffect(() => {
+    return () => {
+      cleanupRequests();
+      revokePreview();
+    };
+  }, [cleanupRequests, revokePreview]);
 
   // Esc — 업로드 중이어도 닫고 요청 취소
   useEffect(() => {
-    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -139,7 +138,7 @@ export function UserSignDialog({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [handleClose, open]);
+  }, [handleClose]);
 
   /** 파일 선택창 열기 — 취소 시 busy/포커스 잔존 방지 */
   const openFilePicker = () => {
@@ -232,8 +231,6 @@ export function UserSignDialog({
     }
   };
 
-  if (!open) return null;
-
   return (
     <div
       // 서명 관리 모달 오버레이 — 배경 클릭 시 닫기(요청 취소 포함)
@@ -261,7 +258,7 @@ export function UserSignDialog({
           <div
             // 룩업 그리드와 동일 높이 — 이질감 방지
             className="flex items-center justify-center rounded border border-slate-100 bg-slate-50 p-3"
-            style={{ height: SYS_MODAL_BODY_H, minHeight: SYS_MODAL_BODY_H }}
+            style={{ height: COMMON_MODAL_BODY_H, minHeight: COMMON_MODAL_BODY_H }}
           >
             {loading ? (
               <span className="text-xs text-slate-500">불러오는 중…</span>
@@ -303,7 +300,9 @@ export function UserSignDialog({
               variant="danger"
               loading={deleting}
               disabled={busy}
-              onClick={() => { void handleDelete(); }}
+              onClick={() => {
+                void handleDelete();
+              }}
             >
               삭제
             </MesButton>

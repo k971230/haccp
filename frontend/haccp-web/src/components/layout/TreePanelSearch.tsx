@@ -11,9 +11,12 @@
  * PIPELINE[HF92] 트리 검색
  */
 import type { ReactNode } from "react";
-import { Search } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 import { searchInputClass } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
+
+/** 트리 1단계 들여쓰기(px) — 깊이에 비례해 곱한다 */
+const TREE_INDENT_PX = 12;
 
 /** 분할 패널 제목 행(좌 트리·우 그리드 공통) — 고정 h-9, wrap 금지로 화면 전환 시 흔들림 방지 */
 export const treePanelHeadClass =
@@ -23,6 +26,63 @@ export const treePanelHeadClass =
 export const treeNodeSelectedClass = "bg-blue-100 font-bold text-blue-700";
 /** 트리 노드 비선택 */
 export const treeNodeIdleClass = "text-slate-700 hover:bg-slate-100";
+
+/** 트리 노드 라벨 버튼 — 메뉴·부서 등 단일 선택 트리 공통 */
+export const treeNodeLabelClass = "min-w-0 flex-1 truncate rounded px-1 py-0.5 text-left";
+
+/**
+ * TreeNodeRow — 트리 한 줄(펼침 화살표 + 라벨 슬롯).
+ *
+ * 개발자: 박승우
+ * 일자: 2026-08-12
+ * 코멘트:
+ *   1) 메뉴·부서·권한·로그 트리가 각자 갖고 있던 마크업을 하나로 모아 글자 크기·간격·들여쓰기를 통일한다
+ *   2) 들여쓰기는 이 행에만 준다 — 부모 래퍼에 주면 깊이마다 누적돼 하위로 갈수록 과하게 밀린다
+ *   3) 표시 전용이라 상태·API를 갖지 않는다. 펼침 토글과 라벨은 호출한 화면이 넘긴다
+ */
+export function TreeNodeRow({
+  // 트리 깊이 — 0이 최상위, 1단계마다 TREE_INDENT_PX만큼 들여쓴다
+  depth,
+  // 하위 노드 보유 여부 — 없으면 화살표 자리를 빈 칸으로 채워 라벨 시작 위치를 맞춘다
+  hasChild,
+  // 펼침 상태 — 화살표 회전에만 쓴다(하위 렌더는 호출한 화면이 판단)
+  open,
+  // 화살표 클릭 — 펼침/접기 토글
+  onToggle,
+  // 라벨 슬롯 — 선택 버튼(메뉴·부서·로그) 또는 체크박스 label(권한그룹)
+  children,
+}: {
+  depth: number;
+  hasChild: boolean;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className="flex items-center gap-1 py-0.5 text-[12px]"
+      style={{ paddingLeft: depth * TREE_INDENT_PX }}
+    >
+      {hasChild ? (
+        <button
+          // 하위 펼침/접기
+          type="button"
+          className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-slate-500"
+          onClick={onToggle}
+          aria-expanded={open}
+        >
+          <ChevronRight
+            className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-90")}
+            aria-hidden
+          />
+        </button>
+      ) : (
+        <span className="inline-block w-5 shrink-0" />
+      )}
+      {children}
+    </div>
+  );
+}
 
 /**
  * 개발자: 박승우

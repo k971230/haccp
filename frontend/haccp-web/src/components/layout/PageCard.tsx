@@ -74,10 +74,8 @@ export function PageCardTree({
       // 좌우 분할
       orientation="horizontal"
       storageKey={storageKey}
-      // 트리:본문 = 2:8 고정
+      // 트리:본문 기본 2:8 — 경계선을 끌면 20~80% 범위에서 조절되고 storageKey에 저장된다
       defaultPrimaryPct={20}
-      minPct={20}
-      maxPct={20}
       panelClassName={card}
       primary={tree}
       secondary={children}

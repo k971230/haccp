@@ -31,7 +31,7 @@ import { mesError, toUserMessage } from "@/shell/errors";
 import { mesConfirm, mesConfirmUnsaved, mesToast } from "@/shell/dialog";
 import { MES } from "@/shell/messages";
 // 역할 — 본인 서명 미등록 시 즉시 업로드
-import { uploadMySign } from "@/api/systemApi";
+import { uploadMySign } from "@/api/sys/userApi";
 // 역할 — 편집 그리드
 import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
 // 역할 — 목록 그리드 잠금(신규만 기준일 편집)
@@ -120,6 +120,36 @@ function buildHwpSrcFileName(
 ): string {
   const safeSeq = Number.isFinite(seq) && seq > 0 ? Math.floor(seq) : 1;
   return `${sanitizeFileToken(tmplNm)}_${baseDt}_${String(safeSeq).padStart(3, "0")}.hwpx`;
+}
+
+/**
+ * 서명 이미지를 흰 배경에 합성한 PNG로 바꾼다.
+ * 서명 원본은 배경이 투명한 RGBA PNG인데, 클립보드를 거쳐 한글로 들어갈 때
+ * 알파가 없는 비트맵으로 변환되면서 투명 영역이 검정이 된다(= 검은 사각형으로 보임).
+ * 그래서 복사 직전에만 흰색을 깔아 평탄화한다. 서버에 저장된 원본은 투명 그대로 둔다.
+ */
+async function flattenSignToWhitePng(
+  // 서버에서 받은 서명 바이너리 — 투명 배경 PNG를 전제로 한다
+  blob: Blob,
+): Promise<Blob> {
+  const bitmap = await createImageBitmap(blob);
+  const canvas = document.createElement("canvas");
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext("2d");
+  // 2D 컨텍스트를 못 얻을 때(= 캔버스 비활성) 원본을 그대로 돌려준다
+  if (!ctx) {
+    bitmap.close();
+    return blob;
+  }
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  // toBlob이 null을 주는 경우(= 인코딩 실패) 원본으로 되돌린다
+  return await new Promise<Blob>((resolve) =>
+    canvas.toBlob((out) => resolve(out ?? blob), "image/png"),
+  );
 }
 
 /** 기존 HWP_SRC 파일명에서 _001.hwpx 연번을 읽는다 — 없으면 null */
@@ -982,14 +1012,24 @@ export default function HwpDocumentEditorPage({
 
   /**
    * 서명 이미지를 클립보드에 넣고 붙여넣기 안내를 띄운다.
+   * 투명 배경은 한글에서 검게 나오므로 흰 배경으로 합성한 뒤 올린다.
    * Clipboard API 실패 시에도 이미지는 받았다는 안내만 한다.
    */
   const copySignBlobToClipboard = async (
     // 서버에서 받은 서명 바이너리 — image/* MIME 권장
     blob: Blob
   ) => {
-    const mime = blob.type && blob.type.startsWith("image/") ? blob.type : "image/png";
-    const imageBlob = mime === blob.type ? blob : new Blob([blob], { type: mime });
+    let imageBlob: Blob;
+    try {
+      // 합성 성공 시(= 흰 배경 PNG) 한글에서도 검게 나오지 않는다
+      imageBlob = await flattenSignToWhitePng(blob);
+    } catch {
+      // 합성에 실패했을 때(= createImageBitmap 미지원 등) 원본을 그대로 올려 기존 동작을 유지한다
+      const rawMime = blob.type && blob.type.startsWith("image/") ? blob.type : "image/png";
+      imageBlob = rawMime === blob.type ? blob : new Blob([blob], { type: rawMime });
+    }
+    // ClipboardItem 키는 실제 blob MIME과 같아야 한다
+    const mime = imageBlob.type || "image/png";
     try {
       await navigator.clipboard.write([new ClipboardItem({ [mime]: imageBlob })]);
       mesToast("서명을 클립보드에 복사했습니다. 편집기에서 붙여넣기 하세요.", "success");
@@ -1031,7 +1071,7 @@ export default function HwpDocumentEditorPage({
     if (!file) return;
     void asyncAct.run(async () => {
       try {
-        // 본인 서명 경로 저장 — tbl_user.sign_path
+        // 본인 서명 이미지 저장 — tbl_user.sign_img (bytea)
         await uploadMySign(file);
         const blob = await fetchMySignImage();
         await copySignBlobToClipboard(blob);

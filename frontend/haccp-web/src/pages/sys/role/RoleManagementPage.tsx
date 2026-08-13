@@ -6,12 +6,11 @@
  * 코멘트:
  *   1) 좌측은 대·중·소 메뉴 트리와 readYn 체크, 우측은 권한그룹 CRUD
  *   2) 상단 그룹코드·그룹명·사용여부로 FE 필터한다(사용 기본 Y)
- *   3) 트리는 use_yn=Y 메뉴만 표시하고, 우 그리드 선택 행의 권한을 편집한다
+ *   3) 컬럼·잠금·트리 산출은 RoleManagementRule이 갖고 이 파일은 렌더·상태·API만 담당한다
  *
  * PIPELINE[HF99] 권한그룹 관리
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useGridAccess } from "@/hooks/useGridAccess";
@@ -21,6 +20,7 @@ import { GridCrudButtons } from "@/components/grid/GridCrudButtons";
 import { PageCard } from "@/components/layout/PageCard";
 import { ResizableSplit } from "@/components/layout/ResizableSplit";
 import {
+  TreeNodeRow,
   TreePanelSearch,
   treePanelHeadClass,
 } from "@/components/layout/TreePanelSearch";
@@ -42,76 +42,33 @@ import { MES } from "@/shell/messages";
 import { usePageCommands } from "@/shell/pageCommands";
 import { guardSaveWithKey } from "@/shell/gridRules";
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
-import type { GridColumn } from "@/types/grid";
 import type { EditableRow } from "@/types/editable";
+// 역할 — 권한그룹 도메인 API
 import {
-  deleteSystemRows,
-  listAdminMenus,
+  deleteRoles,
   listRoleScreens,
-  listSystemRows,
+  listRoles,
   saveRoleScreens,
-  saveSystemRows,
-  validateDeleteSystemRows,
-  type AdminMenuRow,
-  type SystemRow,
-} from "@/api/systemApi";
-import { SYSTEM_GRID_RULES } from "./SystemManagementPage.rules";
-
-const SCREEN = "role-management" as const;
-
-type RoleRow = SystemRow & {
-  _key?: string;
-  usrgrpCd?: string;
-  usrgrpNm?: string;
-  descRmk?: string;
-  useYn?: string;
-  idx?: number | null;
-};
-
-type TreeNode = {
-  menuCd: string;
-  name: string;
-  scrnCd?: string | null;
-  children: TreeNode[];
-};
-
-function buildMenuTree(menus: AdminMenuRow[]): TreeNode[] {
-  const ordered = [...menus]
-    .filter((m) => String(m.useYn ?? "").toUpperCase() === "Y")
-    .sort((a, b) => Number(a.sortNo ?? 0) - Number(b.sortNo ?? 0));
-  const byCd = new Map(ordered.map((m) => [m.menuCd, m]));
-  const nodes = new Map<string, TreeNode>();
-  for (const m of ordered) {
-    nodes.set(m.menuCd, {
-      menuCd: m.menuCd,
-      name: m.menuNm,
-      scrnCd: m.scrnCd,
-      children: [],
-    });
-  }
-  const roots: TreeNode[] = [];
-  for (const m of ordered) {
-    const node = nodes.get(m.menuCd)!;
-    const parent = m.hMenuCd ? nodes.get(m.hMenuCd) : undefined;
-    if (parent) parent.children.push(node);
-    else if (!m.hMenuCd || !byCd.has(m.hMenuCd)) roots.push(node);
-  }
-  return roots;
-}
-
-function collectLeafScrn(node: TreeNode): string[] {
-  if (node.scrnCd) return [node.scrnCd];
-  return node.children.flatMap(collectLeafScrn);
-}
-
-function matchRole(row: RoleRow, grpCd: string, grpNm: string, useYn: string): boolean {
-  const qCd = grpCd.trim().toLowerCase();
-  const qNm = grpNm.trim().toLowerCase();
-  if (qCd && !String(row.usrgrpCd ?? "").toLowerCase().includes(qCd)) return false;
-  if (qNm && !String(row.usrgrpNm ?? "").toLowerCase().includes(qNm)) return false;
-  if (useYn && String(row.useYn ?? "").toUpperCase() !== useYn.toUpperCase()) return false;
-  return true;
-}
+  saveRoles,
+  validateDeleteRoles,
+} from "@/api/sys/roleApi";
+// 역할 — 권한 트리 원본(관리자 메뉴 전체)
+import { listAdminMenus } from "@/api/sys/menuApi";
+import type { AdminMenuRow, SysRow } from "@/api/sys/sysTypes";
+// 역할 — 화면 규칙(컬럼·잠금·초기값·트리)
+import {
+  PERSIST_ID,
+  REQUIRED_LABEL,
+  ROLE_RULES,
+  SCRN_CD,
+  buildRoleColumns,
+  buildRoleTree,
+  collectLeafScrn,
+  matchRole,
+  newRoleRow,
+  type RoleRow,
+  type RoleTreeNode,
+} from "./RoleManagementRule";
 
 /**
  * 개발자: 박승우
@@ -122,14 +79,15 @@ function matchRole(row: RoleRow, grpCd: string, grpNm: string, useYn: string): b
  *   3) 권한 실패는 업무 토스트
  */
 export default function RoleManagementPage() {
-  const canWrite = useAuthStore((s) => s.can(SCREEN, "write"));
-  const canModify = useAuthStore((s) => s.can(SCREEN, "modify"));
-  const canDelete = useAuthStore((s) => s.can(SCREEN, "delete"));
+  const canWrite = useAuthStore((s) => s.can(SCRN_CD, "write"));
+  const canModify = useAuthStore((s) => s.can(SCRN_CD, "modify"));
+  const canDelete = useAuthStore((s) => s.can(SCRN_CD, "delete"));
   const asyncAct = useAsyncAction();
   const g = useEditableRows<RoleRow>("idx");
+  // 권한그룹 전건 보관 — 헤더 검색은 서버 왕복 없이 이 목록을 거른다
   const allRolesRef = useRef<RoleRow[]>([]);
-  const grid = useGridAccess(SYSTEM_GRID_RULES[SCREEN], {
-    scrnCd: SCREEN,
+  const grid = useGridAccess(ROLE_RULES, {
+    scrnCd: SCRN_CD,
     gridRole: "single",
     readOnly: !canModify,
     extra: { canWrite, canModify, canDelete },
@@ -141,7 +99,9 @@ export default function RoleManagementPage() {
   const [selKeys, setSelKeys] = useState<string[]>([]);
   const [selReset, setSelReset] = useState(0);
   const [menus, setMenus] = useState<AdminMenuRow[]>([]);
+  // 화면코드 → 조회권한 Y/N — 체크박스 표시 원본
   const [readMap, setReadMap] = useState<Record<string, string>>({});
+  // 아직 저장하지 않은 화면코드 — 권한저장 버튼 활성 조건
   const [dirtyScrn, setDirtyScrn] = useState<Set<string>>(new Set());
   const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
   // 트리 결과 내 검색 — 메뉴코드·명
@@ -150,45 +110,14 @@ export default function RoleManagementPage() {
   const ynOpts = useMemo(() => ynOptions(), []);
   const ynLabels = useMemo(() => ynMap(), []);
 
-  const columns: GridColumn<RoleRow>[] = useMemo(
-    () => [
-      {
-        field: "usrgrpCd",
-        header: "그룹코드",
-        width: 110,
-        required: true,
-        editableOnNew: true,
-      },
-      {
-        field: "usrgrpNm",
-        header: "그룹명",
-        width: 140,
-        editable: canWrite || canModify,
-        required: true,
-      },
-      {
-        field: "descRmk",
-        header: "설명",
-        width: 180,
-        editable: canWrite || canModify,
-      },
-      {
-        field: "useYn",
-        header: "사용여부",
-        width: 80,
-        type: "code",
-        editable: canWrite || canModify,
-        codeOptions: ynOpts,
-        codeMap: ynLabels,
-        required: true,
-      },
-    ],
+  const columns = useMemo(
+    () => buildRoleColumns(canWrite || canModify, ynOpts, ynLabels),
     [canModify, canWrite, ynLabels, ynOpts],
   );
 
   const activeRole = g.rows.find((r) => r._key === activeKey);
   const usrgrpCd = String(activeRole?.usrgrpCd ?? "").trim();
-  const fullTree = useMemo(() => buildMenuTree(menus), [menus]);
+  const fullTree = useMemo(() => buildRoleTree(menus), [menus]);
   const tree = useMemo(
     () => filterTreeByQuery(fullTree, treeQuery, (n) => n.menuCd, (n) => n.name),
     [fullTree, treeQuery],
@@ -210,9 +139,7 @@ export default function RoleManagementPage() {
   }, [runTreeSearch]);
 
   const applyRoleFilter = useCallback(() => {
-    const filtered = allRolesRef.current.filter((r) =>
-      matchRole(r, qGrpCd, qGrpNm, qUseYn),
-    );
+    const filtered = allRolesRef.current.filter((r) => matchRole(r, qGrpCd, qGrpNm, qUseYn));
     g.load(filtered.map((r) => ({ ...r })) as RoleRow[]);
     setActiveKey(null);
     setSelKeys([]);
@@ -223,7 +150,7 @@ export default function RoleManagementPage() {
   }, [qGrpCd, qGrpNm, qUseYn]);
 
   const loadRoles = useCallback(async () => {
-    const rows = await listSystemRows(SCREEN, { keyword: "" });
+    const rows = await listRoles();
     allRolesRef.current = rows.map((r) => ({ ...r })) as RoleRow[];
     applyRoleFilter();
   }, [applyRoleFilter]);
@@ -261,6 +188,7 @@ export default function RoleManagementPage() {
   }, []);
 
   useEffect(() => {
+    // 미저장 신규 행일 때(= _rowState "C") 권한 대상이 없으므로 트리를 비운다
     if (!usrgrpCd || activeRole?._rowState === "C") {
       setReadMap({});
       return;
@@ -294,7 +222,7 @@ export default function RoleManagementPage() {
     // 행추가 시 이전 체크 해제
     setSelKeys([]);
     setSelReset((n) => n + 1);
-    setActiveKey(g.addRow({ usrgrpCd: "", usrgrpNm: "", useYn: DEFAULT_USE_YN }));
+    setActiveKey(g.addRow(newRoleRow()));
   };
 
   const handleSaveRole = async () => {
@@ -309,15 +237,15 @@ export default function RoleManagementPage() {
     }
     for (const row of dirty) {
       if (!String(row.usrgrpCd ?? "").trim() || !String(row.usrgrpNm ?? "").trim()) {
-        mesToast(MES.required("그룹코드/그룹명"), "warn");
+        mesToast(MES.required(REQUIRED_LABEL), "warn");
         setActiveKey(row._key);
         return;
       }
     }
     if (!(await mesConfirm(MES.saveConfirm))) return;
     try {
-      await saveSystemRows(SCREEN, dirty.map((row) => {
-        const next: SystemRow = { ...row };
+      await saveRoles(dirty.map((row) => {
+        const next: SysRow = { ...row };
         delete (next as { _key?: string })._key;
         delete (next as { _rowState?: string })._rowState;
         delete (next as { _original?: unknown })._original;
@@ -360,9 +288,9 @@ export default function RoleManagementPage() {
     const localOnly = targets.filter((r) => r._rowState === "C");
     if (keys.length === 0 && localOnly.length === 0) return mesToast(MES.selectRow, "warn");
     try {
-      if (keys.length > 0) await validateDeleteSystemRows(SCREEN, keys);
+      if (keys.length > 0) await validateDeleteRoles(keys);
       if (!(await mesConfirm(MES.deleteConfirm()))) return;
-      if (keys.length > 0) await deleteSystemRows(SCREEN, keys);
+      if (keys.length > 0) await deleteRoles(keys);
       // 체크된 신규행만 로컬 제거 — 나머지 미저장 행추가분은 유지
       let lastFocus = activeKey;
       for (const r of localOnly) {
@@ -398,29 +326,24 @@ export default function RoleManagementPage() {
     del: canDelete ? () => { void asyncAct.run(handleDelete, "del"); } : undefined,
   });
 
-  const renderNode = (node: TreeNode, depth: number) => {
+  const renderNode = (node: RoleTreeNode, depth: number) => {
     const open = openKeys.has(node.menuCd);
     const leaves = collectLeafScrn(node);
     const isLeaf = !!node.scrnCd;
     const checked = isLeaf
       ? readMap[node.scrnCd!] === "Y"
       : leaves.length > 0 && leaves.every((s) => readMap[s] === "Y");
+    // 일부 하위만 Y일 때(= 부분 선택) 체크박스를 indeterminate로 표시
     const partial = !isLeaf && !checked && leaves.some((s) => readMap[s] === "Y");
     return (
-      <div key={node.menuCd} style={{ paddingLeft: depth * 12 }}>
-        <div className="flex items-center gap-1 py-0.5 text-[12px]">
-          {node.children.length > 0 ? (
-            <button
-              type="button"
-              className="inline-flex h-5 w-5 items-center justify-center text-slate-500"
-              onClick={() => toggleOpen(node.menuCd)}
-              aria-expanded={open}
-            >
-              <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-90")} aria-hidden />
-            </button>
-          ) : (
-            <span className="inline-block w-5" />
-          )}
+      <div key={node.menuCd}>
+        <TreeNodeRow
+          // 깊이 — 공통 컴포넌트가 12px 단위로 들여쓴다
+          depth={depth}
+          hasChild={node.children.length > 0}
+          open={open}
+          onToggle={() => toggleOpen(node.menuCd)}
+        >
           <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5">
             <input
               type="checkbox"
@@ -439,7 +362,7 @@ export default function RoleManagementPage() {
               {node.name}
             </span>
           </label>
-        </div>
+        </TreeNodeRow>
         {open && node.children.map((c) => renderNode(c, depth + 1))}
       </div>
     );
@@ -455,6 +378,7 @@ export default function RoleManagementPage() {
           >
             <SearchField label="그룹코드">
               <input
+                // 그룹코드 부분검색
                 className={searchInputClass}
                 value={qGrpCd}
                 onChange={(e) => setQGrpCd(e.target.value)}
@@ -463,13 +387,19 @@ export default function RoleManagementPage() {
             </SearchField>
             <SearchField label="그룹명">
               <input
+                // 그룹명 부분검색
                 className={searchInputClass}
                 value={qGrpNm}
                 onChange={(e) => setQGrpNm(e.target.value)}
                 placeholder="그룹명"
               />
             </SearchField>
-            <SearchSelect label="사용여부" value={qUseYn} onChange={setQUseYn}>
+            <SearchSelect
+              // 사용여부 — 기본 Y, 빈값=전체
+              label="사용여부"
+              value={qUseYn}
+              onChange={setQUseYn}
+            >
               <option value="">전체</option>
               {ynOpts.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -482,10 +412,8 @@ export default function RoleManagementPage() {
           // 좌 트리 · 우 그리드 (메뉴·부서와 동일 규칙)
           orientation="horizontal"
           storageKey="haccp-split-role-mgmt"
-          // 트리:그리드 = 2:8 고정
+          // 트리:그리드 기본 2:8 — 경계선을 끌면 20~80% 범위에서 조절되고 storageKey에 저장된다
           defaultPrimaryPct={20}
-          minPct={20}
-          maxPct={20}
           panelClassName="rounded-xl border border-slate-200 bg-white shadow-sm p-2"
           primary={
             <>
@@ -537,8 +465,10 @@ export default function RoleManagementPage() {
                 />
               </div>
               <MesEditableGrid
-                persistId="role-mgmt-master"
-                scrnCd={SCREEN}
+                // 열 설정 저장 키 — 권한그룹 마스터
+                persistId={PERSIST_ID}
+                scrnCd={SCRN_CD}
+                // 검색 필터된 권한그룹 행
                 rows={g.rows as EditableRow<RoleRow>[]}
                 columns={columns}
                 editable={canWrite || canModify}
