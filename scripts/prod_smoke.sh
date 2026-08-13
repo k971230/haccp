@@ -92,7 +92,10 @@ elif q == "success":
 elif q == "menu_len":
     print(len(d) if isinstance(d, list) else 0)
 elif q == "has_approval_history":
-    ok = isinstance(d, list) and any(isinstance(x, dict) and x.get("menuCd") == "approval-history" for x in d)
+    # menu_cd 는 kebab 개편 후 menu-approval-history — 화면코드(scrn_cd)로 본다
+    ok = isinstance(d, list) and any(
+        isinstance(x, dict) and x.get("scrnCd") == "approval-history" for x in d
+    )
     print("yes" if ok else "")
 else:
     sys.exit(2)
@@ -123,9 +126,9 @@ fetch "$TMP/menu.json" "$BASE_URL/api/v1/menu/list" -H "Authorization: Bearer $T
 MLEN="$(jget "$TMP/menu.json" menu_len)"
 [ "${MLEN:-0}" -ge 5 ] || { echo "메뉴 ${MLEN:-0}건 — 5건 미만"; exit 1; }
 
-echo "==> 6) approval-history leaf (STEP 03 회귀)"
+echo "==> 6) approval-history leaf (STEP 03 회귀, scrnCd)"
 [ -n "$(jget "$TMP/menu.json" has_approval_history)" ] || {
-  echo "approval-history 메뉴 부재 — STEP 03 회귀"; exit 1;
+  echo "approval-history 화면(scrnCd) 메뉴 부재 — STEP 03 회귀"; exit 1;
 }
 
 echo "==> 7) 냉장 CCP 목록"
