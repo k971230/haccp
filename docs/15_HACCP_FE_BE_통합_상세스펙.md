@@ -592,14 +592,13 @@ Deep-link: `/screen/{scrnCd}?docIdx=` — `documentNav.ts` (tmplCd→scrnCd).
 
 ```
 APP_FILE_ROOT/
-  _template/           # 표준·회사 양식 HWP (DB에 바이너리 없음)
-    {한글파일}.hwp
-    {coCd}/…
-  {coCd}/
-    documents/{docIdx}/…
-    signs/{userId}…
-    equipment photos…
+  HaccpTemplates/{tmplCd}/{한글파일}.hwp        # 전 회사 공통 표준 양식 (DB에 바이너리 없음)
+  CustomTemplates/{coCd}/{tmplCd}/{파일}       # 회사 커스텀 양식
+  HaccpLogBooks/{coCd}/{yyyy-MM-dd}/{tmplCd}/  # 작성 문서 첨부·PDF·설비 사진
+    {uuid}_{원본명}
 ```
+
+사용자 서명은 파일이 아니라 `tbl_user.sign_img bytea` — 볼륨에 두지 않는다.
 
 - TemplateImportService(ApplicationRunner): APP_TEMPLATE_IMPORT_ROOT + manifest.tsv  
 - formPath는 서버 전용 — API는 formUrl만  

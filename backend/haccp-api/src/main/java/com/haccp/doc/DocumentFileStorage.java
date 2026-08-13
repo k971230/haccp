@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-06
  * 코멘트:
- *   1) MultipartFile을 테넌트·연월 단위 하위 경로에 저장하고 내부 상대 경로만 DB에 남긴다
+ *   1) MultipartFile을 HaccpLogBooks/{회사코드}/{일자}/{양식코드} 하위에 저장하고 상대 경로만 DB에 남긴다
  *   2) 파일명은 경로 조작 문자를 제거하고 UUID를 앞에 붙여 같은 이름의 덮어쓰기를 막는다
  *   3) 읽기·삭제는 상대 경로가 root 안에 있을 때만 허용해 다른 파일 접근을 차단한다
  *
@@ -37,42 +37,72 @@ import org.springframework.stereotype.Component;
 @Component
 public class DocumentFileStorage {
 
-    // 상대 경로의 연월 폴더 형식 — DB 저장 경로와 동일
-    private static final DateTimeFormatter YEAR_MONTH = DateTimeFormatter.ofPattern("yyyy/MM");
+    // 상대 경로의 일자 폴더 형식 — 하루 단위로 묶어 운영자가 눈으로 찾는다
+    private static final DateTimeFormatter FILE_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     // 파일 저장 루트 — .env APP_FILE_ROOT에서만 받는다
     private final Path root;
+    // 작성 문서·첨부 루트 폴더명 — app.document.logbook-directory
+    private final String logbookDirectory;
     // 업로드 1건 최대 크기 — application.yml/.env에서만 받는다
     private final long maxBytes;
 
     public DocumentFileStorage(
             // 파일 볼륨 루트 — 운영은 Docker named volume 경로
             @Value("${app.file.root}") String root,
+            // 작성 문서 루트 폴더명 — 표준·자사 양식 루트와 분리한다
+            @Value("${app.document.logbook-directory}") String logbookDirectory,
             // 업로드 파일 최대 크기 byte — multipart 한계와 같은 값으로 맞춘다
             @Value("${app.file.max-bytes}") long maxBytes
     ) {
         this.root = Path.of(root).toAbsolutePath().normalize();
+        this.logbookDirectory = TemplateFileNames.segment(logbookDirectory);
         this.maxBytes = maxBytes;
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-13
+     * 코멘트:
+     *   1) {logbookDirectory}/{coCd}/{yyyy-MM-dd}/{tmplCd}/{uuid}_{원본명} 상대 경로를 만든다
+     *   2) 문서 첨부·PDF 저장 직전에 쓴다 — DB에는 이 상대 경로만 남는다
+     *   3) tmplCd가 공백일 때(= 양식과 무관한 첨부, 설비 사진 등) 타입 폴더를 생략한다
+     */
+    private String logbookRelativePath(
+            // JWT 회사코드 — 테넌트 물리 분리 세그먼트
+            String coCd,
+            // 문서 양식코드 tmpl_cd — 타입 폴더
+            String tmplCd,
+            // 경로 조작 문자를 제거한 원본 파일명
+            String safeOriginalName
+    ) {
+        String type = TemplateFileNames.segment(tmplCd);
+        return logbookDirectory
+                + "/" + TemplateFileNames.segment(coCd)
+                + "/" + FILE_DATE.format(LocalDate.now())
+                + (type.isBlank() ? "" : "/" + type)
+                + "/" + UUID.randomUUID() + "_" + safeOriginalName;
     }
 
     /**
      * 개발자: 박승우
      * 일자: 2026-08-06
      * 코멘트:
-     *   1) 업로드 파일을 {root}/{coCd}/{yyyy}/{mm}에 저장한다
+     *   1) 업로드 파일을 {logbookDirectory}/{coCd}/{일자}/{tmplCd} 아래에 저장한다
      *   2) DocumentService가 DB 메타 행을 만들기 직전에 호출한다
      *   3) 성공 시 DB에 저장할 상대 경로를 반환하고, 실패 시 BizException
      */
     public String save(
-            // JWT 회사코드 — 첫 경로 세그먼트로 테넌트 파일을 물리 분리
+            // JWT 회사코드 — 테넌트 파일을 물리 분리하는 세그먼트
             String coCd,
+            // 문서 양식코드 tmpl_cd — 타입 폴더. 양식과 무관한 첨부는 공백
+            String tmplCd,
             // 브라우저가 올린 파일 — 요청 종료 뒤 임시 저장이 사라지므로 이 메서드에서 복사
             MultipartFile file
     ) {
         validate(file);
         String original = safeName(file.getOriginalFilename());
-        String relative = coCd + "/" + YEAR_MONTH.format(LocalDate.now()) + "/"
-                + UUID.randomUUID() + "_" + original;
+        String relative = logbookRelativePath(coCd, tmplCd, original);
         Path target = resolve(relative);
 
         try {
@@ -97,6 +127,8 @@ public class DocumentFileStorage {
     public String saveFromPath(
             // JWT 회사코드 — 테넌트 물리 분리 세그먼트
             String coCd,
+            // 문서 양식코드 tmpl_cd — 타입 폴더. 양식과 무관한 산출물은 공백
+            String tmplCd,
             // CLI가 만든 임시 PDF 등 — 호출 후 삭제해도 되는 원본
             Path source,
             // 다운로드·목록에 보일 원본 파일명
@@ -112,8 +144,7 @@ public class DocumentFileStorage {
                 throw new BizException("파일 크기가 허용 한도를 초과했습니다.");
             }
             String original = safeName(originalName);
-            String relative = coCd + "/" + YEAR_MONTH.format(LocalDate.now()) + "/"
-                    + UUID.randomUUID() + "_" + original;
+            String relative = logbookRelativePath(coCd, tmplCd, original);
             Path target = resolve(relative);
             Files.createDirectories(target.getParent());
             Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);

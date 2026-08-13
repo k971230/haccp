@@ -5,7 +5,7 @@
  * 일자: 2026-08-10
  * 코멘트:
  *   1) 회사 사용 HWP 템플릿 목록을 좌측 그리드로 보여주고 선택 시 rhwp로 원본을 연다
- *   2) 신규는 선택 기준양식+한글 HWP 업로드 → 볼륨(_template/{coCd})·sys_yn=N 등록
+ *   2) 신규는 선택 기준양식+한글 HWP 업로드 → 볼륨(CustomTemplates/{coCd}/{tmplCd})·sys_yn=N 등록
  *   3) 내보내기/불러오기는 HWP 설정 export-hist만 관리 (바이너리는 볼륨이 정본)
  *
  * PIPELINE[HF123] 사용양식관리
@@ -65,6 +65,8 @@ import {
 } from "@/api/workflowApi";
 // 역할 — 선택행 우선 삭제 대상
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
+// 역할 — 양식 유형(hwp) 판별·정본 상수 — DB는 소문자 hwp/html
+import { DOC_KIND_HWP, isHwpKind } from "@/lib/docKind";
 
 /** 좌측 템플릿 그리드 행 — 서버 템플릿 + 로컬 draft */
 type TmplListRow = DocumentTemplateRow & {
@@ -154,7 +156,7 @@ export default function HwpTemplateManagementPage() {
       // HWP만 — 법적서류(LAW)는 legal-document-upload 화면 전용
       const hwp = rows.filter(
         (row) =>
-          row.docKind === "HWP"
+          isHwpKind(row.docKind)
           && row.categoryCd !== "LAW"
           && !String(row.tmplCd || "").startsWith("LAW_"),
       );
@@ -459,7 +461,7 @@ export default function HwpTemplateManagementPage() {
       const packNm = `HWP설정_${stamp}`;
       if (!(await mesConfirm(`현재 HWP 양식 설정을 '${packNm}' 패키지로 내보내시겠습니까?`))) return;
       try {
-        const histIdx = await exportTemplateHist({ packNm, docKind: "HWP" });
+        const histIdx = await exportTemplateHist({ packNm, docKind: DOC_KIND_HWP });
         mesToast(`내보내기를 완료했습니다. (이력 ${histIdx})`, "success");
       } catch (error) {
         mesError(error);
@@ -474,7 +476,7 @@ export default function HwpTemplateManagementPage() {
         { kind: "SERVER", label: "서버 템플릿 (표준 오버라이드 초기화)" },
       ];
       try {
-        const hist: TemplateExportHist[] = await listTemplateExportHist({ docKind: "HWP" });
+        const hist: TemplateExportHist[] = await listTemplateExportHist({ docKind: DOC_KIND_HWP });
         for (const row of hist) {
           picks.push({
             kind: "HIST",
@@ -503,7 +505,7 @@ export default function HwpTemplateManagementPage() {
       if (!(await mesConfirm(msg))) return;
       try {
         if (pick.kind === "SERVER") {
-          await importTemplateHist({ source: "SERVER", docKind: "HWP" });
+          await importTemplateHist({ source: "SERVER", docKind: DOC_KIND_HWP });
         } else {
           await importTemplateHist({ histIdx: pick.idx });
         }

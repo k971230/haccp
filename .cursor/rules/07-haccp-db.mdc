@@ -74,7 +74,8 @@ alwaysApply: false
 
 ## 양식 42종
 
-- `tbl_template.doc_kind` = `DB`(HTML 입력 양식) / `HWP`(rhwp 문서작성 양식)
+- `tbl_template.doc_kind` = `html`(HTML 입력 양식) / `hwp`(rhwp 문서작성 양식) — **소문자 정본** (`51`에서 `DB`/`HWP` 치환, `83`에서 SP·앱 비교까지 정합)
+- 양식 파일 경로 = `HaccpTemplates/{tmpl_cd}/{파일}` · 자사 `CustomTemplates/{co_cd}/{tmpl_cd}/{파일}` · 작성 문서 `HaccpLogBooks/{co_cd}/{일자}/{tmpl_cd}/{파일}` (`83`). `html` 양식은 `form_path` NULL
 - `impl_yn = 'Y'` 30종은 해썹일지 PDF 실물 서식, `impl_yn = 'N'` 12종은 카탈로그 등재만 (미구현)
 - 표준 양식·점검항목은 **플랫폼 소유**(`co_cd` 없음). 업체별 조정은 `tbl_company_template`,
   `tbl_company_check_item` 오버라이드 행으로만 처리하고 표준 시드를 직접 수정하지 않는다

@@ -119,7 +119,7 @@ public class WorkflowController {
      * 개발자: 박승우
      * 일자: 2026-08-10
      * 코멘트:
-     *   1) 자사 HWP를 템플릿 볼륨(_template/{coCd}/한글명)에 올리고 sys_yn=N으로 등록한다
+     *   1) 자사 HWP를 템플릿 볼륨(CustomTemplates/{coCd}/{tmplCd}/한글명)에 올리고 sys_yn=N으로 등록한다
      *   2) 사용양식관리 신규 업로드가 multipart로 호출한다
      *   3) 성공 시 tmplCd·formPath·formFileNm — 바이너리는 DB에 넣지 않는다
      */
@@ -278,7 +278,7 @@ public class WorkflowController {
      * 일자: 2026-08-06
      * 코멘트:
      *   1) 현재 회사 양식·점검항목 오버라이드를 패키지로 내보낸다
-     *   2) DB/HWP 설정 화면의 내보내기 버튼이 packNm·docKind로 호출한다
+     *   2) html/hwp 설정 화면의 내보내기 버튼이 packNm·docKind로 호출한다
      *   3) 생성된 이력 idx를 반환해 화면이 성공 안내를 표시한다
      */
     @PutMapping("/template-export-hist/export")

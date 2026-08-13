@@ -13,7 +13,7 @@
 #  실행 (내부 PG):
 #    docker compose --env-file .env.docker -f docker-compose.prod.yml --profile with-db up -d
 #
-#  선행 필수: bash scripts/init_volumes.sh (표준 양식 원본 시드) — 빠뜨리면 api 가 기동 실패한다
+#  선행 권장: bash scripts/init_volumes.sh (표준 양식 원본 시드). 없어도 api 는 기동하고 화면에서 올린다
 # ============================================================
 
 # 프로젝트명 고정 — 컨테이너·네트워크 접두어가 실행 디렉터리 이름에 따라 흔들리지 않게 한다
@@ -68,7 +68,7 @@ services:
       # 아래 3개는 볼륨 마운트 지점과 반드시 일치해야 해서 .env.docker 가 아닌 여기에 고정한다
       APP_FILE_ROOT: /var/haccp/files
       # 기동 직후 매니페스트대로 표준 양식을 파일 볼륨에 복사한다.
-      # 이 디렉터리가 비어 있으면(= init_volumes.sh 미실행) 필수 양식 누락으로 기동이 중단된다
+      # 비어 있으면 해당 행만 건너뛰고 기동한다 — 양식 파일 관리 화면에서 로컬열기 후 저장
       APP_TEMPLATE_IMPORT_ROOT: /var/haccp/templates
       TZ: Asia/Seoul
     volumes:

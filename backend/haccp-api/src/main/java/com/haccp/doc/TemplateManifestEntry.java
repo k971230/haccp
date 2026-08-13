@@ -19,7 +19,7 @@ public record TemplateManifestEntry(
         String tmplCd,
         // docs/ 또는 import-root의 원본 파일명 (실존명 그대로)
         String sourceName,
-        // _template 아래 저장 파일명 (번호 접두 제거 한글명)
+        // HaccpTemplates/{tmpl_cd} 아래 저장 파일명 (번호 접두 제거 한글명)
         String targetName,
         // true면 원본 누락 시 기동 실패, false면 스킵(LAW 등 선택)
         boolean required

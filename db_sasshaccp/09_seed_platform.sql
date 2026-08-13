@@ -18,66 +18,66 @@ SET search_path TO sasshaccp;
 
 -- ------------------------------------------------------------
 -- 1. tbl_template — 표준 템플릿 카탈로그 42종
---    doc_kind DB  = 전용 HTML 화면 + DB 저장 (반복·수치·자동판정)
---    doc_kind HWP = rhwp 문서작성형 (서술·사진·저빈도, 관리정보만 DB화)
+--    doc_kind html = 전용 HTML 화면 + DB 저장 (반복·수치·자동판정)
+--    doc_kind hwp  = rhwp 문서작성형 (서술·사진·저빈도, 관리정보만 DB화)
 -- ------------------------------------------------------------
 INSERT INTO tbl_template
     (tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd, default_cycle_cd, default_retention_month, impl_yn, sort_no, ins_id)
 VALUES
     -- [DB형 15종] 반복 기록·수치 입력·자동판정이 필요한 양식 (mng_no = 원본 PDF 일지관리 번호)
-    ('tmpl_ccp-cold-log',      'CCP 냉장·냉동 보관 모니터링 일지',     '2-1',  'DB',  'CCP', 'ccp-cold-monitor',       'D', 24, 'Y',  2, 'system'),
-    ('tmpl_ccp-metal-log',     'CCP 금속검출 모니터링 일지',           '2-2',  'DB',  'CCP', 'ccp-metal-monitor',      'D', 24, 'Y',  3, 'system'),
-    ('tmpl_ccp-verify-check',    '중요관리점(CCP) 검증점검표',          '3',    'DB',  'CCP', 'ccp-verification-check', 'M', 24, 'Y',  4, 'system'),
-    ('tmpl_prp-verify-plan',   '연간 검증계획서',                     '4',    'DB',  'VER', 'annual-verification-plan','Y', 36, 'Y',  5, 'system'),
-    ('tmpl_prp-hygiene-daily',     '일일 위생 점검일지',                  '10',   'DB',  'HYG', 'daily-hygiene-check',    'D', 24, 'Y', 11, 'system'),
-    ('tmpl_prp-hygiene-personal',  '개인 위생관리 점검표',                '11',   'DB',  'HYG', 'personal-hygiene-check', 'D', 24, 'Y', 12, 'system'),
-    ('tmpl_prp-hygiene-area',      '작업장 환경위생관리 점검표',          '12',   'DB',  'HYG', 'area-hygiene-check',     'D', 24, 'Y', 13, 'system'),
-    ('tmpl_prp-pest-check',          '방충·방서 점검표',                    '13',   'DB',  'HYG', 'pest-control-check',     'W', 24, 'Y', 14, 'system'),
-    ('tmpl_prp-facility-check',      '시설·설비·처리도구 점검표',           '14',   'DB',  'FAC', 'facility-equipment-check','W', 24, 'Y', 15, 'system'),
-    ('tmpl_prp-calib-target',  '검·교정 대상',                        '15',   'DB',  'FAC', 'calibration-target-management','Y', 36, 'Y', 16, 'system'),
-    ('tmpl_prp-waste-check',         '폐기물 처리 점검표',                  '18',   'DB',  'FAC', 'waste-disposal-check',   'M', 24, 'Y', 21, 'system'),
-    ('tmpl_logis-inventory-check',     '입·출고 및 재고 점검표',              '19',   'DB',  'INV', 'inventory-check',        'M', 24, 'Y', 22, 'system'),
-    ('tmpl_logis-receive-inspect',     '입고검사 일지',                       '20',   'DB',  'INV', 'receiving-inspection',   'E', 24, 'Y', 23, 'system'),
-    ('tmpl_prp-water-check',         '용수관리 점검표',                     '24',   'DB',  'HYG', 'water-management-check', 'W', 24, 'Y', 27, 'system'),
-    ('tmpl_ccp-process-check',       '공정관리 점검표',                     '26',   'DB',  'PRC', 'process-control-check',  'M', 24, 'Y', 29, 'system'),
+    ('tmpl_ccp-cold-log',      'CCP 냉장·냉동 보관 모니터링 일지',     '2-1',  'html','CCP', 'ccp-cold-monitor',       'D', 24, 'Y',  2, 'system'),
+    ('tmpl_ccp-metal-log',     'CCP 금속검출 모니터링 일지',           '2-2',  'html','CCP', 'ccp-metal-monitor',      'D', 24, 'Y',  3, 'system'),
+    ('tmpl_ccp-verify-check',    '중요관리점(CCP) 검증점검표',          '3',    'html','CCP', 'ccp-verification-check', 'M', 24, 'Y',  4, 'system'),
+    ('tmpl_prp-verify-plan',   '연간 검증계획서',                     '4',    'html','VER', 'annual-verification-plan','Y', 36, 'Y',  5, 'system'),
+    ('tmpl_prp-hygiene-daily',     '일일 위생 점검일지',                  '10',   'html','HYG', 'daily-hygiene-check',    'D', 24, 'Y', 11, 'system'),
+    ('tmpl_prp-hygiene-personal',  '개인 위생관리 점검표',                '11',   'html','HYG', 'personal-hygiene-check', 'D', 24, 'Y', 12, 'system'),
+    ('tmpl_prp-hygiene-area',      '작업장 환경위생관리 점검표',          '12',   'html','HYG', 'area-hygiene-check',     'D', 24, 'Y', 13, 'system'),
+    ('tmpl_prp-pest-check',          '방충·방서 점검표',                    '13',   'html','HYG', 'pest-control-check',     'W', 24, 'Y', 14, 'system'),
+    ('tmpl_prp-facility-check',      '시설·설비·처리도구 점검표',           '14',   'html','FAC', 'facility-equipment-check','W', 24, 'Y', 15, 'system'),
+    ('tmpl_prp-calib-target',  '검·교정 대상',                        '15',   'html','FAC', 'calibration-target-management','Y', 36, 'Y', 16, 'system'),
+    ('tmpl_prp-waste-check',         '폐기물 처리 점검표',                  '18',   'html','FAC', 'waste-disposal-check',   'M', 24, 'Y', 21, 'system'),
+    ('tmpl_logis-inventory-check',     '입·출고 및 재고 점검표',              '19',   'html','INV', 'inventory-check',        'M', 24, 'Y', 22, 'system'),
+    ('tmpl_logis-receive-inspect',     '입고검사 일지',                       '20',   'html','INV', 'receiving-inspection',   'E', 24, 'Y', 23, 'system'),
+    ('tmpl_prp-water-check',         '용수관리 점검표',                     '24',   'html','HYG', 'water-management-check', 'W', 24, 'Y', 27, 'system'),
+    ('tmpl_ccp-process-check',       '공정관리 점검표',                     '26',   'html','PRC', 'process-control-check',  'M', 24, 'Y', 29, 'system'),
 
     -- [rhwp 문서형 15종] 서술·사진 중심, 관리정보만 DB화하고 본문은 한글 원본 보관
-    ('tmpl_admin-handover-doc',      '업무 인수인계서',                     '1',    'HWP', 'DOC', NULL,         'E', 36, 'Y',  1, 'system'),
-    ('tmpl_prp-verify-check',  '검증 점검표',                         '5',    'HWP', 'VER', NULL,         'E', 24, 'Y',  6, 'system'),
-    ('tmpl_prp-verify-report', '검증결과 보고서',                     '6',    'HWP', 'VER', NULL,         'E', 24, 'Y',  7, 'system'),
-    ('tmpl_prp-verify-action',     '검증 개선조치 결과보고서',            '7',    'HWP', 'VER', NULL,         'E', 24, 'Y',  8, 'system'),
-    ('tmpl_admin-edu-plan',      '연간 교육·훈련 계획서',               '8',    'HWP', 'EDU', 'edu-annual-plan',   'Y', 36, 'Y',  9, 'system'),
-    ('tmpl_admin-edu-log',       '교육일지',                            '9',    'HWP', 'EDU', 'edu-training-log',  'E', 24, 'Y', 10, 'system'),
-    ('tmpl_admin-law-health',    '보건증관리',                          NULL,   'HWP', 'LAW', 'law-health-cert',       'E', 36, 'Y', 61, 'system'),
-    ('tmpl_logis-material-ledger',  '원료수불대장관리',                    NULL,   'HWP', 'LAW', 'law-material-ledger',   'M', 36, 'Y', 62, 'system'),
-    ('tmpl_admin-building-ledger',  '건축물대장관리',                      NULL,   'HWP', 'LAW', 'law-building-ledger',   'E', 36, 'Y', 63, 'system'),
-    ('tmpl_admin-production-ledger','생산대장관리',                        NULL,   'HWP', 'LAW', 'law-production-ledger', 'D', 36, 'Y', 64, 'system'),
-    ('tmpl_admin-license-manage',   '영업등록증관리',                      NULL,   'HWP', 'LAW', 'law-business-license',  'E', 36, 'Y', 65, 'system'),
-    ('tmpl_admin-self-test', '자가품질검사관리',                    NULL,   'HWP', 'LAW', 'law-self-quality-test', 'M', 36, 'Y', 66, 'system'),
-    ('tmpl_admin-cert-manage',      '수료증관리',                          NULL,   'HWP', 'LAW', 'law-completion-cert',   'E', 36, 'Y', 67, 'system'),
+    ('tmpl_admin-handover-doc',      '업무 인수인계서',                     '1',    'hwp', 'DOC', NULL,         'E', 36, 'Y',  1, 'system'),
+    ('tmpl_prp-verify-check',  '검증 점검표',                         '5',    'hwp', 'VER', NULL,         'E', 24, 'Y',  6, 'system'),
+    ('tmpl_prp-verify-report', '검증결과 보고서',                     '6',    'hwp', 'VER', NULL,         'E', 24, 'Y',  7, 'system'),
+    ('tmpl_prp-verify-action',     '검증 개선조치 결과보고서',            '7',    'hwp', 'VER', NULL,         'E', 24, 'Y',  8, 'system'),
+    ('tmpl_admin-edu-plan',      '연간 교육·훈련 계획서',               '8',    'hwp', 'EDU', 'edu-annual-plan',   'Y', 36, 'Y',  9, 'system'),
+    ('tmpl_admin-edu-log',       '교육일지',                            '9',    'hwp', 'EDU', 'edu-training-log',  'E', 24, 'Y', 10, 'system'),
+    ('tmpl_admin-law-health',    '보건증관리',                          NULL,   'hwp', 'LAW', 'law-health-cert',       'E', 36, 'Y', 61, 'system'),
+    ('tmpl_logis-material-ledger',  '원료수불대장관리',                    NULL,   'hwp', 'LAW', 'law-material-ledger',   'M', 36, 'Y', 62, 'system'),
+    ('tmpl_admin-building-ledger',  '건축물대장관리',                      NULL,   'hwp', 'LAW', 'law-building-ledger',   'E', 36, 'Y', 63, 'system'),
+    ('tmpl_admin-production-ledger','생산대장관리',                        NULL,   'hwp', 'LAW', 'law-production-ledger', 'D', 36, 'Y', 64, 'system'),
+    ('tmpl_admin-license-manage',   '영업등록증관리',                      NULL,   'hwp', 'LAW', 'law-business-license',  'E', 36, 'Y', 65, 'system'),
+    ('tmpl_admin-self-test', '자가품질검사관리',                    NULL,   'hwp', 'LAW', 'law-self-quality-test', 'M', 36, 'Y', 66, 'system'),
+    ('tmpl_admin-cert-manage',      '수료증관리',                          NULL,   'hwp', 'LAW', 'law-completion-cert',   'E', 36, 'Y', 67, 'system'),
     ('tmpl_prp-calib-temp','자체 검·교정 일지(온도계)',           '16-1', 'hwp', 'FAC', NULL,         'Y', 24, 'Y', 17, 'system'),
     ('tmpl_prp-calib-weight', '자체 검·교정 일지(저울·표준분동)',    '16-2', 'hwp', 'FAC', NULL,         'Y', 24, 'Y', 18, 'system'),
     ('tmpl_prp-calib-scale', '자체 검·교정 일지(저울·표준저울)',    '16-3', 'hwp', 'FAC', NULL,         'Y', 24, 'Y', 19, 'system'),
-    ('tmpl_prp-equip-card',    '시설·설비 이력카드',                  '17',   'HWP', 'FAC', NULL,         'E', 36, 'Y', 20, 'system'),
-    ('tmpl_prp-test-product',     '제품검사 성적서',                     '21',   'HWP', 'VER', 'test-product-report', 'M', 24, 'Y', 24, 'system'),
-    ('tmpl_prp-test-surface',  '표면오염도 검사 성적서',              '22',   'HWP', 'VER', 'test-surface-report', 'M', 24, 'Y', 25, 'system'),
-    ('tmpl_admin-bad-product',   '부적합제품 관리 점검표',              '23',   'HWP', 'DOC', NULL,         'E', 24, 'Y', 26, 'system'),
-    ('tmpl_admin-claim-log',         '클레임 관리 일지',                    '25',   'HWP', 'DOC', NULL,         'E', 24, 'Y', 28, 'system'),
-    ('tmpl_logis-vehicle-log',   '차량운행일지',                        '27',   'HWP', 'FAC', NULL,         'E', 24, 'Y', 30, 'system'),
+    ('tmpl_prp-equip-card',    '시설·설비 이력카드',                  '17',   'hwp', 'FAC', NULL,         'E', 36, 'Y', 20, 'system'),
+    ('tmpl_prp-test-product',     '제품검사 성적서',                     '21',   'hwp', 'VER', 'test-product-report', 'M', 24, 'Y', 24, 'system'),
+    ('tmpl_prp-test-surface',  '표면오염도 검사 성적서',              '22',   'hwp', 'VER', 'test-surface-report', 'M', 24, 'Y', 25, 'system'),
+    ('tmpl_admin-bad-product',   '부적합제품 관리 점검표',              '23',   'hwp', 'DOC', NULL,         'E', 24, 'Y', 26, 'system'),
+    ('tmpl_admin-claim-log',         '클레임 관리 일지',                    '25',   'hwp', 'DOC', NULL,         'E', 24, 'Y', 28, 'system'),
+    ('tmpl_logis-vehicle-log',   '차량운행일지',                        '27',   'hwp', 'FAC', NULL,         'E', 24, 'Y', 30, 'system'),
 
     -- [카탈로그 등록 12종] 표준기준서에는 있으나 이번 범위에서 화면을 만들지 않는다(impl_yn=N)
-    ('HAZARD_ANAL',   '위해요소 분석표',                     NULL,   'HWP', 'DOC', NULL,         'Y', 36, 'N', 41, 'system'),
-    ('CCP_DECIDE',    'CCP 결정도',                          NULL,   'HWP', 'DOC', NULL,         'Y', 36, 'N', 42, 'system'),
-    ('CCP_PLAN',      'CCP 관리계획표',                      NULL,   'HWP', 'DOC', NULL,         'Y', 36, 'N', 43, 'system'),
-    ('FLOW_CHART',    '공정흐름도',                          NULL,   'HWP', 'DOC', NULL,         'Y', 36, 'N', 44, 'system'),
-    ('LAYOUT',        '작업장 평면도',                       NULL,   'HWP', 'DOC', NULL,         'Y', 36, 'N', 45, 'system'),
-    ('PRODUCT_SPEC',  '제품설명서',                          NULL,   'HWP', 'DOC', NULL,         'Y', 36, 'N', 46, 'system'),
-    ('RAW_SPEC',      '원·부재료 설명서',                    NULL,   'HWP', 'DOC', NULL,         'Y', 36, 'N', 47, 'system'),
-    ('PRE_REQ',       '선행요건 관리기준서',                 NULL,   'HWP', 'DOC', NULL,         'Y', 36, 'N', 48, 'system'),
-    ('SUPPLIER_EVAL', '공급업체 평가표',                     NULL,   'HWP', 'VER', NULL,         'Y', 36, 'N', 49, 'system'),
-    ('TRACE_DRILL',   '추적성 모의훈련 기록',                NULL,   'HWP', 'VER', NULL,         'Y', 36, 'N', 50, 'system'),
-    ('INTERNAL_AUDIT','내부심사 계획 및 결과',               NULL,   'HWP', 'VER', NULL,         'Y', 36, 'N', 51, 'system'),
-    ('ALLERGEN',      '알레르기 유발물질 관리',              NULL,   'HWP', 'HYG', NULL,         'Y', 36, 'N', 52, 'system')
+    ('HAZARD_ANAL',   '위해요소 분석표',                     NULL,   'hwp', 'DOC', NULL,         'Y', 36, 'N', 41, 'system'),
+    ('CCP_DECIDE',    'CCP 결정도',                          NULL,   'hwp', 'DOC', NULL,         'Y', 36, 'N', 42, 'system'),
+    ('CCP_PLAN',      'CCP 관리계획표',                      NULL,   'hwp', 'DOC', NULL,         'Y', 36, 'N', 43, 'system'),
+    ('FLOW_CHART',    '공정흐름도',                          NULL,   'hwp', 'DOC', NULL,         'Y', 36, 'N', 44, 'system'),
+    ('LAYOUT',        '작업장 평면도',                       NULL,   'hwp', 'DOC', NULL,         'Y', 36, 'N', 45, 'system'),
+    ('PRODUCT_SPEC',  '제품설명서',                          NULL,   'hwp', 'DOC', NULL,         'Y', 36, 'N', 46, 'system'),
+    ('RAW_SPEC',      '원·부재료 설명서',                    NULL,   'hwp', 'DOC', NULL,         'Y', 36, 'N', 47, 'system'),
+    ('PRE_REQ',       '선행요건 관리기준서',                 NULL,   'hwp', 'DOC', NULL,         'Y', 36, 'N', 48, 'system'),
+    ('SUPPLIER_EVAL', '공급업체 평가표',                     NULL,   'hwp', 'VER', NULL,         'Y', 36, 'N', 49, 'system'),
+    ('TRACE_DRILL',   '추적성 모의훈련 기록',                NULL,   'hwp', 'VER', NULL,         'Y', 36, 'N', 50, 'system'),
+    ('INTERNAL_AUDIT','내부심사 계획 및 결과',               NULL,   'hwp', 'VER', NULL,         'Y', 36, 'N', 51, 'system'),
+    ('ALLERGEN',      '알레르기 유발물질 관리',              NULL,   'hwp', 'HYG', NULL,         'Y', 36, 'N', 52, 'system')
 ON CONFLICT (tmpl_cd) DO UPDATE SET
     tmpl_nm     = EXCLUDED.tmpl_nm,
     mng_no      = EXCLUDED.mng_no,
@@ -89,11 +89,13 @@ ON CONFLICT (tmpl_cd) DO UPDATE SET
     upd_id      = 'system',
     upd_dt      = now();
 
--- 구현 양식 30종의 원본 HWP 상대 경로 — APP_FILE_ROOT/_template/{tmpl_cd}.hwp 에 읽기 전용으로 배치한다
--- 카탈로그 전용 12종은 원본이 없으므로 NULL을 유지한다
+-- hwp 양식의 원본 상대 경로 — APP_FILE_ROOT/HaccpTemplates/{tmpl_cd}/{파일명}
+-- 파일명 기본은 {tmpl_cd}.hwp 이고, 46 이 실제 한글 파일명으로 덮어쓴다
+-- html 양식(전용 화면 + DB 저장)과 카탈로그 전용 12종은 물리 원본이 없으므로 NULL을 유지한다
 UPDATE tbl_template
    SET form_path = CASE
-                       WHEN impl_yn = 'Y' THEN '_template/' || tmpl_cd || '.hwp'
+                       WHEN doc_kind = 'hwp' AND impl_yn = 'Y'
+                            THEN 'HaccpTemplates/' || tmpl_cd || '/' || tmpl_cd || '.hwp'
                        ELSE NULL
                    END,
        upd_id = 'system',

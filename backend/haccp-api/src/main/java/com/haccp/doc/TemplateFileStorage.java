@@ -4,9 +4,9 @@
  * 개발자: 박승우
  * 일자: 2026-08-10
  * 코멘트:
- *   1) APP_FILE_ROOT/{templateDirectory} 아래만 읽고 쓰며 문서 첨부 트리와 경계를 둔다
+ *   1) APP_FILE_ROOT/{표준루트}·{자사루트} 아래만 읽고 쓰며 작성 문서(HaccpLogBooks) 트리와 경계를 둔다
  *   2) 덮어쓰기·신규 생성·자사 하위폴더를 지원한다 — 나중에 S3로 교체해도 동일 메서드 계약을 유지한다
- *   3) 디렉터리명은 app.template.directory 로만 바꾸며 코드에 _template 문자열을 흩뿌리지 않는다
+ *   3) 디렉터리명은 app.template.standard-directory·custom-directory 로만 바꾼다
  *
  * PIPELINE[HB89] 템플릿 파일 저장
  * PIPELINE[HB88, HB90] 연관 모듈
@@ -47,32 +47,54 @@ public class TemplateFileStorage {
 
     // APP_FILE_ROOT 정규화 경로
     private final Path appFileRoot;
-    // 템플릿 전용 하위 폴더명 — 기본 _template (설정으로만 변경)
-    private final String templateDirectory;
-    // APP_FILE_ROOT/{templateDirectory}
-    private final Path templateRoot;
+    // 전 회사 공통 표준 양식 폴더명 — app.template.standard-directory
+    private final String standardDirectory;
+    // 회사별 자사 커스텀 양식 폴더명 — app.template.custom-directory
+    private final String customDirectory;
+    // APP_FILE_ROOT/{standardDirectory}
+    private final Path standardRoot;
+    // APP_FILE_ROOT/{customDirectory}
+    private final Path customRoot;
     // 업로드 허용 바이트 상한 — app.file.max-bytes
     private final long maxBytes;
 
     public TemplateFileStorage(
             // 문서·첨부·템플릿이 함께 쓰는 운영 볼륨 루트
             @Value("${app.file.root}") String appFileRoot,
-            // 템플릿 공간 디렉터리명 — 기본 _template
-            @Value("${app.template.directory:_template}") String templateDirectory,
+            // 표준 양식 루트 폴더명 — 전 회사 공통 1벌
+            @Value("${app.template.standard-directory}") String standardDirectory,
+            // 자사 양식 루트 폴더명 — 회사코드 하위로만 쓴다
+            @Value("${app.template.custom-directory}") String customDirectory,
             // 운영 파일 크기 한도
             @Value("${app.file.max-bytes}") long maxBytes
     ) {
         this.appFileRoot = Path.of(appFileRoot).toAbsolutePath().normalize();
-        this.templateDirectory = (templateDirectory == null || templateDirectory.isBlank())
-                ? "_template"
-                : templateDirectory.trim().replace('\\', '/');
-        this.templateRoot = this.appFileRoot.resolve(this.templateDirectory).normalize();
+        this.standardDirectory = TemplateFileNames.segment(standardDirectory);
+        this.customDirectory = TemplateFileNames.segment(customDirectory);
+        this.standardRoot = this.appFileRoot.resolve(this.standardDirectory).normalize();
+        this.customRoot = this.appFileRoot.resolve(this.customDirectory).normalize();
         this.maxBytes = maxBytes;
     }
 
-    /** 설정상 템플릿 디렉터리명 — form_path 조립에 재사용 */
-    public String templateDirectory() {
-        return templateDirectory;
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-13
+     * 코멘트:
+     *   1) 표준·자사 루트 이름을 알고 있는 이 저장소가 상대 form_path를 조립한다
+     *   2) 표준 배포·자사 업로드가 볼륨에 쓰기 직전에 호출한다
+     *   3) coCd가 공백일 때(= 전 회사 공통 표준) 표준 루트, 값이 있으면 자사 루트
+     */
+    public String formPath(
+            // 회사코드 — 공백이면 표준 양식
+            String coCd,
+            // 양식코드 tmpl_cd — 타입 폴더
+            String tmplCd,
+            // safeTemplateFileName으로 정규화한 파일명
+            String safeFileName
+    ) {
+        return TemplateFileNames.relativeFormPath(
+                standardDirectory, customDirectory, coCd, tmplCd, safeFileName
+        );
     }
 
     /**
@@ -84,7 +106,7 @@ public class TemplateFileStorage {
      *   3) 절대경로·상위 이동·심볼릭 링크 이탈·누락은 업무 오류로 차단한다
      */
     public Path read(
-            // DB가 반환한 내부 상대 경로 — 반드시 {templateDirectory}/ 로 시작
+            // DB가 반환한 내부 상대 경로 — 표준·자사 루트 중 하나로 시작
             String formPath
     ) {
         Path target = resolveInsideTemplate(formPath, false);
@@ -93,9 +115,10 @@ public class TemplateFileStorage {
             throw new NotFoundException(FORM_NOT_UPLOADED);
         }
         try {
-            Path realTemplateRoot = templateRoot.toRealPath();
             Path realTarget = target.toRealPath();
-            if (!realTarget.startsWith(realTemplateRoot)) {
+            // 심볼릭 링크로 루트 밖을 가리킬 때(= 링크 이탈) 차단 — 실경로로 다시 확인한다
+            if (!startsWithRealRoot(realTarget, standardRoot)
+                    && !startsWithRealRoot(realTarget, customRoot)) {
                 throw new BizException("허용되지 않은 템플릿 경로입니다.");
             }
             return realTarget;
@@ -104,24 +127,37 @@ public class TemplateFileStorage {
         }
     }
 
+    /** 실경로 비교 — 루트 폴더가 아직 없을 때(= 해당 루트에 업로드 이력 없음) false */
+    private boolean startsWithRealRoot(Path realTarget, Path root) {
+        try {
+            return realTarget.startsWith(root.toRealPath());
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
     /**
      * 개발자: 박승우
      * 일자: 2026-08-06
      * 코멘트:
      *   1) 기존 form_path 위치에 HWP/HWPX 바이트를 덮어쓴다
-     *   2) 표준 양식 수정 저장 시 호출한다
-     *   3) 확장자·크기·루트 이탈이 있으면 쓰기 전에 차단한다
+     *   2) 표준 양식 수정 저장·원본 부재 후 로컬열기 저장에서 호출한다
+     *   3) 경로만 있고 실물이 없을 때(= 볼륨 미시드) 상위 폴더를 만들고 신규로 쓴다
      */
     public Path write(
-            // DB form_path — 이미 존재하는 파일만
+            // DB form_path — 표준·자사 루트 안이면 실물 유무와 상관없이 이 위치에 쓴다
             String formPath,
             // 브라우저가 올린 수정본
             MultipartFile file
     ) {
         validateUpload(file);
-        Path target = read(formPath);
-        try (InputStream input = file.getInputStream()) {
-            Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
+        // 실물이 없어도 같은 경로에 저장해야 한다 — 없으면 create 와 같다
+        Path target = resolveInsideTemplate(formPath, true);
+        try {
+            Files.createDirectories(target.getParent());
+            try (InputStream input = file.getInputStream()) {
+                Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
+            }
             return target;
         } catch (IOException e) {
             throw new BizException("템플릿 원본 파일을 저장하지 못했습니다.");
@@ -133,11 +169,11 @@ public class TemplateFileStorage {
      * 일자: 2026-08-10
      * 코멘트:
      *   1) 아직 없는 form_path에 신규 파일을 만든다 (자사 업로드·배포 초기화)
-     *   2) 상위 디렉터리(_template/{coCd})를 필요 시 생성한다
+     *   2) 상위 디렉터리({자사루트}/{coCd}/{tmplCd})를 필요 시 생성한다
      *   3) 성공 시 실제 Path — DB에는 상대 formPath를 그대로 저장한다
      */
     public Path create(
-            // 저장할 상대 경로 — {templateDirectory}/... 또는 {templateDirectory}/{coCd}/...
+            // 저장할 상대 경로 — formPath()가 만든 {표준루트}/{tmplCd}/... 또는 {자사루트}/{coCd}/{tmplCd}/...
             String formPath,
             // 업로드 바이트
             MultipartFile file
@@ -201,17 +237,15 @@ public class TemplateFileStorage {
     }
 
     /**
-     * form_path를 템플릿 루트 안 Path로 해석한다.
-     * allowMissingParent=true이면(= 신규 생성) 파일 존재 여부는 검사하지 않는다.
+     * form_path를 표준·자사 템플릿 루트 안 Path로 해석한다.
+     * allowCreate=true이면(= 신규 생성) 파일 존재 여부는 검사하지 않는다.
      */
     private Path resolveInsideTemplate(String formPath, boolean allowCreate) {
         Path declaredPath = parseDeclaredPath(formPath);
         Path target = appFileRoot.resolve(declaredPath).normalize();
-        if (!target.startsWith(templateRoot)) {
+        // 정규화 후에도 두 루트 밖일 때(= ../ 경로 조작) 차단
+        if (!target.startsWith(standardRoot) && !target.startsWith(customRoot)) {
             throw new BizException("허용되지 않은 템플릿 경로입니다.");
-        }
-        if (!allowCreate && !Files.exists(target)) {
-            // 존재 검사는 read에서 다시 한다 — 여기서는 경로만
         }
         return target;
     }
@@ -226,9 +260,11 @@ public class TemplateFileStorage {
         } catch (RuntimeException e) {
             throw new BizException("템플릿 경로가 올바르지 않습니다.");
         }
+        // 첫 세그먼트가 표준·자사 루트가 아닐 때(= 문서 볼륨·절대경로) 차단
+        String first = declaredPath.getNameCount() == 0 ? "" : declaredPath.getName(0).toString();
         if (declaredPath.isAbsolute()
                 || declaredPath.getNameCount() < 2
-                || !templateDirectory.equals(declaredPath.getName(0).toString())) {
+                || !(standardDirectory.equals(first) || customDirectory.equals(first))) {
             throw new BizException("허용되지 않은 템플릿 경로입니다.");
         }
         return declaredPath;

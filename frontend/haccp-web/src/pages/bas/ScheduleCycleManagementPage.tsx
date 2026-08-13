@@ -44,6 +44,8 @@ import {
   type ScheduleRule,
 } from "@/api/workflowApi";
 import { SCHEDULE_CYCLE_GRID_RULES } from "./ScheduleCycleManagementPage.rules";
+// 역할 — 양식 유형(hwp/html) 정규화·판별 — DB 정본은 소문자
+import { DOC_KIND_HWP, isHwpKind, toDocKind } from "@/lib/docKind";
 
 const CYCLE_OPTIONS = [
   { value: "D", label: "일" },
@@ -88,12 +90,6 @@ function toUiSys(v?: string | null): string {
   if (s === "usr" || s === "n") return "usr";
   return "sys";
 }
-function toUiTy(v?: string | null): string {
-  const s = String(v ?? "").toLowerCase();
-  if (s === "hwp" || s === "hwpx") return "hwp";
-  if (s === "html" || s === "db") return "html";
-  return s || "hwp";
-}
 function toUiUse(v?: string | null): string {
   const s = String(v ?? "y").toLowerCase();
   return s === "n" ? "n" : "y";
@@ -118,7 +114,8 @@ function mapDoc(form: CompanyTemplate): DocRow {
   return {
     ...form,
     sysYn: toUiSys(form.sysYn),
-    docKind: toUiTy(form.docKind),
+    // 유형 미지정 행(= 신규 자사 양식)은 한글형으로 본다
+    docKind: toDocKind(form.docKind) || DOC_KIND_HWP,
     useYn: toUiUse(form.useYn),
   };
 }
@@ -185,7 +182,7 @@ export default function ScheduleCycleManagementPage() {
   // 추가 가능 — 미사용 + hwp 타입만
   const unusedOptions = useMemo(
     () => allTemplates
-      .filter((form) => toUiUse(form.useYn) !== "y" && toUiTy(form.docKind) === "hwp")
+      .filter((form) => toUiUse(form.useYn) !== "y" && isHwpKind(form.docKind))
       .map((form) => ({ value: form.tmplCd, label: form.tmplNm ?? form.tmplCd })),
     [allTemplates],
   );

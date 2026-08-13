@@ -490,7 +490,7 @@ BEGIN
             retention_until, del_yn, ins_id, ins_dt
         )
         VALUES (
-            p_co_cd, 'tmpl_ccp-cold-log', 'DB', v_doc_no, p_base_dt, v_title, 'WRK',
+            p_co_cd, 'tmpl_ccp-cold-log', 'html', v_doc_no, p_base_dt, v_title, 'WRK',
             v_appr, p_id, now(), 1,
             to_char(
                 (to_date(p_base_dt, 'YYYYMMDD') + (COALESCE(v_retain_m, 24) || ' months')::interval)::date,
@@ -736,7 +736,7 @@ BEGIN
         RAISE EXCEPTION '점검 행이 없습니다.' USING ERRCODE = '45000';
     END IF;
     SELECT coalesce(nullif(t.tmpl_nm, ''), '공통 CCP 모니터링') INTO v_title
-      FROM tbl_template t WHERE t.tmpl_cd = p_tmpl_cd AND t.doc_kind = 'DB' AND t.use_yn = 'Y';
+      FROM tbl_template t WHERE t.tmpl_cd = p_tmpl_cd AND t.doc_kind = 'html' AND t.use_yn = 'Y';
     IF v_title IS NULL THEN
         RAISE EXCEPTION '사용할 공통 CCP 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000';
     END IF;
@@ -746,7 +746,7 @@ BEGIN
         INSERT INTO tbl_document (
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status, writer_id, form_src, ins_id
         ) VALUES (
-            p_co_cd, p_tmpl_cd, 'DB', v_doc_no, p_base_dt, v_title, 'WRK', p_id, 'BASE', p_id
+            p_co_cd, p_tmpl_cd, 'html', v_doc_no, p_base_dt, v_title, 'WRK', p_id, 'BASE', p_id
         ) RETURNING idx INTO v_doc_idx;
         INSERT INTO tbl_ccp_generic_monitor (
             co_cd, doc_idx, base_dt, tmpl_cd, ccp_cd, diary_no, limit_item_kind, mng_user_id, mng_nm, ins_id

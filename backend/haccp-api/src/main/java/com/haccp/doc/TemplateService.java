@@ -46,7 +46,7 @@ public class TemplateService {
 
     // 회사 사용 템플릿을 저장프로시저로 조회하는 경계
     private final DocumentMapper mapper;
-    // APP_FILE_ROOT/_template 밖 접근을 차단하는 원본 파일 저장소
+    // APP_FILE_ROOT 의 표준·자사 양식 루트 밖 접근을 차단하는 원본 파일 저장소
     private final TemplateFileStorage storage;
 
     /**
@@ -129,7 +129,8 @@ public class TemplateService {
             }
             String coCd = LoginUserContext.coCd();
             String safeName = TemplateFileNames.safeTemplateFileName(file.getOriginalFilename());
-            formPath = TemplateFileNames.relativeFormPath(storage.templateDirectory(), coCd, safeName);
+            // 자사 최초 업로드 — CustomTemplates/{회사코드}/{양식코드}/{파일명}
+            formPath = storage.formPath(coCd, template.getTmplCd(), safeName);
             storage.create(formPath, file);
             mapper.updateCompanyTemplateFormPath(coCd, template.getTmplCd(), formPath, LoginUserContext.userId());
             return;

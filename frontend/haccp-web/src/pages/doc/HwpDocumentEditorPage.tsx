@@ -85,6 +85,8 @@ import { cn } from "@/lib/cn";
 import { fromInputDate, toInputDate, todayYmd } from "@/lib/docDateTime";
 // 역할 — DB형과 동일 draft·목록 세션
 import { useDocFormSession, type DocListMeta } from "@/hooks/useDocFormSession";
+// 역할 — 양식 유형(hwp) 판별 — DB 정본은 소문자 hwp/html
+import { isHwpKind } from "@/lib/docKind";
 
 /** 바이트 단위를 첨부 목록용 텍스트로 바꾼다 */
 function fileSize(size?: number | null): string {
@@ -412,7 +414,7 @@ export default function HwpDocumentEditorPage({
       const rows = await listDocumentTemplates();
       let next = rows.filter(
         (row) =>
-          row.docKind === "HWP"
+          isHwpKind(row.docKind)
           && row.categoryCd !== "LAW"
           && !String(row.tmplCd || "").startsWith("LAW_"),
       );
@@ -453,7 +455,7 @@ export default function HwpDocumentEditorPage({
         keyword: q.docNo.trim() || undefined,
         writerId: q.writer.trim() || undefined,
       });
-      const hwpOnly = server.filter((row) => row.docKind === "HWP" && row.tmplCd === filterTmpl);
+      const hwpOnly = server.filter((row) => isHwpKind(row.docKind) && row.tmplCd === filterTmpl);
       replaceServerList(
         hwpOnly.map((row: DocumentListRow) => ({
           docIdx: row.docIdx,
@@ -515,7 +517,7 @@ export default function HwpDocumentEditorPage({
           fromDt: baseDt,
           toDt: baseDt,
         }))
-          .filter((row) => row.docKind === "HWP" && row.tmplCd === tmplCd && row.baseDt === baseDt)
+          .filter((row) => isHwpKind(row.docKind) && row.tmplCd === tmplCd && row.baseDt === baseDt)
           .sort((a, b) => a.docIdx - b.docIdx);
         const peerIdx = peers.findIndex((row) => row.docIdx === saved.docIdx);
         seq = peerIdx >= 0 ? peerIdx + 1 : peers.length + 1;
@@ -563,7 +565,7 @@ export default function HwpDocumentEditorPage({
       mesToast("상신 전(작성중·반려) 문서만 불러와 수정할 수 있습니다.", "warn");
       return false;
     }
-    if (next.header.docKind !== "HWP") {
+    if (!isHwpKind(next.header.docKind)) {
       mesToast("HWP 문서만 이 화면에서 열 수 있습니다.", "warn");
       return false;
     }
@@ -871,7 +873,7 @@ export default function HwpDocumentEditorPage({
         tmplCd: fixedTmplCd,
         fromDt: nextBaseDt,
         toDt: nextBaseDt,
-      })).filter((row) => row.docKind === "HWP" && row.tmplCd === fixedTmplCd && row.baseDt === nextBaseDt)
+      })).filter((row) => isHwpKind(row.docKind) && row.tmplCd === fixedTmplCd && row.baseDt === nextBaseDt)
         .sort((a, b) => a.docIdx - b.docIdx);
       // 해당 일자 문서가 있을 때(= 기존 작성분 열기)
       if (peers.length > 0) {

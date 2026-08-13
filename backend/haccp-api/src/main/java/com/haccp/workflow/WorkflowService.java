@@ -153,7 +153,7 @@ public class WorkflowService {
      * 개발자: 박승우
      * 일자: 2026-08-10
      * 코멘트:
-     *   1) 업로드 HWP를 _template/{coCd}/{한글파일명}에 두고 company_template(sys_yn=N)에 연결한다
+     *   1) 업로드 HWP를 CustomTemplates/{coCd}/{tmplCd}/{한글파일명}에 두고 company_template(sys_yn=N)에 연결한다
      *   2) 사용양식관리 「신규」업로드가 호출한다 — 파일명은 원본 한글명을 쓰고 번호 접두만 제거한다
      *   3) 성공 시 저장된 상대 form_path — DB에는 경로만, 바이너리는 볼륨
      */
@@ -172,9 +172,8 @@ public class WorkflowService {
         }
         String coCd = LoginUserContext.coCd();
         String safeName = TemplateFileNames.safeTemplateFileName(file.getOriginalFilename());
-        String formPath = TemplateFileNames.relativeFormPath(
-                templateFileStorage.templateDirectory(), coCd, safeName
-        );
+        // 자사 커스텀 양식 — CustomTemplates/{회사코드}/{양식코드}/{파일명}
+        String formPath = templateFileStorage.formPath(coCd, code, safeName);
         // 볼륨에 먼저 쓰고 DB 메타를 맞춘다 — 실패 시 트랜잭션 롤백(고아 파일은 운영 정리)
         templateFileStorage.create(formPath, file);
         mapper.createCompanyTemplateCustom(
@@ -408,13 +407,14 @@ public class WorkflowService {
      * 일자: 2026-08-06
      * 코멘트:
      *   1) 현재 회사의 사용양식·점검항목 오버라이드를 JSON 패키지로 이력에 저장한다
-     *   2) DB/HWP 설정 화면의 내보내기 버튼이 packNm·docKind로 호출한다
+     *   2) html/hwp 설정 화면의 내보내기 버튼이 packNm·docKind로 호출한다
      *   3) 동일 트랜잭션에서 스냅샷을 만들고 이력 idx를 반환한다
      */
     @Transactional
     public Long exportTemplateHist(Map<String, Object> body) {
         String packNm = requireText(body, "packNm", "패키지명을 입력하세요.");
-        String docKind = requireText(body, "docKind", "문서 유형(DB/HWP)을 선택하세요.").toUpperCase();
+        // docKind 정본은 소문자 hwp/html — 이력·payload 모두 소문자로 남긴다
+        String docKind = requireText(body, "docKind", "문서 유형(html/hwp)을 선택하세요.").toLowerCase();
         String remk = text(body == null ? null : body.get("remk"));
         String coCd = LoginUserContext.coCd();
 
@@ -473,10 +473,11 @@ public class WorkflowService {
         }
         String source = text(body.get("source")).toUpperCase();
         Long histIdx = longValue(body.get("histIdx"));
-        String docKindFilter = text(body.get("docKind")).toUpperCase();
+        // 복원 범위 유형 — 정본 소문자, 미지정이면 DB 입력형(html)
+        String docKindFilter = text(body.get("docKind")).toLowerCase();
 
         if ("SERVER".equals(source)) {
-            restoreServerOverlays(docKindFilter.isBlank() ? "DB" : docKindFilter);
+            restoreServerOverlays(docKindFilter.isBlank() ? "html" : docKindFilter);
             return;
         }
         if (histIdx == null) {

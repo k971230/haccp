@@ -73,6 +73,8 @@ import { MES } from "@/shell/messages";
 // 역할 — 그리드·편집 행 타입
 import type { GridColumn } from "@/types/grid";
 import type { EditableRow } from "@/types/editable";
+// 역할 — 양식 유형 정본 상수(소문자 hwp) — 법적서류는 항상 HWP 업로드형
+import { DOC_KIND_HWP } from "@/lib/docKind";
 
 /** 화면코드 — 권한 조회 키 */
 const SCREEN_CODE = "legal-document-upload";
@@ -311,7 +313,7 @@ export default function LegalDocumentUploadPage({
     const key = tmpls.addRow({
       tmplCd: "",
       tmplNm: "",
-      docKind: "HWP",
+      docKind: DOC_KIND_HWP,
       categoryCd: "LAW",
       sysYn: "N",
       formFileNm: "",
@@ -439,7 +441,7 @@ export default function LegalDocumentUploadPage({
       docIdx: null as unknown as number,
       tmplCd: selectedTmpl.tmplCd,
       tmplNm: selectedTmpl.tmplNm,
-      docKind: "HWP",
+      docKind: DOC_KIND_HWP,
       docNo: "",
       baseDt: todayYmd(),
       title: "",

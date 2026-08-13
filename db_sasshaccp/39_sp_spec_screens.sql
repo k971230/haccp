@@ -725,7 +725,7 @@ BEGIN
         RAISE EXCEPTION '점검 행이 없습니다.' USING ERRCODE = '45000';
     END IF;
     SELECT coalesce(nullif(t.tmpl_nm, ''), '공통 CCP 모니터링') INTO v_title
-      FROM tbl_template t WHERE t.tmpl_cd = p_tmpl_cd AND t.doc_kind = 'DB' AND t.use_yn = 'Y';
+      FROM tbl_template t WHERE t.tmpl_cd = p_tmpl_cd AND t.doc_kind = 'html' AND t.use_yn = 'Y';
     IF v_title IS NULL THEN
         RAISE EXCEPTION '사용할 공통 CCP 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000';
     END IF;
