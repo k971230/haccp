@@ -36,8 +36,8 @@ export interface ApprovalLine {
 export interface CompanyTemplate {
   tmplCd: string;
   tmplNm: string;
-  // 문서 유형 — DB: HTML 일지, HWP: rhwp 문서
-  docKind?: "DB" | "HWP" | string;
+  // 문서 유형 — html: 전용 HTML 일지, hwp: rhwp 문서작성형 (DB 정본은 소문자)
+  docKind?: "hwp" | "html" | string;
   apprLineCd?: string | null;
   cycleCd?: string | null;
   retentionMonth?: number | null;

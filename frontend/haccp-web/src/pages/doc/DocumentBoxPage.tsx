@@ -69,6 +69,8 @@ import { useCommonCodes } from "@/hooks/useCommonCodes";
 import { DocumentApprovalToolbar } from "@/components/document/DocumentApprovalToolbar";
 // 역할 — Blob URL 해제 대기 — 파일 API 타임아웃과 동일
 import { API_TIMEOUT_FILE_MS } from "@/config/envConfig";
+// 역할 — 양식 유형(hwp/html) 정규화·라벨 — DB 정본은 소문자
+import { DOC_KIND_HTML, DOC_KIND_HWP, docKindLabel, isHwpKind, toDocKind } from "@/lib/docKind";
 
 /** byte → 사람이 읽는 크기 */
 function fileSize(size?: number | null): string {
@@ -76,11 +78,11 @@ function fileSize(size?: number | null): string {
   return `${(size / 1024).toFixed(1)} KB`;
 }
 
-/** 양식 타입 라벨 */
+/** 양식 타입 라벨 — value는 DB 정본 소문자(hwp/html) */
 const DOC_KIND_OPTIONS = [
   { value: "", label: "전체" },
-  { value: "DB", label: "DB형" },
-  { value: "HWP", label: "한글형" },
+  { value: DOC_KIND_HTML, label: "DB형" },
+  { value: DOC_KIND_HWP, label: "한글형" },
 ] as const;
 
 /** 문서함 / 결재함 / 결재이력 */
@@ -181,7 +183,7 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
       ...row,
       _key: String(row.docIdx),
       statusNm: statusLabel(row.status, row.status),
-      docKindNm: row.docKind === "HWP" ? "한글형" : row.docKind === "DB" ? "DB형" : (row.docKind || ""),
+      docKindNm: docKindLabel(row.docKind),
       writerDisp: row.writerNm || row.writerId || "",
     })),
     [rows, statusLabel],
@@ -237,7 +239,7 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
         });
       }
       let next = list;
-      if (boxMode === "inbox" && kind) next = next.filter((row) => row.docKind === kind);
+      if (boxMode === "inbox" && kind) next = next.filter((row) => toDocKind(row.docKind) === kind);
       setRows(next);
       setSelKeys([]);
       setSelReset((n) => n + 1);
@@ -346,7 +348,7 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
         mesToast(MES.selectRow, "warn");
         return;
       }
-      const nonHwp = focus.find((row) => row.docKind !== "HWP");
+      const nonHwp = focus.find((row) => !isHwpKind(row.docKind));
       if (nonHwp) {
         mesToast("DB형 문서는 해당 양식 화면에서 삭제하세요.", "warn");
         return;
@@ -503,7 +505,7 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
                   <div>
                     <h2 className="text-base font-semibold text-slate-800">{detail.header.title || detail.header.tmplNm}</h2>
                     <p className="mt-1 text-xs text-slate-500">
-                      {detail.header.docNo} · {detail.header.docKind === "HWP" ? "한글 문서형" : "DB 입력형"} · 작성자 {detail.header.writerNm || detail.header.writerId || "-"}
+                      {detail.header.docNo} · {isHwpKind(detail.header.docKind) ? "한글 문서형" : "DB 입력형"} · 작성자 {detail.header.writerNm || detail.header.writerId || "-"}
                     </p>
                   </div>
                   <span className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700">

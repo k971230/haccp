@@ -23,7 +23,7 @@ export interface DocumentListRow {
   docIdx: number;
   tmplCd: string;
   tmplNm: string;
-  docKind: "DB" | "HWP";
+  docKind: "hwp" | "html";
   docNo: string;
   baseDt: string;
   title?: string | null;
@@ -103,7 +103,7 @@ export interface HwpDocumentSaveResult {
 export interface DocumentTemplateRow {
   tmplCd: string;
   tmplNm: string;
-  docKind: "DB" | "HWP";
+  docKind: "hwp" | "html";
   categoryCd?: string | null;
   mngNo?: string | null;
   formUrl?: string | null;

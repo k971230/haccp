@@ -29,7 +29,7 @@ public class DocumentTemplateRow {
     private String categoryCd;
     // 표준 관리번호
     private String mngNo;
-    // APP_FILE_ROOT/_template 하위의 서버 전용 상대 경로
+    // APP_FILE_ROOT/HaccpTemplates·CustomTemplates 하위의 서버 전용 상대 경로
     private String formPath;
     // 다운로드 헤더·rhwp 적재에 쓸 원본 파일명
     private String formFileNm;

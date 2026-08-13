@@ -136,7 +136,7 @@ public interface WorkflowMapper {
     // STEP 20 / G-14: select/save/deleteSmartDiary* Mapper 제거 (XML·SP 호출 경로 폐기)
 
     // coCd: JWT 회사코드 — 타사 내보내기 이력이 섞이지 않도록 제한
-    // docKind: DB/HWP 필터 — 공백이면 전체 이력
+    // docKind: html/hwp 필터 — 공백이면 전체 이력
     // 성공 시 패키지명·종류·비고·등록일시 목록(payload 제외)
     List<Map<String, Object>> selectTemplateExportHist(@Param("coCd") String coCd, @Param("docKind") String docKind);
 

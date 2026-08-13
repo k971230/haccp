@@ -172,7 +172,8 @@ public class MasterService {
             throw new BizException("설비를 찾을 수 없습니다.");
         }
         String previous = existing.get("photoPath") == null ? "" : String.valueOf(existing.get("photoPath")).trim();
-        String path = fileStorage.save(coCd, file);
+        // 설비 사진은 양식(tmpl_cd)에 속하지 않으므로 타입 폴더 없이 일자 폴더까지만 쓴다
+        String path = fileStorage.save(coCd, "", file);
 
         MasterSaveItem item = new MasterSaveItem();
         item.setIdx(idx);

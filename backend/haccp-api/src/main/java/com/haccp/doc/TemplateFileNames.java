@@ -5,7 +5,7 @@
  * 일자: 2026-08-10
  * 코멘트:
  *   1) docs 원본의 번호 접두만 제거하고 한글 본명은 그대로 둔다 (임의 작명 금지)
- *   2) 경로 조작 문자를 치환해 _template 하위 저장에만 쓰이게 한다
+ *   2) 경로 조작 문자를 치환해 표준·자사 양식 루트 하위 저장에만 쓰이게 한다
  *   3) 나중에 오브젝트스토리지로 옮겨도 동일 규칙으로 키를 만든다
  *
  * PIPELINE[HB89] 템플릿 파일명
@@ -89,27 +89,63 @@ public final class TemplateFileNames {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-10
+     * 일자: 2026-08-13
      * 코멘트:
      *   1) APP_FILE_ROOT 기준 상대 form_path를 조립한다
-     *   2) 표준은 _template/{파일}, 자사는 _template/{coCd}/{파일}
-     *   3) 디렉터리명은 설정(app.template.directory)과 맞춘다
+     *   2) 표준은 {표준루트}/{tmplCd}/{파일}, 자사는 {자사루트}/{coCd}/{tmplCd}/{파일}
+     *   3) 회사명은 경로에 넣지 않는다 — 상호 변경 시 경로가 깨지므로 회사코드만 쓴다
      */
     public static String relativeFormPath(
-            // 템플릿 루트 디렉터리명 — 기본 _template
-            String templateDirectory,
-            // 회사코드 — null/공백이면 표준(공용) 경로
+            // 표준 양식 루트 디렉터리명 — app.template.standard-directory
+            String standardDirectory,
+            // 자사 양식 루트 디렉터리명 — app.template.custom-directory
+            String customDirectory,
+            // 회사코드 — null/공백일 때(= 전 회사 공통 표준 1벌) 표준 루트로 간다
             String coCd,
-            // 이미 정규화된 파일명
+            // 양식코드 tmpl_cd — 타입 폴더 세그먼트. 공백이면 세그먼트를 생략한다
+            String tmplCd,
+            // 이미 safeTemplateFileName으로 정규화된 파일명
             String safeFileName
     ) {
-        String dir = (templateDirectory == null || templateDirectory.isBlank())
-                ? "_template"
-                : templateDirectory.trim().replace('\\', '/');
+        String type = segment(tmplCd);
         String file = basename(safeFileName);
         if (coCd == null || coCd.isBlank()) {
-            return dir + "/" + file;
+            return join(segment(standardDirectory), type, file);
         }
-        return dir + "/" + coCd.trim() + "/" + file;
+        return join(segment(customDirectory), segment(coCd), type, file);
+    }
+
+    /**
+     * 경로 세그먼트 1개를 정규화한다 — 구분자·상위 이동 문자를 없애 루트 이탈을 막는다.
+     * 공백일 때(= 선택 세그먼트 미지정) 빈 문자열을 돌려주고 join에서 빠진다.
+     */
+    public static String segment(
+            // 디렉터리명·회사코드·양식코드 등 한 단계 이름
+            String raw
+    ) {
+        if (raw == null) {
+            return "";
+        }
+        String value = raw.trim().replace('\\', '/');
+        int slash = value.lastIndexOf('/');
+        if (slash >= 0) {
+            value = value.substring(slash + 1);
+        }
+        return value.replace("..", "").trim();
+    }
+
+    /** 빈 세그먼트를 건너뛰고 / 로 잇는다 */
+    private static String join(String... segments) {
+        StringBuilder path = new StringBuilder();
+        for (String segment : segments) {
+            if (segment == null || segment.isBlank()) {
+                continue;
+            }
+            if (path.length() > 0) {
+                path.append('/');
+            }
+            path.append(segment);
+        }
+        return path.toString();
     }
 }

@@ -434,7 +434,8 @@ CREATE OR REPLACE PROCEDURE sp_tbl_document_d_000(
 LANGUAGE plpgsql AS $$
 DECLARE
     v_status varchar(3);
-    v_kind varchar(3);
+    -- doc_kind 는 varchar(10) — html(4자)이 잘리지 않게 폭을 맞춘다
+    v_kind varchar(10);
 BEGIN
     SELECT status, doc_kind INTO v_status, v_kind
       FROM tbl_document
@@ -446,8 +447,8 @@ BEGIN
     IF NOT FOUND THEN
         RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
-    -- DB형일 때(= 업무 헤더·상세가 연결됨) 전용 양식 삭제 SP로만 처리한다
-    IF v_kind <> 'HWP' THEN
+    -- DB형(html)일 때(= 업무 헤더·상세가 연결됨) 전용 양식 삭제 SP로만 처리한다
+    IF v_kind <> 'hwp' THEN
         RAISE EXCEPTION 'DB형 문서는 해당 양식 화면에서 삭제하세요.' USING ERRCODE = '45000';
     END IF;
     -- 임시·반려가 아닐 때(= 결재 흐름 또는 보존 대상) 삭제 차단
@@ -497,7 +498,8 @@ LANGUAGE plpgsql AS $$
 DECLARE
     v_idx bigint;
     v_tmpl_nm varchar(200);
-    v_doc_kind varchar(3);
+    -- doc_kind 는 varchar(10) — hwp/html 정본
+    v_doc_kind varchar(10);
     v_use_yn varchar(1);
     v_appr_line_cd varchar(20);
     v_retention_month int;
@@ -520,7 +522,7 @@ BEGIN
        AND t.impl_yn = 'Y'
        AND t.use_yn = 'Y';
 
-    IF NOT FOUND OR v_doc_kind <> 'HWP' OR v_use_yn <> 'Y' THEN
+    IF NOT FOUND OR v_doc_kind <> 'hwp' OR v_use_yn <> 'Y' THEN
         RAISE EXCEPTION '사용 가능한 문서형 양식이 아닙니다.' USING ERRCODE = '45000';
     END IF;
 
@@ -532,7 +534,7 @@ BEGIN
             ins_id, ins_dt
         )
         VALUES (
-            p_co_cd, p_tmpl_cd, 'HWP', v_doc_no, p_base_dt, NULLIF(p_base_dt_to, ''),
+            p_co_cd, p_tmpl_cd, 'hwp', v_doc_no, p_base_dt, NULLIF(p_base_dt_to, ''),
             COALESCE(NULLIF(trim(p_title), ''), v_tmpl_nm || ' (' || to_char(to_date(p_base_dt, 'YYYYMMDD'), 'YYYY-MM-DD') || ')'),
             'WRK', v_appr_line_cd, p_id, 1,
             to_char(to_date(p_base_dt, 'YYYYMMDD') + make_interval(months => v_retention_month), 'YYYYMMDD'),
@@ -544,7 +546,7 @@ BEGIN
           FROM tbl_document
          WHERE idx = p_doc_idx
            AND co_cd = p_co_cd
-           AND doc_kind = 'HWP'
+           AND doc_kind = 'hwp'
            AND writer_id = p_id
            AND status IN ('WRK', 'RJT')
            AND del_yn = 'N'

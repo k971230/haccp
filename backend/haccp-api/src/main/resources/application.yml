@@ -83,9 +83,14 @@ app:
     root: ${APP_FILE_ROOT:./data/haccp-files}
     # 파일 1건 최대 byte — multipart 설정과 같은 env에서 운영 통제
     max-bytes: ${APP_FILE_MAX_BYTES:20971520}
+  document:
+    # 작성 문서·첨부 볼륨 하위 루트 — HaccpLogBooks/{회사코드}/{일자}/{양식코드}
+    logbook-directory: ${APP_DOCUMENT_LOGBOOK_DIRECTORY:HaccpLogBooks}
   template:
-    # 템플릿 볼륨 하위 디렉터리명 — 기본 _template. S3 이전 전까지 경로 조립의 단일 출처
-    directory: ${APP_TEMPLATE_DIRECTORY:_template}
+    # 전 회사 공통 표준 양식 루트 — HaccpTemplates/{양식코드}/{파일명}
+    standard-directory: ${APP_TEMPLATE_STANDARD_DIRECTORY:HaccpTemplates}
+    # 회사별 자사 커스텀 양식 루트 — CustomTemplates/{회사코드}/{양식코드}/{파일명}
+    custom-directory: ${APP_TEMPLATE_CUSTOM_DIRECTORY:CustomTemplates}
     # classpath 또는 절대경로 매니페스트 TSV — 양식 추가 시 이 파일만 수정 (Java 하드코딩 금지)
     manifest: ${APP_TEMPLATE_MANIFEST:templates/manifest.tsv}
     # 배포 원본 HWP 디렉터리 — 비우면 초기화를 건너뛰고, 지정하면 시작 시 매니페스트대로 복사한다

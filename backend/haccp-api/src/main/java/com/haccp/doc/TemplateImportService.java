@@ -4,8 +4,8 @@
  * 개발자: 박승우
  * 일자: 2026-08-10
  * 코멘트:
- *   1) APP_TEMPLATE_IMPORT_ROOT의 매니페스트 원본만 APP_FILE_ROOT 템플릿 공간으로 복사한다
- *   2) TMPL_CD 하드코딩 목록 대신 templates/manifest.tsv를 읽어 확장한다
+ *   1) APP_TEMPLATE_IMPORT_ROOT의 매니페스트 원본만 APP_FILE_ROOT/HaccpTemplates/{tmpl_cd}로 복사한다
+ *   2) tmpl_cd 하드코딩 목록 대신 templates/manifest.tsv를 읽어 확장한다
  *   3) required=N 행(LAW 등)은 원본이 없으면 건너뛰고, required=Y 누락만 기동을 중단한다
  *
  * PIPELINE[HB92] 템플릿 배포 초기화
@@ -88,9 +88,8 @@ public class TemplateImportService implements ApplicationRunner {
                 skipped++;
                 continue;
             }
-            String formPath = TemplateFileNames.relativeFormPath(
-                    storage.templateDirectory(), null, entry.targetName()
-            );
+            // 표준 배포 — 회사코드 없이 HaccpTemplates/{tmpl_cd}/{대상파일명}
+            String formPath = storage.formPath(null, entry.tmplCd(), entry.targetName());
             boolean wrote = storage.copyFromPath(source, formPath, overwrite);
             if (wrote) {
                 imported++;

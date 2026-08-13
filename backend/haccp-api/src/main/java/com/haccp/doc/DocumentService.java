@@ -224,7 +224,7 @@ public class DocumentService {
         if ("HWP_SRC".equals(kind)) {
             replaceExistingHwpSrc(coCd, requiredDocIdx, userId, requestMeta);
         }
-        String path = storage.save(coCd, file);
+        String path = storage.save(coCd, documentTmplCd(coCd, requiredDocIdx), file);
         try {
             Long fileIdx = mapper.insertFile(
                     coCd,
@@ -549,7 +549,8 @@ public class DocumentService {
         assertDeletable(coCd, keys);
         for (DocumentDeleteItem key : keys) {
             Map<String, Object> header = camelMap(mapper.selectDocument(coCd, key.getDocIdx()));
-            if (!"HWP".equals(header.get("docKind"))) {
+            // docKind 정본은 소문자 hwp/html — 과거 대문자(HWP) 잔존값도 같게 본다
+            if (!"hwp".equalsIgnoreCase(String.valueOf(header.get("docKind")))) {
                 throw new BizException("DB형 문서는 해당 양식 화면에서 삭제하세요.");
             }
             List<DocumentFileRow> files = mapper.selectFiles(coCd, key.getDocIdx());
@@ -592,7 +593,7 @@ public class DocumentService {
         } catch (IOException e) {
             throw new BizException("변환된 PDF를 읽지 못했습니다.");
         }
-        String path = storage.saveFromPath(coCd, generatedPdf, pdfName);
+        String path = storage.saveFromPath(coCd, documentTmplCd(coCd, docIdx), generatedPdf, pdfName);
         try {
             Long fileIdx = mapper.insertFile(
                     coCd,
@@ -684,6 +685,24 @@ public class DocumentService {
     /** 파일 목록을 API 노출 형태로 바꾼다 */
     private List<Map<String, Object>> publicFiles(List<DocumentFileRow> files) {
         return files.stream().map(this::publicFile).toList();
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-13
+     * 코멘트:
+     *   1) 문서 헤더에서 양식코드(tmplCd)만 읽어 저장 경로의 타입 폴더로 쓴다
+     *   2) 첨부 업로드·PDF 등록이 물리 파일을 만들기 직전에 호출한다
+     *   3) 헤더가 없을 때(= 삭제된 문서) 빈 문자열 — 경로는 타입 폴더 없이 조립된다
+     */
+    private String documentTmplCd(
+            // JWT 회사코드
+            String coCd,
+            // 대상 문서 idx
+            Long docIdx
+    ) {
+        Map<String, Object> header = camelMap(mapper.selectDocument(coCd, docIdx));
+        return header == null ? "" : text(String.valueOf(header.getOrDefault("tmplCd", "")));
     }
 
     /** MyBatis Map의 DB lower_snake 키를 API camelCase 키로 한 번만 바꾼다 */
