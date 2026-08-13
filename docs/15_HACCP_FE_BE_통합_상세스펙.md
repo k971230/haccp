@@ -212,7 +212,7 @@ sequenceDiagram
 | 단계 | 구현 |
 |------|------|
 | DB | tbl_menu (co_cd) JOIN 권한 |
-| SP | `sp_tbl_menu_r_000` |
+| SP | `sp_menu_nav_r_000` |
 | API | GET `/api/v1/menu/list` |
 | FE | `menuApi` → `SideMenu` |
 | 구현 여부 | `isImplemented(scrnCd)` ← SCREEN_REGISTRY |
@@ -303,7 +303,7 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 
 ### 4.3 BE java 패키지 ↔ mapper XML
 
-동일 도메인명: `src/main/java/com/metis/haccp/{pkg}` ↔ `resources/mapper/{pkg}/*.xml`
+동일 도메인명: `src/main/java/com/haccp/{pkg}` ↔ `resources/mapper/{pkg}/*.xml`
 
 ### 4.4 DB
 
@@ -337,7 +337,7 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 | validateDeleteSystemRows | POST | `/api/v1/sys/{screenCode}/validate-delete` |
 | deleteSystemRows | POST | `/api/v1/sys/{screenCode}/delete` |
 | uploadUserSign / uploadMySign | POST multipart | `/api/v1/sys/users/{id\|me}/sign` |
-| fetchMySignPath | GET | `/api/v1/sys/users/me/sign-path` |
+| fetchUserSignBlob / fetchMySignImage | GET | `/api/v1/sys/users/{id\|me}/sign` (bytea 응답) |
 
 screenCode: company/user/department/role/menu/common-code-management · login-history · screen-usage-statistics · audit-log  
 (이력 3종은 list만)

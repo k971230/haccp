@@ -13,7 +13,7 @@ alwaysApply: false
 | DB / 스키마 | `metis` / `metis` | `sasshaccp` / `sasshaccp` |
 | 테이블명 | `bas1200`, `bap1100` (레거시 코드형) | `tbl_company`, `tbl_user` (의미형) |
 | PK | 복합 PK | `idx bigint GENERATED ALWAYS AS IDENTITY` 단일 대리키 |
-| SP | `sp_sk_*`, `sp_new_*` | `sp_tbl_{명칭}_{r｜c｜d｜u}_{000}` |
+| SP | `sp_sk_*`, `sp_new_*` | 테이블 단위 `sp_tbl_{명칭}_{r｜c｜d｜u}_{000}` · 화면 단위 `sp_{화면명}_{r｜c｜d｜u}_{000}` |
 
 ## 명명 규약
 
@@ -27,6 +27,11 @@ alwaysApply: false
 
 ## 저장프로시저 규약
 
+- 이름 규약은 **두 갈래가 병존**한다
+  - 테이블 단위(업무 도메인 doc·ccp·hyg·bas·log 적재 등): `sp_tbl_{테이블명}_{r｜c｜d｜u}_{000}`
+  - 화면 단위(sys 6도메인 — 공통코드·메뉴·권한·부서·사용자·로그 3화면): `sp_{화면명}_{r｜c｜d｜u}_{000}`
+    예: `sp_common_code_management_r_000`, `sp_user_management_sign_u_000`, `sp_screen_usage_statistics_r_000`
+  - 신규 화면 전용 SP는 화면명 규약을, 여러 화면이 공유하는 테이블 CRUD는 테이블 규약을 쓴다
 - 조회: `FUNCTION ... RETURNS TABLE`, 쓰기: `PROCEDURE`
 - 파라미터 접두 `p_` — 첫 인자는 **항상 `p_co_cd`** (조회·쓰기 무관)
 - **테넌트 격리는 SP 책임이다.** PK가 전역 유일한 `idx`라서 `WHERE idx = p_idx`만 쓰면 타사 데이터가 열린다.

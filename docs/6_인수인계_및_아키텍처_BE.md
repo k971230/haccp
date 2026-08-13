@@ -5,7 +5,7 @@
 
 ## 패키지
 
-`com.metis.haccp.{auth|menu|code|pref|log|bas|workflow|ccp|hyg|ops|doc|tsk|sys|common}`
+`com.haccp.{auth|menu|code|pref|log|bas|workflow|ccp|hyg|ops|doc|tsk|sys|common}`
 
 ## 레이어
 
