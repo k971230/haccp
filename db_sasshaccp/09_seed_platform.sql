@@ -24,7 +24,7 @@ SET search_path TO sasshaccp;
 INSERT INTO tbl_template
     (tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd, default_cycle_cd, default_retention_month, impl_yn, sort_no, ins_id)
 VALUES
-    -- [DB형 15종] 반복 기록·수치 입력·자동판정이 필요한 양식 (mng_no = 원본 PDF 기록관리 번호)
+    -- [DB형 15종] 반복 기록·수치 입력·자동판정이 필요한 양식 (mng_no = 원본 PDF 일지관리 번호)
     ('tmpl_ccp-cold-log',      'CCP 냉장·냉동 보관 모니터링 일지',     '2-1',  'DB',  'CCP', 'ccp-cold-monitor',       'D', 24, 'Y',  2, 'system'),
     ('tmpl_ccp-metal-log',     'CCP 금속검출 모니터링 일지',           '2-2',  'DB',  'CCP', 'ccp-metal-monitor',      'D', 24, 'Y',  3, 'system'),
     ('tmpl_ccp-verify-check',    '중요관리점(CCP) 검증점검표',          '3',    'DB',  'CCP', 'ccp-verification-check', 'M', 24, 'Y',  4, 'system'),
@@ -241,6 +241,12 @@ INSERT INTO tbl_code (co_cd, main_cd, sub_cd, code_nm, sort_no, ref1, sys_yn, in
     ('0000', 'audit-target', '*',        '감사 대상 메뉴',         0, NULL, 'Y', 'system'),
     ('0000', 'audit-target', 'tbl_document',      '문서함',        1, 'document-inbox', 'Y', 'system'),
     ('0000', 'audit-target', 'tbl_document_file', '문서 파일',     2, 'document-inbox', 'Y', 'system'),
+    ('0000', 'audit-target', 'tbl_code',          '공통코드 관리', 3, 'common-code-management', 'Y', 'system'),
+    ('0000', 'audit-target', 'tbl_menu',          '메뉴 관리',     4, 'menu-management',        'Y', 'system'),
+    ('0000', 'audit-target', 'tbl_role',          '권한그룹 관리', 5, 'role-management',        'Y', 'system'),
+    ('0000', 'audit-target', 'tbl_role_screen',   '화면 권한',     6, 'role-management',        'Y', 'system'),
+    ('0000', 'audit-target', 'tbl_dept',          '부서 관리',     7, 'department-management',  'Y', 'system'),
+    ('0000', 'audit-target', 'tbl_user',          '사용자 관리',   8, 'user-management',        'Y', 'system'),
     -- 법인구분 — tbl_company.co_gbn
     ('0000', 'CO_GBN',       '*',        '법인구분',               0, NULL, 'Y', 'system'),
     ('0000', 'CO_GBN',       '1',        '법인',                   1, NULL, 'Y', 'system'),

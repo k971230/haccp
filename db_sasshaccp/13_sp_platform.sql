@@ -90,6 +90,47 @@ COMMENT ON PROCEDURE sp_tbl_menu_sort_encode_u_000(varchar) IS
   '메뉴 sort_no 인코딩 — 대(1~9)*1000+중(0~9)*100+소(0~99). leaf는 sort_no 상대순. p_co_cd NULL=전업체';
 
 -- ------------------------------------------------------------
+-- 0-1. sp_tbl_company_code_copy_c_000 — 플랫폼 표준코드(0000)를 업체로 복제
+--      공통코드 조회 SP가 co_cd = p_co_cd 완전 고유 격리로 바뀌면서
+--      0000 상속이 사라졌다. 업체는 표준코드 실물을 자기 co_cd로 갖고 있어야
+--      사용여부·판정 등 전 화면 콤보가 채워진다
+--      company_init보다 먼저 정의해야 CALL이 가능하다
+-- ------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE sp_tbl_company_code_copy_c_000(
+    -- p_co_cd: 복제 대상 업체코드 — 0000 자기 자신은 금지
+    p_co_cd varchar,
+    -- p_id: 작업자 로그인 ID — 복제행 ins_id
+    p_id    varchar
+)
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF COALESCE(p_co_cd, '') = '' THEN
+        RAISE EXCEPTION '회사코드는 필수입니다.' USING ERRCODE = '45000';
+    END IF;
+    -- 0000으로 호출할 때(= 원본 자기 복제) 무한 중복이 되므로 막는다
+    IF p_co_cd = '0000' THEN
+        RAISE EXCEPTION '0000은 표준코드 원본이라 복제 대상이 될 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+
+    -- 업체가 이미 가진 (main_cd, sub_cd)는 건드리지 않는다 — 업체가 고친 코드명·순서를 보존한다
+    INSERT INTO tbl_code(co_cd, main_cd, sub_cd, code_nm, sort_no, ref1, ref2,
+                         sys_yn, use_yn, ins_id, ins_dt)
+    SELECT p_co_cd, s.main_cd, s.sub_cd, s.code_nm, s.sort_no, s.ref1, s.ref2,
+           s.sys_yn, s.use_yn, p_id, now()
+      FROM tbl_code s
+     WHERE s.co_cd = '0000'
+       AND NOT EXISTS (
+               SELECT 1
+                 FROM tbl_code o
+                WHERE o.co_cd = p_co_cd
+                  AND o.main_cd = s.main_cd
+                  AND o.sub_cd = s.sub_cd
+           );
+END$$;
+COMMENT ON PROCEDURE sp_tbl_company_code_copy_c_000(varchar, varchar) IS
+  '플랫폼 표준코드(co_cd=0000) 미보유분을 업체로 복제 — 재실행 안전. 공통코드 완전 고유 격리 전제';
+
+-- ------------------------------------------------------------
 -- 1. sp_tbl_company_init_c_000 — 신규 업체(테넌트) 초기 생성
 --    이미 존재하는 회사코드로 다시 호출하면 부족한 데이터만 채운다(재실행 안전)
 -- ------------------------------------------------------------
@@ -346,8 +387,11 @@ BEGIN
         (p_co_cd, 'ST03', '완제품냉장1', 'COLD',   'CCP-3B', -2, 5, 3, 'Y', p_id, now()),
         (p_co_cd, 'ST04', '완제품냉동1', 'FROZEN', 'CCP-3B', -23, -18, 4, 'Y', p_id, now())
     ON CONFLICT (co_cd, storage_cd) DO NOTHING;
+
+    -- (11) 표준 공통코드 복제 — 공통코드 조회가 co_cd 완전 고유라서 실물이 없으면 전 화면 콤보가 빈다
+    CALL sp_tbl_company_code_copy_c_000(p_co_cd, p_id);
 END$$;
-COMMENT ON PROCEDURE sp_tbl_company_init_c_000(varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar) IS '신규 업체 초기 생성 — 회사·권한·메뉴·사용양식·결재선·채번규칙·관리자·기본 CCP한계·샘플보관고';
+COMMENT ON PROCEDURE sp_tbl_company_init_c_000(varchar, varchar, varchar, varchar, varchar, varchar, varchar, varchar) IS '신규 업체 초기 생성 — 회사·권한·메뉴·사용양식·결재선·채번규칙·관리자·기본 CCP한계·샘플보관고·표준코드 복제';
 
 -- ------------------------------------------------------------
 -- 2. sp_tbl_company_template_r_000 — 업체 사용양식 조회

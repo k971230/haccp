@@ -47,8 +47,8 @@ export interface GenericCcpRow {
   judgeModYn?: string | null;
   checkerId?: string | null;
   checkerNm?: string | null;
-  // 행 서명 이미지 경로
-  signPath?: string | null;
+  // 행 서명 보유여부 Y/N — Y로 저장하면 SP가 점검자 서명 원본을 그 행에 복사한다
+  signYn?: string | null;
   cells: GenericCcpCell[];
 }
 

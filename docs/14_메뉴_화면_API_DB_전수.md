@@ -86,7 +86,7 @@
 | 단계 | 구현 |
 |------|------|
 | API | GET /api/v1/menu/list — MenuController → MenuMapper |
-| SP | sp_tbl_menu_r_000 (11_sp_auth.sql) |
+| SP | sp_menu_nav_r_000 (11_sp_auth.sql) |
 | 회사 생성 | sp_tbl_company_init_c_000 — use_yn=Y AND module IN (WRK,APR,FRM,COD,SYS) |
 
 ### 1.4 migrate 타임라인
@@ -449,25 +449,25 @@ shell: HaccpShell · SideMenu · screenRegistry · pageCommands · useViewLog ·
 
 | Interface | XML |
 |-----------|-----|
-| com.metis.haccp.auth/AuthMapper | resources/mapper/auth/AuthMapper.xml |
-| com.metis.haccp.menu/MenuMapper | resources/mapper/menu/MenuMapper.xml |
-| com.metis.haccp.code/CodeMapper | resources/mapper/code/CodeMapper.xml |
-| com.metis.haccp.pref/PrefMapper | resources/mapper/pref/PrefMapper.xml |
-| com.metis.haccp.log/LogMapper | resources/mapper/log/LogMapper.xml |
-| com.metis.haccp.bas/MasterMapper | resources/mapper/bas/MasterMapper.xml |
-| com.metis.haccp.bas/EquipmentHistMapper | resources/mapper/bas/EquipmentHistMapper.xml |
-| com.metis.haccp.bas/PestDeviceHistMapper | resources/mapper/bas/PestDeviceHistMapper.xml |
-| com.metis.haccp.workflow/WorkflowMapper | resources/mapper/workflow/WorkflowMapper.xml |
-| com.metis.haccp.ccp/CcpColdMapper | resources/mapper/ccp/CcpColdMapper.xml |
-| com.metis.haccp.ccp/CcpGenericMapper | resources/mapper/ccp/CcpGenericMapper.xml |
-| com.metis.haccp.ccp/CcpFormsMapper | resources/mapper/ccp/CcpFormsMapper.xml |
-| com.metis.haccp.hyg/HygieneMapper | resources/mapper/hyg/HygieneMapper.xml |
-| com.metis.haccp.hyg/HealthCertMapper | resources/mapper/hyg/HealthCertMapper.xml |
-| com.metis.haccp.doc/DocumentMapper | resources/mapper/doc/DocumentMapper.xml |
-| com.metis.haccp.doc/DocCorrectiveMapper | resources/mapper/doc/DocCorrectiveMapper.xml |
-| com.metis.haccp.tsk/TaskMapper | resources/mapper/tsk/TaskMapper.xml |
-| com.metis.haccp.sys/SystemMapper | resources/mapper/sys/SystemMapper.xml |
-| com.metis.haccp.ops/BizOpsMapper | resources/mapper/ops/BizOpsMapper.xml |
+| com.haccp.auth/AuthMapper | resources/mapper/auth/AuthMapper.xml |
+| com.haccp.menu/MenuMapper | resources/mapper/menu/MenuMapper.xml |
+| com.haccp.code/CodeMapper | resources/mapper/code/CodeMapper.xml |
+| com.haccp.pref/PrefMapper | resources/mapper/pref/PrefMapper.xml |
+| com.haccp.log/LogMapper | resources/mapper/log/LogMapper.xml |
+| com.haccp.bas/MasterMapper | resources/mapper/bas/MasterMapper.xml |
+| com.haccp.bas/EquipmentHistMapper | resources/mapper/bas/EquipmentHistMapper.xml |
+| com.haccp.bas/PestDeviceHistMapper | resources/mapper/bas/PestDeviceHistMapper.xml |
+| com.haccp.workflow/WorkflowMapper | resources/mapper/workflow/WorkflowMapper.xml |
+| com.haccp.ccp/CcpColdMapper | resources/mapper/ccp/CcpColdMapper.xml |
+| com.haccp.ccp/CcpGenericMapper | resources/mapper/ccp/CcpGenericMapper.xml |
+| com.haccp.ccp/CcpFormsMapper | resources/mapper/ccp/CcpFormsMapper.xml |
+| com.haccp.hyg/HygieneMapper | resources/mapper/hyg/HygieneMapper.xml |
+| com.haccp.hyg/HealthCertMapper | resources/mapper/hyg/HealthCertMapper.xml |
+| com.haccp.doc/DocumentMapper | resources/mapper/doc/DocumentMapper.xml |
+| com.haccp.doc/DocCorrectiveMapper | resources/mapper/doc/DocCorrectiveMapper.xml |
+| com.haccp.tsk/TaskMapper | resources/mapper/tsk/TaskMapper.xml |
+| com.haccp.sys/SystemMapper | resources/mapper/sys/SystemMapper.xml |
+| com.haccp.ops/BizOpsMapper | resources/mapper/ops/BizOpsMapper.xml |
 
 비 REST: GlobalExceptionHandler · TemplateImportService(ApplicationRunner) · Actuator
 

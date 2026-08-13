@@ -82,7 +82,7 @@ import { DocumentApprovalToolbar } from "@/components/document/DocumentApprovalT
 // 역할 — 홈·문서함 ?docIdx= deep-link
 import { useDocIdxQuery } from "@/hooks/useDocIdxQuery";
 // 역할 — 로그인 사용자 서명 경로·미등록 시 업로드
-import { fetchMySignPath, uploadMySign } from "@/api/systemApi";
+import { fetchMySignInfo, uploadMySign } from "@/api/sys/userApi";
 
 /** 편집 가능 여부 — 신규이거나 임시·반려 */
 function isEditable(status?: string | null): boolean {
@@ -137,7 +137,7 @@ function emptyRows(
     checkerNm: writerNm,
     writerId,
     writerNm,
-    signPath: null,
+    signYn: "N",
     temps: storages.map((s) => ({
       storageCd: s.storageCd,
       tempVal: null,
@@ -331,21 +331,23 @@ export default function ColdMonitorPage() {
    * 개발자: 박승우
    * 일자: 2026-08-07
    * 코멘트:
-   *   1) 로그인 사용자 서명 경로를 해당 행 signPath에 붙인다
+   *   1) 로그인 사용자 서명이 등록돼 있으면 해당 행 signYn을 Y로 올린다
+   *      서명 실물은 저장 시 SP가 tbl_user.sign_img에서 그 행으로 복사한다
    *   2) 미등록이면 이미지 선택을 열어 즉시 등록 후 적용한다
    *   3) 임시·반려 편집 행에서만 호출한다
    */
   const applyRowSign = useCallback(async (rowSeq: number) => {
     if (!editable) return;
     try {
-      let path = await fetchMySignPath();
-      if (!path) {
+      // 서명 등록 여부만 확인 — 파일명·보유여부만 받고 이미지는 내려받지 않는다
+      const info = await fetchMySignInfo();
+      if (info.signYn !== "Y") {
         signTargetRowRef.current = rowSeq;
         signFileRef.current?.click();
         mesToast("등록된 서명이 없습니다. 서명 이미지 파일을 선택하세요.", "warn");
         return;
       }
-      patchRow(rowSeq, { signPath: path });
+      patchRow(rowSeq, { signYn: "Y" });
       mesToast("서명을 적용했습니다.", "success");
     } catch (error) {
       mesError(error);
@@ -356,7 +358,7 @@ export default function ColdMonitorPage() {
    * 개발자: 박승우
    * 일자: 2026-08-07
    * 코멘트:
-   *   1) 선택한 서명 이미지를 본인 서명으로 등록한 뒤 대상 행에 경로를 넣는다
+   *   1) 선택한 서명 이미지를 본인 서명으로 등록한 뒤 대상 행 signYn을 Y로 올린다
    *   2) applyRowSign이 미등록일 때 연 파일 입력에서 호출한다
    *   3) 실패 시 업무 토스트
    */
@@ -365,8 +367,8 @@ export default function ColdMonitorPage() {
     signTargetRowRef.current = null;
     if (!file || rowSeq == null) return;
     try {
-      const path = await uploadMySign(file);
-      patchRow(rowSeq, { signPath: path });
+      await uploadMySign(file);
+      patchRow(rowSeq, { signYn: "Y" });
       mesToast("서명을 등록·적용했습니다.", "success");
     } catch (error) {
       mesError(error);
@@ -575,7 +577,7 @@ export default function ColdMonitorPage() {
                   checkerNm: writerNm,
                   writerId,
                   writerNm,
-                  signPath: r.signPath || null,
+                  signYn: r.signYn === "Y" ? "Y" : "N",
                 };
               });
             const saved = await saveColdMonitor({
@@ -748,7 +750,7 @@ export default function ColdMonitorPage() {
             checkerNm: user?.userNm || "",
             writerId: user?.userId || "",
             writerNm: user?.userNm || "",
-            signPath: null,
+            signYn: "N",
             temps: visibleStorages.map((s) => ({ storageCd: s.storageCd, tempVal: null, judgeCd: null })),
           },
         ],
@@ -1026,8 +1028,8 @@ export default function ColdMonitorPage() {
                               />
                             </td>
                             <td className="text-center">
-                              {/* 서명 경로가 있을 때(= 행 서명 적용됨) 표시·재적용 */}
-                              {(r.signPath || "").trim() ? (
+                              {/* 서명이 적용된 행일 때(= signYn Y) 표시·재적용 */}
+                              {r.signYn === "Y" ? (
                                 <button
                                   type="button"
                                   className="text-xs text-emerald-700 underline disabled:no-underline disabled:text-slate-500"

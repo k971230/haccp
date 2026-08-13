@@ -52,6 +52,8 @@ import { ShellFooter } from "./ShellFooter";
 import { PageScrnContext } from "./pageCommands";
 // 역할 — 모달·토스트 호스트
 import { DialogHost } from "./dialog";
+// 역할 — 코드 룩업·서명 등 전역 공통 모달 호스트
+import { GlobalModal } from "@/components/common/modal/GlobalModal";
 // 역할 — 화면 조회 로그 수집
 import { useViewLog } from "./useViewLog";
 
@@ -297,8 +299,11 @@ export function HaccpShell() {
         <ShellFooter user={user} />
       </main>
 
-      {/* 모달·토스트 — 셸에 한 번만 마운트한다 */}
+      {/* 확인·토스트 — 셸에 한 번만 마운트한다 */}
       <DialogHost />
+
+      {/* 코드 룩업·서명 등 공통 모달 — modalStore가 열림 상태를 갖는다 */}
+      <GlobalModal />
     </div>
   );
 }

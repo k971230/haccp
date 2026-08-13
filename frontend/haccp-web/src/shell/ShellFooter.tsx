@@ -44,7 +44,7 @@ export function ShellFooter({
   return (
     <footer className="relative z-10 flex h-6 shrink-0 items-center justify-between gap-2 bg-[#1a3676] px-2 text-[10px] leading-none text-white sm:px-3">
       <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-white/90">
-        <span className="shrink-0 font-semibold text-white">HACCP 기록관리</span>
+        <span className="shrink-0 font-semibold text-white">HACCP 일지관리</span>
         {co && (
           <>
             <span className="shrink-0 text-white/40">|</span>

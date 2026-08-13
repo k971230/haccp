@@ -63,8 +63,8 @@ import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
 import { useGridAccess } from "@/hooks/useGridAccess";
 import type { GridColumn } from "@/types/grid";
 import type { EditableRow } from "@/types/editable";
-// 역할 — 로그인 사용자 서명 경로·미등록 시 업로드
-import { fetchMySignPath, uploadMySign } from "@/api/systemApi";
+// 역할 — 로그인 사용자 서명 보유 확인(메타데이터)·미등록 시 업로드
+import { fetchMySignInfo, uploadMySign } from "@/api/sys/userApi";
 // 역할 — DocForm 날짜·시각 변환
 import { fromInputDate, toInputDate, todayYmd } from "@/lib/docDateTime";
 // 역할 — 확인·토스트·업무 오류
@@ -243,7 +243,7 @@ function makeEmptyRow(columns: ColumnPreset[], userId: string, userNm: string, r
     judgeModYn: "N",
     checkerId: userId,
     checkerNm: userNm,
-    signPath: null,
+    signYn: "N",
     cells: columns.map((column) => ({ itemCd: column.itemCd, numVal: null, txtVal: "", judgeCd: null })),
   };
 }
@@ -267,7 +267,7 @@ function mapDetailRows(
     judgeModYn: item.judgeModYn ?? "N",
     checkerId: item.checkerId ?? userId,
     checkerNm: item.checkerNm ?? userNm,
-    signPath: item.signPath ?? null,
+    signYn: item.signYn === "Y" ? "Y" : "N",
     cells: columns.map((column) => {
       const cell = (item.cells ?? []).find((c) => c.itemCd === column.itemCd);
       return {
@@ -655,15 +655,17 @@ export default function CcpGenericMonitorPage({
    * 개발자: 박승우
    * 일자: 2026-08-07
    * 코멘트:
-   *   1) 로그인 사용자 서명 경로를 해당 행 signPath에 붙인다
+   *   1) 로그인 사용자 서명이 등록돼 있으면 해당 행 signYn을 Y로 올린다
+   *      서명 실물은 저장 시 SP가 tbl_user.sign_img에서 그 행으로 복사한다
    *   2) 미등록이면 파일 선택 업로드 후 적용한다
    *   3) 실패 시 토스트
    */
   const applyRowSign = async (rowSeq: number) => {
     if (!editable) return;
     try {
-      let path = await fetchMySignPath();
-      if (!(path || "").trim()) {
+      // 서명 등록 여부만 확인 — 파일명·보유여부만 받고 이미지는 내려받지 않는다
+      const info = await fetchMySignInfo();
+      if (info.signYn !== "Y") {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = "image/*";
@@ -672,10 +674,10 @@ export default function CcpGenericMonitorPage({
           input.click();
         });
         if (!file) return;
-        path = await uploadMySign(file);
+        await uploadMySign(file);
       }
       patchRow(rowSeq, {
-        signPath: path,
+        signYn: "Y",
         checkerId: user?.userId ?? "",
         checkerNm: user?.userNm ?? "",
       });
@@ -967,7 +969,7 @@ export default function CcpGenericMonitorPage({
                             />
                           </td>
                           <td className="text-center">
-                            {(row.signPath || "").trim() ? (
+                            {row.signYn === "Y" ? (
                               <button
                                 type="button"
                                 className="text-xs text-emerald-700 underline disabled:no-underline disabled:text-slate-500"

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- 역할 — 오늘 과제·알림·개선조치·문서관계·감사자료 SP 호출 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.metis.haccp.tsk.TaskMapper">
+<mapper namespace="com.haccp.tsk.TaskMapper">
     <!-- 활성 회사 — 정기 배치가 각 테넌트 과제를 멱등 생성 -->
     <select id="selectCompanyCodes" resultType="string">SELECT co_cd FROM tbl_company WHERE use_yn = 'Y'</select>
     <!-- 과제 생성·지연 갱신·알림 생성 — SP 내부에서 중복을 차단 -->

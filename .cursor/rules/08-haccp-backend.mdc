@@ -8,10 +8,10 @@ alwaysApply: false
 
 | 항목 | 값 |
 |------|-----|
-| 패키지 | `com.metis.haccp.*` |
+| 패키지 | `com.haccp.*` |
 | 포트 | **7070** (로컬·컨테이너 동일) |
 | DB / 스키마 | `sasshaccp` / `sasshaccp` |
-| SP | `sp_tbl_{명칭}_{r｜c｜d｜u}_{000}` |
+| SP | 테이블 단위 `sp_tbl_{명칭}_*` · 화면 단위 `sp_{화면명}_*` (sys 6도메인) |
 | 로그인 | **아이디만** (전역 유일, 서버가 회사 판정) |
 | 화면 권한 | 조회·등록·수정·삭제·출력 5개 Y/N |
 | JWT | 단일 TTL (`app.jwt.expire-minutes`) |
@@ -20,7 +20,7 @@ DB 규약: [`07-haccp-db.mdc`](07-haccp-db.mdc) · 운영: [`06-operations.mdc`]
 
 ## 패키지
 
-`com.metis.haccp.{영역}` — `auth`, `menu`, `code`, `pref`, `log`, `common`,  
+`com.haccp.{영역}` — `auth`, `menu`, `code`, `pref`, `log`, `common`,  
 업무: `tsk`, `ccp`, `hyg`, `doc`, `bas`, `sys`, `ops`, `workflow` …
 
 ## 레이어

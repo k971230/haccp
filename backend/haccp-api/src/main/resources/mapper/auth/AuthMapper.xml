@@ -12,7 +12,7 @@ AuthMapper.xml — 인증·로그인 이력 sp_tbl_* 호출 매퍼.
 PIPELINE[HB28] MyBatis XML
 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.metis.haccp.auth.AuthMapper">
+<mapper namespace="com.haccp.auth.AuthMapper">
 
     <!--
       로그인 사용자 조회 — sp_tbl_user_login_r_000
@@ -20,7 +20,7 @@ PIPELINE[HB28] MyBatis XML
       회사(사용여부·서비스종료일)·권한그룹명·부서명을 LEFT JOIN 해 한 번에 받는다 — 로그인 판정에 필요한 값이 전부 이 한 행에 있다
       결과: 아이디가 있으면 UserLoginRow 1건, 없으면 null (없음은 예외가 아니며 Service가 실패로 처리한다)
     -->
-    <select id="selectUserForLogin" resultType="com.metis.haccp.auth.dto.UserLoginRow">
+    <select id="selectUserForLogin" resultType="com.haccp.auth.dto.UserLoginRow">
         SELECT * FROM sp_tbl_user_login_r_000(
             #{userId, mode=IN, jdbcType=VARCHAR}
         )
@@ -41,13 +41,13 @@ PIPELINE[HB28] MyBatis XML
     </update>
 
     <!--
-      화면 권한 조회 — sp_tbl_role_screen_r_000
+      화면 권한 조회 — sp_role_management_screen_r_000 (권한그룹 관리 화면과 공유하는 화면명 SP)
       coCd는 JWT 회사코드(테넌트 범위), usrgrpCd는 로그인 사용자의 권한그룹코드
       화면 마스터를 기준으로 LEFT JOIN 하므로 권한 미설정 화면도 전부 'N'으로 채워져 나온다
       결과: 사용중(use_yn='Y') 화면 전체의 권한 목록. 프론트는 이 목록으로 버튼 활성 여부를 판정한다
     -->
-    <select id="selectScreenAuths" resultType="com.metis.haccp.auth.dto.ScreenAuthRow">
-        SELECT * FROM sp_tbl_role_screen_r_000(
+    <select id="selectScreenAuths" resultType="com.haccp.auth.dto.ScreenAuthRow">
+        SELECT * FROM sp_role_management_screen_r_000(
             #{coCd,     mode=IN, jdbcType=VARCHAR},
             #{usrgrpCd, mode=IN, jdbcType=VARCHAR}
         )

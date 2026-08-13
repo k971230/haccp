@@ -9,9 +9,9 @@ DocCorrectiveMapper.xml — 문서형 이탈 푸터 SP.
   2) payloadJson은 camelCase jsonb
 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.metis.haccp.doc.DocCorrectiveMapper">
+<mapper namespace="com.haccp.doc.DocCorrectiveMapper">
 
-    <select id="selectByDoc" resultType="com.metis.haccp.ccp.dto.DocCorrectiveDto">
+    <select id="selectByDoc" resultType="com.haccp.ccp.dto.DocCorrectiveDto">
         SELECT * FROM sp_tbl_doc_corrective_r_000(
             #{coCd,   mode=IN, jdbcType=VARCHAR},
             #{docIdx, mode=IN, jdbcType=BIGINT}

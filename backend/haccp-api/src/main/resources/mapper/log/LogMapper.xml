@@ -12,7 +12,7 @@ LogMapper.xml — 화면 조회 로그·일자 UV/PV 집계 sp_tbl_* 호출 매�
 PIPELINE[HB45] MyBatis XML
 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.metis.haccp.log.LogMapper">
+<mapper namespace="com.haccp.log.LogMapper">
 
     <!--
       화면 조회 이벤트 적재 — sp_tbl_view_log_c_000

@@ -39,7 +39,7 @@ export function HomeView() {
   return (
     <div className="flex h-full min-h-0 items-center justify-center bg-slate-50 p-6">
       <div className="rounded border border-slate-200 bg-white px-8 py-6 text-center shadow-sm">
-        <p className="text-xs font-semibold text-[#1a3676]">HACCP 기록관리</p>
+        <p className="text-xs font-semibold text-[#1a3676]">HACCP 일지관리</p>
         <h1 className="mt-2 text-lg font-bold text-slate-800">
           {user?.userNm ?? "사용자"}님, 오늘 할 일로 이동합니다.
         </h1>

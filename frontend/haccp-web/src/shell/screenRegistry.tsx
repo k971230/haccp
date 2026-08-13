@@ -34,13 +34,13 @@ import HwpDocumentEditorPage from "@/pages/doc/HwpDocumentEditorPage";
 // 역할 — HWP 양식 파일 관리
 import HwpTemplateManagementPage from "@/pages/bas/HwpTemplateManagementPage";
 // 역할 — 권한그룹 좌 메뉴권한 트리 + 우 마스터 그리드
-import RoleManagementPage from "@/pages/sys/RoleManagementPage";
+import RoleManagementPage from "@/pages/sys/role/RoleManagementPage";
 // 역할 — 부서 좌 트리 + 우 그리드
-import DepartmentManagementPage from "@/pages/sys/DepartmentManagementPage";
+import DepartmentManagementPage from "@/pages/sys/department/DepartmentManagementPage";
 // 역할 — 메뉴 좌 트리 + 우 그리드
-import MenuManagementPage from "@/pages/sys/MenuManagementPage";
+import MenuManagementPage from "@/pages/sys/menu/MenuManagementPage";
 // 역할 — 공통코드 대분류·시스템·사용자 3그리드
-import CommonCodeManagementPage from "@/pages/sys/CommonCodeManagementPage";
+import CommonCodePage from "@/pages/sys/commoncode/CommonCodePage";
 // 역할 — 기초정보·한계기준 마스터
 import MasterDataPage from "@/pages/bas/MasterDataPage";
 // 역할 — 설비카드 이력 M-D
@@ -56,10 +56,12 @@ import BizOpsFormPage from "@/pages/ops/BizOpsFormPage";
 // 역할 — 오늘 할 일·개선조치
 import TodayTasksPage from "@/pages/tsk/TodayTasksPage";
 import CorrectiveActionManagementPage from "@/pages/doc/CorrectiveActionManagementPage";
-// 역할 — 시스템 관리(사용자)
-import SystemManagementPage from "@/pages/sys/SystemManagementPage";
-// 역할 — 로그인·통계·감사 로그
-import LogManagementPage from "@/pages/sys/LogManagementPage";
+// 역할 — 사용자 관리 그리드
+import UserManagementPage from "@/pages/sys/user/UserManagementPage";
+// 역할 — 로그 3화면 (각자 LogPageShell + Rule)
+import LoginHistoryPage from "@/pages/sys/log/LoginHistoryPage";
+import ScreenUsageStatisticsPage from "@/pages/sys/log/ScreenUsageStatisticsPage";
+import AuditLogPage from "@/pages/sys/log/AuditLogPage";
 
 /**
  * 개발자: 박승우
@@ -87,14 +89,14 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   "today-tasks": TodayTasksPage,
 
   // 시스템 관리 — company-management 제거(온보딩 외 미노출)
-  "user-management": () => <SystemManagementPage screenCode="user-management" />,
+  "user-management": UserManagementPage,
   "department-management": DepartmentManagementPage,
   "role-management": RoleManagementPage,
   "menu-management": MenuManagementPage,
-  "common-code-management": CommonCodeManagementPage,
-  "login-history": () => <LogManagementPage screenCode="login-history" />,
-  "screen-usage-statistics": () => <LogManagementPage screenCode="screen-usage-statistics" />,
-  "audit-log": () => <LogManagementPage screenCode="audit-log" />,
+  "common-code-management": CommonCodePage,
+  "login-history": LoginHistoryPage,
+  "screen-usage-statistics": ScreenUsageStatisticsPage,
+  "audit-log": AuditLogPage,
 
   // 기초정보 관리
   "product-management": () => <MasterDataPage screenCode="product-management" />,

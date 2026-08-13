@@ -13,7 +13,7 @@ PIPELINE[HB96] 공통 CCP MyBatis XML
 PIPELINE[HB95, HB94, HF94] 연관 모듈
 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.metis.haccp.ccp.CcpGenericMapper">
+<mapper namespace="com.haccp.ccp.CcpGenericMapper">
     <!-- 공통 CCP 템플릿과 대표 공공 기준일지 — 회사 양식 사용 설정을 함께 확인 -->
     <select id="selectTemplates" resultType="map">
         SELECT t.tmpl_cd, t.tmpl_nm, d.diary_no, d.diary_nm, d.limit_item_kind,
@@ -50,7 +50,7 @@ PIPELINE[HB95, HB94, HF94] 연관 모듈
     </select>
 
     <!-- 삭제 차단 — 결재 진행·완료 문서 -->
-    <select id="selectDeleteBlocker" resultType="com.metis.haccp.common.validation.DeleteBlocker">
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
         SELECT d.doc_no AS ref_key,
                CASE d.status
                     WHEN 'REQ' THEN '결재요청'
