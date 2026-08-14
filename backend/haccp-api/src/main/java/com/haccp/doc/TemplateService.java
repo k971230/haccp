@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) 템플릿 SP의 회사 사용여부와 파일 저장소의 물리 경계 검증을 한 흐름으로 묶는다
  *   2) 목록은 formPath 대신 인증된 API URL을 반환하고, 원본은 JWT 회사 범위에서만 연다
- *   3) 원본 수정은 같은 form_path에 HWP/HWPX를 덮어쓰며 DB 경로를 바꾸지 않는다
+ *   3) 원본 수정은 덮어쓰지 않고 새 버전 파일 + 이력 1건으로 남긴다 — 불러오기·초기화의 원천
  *
  * PIPELINE[HB90] 템플릿 Service
  * PIPELINE[HB83, HB88, HB89] 연관 모듈
@@ -24,6 +24,9 @@ import com.haccp.doc.dto.DocumentTemplateResponse;
 import com.haccp.doc.dto.DocumentTemplateRow;
 // 역할 — 파일 경로
 import java.nio.file.Path;
+// 역할 — 업로드 버전 파일명 시각 접미
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 // 역할 — 목록 타입
 import java.util.List;
 // 역할 — 서버 로그(요청 맥락 상세)
@@ -107,11 +110,11 @@ public class TemplateService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-06
+     * 일자: 2026-08-14
      * 코멘트:
-     *   1) 로그인 회사가 사용 중인 템플릿의 표준 원본 파일을 덮어쓴다
-     *   2) HWP 문서 편집 화면이 "템플릿 원본 저장"을 눌렀을 때 호출한다
-     *   3) 성공 시 같은 form_path가 유지되고, 미사용·미등록이면 업무 오류로 실패한다
+     *   1) 업로드본을 새 버전 파일로 저장하고 이력에 1건 남긴 뒤 현재 적용본으로 만든다
+     *   2) 사용양식관리 업로드·법적서류 유형 업로드·HWP 편집기의 "템플릿 원본 저장"이 호출한다
+     *   3) 기존 파일을 덮어쓰지 않는다 — 초기화·불러오기가 과거 버전을 다시 열 수 있어야 한다
      */
     @Transactional
     public void saveForm(
@@ -121,21 +124,26 @@ public class TemplateService {
             MultipartFile file
     ) {
         DocumentTemplateRow template = requireTemplate(tmplCd);
-        String formPath = template.getFormPath() == null ? "" : template.getFormPath().trim();
-        // form_path 없을 때(= 법적서류 유형 최초 템플릿) 회사 폴더에 1건 생성 후 경로 저장
-        if (formPath.isBlank()) {
-            if (file == null || file.isEmpty()) {
-                throw new BizException("업로드할 양식 파일을 선택하세요.");
-            }
-            String coCd = LoginUserContext.coCd();
-            String safeName = TemplateFileNames.safeTemplateFileName(file.getOriginalFilename());
-            // 자사 최초 업로드 — CustomTemplates/{회사코드}/{양식코드}/{파일명}
-            formPath = storage.formPath(coCd, template.getTmplCd(), safeName);
-            storage.create(formPath, file);
-            mapper.updateCompanyTemplateFormPath(coCd, template.getTmplCd(), formPath, LoginUserContext.userId());
-            return;
+        if (file == null || file.isEmpty()) {
+            throw new BizException("업로드할 양식 파일을 선택하세요.");
         }
-        storage.write(formPath, file);
+        String coCd = LoginUserContext.coCd();
+        // 표시 이력에는 사용자가 올린 원본명을 남기고, 물리 파일만 시각 접미로 버전을 구분한다
+        String safeName = TemplateFileNames.safeTemplateFileName(file.getOriginalFilename());
+        String versionName = TemplateFileNames.versionedFileName(
+                safeName, DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now())
+        );
+        // 자사 업로드 — CustomTemplates/{회사코드}/{양식코드}/{버전 파일명}
+        String formPath = storage.formPath(coCd, template.getTmplCd(), versionName);
+        // 볼륨에 먼저 쓰고 DB 메타를 맞춘다 — SP 실패 시 트랜잭션 롤백(고아 파일은 운영 정리)
+        storage.create(formPath, file);
+        mapper.insertCompanyTemplateFile(
+                coCd, template.getTmplCd(), safeName, formPath, file.getSize(), LoginUserContext.userId()
+        );
+        log.info(
+                "Template form version saved — coCd={}, tmplCd={}, formPath={}",
+                coCd, template.getTmplCd(), formPath
+        );
     }
 
     /** 회사 사용 템플릿 단건을 강제한다 */

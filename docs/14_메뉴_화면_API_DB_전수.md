@@ -208,7 +208,7 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 
 | 부모 | menu_cd | 메뉴명 | scrn_cd | sort | module | tmplCd | FE Page | 컴포넌트 | FE API | BE Controller | API | Mapper | SP | Cmds |
 |------|---------|--------|---------|------|--------|--------|---------|----------|--------|---------------|-----|--------|----|------|
-| `MFRM` | `hwp-template-management` | HWP문서관리 | `hwp-template-management` | 310 | FRM | — | HwpTemplateManagementPage | MesEditableGrid·DocForm*·MesButton | documentApi·workflowApi | TemplateController·WorkflowController | /api/v1/doc/templates/* · company-templates/forms | DocumentMapper·WorkflowMapper | sp_tbl_company_template_* | 인페이지 |
+| `MFRM` | `hwp-template-management` | 사용양식 관리 | `hwp-template-management` | 310 | FRM | — | hwp/hwptemplate/HwpTemplateManagementPage | MesEditableGrid·DocForm*·MesButton | documentApi·hwpTemplateApi | TemplateController·HwpTemplateController (삭제는 Workflow 잔류) | /api/v1/doc/templates/* · /api/v1/hwp/hwp-templates/{list,save,files,apply-file} · /api/v1/bas/company-templates/validate-delete·delete | DocumentMapper·HwpTemplateMapper·WorkflowMapper | sp_hwp_template_management_* · sp_tbl_company_template_d_000 | 인페이지 |
 | `MFRM` | `daily-hyg-item-admin` | 일일위생 점검항목관리 | `daily-hyg-item-admin` | 311 | FRM | tmpl_prp-hygiene-daily | TemplateCheckItemManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/company-check-items/* | WorkflowMapper | sp_tbl_company_check_item_* | add·save·del·search |
 | `MFRM` | `ccp-cold-limit-admin` | 냉장냉동 CCP 기준관리 | `ccp-cold-limit-admin` | 321 | FRM | tmpl_ccp-cold-log | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
 | `MFRM` | `ccp-heat-limit-admin` | 가열 CCP 기준관리 | `ccp-heat-limit-admin` | 322 | FRM | tmpl_ccp-heat-log | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
@@ -218,7 +218,7 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 | `MFRM` | `ccp-verify-standard-admin` | CCP검증 기준·주기관리 | `ccp-verify-standard-admin` | 326 | FRM | tmpl_ccp-verify-check | TemplateCheckItemManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/company-check-items/* | WorkflowMapper | sp_tbl_company_check_item_* | add·save·del·search |
 | `MFRM` | `ccp-limit-management` | CCP한계기준 관리 | `ccp-limit-management` | 330 | FRM | — | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
 | `MFRM` | `facility-check-item-admin` | 설비시설점검 항목·주기 | `facility-check-item-admin` | 331 | FRM | tmpl_prp-facility-check | TemplateCheckItemManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/company-check-items/* | WorkflowMapper | sp_tbl_company_check_item_* | add·save·del·search |
-| `MFRM` | `schedule-cycle-management` | 작성주기 관리 | `schedule-cycle-management` | 340 | FRM | — | ScheduleCycleManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/schedule-rules/* | WorkflowMapper | sp_tbl_schedule_rule_* | add·save·del·search |
+| `MFRM` | `schedule-cycle-management` | 문서주기관리 | `schedule-cycle-management` | 340 | FRM | — | hwp/doccycle/ScheduleCycleManagementPage | MesDataGrid·ResizableSplit·PageCard·SearchArea·CodeLookup 모달 | docCycleApi·departmentApi·userApi | DocCycleController (com.haccp.hwp.doccycle) | /api/v1/hwp/doc-cycles/{forms,get,save,validate-delete,delete} | mapper/hwp/doccycle/DocCycleMapper | sp_schedule_cycle_management_* · sp_tbl_schedule_task_regen_c_000 | save·del·search |
 | `MFRM` | `approval-line-management` | 결재선 관리 | `approval-line-management` | 350 | FRM | — | ApprovalLineManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/approval-lines/* | WorkflowMapper | sp_tbl_approval_line_* | add·save·del·search |
 | `MFRM` | `equipment-management` | 설비 이력 | `equipment-history` | 360 | WRK | tmpl_prp-equip-card | EquipmentHistoryPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | masterApi·equipmentHistApi | MasterController·EquipmentHistController | /api/v1/bas/equipment/* · /equipment-hist/* · photo | MasterMapper·EquipmentHistMapper | sp_tbl_equipment_hist_* | add·save·del·search |
 | `MFRM` | `pest-device-management` | 방충설비 이력 | `pest-device-history` | 370 | BAS | — | PestDeviceHistoryPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | masterApi·pestDeviceHistApi | MasterController·PestDeviceHistController | /api/v1/bas/pest-device/* · /pest-device-hist/* | MasterMapper·PestDeviceHistMapper | pest hist SP | add·save·del·search |
@@ -394,10 +394,10 @@ HWP 이관 4종은 §4.7 `fixedTmplCd`·`documentApi` 경로만 사용한다. �
 - `src/pages/auth/LoginPage.tsx`
 - `src/pages/bas/ApprovalLineManagementPage.tsx`
 - `src/pages/bas/EquipmentHistoryPage.tsx`
-- `src/pages/bas/HwpTemplateManagementPage.tsx`
+- `src/pages/hwp/hwptemplate/HwpTemplateManagementPage.tsx`
 - `src/pages/bas/MasterDataPage.tsx`
 - `src/pages/bas/PestDeviceHistoryPage.tsx`
-- `src/pages/bas/ScheduleCycleManagementPage.tsx`
+- `src/pages/hwp/doccycle/ScheduleCycleManagementPage.tsx`
 - `src/pages/bas/TemplateCheckItemManagementPage.tsx`
 - `src/pages/ccp/CcpFormPage.tsx`
 - `src/pages/ccp/CcpGenericMonitorPage.tsx`
@@ -423,6 +423,8 @@ HWP 이관 4종은 §4.7 `fixedTmplCd`·`documentApi` 경로만 사용한다. �
 - `src/api/ccpGenericApi.ts`
 - `src/api/codeApi.ts`
 - `src/api/documentApi.ts`
+- `src/api/hwp/docCycleApi.ts`
+- `src/api/hwp/hwpTemplateApi.ts`
 - `src/api/equipmentHistApi.ts`
 - `src/api/healthCertApi.ts`
 - `src/api/http.ts`

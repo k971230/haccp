@@ -18,6 +18,8 @@ com/haccp/sys/
 XML은 `resources/mapper/sys/{같은 폴더명}/*.xml` (`mapper/sys/README.md`).
 구 `SystemController`·`SystemService`·`SystemMapper`·`SystemMapper.xml` 단일 허브는 제거되었다. 되살리지 않는다.
 
+**다른 영역도 이번에 손대는 메뉴는 같은 규약으로 분할한다.** 미리 전 메뉴를 나누지 않는다. 상세 `08-haccp-backend.mdc`.
+
 패키지 루트는 `com.haccp`다. 구 MES 접두 패키지는 전면 이동되었고 잔존 참조가 없어야 한다 (MES 접두 문자열 grep 결과 0건).
 
 ## 계층 책임

@@ -44,12 +44,26 @@ public interface DocumentMapper {
             @Param("coCd") String coCd
     );
 
-    // coCd/tmplCd/formPath: 회사 양식 원본 경로 최초·교체 등록
-    // userId: JWT 작업자
-    void updateCompanyTemplateFormPath(
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-14
+     * 코멘트:
+     *   1) 업로드한 양식 파일을 이력에 append 하고 현재 적용본(form_path·current_file_idx)까지 옮긴다
+     *   2) 양식 파일 업로드(사용양식관리 저장·법적서류 업로드) 직후 호출한다
+     *   3) 기본 제공본(default_file_idx)은 비어 있을 때만 채워진다 — 시스템 원본을 덮어쓰지 않아 초기화가 항상 동작한다
+     */
+    void insertCompanyTemplateFile(
+            // JWT 회사코드 — 이력·현재 적용본의 테넌트 범위
             @Param("coCd") String coCd,
+            // 대상 양식코드 — 사용양식으로 등록되어 있어야 한다
             @Param("tmplCd") String tmplCd,
+            // 표시 파일명 — 업로드 원본명(번호 접두 제거)
+            @Param("fileNm") String fileNm,
+            // 저장된 상대 경로 — CustomTemplates/{coCd}/{tmplCd}/{버전 파일명}
             @Param("formPath") String formPath,
+            // 바이트 크기 — 모르면 null
+            @Param("fileSize") Long fileSize,
+            // JWT 작업자 ID
             @Param("userId") String userId
     );
 

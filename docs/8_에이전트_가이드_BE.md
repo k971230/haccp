@@ -10,7 +10,8 @@ Spring Boot **3.3.4** · Java **17** · MyBatis **3.0.3** · PG `sasshaccp` · �
 
 ## 패턴
 
-- 신규 API: Controller + (Service) + Mapper + `resources/mapper/{pkg}/*.xml` + SP  
+- 신규 API: Controller + (Service) + Mapper + `resources/mapper/{영역}/{메뉴}/*.xml` + SP  
+- 손대는 메뉴: 허브(평탄 패키지)에 남아 있으면 **그 작업에서** `com.haccp.{영역}.{메뉴}` + `mapper/{영역}/{메뉴}/` 로 분할. 미리 전 메뉴를 나누지 않는다. 기존 URL은 유지. 골드 `com.haccp.sys`  
 - 삭제: validate-delete → delete · Double Check  
 - 파일: Storage 경유 · multipart 한도 = `APP_FILE_MAX_*`  
 - 테넌트: `LoginUserContext`  

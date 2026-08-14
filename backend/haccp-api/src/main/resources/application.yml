@@ -70,6 +70,14 @@ app:
   # 오늘 할 일 생성 시각 — Spring cron 6필드, 환경변수로 운영 시간 조정
   task-generation:
     cron: ${TASK_GENERATION_CRON:0 5 0 * * *}
+  # 문서주기(양식별 작성주기) — 예정일 생성·마감 알림 공통 상수
+  schedule:
+    # 마감 몇 분 전에 알릴지 — tbl_schedule_task.alarm_dt 계산 기준
+    alarm-before-minutes: ${SCHEDULE_ALARM_BEFORE_MINUTES:60}
+    # 예정일을 몇 개월치 미리 만들지 — 길면 규칙 변경 시 정리 대상이 늘고, 짧으면 달력이 비어 보인다
+    generate-months: ${SCHEDULE_GENERATE_MONTHS:12}
+    # 마감 임박 알림 점검 주기 — 기본 10분 간격(알림 지연이 마감 시간을 넘지 않게)
+    alarm-cron: ${SCHEDULE_ALARM_CRON:0 */10 * * * *}
   # 화면 UV/PV 일자 집계 — 과제 생성(00:05) 직후 전일·당일 업서트
   view-stat-daily:
     cron: ${VIEW_STAT_DAILY_CRON:0 15 0 * * *}

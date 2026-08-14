@@ -77,6 +77,29 @@ public final class TemplateFileNames {
         return safe;
     }
 
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-14
+     * 코멘트:
+     *   1) 같은 폴더에서 이전 버전을 덮어쓰지 않도록 파일명에 업로드 시각을 끼운다
+     *   2) 양식 파일 업로드가 이력 1건을 남길 때마다 호출한다 (초기화·불러오기가 과거 파일을 다시 열어야 한다)
+     *   3) 확장자 앞에 _yyyyMMddHHmmss 를 붙이고, 확장자가 없으면 이름 끝에 붙인다
+     */
+    public static String versionedFileName(
+            // 이미 safeTemplateFileName으로 정규화된 파일명
+            String safeFileName,
+            // 업로드 시각 문자열 yyyyMMddHHmmss — 호출부가 한 번만 만든다
+            String stamp
+    ) {
+        String name = basename(safeFileName);
+        String suffix = stamp == null || stamp.isBlank() ? "" : "_" + stamp.trim();
+        int dot = name.lastIndexOf('.');
+        if (dot <= 0) {
+            return name + suffix;
+        }
+        return name.substring(0, dot) + suffix + name.substring(dot);
+    }
+
     /** 경로가 섞여 와도 마지막 세그먼트만 취한다 */
     public static String basename(String pathOrName) {
         if (pathOrName == null) {
