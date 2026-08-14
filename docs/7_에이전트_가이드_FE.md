@@ -38,7 +38,8 @@
 
 | 할 일 | 패턴 |
 |-------|------|
-| 새 화면 | `pages/{모듈}/` + `SCREEN_REGISTRY` + (필요) `api/` + BE + 메뉴/SP |
+| 새 화면 | `pages/{영역}/{메뉴}/` Page+Rule+README + `SCREEN_REGISTRY` + `api/{영역}/` + BE + 메뉴/SP |
+| 손대는 메뉴 | 아직 평탄하면 **그 작업에서** sys와 같이 분할. 미리 전 메뉴를 나누지 않는다. `scrnCd`·`persistId`·기존 URL은 유지 |
 | DB형 문서 | `useDocFormSession` + DocForm* — 복붙 Page 금지 |
 | HWP | `hwpLeaf`만 — 양식별 Page 금지 |
 | 그리드 CRUD | `useEditableRows` · `useGridAccess` · `GridCrudButtons` · `useAsyncAction` |

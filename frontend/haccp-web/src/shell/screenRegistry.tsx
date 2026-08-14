@@ -32,7 +32,7 @@ import HealthCertPage from "@/pages/hyg/HealthCertPage";
 // 역할 — rhwp HWP 문서형 작성·일자별 업로드
 import HwpDocumentEditorPage from "@/pages/doc/HwpDocumentEditorPage";
 // 역할 — HWP 양식 파일 관리
-import HwpTemplateManagementPage from "@/pages/bas/HwpTemplateManagementPage";
+import HwpTemplateManagementPage from "@/pages/hwp/hwptemplate/HwpTemplateManagementPage";
 // 역할 — 권한그룹 좌 메뉴권한 트리 + 우 마스터 그리드
 import RoleManagementPage from "@/pages/sys/role/RoleManagementPage";
 // 역할 — 부서 좌 트리 + 우 그리드
@@ -50,7 +50,7 @@ import PestDeviceHistoryPage from "@/pages/bas/PestDeviceHistoryPage";
 // 역할 — 결재선·점검항목·작성주기
 import ApprovalLineManagementPage from "@/pages/bas/ApprovalLineManagementPage";
 import TemplateCheckItemManagementPage from "@/pages/bas/TemplateCheckItemManagementPage";
-import ScheduleCycleManagementPage from "@/pages/bas/ScheduleCycleManagementPage";
+import ScheduleCycleManagementPage from "@/pages/hwp/doccycle/ScheduleCycleManagementPage";
 // 역할 — 설비·시설 점검 DB형
 import BizOpsFormPage from "@/pages/ops/BizOpsFormPage";
 // 역할 — 오늘 할 일·개선조치

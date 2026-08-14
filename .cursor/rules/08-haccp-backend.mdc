@@ -21,7 +21,18 @@ DB 규약: [`07-haccp-db.mdc`](07-haccp-db.mdc) · 운영: [`06-operations.mdc`]
 ## 패키지
 
 `com.haccp.{영역}` — `auth`, `menu`, `code`, `pref`, `log`, `common`,  
-업무: `tsk`, `ccp`, `hyg`, `doc`, `bas`, `sys`, `ops`, `workflow` …
+업무: `tsk`, `ccp`, `hyg`, `doc`, `hwp`, `bas`, `sys`, `ops`, `workflow` …
+
+## 화면 패키지 분할 (sys 골드)
+
+`com.haccp.sys.{메뉴}` = Controller · Service · Mapper, XML은 `mapper/sys/{메뉴}/`. **이번에 손대는 메뉴가 허브(평탄 패키지)에 남아 있으면 그 작업에서 동일하게 나눈다.** 미리 전 메뉴를 나누지 않는다.
+
+| 대상 | 규칙 |
+|------|------|
+| 패키지 | `com.haccp.{영역}.{메뉴}` — 하이픈 없는 짧은 도메인명 |
+| XML | `resources/mapper/{영역}/{메뉴}/*.xml` — `namespace`는 인터페이스 FQCN |
+| URL | 기존 `/api/v1/{영역}/{리소스}/…` 유지. 폴더 이동만으로 경로를 바꾸지 않는다 |
+| 공유 유틸 | 영역 루트에 둔다 (`SysPayload`, `pages/hwp/formType.ts`와 같은 위치) |
 
 ## 레이어
 

@@ -289,7 +289,8 @@ sequenceDiagram
 | pages/auth | LoginPage |
 | pages/tsk | TodayTasksPage |
 | pages/sys | SystemManagementPage (+rules) |
-| pages/bas | MasterData · Equipment/Pest History · ApprovalLine · Schedule · TemplateCheckItem · HwpTemplate |
+| pages/bas | MasterData · Equipment/Pest History · ApprovalLine · TemplateCheckItem |
+| pages/hwp | hwptemplate/ · doccycle/ |
 | pages/ccp | Cold · Generic · Metal · Verification · CcpFormPage |
 | pages/hyg | HygieneCheck · HealthCert |
 | pages/ops | BizOpsFormPage |
@@ -299,7 +300,7 @@ sequenceDiagram
 
 authApi · menuApi · codeApi · prefApi · viewLogApi · http  
 systemApi · masterApi · equipmentHistApi · pestDeviceHistApi · workflowApi  
-documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGenericApi · bizOpsApi · taskWorkflowApi
+documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGenericApi · bizOpsApi · taskWorkflowApi · hwpTemplateApi · docCycleApi
 
 ### 4.3 BE java 패키지 ↔ mapper XML
 
@@ -360,7 +361,8 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 | saveLegalType | PUT `/api/v1/bas/legal-types/save` |
 | company-check-items | list?tmplCd · save · validate-delete · delete |
 | company-forms | list · clone · activate · form-items list/save |
-| schedule-rules | list/save/validate-delete/delete |
+| hwp-templates | `/api/v1/hwp/hwp-templates/{list,save,files,apply-file}` — 사용양식 목록·저장·파일이력·불러오기/초기화 |
+| schedule-rules | list/save/validate-delete/delete (구 단일 그리드 API — 화면은 5.9 doc-cycles 사용) |
 | template-export-hist | list · get · export · import |
 | ~~smart-diary~~ | **폐기** (STEP 20 / G-14) — BE 엔드포인트 제거. DB DROP은 별도 승인 |
 
@@ -393,6 +395,7 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 | ccpGenericApi | templates · get · save · del | `/api/v1/ccp/generic-monitor/*` |
 | bizOpsApi | list/detail/save/del | `/api/v1/fac|inv|prc/{screen}/*` — **작성 UI는 `facility-equipment-check`만**. 나머지 base는 API 잔존(§5.7) |
 | taskWorkflowApi | today-tasks · notifications · corrective · relations · audit-export(동결) | `/api/v1/tsk/*` · `/api/v1/doc/corrective-actions/*` |
+| api/hwp/docCycleApi | forms(좌측 목록) · get · save · validate-delete · delete | `/api/v1/hwp/doc-cycles/*` — 저장 시 서버가 예정일 재생성 |
 
 ### 5.7 BizOps 다중 base — API 잔존 · UI HWP (G-15)
 
@@ -434,6 +437,8 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 | ViewLogController | /api/v1/log/view | 1 |
 | MasterController | /api/v1/bas | 5 |
 | EquipmentHistController | /api/v1/bas/equipment-hist | 4 |
+| DocCycleController (`hwp.doccycle`) | /api/v1/hwp/doc-cycles | 5 |
+| HwpTemplateController (`hwp.hwptemplate`) | /api/v1/hwp/hwp-templates | 4 |
 | PestDeviceHistController | /api/v1/bas/pest-device-hist | 4 |
 | WorkflowController | /api/v1/bas | 30+ |
 | CcpColdController | /api/v1/ccp/cold-monitor | 5 |
@@ -484,7 +489,7 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 | D CCP 한계 admin | MasterDataPage | masterApi ccp-limit | MasterController | sp_tbl_ccp_limit_* |
 | E 설비/방충 이력 M-D | Equipment/Pest HistoryPage | master+hist API | Master+HistController | equipment_hist / pest hist |
 | F 결재선·주기·점검항목 | ApprovalLine · Schedule · TemplateCheckItem | workflowApi | WorkflowController | 18_sp_workflow |
-| G HWP 양식관리 | HwpTemplateManagementPage | document+workflow | Template+Workflow | company_template · form file |
+| G HWP 양식관리 | hwp/hwptemplate/HwpTemplateManagementPage | document+hwpTemplateApi | Template+HwpTemplate (삭제는 Workflow 잔류) | company_template · form file |
 | H 위생 DB | HygieneCheckPage | hygieneApi | HygieneController | sp_tbl_hygiene_document_* |
 | I 냉장 CCP | ColdMonitorPage | ccpColdApi | CcpColdController | sp_tbl_ccp_cold_monitor_* |
 | J 금속/검증 CCP | CcpFormPage | ccpFormsApi | CcpFormsController | sp_tbl_ccp_form_* |
@@ -542,6 +547,7 @@ hwpLeaf(tmplCd) → HwpDocumentEditorPage
 | company-templates | `[{ tmplCd }]` |
 | company-check-items | `[{ tmplCd, itemCd }]` |
 | schedule-rules | `[{ idx }]` |
+| doc-cycles | `[{ tmplCd }]` — 양식당 주기 1건이라 대리키가 아니라 양식코드다 |
 | documents / ccp / hyg / bizops | `[{ docIdx }]` |
 | health-cert | `[{ idx }]` |
 | corrective | `[{ idx }]` |
@@ -599,6 +605,9 @@ APP_FILE_ROOT/
 ```
 
 사용자 서명은 파일이 아니라 `tbl_user.sign_img bytea` — 볼륨에 두지 않는다.
+
+사용양식 업로드는 덮어쓰지 않는다. `CustomTemplates/{coCd}/{tmplCd}/` 안에 `{안전파일명}_{yyyyMMddHHmmss}.{확장자}` 로 버전이 공존하고,
+`tbl_company_template_file` 이력의 `current_file_idx`(현재 적용) · `default_file_idx`(초기화 복원 대상)만 바뀐다.
 
 - TemplateImportService(ApplicationRunner): APP_TEMPLATE_IMPORT_ROOT + manifest.tsv  
 - formPath는 서버 전용 — API는 formUrl만  

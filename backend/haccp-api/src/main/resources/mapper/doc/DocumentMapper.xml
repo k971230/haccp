@@ -24,12 +24,14 @@ PIPELINE[HB84] MyBatis XML
         )
     </select>
 
-    <!-- 회사 양식 form_path 갱신 — 법적서류 템플릿 1건 최초·교체 -->
-    <update id="updateCompanyTemplateFormPath" statementType="CALLABLE">
-        CALL sp_tbl_company_template_form_u_000(
+    <!-- 양식 파일 업로드 — 이력 append + 현재 적용본 갱신. 기본 제공본은 없을 때만 채운다 -->
+    <update id="insertCompanyTemplateFile" statementType="CALLABLE">
+        CALL sp_hwp_template_management_file_c_000(
             #{coCd, jdbcType=VARCHAR},
             #{tmplCd, jdbcType=VARCHAR},
+            #{fileNm, jdbcType=VARCHAR},
             #{formPath, jdbcType=VARCHAR},
+            #{fileSize, jdbcType=BIGINT},
             #{userId, jdbcType=VARCHAR}
         )
     </update>
