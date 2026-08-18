@@ -16,7 +16,7 @@
 
 - 구분(시스템/자사)은 서버가 정하고 badge 표시 전용. 신규는 항상 자사양식
 - 시스템양식은 플랫폼 카탈로그 예제 전부(html 전용 화면 양식 포함)가 조회된다. SP는 `87_migrate_hwp_template_list_all.sql`(Jenkins migrate 안 함, DBeaver/수동)
-- `tmplCd` 는 신규행만 편집 (`LIST_GRID_RULES.newOnly`)
+- `tmplCd` 는 신규도 잠금. 사용자추가는 `hwp_usr_NNN` 자동 채번
 - 파일 기능은 구분과 무관. 삭제만 자사양식(+ 신규 draft) 허용
 - 업로드는 덮어쓰지 않고 버전 1건을 쌓는다
 - 불러오기 구분 콤보·열은 공통코드 `src-ty`(기본양식/사용자양식). 시드 `88_migrate_src_ty_code.sql`(Jenkins migrate 안 함, DBeaver/수동)

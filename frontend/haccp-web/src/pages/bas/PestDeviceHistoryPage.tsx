@@ -30,7 +30,7 @@ import { PageCard, PageCardSplit } from "@/components/layout/PageCard";
 import { PageHead, SearchArea, SearchButton } from "@/components/layout/SearchArea";
 import { gridHeadClass, gridPanelClass, pageRootClass } from "@/components/layout/pageClasses";
 // 역할 — 확인창·성공 및 오류 토스트
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
 // 역할 — 서버 예외를 업무 문구로 변환
 import { mesError } from "@/shell/errors";
 // 역할 — 공통 저장·삭제·필수 안내 문구
@@ -436,7 +436,7 @@ export default function PestDeviceHistoryPage() {
     const label = String(persisted[0].pestNm ?? persisted[0].pestCd ?? "방충설비");
     try {
       await validateDeleteMasterRows("pest-device", keys);
-      if (!(await mesConfirm(MES.deleteConfirm(label)))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm(label)))) return;
       await deleteMasterRows("pest-device", keys);
       clearPestSel();
       mesToast(MES.deleteDone, "success");
@@ -483,7 +483,7 @@ export default function PestDeviceHistoryPage() {
     if (keys.length === 0) return mesToast("삭제할 행의 키가 올바르지 않습니다.", "warn");
     try {
       await validateDeletePestDeviceHist(keys);
-      if (!(await mesConfirm(MES.deleteConfirm(selectedPestLabel || "이력")))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm(selectedPestLabel || "이력")))) return;
       await deletePestDeviceHist(keys);
       clearHistSel();
       mesToast(MES.deleteDone, "success");

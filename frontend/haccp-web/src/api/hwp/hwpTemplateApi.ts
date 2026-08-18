@@ -48,8 +48,10 @@ export interface HwpTemplateFile {
   fileSize?: number | null;
   // 출처 — sys: 기본 제공본, usr: 회사 업로드본
   srcTy: "sys" | "usr" | string;
-  currentYn: "Y" | "N" | string;
-  defaultYn: "Y" | "N" | string;
+  // 현재 적용 문구 — SP CASE. 적용 중이면 '현재적용', 아니면 빈 문자열
+  currentYn: string;
+  // 기본 제공 여부 — SP CASE. 그리드 양식구분은 src-ty 를 쓰고 이 값은 초기화 판정용
+  defaultYn: string;
   insId?: string | null;
   insDt?: string | null;
 }

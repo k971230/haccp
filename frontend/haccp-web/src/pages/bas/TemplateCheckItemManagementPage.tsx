@@ -19,7 +19,7 @@ import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useGridAccess } from "@/hooks/useGridAccess";
 import { MesButton } from "@/components/ui/MesButton";
 import { searchInputClass } from "@/components/ui/Input";
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 import { usePageCommands } from "@/shell/pageCommands";
@@ -382,7 +382,7 @@ export default function TemplateCheckItemManagementPage({
     }));
     try {
       await validateDeleteCompanyCheckItems(keys);
-      if (!(await mesConfirm(MES.deleteConfirm()))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm()))) return;
       await deleteCompanyCheckItems(keys);
       clearItemSel();
       mesToast(MES.deleteDone, "success");
@@ -423,7 +423,7 @@ export default function TemplateCheckItemManagementPage({
     if (keys.length === 0) return mesToast("삭제할 행의 키가 올바르지 않습니다.", "warn");
     try {
       await validateDeleteScheduleRules(keys);
-      if (!(await mesConfirm(MES.deleteConfirm()))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm()))) return;
       await deleteScheduleRules(keys);
       clearRuleSel();
       mesToast(MES.deleteDone, "success");

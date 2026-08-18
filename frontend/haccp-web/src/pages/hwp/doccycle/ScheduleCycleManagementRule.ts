@@ -14,8 +14,8 @@
 import type { GridColumn } from "@/types/grid";
 // 역할 — 주기 목록·상세 타입
 import type { DocCycleDetail, DocCycleFormRow } from "@/api/hwp/docCycleApi";
-// 역할 — 구분 라벨 정본
-import { FORM_TYPE_LABEL } from "../formType";
+// 역할 — sys-yn 레거시 Y/N 별칭
+import { withSysYnLegacyAliases } from "../formType";
 
 /** 화면코드 — tbl_screen.scrn_cd·권한·pref 키 */
 export const SCRN_CD = "schedule-cycle-management" as const;
@@ -192,13 +192,16 @@ export function formToDetails(form: CycleForm): DocCycleDetail[] {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-14
+ * 일자: 2026-08-18
  * 코멘트:
  *   1) 좌측 조회 전용 목록 컬럼을 만든다
- *   2) Page가 useMemo로 호출한다
- *   3) 구분은 formType 정본 badge, 사용여부는 사용/미사용
+ *   2) Page가 sys-yn 맵을 넘겨 useMemo로 호출한다
+ *   3) 구분 문구는 공통코드 sys-yn 이다. 불러오기 src-ty 와 섞지 않는다
  */
-export function buildFormColumns(): GridColumn<DocCycleFormRow>[] {
+export function buildFormColumns(
+  // sys-yn 공통코드 맵 — 시스템제공/사용자추가
+  sysYnMap: Record<string, string>,
+): GridColumn<DocCycleFormRow>[] {
   return [
     {
       // 양식코드 — 조회 전용. 등록·수정은 사용양식 관리에서 한다
@@ -207,19 +210,20 @@ export function buildFormColumns(): GridColumn<DocCycleFormRow>[] {
       width: 180,
     },
     {
-      // 양식명 — 자사 표시명(tmpl_nm_ovr) 우선
+      // 양식명 — 회사 표시명(tmpl_nm_ovr) 우선
       field: "tmplNm",
       header: "양식명",
       width: 200,
     },
     {
-      // 구분 — 시스템양식/자사양식 badge. 주기 설정은 구분과 무관하게 가능하다
+      // 구분 — 시스템제공/사용자추가 badge. 주기 설정은 구분과 무관하게 가능하다
       field: "formTy",
       header: "구분",
       width: 96,
       type: "code",
-      codeMap: FORM_TYPE_LABEL,
-      badge: { sys: "blue", usr: "green" },
+      // sys-yn 문구 + 레거시 Y/N 별칭. src-ty 와 섞지 않는다
+      codeMap: withSysYnLegacyAliases(sysYnMap),
+      badge: { sys: "blue", usr: "green", Y: "blue", N: "green" },
     },
     {
       // 사용여부 — 양식(ct.use_yn). 미사용도 검색 전체에서 보인다

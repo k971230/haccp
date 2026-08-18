@@ -68,7 +68,7 @@ import { fetchMySignInfo, uploadMySign } from "@/api/sys/userApi";
 // 역할 — DocForm 날짜·시각 변환
 import { fromInputDate, toInputDate, todayYmd } from "@/lib/docDateTime";
 // 역할 — 확인·토스트·업무 오류
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 import { cn } from "@/lib/cn";
@@ -613,7 +613,7 @@ export default function CcpGenericMonitorPage({
     try {
       const keys = [{ docIdx }];
       await validateDeleteGenericCcp(keys);
-      if (!(await mesConfirm("선택한 공통 CCP 일지를 삭제하시겠습니까?"))) return;
+      if (!(await mesConfirmDanger("선택한 공통 CCP 일지를 삭제하시겠습니까?"))) return;
       await deleteGenericCcp(keys);
       mesToast(MES.deleteDone, "success");
       await loadList();

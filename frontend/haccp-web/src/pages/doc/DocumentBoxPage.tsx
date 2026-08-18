@@ -33,7 +33,7 @@ import {
   type DocFormSearchValues,
 } from "@/components/form/DocFormSearchToolbar";
 // 역할 — 토스트·확인
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 // 역할 — 오류 업무 문구
 import { mesError } from "@/shell/errors";
 // 역할 — 공통 메시지
@@ -356,7 +356,7 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
       try {
         const keys = focus.map((row) => ({ docIdx: row.docIdx }));
         await validateDeleteDocument(keys);
-        if (!(await mesConfirm(MES.deleteConfirm(`${focus.length}건`)))) return;
+        if (!(await mesConfirmDanger(MES.deleteConfirm(`${focus.length}건`)))) return;
         await deleteDocument(keys);
         mesToast(MES.deleteDone, "success");
         setSelected(null);

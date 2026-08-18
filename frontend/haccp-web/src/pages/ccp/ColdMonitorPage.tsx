@@ -22,7 +22,7 @@ import { useDocFormSession, type DocListMeta } from "@/hooks/useDocFormSession";
 // 역할 — 셸 툴바·단축키 CRUD 등록
 import { usePageCommands } from "@/shell/pageCommands";
 // 역할 — 확인·토스트
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 // 역할 — 업무 예외 → 문구
 import { mesError } from "@/shell/errors";
 // 역할 — 공통 안내 문구
@@ -643,7 +643,7 @@ export default function ColdMonitorPage() {
       try {
         const keys = [{ docIdx }];
         await validateDeleteColdMonitor(keys);
-        if (!(await mesConfirm(MES.deleteConfirm(docNo || "문서")))) return;
+        if (!(await mesConfirmDanger(MES.deleteConfirm(docNo || "문서")))) return;
         await deleteColdMonitor(keys);
         mesToast(MES.deleteDone, "success");
         await loadList();

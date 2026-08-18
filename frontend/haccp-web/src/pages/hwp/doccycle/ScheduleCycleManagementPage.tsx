@@ -19,7 +19,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 // 역할 — 비동기 중복 실행 차단
 import { useAsyncAction } from "@/hooks/useAsyncAction";
-// 역할 — 공통코드 CYCLE_CD·nonwork-rule 콤보
+// 역할 — 공통코드 CYCLE_CD·nonwork-rule·sys-yn 콤보
 import { useCommonCodes } from "@/hooks/useCommonCodes";
 // 역할 — 조회 전용 그리드
 import { MesDataGrid } from "@/components/grid/MesDataGrid";
@@ -34,7 +34,7 @@ import { gridHeadClass, pageRootClass } from "@/components/layout/pageClasses";
 // 역할 — 담당자 선택 공통 팝업 — 고르면 소속 부서까지 채운다
 import { useModalStore } from "@/stores/modalStore";
 // 역할 — 업무 확인·토스트·오류 안내
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 // 역할 — 상단 공통 버튼(조회·저장·삭제) 연결
@@ -56,6 +56,7 @@ import { listUsers } from "@/api/sys/userApi";
 import { DEFAULT_USE_YN, ynOptions } from "@/lib/yn";
 // 역할 — 구분 헤더 배지 — 사용양식 관리와 동일 색·문구
 import { FormTypeBadge } from "../FormTypeBadge";
+import { SYS_YN_MAIN_CD } from "../formType";
 // 역할 — 화면 규칙(주기 상수·변환·좌측 컬럼·pref 키)
 import {
   CYCLE_FALLBACK,
@@ -98,6 +99,8 @@ export default function ScheduleCycleManagementPage() {
   const openModal = useModalStore((state) => state.openModal);
   const cycleCodes = useCommonCodes("CYCLE_CD");
   const nonworkCodes = useCommonCodes("nonwork-rule");
+  // 목록 구분 문구 — 시스템제공/사용자추가. 불러오기 src-ty 와 섞지 않는다
+  const sysYnCodes = useCommonCodes(SYS_YN_MAIN_CD);
 
   // 검색 조건 — 양식코드·양식명 부분검색(서버 LIKE), 사용여부 기본 Y·빈값=전체
   const [qTmplCd, setQTmplCd] = useState("");
@@ -138,7 +141,10 @@ export default function ScheduleCycleManagementPage() {
     [nonworkCodes.codes],
   );
 
-  const formColumns = useMemo(() => buildFormColumns(), []);
+  const formColumns = useMemo(
+    () => buildFormColumns(sysYnCodes.codeMap),
+    [sysYnCodes.codeMap],
+  );
 
   /**
    * 개발자: 박승우
@@ -370,7 +376,7 @@ export default function ScheduleCycleManagementPage() {
     const keys = [{ tmplCd: activeTmplCd }];
     try {
       await validateDeleteDocCycles(keys);
-      if (!(await mesConfirm(MES.deleteConfirm(activeForm?.tmplNm ?? activeTmplCd)))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm(activeForm?.tmplNm ?? activeTmplCd)))) return;
       await deleteDocCycles(keys);
       mesToast(MES.deleteDone, "success");
       await loadForms();
@@ -529,8 +535,10 @@ export default function ScheduleCycleManagementPage() {
                   </b>
                   {activeForm ? (
                     <FormTypeBadge
-                      // 주기 대상 구분
+                      // 주기 대상 구분 — sys/usr
                       sysYn={activeForm.formTy}
+                      // sys-yn 공통코드 문구 — 시스템제공/사용자추가
+                      codeMap={sysYnCodes.codeMap}
                     />
                   ) : null}
                   {dirty ? (

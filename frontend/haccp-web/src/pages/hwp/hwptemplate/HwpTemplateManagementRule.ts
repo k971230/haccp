@@ -18,8 +18,8 @@ import type { ScreenGridRules } from "@/shell/gridRules/types";
 import type { HwpTemplateFile, HwpTemplateRow } from "@/api/hwp/hwpTemplateApi";
 // 역할 — 편집행 메타
 import type { EditableRow } from "@/types/editable";
-// 역할 — 구분 라벨·자사양식 판정
-import { FORM_TYPE_LABEL, isCompanyForm } from "../formType";
+// 역할 — 사용자추가 판정·sys-yn 레거시 별칭
+import { isCompanyForm, withSysYnLegacyAliases } from "../formType";
 
 /** 화면코드 — tbl_screen.scrn_cd·권한·pref 키 */
 export const SCRN_CD = "hwp-template-management" as const;
@@ -30,46 +30,72 @@ export const PERSIST_ID = "hwp-template-management-list" as const;
 /** 좌 목록 · 우 미리보기 분할 비율 저장 키 */
 export const SPLIT_KEY = "haccp-split-hwp-template" as const;
 
-/** 불러오기 팝업 그리드 열 설정 저장 키 */
-export const FILE_HIST_PERSIST_ID = "hwp-template-file-hist" as const;
+/** 불러오기 팝업 그리드 열 설정 저장 키 — -3 은 양식구분 열 변경 후 옛 pref 를 버린다 */
+export const FILE_HIST_PERSIST_ID = "hwp-template-file-hist-3" as const;
 
-/** 파일 이력 출처 공통코드 대분류 — sys 기본양식, usr 사용자양식 */
+/** 파일 이력 양식구분 공통코드 대분류 — sys 시스템, usr 사용자 */
 export const SRC_TY_MAIN_CD = "src-ty" as const;
 
 /** 좌측 그리드 행 — 서버 목록 + 신규 draft */
 export type TmplListRow = HwpTemplateRow;
 
-/** tmplCd 는 신규(C) 행만 편집 */
-export const LIST_GRID_RULES: ScreenGridRules = { newOnly: ["tmplCd"] };
+/** tmplCd 는 신규도 잠근다 — hwp_usr_NNN 자동 채번 */
+export const LIST_GRID_RULES: ScreenGridRules = {};
+
+/** 사용자추가 양식코드 접두 — 시스템제공 hwp_sys_ 와 짝 */
+export const USR_TMPL_PREFIX = "hwp_usr_" as const;
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-18
+ * 코멘트:
+ *   1) 다음 사용자추가 코드를 만든다 — hwp_usr_001, 002 …
+ *   2) 신규 버튼이 목록·미저장 draft 를 보고 호출한다
+ *   3) 숫자가 아닌 옛 코드는 건너뛰고, 빈 목록이면 001 부터 시작한다
+ */
+export function nextUsrTmplCd(
+  // 현재 그리드 행 — 저장된 사용자추가 + 아직 저장 안 한 draft
+  rows: Array<{ tmplCd?: string | null }>,
+): string {
+  let max = 0;
+  const pattern = /^hwp_usr_(\d+)$/i;
+  for (const row of rows) {
+    const matched = pattern.exec(String(row.tmplCd ?? "").trim());
+    if (matched) max = Math.max(max, Number(matched[1]));
+  }
+  return `${USR_TMPL_PREFIX}${String(max + 1).padStart(3, "0")}`;
+}
 
 /** 사용유무 콤보 옵션 */
 export type UseOpt = { value: string; label: string };
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-14
+ * 일자: 2026-08-18
  * 코멘트:
- *   1) 좌측 목록 컬럼을 만든다 — 구분은 badge, 코드는 신규만
- *   2) Page가 canEdit·useOpts 를 넘겨 useMemo로 호출한다
- *   3) 구분 코드맵은 formType 정본을 쓴다
+ *   1) 좌측 목록 컬럼을 만든다 — 구분은 badge, 양식코드는 자동 채번이라 잠근다
+ *   2) Page가 canEdit·useOpts·sys-yn 맵을 넘겨 useMemo로 호출한다
+ *   3) 구분 문구는 공통코드 sys-yn 이다. 불러오기 src-ty 와 섞지 않는다
  */
 export function buildListColumns(
   // 셀 편집 가능 — 쓰기·수정 권한
   canEdit: boolean,
   // 사용유무 콤보
   useOpts: UseOpt[],
+  // sys-yn 공통코드 맵 — 시스템제공/사용자추가
+  sysYnMap: Record<string, string>,
 ): GridColumn<TmplListRow>[] {
   return [
     {
-      // 양식코드 — 신규행에서 직접 입력하고 저장 후 잠긴다
+      // 양식코드 — 신규는 hwp_usr_NNN 자동 채번, 사용자가 고치지 않는다
       field: "tmplCd",
       header: "양식코드",
       width: 190,
       required: true,
-      editableOnNew: true,
+      editable: false,
     },
     {
-      // 양식명 — 시스템양식도 회사 표시명을 바꿀 수 있다
+      // 양식명 — 시스템제공도 회사 표시명을 바꿀 수 있다
       field: "tmplNm",
       header: "양식명",
       width: 200,
@@ -83,8 +109,9 @@ export function buildListColumns(
       width: 96,
       type: "code",
       editable: false,
-      codeMap: FORM_TYPE_LABEL,
-      badge: { sys: "blue", usr: "green" },
+      // sys-yn 문구 + 레거시 Y/N 별칭. src-ty 와 섞지 않는다
+      codeMap: withSysYnLegacyAliases(sysYnMap),
+      badge: { sys: "blue", usr: "green", Y: "blue", N: "green" },
     },
     {
       // 양식파일 — 현재 적용 파일명. 없으면 업로드 전이다
@@ -145,20 +172,20 @@ export function buildButtonState(
  * 개발자: 박승우
  * 일자: 2026-08-18
  * 코멘트:
- *   1) 불러오기 팝업 그리드 컬럼을 만든다 — 파일명·등록일·출처·현재적용·기본양식
- *   2) 팝업이 src-ty 공통코드 맵을 넘겨 구분 라벨을 그린다
+ *   1) 불러오기 팝업 그리드 컬럼을 만든다 — 파일명·등록일·양식구분·현재적용
+ *   2) 양식구분은 src-ty 공통코드(시스템/사용자). 현재적용은 SP CASE 문구다
  *   3) 등록일은 yyyy-mm-dd만 — 시각은 숨긴다
  */
 export function buildFileHistColumns(
-  // src-ty 공통코드 맵 — sys 기본양식, usr 사용자양식
+  // src-ty 공통코드 맵 — sys 시스템, usr 사용자
   srcTyMap: Record<string, string>,
 ): GridColumn<HwpTemplateFile>[] {
   return [
     {
-      // 이력 파일명 — 업로드 당시 이름
+      // 이력 파일명 — 업로드 당시 이름. 현재적용 배지 자리를 위해 줄인다
       field: "fileNm",
       header: "파일명",
-      width: 220,
+      width: 160,
     },
     {
       // 등록일 — yyyy-mm-dd
@@ -168,33 +195,22 @@ export function buildFileHistColumns(
       type: "date",
     },
     {
-      // 출처 — src-ty 공통코드. 목록 구분(시스템양식/자사양식)과 섞지 않는다
+      // 양식구분 — src-ty 공통코드. 목록 구분(sys-yn 시스템제공/사용자추가)과 섞지 않는다
       field: "srcTy",
-      header: "구분",
-      width: 110,
+      header: "양식구분",
+      width: 100,
       type: "code",
       codeMap: srcTyMap,
       badge: { sys: "blue", usr: "green" },
     },
     {
-      // 지금 적용 중인 버전 — Y만 문구
+      // 지금 적용 중인 버전 — SP CASE 문구(현재적용). 배지가 잘리지 않게 88보다 넓힌다
       field: "currentYn",
       header: "현재적용",
-      width: 88,
+      width: 120,
       type: "code",
       align: "center",
-      codeMap: { Y: "현재적용", N: "" },
-      badge: { Y: "green" },
-    },
-    {
-      // 초기화 대상 기본 제공본 — Y만 문구
-      field: "defaultYn",
-      header: "기본양식",
-      width: 88,
-      type: "code",
-      align: "center",
-      codeMap: { Y: "기본양식", N: "" },
-      badge: { Y: "amber" },
+      badge: { 현재적용: "green" },
     },
   ];
 }

@@ -1,11 +1,11 @@
 /**
- * HwpTemplateManagementPage — 사용양식 관리 (시스템양식 / 자사양식).
+ * HwpTemplateManagementPage — 사용양식 관리 (시스템제공 / 사용자추가).
  *
  * 개발자: 박승우
- * 일자: 2026-08-14
+ * 일자: 2026-08-18
  * 코멘트:
- *   1) 구분(시스템/자사)은 서버가 정하고 화면은 badge로만 보여준다 — 신규는 항상 자사양식이다
- *   2) 파일 기능(업로드·내보내기·불러오기·초기화)은 구분과 무관하게 쓸 수 있고, 삭제만 자사양식으로 제한한다
+ *   1) 구분(시스템제공/사용자추가)은 서버가 정하고 화면은 badge로만 보여준다 — 신규는 항상 사용자추가다
+ *   2) 파일 기능(업로드·내보내기·불러오기·초기화)은 구분과 무관하게 쓸 수 있고, 삭제만 사용자추가로 제한한다
  *   3) 업로드는 덮어쓰지 않고 버전 1건을 쌓는다 — 불러오기는 과거 버전, 초기화는 기본 제공본으로 되돌린다
  *
  * PIPELINE[HF123] 사용양식관리
@@ -25,14 +25,14 @@ import { useAuthStore } from "@/stores/authStore";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 // 역할 — 편집 그리드 행 상태
 import { useEditableRows } from "@/hooks/useEditableRows";
-// 역할 — 공통코드 use-yn (사용유무 콤보)
+// 역할 — 공통코드 use-yn(사용유무)·sys-yn(목록 구분)
 import { useCommonCodes } from "@/hooks/useCommonCodes";
 // 역할 — 표준 버튼·검색 입력 스타일
 import { MesButton } from "@/components/ui/MesButton";
 import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 업무 오류·성공 안내
 import { mesError, toUserMessage } from "@/shell/errors";
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { MES } from "@/shell/messages";
 // 역할 — 상단 공통 버튼(조회·저장·삭제) 연결
 import { usePageCommands } from "@/shell/pageCommands";
@@ -63,8 +63,8 @@ import {
 } from "@/api/hwp/hwpTemplateApi";
 // 역할 — 선택행 우선 삭제 대상
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
-// 역할 — 자사양식 판정
-import { isCompanyForm } from "../formType";
+// 역할 — 사용자추가 판정·sys-yn 대분류
+import { SYS_YN_MAIN_CD, isCompanyForm } from "../formType";
 // 역할 — 구분 헤더 배지 — 문서주기관리와 동일 색·문구
 import { FormTypeBadge } from "../FormTypeBadge";
 // 역할 — 파일 이력 불러오기 팝업 — 코드조회와 같은 그리드 셸
@@ -77,6 +77,7 @@ import {
   SPLIT_KEY,
   buildButtonState,
   buildListColumns,
+  nextUsrTmplCd,
   type TmplListRow,
 } from "./HwpTemplateManagementRule";
 
@@ -106,6 +107,8 @@ export default function HwpTemplateManagementPage() {
   });
   const asyncAct = useAsyncAction();
   const useCodes = useCommonCodes("use-yn");
+  // 목록 구분 문구 — 시스템제공/사용자추가. 불러오기 src-ty 와 섞지 않는다
+  const sysYnCodes = useCommonCodes(SYS_YN_MAIN_CD);
 
   // 조회 조건 — 양식코드·양식명 부분검색(서버 LIKE)
   const [qTmplCd, setQTmplCd] = useState("");
@@ -144,8 +147,8 @@ export default function HwpTemplateManagementPage() {
   );
 
   const listColumns = useMemo(
-    () => buildListColumns(canEdit, useOpts),
-    [canEdit, useOpts],
+    () => buildListColumns(canEdit, useOpts, sysYnCodes.codeMap),
+    [canEdit, useOpts, sysYnCodes.codeMap],
   );
 
   /**
@@ -269,7 +272,7 @@ export default function HwpTemplateManagementPage() {
       const row = templates.rowsRef.current.find((item) => item._key === key);
       // 로컬 draft일 때(= 아직 서버 미등록) 파일 API를 호출하지 않는다
       if (!row || row._rowState === "C") {
-        setEditorMessage("신규 자사양식입니다. 저장한 뒤 업로드하세요.");
+        setEditorMessage("신규 사용자추가 양식입니다. 저장한 뒤 업로드하세요.");
         return;
       }
       const url = formUrlOf(row);
@@ -287,11 +290,11 @@ export default function HwpTemplateManagementPage() {
 
   /**
    * 개발자: 박승우
-   * 일자: 2026-08-14
+   * 일자: 2026-08-18
    * 코멘트:
-   *   1) 빈 행을 추가한다 — 구분은 자사양식(usr) 고정이며 사용자가 바꿀 수 없다
-   *   2) 목록 헤더 「신규」에서 호출한다
-   *   3) 양식코드·양식명을 입력하고 저장한 뒤 파일을 업로드한다
+   *   1) 빈 행을 추가한다 — 구분은 사용자추가(usr) 고정이며 사용자가 바꿀 수 없다
+   *   2) 양식코드는 hwp_usr_NNN 을 자동 채번한다. 양식명은 저장 전에 입력한다
+   *   3) 목록 헤더 「신규」에서 호출한다
    */
   const handleAdd = () => {
     if (!canWrite) {
@@ -299,14 +302,14 @@ export default function HwpTemplateManagementPage() {
       return;
     }
     const key = templates.addRow({
-      tmplCd: "",
+      tmplCd: nextUsrTmplCd(templates.rows),
       tmplNm: "",
-      // 신규는 항상 자사양식 — 서버도 usr 로 강제한다(요구사항 4)
+      // 신규는 항상 사용자추가 — 서버도 usr 로 강제한다(요구사항 4)
       sysYn: "usr",
       useYn: "Y",
     });
     setActiveKey(key);
-    setEditorMessage("신규 자사양식입니다. 양식코드·양식명을 입력해 저장한 뒤 업로드하세요.");
+    setEditorMessage("신규 사용자추가 양식입니다. 양식명을 입력해 저장한 뒤 업로드하세요.");
   };
 
   /**
@@ -405,7 +408,7 @@ export default function HwpTemplateManagementPage() {
     const label = String(persisted[0].tmplNm ?? persisted[0].tmplCd ?? "양식");
     try {
       await validateDeleteCompanyTemplates(keys);
-      if (!(await mesConfirm(MES.deleteConfirm(label)))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm(label)))) return;
       await deleteCompanyTemplates(keys);
       clearSel();
       mesToast(MES.deleteDone, "success");
@@ -473,11 +476,11 @@ export default function HwpTemplateManagementPage() {
 
   /**
    * 개발자: 박승우
-   * 일자: 2026-08-14
+   * 일자: 2026-08-18
    * 코멘트:
    *   1) 선택 양식의 파일 이력을 읽어 불러오기 팝업을 연다
    *   2) 미리보기 헤더 「불러오기」에서 호출한다
-   *   3) 이력이 없으면 팝업을 열지 않고 안내만 한다
+   *   3) SP 문구 '현재적용' 행을 라디오 기본 선택으로 두고, 이력이 없으면 팝업을 열지 않는다
    */
   const openHistModal = () =>
     asyncAct.run(async () => {
@@ -493,7 +496,7 @@ export default function HwpTemplateManagementPage() {
           return;
         }
         setHistRows(rows);
-        setHistActiveIdx(rows.find((file) => file.currentYn === "Y")?.idx ?? rows[0].idx);
+        setHistActiveIdx(rows.find((file) => file.currentYn === "현재적용")?.idx ?? rows[0].idx);
         setHistOpen(true);
       } catch (error) {
         mesError(error);
@@ -543,7 +546,7 @@ export default function HwpTemplateManagementPage() {
         mesToast("양식을 선택하세요.", "warn");
         return;
       }
-      if (!(await mesConfirm(`'${row.tmplNm || row.tmplCd}' 양식을 기본 제공 파일로 초기화하시겠습니까?`))) return;
+      if (!(await mesConfirmDanger(`'${row.tmplNm || row.tmplCd}' 양식을 기본 제공 파일로 초기화하시겠습니까?`))) return;
       try {
         await applyHwpTemplateFile({ tmplCd: String(row.tmplCd) });
         mesToast("기본 제공 양식으로 초기화했습니다.", "success");
@@ -686,8 +689,10 @@ export default function HwpTemplateManagementPage() {
                   <b className="truncate">{activeRow?.tmplNm || activeRow?.tmplCd || "양식 미리보기"}</b>
                   {activeRow ? (
                     <FormTypeBadge
-                      // 미리보기 대상 구분
+                      // 미리보기 대상 구분 — sys/usr
                       sysYn={activeRow.sysYn}
+                      // sys-yn 공통코드 문구 — 시스템제공/사용자추가
+                      codeMap={sysYnCodes.codeMap}
                     />
                   ) : null}
                   <span className="truncate text-xs font-normal text-slate-500">{editorMessage}</span>

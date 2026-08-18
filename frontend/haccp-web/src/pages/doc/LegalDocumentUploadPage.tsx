@@ -68,7 +68,7 @@ import { usePageCommands } from "@/shell/pageCommands";
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
 // 역할 — 오류·확인·토스트·공통 문구
 import { mesError } from "@/shell/errors";
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { MES } from "@/shell/messages";
 // 역할 — 그리드·편집 행 타입
 import type { GridColumn } from "@/types/grid";
@@ -390,7 +390,7 @@ export default function LegalDocumentUploadPage({
     if (keys.length === 0) return mesToast("삭제할 유형 코드가 올바르지 않습니다.", "warn");
     try {
       await validateDeleteCompanyTemplates(keys);
-      if (!(await mesConfirm(MES.deleteConfirm(`${keys.length}건`)))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm(`${keys.length}건`)))) return;
       await deleteCompanyTemplates(keys);
       mesToast(MES.deleteDone, "success");
       setTmplKey(null);
@@ -530,7 +530,7 @@ export default function LegalDocumentUploadPage({
     if (keys.length === 0) return mesToast("삭제할 문서 키가 올바르지 않습니다.", "warn");
     try {
       await validateDeleteDocument(keys);
-      if (!(await mesConfirm(MES.deleteConfirm(`${keys.length}건`)))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm(`${keys.length}건`)))) return;
       await deleteDocument(keys);
       mesToast(MES.deleteDone, "success");
       setDocKey(null);

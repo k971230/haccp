@@ -30,7 +30,7 @@ import { PageCard, PageCardSplit } from "@/components/layout/PageCard";
 import { PageHead, SearchArea, SearchButton } from "@/components/layout/SearchArea";
 import { gridHeadClass, gridPanelClass, pageRootClass } from "@/components/layout/pageClasses";
 // 역할 — 확인창·성공 및 오류 토스트
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
 // 역할 — 서버 예외를 업무 문구로 변환
 import { mesError } from "@/shell/errors";
 // 역할 — 공통 저장·삭제·필수 안내 문구
@@ -612,7 +612,7 @@ export default function EquipmentHistoryPage() {
     const label = String(persisted[0].equipNm ?? persisted[0].equipCd ?? "설비");
     try {
       await validateDeleteMasterRows("equipment", keys);
-      if (!(await mesConfirm(MES.deleteConfirm(label)))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm(label)))) return;
       await deleteMasterRows("equipment", keys);
       clearEquipSel();
       mesToast(MES.deleteDone, "success");
@@ -659,7 +659,7 @@ export default function EquipmentHistoryPage() {
     if (keys.length === 0) return mesToast("삭제할 행의 키가 올바르지 않습니다.", "warn");
     try {
       await validateDeleteEquipmentHist(keys);
-      if (!(await mesConfirm(MES.deleteConfirm(selectedEquipLabel || "이력")))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm(selectedEquipLabel || "이력")))) return;
       await deleteEquipmentHist(keys);
       clearHistSel();
       mesToast(MES.deleteDone, "success");

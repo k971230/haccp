@@ -26,7 +26,7 @@ import { PageCard, PageCardSplit } from "@/components/layout/PageCard";
 import { PageHead, SearchArea, SearchButton } from "@/components/layout/SearchArea";
 import { gridHeadClass, gridPanelClass, pageRootClass } from "@/components/layout/pageClasses";
 // 역할 — 확인·토스트·오류·공통 문구
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 import { usePageCommands } from "@/shell/pageCommands";
@@ -325,7 +325,7 @@ export default function ApprovalLineManagementPage() {
     const keys = persisted.map((row) => ({ apprLineCd: String(row.apprLineCd) }));
     try {
       await validateDeleteApprovalLines(keys);
-      if (!(await mesConfirm(MES.deleteConfirm(String(persisted[0].apprLineNm ?? persisted[0].apprLineCd))))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm(String(persisted[0].apprLineNm ?? persisted[0].apprLineCd))))) return;
       await deleteApprovalLines(keys);
       clearSel();
       mesToast(MES.deleteDone, "success");

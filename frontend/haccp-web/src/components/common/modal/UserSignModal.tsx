@@ -18,7 +18,7 @@ import { cn } from "@/lib/cn";
 // 역할 — 서명 조회·업로드·삭제 API (사용자 도메인 소유)
 import { deleteUserSign, fetchUserSignBlob, uploadUserSign } from "@/api/sys/userApi";
 import { mesError } from "@/shell/errors";
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 // 역할 — 모달 props 계약·공통 바디 높이
 import { COMMON_MODAL_BODY_H, type UserSignModalProps } from "./modalTypes";
 // 역할 — 전역 모달 닫기
@@ -212,7 +212,7 @@ export function UserSignModal({
   /** 등록된 서명 삭제 — 확인 후 API */
   const handleDelete = async () => {
     if (!hasSign || busy) return;
-    if (!(await mesConfirm("등록된 서명을 삭제하시겠습니까?"))) return;
+    if (!(await mesConfirmDanger("등록된 서명을 삭제하시겠습니까?"))) return;
     const ac = new AbortController();
     uploadAbortRef.current?.abort();
     uploadAbortRef.current = ac;

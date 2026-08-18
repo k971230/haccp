@@ -70,7 +70,7 @@ export function HwpTemplateFileHistModal({
   onApply,
   onClose,
 }: HwpTemplateFileHistModalProps) {
-  // 역할 — src-ty 콤보·구분 열 라벨
+  // 역할 — src-ty 콤보·양식구분 열 라벨
   const srcTy = useCommonCodes(SRC_TY_MAIN_CD);
   // 입력 중 파일명 — 조회 전
   const [draftNm, setDraftNm] = useState("");
@@ -139,7 +139,7 @@ export function HwpTemplateFileHistModal({
         </div>
         <div className="flex flex-col gap-2 p-3">
           <div
-            // 파일명·구분 이중 검색 + 조회 — 코드조회와 같은 한 줄
+            // 파일명·양식구분 이중 검색 + 조회 — 코드조회와 같은 한 줄
             className="flex flex-wrap items-center gap-1.5"
           >
             <input
@@ -157,7 +157,7 @@ export function HwpTemplateFileHistModal({
               autoFocus
             />
             <select
-              // 구분 — src-ty. 빈 값=전체
+              // 양식구분 — src-ty. 빈 값=전체
               className={cn(searchInputClass, "h-8 w-[8.5rem] bg-white")}
               value={draftSrc}
               onChange={(e) => setDraftSrc(e.target.value)}
@@ -186,9 +186,9 @@ export function HwpTemplateFileHistModal({
             persistId={FILE_HIST_PERSIST_ID}
             // pref 저장용 화면코드 — 사용양식관리와 동일
             scrnCd={SCRN_CD}
-            // 파일명·구분 필터된 이력
+            // 파일명·양식구분 필터된 이력
             rows={filteredRows}
-            // 파일명·등록일·출처·현재적용·기본양식
+            // 파일명·등록일·양식구분·현재적용
             columns={columns}
             // 이력 PK — idx
             rowKey={(r) => String(r.idx)}

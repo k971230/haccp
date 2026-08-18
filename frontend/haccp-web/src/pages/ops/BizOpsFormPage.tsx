@@ -29,7 +29,7 @@ import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useDocFormSession, type DocListMeta } from "@/hooks/useDocFormSession";
 // 역할 — 셸 툴바·단축키 CRUD 등록
 import { usePageCommands } from "@/shell/pageCommands";
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
@@ -491,7 +491,7 @@ export default function BizOpsFormPage({ screenCode }: BizOpsFormPageProps) {
     try {
       const keys = [{ docIdx }];
       await validateDeleteBizOps(screenCode, keys);
-      if (!await mesConfirm(MES.deleteConfirm(docNo || "문서"))) return;
+      if (!await mesConfirmDanger(MES.deleteConfirm(docNo || "문서"))) return;
       await deleteBizOps(screenCode, keys);
       mesToast(MES.deleteDone, "success");
       await loadList();

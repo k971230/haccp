@@ -37,7 +37,7 @@ import { pageRootClass } from "@/components/layout/pageClasses";
 import { treePanelHeadClass } from "@/components/layout/TreePanelSearch";
 import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 확인·토스트·오류·공통 문구
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 // 역할 — 셸 상단·단축키 CRUD 명령 등록
@@ -315,7 +315,7 @@ export default function UserManagementPage() {
     }
     try {
       if (keys.length > 0) await validateDeleteUsers(keys);
-      if (!(await mesConfirm(MES.deleteConfirm()))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm()))) return;
       if (keys.length > 0) await deleteUsers(keys);
       let lastFocus = activeKey;
       for (const row of newRows) {

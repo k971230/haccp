@@ -38,7 +38,7 @@ import { searchInputClass } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
 import { filterTreeByQuery } from "@/lib/treeFilter";
 import { DEFAULT_USE_YN, ynMap, ynOptions } from "@/lib/yn";
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 import { usePageCommands } from "@/shell/pageCommands";
@@ -277,7 +277,7 @@ export default function DepartmentManagementPage() {
     if (keys.length === 0 && localOnly.length === 0) return mesToast(MES.selectRow, "warn");
     try {
       if (keys.length > 0) await validateDeleteDepartments(keys);
-      if (!(await mesConfirm(MES.deleteConfirm()))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm()))) return;
       if (keys.length > 0) await deleteDepartments(keys);
       // 체크된 신규행만 로컬 제거 — 나머지 미저장 행추가분은 유지
       let lastFocus = activeKey;

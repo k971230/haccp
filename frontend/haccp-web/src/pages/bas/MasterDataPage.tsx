@@ -31,7 +31,7 @@ import { gridHeadClass } from "@/components/layout/pageClasses";
 import { MesButton } from "@/components/ui/MesButton";
 import { Input } from "@/components/ui/Input";
 // 역할 — 확인창·성공 및 오류 토스트
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
 // 역할 — 서버 예외를 업무 문구로 변환
 import { mesError } from "@/shell/errors";
 // 역할 — 공통 저장·삭제·필수 안내 문구
@@ -465,7 +465,7 @@ export default function MasterDataPage({ screenCode }: MasterDataPageProps) {
     const label = String(persisted[0][config.nameField] ?? persisted[0][config.keyField] ?? "");
     try {
       await validateDeleteMasterRows(config.type, keys);
-      if (!(await mesConfirm(MES.deleteConfirm(label)))) return;
+      if (!(await mesConfirmDanger(MES.deleteConfirm(label)))) return;
       await deleteMasterRows(config.type, keys);
       clearSel();
       mesToast(MES.deleteDone, "success");

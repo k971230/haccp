@@ -22,8 +22,8 @@ set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-# 원본 HWP 디렉터리 — 기본은 docs/templates (매니페스트 required=Y 만 둔다). 서버는 HACCP_TEMPLATE_SRC 로 덮을 수 있다
-SRC="${HACCP_TEMPLATE_SRC:-$ROOT/docs/templates}"
+# 원본 HWP 디렉터리 — 기본은 docs/templates/new (매니페스트 required=Y). 서버는 HACCP_TEMPLATE_SRC 로 덮을 수 있다
+SRC="${HACCP_TEMPLATE_SRC:-$ROOT/docs/templates/new}"
 MANIFEST="$ROOT/backend/haccp-api/src/main/resources/templates/manifest.tsv"
 
 # 도커는 MSYS 형식(/d/haccp)을 모른다 — Windows 에서는 D:\haccp 형태로 바꿔 넘긴다

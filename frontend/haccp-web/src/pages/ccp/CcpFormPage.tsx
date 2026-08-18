@@ -27,7 +27,7 @@ import { useGridAccess } from "@/hooks/useGridAccess";
 import type { GridColumn } from "@/types/grid";
 import type { EditableRow } from "@/types/editable";
 // 역할 — 대화·오류
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 // 역할 — 문서형 레이아웃
@@ -491,7 +491,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
     if (!isEdit) return mesToast(MES.inApprovalLocked, "warn");
     try {
       await validateDeleteCcpForm(form, [{ docIdx }]);
-      if (!await mesConfirm(MES.deleteConfirm(buf?.docNo || "문서"))) return;
+      if (!await mesConfirmDanger(MES.deleteConfirm(buf?.docNo || "문서"))) return;
       await deleteCcpForm(form, [{ docIdx }]);
       mesToast(MES.deleteDone, "success");
       await loadList();

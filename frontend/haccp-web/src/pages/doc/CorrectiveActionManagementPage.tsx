@@ -36,7 +36,7 @@ import {
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useEditableRows } from "@/hooks/useEditableRows";
 import { usePageCommands } from "@/shell/pageCommands";
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 import type { GridColumn } from "@/types/grid";
@@ -202,7 +202,7 @@ export default function CorrectiveActionManagementPage() {
     try {
       const keys = saved.map((row) => ({ idx: Number(row.idx) }));
       await validateDeleteCorrectiveActions(keys);
-      if (!(await mesConfirm(`선택한 개선조치 ${keys.length}건을 삭제하시겠습니까?`))) return;
+      if (!(await mesConfirmDanger(`선택한 개선조치 ${keys.length}건을 삭제하시겠습니까?`))) return;
       await deleteCorrectiveActions(keys);
       mesToast(MES.deleteDone, "success");
       await load();

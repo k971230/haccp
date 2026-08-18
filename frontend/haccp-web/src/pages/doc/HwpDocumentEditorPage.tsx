@@ -28,7 +28,7 @@ import { MesButton } from "@/components/ui/MesButton";
 import { Input } from "@/components/ui/Input";
 // 역할 — 업무 오류·성공 안내
 import { mesError, toUserMessage } from "@/shell/errors";
-import { mesConfirm, mesConfirmUnsaved, mesToast } from "@/shell/dialog";
+import { mesConfirmDanger, mesConfirmUnsaved, mesToast } from "@/shell/dialog";
 import { MES } from "@/shell/messages";
 // 역할 — 본인 서명 미등록 시 즉시 업로드
 import { uploadMySign } from "@/api/sys/userApi";
@@ -810,7 +810,7 @@ export default function HwpDocumentEditorPage({
       const keys = [{ docIdx }];
       try {
         await validateDeleteDocument(keys);
-        if (!(await mesConfirm(MES.deleteConfirm(detail?.header.docNo || "문서")))) return;
+        if (!(await mesConfirmDanger(MES.deleteConfirm(detail?.header.docNo || "문서")))) return;
         await deleteDocument(keys);
         setDocIdx(null);
         setDetail(null);

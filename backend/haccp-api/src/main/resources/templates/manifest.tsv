@@ -1,42 +1,32 @@
-# tmpl_cd	source_name	target_name	required  — docs 실존 파일명만. 대상은 번호접두 제거 한글명
+# tmpl_cd	source_name	target_name	required  — docs/templates/new 실존 파일명. 대상은 (시스템)접두 제거 한글명
 # 배포 경로: APP_FILE_ROOT/HaccpTemplates/{tmpl_cd}/{target_name}
-tmpl_admin-handover-doc	1.업무_인수인계서.hwp	업무_인수인계서.hwp	Y
-tmpl_ccp-cold-log	2.중요관리점[CCP]_점검표_냉장보관.hwp	중요관리점[CCP]_점검표_냉장보관.hwp	Y
-tmpl_ccp-metal-log	2.중요관리점[CCP]_점검표_금속검출.hwp	중요관리점[CCP]_점검표_금속검출.hwp	Y
-tmpl_ccp-verify-check	3.중요관리점_검증점검표.hwp	중요관리점_검증점검표.hwp	Y
-tmpl_prp-verify-plan	4.연간_검증계획서.hwp	연간_검증계획서.hwp	Y
-tmpl_prp-verify-check	5.검증_점검표.hwp	검증_점검표.hwp	Y
-tmpl_prp-verify-report	6.검증결과_보고서.hwp	검증결과_보고서.hwp	Y
-tmpl_prp-verify-action	7.검증_개선조치_결과보고서.hwp	검증_개선조치_결과보고서.hwp	Y
-tmpl_admin-edu-plan	8.연간_교육_훈련_계획서.hwp	연간_교육_훈련_계획서.hwp	Y
-tmpl_admin-edu-log	9.교육일지.hwp	교육일지.hwp	Y
-tmpl_prp-hygiene-daily	10.일일_위생_점검일지.hwp	일일_위생_점검일지.hwp	Y
-tmpl_prp-hygiene-personal	11.개인_위생관리_점검표.hwp	개인_위생관리_점검표.hwp	Y
-tmpl_prp-hygiene-area	12.작업장_위생관리_점검표.hwp	작업장_위생관리_점검표.hwp	Y
-tmpl_prp-pest-check	13.방충_방서_점검표.hwp	방충_방서_점검표.hwp	Y
-tmpl_prp-facility-check	14.시설_설비_처리도구_점검표.hwp	시설_설비_처리도구_점검표.hwp	Y
-tmpl_prp-calib-target	15.검_교정_대상.hwp	검_교정_대상.hwp	Y
-tmpl_prp-calib-temp	16.자체_검_교정_일지_1.hwp	자체_검_교정_일지_1.hwp	Y
-tmpl_prp-calib-weight	16.자체_검_교정_일지_2.hwp	자체_검_교정_일지_2.hwp	Y
-tmpl_prp-calib-scale	16.자체_검_교정_일지_3.hwp	자체_검_교정_일지_3.hwp	Y
-tmpl_prp-equip-card	17.시설_설비_이력카드.hwp	시설_설비_이력카드.hwp	Y
-tmpl_prp-waste-check	18.폐기물_처리_점검표.hwp	폐기물_처리_점검표.hwp	Y
-tmpl_logis-inventory-check	19.입출고_및_재고_점검표.hwp	입출고_및_재고_점검표.hwp	Y
-tmpl_logis-receive-inspect	20.입고검사_일지.hwp	입고검사_일지.hwp	Y
-tmpl_prp-test-product	21.제품검사_성적서.hwp	제품검사_성적서.hwp	Y
-tmpl_prp-test-surface	22.표면오염도_검사_성적서.hwp	표면오염도_검사_성적서.hwp	Y
-tmpl_admin-bad-product	23.부적합제품_관리_점검표.hwp	부적합제품_관리_점검표.hwp	Y
-tmpl_prp-water-check	24.용수관리_점검표.hwp	용수관리_점검표.hwp	Y
-tmpl_admin-claim-log	25.클레임_관리_일지.hwp	클레임_관리_일지.hwp	Y
-tmpl_ccp-process-check	26.공정관리_점검표.hwp	공정관리_점검표.hwp	Y
-tmpl_logis-vehicle-log	27.차량운행일지.hwp	차량운행일지.hwp	Y
-tmpl_admin-visitor-log	3. 외부인출입기록부.hwp	외부인출입기록부.hwp	Y
-tmpl_prp-visual-inspect	13. 원료부자재육안검사기준.hwp	원료부자재육안검사기준.hwp	Y
-tmpl_logis-submat-receive	15. 부자재입고검수점검표.hwp	부자재입고검수점검표.hwp	Y
-tmpl_prp-calib-ext	18. 외부 검교정기록부.hwp	외부 검교정기록부.hwp	Y
-tmpl_logis-shipment-log	20. 제품출고관리일지.hwp	제품출고관리일지.hwp	Y
-tmpl_admin-recall-report	25. 회수결과보고서.hwp	회수결과보고서.hwp	Y
-tmpl_admin-eval-check	26. 실시상황평가표.hwp	실시상황평가표.hwp	Y
+hwp_sys_001	00.(시스템)외부인출입기록부.hwp	외부인출입기록부.hwp	Y
+hwp_sys_002	01.(시스템)업무인수인계서.hwp	업무인수인계서.hwp	Y
+hwp_sys_003	04.(시스템)연간검증계획서.hwp	연간검증계획서.hwp	Y
+hwp_sys_004	05.(시스템)검증점검표.hwp	검증점검표.hwp	Y
+hwp_sys_005	06.(시스템)검증결과보고서.hwp	검증결과보고서.hwp	Y
+hwp_sys_006	07.(시스템)검증개선조치결과보고서.hwp	검증개선조치결과보고서.hwp	Y
+hwp_sys_007	08.(시스템)연간교육·훈련계획서.hwp	연간교육·훈련계획서.hwp	Y
+hwp_sys_008	09.(시스템)교육일지.hwp	교육일지.hwp	Y
+hwp_sys_009	11.(시스템)개인위생관리점검표.hwp	개인위생관리점검표.hwp	Y
+hwp_sys_010	12.(시스템)작업장위생관리점검표.hwp	작업장위생관리점검표.hwp	Y
+hwp_sys_011	13.(시스템)방충방서점검표.hwp	방충방서점검표.hwp	Y
+hwp_sys_012	14.(시스템)시설설비처리도구점검표.hwp	시설설비처리도구점검표.hwp	Y
+hwp_sys_013	15.(시스템)검교정대상.hwp	검교정대상.hwp	Y
+hwp_sys_014	16.(시스템)자체검교정일지.hwp	자체검교정일지.hwp	Y
+hwp_sys_015	18.(시스템)폐기물처리점검표.hwp	폐기물처리점검표.hwp	Y
+hwp_sys_016	19.(시스템)입출고및재고점검표.hwp	입출고및재고점검표.hwp	Y
+hwp_sys_017	20.(시스템)입고검사일지.hwp	입고검사일지.hwp	Y
+hwp_sys_018	21.(시스템)제품검사성적서.hwp	제품검사성적서.hwp	Y
+hwp_sys_019	22.(시스템)표면오염도검사성적서.hwp	표면오염도검사성적서.hwp	Y
+hwp_sys_020	23.(시스템)부적합제품관리점검표.hwp	부적합제품관리점검표.hwp	Y
+hwp_sys_021	24.(시스템)용수관리_점검표.hwp	용수관리_점검표.hwp	Y
+hwp_sys_022	25.(시스템)소비자불만관리일지.hwp	소비자불만관리일지.hwp	Y
+hwp_sys_023	27.(시스템)차량운행일지.hwp	차량운행일지.hwp	Y
+hwp_sys_024	28.(시스템)압축공기필터관리대장.hwp	압축공기필터관리대장.hwp	Y
+hwp_sys_025	28.(시스템)회수관리일지.hwp	회수관리일지.hwp	Y
+hwp_sys_026	29.(시스템)육안검사기준.hwp	육안검사기준.hwp	Y
+hwp_sys_027	30.(시스템)육안검사일지.hwp	육안검사일지.hwp	Y
 tmpl_admin-law-health	LAW_HEALTH.hwp	LAW_HEALTH.hwp	N
 tmpl_logis-material-ledger	LAW_MATERIAL.hwp	LAW_MATERIAL.hwp	N
 tmpl_admin-building-ledger	LAW_BUILDING.hwp	LAW_BUILDING.hwp	N

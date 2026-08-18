@@ -22,7 +22,7 @@ import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useDocFormSession, type DocListMeta } from "@/hooks/useDocFormSession";
 // 역할 — 셸 툴바·단축키 CRUD 등록
 import { usePageCommands } from "@/shell/pageCommands";
-import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 import { MesButton } from "@/components/ui/MesButton";
@@ -466,7 +466,7 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
     try {
       const keys = [{ docIdx }];
       await validateDeleteHygiene(screenCode, keys);
-      if (!await mesConfirm(`${buf?.docNo || title} 문서를 삭제하시겠습니까?`)) return;
+      if (!await mesConfirmDanger(`${buf?.docNo || title} 문서를 삭제하시겠습니까?`)) return;
       await deleteHygiene(screenCode, keys);
       mesToast(MES.deleteDone, "success");
       await loadList();

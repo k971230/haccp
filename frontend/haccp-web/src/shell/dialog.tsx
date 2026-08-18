@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-06
  * 코멘트:
- *   1) mesConfirm/mesAlert는 Promise를 반환해 화면 코드가 await로 사용자 응답을 기다릴 수 있다
+ *   1) mesConfirm은 안내(파랑), mesConfirmDanger는 삭제·초기화(빨간 틴트) — 확인/취소 문구는 같다
  *   2) mesConfirmUnsaved는 저장/저장안함/취소 3버튼 — HWP 행 이동 미저장 가드용
  *   3) mes-web의 터치PC(kiosk) 대형 모드는 걷어냈다 — HACCP는 사무실 PC에서만 쓴다
  *
@@ -108,8 +108,8 @@ export const useDialogStore = create<DialogState>((set, get) => ({
         message,
         // 제목 미지정 시 — confirm은 "확인", alert는 "알림"
         title: o?.title ?? (kind === "confirm" ? "확인" : "알림"),
-        // 톤 미지정 시 — confirm은 주의(warn), alert는 정보(info)
-        tone: o?.tone ?? (kind === "confirm" ? "warn" : "info"),
+        // 톤 미지정 시 — confirm·alert 모두 안내(info). 삭제·초기화는 mesConfirmDanger가 error를 넘긴다
+        tone: o?.tone ?? "info",
         okText: o?.okText ?? "확인",
         cancelText: o?.cancelText ?? "취소",
         resolve,
@@ -163,15 +163,28 @@ export const useDialogStore = create<DialogState>((set, get) => ({
  * 일자: 2026-08-05
  * 코멘트:
  *   1) 확인·취소 모달을 띄우고 사용자 선택을 Promise로 돌려준다
- *   2) 저장·삭제처럼 되돌리기 어려운 처리 직전에 await로 호출한다
+ *   2) 저장·업로드·적용처럼 안내 확인에 쓴다. 확인 버튼은 save(파랑)
  *   3) 확인이면 true, 취소·Escape·백드롭 클릭이면 false다
  */
 export const mesConfirm = (
   // 확인 문구 — 여러 줄이면 그대로 줄바꿈되어 표시된다
   message: string,
-  // 제목·톤·버튼 문구 재정의 — 생략하면 확인 모달 기본값을 쓴다
+  // 제목·톤·버튼 문구 재정의 — 생략하면 확인 모달 기본값(info)을 쓴다
   o?: Parameters<DialogState["show"]>[2]
 ) => useDialogStore.getState().show("confirm", message, o);
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-18
+ * 코멘트:
+ *   1) 삭제·초기화처럼 되돌리기 어려운 확인에 쓴다
+ *   2) 버튼은 취소/확인 그대로이고, 확인만 툴바 초기화와 같은 danger(빨간 틴트)다
+ *   3) 확인이면 true, 취소·Escape·백드롭이면 false다
+ */
+export const mesConfirmDanger = (
+  // 확인 문구 — MES.deleteConfirm 또는 초기화 질문
+  message: string,
+) => useDialogStore.getState().show("confirm", message, { tone: "error" });
 
 /**
  * 개발자: 박승우
@@ -312,13 +325,17 @@ export function DialogHost() {
                 <>
                   {/* confirm일 때만(= 취소 선택지가 있을 때) 취소 버튼을 둔다 */}
                   {kind === "confirm" && (
-                    <MesButton variant="secondary" onClick={() => close(false)}>
+                    <MesButton
+                      // 취소 — 아무 것도 하지 않고 닫는다
+                      variant="secondary"
+                      onClick={() => close(false)}
+                    >
                       {cancelText}
                     </MesButton>
                   )}
                   <MesButton
-                    // 삭제처럼 주의가 필요한 확인이면 경고 색 버튼으로 바꿔 오클릭을 줄인다
-                    variant={kind === "confirm" && (tone === "warn" || tone === "error") ? "dangerConfirm" : "save"}
+                    // 삭제·초기화(error·warn)는 툴바 초기화와 같은 danger, 안내는 save(파랑)
+                    variant={kind === "confirm" && (tone === "warn" || tone === "error") ? "danger" : "save"}
                     // 열리자마자 Enter로 확인할 수 있게 포커스를 준다
                     autoFocus
                     onClick={() => close(true)}
