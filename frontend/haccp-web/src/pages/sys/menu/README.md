@@ -17,13 +17,14 @@
 - 좌측 노드를 고르면 **직속 하위만** 그리드에 남는다. 「전체」는 검색조건만 적용한 전건
 - 표시 순서는 `sort_no`(대중소 인코딩) → 메뉴코드
 
-## API · SP
+## API · SP · 테이블
 
-| 동작 | API (`api/sys/menuApi.ts`) | SP |
-|---|---|---|
-| 조회 | `listAdminMenus` | `sp_menu_management_r_000` |
-| 저장 | `saveMenus` | `sp_menu_management_c_000` |
-| 삭제 검증 → 삭제 | `validateDeleteMenus` → `deleteMenus` | `_delete_blocker_r_000` → `_d_000` |
+| 동작 | API (`api/sys/menuApi.ts`) | SP | 테이블 |
+|---|---|---|---|
+| 조회 | `listAdminMenus` | `sp_menu_management_r_000` | `tbl_menu` `tbl_screen` |
+| 저장 | `saveMenus` | `sp_menu_management_c_000` | `tbl_menu` |
+| 삭제 검증 | `validateDeleteMenus` | `sp_menu_management_delete_blocker_r_000` | `tbl_menu` `tbl_role_screen` |
+| 삭제 | `deleteMenus` | `sp_menu_management_d_000` | `tbl_menu` `tbl_role_screen` |
 
 `listAdminMenus`는 권한 관리·감사 이력·화면 이용 통계의 좌측 트리 원본으로도 쓰인다.
 

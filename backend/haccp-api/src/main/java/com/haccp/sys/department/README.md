@@ -4,14 +4,12 @@
 
 ## 엔드포인트
 
-| Method | URL | Service | SP |
-|---|---|---|---|
-| GET | `/api/v1/sys/department-management/list` | `list` | `sp_department_management_r_000` |
-| PUT | `/api/v1/sys/department-management/save` | `save` | `sp_department_management_c_000` |
-| POST | `/api/v1/sys/department-management/validate-delete` | `validateDelete` | `sp_department_management_delete_blocker_r_000` |
-| POST | `/api/v1/sys/department-management/delete` | `delete` | `sp_department_management_d_000` |
-
-테이블: `tbl_dept` (상위부서명 self JOIN, 삭제 차단 판정에 `tbl_user`·하위 부서)
+| Method | URL | Service | SP | 테이블 |
+|---|---|---|---|---|
+| GET | `/api/v1/sys/department-management/list` | `list` | `sp_department_management_r_000` | `tbl_dept` |
+| PUT | `/api/v1/sys/department-management/save` | `save` | `sp_department_management_c_000` | `tbl_dept` |
+| POST | `/api/v1/sys/department-management/validate-delete` | `validateDelete` | `sp_department_management_delete_blocker_r_000` | `tbl_dept` `tbl_user` |
+| POST | `/api/v1/sys/department-management/delete` | `delete` | `sp_department_management_d_000` | `tbl_dept` `tbl_user` |
 
 ## 규칙
 

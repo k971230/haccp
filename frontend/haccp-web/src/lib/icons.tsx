@@ -2,11 +2,11 @@
  * icons — 버튼 preset 아이콘과 대분류 메뉴 아이콘 매핑.
  *
  * 개발자: 박승우
- * 일자: 2026-08-05
+ * 일자: 2026-08-18
  * 코멘트:
  *   1) 버튼은 문자열 이름("plus")으로 아이콘을 지정할 수 있게 해 화면마다 lucide를 직접 import하지 않게 한다
  *   2) 대분류 메뉴 아이콘은 모듈코드로 고른다 — mes-web처럼 메뉴명 키워드로 추측하지 않는다
- *   3) 없는 이름을 넘기면 null이라 아이콘만 빠지고 화면은 정상 동작한다
+ *   3) reset은 사용양식 초기화 버튼이 쓴다
  *
  * PIPELINE[HF38] 공통 모듈
  */
@@ -32,6 +32,7 @@ import {
   Menu,
   MoreHorizontal,
   Plus,
+  RotateCcw,
   Save,
   Search,
   Settings,
@@ -51,6 +52,7 @@ export const MES_ICONS = {
   columns: LayoutGrid,   // 열 설정
   download: Download,    // 다운로드·출력
   upload: Upload,        // 파일·사진 첨부
+  reset: RotateCcw,      // 초기화·복원
   menu: Menu,            // 메뉴 열기
   more: MoreHorizontal,  // 더보기
   inbox: Inbox,          // 결재 수신함

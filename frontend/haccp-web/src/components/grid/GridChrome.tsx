@@ -32,18 +32,24 @@ type View<T extends Record<string, any>> = MesTableViewApi<T>;
 // IME 조합 중 필터 debounce 지연(ms)
 const FILTER_DEBOUNCE_MS = 250;
 
-/** 행번호·선택열 sticky 폭 합 — 데이터 열 left-pin 시작 offset */
+/** 행번호·선택열·라디오열 sticky 폭 합 — 데이터 열 left-pin 시작 offset */
 /**
  * 개발자: 박승우
  * 일자: 2026-07-10
  * 코멘트:
- *   1) 행번호(32px)·선택열(36px) 합산 — pin left 기준
+ *   1) 행번호(32px)·선택열(36px)·라디오열(36px) 합산 — pin left 기준
  *   2) 모듈 import·화면/훅에서 호출될 때
  *   3) 성공 시 정상 반환, 실패 시 예외·가드 메시지
  */
-// 설명 — 행번호(32px)·선택열(36px) 합산 — pin left 기준
-export function gridLeadLeftPx(opts: { showRowNum?: boolean; selectable?: boolean }): number {
-  return (opts.showRowNum ? 32 : 0) + (opts.selectable ? 36 : 0);
+// 설명 — 행번호(32px)·선택열(36px)·라디오열(36px) 합산 — pin left 기준
+export function gridLeadLeftPx(opts: {
+  showRowNum?: boolean;
+  selectable?: boolean;
+  singleSelect?: boolean;
+}): number {
+  return (opts.showRowNum ? 32 : 0)
+    + (opts.selectable ? 36 : 0)
+    + (opts.singleSelect ? 36 : 0);
 }
 
 /**
@@ -126,7 +132,10 @@ export function GridToolbar<T extends Record<string, any>>(props: {
   const menuColumns = columns.filter((c) => !c.hidden && c.field !== "coCd");
 
   return (
-    <div className="flex min-h-9 shrink-0 flex-wrap items-center gap-1.5 border-b border-slate-200 bg-slate-50/70 px-3 py-2">
+    <div
+      // 그리드 툴바 — treePanelHeadClass와 같은 h-9. wrap 금지로 화면 전환 시 흔들림 방지
+      className="flex h-9 shrink-0 items-center gap-1.5 overflow-hidden border-b border-slate-200 bg-slate-50/70 px-3"
+    >
       <div className="relative">
         <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden />
         <input
@@ -150,7 +159,7 @@ export function GridToolbar<T extends Record<string, any>>(props: {
           }}
         />
       </div>
-      <div className="ml-auto flex flex-wrap items-center gap-1">
+      <div className="ml-auto flex shrink-0 items-center gap-1">
         <MesButton
           // 버튼 크기(sm/md/touch)
           // 그리드 헤더는 보통 sm, 키오스크는 touch

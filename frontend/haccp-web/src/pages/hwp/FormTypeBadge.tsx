@@ -33,8 +33,8 @@ export function FormTypeBadge({
     <span
       className={
         company
-          ? "rounded px-1.5 py-0.5 text-[11px] font-medium bg-emerald-50 text-emerald-700"
-          : "rounded px-1.5 py-0.5 text-[11px] font-medium bg-blue-50 text-blue-700"
+          ? "shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium bg-emerald-50 text-emerald-700"
+          : "shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium bg-blue-50 text-blue-700"
       }
     >
       {FORM_TYPE_LABEL[company ? "usr" : "sys"]}

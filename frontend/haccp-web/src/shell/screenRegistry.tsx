@@ -59,9 +59,9 @@ import CorrectiveActionManagementPage from "@/pages/doc/CorrectiveActionManageme
 // 역할 — 사용자 관리 그리드
 import UserManagementPage from "@/pages/sys/user/UserManagementPage";
 // 역할 — 로그 3화면 (각자 LogPageShell + Rule)
-import LoginHistoryPage from "@/pages/sys/log/LoginHistoryPage";
-import ScreenUsageStatisticsPage from "@/pages/sys/log/ScreenUsageStatisticsPage";
-import AuditLogPage from "@/pages/sys/log/AuditLogPage";
+import LoginHistoryPage from "@/pages/sys/loginhistory/LoginHistoryPage";
+import ScreenUsageStatisticsPage from "@/pages/sys/screenusage/ScreenUsageStatisticsPage";
+import AuditLogPage from "@/pages/sys/auditlog/AuditLogPage";
 
 /**
  * 개발자: 박승우

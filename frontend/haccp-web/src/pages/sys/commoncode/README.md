@@ -16,14 +16,15 @@
 - 우하 사용자 코드(`sys_yn='N'`): CRUD. `mainCd`·`subCd`는 신규 행에서만 입력(`USR_RULES.newOnly`)
 - 헤더 검색(대분류코드·대분류명·사용여부)은 전건 조회 후 FE 필터다. 사용여부 기본값은 `DEFAULT_USE_YN`(Y)
 
-## API · SP
+## API · SP · 테이블
 
-| 동작 | API (`api/sys/commonCodeApi.ts`) | SP |
-|---|---|---|
-| 대분류 조회 | `listCodeGroups` | `sp_common_code_management_r_000` |
-| 세부 조회 | `listCodeDetails(mainCd, sysYn)` | `sp_common_code_management_r_001` |
-| 저장 | `saveCommonCodes` | `sp_common_code_management_c_000` |
-| 삭제 검증 → 삭제 | `validateDeleteCommonCodes` → `deleteCommonCodes` | `_delete_blocker_r_000` → `_d_000` |
+| 동작 | API (`api/sys/commonCodeApi.ts`) | SP | 테이블 |
+|---|---|---|---|
+| 대분류 조회 | `listCodeGroups` | `sp_common_code_management_r_000` | `tbl_code` |
+| 세부 조회 | `listCodeDetails(mainCd, sysYn)` | `sp_common_code_management_r_001` | `tbl_code` |
+| 저장 | `saveCommonCodes` | `sp_common_code_management_c_000` | `tbl_code` |
+| 삭제 검증 | `validateDeleteCommonCodes` | `sp_common_code_management_delete_blocker_r_000` | `tbl_code` |
+| 삭제 | `deleteCommonCodes` | `sp_common_code_management_d_000` | `tbl_code` |
 
 전역 콤보(`useCommonCodes`)도 `sp_common_code_management_r_001`을 쓰므로 이 SP를 고치면 **전 화면 콤보가 함께 바뀐다**.
 

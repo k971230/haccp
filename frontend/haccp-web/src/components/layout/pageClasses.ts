@@ -34,9 +34,9 @@ export const pageRootClass = "flex h-full min-h-0 flex-col gap-4";
 // 설명 — 그리드 블록 — flex-1 세로 채움
 export const gridBlockClass = "flex min-h-0 flex-1 flex-col";
 
-/** 그리드 패널 헤더 — accent dot 파란색 통일 (.mes-grid-head b::before) */
+/** 그리드 패널 헤더 — treePanelHeadClass와 같은 h-9. wrap 금지로 화면 전환 시 흔들림 방지 */
 export const gridHeadClass =
-  "mes-grid-head flex min-h-9 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/70 px-3 py-2.5 [&_b]:text-mes-ui [&_b]:font-bold [&_b]:text-black";
+  "mes-grid-head flex h-9 shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-slate-200 bg-slate-50/70 px-3 [&_b]:truncate [&_b]:text-mes-ui [&_b]:font-bold [&_b]:text-black";
 
 /** 그리드 패널 (분할 화면 — border 포함) */
 export const gridPanelClass =

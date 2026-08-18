@@ -2,11 +2,12 @@
  * MesDataGrid — 읽기전용 그리드 (useMesTable + 가상스크롤 + pref).
  *
  * 개발자: 박승우
- * 일자: 2026-08-12
+ * 일자: 2026-08-18
  * 코멘트:
  *   1) loading 중에도 table을 유지하고 GridLoadingOverlay만 띄운다
  *   2) pref는 persistId + scrnCd(prop 또는 PageScrnContext)로 저장한다
  *   3) 코드 룩업·로그 그리드도 scrnCd prop으로 열 너비·숨김을 DB에 남긴다
+ *   4) singleSelect는 라디오 리드 열 — activeKey와 동기이며 selectable(다중 체크박스)과 같이 쓰지 않는다
  *
  * PIPELINE[F89] 읽기전용 데이터 그리드
  * PIPELINE[F90, F75, F173] 연관 모듈
@@ -72,6 +73,8 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
     // 행 다중선택(__select) 옵트인
     // 기본 off — 삭제는 페이지 activeKey 단건 유지 패턴과 병행
     selectable = false,
+    // 단건 라디오 리드 열 — activeKey 행이 켜진다. selectable과 같이 쓰지 않는다
+    singleSelect = false,
     onSelectionChange,
   } = props;
   // pref 저장용 화면코드 — prop 우선, 없으면 셸 PageScrnContext
@@ -133,9 +136,11 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
 
 // 설명 — height 100%/auto 시 flex fill 레이아웃
   const fill = height === "100%" || height === "auto";
-  const leadCols = (showRowNum ? 1 : 0) + (selectable ? 1 : 0);
-  const leadLeft = gridLeadLeftPx({ showRowNum, selectable });
-  const selectLeft = showRowNum ? 32 : 0;
+  const leadCols = (showRowNum ? 1 : 0) + (singleSelect ? 1 : 0) + (selectable ? 1 : 0);
+  const leadLeft = gridLeadLeftPx({ showRowNum, selectable, singleSelect });
+  // 라디오는 행번호 다음, 다중 체크박스는 그 다음
+  const singleLeft = showRowNum ? 32 : 0;
+  const selectLeft = singleLeft + (singleSelect ? 36 : 0);
 
 // 설명 — 왼쪽 pin 열 sticky left offset 계산
   const pinLeftStyle = (field: string): React.CSSProperties | undefined => {
@@ -179,6 +184,28 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
               // 변경 시 화면·훅 동작에 영향 — 기본값·nullable 여부 확인
               onDoubleClick={() => props.onRowDoubleClick?.(r)}>
               {showRowNum && <GridRowNumCell index={i} active={active} />}
+              {singleSelect && (
+                <td
+                  // 단건 라디오 — activeKey와 동기. 클릭은 onRowClick만
+                  className="mes-col-select mes-col-pinned"
+                  style={{ width: 36, position: "sticky", left: singleLeft }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="mes-cell mes-cellwrap mes-align-center">
+                    <input
+                      // HTML radio — 같은 persistId 그리드에서 1건만
+                      type="radio"
+                      name={`${props.persistId ?? "mes-grid"}-single`}
+                      className="h-3.5 w-3.5 border-slate-300"
+                      // 활성 행일 때 켜짐 — activeKey와 동기
+                      checked={active}
+                      // 라디오 클릭 — 행 클릭과 동일하게 onRowClick
+                      onChange={() => { props.onSetActive?.(); props.onRowClick?.(r); }}
+                      title="이 행 선택"
+                    />
+                  </div>
+                </td>
+              )}
               {selectable && (
                 <td
                   // 추가 Tailwind/CSS 클래스
@@ -277,6 +304,13 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
             <thead>
               <tr>
                 {showRowNum && <th className="mes-rownum">{rowNumHeader}</th>}
+                {singleSelect && (
+                  <th
+                    // 단건 라디오 헤더 — 전체선택 없음
+                    className="mes-rownum mes-col-pinned mes-col-select p-0"
+                    style={{ width: 36, position: "sticky", left: singleLeft, zIndex: 4 }}
+                  />
+                )}
                 {selectable && <GridSelectHeadCell view={view} leftOffset={selectLeft} />}
                 {cols.map((c) => (
                   <GridHeadCell key={c.field} col={c} view={view} sortable={sortable} leadLeftPx={leadLeft} />

@@ -270,7 +270,7 @@ sequenceDiagram
 | 화면 | scrn_cd | persistId | 그리드 | 가상화 | pref |
 |------|---------|-----------|--------|--------|------|
 | 문서함 | `document-inbox` | `doc-document-inbox` | MesEditableGrid | displayRows≥100 | O (셸 Provider) |
-| 변경 감사 로그 | `audit-log` | `sys-audit-log` | MesEditableGrid | 동일 | O |
+| 변경 감사 로그 | `audit-log` | `log-audit-log` | MesDataGrid (LogPageShell) | 동일 | O |
 | 설비 이력 | `equipment-history` | `bas-equipment-history-master` · `-detail` | MesEditableGrid×2 | 동일 | O |
 
 편차(허용): `ROW_ESTIMATE_PX=28` 은 estimateSize 고정(가상화 보정용) — env 미이관. 크리티컬 버그 없음.  
@@ -288,7 +288,7 @@ sequenceDiagram
 |------|------|
 | pages/auth | LoginPage |
 | pages/tsk | TodayTasksPage |
-| pages/sys | SystemManagementPage (+rules) |
+| pages/sys | commoncode/ · menu/ · role/ · department/ · user/ · loginhistory/ · auditlog/ · screenusage/ |
 | pages/bas | MasterData · Equipment/Pest History · ApprovalLine · TemplateCheckItem |
 | pages/hwp | hwptemplate/ · doccycle/ |
 | pages/ccp | Cold · Generic · Metal · Verification · CcpFormPage |
@@ -296,10 +296,10 @@ sequenceDiagram
 | pages/ops | BizOpsFormPage |
 | pages/doc | HwpDocumentEditor · DocumentBox · LegalDocumentUpload · CorrectiveAction |
 
-### 4.2 FE api (19)
+### 4.2 FE api
 
 authApi · menuApi · codeApi · prefApi · viewLogApi · http  
-systemApi · masterApi · equipmentHistApi · pestDeviceHistApi · workflowApi  
+api/sys/* · masterApi · equipmentHistApi · pestDeviceHistApi · workflowApi  
 documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGenericApi · bizOpsApi · taskWorkflowApi · hwpTemplateApi · docCycleApi
 
 ### 4.3 BE java 패키지 ↔ mapper XML
@@ -329,19 +329,20 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 | pref grid list/save | GET/PUT | `/api/v1/pref/grid/{list,save}` | http |
 | collectViewLogs | POST | `/api/v1/log/view/collect` | http (실패 무시) |
 
-### 5.2 systemApi
+### 5.2 api/sys (화면 1개 = 파일 1개)
 
 | FE | Method | URL |
 |----|--------|-----|
-| listSystemRows(screenCode) | GET | `/api/v1/sys/{screenCode}/list` |
-| saveSystemRows | PUT | `/api/v1/sys/{screenCode}/save` |
-| validateDeleteSystemRows | POST | `/api/v1/sys/{screenCode}/validate-delete` |
-| deleteSystemRows | POST | `/api/v1/sys/{screenCode}/delete` |
-| uploadUserSign / uploadMySign | POST multipart | `/api/v1/sys/users/{id\|me}/sign` |
-| fetchUserSignBlob / fetchMySignImage | GET | `/api/v1/sys/users/{id\|me}/sign` (bytea 응답) |
+| commonCodeApi | GET/PUT/POST | `/api/v1/sys/common-code-management/{list,save,validate-delete,delete}` |
+| menuApi | GET/PUT/POST | `/api/v1/sys/menu-management/{list,save,validate-delete,delete}` |
+| roleApi | GET/PUT/POST | `/api/v1/sys/role-management/{list,save,validate-delete,delete}` · screens |
+| departmentApi | GET/PUT/POST | `/api/v1/sys/department-management/{list,save,validate-delete,delete}` |
+| userApi | GET/PUT/POST | `/api/v1/sys/user-management/{list,save,validate-delete,delete}` · `/users/{id\|me}/sign` |
+| loginHistoryApi | GET | `/api/v1/sys/login-history/list` |
+| auditLogApi | GET | `/api/v1/sys/audit-log/list` |
+| screenUsageApi | GET | `/api/v1/sys/screen-usage-statistics/list` |
 
-screenCode: company/user/department/role/menu/common-code-management · login-history · screen-usage-statistics · audit-log  
-(이력 3종은 list만)
+이력 3종은 list만. 서명은 `userApi`가 소유한다. `company-management`는 온보딩 외 미노출.
 
 ### 5.3 masterApi · 이력
 
@@ -416,7 +417,7 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 | 검사 | 결과 |
 |------|------|
 | `screenRegistry` → `BizOpsFormPage` | `facility-equipment-check` **1건만** |
-| HWP leaf (`waste-hwp` · `inventory-hwp` · `receiving-insp-hwp` · `process-hwp`) | `HwpDocumentEditorPage` → `documentApi` · `systemApi`(서명)만. `bizOpsApi` / `/api/v1/fac|inv|prc/` **호출 0** |
+| HWP leaf (`waste-hwp` · `inventory-hwp` · `receiving-insp-hwp` · `process-hwp`) | `HwpDocumentEditorPage` → `documentApi` · `userApi`(서명)만. `bizOpsApi` / `/api/v1/fac|inv|prc/` **호출 0** |
 | `BizOpsFormPage` meta에 남은 5 screenCode | 코드 잔존(재활성 대비)이나 **메뉴·레지스트리 경로 없음** → 운영 작성 경로에서 미도달 |
 | 불필요 API 삭제 | **미실시** — STEP 20과 동일하게 별도 승인 후(데이터·SP 의존). 현행은 문서 고정으로 혼동만 제거 |
 
@@ -449,10 +450,17 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 | DocumentController | /api/v1/doc/documents | 11 |
 | TemplateController | /api/v1/doc/templates | 3 |
 | TaskController | (full path) | 11 |
-| SystemController | /api/v1/sys | 8 |
+| CommonCodeController | /api/v1/sys/common-code-management | 4 |
+| MenuMgmtController | /api/v1/sys/menu-management | 4 |
+| RoleMgmtController | /api/v1/sys/role-management | 6 |
+| DepartmentController | /api/v1/sys/department-management | 4 |
+| UserController | /api/v1/sys/user-management · /users | 8 |
+| LoginHistoryController | /api/v1/sys/login-history | 1 |
+| AuditLogController | /api/v1/sys/audit-log | 1 |
+| ScreenUsageController | /api/v1/sys/screen-usage-statistics | 1 |
 | BizOpsController | 6 bases × 5 | 30 |
 
-합계: **@RestController 19**.
+합계: sys는 화면 1개 = Controller 1개로 분할. 나머지 도메인은 기존 표와 같다.
 
 ### 6.2 DocumentController 상세
 
@@ -483,8 +491,8 @@ screenCode: company/user/department/role/menu/common-code-management · login-hi
 
 | 유형 | FE Page | FE API | BE | 대표 SP/테이블 |
 |------|---------|--------|-----|----------------|
-| A 시스템 CRUD | SystemManagementPage | systemApi | SystemController | 21_sp_system · tbl_company/user/… |
-| B 시스템 이력 | 동일 readOnly | systemApi list | SystemController | login_log · view_stat_daily · audit_log |
+| A 시스템 CRUD | CommonCode·Menu·Role·Department·User Page | api/sys/{공통코드·메뉴·권한·부서·사용자}Api | CommonCode·MenuMgmt·RoleMgmt·Department·User Controller | sp_{화면명}_* · tbl_user/dept/role/menu/code |
+| B 시스템 이력 | LoginHistory·AuditLog·ScreenUsage Page (LogPageShell) | loginHistoryApi · auditLogApi · screenUsageApi | LoginHistory·AuditLog·ScreenUsage Controller | login_log · view_stat_daily · audit_log |
 | C 기초 마스터 | MasterDataPage | masterApi | MasterController | sp_tbl_master_* |
 | D CCP 한계 admin | MasterDataPage | masterApi ccp-limit | MasterController | sp_tbl_ccp_limit_* |
 | E 설비/방충 이력 M-D | Equipment/Pest HistoryPage | master+hist API | Master+HistController | equipment_hist / pest hist |

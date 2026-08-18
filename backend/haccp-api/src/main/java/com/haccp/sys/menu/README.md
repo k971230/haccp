@@ -4,14 +4,12 @@
 
 ## 엔드포인트
 
-| Method | URL | Service | SP |
-|---|---|---|---|
-| GET | `/api/v1/sys/menu-management/list` | `list` | `sp_menu_management_r_000` |
-| PUT | `/api/v1/sys/menu-management/save` | `save` | `sp_menu_management_c_000` |
-| POST | `/api/v1/sys/menu-management/validate-delete` | `validateDelete` | `sp_menu_management_delete_blocker_r_000` |
-| POST | `/api/v1/sys/menu-management/delete` | `delete` | `sp_menu_management_d_000` |
-
-테이블: `tbl_menu` `tbl_screen` (삭제 차단 판정에 `tbl_role_screen`·하위 메뉴)
+| Method | URL | Service | SP | 테이블 |
+|---|---|---|---|---|
+| GET | `/api/v1/sys/menu-management/list` | `list` | `sp_menu_management_r_000` | `tbl_menu` `tbl_screen` |
+| PUT | `/api/v1/sys/menu-management/save` | `save` | `sp_menu_management_c_000` | `tbl_menu` |
+| POST | `/api/v1/sys/menu-management/validate-delete` | `validateDelete` | `sp_menu_management_delete_blocker_r_000` | `tbl_menu` `tbl_role_screen` |
+| POST | `/api/v1/sys/menu-management/delete` | `delete` | `sp_menu_management_d_000` | `tbl_menu` `tbl_role_screen` |
 
 ## 사이드바와 분리된 이유
 

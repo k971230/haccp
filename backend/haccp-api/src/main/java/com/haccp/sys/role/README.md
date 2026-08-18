@@ -4,16 +4,14 @@
 
 ## 엔드포인트
 
-| Method | URL | Service | SP |
-|---|---|---|---|
-| GET | `/api/v1/sys/role-management/list` | `list` | `sp_role_management_r_000` |
-| PUT | `/api/v1/sys/role-management/save` | `save` | `sp_role_management_c_000` |
-| POST | `/api/v1/sys/role-management/validate-delete` | `validateDelete` | `sp_role_management_delete_blocker_r_000` |
-| POST | `/api/v1/sys/role-management/delete` | `delete` | `sp_role_management_d_000` |
-| GET | `/api/v1/sys/role-management/screens?usrgrpCd` | `listScreens` | `sp_role_management_screen_r_000` |
-| PUT | `/api/v1/sys/role-management/screens` | `saveScreens` | `sp_role_management_screen_c_000` |
-
-테이블: `tbl_role` `tbl_role_screen` `tbl_screen` (삭제 차단 판정에 `tbl_user`)
+| Method | URL | Service | SP | 테이블 |
+|---|---|---|---|---|
+| GET | `/api/v1/sys/role-management/list` | `list` | `sp_role_management_r_000` | `tbl_role` |
+| PUT | `/api/v1/sys/role-management/save` | `save` | `sp_role_management_c_000` | `tbl_role` |
+| POST | `/api/v1/sys/role-management/validate-delete` | `validateDelete` | `sp_role_management_delete_blocker_r_000` | `tbl_role` `tbl_user` |
+| POST | `/api/v1/sys/role-management/delete` | `delete` | `sp_role_management_d_000` | `tbl_role` `tbl_user` `tbl_role_screen` |
+| GET | `/api/v1/sys/role-management/screens?usrgrpCd` | `listScreens` | `sp_role_management_screen_r_000` | `tbl_screen` `tbl_role_screen` |
+| PUT | `/api/v1/sys/role-management/screens` | `saveScreens` | `sp_role_management_screen_c_000` | `tbl_role_screen` |
 
 ## 규칙
 

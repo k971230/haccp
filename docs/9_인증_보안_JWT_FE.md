@@ -96,9 +96,9 @@ BE: 업무 API는 JWT 필수. 화면별 권한은 주로 FE 게이트 + SP/테�
 
 ## 6. 로그인 이력·시스템 화면
 
-- 테이블: `tbl_login_log` (`02_ddl_log.sql`) — result S/F/L  
-- 시스템 조회: `SystemController` 타입 `login-history`  
-- FE: `SystemManagementPage` screenCode 스위치
+- 테이블: `tbl_login_log` (`02_ddl_log.sql`) — result S/F/L
+- 조회: `LoginHistoryController` `GET /api/v1/sys/login-history/list`
+- FE: `pages/sys/loginhistory/LoginHistoryPage` + `LoginHistoryRule` (`LogPageShell`)
 
 ---
 
