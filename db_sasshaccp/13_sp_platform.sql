@@ -309,9 +309,9 @@ BEGIN
     -- 메뉴 sort_no 대·중·소 인코딩(1001~9999) — sp는 21/53에 정의
     CALL sp_tbl_menu_sort_encode_u_000(p_co_cd);
 
-    -- (5) 사용양식 — 구현된 표준 템플릿(impl_yn=Y)만 복사한다
-    INSERT INTO tbl_company_template(co_cd, tmpl_cd, cycle_cd, retention_month, use_yn, ins_id, ins_dt)
-    SELECT p_co_cd, t.tmpl_cd, t.default_cycle_cd, t.default_retention_month, 'Y', p_id, now()
+    -- (5) 사용양식 — 구현된 표준 템플릿(impl_yn=Y)을 시스템양식 예제로 복사한다
+    INSERT INTO tbl_company_template(co_cd, tmpl_cd, cycle_cd, retention_month, use_yn, sys_yn, ins_id, ins_dt)
+    SELECT p_co_cd, t.tmpl_cd, t.default_cycle_cd, t.default_retention_month, 'Y', 'sys', p_id, now()
       FROM tbl_template t WHERE t.use_yn = 'Y' AND t.impl_yn = 'Y'
     ON CONFLICT (co_cd, tmpl_cd) DO NOTHING;
 

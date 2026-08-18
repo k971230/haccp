@@ -55,7 +55,7 @@ public class DocumentFileStorage {
             // 업로드 파일 최대 크기 byte — multipart 한계와 같은 값으로 맞춘다
             @Value("${app.file.max-bytes}") long maxBytes
     ) {
-        this.root = Path.of(root).toAbsolutePath().normalize();
+        this.root = TemplateFileNames.absoluteRoot(root);
         this.logbookDirectory = TemplateFileNames.segment(logbookDirectory);
         this.maxBytes = maxBytes;
     }

@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-14
  * 코멘트:
- *   1) 문서주기관리 화면(좌측 양식 목록 30% · 우측 주기 폼 70%)의 조회·저장·삭제 계약을 제공한다
+ *   1) 문서주기관리 화면(좌측 양식 목록 50% · 우측 주기 폼 50%)의 조회·저장·삭제 계약을 제공한다
  *   2) coCd·userId는 요청 본문으로 받지 않고 JWT LoginUserContext만 쓴다
  *   3) 삭제는 POST validate-delete → POST delete 순서이며 HTTP DELETE를 사용하지 않는다
  *
@@ -42,7 +42,7 @@ public class DocCycleController {
      * 개발자: 박승우
      * 일자: 2026-08-14
      * 코멘트:
-     *   1) 좌측 양식 목록 — 사용 중 사용양식 + 구분 + 주기 등록여부
+     *   1) 좌측 양식 목록 — 사용여부 검색 + 구분 + 주기 등록여부
      *   2) 화면 진입·조회 버튼에서 호출한다
      *   3) 성공 시 camelCase 행 배열
      */
@@ -51,9 +51,11 @@ public class DocCycleController {
             // 양식코드 검색어 — 미지정이면 전체
             @RequestParam(required = false) String tmplCd,
             // 양식명 검색어 — 미지정이면 전체
-            @RequestParam(required = false) String tmplNm
+            @RequestParam(required = false) String tmplNm,
+            // 사용여부 Y/N — 미지정이면 전체
+            @RequestParam(required = false) String useYn
     ) {
-        return CommonResponse.ok(service.forms(tmplCd, tmplNm));
+        return CommonResponse.ok(service.forms(tmplCd, tmplNm, useYn));
     }
 
     /**

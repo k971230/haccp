@@ -1,6 +1,6 @@
 # doccycle — 문서주기관리 (`schedule-cycle-management`)
 
-화면 1개 = 패키지 1개. 정본 규약: `pages/sys/README.md` · `08-haccp-backend.mdc`.
+화면 1개 = 패키지 1개. 파이프라인 표는 FE `pages/hwp/README.md` 2장 · 이 패키지 상위 `com.haccp.hwp/README.md`.
 
 | 파일 | 역할 |
 |------|------|
@@ -11,3 +11,5 @@
 | `DocumentAlarmScheduler` | 마감 임박 알림 — `app.schedule.alarm-cron` |
 
 일일 배치: `tsk/DailyTaskGenerationJob` → `DocCycleService.regenerateAllCompanies()` → `TaskService.generateAllCompanies()`.
+
+목록 `useYn` 검색은 `86_migrate_doc_cycle_form_use_yn.sql`. Jenkins migrate 안 함.

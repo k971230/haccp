@@ -27,6 +27,9 @@ export const SCRN_CD = "hwp-template-management" as const;
 /** 그리드 열 설정 저장 키 — 폴더를 옮겨도 값을 바꾸지 않는다 */
 export const PERSIST_ID = "hwp-template-management-list" as const;
 
+/** 좌 목록 · 우 미리보기 분할 비율 저장 키 */
+export const SPLIT_KEY = "haccp-split-hwp-template" as const;
+
 /** 좌측 그리드 행 — 서버 목록 + 신규 draft */
 export type TmplListRow = HwpTemplateRow;
 

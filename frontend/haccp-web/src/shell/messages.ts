@@ -78,7 +78,7 @@ export const MES = {
    * 백엔드 TemplateFileStorage.FORM_NOT_UPLOADED(404 응답)와 같은 문구를 쓴다.
    * 버튼 비활성 툴팁과 서버 404 토스트가 갈라지면 사용자가 원인을 못 찾기 때문이다.
    */
-  formNotUploaded: "양식 파일이 아직 업로드되지 않았습니다. 좌측 상단에서 파일을 업로드해 주세요.",
+  formNotUploaded: "양식 파일이 없습니다. 업로드해 주세요.",
 
   /** 네트워크 단절·타임아웃 */
   networkError: "네트워크 연결을 확인해 주세요.",

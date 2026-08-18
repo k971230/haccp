@@ -30,6 +30,8 @@ export interface DocCycleFormRow {
   cycleCd?: string | null;
   // 주기 등록 여부 Y/N — 삭제 버튼 활성 판정
   ruleYn: "Y" | "N" | string;
+  // 양식 사용여부 — 검색·목록 열
+  useYn?: "Y" | "N" | string | null;
 }
 
 /** 반복 상세 1건 — detailTy에 따라 val1·val2 의미가 달라진다 */
@@ -66,7 +68,7 @@ export interface DocCycleRule {
  * 개발자: 박승우
  * 일자: 2026-08-14
  * 코멘트:
- *   1) 사용 중 양식 목록을 조회한다 — 구분·주기 등록여부 포함
+ *   1) 양식 목록을 조회한다 — 구분·사용여부·주기 등록여부 포함
  *   2) 화면 진입·조회 버튼에서 호출한다
  *   3) 조건에 맞는 양식이 없으면 빈 배열
  */
@@ -75,6 +77,8 @@ export async function listDocCycleForms(params?: {
   tmplCd?: string;
   // 양식명 부분검색어 — 생략하면 전체
   tmplNm?: string;
+  // 사용여부 Y/N — 생략·공백이면 전체
+  useYn?: string;
 }): Promise<DocCycleFormRow[]> {
   const { data } = await http.get<CommonResponse<DocCycleFormRow[]>>(`${BASE}/forms`, { params });
   return data.data ?? [];

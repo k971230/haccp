@@ -70,6 +70,8 @@ interface MesEditableGridProps<T extends Record<string, any>> extends GridAccess
   onSelectionChange?: (rows: EditableRow<T>[]) => void;
   /** 값 변경 시 체크 선택 초기화 — 삭제 후 clearSelection 연동 */
   selectionResetKey?: number | string;
+  /** 하단 총 N건 푸터 — 헤더에 건수를 안 두는 화면은 false */
+  showFooter?: boolean;
 }
 
 // 설명 — 숫자 셀 표시 포맷 — 천단위 구분
@@ -95,7 +97,7 @@ export function MesEditableGrid<T extends Record<string, any>>(props: MesEditabl
 
 // 설명 — 편집 그리드 본체 — useMesTable + 셀 편집·키보드 네비
 function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableGridProps<T>) {
-  const { rows, height = 320, editable, activeKey, loading, showRowNum = true, access, onLockedAttempt, touchKiosk, selectable } = props;
+  const { rows, height = 320, editable, activeKey, loading, showRowNum = true, showFooter = true, access, onLockedAttempt, touchKiosk, selectable } = props;
   type ER = EditableRow<T>;
   const columns = props.columns as unknown as GridColumn<ER>[];
   // pref 저장용 화면코드 — prop 우선, 없으면 셸 PageScrnContext
@@ -669,6 +671,7 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
       // grid 행: 툴바 / 본문(1fr) / 푸터 — 총 n건이 마지막 행을 가리지 않음
       className={cn(
         "mes-grid-wrap",
+        !showFooter && "mes-grid-no-footer",
         fill
           ? "mes-grid-embedded mes-grid-fill min-h-0"
           : "overflow-hidden rounded-xl border border-slate-200 shadow-sm",
@@ -703,7 +706,9 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
         )}
         <GridLoadingOverlay show={!!loading} />
       </div>
-      <GridFooter cols={cols} total={view.totalCount} shown={view.shownCount} aggregates={view.aggregates} />
+      {showFooter && (
+        <GridFooter cols={cols} total={view.totalCount} shown={view.shownCount} aggregates={view.aggregates} />
+      )}
     </div>
   );
 }

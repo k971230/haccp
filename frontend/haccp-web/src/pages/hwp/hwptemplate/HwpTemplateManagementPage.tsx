@@ -31,22 +31,24 @@ import { useCommonCodes } from "@/hooks/useCommonCodes";
 import { MesButton } from "@/components/ui/MesButton";
 import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 업무 오류·성공 안내
-import { mesError } from "@/shell/errors";
+import { mesError, toUserMessage } from "@/shell/errors";
 import { mesConfirm, mesToast } from "@/shell/dialog";
 import { MES } from "@/shell/messages";
+// 역할 — 상단 공통 버튼(조회·저장·삭제) 연결
+import { usePageCommands } from "@/shell/pageCommands";
 // 역할 — 편집 그리드
 import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
+// 역할 — 그리드 헤더 신규·저장·삭제 — 공통코드 관리와 같은 묶음
+import { GridCrudButtons } from "@/components/grid/GridCrudButtons";
 // 역할 — 그리드 잠금 — tmplCd 는 신규행만
 import { useGridAccess } from "@/hooks/useGridAccess";
 // 역할 — 편집행 타입
 import type { EditableRow } from "@/types/editable";
-// 역할 — 문서 공통 헤더·레이아웃
-import {
-  DocFormBody,
-  DocFormDocumentList,
-  DocFormLayout,
-  DocFormToolbar,
-} from "@/components/form/DocFormLayout";
+// 역할 — 페이지 카드·검색 영역·좌우 분할(공통코드 관리와 같은 뼈대)
+import { PageCard } from "@/components/layout/PageCard";
+import { SearchArea, SearchButton, SearchField } from "@/components/layout/SearchArea";
+import { ResizableSplit } from "@/components/layout/ResizableSplit";
+import { gridHeadClass, pageRootClass } from "@/components/layout/pageClasses";
 // 역할 — HWP 원본 읽기·업로드 API
 import { loadHwpTemplateFile, saveHwpTemplateForm } from "@/api/documentApi";
 // 역할 — 사용양식 목록·저장·삭제·파일 이력·불러오기/초기화 API
@@ -61,17 +63,24 @@ import {
 } from "@/api/hwp/hwpTemplateApi";
 // 역할 — 선택행 우선 삭제 대상
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
-// 역할 — 양식 구분 라벨·판정 정본
-import { FORM_TYPE_LABEL, isCompanyForm } from "../formType";
+// 역할 — 자사양식 판정
+import { isCompanyForm } from "../formType";
+// 역할 — 구분 헤더 배지 — 문서주기관리와 동일 색·문구
+import { FormTypeBadge } from "../FormTypeBadge";
 // 역할 — 화면 규칙(컬럼·잠금·버튼 판정·pref 키)
 import {
   LIST_GRID_RULES,
   PERSIST_ID,
   SCRN_CD,
+  SPLIT_KEY,
   buildButtonState,
   buildListColumns,
   type TmplListRow,
 } from "./HwpTemplateManagementRule";
+
+/** 좌우 패널 — 공통코드 관리와 같은 높이 고정(분할해도 그리드가 밀리지 않는다) */
+const splitPanelClass =
+  "flex min-h-0 h-full flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm p-2";
 
 /**
  * 개발자: 박승우
@@ -112,7 +121,7 @@ export default function HwpTemplateManagementPage() {
   const editorHostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<RhwpEditor | null>(null);
   const [editorReady, setEditorReady] = useState(false);
-  const [editorMessage, setEditorMessage] = useState("rhwp 에디터가 시작하는 중입니다.");
+  const [editorMessage, setEditorMessage] = useState("미리보기를 준비하고 있습니다.");
   // 숨은 업로드 input — 선택 즉시 서버 업로드(버전 1건 적재)
   const uploadFileRef = useRef<HTMLInputElement>(null);
   // 파일 이력 모달 — 불러오기
@@ -200,10 +209,10 @@ export default function HwpTemplateManagementPage() {
         foldRhwpToolboxes(createdEditor.element);
         editorRef.current = createdEditor;
         setEditorReady(true);
-        setEditorMessage("rhwp 미리보기가 준비되었습니다. 좌측에서 양식을 선택하세요.");
+        setEditorMessage("미리보기가 준비되었습니다. 왼쪽에서 양식을 선택하세요.");
       } catch (error) {
         if (!disposed) {
-          setEditorMessage(error instanceof Error ? error.message : "rhwp 에디터를 시작하지 못했습니다.");
+          setEditorMessage(error instanceof Error ? error.message : "미리보기를 시작하지 못했습니다.");
         }
       }
     })();
@@ -224,7 +233,7 @@ export default function HwpTemplateManagementPage() {
   ) => {
     const editor = editorRef.current;
     if (!editor) {
-      if (!silent) mesToast("rhwp 미리보기가 준비될 때까지 기다리세요.", "warn");
+      if (!silent) mesToast("미리보기가 준비될 때까지 기다리세요.", "warn");
       return;
     }
     try {
@@ -268,9 +277,9 @@ export default function HwpTemplateManagementPage() {
       }
       try {
         await loadIntoEditor(await loadHwpTemplateFile(url), row.formFileNm ?? String(row.tmplCd), true);
-      } catch {
-        setEditorMessage("양식 파일을 열지 못했습니다. 다시 업로드하세요.");
-        mesToast("양식 파일을 열지 못했습니다.", "warn");
+      } catch (error) {
+        // 원본이 디스크에 없을 때(= 404) 미리보기 헤더에만 안내한다. 행 전환마다 토스트를 띄우지 않는다
+        setEditorMessage(toUserMessage(error, MES.formNotUploaded));
       }
     }, "loadTemplate");
 
@@ -279,7 +288,7 @@ export default function HwpTemplateManagementPage() {
    * 일자: 2026-08-14
    * 코멘트:
    *   1) 빈 행을 추가한다 — 구분은 자사양식(usr) 고정이며 사용자가 바꿀 수 없다
-   *   2) 툴바 「신규」에서 호출한다
+   *   2) 목록 헤더 「신규」에서 호출한다
    *   3) 양식코드·양식명을 입력하고 저장한 뒤 파일을 업로드한다
    */
   const handleAdd = () => {
@@ -303,7 +312,7 @@ export default function HwpTemplateManagementPage() {
    * 일자: 2026-08-14
    * 코멘트:
    *   1) 변경된 행(신규·수정)을 저장한다 — 양식코드·양식명·사용유무만 보낸다
-   *   2) 툴바 「저장」에서 호출한다
+   *   2) 목록 헤더 「저장」에서 호출한다
    *   3) 구분은 보내지 않는다 — 신규는 자사양식, 기존 행은 구분 불변(요구사항 19)
    */
   const handleSave = async () => {
@@ -353,7 +362,7 @@ export default function HwpTemplateManagementPage() {
    * 일자: 2026-08-14
    * 코멘트:
    *   1) 미저장 draft는 로컬 제거, 자사양식만 validate-delete 후 삭제한다
-   *   2) 툴바 「삭제」에서 호출한다
+   *   2) 목록 헤더 「삭제」에서 호출한다
    *   3) 시스템양식은 요청 전에 막는다 — 서버·SP도 같은 문구로 다시 차단한다
    */
   const handleDelete = async () => {
@@ -409,7 +418,7 @@ export default function HwpTemplateManagementPage() {
    * 일자: 2026-08-14
    * 코멘트:
    *   1) 선택한 로컬 HWP/HWPX를 새 버전으로 업로드하고 현재 적용본으로 만든다
-   *   2) 툴바 「업로드」 파일 선택 후 호출된다
+   *   2) 미리보기 헤더 「업로드」 파일 선택 후 호출된다
    *   3) 기존 파일은 덮어쓰지 않는다 — 이력에 남아 불러오기로 되돌릴 수 있다
    */
   const handleUploadFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -435,7 +444,7 @@ export default function HwpTemplateManagementPage() {
    * 일자: 2026-08-14
    * 코멘트:
    *   1) 현재 적용 파일을 로컬로 내려받는다
-   *   2) 툴바 「내보내기」에서 호출한다
+   *   2) 미리보기 헤더 「내보내기」에서 호출한다
    *   3) 파일이 없으면 버튼이 비활성이므로 여기서는 경로만 확인한다
    */
   const handleExportFile = () =>
@@ -465,7 +474,7 @@ export default function HwpTemplateManagementPage() {
    * 일자: 2026-08-14
    * 코멘트:
    *   1) 선택 양식의 파일 이력을 읽어 불러오기 팝업을 연다
-   *   2) 툴바 「불러오기」에서 호출한다
+   *   2) 미리보기 헤더 「불러오기」에서 호출한다
    *   3) 이력이 없으면 팝업을 열지 않고 안내만 한다
    */
   const openHistModal = () =>
@@ -522,7 +531,7 @@ export default function HwpTemplateManagementPage() {
    * 일자: 2026-08-14
    * 코멘트:
    *   1) 현재 적용본을 기본 제공본으로 되돌린다 — 시스템양식은 배포 원본, 자사양식은 최초 등록본
-   *   2) 툴바 「초기화」에서 호출한다
+   *   2) 미리보기 헤더 「초기화」에서 호출한다
    *   3) 업로드 이력은 남으므로 다시 불러올 수 있다
    */
   const handleReset = () =>
@@ -549,6 +558,13 @@ export default function HwpTemplateManagementPage() {
     [activeRow, canDeleteAuth, canEdit],
   );
 
+  usePageCommands({
+    search: () => { void loadList(); },
+    add: canWrite ? handleAdd : undefined,
+    save: canEdit ? () => { void asyncAct.run(handleSave, "save"); } : undefined,
+    del: canDeleteAuth ? () => { void asyncAct.run(handleDelete, "del"); } : undefined,
+  });
+
   useEffect(() => {
     if (!editorReady || !activeKey) return;
     void handleSelect(activeKey);
@@ -556,180 +572,172 @@ export default function HwpTemplateManagementPage() {
   }, [editorReady]);
 
   return (
-    <DocFormLayout>
-      <DocFormToolbar>
-        <label className="flex flex-col gap-1 text-xs text-slate-600">
-          {/* 양식코드 부분검색 — 서버 LIKE */}
-          양식코드
-          <input
-            className={searchInputClass}
-            value={qTmplCd}
-            placeholder="tmpl_…"
-            onChange={(event) => setQTmplCd(event.target.value)}
-            onKeyDown={(event) => { if (event.key === "Enter") void loadList(); }}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-slate-600">
-          {/* 양식명 부분검색 — 서버 LIKE */}
-          양식명
-          <input
-            className={searchInputClass}
-            value={qTmplNm}
-            placeholder="양식명"
-            onChange={(event) => setQTmplNm(event.target.value)}
-            onKeyDown={(event) => { if (event.key === "Enter") void loadList(); }}
-          />
-        </label>
-        <MesButton
-          // 목록 재조회
-          variant="search"
-          icon="search"
-          disabled={listLoading}
-          onClick={() => void loadList()}
-        >
-          조회
-        </MesButton>
-        <div className="ml-auto flex flex-wrap gap-2">
-          <MesButton
-            // 빈 행 추가 — 구분은 자사양식 고정
-            variant="add"
-            disabled={!canWrite || asyncAct.isBusy()}
-            onClick={handleAdd}
+    <div className={pageRootClass}>
+      <PageCard
+        search={(
+          <SearchArea
+            onSearch={() => { void loadList(); }}
+            actions={<SearchButton loading={listLoading} />}
           >
-            신규
-          </MesButton>
-          <MesButton
-            // 양식코드·양식명·사용유무 저장
-            variant="save"
-            disabled={!buttonState.canSaveRow || asyncAct.isBusy("save")}
-            loading={asyncAct.isBusy("save")}
-            onClick={() => void asyncAct.run(handleSave, "save")}
-          >
-            저장
-          </MesButton>
-          <MesButton
-            // 자사양식·미저장 draft만
-            variant="danger"
-            disabled={!buttonState.canDeleteRow || asyncAct.isBusy("del")}
-            loading={asyncAct.isBusy("del")}
-            onClick={() => void asyncAct.run(handleDelete, "del")}
-          >
-            삭제
-          </MesButton>
-          <MesButton
-            // 로컬 HWP를 새 버전으로 업로드
-            variant="secondary"
-            disabled={!buttonState.canUpload || asyncAct.isBusy()}
-            onClick={() => uploadFileRef.current?.click()}
-          >
-            업로드
-          </MesButton>
-          <MesButton
-            // 현재 적용 파일 내려받기
-            variant="secondary"
-            disabled={!buttonState.canExport || asyncAct.isBusy("export")}
-            onClick={() => void handleExportFile()}
-          >
-            내보내기
-          </MesButton>
-          <MesButton
-            // 파일 이력에서 과거 버전 적용
-            variant="secondary"
-            disabled={!buttonState.canImport || asyncAct.isBusy("hist-open")}
-            onClick={() => void openHistModal()}
-          >
-            불러오기
-          </MesButton>
-          <MesButton
-            // 기본 제공 파일로 복원
-            variant="secondary"
-            disabled={!buttonState.canReset || asyncAct.isBusy("reset")}
-            onClick={() => void handleReset()}
-          >
-            초기화
-          </MesButton>
-        </div>
-      </DocFormToolbar>
+            <SearchField label="양식코드">
+              <input
+                // 양식코드 부분검색 — 서버 LIKE
+                className={searchInputClass}
+                value={qTmplCd}
+                placeholder="양식코드"
+                onChange={(event) => setQTmplCd(event.target.value)}
+              />
+            </SearchField>
+            <SearchField label="양식명">
+              <input
+                // 양식명 부분검색 — 서버 LIKE
+                className={searchInputClass}
+                value={qTmplNm}
+                placeholder="양식명"
+                onChange={(event) => setQTmplNm(event.target.value)}
+              />
+            </SearchField>
+          </SearchArea>
+        )}
+      >
+        <input
+          // 업로드용 숨은 file input — 선택 즉시 서버 업로드
+          ref={uploadFileRef}
+          type="file"
+          accept=".hwp,.hwpx"
+          className="hidden"
+          onChange={(event) => void handleUploadFile(event)}
+        />
 
-      <input
-        // 업로드용 숨은 file input — 선택 즉시 서버 업로드
-        ref={uploadFileRef}
-        type="file"
-        accept=".hwp,.hwpx"
-        className="hidden"
-        onChange={(event) => void handleUploadFile(event)}
-      />
-
-      <DocFormBody withSummary={false}>
-        <DocFormDocumentList label="사용양식 목록">
-          <MesEditableGrid
-            // 열 설정 저장 키 — 사용양식관리 전용
-            persistId={PERSIST_ID}
-            // 서버 목록 + 신규 draft
-            rows={templates.rows}
-            // 양식코드·양식명·구분·양식파일·사용유무
-            columns={listColumns}
-            // 신규행 셀 편집 — 저장행은 newOnly 로 코드만 잠근다
-            editable={canEdit}
-            // 패널 제목
-            title="사용양식 목록"
-            // 부모 flex 높이 채움
-            height="100%"
-            // 목록 조회 중
-            loading={listLoading}
-            // 선택 양식 키
-            activeKey={activeKey}
-            // 행 클릭 시 현재 파일 미리보기
-            onActivate={(row) => { void handleSelect(row._key ?? null); }}
-            // 셀 변경 — 구분은 편집 대상이 아니라 그대로 유지된다
-            onCellChange={(key, field, value) => {
-              templates.updateCell(key, field as keyof TmplListRow, value);
-            }}
-            // 잠금·권한 접근 판정
-            access={listGrid.access}
-            // 잠금 셀 시도 안내
-            onLockedAttempt={listGrid.onLockedAttempt}
-            // 다중 선택 삭제
-            selectable
-            onSelectionChange={(rows) => setSelKeys(rows.map((row) => row._key))}
-            selectionResetKey={selReset}
-            showRowNum
-          />
-        </DocFormDocumentList>
-
-        <section
-          // rhwp 미리보기 영역
-          aria-label="사용양식 미리보기"
-          className="flex min-h-0 flex-col overflow-hidden rounded border border-slate-200 bg-white"
-        >
-          <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-1.5 text-xs text-slate-500">
-            <span className="font-medium text-slate-700">
-              {activeRow?.tmplNm || activeRow?.tmplCd || "양식 미선택"}
-            </span>
-            {activeRow ? (
-              <span
-                // 구분 badge — 시스템양식은 파랑, 자사양식은 초록
-                className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
-                  isCompanyForm(activeRow.sysYn)
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "bg-blue-50 text-blue-700"
-                }`}
-              >
-                {FORM_TYPE_LABEL[isCompanyForm(activeRow.sysYn) ? "usr" : "sys"]}
-              </span>
-            ) : null}
-            <span className="truncate">{editorMessage}</span>
-            <span className="ml-auto text-slate-400">
-              등록 {templates.rows.length}건
-            </span>
-          </div>
-          <div
-            // rhwp createEditor 호스트
-            ref={editorHostRef}
-            className="min-h-0 flex-1 bg-slate-50"
-          />
-        </section>
-      </DocFormBody>
+        <ResizableSplit
+          // 좌 목록 · 우 미리보기 — 경계를 끌면 비율이 저장된다
+          orientation="horizontal"
+          storageKey={SPLIT_KEY}
+          defaultPrimaryPct={35}
+          minPct={20}
+          maxPct={60}
+          className="mes-page-split min-h-0 h-full flex-1 gap-0"
+          primary={(
+            <div className={splitPanelClass}>
+              <div className={gridHeadClass}>
+                <div className="flex min-w-0 items-center gap-2">
+                  <b>사용양식 목록</b>
+                </div>
+                <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                  <GridCrudButtons
+                    // 신규·저장·삭제 — 공통코드 헤더와 같은 묶음
+                    addLabel="신규"
+                    run={asyncAct.run}
+                    onAdd={canWrite ? handleAdd : undefined}
+                    onSave={canEdit ? handleSave : undefined}
+                    onDel={canDeleteAuth ? handleDelete : undefined}
+                    busy={{
+                      save: asyncAct.isBusy("save"),
+                      del: asyncAct.isBusy("del"),
+                    }}
+                  />
+                </div>
+              </div>
+              <MesEditableGrid
+                // 열 설정 저장 키 — 사용양식관리 전용
+                persistId={PERSIST_ID}
+                // 화면 권한·pref 범위
+                scrnCd={SCRN_CD}
+                // 서버 목록 + 신규 draft
+                rows={templates.rows}
+                // 양식코드·양식명·구분·양식파일·사용유무
+                columns={listColumns}
+                // 신규행 셀 편집 — 저장행은 newOnly 로 코드만 잠근다
+                editable={canEdit}
+                // 패널 제목
+                title="사용양식 목록"
+                // 부모 flex 높이 채움
+                height="100%"
+                // 목록 조회 중
+                loading={listLoading}
+                // 선택 양식 키
+                activeKey={activeKey}
+                // 행 클릭 시 현재 파일 미리보기
+                onActivate={(row) => { void handleSelect(row._key ?? null); }}
+                // 셀 변경 — 구분은 편집 대상이 아니라 그대로 유지된다
+                onCellChange={(key, field, value) => {
+                  templates.updateCell(key, field as keyof TmplListRow, value);
+                }}
+                // 잠금·권한 접근 판정
+                access={listGrid.access}
+                // 잠금 셀 시도 안내
+                onLockedAttempt={listGrid.onLockedAttempt}
+                // 다중 선택 삭제
+                selectable
+                onSelectionChange={(rows) => setSelKeys(rows.map((row) => row._key))}
+                selectionResetKey={selReset}
+                showRowNum
+                // 헤더에 건수를 두지 않으므로 그리드 푸터 총 N건도 숨긴다
+                showFooter={false}
+              />
+            </div>
+          )}
+          secondary={(
+            <div className={splitPanelClass}>
+              <div className={gridHeadClass}>
+                <div className="flex min-w-0 items-center gap-2">
+                  <b>{activeRow?.tmplNm || activeRow?.tmplCd || "양식 미리보기"}</b>
+                  {activeRow ? (
+                    <FormTypeBadge
+                      // 미리보기 대상 구분
+                      sysYn={activeRow.sysYn}
+                    />
+                  ) : null}
+                  <span className="truncate text-xs font-normal text-slate-500">{editorMessage}</span>
+                </div>
+                <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                  <MesButton
+                    // 로컬 HWP를 새 버전으로 업로드
+                    variant="excel"
+                    size="sm"
+                    disabled={!buttonState.canUpload || asyncAct.isBusy()}
+                    onClick={() => uploadFileRef.current?.click()}
+                  >
+                    업로드
+                  </MesButton>
+                  <MesButton
+                    // 현재 적용 파일 내려받기
+                    variant="save"
+                    size="sm"
+                    disabled={!buttonState.canExport || asyncAct.isBusy("export")}
+                    onClick={() => void handleExportFile()}
+                  >
+                    내보내기
+                  </MesButton>
+                  <MesButton
+                    // 파일 이력에서 과거 버전 적용
+                    variant="add"
+                    size="sm"
+                    disabled={!buttonState.canImport || asyncAct.isBusy("hist-open")}
+                    onClick={() => void openHistModal()}
+                  >
+                    불러오기
+                  </MesButton>
+                  <MesButton
+                    // 기본 제공 파일로 복원
+                    variant="danger"
+                    size="sm"
+                    disabled={!buttonState.canReset || asyncAct.isBusy("reset")}
+                    onClick={() => void handleReset()}
+                  >
+                    초기화
+                  </MesButton>
+                </div>
+              </div>
+              <div
+                // rhwp createEditor 호스트 — 패널 안에서만 스크롤되어 좌측 목록이 밀리지 않는다
+                ref={editorHostRef}
+                className="min-h-0 flex-1 overflow-hidden bg-slate-50"
+              />
+            </div>
+          )}
+        />
+      </PageCard>
 
       {histOpen ? (
         <div
@@ -778,6 +786,6 @@ export default function HwpTemplateManagementPage() {
           </div>
         </div>
       ) : null}
-    </DocFormLayout>
+    </div>
   );
 }

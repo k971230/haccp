@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-14
  * 코멘트:
- *   1) 85_migrate_doc_cycle.sql의 sp_schedule_cycle_management_* / sp_tbl_schedule_task_regen_c_000 만 호출한다
+ *   1) 85_migrate_doc_cycle.sql + 86_migrate_doc_cycle_form_use_yn.sql 의 SP만 호출한다
  *   2) 조회는 FUNCTION(map), 저장·삭제·재생성은 PROCEDURE CALL이다
  *   3) coCd·userId는 Service가 JWT에서만 채워 전달한다 (배치는 'system')
  *
@@ -27,9 +27,9 @@ public interface DocCycleMapper {
      * 개발자: 박승우
      * 일자: 2026-08-14
      * 코멘트:
-     *   1) 좌측 양식 목록 — 사용 중(use_yn=Y) 사용양식 + 구분 + 주기 등록여부
+     *   1) 좌측 양식 목록 — 사용여부 검색 + 구분 + 주기 등록여부
      *   2) 화면 진입·조회 버튼에서 호출한다
-     *   3) 성공 시 tmpl_cd·tmpl_nm·form_ty·doc_kind·cycle_cd·rule_yn 행 목록
+     *   3) 성공 시 tmpl_cd·tmpl_nm·form_ty·doc_kind·cycle_cd·rule_yn·use_yn 행 목록
      */
     List<Map<String, Object>> selectForms(
             // JWT 회사코드 — 자사 사용양식 범위
@@ -37,7 +37,9 @@ public interface DocCycleMapper {
             // 양식코드 검색어 — 공백이면 전체
             @Param("tmplCd") String tmplCd,
             // 양식명 검색어 — 공백이면 전체
-            @Param("tmplNm") String tmplNm
+            @Param("tmplNm") String tmplNm,
+            // 사용여부 Y/N — 공백이면 전체
+            @Param("useYn") String useYn
     );
 
     /**
