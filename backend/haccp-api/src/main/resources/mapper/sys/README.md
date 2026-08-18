@@ -9,7 +9,9 @@ mapper/sys/
  ├ role/       RoleMgmtMapper.xml
  ├ department/ DepartmentMapper.xml
  ├ user/       UserMapper.xml
- └ log/        LoginHistoryMapper.xml · AuditLogMapper.xml · ScreenUsageMapper.xml
+ ├ loginhistory/ LoginHistoryMapper.xml
+ ├ auditlog/     AuditLogMapper.xml
+ └ screenusage/  ScreenUsageMapper.xml
 ```
 
 `namespace`는 인터페이스 FQCN과 정확히 같다 (`com.haccp.sys.commoncode.CommonCodeMapper`).
@@ -44,14 +46,18 @@ mapper/sys/
 테이블 단위 `sp_tbl_*` 규약은 doc·ccp·hyg·bas 등 업무 도메인과 로그 적재에만 남는다.
 `AuditLogMapper.insertAudit`이 부르는 `sp_tbl_audit_log_c_000`은 화면이 아니라 `tbl_audit_log` 테이블 단위 적재라 예외적으로 `sp_tbl_` 이름을 그대로 쓴다.
 
-| 폴더 | 조회 | 저장 | 삭제 검증 | 삭제 | 기타 |
-|---|---|---|---|---|---|
-| commoncode | `sp_common_code_management_r_000`(대분류) · `_r_001`(세부) | `_c_000` | `_delete_blocker_r_000` | `_d_000` | |
-| menu | `sp_menu_management_r_000` | `_c_000` | `_delete_blocker_r_000` | `_d_000` | 사이드바는 `sp_menu_nav_r_000`(mapper/menu) |
-| role | `sp_role_management_r_000` | `_c_000` | `_delete_blocker_r_000` | `_d_000` | `_screen_r_000` · `_screen_c_000` |
-| department | `sp_department_management_r_000` | `_c_000` | `_delete_blocker_r_000` | `_d_000` | |
-| user | `sp_user_management_r_000` | `_c_000` | `_delete_blocker_r_000` | `_d_000` | `_sign_info_r_000`(유무·파일명) · `_sign_r_000`(bytea 조회) · `_sign_u_000`(bytea 저장·삭제) |
-| log | `sp_login_history_r_000` · `sp_audit_log_r_000` · `sp_screen_usage_statistics_r_000` | — | — | — | 감사 적재 `sp_tbl_audit_log_c_000`(AuditLogMapper.insertAudit) |
+| 폴더 | SP (전명) | 테이블 |
+|---|---|---|
+| commoncode | `sp_common_code_management_r_000` · `sp_common_code_management_r_001` · `sp_common_code_management_c_000` · `sp_common_code_management_delete_blocker_r_000` · `sp_common_code_management_d_000` | `tbl_code` |
+| menu | `sp_menu_management_r_000` · `sp_menu_management_c_000` · `sp_menu_management_delete_blocker_r_000` · `sp_menu_management_d_000` | `tbl_menu` `tbl_screen` `tbl_role_screen` |
+| role | `sp_role_management_r_000` · `sp_role_management_c_000` · `sp_role_management_delete_blocker_r_000` · `sp_role_management_d_000` · `sp_role_management_screen_r_000` · `sp_role_management_screen_c_000` | `tbl_role` `tbl_role_screen` `tbl_screen` `tbl_user` |
+| department | `sp_department_management_r_000` · `sp_department_management_c_000` · `sp_department_management_delete_blocker_r_000` · `sp_department_management_d_000` | `tbl_dept` `tbl_user` |
+| user | `sp_user_management_r_000` · `sp_user_management_c_000` · `sp_user_management_delete_blocker_r_000` · `sp_user_management_d_000` · `sp_user_management_sign_info_r_000` · `sp_user_management_sign_r_000` · `sp_user_management_sign_u_000` | `tbl_user` `tbl_dept` `tbl_role` `tbl_grid_pref` `tbl_user_noti_pref` |
+| loginhistory | `sp_login_history_r_000` | `tbl_login_log` `tbl_user` |
+| auditlog | `sp_audit_log_r_000` · `sp_tbl_audit_log_c_000`(AuditWriter 적재) | `tbl_audit_log` `tbl_user` |
+| screenusage | `sp_screen_usage_statistics_r_000` | `tbl_view_stat_daily` `tbl_menu` `tbl_screen` |
+
+사이드바 트리는 이 폴더가 아니다: `sp_menu_nav_r_000` (`mapper/menu`).
 
 ## 바인딩 규약
 

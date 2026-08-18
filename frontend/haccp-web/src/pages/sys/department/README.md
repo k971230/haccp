@@ -16,13 +16,14 @@
 - 룩업 후보는 자기 자신과 자기 하위를 제외한 목록이다(순환 방지)
 - 좌측 노드를 고르면 해당 부서와 하위가 그리드에 남고, 행추가 시 상위부서가 선택 노드로 채워진다
 
-## API · SP
+## API · SP · 테이블
 
-| 동작 | API (`api/sys/departmentApi.ts`) | SP |
-|---|---|---|
-| 조회 | `listDepartments` | `sp_department_management_r_000` (상위부서명 self JOIN 포함) |
-| 저장 | `saveDepartments` | `sp_department_management_c_000` |
-| 삭제 검증 → 삭제 | `validateDeleteDepartments` → `deleteDepartments` | `_delete_blocker_r_000` → `_d_000` |
+| 동작 | API (`api/sys/departmentApi.ts`) | SP | 테이블 |
+|---|---|---|---|
+| 조회 | `listDepartments` | `sp_department_management_r_000` | `tbl_dept` (상위부서명 self JOIN) |
+| 저장 | `saveDepartments` | `sp_department_management_c_000` | `tbl_dept` |
+| 삭제 검증 | `validateDeleteDepartments` | `sp_department_management_delete_blocker_r_000` | `tbl_dept` `tbl_user` |
+| 삭제 | `deleteDepartments` | `sp_department_management_d_000` | `tbl_dept` `tbl_user` |
 
 삭제는 하위 부서 또는 소속 사용자가 있으면 차단된다.
 

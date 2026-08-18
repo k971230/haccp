@@ -103,11 +103,11 @@ Jenkins는 `db_sasshaccp/*.sql` migrate를 안 돌린다. 목록 SP 시그니처
 | 조회 | `loadList` → `listHwpTemplates` | `GET /api/v1/hwp/hwp-templates/list` | `list` | `sp_hwp_template_management_r_000` | `tbl_company_template` `tbl_template` |
 | 신규 | `handleAdd` | 없음(로컬 draft) | | | |
 | 저장 | `handleSave` → `saveHwpTemplate` | `PUT .../save` | `save` | `sp_hwp_template_management_c_000` | `tbl_company_template` `tbl_template` |
-| 삭제 | `handleDelete` → `validateDeleteCompanyTemplates` → `deleteCompanyTemplates` | `POST /api/v1/bas/company-templates/validate-delete` → `POST .../delete` | Workflow `validateDelete`·`delete` | `sp_tbl_company_template_delete_blocker_r_000` → `_d_000` | `tbl_company_template` |
+| 삭제 | `handleDelete` → `validateDeleteCompanyTemplates` → `deleteCompanyTemplates` | `POST /api/v1/bas/company-templates/validate-delete` → `POST .../delete` | Workflow `validateDelete`·`delete` | `sp_tbl_company_template_delete_blocker_r_000` → `sp_tbl_company_template_d_000` | `tbl_company_template` |
 | 업로드 | `handleUploadFile` → `saveHwpTemplateForm` | `POST /api/v1/doc/templates/{tmplCd}/form` | `doc.TemplateService.saveForm` | `sp_hwp_template_management_file_c_000` | `tbl_company_template_file` |
 | 내보내기 | `handleExportFile` | `GET /api/v1/doc/templates/{tmplCd}/form` | 파일 볼륨 읽기 | | `HaccpTemplates` / `CustomTemplates` |
-| 불러오기 | `openHistModal` → `applyHwpTemplateFile` | `GET .../files` · `POST .../apply-file` | `listFiles` · `applyFile` | `sp_hwp_template_management_file_r_000` · `_current_u_000` | `tbl_company_template_file` |
-| 초기화 | `handleReset` → `applyHwpTemplateFile(default)` | `POST .../apply-file` | `applyFile` | `_current_u_000` | `tbl_company_template` |
+| 불러오기 | `openHistModal` → `applyHwpTemplateFile` | `GET .../files` · `POST .../apply-file` | `listFiles` · `applyFile` | `sp_hwp_template_management_file_r_000` · `sp_hwp_template_management_current_u_000` | `tbl_company_template_file` |
+| 초기화 | `handleReset` → `applyHwpTemplateFile(default)` | `POST .../apply-file` | `applyFile` | `sp_hwp_template_management_current_u_000` | `tbl_company_template` |
 
 시스템양식은 삭제 불가(FE·Service·SP 3중 차단). 파일 기능은 구분과 무관.
 
@@ -138,7 +138,7 @@ Jenkins는 `db_sasshaccp/*.sql` migrate를 안 돌린다. 목록 SP 시그니처
 | 조회 | `loadForms` → `listDocCycleForms` | `GET /api/v1/hwp/doc-cycles/forms` | `forms` | `sp_schedule_cycle_management_form_r_000` | `tbl_company_template` `tbl_template` `tbl_schedule_rule` |
 | 행 선택 | `handleSelect` → `getDocCycle` | `GET .../get` | `cycle` | `sp_schedule_cycle_management_r_000` | `tbl_schedule_rule` `tbl_schedule_rule_detail` |
 | 저장 | `handleSave` → `saveDocCycle` | `PUT .../save` | `save` (+ 예정일 재생성) | `sp_schedule_cycle_management_c_000` · `sp_tbl_schedule_task_regen_c_000` | `tbl_schedule_rule` `tbl_schedule_task` |
-| 삭제 | `handleDelete` → `validateDeleteDocCycles` → `deleteDocCycles` | `POST .../validate-delete` → `POST .../delete` | `validateDelete`·`delete` | `sp_schedule_cycle_management_delete_blocker_r_000` → `_d_000` | `tbl_schedule_rule` |
+| 삭제 | `handleDelete` → `validateDeleteDocCycles` → `deleteDocCycles` | `POST .../validate-delete` → `POST .../delete` | `validateDelete`·`delete` | 검증은 `sp_schedule_cycle_management_r_000` 존재 확인 · 삭제는 `sp_schedule_cycle_management_d_000` | `tbl_schedule_rule` |
 | 담당자 | `openModal("CodeLookup")` | `listUsers` | | | `tbl_user` `tbl_dept` |
 
 담당자를 고르면 소속 부서가 기본값으로 들어온다. 담당부서는 읽기 전용.

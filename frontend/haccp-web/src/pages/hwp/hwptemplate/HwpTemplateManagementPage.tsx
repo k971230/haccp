@@ -67,6 +67,8 @@ import { resolveRowsForDelete } from "@/shell/resolveDelete";
 import { isCompanyForm } from "../formType";
 // 역할 — 구분 헤더 배지 — 문서주기관리와 동일 색·문구
 import { FormTypeBadge } from "../FormTypeBadge";
+// 역할 — 파일 이력 불러오기 팝업 — 코드조회와 같은 그리드 셸
+import { HwpTemplateFileHistModal } from "./HwpTemplateFileHistModal";
 // 역할 — 화면 규칙(컬럼·잠금·버튼 판정·pref 키)
 import {
   LIST_GRID_RULES,
@@ -623,7 +625,7 @@ export default function HwpTemplateManagementPage() {
                 <div className="flex min-w-0 items-center gap-2">
                   <b>사용양식 목록</b>
                 </div>
-                <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                <div className="ml-auto flex shrink-0 items-center gap-1.5">
                   <GridCrudButtons
                     // 신규·저장·삭제 — 공통코드 헤더와 같은 묶음
                     addLabel="신규"
@@ -680,8 +682,8 @@ export default function HwpTemplateManagementPage() {
           secondary={(
             <div className={splitPanelClass}>
               <div className={gridHeadClass}>
-                <div className="flex min-w-0 items-center gap-2">
-                  <b>{activeRow?.tmplNm || activeRow?.tmplCd || "양식 미리보기"}</b>
+                <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+                  <b className="truncate">{activeRow?.tmplNm || activeRow?.tmplCd || "양식 미리보기"}</b>
                   {activeRow ? (
                     <FormTypeBadge
                       // 미리보기 대상 구분
@@ -690,20 +692,22 @@ export default function HwpTemplateManagementPage() {
                   ) : null}
                   <span className="truncate text-xs font-normal text-slate-500">{editorMessage}</span>
                 </div>
-                <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                <div className="ml-auto flex shrink-0 items-center gap-1.5">
                   <MesButton
-                    // 로컬 HWP를 새 버전으로 업로드
-                    variant="excel"
+                    // 로컬 HWP를 새 버전으로 업로드 — 저장·현재 적용이라 save(파랑)
+                    variant="save"
                     size="sm"
+                    icon="upload"
                     disabled={!buttonState.canUpload || asyncAct.isBusy()}
                     onClick={() => uploadFileRef.current?.click()}
                   >
                     업로드
                   </MesButton>
                   <MesButton
-                    // 현재 적용 파일 내려받기
-                    variant="save"
+                    // 현재 적용 파일만 내려받기 — 적용 없음이라 excel(초록)
+                    variant="excel"
                     size="sm"
+                    icon="download"
                     disabled={!buttonState.canExport || asyncAct.isBusy("export")}
                     onClick={() => void handleExportFile()}
                   >
@@ -713,6 +717,7 @@ export default function HwpTemplateManagementPage() {
                     // 파일 이력에서 과거 버전 적용
                     variant="add"
                     size="sm"
+                    icon="inbox"
                     disabled={!buttonState.canImport || asyncAct.isBusy("hist-open")}
                     onClick={() => void openHistModal()}
                   >
@@ -722,6 +727,7 @@ export default function HwpTemplateManagementPage() {
                     // 기본 제공 파일로 복원
                     variant="danger"
                     size="sm"
+                    icon="reset"
                     disabled={!buttonState.canReset || asyncAct.isBusy("reset")}
                     onClick={() => void handleReset()}
                   >
@@ -739,53 +745,22 @@ export default function HwpTemplateManagementPage() {
         />
       </PageCard>
 
-      {histOpen ? (
-        <div
-          // 파일 이력 모달 — 불러오기
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="양식 파일 불러오기"
-        >
-          <div className="flex max-h-[80vh] w-full max-w-lg flex-col gap-3 rounded border border-slate-200 bg-white p-4 shadow-lg">
-            <h2 className="text-sm font-semibold text-slate-800">양식 파일 불러오기</h2>
-            <p className="text-xs text-slate-500">
-              적용할 버전을 선택하세요. 현재 적용본과 기본 제공본을 함께 표시합니다.
-            </p>
-            <ul className="min-h-0 flex-1 overflow-auto rounded border border-slate-100">
-              {histRows.map((file) => (
-                <li key={file.idx}>
-                  <button
-                    type="button"
-                    className={`block w-full px-3 py-2 text-left text-sm ${histActiveIdx === file.idx ? "bg-slate-100 font-medium" : "hover:bg-slate-50"}`}
-                    onClick={() => setHistActiveIdx(file.idx)}
-                  >
-                    <span className="mr-2">{file.fileNm}</span>
-                    <span className="text-xs text-slate-500">
-                      {[
-                        file.insDt ?? "",
-                        file.srcTy === "sys" ? "기본제공" : "업로드",
-                        file.currentYn === "Y" ? "현재적용" : "",
-                        file.defaultYn === "Y" ? "기본양식" : "",
-                      ].filter((part) => part).join(" · ")}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <div className="flex justify-end gap-2">
-              <MesButton variant="secondary" onClick={() => setHistOpen(false)}>취소</MesButton>
-              <MesButton
-                variant="save"
-                loading={asyncAct.isBusy("hist-apply")}
-                onClick={() => void applyHist()}
-              >
-                적용
-              </MesButton>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <HwpTemplateFileHistModal
+        // 불러오기 팝업 열림
+        open={histOpen}
+        // 선택 양식의 파일 이력
+        rows={histRows}
+        // 라디오로 고른 파일 idx
+        activeIdx={histActiveIdx}
+        // 적용 API 진행 중
+        applying={asyncAct.isBusy("hist-apply")}
+        // 행·라디오 클릭
+        onSelect={setHistActiveIdx}
+        // 푸터 적용 — mesConfirm 후 현재 적용본 변경
+        onApply={() => void applyHist()}
+        // 배경·취소
+        onClose={() => setHistOpen(false)}
+      />
     </div>
   );
 }

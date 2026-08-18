@@ -12,7 +12,9 @@ com/haccp/sys/
  ├ role/       RoleMgmtController · RoleMgmtService · RoleMgmtMapper
  ├ department/ DepartmentController · DepartmentService · DepartmentMapper
  ├ user/       UserController · UserService · UserMapper   (서명 포함)
- └ log/        LoginHistory* · AuditLog* · ScreenUsage*    (각 C/S/M, 조회 전용)
+ ├ loginhistory/ LoginHistoryController · Service · Mapper   (조회 전용)
+ ├ auditlog/     AuditLogController · Service · Mapper · AuditWriter
+ └ screenusage/  ScreenUsageController · Service · Mapper    (조회 전용)
 ```
 
 XML은 `resources/mapper/sys/{같은 폴더명}/*.xml` (`mapper/sys/README.md`).

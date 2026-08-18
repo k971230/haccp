@@ -104,6 +104,11 @@ export interface MesDataGridProps<T> {
   loading?: boolean;
   height?: number | string;
   selectable?: boolean;
+  /**
+   * 단건 라디오 리드 열 — activeKey 행이 켜진다.
+   * 행·라디오 클릭은 onRowClick만 탄다. selectable(다중 체크박스)과 같이 쓰지 않는다.
+   */
+  singleSelect?: boolean;
   editable?: boolean;
   /** 활성(선택) 행 강조 — WinForms ActiveRow 시각화. rowKey 와 비교. */
   activeKey?: string | null;

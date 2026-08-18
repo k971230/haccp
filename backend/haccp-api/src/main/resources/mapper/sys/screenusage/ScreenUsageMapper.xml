@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ScreenUsageMapper.xml — 화면 이용 통계 화면 SP 호출 매퍼.
+
+개발자: 박승우
+일자: 2026-08-12
+코멘트:
+  1) sp_screen_usage_statistics_r_000 조회 1건만 담당한다 — 네이티브 SQL 금지
+  2) 원시 조회 로그가 아니라 일자 집계(tbl_view_stat_daily)를 읽는다
+  3) 기간은 Controller가 YYYYMMDD로 정규화한 값만 들어온다
+
+PIPELINE[HB92] 화면 이용 통계 MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.sys.screenusage.ScreenUsageMapper">
+
+    <!--
+      화면 이용 통계 목록 — sp_screen_usage_statistics_r_000
+      scrnCd는 좌측 메뉴 트리에서 고른 화면코드이며 공백이면 전체 화면이 나온다
+    -->
+    <select id="selectRows" resultType="map">
+        SELECT * FROM sp_screen_usage_statistics_r_000(
+            #{coCd,   jdbcType=VARCHAR},
+            #{fromDt, jdbcType=VARCHAR},
+            #{toDt,   jdbcType=VARCHAR},
+            #{scrnCd, jdbcType=VARCHAR}
+        )
+    </select>
+
+</mapper>

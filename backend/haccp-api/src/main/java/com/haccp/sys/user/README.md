@@ -4,19 +4,17 @@
 
 ## 엔드포인트
 
-| Method | URL | Service | SP |
-|---|---|---|---|
-| GET | `/api/v1/sys/user-management/list` | `list` | `sp_user_management_r_000` |
-| PUT | `/api/v1/sys/user-management/save` | `save` | `sp_user_management_c_000` |
-| POST | `/api/v1/sys/user-management/validate-delete` | `validateDelete` | `sp_user_management_delete_blocker_r_000` |
-| POST | `/api/v1/sys/user-management/delete` | `delete` | `sp_user_management_d_000` |
-| GET | `/api/v1/sys/users/{userId}/sign` | `loadSign` | `sp_user_management_sign_r_000` |
-| POST | `/api/v1/sys/users/{userId}/sign` | `uploadSign` | `sp_user_management_sign_u_000` |
-| POST | `/api/v1/sys/users/{userId}/sign/delete` | `deleteSign` | `sp_user_management_sign_u_000` |
-| GET | `/api/v1/sys/users/me/sign` | `loadMySign` | `sp_user_management_sign_r_000` |
-| GET | `/api/v1/sys/users/me/sign-info` | `mySignInfo` | `sp_user_management_sign_info_r_000` |
-
-테이블: `tbl_user` `tbl_dept` `tbl_role` (삭제 차단 판정에 `tbl_grid_pref`·`tbl_user_noti_pref` 등 사용자 종속 데이터)
+| Method | URL | Service | SP | 테이블 |
+|---|---|---|---|---|
+| GET | `/api/v1/sys/user-management/list` | `list` | `sp_user_management_r_000` | `tbl_user` `tbl_dept` `tbl_role` |
+| PUT | `/api/v1/sys/user-management/save` | `save` | `sp_user_management_c_000` | `tbl_user` |
+| POST | `/api/v1/sys/user-management/validate-delete` | `validateDelete` | `sp_user_management_delete_blocker_r_000` | `tbl_user` `tbl_grid_pref` `tbl_user_noti_pref` |
+| POST | `/api/v1/sys/user-management/delete` | `delete` | `sp_user_management_d_000` | `tbl_user` `tbl_grid_pref` `tbl_user_noti_pref` |
+| GET | `/api/v1/sys/users/{userId}/sign` | `loadSign` | `sp_user_management_sign_r_000` | `tbl_user.sign_img` |
+| POST | `/api/v1/sys/users/{userId}/sign` | `uploadSign` | `sp_user_management_sign_u_000` | `tbl_user.sign_img` |
+| POST | `/api/v1/sys/users/{userId}/sign/delete` | `deleteSign` | `sp_user_management_sign_u_000` | `tbl_user.sign_img` |
+| GET | `/api/v1/sys/users/me/sign` | `loadMySign` | `sp_user_management_sign_r_000` | `tbl_user.sign_img` |
+| GET | `/api/v1/sys/users/me/sign-info` | `mySignInfo` | `sp_user_management_sign_info_r_000` | `tbl_user` |
 
 ## 규칙
 

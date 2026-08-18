@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) Page는 렌더·상태·API만 담당하고 컬럼·잠금·버튼 활성 판정은 이 파일에 둔다
  *   2) 구분은 표시 전용이라 잠금 대상이 아니고, tmplCd 만 신규행에서 편집한다
- *   3) persistId는 기존 값(hwp-template-management-list)을 승계한다
+ *   3) persistId는 기존 값(hwp-template-management-list)을 승계한다. 불러오기 팝업은 FILE_HIST_PERSIST_ID
  *
  * PIPELINE[HF123] 사용양식관리 그리드 규칙
  */
@@ -14,8 +14,8 @@
 import type { GridColumn } from "@/types/grid";
 // 역할 — 그리드 잠금 규칙 타입
 import type { ScreenGridRules } from "@/shell/gridRules/types";
-// 역할 — 사용양식 목록 행
-import type { HwpTemplateRow } from "@/api/hwp/hwpTemplateApi";
+// 역할 — 사용양식 목록 행·파일 이력 행
+import type { HwpTemplateFile, HwpTemplateRow } from "@/api/hwp/hwpTemplateApi";
 // 역할 — 편집행 메타
 import type { EditableRow } from "@/types/editable";
 // 역할 — 구분 라벨·자사양식 판정
@@ -29,6 +29,12 @@ export const PERSIST_ID = "hwp-template-management-list" as const;
 
 /** 좌 목록 · 우 미리보기 분할 비율 저장 키 */
 export const SPLIT_KEY = "haccp-split-hwp-template" as const;
+
+/** 불러오기 팝업 그리드 열 설정 저장 키 */
+export const FILE_HIST_PERSIST_ID = "hwp-template-file-hist" as const;
+
+/** 파일 이력 출처 공통코드 대분류 — sys 기본양식, usr 사용자양식 */
+export const SRC_TY_MAIN_CD = "src-ty" as const;
 
 /** 좌측 그리드 행 — 서버 목록 + 신규 draft */
 export type TmplListRow = HwpTemplateRow;
@@ -133,4 +139,62 @@ export function buildButtonState(
     canImport: canEdit && persisted && Number(row?.fileHistCnt ?? 0) > 0,
     canReset: canEdit && persisted && !!row?.defaultFileIdx,
   };
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-18
+ * 코멘트:
+ *   1) 불러오기 팝업 그리드 컬럼을 만든다 — 파일명·등록일·출처·현재적용·기본양식
+ *   2) 팝업이 src-ty 공통코드 맵을 넘겨 구분 라벨을 그린다
+ *   3) 등록일은 yyyy-mm-dd만 — 시각은 숨긴다
+ */
+export function buildFileHistColumns(
+  // src-ty 공통코드 맵 — sys 기본양식, usr 사용자양식
+  srcTyMap: Record<string, string>,
+): GridColumn<HwpTemplateFile>[] {
+  return [
+    {
+      // 이력 파일명 — 업로드 당시 이름
+      field: "fileNm",
+      header: "파일명",
+      width: 220,
+    },
+    {
+      // 등록일 — yyyy-mm-dd
+      field: "insDt",
+      header: "등록일",
+      width: 110,
+      type: "date",
+    },
+    {
+      // 출처 — src-ty 공통코드. 목록 구분(시스템양식/자사양식)과 섞지 않는다
+      field: "srcTy",
+      header: "구분",
+      width: 110,
+      type: "code",
+      codeMap: srcTyMap,
+      badge: { sys: "blue", usr: "green" },
+    },
+    {
+      // 지금 적용 중인 버전 — Y만 문구
+      field: "currentYn",
+      header: "현재적용",
+      width: 88,
+      type: "code",
+      align: "center",
+      codeMap: { Y: "현재적용", N: "" },
+      badge: { Y: "green" },
+    },
+    {
+      // 초기화 대상 기본 제공본 — Y만 문구
+      field: "defaultYn",
+      header: "기본양식",
+      width: 88,
+      type: "code",
+      align: "center",
+      codeMap: { Y: "기본양식", N: "" },
+      badge: { Y: "amber" },
+    },
+  ];
 }

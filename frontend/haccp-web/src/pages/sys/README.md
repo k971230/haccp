@@ -21,10 +21,9 @@ pages/sys/
  ├ role/       RoleManagementPage.tsx · RoleManagementRule.ts · README.md
  ├ department/ DepartmentManagementPage.tsx · DepartmentManagementRule.ts · README.md
  ├ user/       UserManagementPage.tsx · UserManagementRule.ts · README.md
- ├ log/        LogPageShell.tsx
- │             LoginHistoryPage.tsx · LoginHistoryRule.ts
- │             AuditLogPage.tsx · AuditLogRule.ts
- │             ScreenUsageStatisticsPage.tsx · ScreenUsageStatisticsRule.ts · README.md
+ ├ loginhistory/ LoginHistoryPage.tsx · LoginHistoryRule.ts · README.md
+ ├ auditlog/     AuditLogPage.tsx · AuditLogRule.ts · README.md
+ ├ screenusage/  ScreenUsageStatisticsPage.tsx · ScreenUsageStatisticsRule.ts · README.md
  └ README.md   (이 파일)
 ```
 
@@ -52,7 +51,9 @@ pages/sys/
 | `roleApi.ts` | 권한그룹 + 화면권한 |
 | `departmentApi.ts` | 부서 관리 |
 | `userApi.ts` | 사용자 관리 + 서명(내 서명 포함) |
-| `logApi.ts` | 로그 3화면 |
+| `loginHistoryApi.ts` | 로그인 이력 |
+| `auditLogApi.ts` | 변경 감사 로그 |
+| `screenUsageApi.ts` | 화면 이용 통계 |
 
 ### 0-5. 그리드 pref 키
 
@@ -81,13 +82,15 @@ java/com/haccp/sys/
  ├ role/       RoleMgmtController · Service · Mapper
  ├ department/ DepartmentController · Service · Mapper
  ├ user/       UserController · Service · Mapper (서명 포함)
- └ log/        LoginHistory* · AuditLog* · ScreenUsage* (각 C/S/M)
-resources/mapper/sys/{commoncode,menu,role,department,user,log}/*.xml
+ ├ loginhistory/ LoginHistory* (C/S/M, 조회 전용)
+ ├ auditlog/     AuditLog* · AuditWriter (조회 + 적재)
+ └ screenusage/  ScreenUsage* (C/S/M, 조회 전용)
+resources/mapper/sys/{commoncode,menu,role,department,user,loginhistory,auditlog,screenusage}/*.xml
 ```
 
 - 패키지 루트는 `com.haccp` (구 MES 접두 패키지에서 전면 이동 완료)
 - Mapper XML은 **SP 호출 전용**이다. 네이티브 SELECT/INSERT/UPDATE/DELETE 금지 (`resources/mapper/sys/README.md`)
-- SP 이름은 화면명 기준 `sp_{화면명}_{r|c|d|u}_{nnn}` (lower_snake, `07-haccp-db.mdc`). 테이블 단위 `sp_tbl_*`와 병존하며 sys 6도메인은 화면명 규약만 쓴다
+- SP 이름은 화면명 기준 `sp_{화면명}_{r|c|d|u}_{nnn}` (lower_snake, `07-haccp-db.mdc`). 테이블 단위 `sp_tbl_*`와 병존하며 sys 화면은 화면명 규약만 쓴다
 
 ### 0-7. CUD 공통 파이프라인
 
@@ -273,12 +276,12 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 
 ### 6-1. 구조
 
-세 화면 모두 **조회 전용**이며 `LogPageShell` 하나를 공유한다.
+세 화면 모두 **조회 전용**이며 `components/layout/LogPageShell.tsx` 하나를 공유한다. 화면 폴더는 각각 `loginhistory/` · `auditlog/` · `screenusage/` 다.
 
 ```
-LoginHistoryPage           →  <LogPageShell key rule={LOGIN_HISTORY_RULE} />
-AuditLogPage               →  <LogPageShell key rule={AUDIT_LOG_RULE} />
-ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE_RULE} />
+loginhistory/LoginHistoryPage           →  <LogPageShell key rule={LOGIN_HISTORY_RULE} />
+auditlog/AuditLogPage               →  <LogPageShell key rule={AUDIT_LOG_RULE} />
+screenusage/ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE_RULE} />
 ```
 
 - 셸은 기간 검색·좌측 트리·그리드라는 **뼈대**만 갖는다. 컬럼·조회 API·후처리는 전부 Rule이 준다
@@ -297,7 +300,7 @@ ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE_RULE} />
 
 ### 6-3. 감사 이력은 누가 쌓나
 
-`tbl_audit_log`는 화면이 아니라 저장·삭제를 수행한 서비스가 남긴다. 적재기는 `com.haccp.sys.log.AuditWriter` 하나이며 SP는 `sp_tbl_audit_log_c_000`이다.
+`tbl_audit_log`는 화면이 아니라 저장·삭제를 수행한 서비스가 남긴다. 적재기는 `com.haccp.sys.auditlog.AuditWriter` 하나이며 SP는 `sp_tbl_audit_log_c_000`이다.
 
 | 대상 테이블 | 남기는 곳 | 행위 |
 |---|---|---|

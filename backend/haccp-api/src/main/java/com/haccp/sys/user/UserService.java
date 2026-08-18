@@ -21,7 +21,7 @@ import com.haccp.common.validation.DeleteValidation;
 // 역할 — 행·삭제키 정규화 공용 유틸
 import com.haccp.sys.SysPayload;
 // 역할 — 변경 감사 이력 적재
-import com.haccp.sys.log.AuditWriter;
+import com.haccp.sys.auditlog.AuditWriter;
 // 역할 — 생성자 주입
 import lombok.RequiredArgsConstructor;
 // 역할 — BCrypt 비밀번호 해시

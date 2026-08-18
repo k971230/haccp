@@ -417,9 +417,9 @@ export default function ScheduleCycleManagementPage() {
     `h-9 w-9 shrink-0 inline-flex items-center justify-center rounded border text-sm tabular-nums ${on
       ? "border-blue-300 bg-blue-50 font-medium text-blue-700"
       : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`;
-  // 말일 실행 — 날짜 칩(파랑)과 구분해 노랑. 꺼져 있어도 노랑 바탕
+  // 말일 실행 — 4행에서 22 시작·30 끝까지 채운다. 꺼져 있어도 노랑 바탕
   const monthEndChipClass = (on: boolean) =>
-    `h-9 shrink-0 inline-flex items-center justify-center rounded border px-3 text-sm ${on
+    `h-9 w-full inline-flex items-center justify-center rounded border px-3 text-sm ${on
       ? "border-amber-400 bg-amber-200 font-semibold text-amber-950"
       : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"}`;
   // 주기 폼 라벨·값 — 검색 영역보다 한 단계 크게
@@ -523,8 +523,8 @@ export default function ScheduleCycleManagementPage() {
           secondary={(
             <div className={splitPanelClass}>
               <div className={gridHeadClass}>
-                <div className="flex min-w-0 items-center gap-2">
-                  <b>
+                <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+                  <b className="truncate">
                     {activeForm ? `${activeForm.tmplNm} 주기설정` : "주기설정"}
                   </b>
                   {activeForm ? (
@@ -534,14 +534,15 @@ export default function ScheduleCycleManagementPage() {
                     />
                   ) : null}
                   {dirty ? (
-                    <span className="text-sm text-amber-600">{MES.unsavedChanges}</span>
+                    <span className="shrink-0 text-sm text-amber-600">{MES.unsavedChanges}</span>
                   ) : null}
                 </div>
-                <div className="ml-auto flex gap-2">
+                <div className="ml-auto flex shrink-0 items-center gap-1.5">
                   <MesButton
                     // 주기 업서트 — 저장 후 예정일이 다시 생성된다
                     variant="save"
                     size="sm"
+                    icon="save"
                     disabled={!canEdit || !activeTmplCd || asyncAct.isBusy("save")}
                     loading={asyncAct.isBusy("save")}
                     onClick={() => void asyncAct.run(handleSave, "save")}
@@ -552,6 +553,7 @@ export default function ScheduleCycleManagementPage() {
                     // 주기 삭제 — 등록된 주기가 있을 때만
                     variant="danger"
                     size="sm"
+                    icon="trash"
                     disabled={!canDeleteAuth || !hasRule || asyncAct.isBusy("del")}
                     loading={asyncAct.isBusy("del")}
                     onClick={() => void asyncAct.run(handleDelete, "del")}
@@ -707,9 +709,12 @@ export default function ScheduleCycleManagementPage() {
                             ))}
                           </div>
                         ))}
-                        <div className="flex w-full flex-wrap items-center gap-1.5">
+                        <div
+                          // 4행 — 31은 21과 세로, 말일은 22 시작·30 끝
+                          className="grid grid-cols-10 gap-1.5"
+                        >
                           <button
-                            // 31일 칩 — 1~30과 같은 고정 칸
+                            // 31일 칩 — 1칸, 1·11·21과 같은 열
                             type="button"
                             className={monthDayChipClass(form.monthDays.includes(31))}
                             disabled={!canEdit}
@@ -718,9 +723,9 @@ export default function ScheduleCycleManagementPage() {
                             31
                           </button>
                           <button
-                            // 말일 실행 — 문구라 날짜 칩보다 넓다. 지정일과 같은 날이면 1회만 실행
+                            // 말일 실행 — 9칸. 지정일과 같은 날이면 1회만 실행
                             type="button"
-                            className={monthEndChipClass(form.monthEnd)}
+                            className={`col-span-9 ${monthEndChipClass(form.monthEnd)}`}
                             disabled={!canEdit}
                             onClick={() => setForm((prev) => ({ ...prev, monthEnd: !prev.monthEnd }))}
                           >

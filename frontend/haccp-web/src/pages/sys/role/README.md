@@ -16,15 +16,16 @@
 - 권한그룹 코드(`usrgrpCd`)는 신규 행에서만 입력 가능
 - 그룹 저장과 권한 저장은 **별개 버튼**이다. 그룹을 저장하지 않은 채 권한만 저장할 수 없다
 
-## API · SP
+## API · SP · 테이블
 
-| 동작 | API (`api/sys/roleApi.ts`) | SP |
-|---|---|---|
-| 그룹 조회 | `listRoles` | `sp_role_management_r_000` |
-| 화면권한 조회 | `listRoleScreens(usrgrpCd)` | `sp_role_management_screen_r_000` |
-| 그룹 저장 | `saveRoles` | `sp_role_management_c_000` |
-| 화면권한 저장 | `saveRoleScreens` | `sp_role_management_screen_c_000` |
-| 삭제 검증 → 삭제 | `validateDeleteRoles` → `deleteRoles` | `_delete_blocker_r_000` → `_d_000` |
+| 동작 | API (`api/sys/roleApi.ts`) | SP | 테이블 |
+|---|---|---|---|
+| 그룹 조회 | `listRoles` | `sp_role_management_r_000` | `tbl_role` |
+| 화면권한 조회 | `listRoleScreens(usrgrpCd)` | `sp_role_management_screen_r_000` | `tbl_screen` `tbl_role_screen` |
+| 그룹 저장 | `saveRoles` | `sp_role_management_c_000` | `tbl_role` |
+| 화면권한 저장 | `saveRoleScreens` | `sp_role_management_screen_c_000` | `tbl_role_screen` |
+| 삭제 검증 | `validateDeleteRoles` | `sp_role_management_delete_blocker_r_000` | `tbl_role` `tbl_user` |
+| 삭제 | `deleteRoles` | `sp_role_management_d_000` | `tbl_role` `tbl_user` `tbl_role_screen` |
 
 트리 원본은 `api/sys/menuApi.listAdminMenus`다.
 

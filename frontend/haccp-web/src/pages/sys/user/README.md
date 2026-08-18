@@ -17,16 +17,17 @@
 - `empCd`·`posCd`·`lockYn`은 이 화면에서 다루지 않으며 저장 payload에서 제거된다
 - 서명은 저장된 사용자에게만 붙일 수 있다(신규 행은 서명 버튼 잠금)
 
-## API · SP
+## API · SP · 테이블
 
-| 동작 | API (`api/sys/userApi.ts`) | SP |
-|---|---|---|
-| 조회 | `listUsers` | `sp_user_management_r_000` |
-| 저장 | `saveUsers` | `sp_user_management_c_000` |
-| 삭제 검증 → 삭제 | `validateDeleteUsers` → `deleteUsers` | `_delete_blocker_r_000` → `_d_000` |
-| 서명 유무 확인 | `fetchMySignInfo()` | `sp_user_management_sign_info_r_000` |
-| 서명 미리보기 | `fetchUserSignBlob(userId)` | `sp_user_management_sign_r_000` |
-| 서명 업로드·삭제 | `uploadUserSign` · `deleteUserSign` | `sp_user_management_sign_u_000` |
+| 동작 | API (`api/sys/userApi.ts`) | SP | 테이블 |
+|---|---|---|---|
+| 조회 | `listUsers` | `sp_user_management_r_000` | `tbl_user` `tbl_dept` `tbl_role` |
+| 저장 | `saveUsers` | `sp_user_management_c_000` | `tbl_user` |
+| 삭제 검증 | `validateDeleteUsers` | `sp_user_management_delete_blocker_r_000` | `tbl_user` `tbl_grid_pref` `tbl_user_noti_pref` |
+| 삭제 | `deleteUsers` | `sp_user_management_d_000` | `tbl_user` `tbl_grid_pref` `tbl_user_noti_pref` |
+| 서명 유무 확인 | `fetchMySignInfo()` | `sp_user_management_sign_info_r_000` | `tbl_user` |
+| 서명 미리보기 | `fetchUserSignBlob(userId)` | `sp_user_management_sign_r_000` | `tbl_user.sign_img` |
+| 서명 업로드·삭제 | `uploadUserSign` · `deleteUserSign` | `sp_user_management_sign_u_000` | `tbl_user.sign_img` |
 
 서명은 바이너리 응답이라 `httpFile`(120s) 인스턴스를 쓴다. 나머지는 `http`(10s).
 서명 실물은 `tbl_user.sign_img bytea`에 담기고 목록은 `sign_yn`만 받는다. 그리드의 `_hasSign`은 이 값에서 파생하며 모달에는 `hasSign` prop으로 넘긴다.

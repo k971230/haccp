@@ -4,15 +4,15 @@
 
 ## 엔드포인트
 
-| Method | URL | Service | SP |
-|---|---|---|---|
-| GET | `/api/v1/sys/common-code-management/groups` | `listGroups` | `sp_common_code_management_r_000` |
-| GET | `/api/v1/sys/common-code-management/details?mainCd&sysYn` | `listDetails` | `sp_common_code_management_r_001` |
-| PUT | `/api/v1/sys/common-code-management/save` | `save` | `sp_common_code_management_c_000` |
-| POST | `/api/v1/sys/common-code-management/validate-delete` | `validateDelete` | `sp_common_code_management_delete_blocker_r_000` |
-| POST | `/api/v1/sys/common-code-management/delete` | `delete` | `sp_common_code_management_d_000` |
+| Method | URL | Service | SP | 테이블 |
+|---|---|---|---|---|
+| GET | `/api/v1/sys/common-code-management/groups` | `listGroups` | `sp_common_code_management_r_000` | `tbl_code` |
+| GET | `/api/v1/sys/common-code-management/details?mainCd&sysYn` | `listDetails` | `sp_common_code_management_r_001` | `tbl_code` |
+| PUT | `/api/v1/sys/common-code-management/save` | `save` | `sp_common_code_management_c_000` | `tbl_code` |
+| POST | `/api/v1/sys/common-code-management/validate-delete` | `validateDelete` | `sp_common_code_management_delete_blocker_r_000` | `tbl_code` |
+| POST | `/api/v1/sys/common-code-management/delete` | `delete` | `sp_common_code_management_d_000` | `tbl_code` |
 
-테이블: `tbl_code` (대분류 = `sub_cd='*'` 행)
+대분류는 `tbl_code` 에서 `sub_cd='*'` 행이다.
 
 ## 규칙
 
