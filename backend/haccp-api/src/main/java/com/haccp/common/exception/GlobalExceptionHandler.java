@@ -37,6 +37,8 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 // 역할 — 전역 예외 처리 어드바이스
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+// 역할 — 응답 쓰던 중 브라우저가 연결을 끊은 경우
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 // 역할 — JDBC SQL 예외
 import java.sql.SQLException;
@@ -225,6 +227,22 @@ public class GlobalExceptionHandler {
     ) {
         // 원인 체인에서 SQLException 추출 후 분류
         return classify(e);
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-14
+     * 코멘트:
+     *   1) 응답을 쓰던 중 브라우저가 연결을 끊은 경우를 서버 장애로 보지 않는다
+     *   2) 사용양식 미리보기처럼 행을 빨리 바꾸면 이전 요청이 취소되어 발생한다
+     *   3) 클라이언트가 이미 떠났으므로 응답 본문은 쓰지 않고 debug 로그만 남긴다
+     */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleClientGone(
+            // 연결이 이미 끊긴 비동기 응답 — 본문을 다시 쓰면 같은 예외가 난다
+            AsyncRequestNotUsableException e
+    ) {
+        log.debug("클라이언트가 연결을 끊었습니다: {}", e.getMessage());
     }
 
     /**

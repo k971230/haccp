@@ -16,6 +16,8 @@ package com.haccp.doc;
 // 역할 — 정규식 접두 제거
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+// 역할 — 상대 APP_FILE_ROOT를 모듈 절대경로로 고정
+import java.nio.file.Path;
 
 /** 템플릿 업로드·배포 시 공통 파일명 규칙 */
 public final class TemplateFileNames {
@@ -170,5 +172,94 @@ public final class TemplateFileNames {
             path.append(segment);
         }
         return path.toString();
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-14
+     * 코멘트:
+     *   1) APP_FILE_ROOT를 절대경로로 고정한다. 상대값이면 실행 CWD가 아니라 haccp-api 모듈 디렉터리 기준이다
+     *   2) DocumentFileStorage·TemplateFileStorage 기동 시 호출한다
+     *   3) IntelliJ 작업 디렉터리가 저장소 루트여도 data/haccp-files 를 모듈 아래로 연다
+     */
+    public static Path absoluteRoot(
+            // .env APP_FILE_ROOT — 상대 또는 절대
+            String configured
+    ) {
+        Path path = Path.of(configured == null ? "" : configured.trim());
+        if (path.isAbsolute()) {
+            return path.normalize();
+        }
+        return moduleDir().resolve(path).normalize();
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-14
+     * 코멘트:
+     *   1) DB form_path가 운영 절대경로(/var/haccp/files/HaccpTemplates/...)여도 루트명부터만 남긴다
+     *   2) TemplateFileStorage.parseDeclaredPath가 호출한다
+     *   3) 이미 상대경로면 그대로 둔다
+     */
+    public static String toRelativeFormPath(
+            // DB·설정에 들어온 경로 — 상대 또는 절대
+            String formPath,
+            // 표준 양식 루트 폴더명
+            String standardDirectory,
+            // 자사 양식 루트 폴더명
+            String customDirectory
+    ) {
+        String normalized = formPath == null ? "" : formPath.trim().replace('\\', '/');
+        while (normalized.startsWith("./")) {
+            normalized = normalized.substring(2);
+        }
+        int std = indexOfDir(normalized, standardDirectory);
+        int cst = indexOfDir(normalized, customDirectory);
+        int cut = -1;
+        if (std >= 0 && cst >= 0) {
+            cut = Math.min(std, cst);
+        } else {
+            cut = Math.max(std, cst);
+        }
+        if (cut > 0) {
+            normalized = normalized.substring(cut);
+        }
+        return normalized;
+    }
+
+    /** haccp-api 모듈 디렉터리 — target/classes 또는 jar 위치에서 한 단계 위 */
+    private static Path moduleDir() {
+        try {
+            var source = TemplateFileNames.class.getProtectionDomain().getCodeSource();
+            if (source == null) {
+                return Path.of("").toAbsolutePath().normalize();
+            }
+            Path location = Path.of(source.getLocation().toURI());
+            String asUnix = location.toString().replace('\\', '/');
+            if (asUnix.endsWith("/target/classes") || asUnix.endsWith("/target/test-classes")) {
+                Path module = location.getParent();
+                return module == null ? location : module.getParent() == null ? module : module.getParent();
+            }
+            if (asUnix.endsWith(".jar") && location.getParent() != null) {
+                return location.getParent();
+            }
+            return location;
+        } catch (Exception ignored) {
+            return Path.of("").toAbsolutePath().normalize();
+        }
+    }
+
+    /** `/HaccpTemplates/` 또는 문자열 시작의 루트 폴더 위치. 없으면 -1 */
+    private static int indexOfDir(String path, String directory) {
+        String dir = segment(directory);
+        if (dir.isBlank() || path.isBlank()) {
+            return -1;
+        }
+        if (path.equals(dir) || path.startsWith(dir + "/")) {
+            return 0;
+        }
+        String needle = "/" + dir + "/";
+        int at = path.indexOf(needle);
+        return at < 0 ? -1 : at + 1;
     }
 }

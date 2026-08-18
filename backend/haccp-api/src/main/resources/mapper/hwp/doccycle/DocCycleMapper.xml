@@ -16,8 +16,9 @@ PIPELINE[HB94, HB98] 연관 모듈
 <mapper namespace="com.haccp.hwp.doccycle.DocCycleMapper">
 
     <!--
-      좌측 양식 목록 — 사용 중 사용양식 + 구분(formTy) + 주기 등록여부(ruleYn).
+      좌측 양식 목록 — 사용여부 검색 + 구분(formTy) + 주기 등록여부(ruleYn).
       tmplCd·tmplNm은 SP 내부에서 LIKE 부분일치로 쓰며 공백이면 전체다.
+      useYn은 Y/N 등가, 공백이면 전체다.
     -->
     <select id="selectForms" resultType="map">
         SELECT tmpl_cd  AS "tmplCd",
@@ -25,11 +26,13 @@ PIPELINE[HB94, HB98] 연관 모듈
                sys_yn   AS "formTy",
                doc_kind AS "docKind",
                cycle_cd AS "cycleCd",
-               rule_yn  AS "ruleYn"
+               rule_yn  AS "ruleYn",
+               use_yn   AS "useYn"
           FROM sp_schedule_cycle_management_form_r_000(
             #{coCd,   mode=IN, jdbcType=VARCHAR},
             #{tmplCd, mode=IN, jdbcType=VARCHAR},
-            #{tmplNm, mode=IN, jdbcType=VARCHAR}
+            #{tmplNm, mode=IN, jdbcType=VARCHAR},
+            #{useYn,  mode=IN, jdbcType=VARCHAR}
           )
     </select>
 

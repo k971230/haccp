@@ -58,17 +58,19 @@ public class DocCycleService {
      * 개발자: 박승우
      * 일자: 2026-08-14
      * 코멘트:
-     *   1) 좌측 양식 목록 — 사용 중 사용양식 + 구분 + 주기 등록여부
+     *   1) 좌측 양식 목록 — 사용여부 검색 + 구분 + 주기 등록여부
      *   2) 화면 진입·조회 버튼에서 호출한다
-     *   3) 성공 시 camelCase 행 배열, 조건이 비면 회사 전체 사용양식
+     *   3) 성공 시 camelCase 행 배열, 조건이 비면 회사 전체(사용여부 기본은 화면이 Y)
      */
     public List<Map<String, Object>> forms(
             // 양식코드 검색어 — null·공백이면 전체
             String tmplCd,
             // 양식명 검색어 — null·공백이면 전체
-            String tmplNm
+            String tmplNm,
+            // 사용여부 Y/N — null·공백이면 전체
+            String useYn
     ) {
-        return mapper.selectForms(LoginUserContext.coCd(), text(tmplCd), text(tmplNm));
+        return mapper.selectForms(LoginUserContext.coCd(), text(tmplCd), text(tmplNm), text(useYn));
     }
 
     /**

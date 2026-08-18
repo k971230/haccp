@@ -115,11 +115,11 @@ export function inputToHhmm(value: string): string {
   return digits.length === 4 ? digits : "1800";
 }
 
-/** 빈 폼 — 주기 미설정 양식을 고르면 이 값으로 채운다 */
+/** 빈 폼 — 주기 미설정 양식을 고르면 이 값으로 채운다(매일·그대로·18:00·당일) */
 export function emptyForm(): CycleForm {
   return {
     baseDt: todayInput(),
-    cycleCd: "M",
+    cycleCd: "D",
     nonworkRule: "keep",
     dueTime: "18:00",
     deptCd: "",
@@ -195,13 +195,10 @@ export function formToDetails(form: CycleForm): DocCycleDetail[] {
  * 일자: 2026-08-14
  * 코멘트:
  *   1) 좌측 조회 전용 목록 컬럼을 만든다
- *   2) Page가 cycleLabels 를 넘겨 useMemo로 호출한다
- *   3) 구분은 formType 정본 badge, 주기는 공통코드 라벨
+ *   2) Page가 useMemo로 호출한다
+ *   3) 구분은 formType 정본 badge, 사용여부는 사용/미사용
  */
-export function buildFormColumns(
-  // 주기 코드 → 표시명
-  cycleLabels: Record<string, string>,
-): GridColumn<DocCycleFormRow>[] {
+export function buildFormColumns(): GridColumn<DocCycleFormRow>[] {
   return [
     {
       // 양식코드 — 조회 전용. 등록·수정은 사용양식 관리에서 한다
@@ -225,12 +222,13 @@ export function buildFormColumns(
       badge: { sys: "blue", usr: "green" },
     },
     {
-      // 주기 — 등록된 주기 코드. 비어 있으면 아직 설정하지 않은 양식이다
-      field: "cycleCd",
-      header: "주기",
-      width: 80,
+      // 사용여부 — 양식(ct.use_yn). 미사용도 검색 전체에서 보인다
+      field: "useYn",
+      header: "사용여부",
+      width: 88,
       type: "code",
-      codeMap: cycleLabels,
+      codeMap: { Y: "사용", N: "미사용" },
+      badge: { Y: "green", N: "gray" },
     },
   ];
 }

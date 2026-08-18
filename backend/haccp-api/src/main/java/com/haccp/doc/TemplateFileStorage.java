@@ -29,6 +29,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 // 역할 — 브라우저 업로드 파일
 import org.springframework.web.multipart.MultipartFile;
+// 역할 — 기동 시 절대 루트 로그
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 볼륨 기반 템플릿 저장소.
@@ -43,7 +46,9 @@ public class TemplateFileStorage {
      * 사용자 입장에서 같은 상황으로 보고 한 문구로 통일한다 — 09 G-05.
      */
     public static final String FORM_NOT_UPLOADED =
-            "양식 파일이 아직 업로드되지 않았습니다. 좌측 상단에서 파일을 업로드해 주세요.";
+            "양식 파일이 없습니다. 업로드해 주세요.";
+
+    private static final Logger log = LoggerFactory.getLogger(TemplateFileStorage.class);
 
     // APP_FILE_ROOT 정규화 경로
     private final Path appFileRoot;
@@ -68,12 +73,13 @@ public class TemplateFileStorage {
             // 운영 파일 크기 한도
             @Value("${app.file.max-bytes}") long maxBytes
     ) {
-        this.appFileRoot = Path.of(appFileRoot).toAbsolutePath().normalize();
+        this.appFileRoot = TemplateFileNames.absoluteRoot(appFileRoot);
         this.standardDirectory = TemplateFileNames.segment(standardDirectory);
         this.customDirectory = TemplateFileNames.segment(customDirectory);
         this.standardRoot = this.appFileRoot.resolve(this.standardDirectory).normalize();
         this.customRoot = this.appFileRoot.resolve(this.customDirectory).normalize();
         this.maxBytes = maxBytes;
+        log.info("템플릿 파일 루트: {}", this.appFileRoot);
     }
 
     /**
@@ -223,12 +229,13 @@ public class TemplateFileStorage {
     }
 
     private Path parseDeclaredPath(String formPath) {
-        if (formPath == null || formPath.isBlank()) {
+        String relative = TemplateFileNames.toRelativeFormPath(formPath, standardDirectory, customDirectory);
+        if (relative.isBlank()) {
             throw new BizException("템플릿 경로가 올바르지 않습니다.");
         }
         Path declaredPath;
         try {
-            declaredPath = Path.of(formPath.replace('\\', '/')).normalize();
+            declaredPath = Path.of(relative.replace('\\', '/')).normalize();
         } catch (RuntimeException e) {
             throw new BizException("템플릿 경로가 올바르지 않습니다.");
         }
