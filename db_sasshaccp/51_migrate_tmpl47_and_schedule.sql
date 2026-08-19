@@ -9,6 +9,8 @@
 --   1) 50 이후 남은 UPPER tmpl_cd를 47종 정본으로 맞춘다
 --   2) doc_kind DB/HWP → html/hwp, company_template.sys_yn Y/N → sys/usr
 --   3) 작성주기 base_dt·목록에 ins_id/ins_dt·양식별 최신 규칙 함수
+--
+-- 운영 정본은 94/95. 신규 설치는 09 정본을 쓰고 이 파일을 재실행하지 않는다.
 -- ============================================================
 
 SET search_path TO sasshaccp;

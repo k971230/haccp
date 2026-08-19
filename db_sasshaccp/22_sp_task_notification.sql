@@ -1,11 +1,12 @@
 -- 역할 — 오늘 할 일·알림·개선조치·문서관계·감사자료 워크플로 저장프로시저
 --
 -- 개발자: 박승우
--- 일자: 2026-08-06
+-- 일자: 2026-08-19
 -- 코멘트:
 --   1) 기존 문서 허브를 기준으로 과제·개선조치·알림·관계를 전용 업무 흐름으로 완결한다
 --   2) 생성 절은 재실행해도 (회사·양식·기준일) 과제를 중복 만들지 않아 배치·로그인 보정이 안전하다
 --   3) 모든 변경은 테넌트 조건과 문서 존재 검증을 수행하고 Spring 트랜잭션 안에서만 실행한다
+--   4) 문서관계 허용 양식은 html_sys/hwp_sys. 운영 DB(이미 94/95)에는 이 파일을 다시 돌리지 않는다
 
 SET search_path TO sasshaccp;
 
@@ -180,10 +181,14 @@ BEGIN
     SELECT tmpl_cd INTO v_src FROM tbl_document WHERE idx = p_src_doc_idx AND co_cd = p_co_cd AND del_yn = 'N';
     SELECT tmpl_cd INTO v_tgt FROM tbl_document WHERE idx = p_tgt_doc_idx AND co_cd = p_co_cd AND del_yn = 'N';
     IF v_src IS NULL OR v_tgt IS NULL THEN RAISE EXCEPTION '연결할 문서를 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
-    IF NOT ((p_rel_type = 'PLAN_REPORT' AND v_src = 'tmpl_prp-verify-plan' AND v_tgt = 'tmpl_prp-verify-report')
-         OR (p_rel_type = 'tmpl_admin-edu-plan_LOG' AND v_src = 'tmpl_admin-edu-plan' AND v_tgt = 'tmpl_admin-edu-log')
-         OR (p_rel_type = 'tmpl_prp-calib-target_LOG' AND v_src = 'tmpl_prp-calib-target' AND v_tgt IN ('tmpl_prp-calib-temp','tmpl_prp-calib-weight','tmpl_prp-calib-scale'))
-         OR (p_rel_type = 'RECV_INVENTORY' AND v_src = 'tmpl_logis-receive-inspect' AND v_tgt IN ('INV', 'tmpl_logis-inventory-check'))) THEN
+    -- PLAN_REPORT: 연간검증계획(hwp_sys_003) → 검증결과보고(hwp_sys_005)
+    -- hwp_sys_007_LOG: 연간교육계획 → 교육일지(hwp_sys_008)
+    -- html_sys_010_LOG: 검교정대상 HTML → 자체검교정일지(hwp_sys_014)
+    -- RECV_INVENTORY: 입고검사(hwp_sys_017) → 재고점검(hwp_sys_016)
+    IF NOT ((p_rel_type = 'PLAN_REPORT' AND v_src = 'hwp_sys_003' AND v_tgt = 'hwp_sys_005')
+         OR (p_rel_type = 'hwp_sys_007_LOG' AND v_src = 'hwp_sys_007' AND v_tgt = 'hwp_sys_008')
+         OR (p_rel_type = 'html_sys_010_LOG' AND v_src = 'html_sys_010' AND v_tgt = 'hwp_sys_014')
+         OR (p_rel_type = 'RECV_INVENTORY' AND v_src = 'hwp_sys_017' AND v_tgt IN ('INV', 'hwp_sys_016'))) THEN
         RAISE EXCEPTION '허용되지 않은 문서 관계입니다.' USING ERRCODE = '45000';
     END IF;
     INSERT INTO tbl_document_relation(co_cd, src_doc_idx, rel_type, tgt_doc_idx, ins_id) VALUES(p_co_cd, p_src_doc_idx, p_rel_type, p_tgt_doc_idx, p_id) ON CONFLICT DO NOTHING;

@@ -491,7 +491,7 @@ COMMENT ON PROCEDURE sp_tbl_company_template_c_000(varchar, varchar, varchar, va
 CREATE OR REPLACE FUNCTION sp_tbl_check_item_r_000(
     -- p_co_cd: JWT 회사코드
     p_co_cd  varchar,
-    -- p_tmpl_cd: 템플릿 코드 — tmpl_prp-hygiene-daily, WATER 등
+    -- p_tmpl_cd: 템플릿 코드 — html_sys_007, hwp_sys_021 등
     p_tmpl_cd varchar,
     -- p_grp_cd: 항목 구분 필터. 공백이면 전체 구분
     p_grp_cd varchar

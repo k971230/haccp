@@ -1,10 +1,10 @@
 /**
- * CcpFormsController — CCP 금속검출·검증점검표·연간 검증계획서 REST API.
+ * CcpFormsController — CCP 금속검출·검증점검표 REST API.
  *
  * 개발자: 박승우
  * 일자: 2026-08-06
  * 코멘트:
- *   1) 세 화면의 URL을 한 컨트롤러에서 받고 Service가 화면별 템플릿을 고정한다
+ *   1) 금속·검증 URL을 한 컨트롤러에서 받고 Service가 화면별 템플릿을 고정한다
  *   2) 목록·상세 GET, 저장 PUT, 삭제 검증·삭제 POST 규약을 동일하게 적용한다
  *   3) 삭제 본문은 항상 [{ docIdx }] 객체 배열이며 HTTP DELETE는 사용하지 않는다
  *

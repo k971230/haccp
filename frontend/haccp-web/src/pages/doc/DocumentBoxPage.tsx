@@ -590,8 +590,8 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
                 <div className="mb-2 flex flex-wrap gap-2">
                   <select value={relationType} onChange={(e) => setRelationType(e.target.value)} className="h-8 rounded border border-slate-300 px-2 text-xs">
                     <option value="PLAN_REPORT">검증계획 → 검증보고</option>
-                    <option value="tmpl_admin-edu-plan_LOG">교육계획 → 교육일지</option>
-                    <option value="tmpl_prp-calib-target_LOG">검교정대상 → 검교정일지</option>
+                    <option value="hwp_sys_007_LOG">교육계획 → 교육일지</option>
+                    <option value="html_sys_010_LOG">검교정대상 → 검교정일지</option>
                     <option value="RECV_INVENTORY">입고검사 → 재고</option>
                   </select>
                   <Input value={relationDocIdx} onChange={(e) => setRelationDocIdx(e.target.value)} placeholder="대상 문서번호" className="w-32" />

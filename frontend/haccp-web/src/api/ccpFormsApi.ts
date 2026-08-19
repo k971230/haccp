@@ -1,5 +1,5 @@
 /**
- * ccpFormsApi — CCP 금속검출·검증점검표·연간 검증계획서 공통 API.
+ * ccpFormsApi — CCP 금속검출·검증점검표 공통 API.
  *
  * 개발자: 박승우
  * 일자: 2026-08-06
@@ -14,7 +14,7 @@
 import { http } from "./http";
 import type { CommonResponse } from "@/types/common";
 
-export type CcpFormCode = "metal-monitor" | "verification-check" | "annual-verification-plan";
+export type CcpFormCode = "metal-monitor" | "verification-check";
 export type CcpRow = Record<string, unknown>;
 
 export async function listCcpForms(

@@ -1,12 +1,12 @@
 /**
- * BizOpsFormPage — 시설·재고·공정 DB형 양식 문서형 기록 화면.
+ * BizOpsFormPage — 시설점검·검교정대상 HTML 양식 문서형 기록 화면.
  *
  * 개발자: 박승우
- * 일자: 2026-08-07
+ * 일자: 2026-08-19
  * 코멘트:
- *   1) 신규 시 좌측 draft(C)를 쌓고 dirty 전건 검증 후 단건 save를 순차 호출한다
+ *   1) 시설·검교정만 HTML 이다. 폐기·재고·입고·공정은 HWP leaf 다
  *   2) 날짜·셀은 docDateTime·DocCellSelect로 DocForm 계약을 맞춘다
- *   3) 검교정은 연도·재고는 연월·그 외는 일자를 baseKey로 쓴다
+ *   3) 검교정은 연도, 시설점검은 일자를 baseKey로 쓴다
  *
  * PIPELINE[HF85] 시설·재고·공정 화면
  * PIPELINE[HF120, HF29, HF56] 연관 모듈
@@ -89,45 +89,6 @@ const formMeta: Record<BizOpsScreenCode, { title: string; headers: Field[]; colu
       { key: "nextCalibDt", label: "차기 예정일", type: "date" }, { key: "remark", label: "비고" },
     ],
   },
-  "waste-disposal-check": {
-    title: "폐기물 처리 점검표",
-    headers: [{ key: "baseDt", label: "시작일", type: "date" }, { key: "baseDtTo", label: "종료일", type: "date" }],
-    columns: [
-      { key: "procDt", label: "처리일", type: "date" }, { key: "wasteGbn", label: "구분", type: "select", options: ["", "BAD", "tmpl_prp-waste-check", "EXPIRE"] },
-      { key: "itemNm", label: "품명" }, { key: "weightKg", label: "중량(kg)", type: "number" },
-      { key: "badDesc", label: "부적합 내용" }, { key: "procDesc", label: "처리방법" },
-      { key: "partnerNm", label: "수거업체" }, { key: "mngNm", label: "담당자" },
-    ],
-  },
-  "inventory-check": {
-    title: "입·출고 및 재고 점검표",
-    headers: [{ key: "baseYm", label: "기준연월" }],
-    columns: [
-      { key: "txnDt", label: "거래일", type: "date" }, { key: "txnGbn", label: "입출고", type: "select", options: ["IN", "OUT"] },
-      { key: "itemGbn", label: "품목구분", type: "select", options: ["MEAT", "SUB", "PACK", "PROD"] },
-      { key: "itemNm", label: "품명" }, { key: "qty", label: "수량", type: "number" },
-      { key: "unitNm", label: "단위" }, { key: "lotNo", label: "로트번호" }, { key: "remark", label: "비고" },
-    ],
-  },
-  "receiving-inspection": {
-    title: "입고검사 일지",
-    headers: [
-      { key: "baseDt", label: "입고일", type: "date" }, { key: "recvGbn", label: "입고구분", type: "select", options: ["MEAT", "SUB", "PACK"] },
-      { key: "partnerNm", label: "반입처" }, { key: "itemNm", label: "품명" }, { key: "recvQty", label: "입고수량", type: "number" },
-    ],
-    columns: [
-      { key: "grpCd", label: "구분", readOnly: true }, { key: "itemNm", label: "검사항목", readOnly: true },
-      { key: "judgeCd", label: "판정", type: "select", options: ["", "P", "F"] }, { key: "evalDesc", label: "평가내용" },
-    ],
-  },
-  "process-control-check": {
-    title: "공정관리 점검표",
-    headers: [{ key: "baseDt", label: "시작일", type: "date" }, { key: "baseDtTo", label: "종료일", type: "date" }, { key: "cycleNm", label: "점검주기" }],
-    columns: [
-      { key: "procNm", label: "공정", readOnly: true }, { key: "itemNm", label: "점검사항", readOnly: true },
-      { key: "resultSummary", label: "일자별 판정", readOnly: true },
-    ],
-  },
 };
 
 /** unknown → date input — DocForm 공통 변환 래핑 */
@@ -139,7 +100,6 @@ function editableStatus(status: unknown): boolean { return !status || status ===
 /** 양식별 기준키 라벨 */
 function baseKeyHeader(screenCode: BizOpsScreenCode): string {
   if (screenCode === "calibration-target-management") return "연도";
-  if (screenCode === "inventory-check") return "연월";
   return "기준일";
 }
 
@@ -147,9 +107,6 @@ function baseKeyHeader(screenCode: BizOpsScreenCode): string {
 function extractBaseKey(screenCode: BizOpsScreenCode, header: FormRow, fallback = ""): string {
   if (screenCode === "calibration-target-management") {
     return String(header.baseYear ?? fallback ?? todayYmd().slice(0, 4)).replace(/\D/g, "").slice(0, 4);
-  }
-  if (screenCode === "inventory-check") {
-    return String(header.baseYm ?? fallback ?? todayYmd().slice(0, 6)).replace(/\D/g, "").slice(0, 6);
   }
   return String(header.baseDt ?? fallback ?? todayYmd()).replace(/\D/g, "").slice(0, 8);
 }
@@ -159,18 +116,12 @@ function applyBaseKey(screenCode: BizOpsScreenCode, header: FormRow, baseKey: st
   if (screenCode === "calibration-target-management") {
     return { ...header, baseYear: baseKey };
   }
-  if (screenCode === "inventory-check") {
-    return { ...header, baseYm: baseKey };
-  }
   return { ...header, baseDt: baseKey };
 }
 
 /** 기준키 표시 */
 function formatBaseKey(screenCode: BizOpsScreenCode, baseKey: string): string {
   if (screenCode === "calibration-target-management") return baseKey;
-  if (screenCode === "inventory-check") {
-    return baseKey.length === 6 ? `${baseKey.slice(0, 4)}-${baseKey.slice(4, 6)}` : baseKey;
-  }
   return toInputDate(baseKey);
 }
 
@@ -178,9 +129,6 @@ function formatBaseKey(screenCode: BizOpsScreenCode, baseKey: string): string {
 function validateBaseKey(screenCode: BizOpsScreenCode, baseKey: string): string | null {
   if (screenCode === "calibration-target-management") {
     return /^\d{4}$/.test(baseKey) ? null : MES.required("연도");
-  }
-  if (screenCode === "inventory-check") {
-    return /^\d{6}$/.test(baseKey) ? null : MES.required("기준연월");
   }
   return /^\d{8}$/.test(baseKey) ? null : MES.required("기준일");
 }
@@ -205,8 +153,6 @@ type Buf = {
 function emptyHeader(screenCode: BizOpsScreenCode, userNm?: string): FormRow {
   const next: FormRow = { baseDt: todayYmd() };
   if (screenCode === "calibration-target-management") next.baseYear = todayYmd().slice(0, 4);
-  if (screenCode === "inventory-check") next.baseYm = todayYmd().slice(0, 6);
-  if (screenCode === "receiving-inspection") next.recvGbn = "MEAT";
   if (screenCode === "facility-equipment-check") next.checkerNm = userNm ?? "";
   return next;
 }
@@ -214,8 +160,6 @@ function emptyHeader(screenCode: BizOpsScreenCode, userNm?: string): FormRow {
 function detailToBuf(screenCode: BizOpsScreenCode, detail: { header: FormRow | null; rows: FormRow[]; corrective?: DocCorrectiveValue | null }, userNm?: string): Buf {
   const nextHeader = detail.header ?? emptyHeader(screenCode, userNm);
   if (!detail.header && screenCode === "calibration-target-management") nextHeader.baseYear = todayYmd().slice(0, 4);
-  if (!detail.header && screenCode === "inventory-check") nextHeader.baseYm = todayYmd().slice(0, 6);
-  if (!detail.header && screenCode === "receiving-inspection") nextHeader.recvGbn = "MEAT";
   if (!detail.header && screenCode === "facility-equipment-check") nextHeader.checkerNm = userNm ?? "";
   const baseKey = extractBaseKey(screenCode, nextHeader);
   const ca = detail.corrective;
@@ -241,7 +185,7 @@ export interface BizOpsFormPageProps { screenCode: BizOpsScreenCode; }
  * 개발자: 박승우
  * 일자: 2026-08-06
  * 코멘트:
- *   1) 시설·재고·공정 문서형 화면을 draft 세션으로 렌더링한다
+ *   1) 시설·검교정 문서형 화면을 draft 세션으로 렌더링한다
  *   2) screenRegistry가 화면코드로 마운트한다
  *   3) 저장·삭제 실패는 업무 토스트만 표시한다
  */
@@ -290,7 +234,7 @@ export default function BizOpsFormPage({ screenCode }: BizOpsFormPageProps) {
   const listColumns = useMemo<GridColumn<ListMeta>[]>(() => {
     // 연도·연월 — 텍스트 / 일지 — YYYY-MM-DD 달력
     const baseCol: GridColumn<ListMeta> =
-      screenCode === "calibration-target-management" || screenCode === "inventory-check"
+      screenCode === "calibration-target-management"
         ? {
             field: "baseKey",
             header: baseKeyHeader(screenCode),
@@ -534,12 +478,7 @@ export default function BizOpsFormPage({ screenCode }: BizOpsFormPageProps) {
       return;
     }
     // 재고 연월일 때(= baseKey) — 목록과 동기
-    if (key === "baseYm" && screenCode === "inventory-check") {
-      setBaseKey(String(value ?? "").replace(/\D/g, "").slice(0, 6));
-      return;
-    }
-    // 일반 일지 기준일일 때(= baseKey) — 목록과 동기
-    if (key === "baseDt" && screenCode !== "calibration-target-management" && screenCode !== "inventory-check") {
+    if (key === "baseDt" && screenCode !== "calibration-target-management") {
       setBaseKey(String(value ?? "").replace(/\D/g, "").slice(0, 8));
       return;
     }
@@ -639,7 +578,7 @@ export default function BizOpsFormPage({ screenCode }: BizOpsFormPageProps) {
       <DocFormBody withSummary>
         <DocFormDocumentList>
           <MesEditableGrid
-            // 시설·재고·공정 문서목록 설정 키
+            // 시설·검교정 문서목록 설정 키
             persistId={`ops-doc-list-${screenCode}`}
             // 서버 목록 + draft
             rows={listRows as EditableRow<ListMeta>[]}
@@ -661,9 +600,7 @@ export default function BizOpsFormPage({ screenCode }: BizOpsFormPageProps) {
               const next =
                 screenCode === "calibration-target-management"
                   ? String(cellValue ?? "").replace(/\D/g, "").slice(0, 4)
-                  : screenCode === "inventory-check"
-                    ? String(cellValue ?? "").replace(/\D/g, "").slice(0, 6)
-                    : fromInputDate(String(cellValue ?? ""));
+                  : fromInputDate(String(cellValue ?? ""));
               const prevBuf = getBuffer(key);
               if (!prevBuf) return;
               putBuffer(key, {
@@ -710,10 +647,9 @@ export default function BizOpsFormPage({ screenCode }: BizOpsFormPageProps) {
                           onClick={() => setSelectedRowSeq(Number(row.rowSeq))}
                         >
                           {meta.columns.map((column) => {
-                            const raw = column.key === "resultSummary" ? JSON.stringify(row.results ?? []) : row[column.key];
                             return (
                               <td key={column.key}>
-                                {renderField(column, raw, (value) => patchRow(Number(row.rowSeq), column.key, value), column.key === "resultSummary")}
+                                {renderField(column, row[column.key], (value) => patchRow(Number(row.rowSeq), column.key, value))}
                               </td>
                             );
                           })}

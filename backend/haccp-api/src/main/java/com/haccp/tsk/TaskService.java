@@ -103,7 +103,7 @@ public class TaskService {
     @Transactional
     public void saveRelation(Long srcDocIdx, String relType, Long tgtDocIdx) {
         String type = text(relType);
-        if (!List.of("PLAN_REPORT", "tmpl_admin-edu-plan_LOG", "tmpl_prp-calib-target_LOG", "RECV_INVENTORY").contains(type)) {
+        if (!List.of("PLAN_REPORT", "hwp_sys_007_LOG", "html_sys_010_LOG", "RECV_INVENTORY").contains(type)) {
             throw new BizException("문서 관계 구분이 올바르지 않습니다.");
         }
         mapper.saveRelation(LoginUserContext.coCd(), DeleteValidation.requirePositive(srcDocIdx, "출발 문서번호가 올바르지 않습니다."), type, DeleteValidation.requirePositive(tgtDocIdx, "대상 문서번호가 올바르지 않습니다."), LoginUserContext.userId());

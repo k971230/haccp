@@ -1,10 +1,10 @@
 /**
- * HygieneService — 위생관리 DB형 양식 5종 업무 로직.
+ * HygieneService — 위생관리 DB형 양식(일일·방충) 업무 로직.
  *
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-08-19
  * 코멘트:
- *   1) 경로의 화면코드를 DDL·템플릿 양식코드로 안전하게 변환한다
+ *   1) HTML 화면코드와 html_sys 양식코드는 1:1이다. 옛 tmpl_* 별칭·HWP 코드는 넣지 않는다
  *   2) 저장은 JSON 전체 교체이며 문서 상태 잠금은 SP와 Service 삭제검증이 함께 지킨다
  *   3) validate-delete와 delete 모두 assertDeletable을 실행하는 Double Check 구조다
  *
@@ -26,6 +26,7 @@ import com.haccp.hyg.dto.HygieneListRow;
 import com.haccp.hyg.dto.HygieneSaveRequest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,12 @@ public class HygieneService {
     private final HygieneMapper mapper;
     private final ObjectMapper objectMapper;
     private final DocCorrectiveSupport correctiveSupport;
+
+    /** HTML 화면코드 → html_sys 양식코드. 등록되지 않은 화면은 막는다. */
+    private static final Map<String, String> SCREEN_TMPL = Map.of(
+            "daily-hygiene-check", "html_sys_007",
+            "pest-control-check", "html_sys_008"
+    );
 
     /**
      * 개발자: 박승우
@@ -122,16 +129,12 @@ public class HygieneService {
         DeleteValidation.throwIfBlocked(mapper.selectDeleteBlocker(LoginUserContext.coCd(), tmplCd, docIdxs), "문서");
     }
 
-    /** 의미 화면 ID만 허용하고 임의 템플릿 접근을 차단한다. */
     private static String templateOf(String screenCode) {
-        return switch (screenCode) {
-            case "daily-hygiene-check" -> "tmpl_prp-hygiene-daily";
-            case "personal-hygiene-check" -> "tmpl_prp-hygiene-personal";
-            case "area-hygiene-check" -> "tmpl_prp-hygiene-area";
-            case "pest-control-check" -> "tmpl_prp-pest-check";
-            case "water-management-check" -> "tmpl_prp-water-check";
-            default -> throw new BizException("지원하지 않는 위생 점검표입니다.");
-        };
+        String tmplCd = SCREEN_TMPL.get(screenCode);
+        if (tmplCd == null) {
+            throw new BizException("지원하지 않는 위생 점검표입니다.");
+        }
+        return tmplCd;
     }
 
     private static String nvl(String value) {

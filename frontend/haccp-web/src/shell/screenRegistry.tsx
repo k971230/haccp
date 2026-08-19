@@ -119,7 +119,7 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   "schedule-cycle-management": ScheduleCycleManagementPage,
   // 문서별 기준관리 (C3)
   "daily-hyg-item-admin": () => (
-    <TemplateCheckItemManagementPage screenCode="daily-hyg-item-admin" fixedTmplCd="tmpl_prp-hygiene-daily" />
+    <TemplateCheckItemManagementPage screenCode="daily-hyg-item-admin" fixedTmplCd="html_sys_007" />
   ),
   "ccp-cold-limit-admin": () => <MasterDataPage screenCode="ccp-cold-limit-admin" />,
   "ccp-heat-limit-admin": () => <MasterDataPage screenCode="ccp-heat-limit-admin" />,
@@ -127,10 +127,10 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   "ccp-filter-limit-admin": () => <MasterDataPage screenCode="ccp-filter-limit-admin" />,
   "ccp-metal-limit-admin": () => <MasterDataPage screenCode="ccp-metal-limit-admin" />,
   "ccp-verify-standard-admin": () => (
-    <TemplateCheckItemManagementPage screenCode="ccp-verify-standard-admin" fixedTmplCd="tmpl_ccp-verify-check" />
+    <TemplateCheckItemManagementPage screenCode="ccp-verify-standard-admin" fixedTmplCd="html_sys_006" />
   ),
   "facility-check-item-admin": () => (
-    <TemplateCheckItemManagementPage screenCode="facility-check-item-admin" fixedTmplCd="tmpl_prp-facility-check" />
+    <TemplateCheckItemManagementPage screenCode="facility-check-item-admin" fixedTmplCd="html_sys_009" />
   ),
 
   // 문서 작성 — DB
@@ -138,46 +138,46 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   "pest-control-check": () => <HygieneCheckPage screenCode="pest-control-check" title="방충방서관리점검표" kind="pest" />,
   "ccp-cold-monitor": ColdMonitorPage,
   "ccp-metal-monitor": MetalMonitorPage,
-  "ccp-heat-monitor": () => <CcpGenericMonitorPage screenCode="ccp-heat-monitor" defaultTmplCd="tmpl_ccp-heat-log" />,
-  "ccp-sanitize-monitor": () => <CcpGenericMonitorPage screenCode="ccp-sanitize-monitor" defaultTmplCd="tmpl_ccp-sanitize-log" />,
-  "ccp-filter-monitor": () => <CcpGenericMonitorPage screenCode="ccp-filter-monitor" defaultTmplCd="tmpl_ccp-filter-log" />,
+  "ccp-heat-monitor": () => <CcpGenericMonitorPage screenCode="ccp-heat-monitor" defaultTmplCd="html_sys_003" />,
+  "ccp-sanitize-monitor": () => <CcpGenericMonitorPage screenCode="ccp-sanitize-monitor" defaultTmplCd="html_sys_004" />,
+  "ccp-filter-monitor": () => <CcpGenericMonitorPage screenCode="ccp-filter-monitor" defaultTmplCd="html_sys_005" />,
   "ccp-verification-check": VerificationCheckPage,
   "facility-equipment-check": () => <BizOpsFormPage screenCode="facility-equipment-check" />,
   // 건강진단관리기록부 — 인원 그리드·첨부 (HA-HYG-02)
   "health-cert-record": HealthCertPage,
 
   // 문서 작성 — HWP 문서만 (양식 1:1 고정)
-  "visitor-log": hwpLeaf("tmpl_admin-visitor-log"),
-  // 설비 이력 — DB형 M-D (상단 설비·하단 이력). HWP tmpl_prp-equip-card leaf 대체
+  "visitor-log": hwpLeaf("hwp_sys_001"),
+  // 설비 이력 — DB형 M-D (상단 설비·하단 이력). 옛 HWP 설비카드 leaf 대체
   "equipment-history": EquipmentHistoryPage,
   // 방충설비 이력 — DB형 M-D (상단 포충등·트랩·하단 이력)
   "pest-device-history": PestDeviceHistoryPage,
-  "visual-insp-standard": hwpLeaf("tmpl_prp-visual-inspect"),
-  "receiving-insp-hwp": hwpLeaf("tmpl_logis-receive-inspect"),
-  "submaterial-recv-hwp": hwpLeaf("tmpl_logis-submat-receive"),
-  "calib-self-hwp": hwpLeaf("tmpl_prp-calib-temp"),
-  "calib-ext-hwp": hwpLeaf("tmpl_prp-calib-ext"),
-  "shipment-log-hwp": hwpLeaf("tmpl_logis-shipment-log"),
-  "waste-hwp": hwpLeaf("tmpl_prp-waste-check"),
-  "inventory-hwp": hwpLeaf("tmpl_logis-inventory-check"),
-  "edu-plan-hwp": hwpLeaf("tmpl_admin-edu-plan"),
-  "edu-log-hwp": hwpLeaf("tmpl_admin-edu-log"),
-  "bad-product-hwp": hwpLeaf("tmpl_admin-bad-product"),
-  "claim-hwp": hwpLeaf("tmpl_admin-claim-log"),
-  "recall-hwp": hwpLeaf("tmpl_admin-recall-report"),
-  "eval-hwp": hwpLeaf("tmpl_admin-eval-check"),
-  "verify-ca-hwp": hwpLeaf("tmpl_prp-verify-action"),
-  "handover-hwp": hwpLeaf("tmpl_admin-handover-doc"),
-  "process-hwp": hwpLeaf("tmpl_ccp-process-check"),
-  "vehicle-hwp": hwpLeaf("tmpl_logis-vehicle-log"),
-  "personal-hyg-hwp": hwpLeaf("tmpl_prp-hygiene-personal"),
-  "area-hyg-hwp": hwpLeaf("tmpl_prp-hygiene-area"),
-  "water-hwp": hwpLeaf("tmpl_prp-water-check"),
-  "verify-plan-hwp": hwpLeaf("tmpl_prp-verify-plan"),
-  "verify-check-hwp": hwpLeaf("tmpl_prp-verify-check"),
-  "verify-report-hwp": hwpLeaf("tmpl_prp-verify-report"),
-  "prod-test-hwp": hwpLeaf("tmpl_prp-test-product"),
-  "surface-test-hwp": hwpLeaf("tmpl_prp-test-surface"),
+  "visual-insp-standard": hwpLeaf("hwp_sys_026"),
+  "receiving-insp-hwp": hwpLeaf("hwp_sys_017"),
+  "submaterial-recv-hwp": hwpLeaf("hwp_sys_029"),
+  "calib-self-hwp": hwpLeaf("hwp_sys_014"),
+  "calib-ext-hwp": hwpLeaf("hwp_sys_030"),
+  "shipment-log-hwp": hwpLeaf("hwp_sys_031"),
+  "waste-hwp": hwpLeaf("hwp_sys_015"),
+  "inventory-hwp": hwpLeaf("hwp_sys_016"),
+  "edu-plan-hwp": hwpLeaf("hwp_sys_007"),
+  "edu-log-hwp": hwpLeaf("hwp_sys_008"),
+  "bad-product-hwp": hwpLeaf("hwp_sys_020"),
+  "claim-hwp": hwpLeaf("hwp_sys_022"),
+  "recall-hwp": hwpLeaf("hwp_sys_025"),
+  "eval-hwp": hwpLeaf("hwp_sys_032"),
+  "verify-ca-hwp": hwpLeaf("hwp_sys_006"),
+  "handover-hwp": hwpLeaf("hwp_sys_002"),
+  "process-hwp": hwpLeaf("hwp_sys_028"),
+  "vehicle-hwp": hwpLeaf("hwp_sys_023"),
+  "personal-hyg-hwp": hwpLeaf("hwp_sys_009"),
+  "area-hyg-hwp": hwpLeaf("hwp_sys_010"),
+  "water-hwp": hwpLeaf("hwp_sys_021"),
+  "verify-plan-hwp": hwpLeaf("hwp_sys_003"),
+  "verify-check-hwp": hwpLeaf("hwp_sys_004"),
+  "verify-report-hwp": hwpLeaf("hwp_sys_005"),
+  "prod-test-hwp": hwpLeaf("hwp_sys_018"),
+  "surface-test-hwp": hwpLeaf("hwp_sys_019"),
 
   // 문서 현황·결재
   "document-inbox": () => <DocumentBoxPage mode="inbox" />,

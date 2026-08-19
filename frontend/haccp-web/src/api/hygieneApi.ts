@@ -1,10 +1,10 @@
 /**
- * hygieneApi — 위생관리 DB형 양식 5종 API.
+ * hygieneApi — 위생관리 HTML 양식(일일·방충) API.
  *
  * 개발자: 박승우
  * 일자: 2026-08-06
  * 코멘트:
- *   1) 의미 화면 ID를 URL로 사용해 일일·개인·작업장·방충방서·용수를 독립 호출한다
+ *   1) 의미 화면 ID를 URL로 사용해 일일·방충을 독립 호출한다
  *   2) 가변 양식 행은 payload JSON으로 보존하고 DB에서 정규화한다
  *   3) 삭제는 POST validate-delete → delete이며 Body는 객체 배열만 보낸다
  *
@@ -18,10 +18,7 @@ import type { CommonResponse } from "@/types/common";
 
 export type HygieneScreenCode =
   | "daily-hygiene-check"
-  | "personal-hygiene-check"
-  | "area-hygiene-check"
-  | "pest-control-check"
-  | "water-management-check";
+  | "pest-control-check";
 
 export interface HygieneListRow {
   docIdx: number;

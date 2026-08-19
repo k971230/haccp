@@ -149,7 +149,7 @@ public class CcpColdService {
         correctiveSupport.saveAutoIfNg(
                 LoginUserContext.coCd(),
                 docIdx,
-                "tmpl_ccp-cold-log",
+                "html_sys_001",
                 req.getBaseDt().trim(),
                 req.getCorrective(),
                 hasNg,

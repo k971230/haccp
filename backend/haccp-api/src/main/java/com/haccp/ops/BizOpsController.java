@@ -1,10 +1,10 @@
 /**
- * BizOpsController — 시설·재고·공정 DB형 양식 6종 REST API.
+ * BizOpsController — 시설·검교정 HTML 양식 REST API.
  *
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-08-19
  * 코멘트:
- *   1) 각 양식은 역할 기반 URL을 독립적으로 제공하고 공통 계약만 Service에서 재사용한다
+ *   1) 시설점검·검교정대상만 HTML API다. 폐기·재고·입고·공정은 HWP leaf다
  *   2) 목록 GET, 상세 GET, 저장 PUT, 삭제검증·삭제 POST로 HTTP DELETE를 쓰지 않는다
  *   3) URL과 템플릿 코드의 대응은 서버 고정값이라 요청 본문으로 양식을 바꿀 수 없다
  *
@@ -32,11 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping({
         "/api/v1/fac/facility-equipment-check",
-        "/api/v1/fac/calibration-target-management",
-        "/api/v1/fac/waste-disposal-check",
-        "/api/v1/inv/inventory-check",
-        "/api/v1/inv/receiving-inspection",
-        "/api/v1/prc/process-control-check"
+        "/api/v1/fac/calibration-target-management"
 })
 @RequiredArgsConstructor
 public class BizOpsController {
@@ -99,12 +95,8 @@ public class BizOpsController {
     /** URL의 역할 기반 식별자를 DB templateCode로 고정 변환한다. */
     private static String templateCode(HttpServletRequest request) {
         String uri = request.getRequestURI();
-        if (uri.contains("facility-equipment-check")) return "tmpl_prp-facility-check";
-        if (uri.contains("calibration-target-management")) return "tmpl_prp-calib-target";
-        if (uri.contains("waste-disposal-check")) return "tmpl_prp-waste-check";
-        if (uri.contains("inventory-check")) return "tmpl_logis-inventory-check";
-        if (uri.contains("receiving-inspection")) return "tmpl_logis-receive-inspect";
-        if (uri.contains("process-control-check")) return "tmpl_ccp-process-check";
+        if (uri.contains("facility-equipment-check")) return "html_sys_009";
+        if (uri.contains("calibration-target-management")) return "html_sys_010";
         throw new IllegalArgumentException("지원하지 않는 양식 경로입니다.");
     }
 }
