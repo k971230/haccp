@@ -67,9 +67,8 @@ services:
       SERVER_PORT: "7070"
       # 아래 3개는 볼륨 마운트 지점과 반드시 일치해야 해서 .env.docker 가 아닌 여기에 고정한다
       APP_FILE_ROOT: /var/haccp/files
-      # 기동 직후 매니페스트대로 표준 양식을 파일 볼륨에 복사한다.
-      # 비어 있으면 해당 행만 건너뛰고 기동한다 — 양식 파일 관리 화면에서 로컬열기 후 저장
-      APP_TEMPLATE_IMPORT_ROOT: /var/haccp/templates
+      # 이미지에 구운 시드 — 기동 시 HaccpTemplates·CustomTemplates 로 복사한다
+      APP_TEMPLATE_IMPORT_ROOT: /opt/haccp/template-src
       TZ: Asia/Seoul
     volumes:
       # 업로드 원본·생성 PDF — 유일하게 백업이 필요한 볼륨이다

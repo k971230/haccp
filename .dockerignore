@@ -27,7 +27,12 @@
 # 런타임 부산물
 **/*.log
 
-# 이미지와 무관한 문서·스키마·에디터 설정
-docs/
+# 이미지와 무관한 문서·스키마·에디터 설정 — 양식 시드(new·usr)만 컨텍스트에 남긴다
+docs/**
+!docs/templates/
+!docs/templates/new/
+!docs/templates/new/**
+!docs/templates/usr/
+!docs/templates/usr/**
 db_sasshaccp/
 .cursor/

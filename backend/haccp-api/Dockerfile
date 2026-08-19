@@ -2,13 +2,13 @@
 #  haccp-api 컨테이너 이미지 — Spring Boot 3.3.4 / Java 17
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-19
 #  코멘트:
 #    1) 빌드(JDK)와 실행(JRE)을 나눠 실행 이미지에 컴파일러·소스·메이븐 캐시를 남기지 않는다
 #    2) rhwp CLI 바이너리는 라이선스상 이미지에 넣지 않는다 — 실행 환경에서 볼륨으로 마운트한다
-#    3) 최종 스테이지는 uid 1000 haccp 로 실행한다 (root 금지)
+#    3) 표준·사용자 HWP 시드는 이미지 /opt/haccp/template-src 에 구워 기동 시 파일 볼륨으로 복사한다
 #
-#  빌드: docker build -f backend/haccp-api/Dockerfile -t haccp-api:local backend/haccp-api
+#  빌드: docker build -f backend/haccp-api/Dockerfile -t haccp-api:local .
 # ============================================================
 
 # ------------------------------------------------------------
@@ -19,8 +19,8 @@ FROM eclipse-temurin:17-jdk-jammy AS build
 WORKDIR /workspace
 
 # pom.xml 을 먼저 복사해 의존성 레이어를 캐시한다 — src 만 고쳤을 때 재다운로드하지 않기 위해서다
-COPY .mvn .mvn
-COPY mvnw pom.xml ./
+COPY backend/haccp-api/.mvn .mvn
+COPY backend/haccp-api/mvnw backend/haccp-api/pom.xml ./
 
 # 저장소가 Windows 체크아웃이라 mvnw 가 CRLF 줄바꿈 + 실행비트 없이 들어온다.
 # 그대로 실행하면 리눅스에서 "bad interpreter: /bin/sh^M" 으로 빌드가 죽는다
@@ -29,7 +29,7 @@ RUN sed -i 's/\r$//' mvnw \
  && ./mvnw -B -ntp dependency:go-offline
 
 # 소스는 의존성 해석이 끝난 뒤 복사한다 — 위 레이어 캐시를 깨지 않기 위해서다
-COPY src src
+COPY backend/haccp-api/src src
 
 # 테스트는 CI 단계에서 따로 돌린다 — 이미지 빌드는 패키징만 책임진다
 RUN ./mvnw -B -ntp -DskipTests package
@@ -57,26 +57,25 @@ RUN groupadd --gid 1000 haccp \
  && useradd --uid 1000 --gid 1000 --create-home --shell /usr/sbin/nologin haccp
 
 # /var/haccp/files: 업로드 원본·PDF 볼륨 마운트 지점
-# /var/haccp/templates: 표준 양식 원본을 읽기 전용으로 마운트하는 지점
-RUN mkdir -p /app /var/haccp/files /var/haccp/templates \
- && chown -R haccp:haccp /app /var/haccp
+# /opt/haccp/template-src: 이미지에 구운 표준·사용자 HWP 시드
+RUN mkdir -p /app /var/haccp/files /var/haccp/templates /opt/haccp/template-src \
+ && chown -R haccp:haccp /app /var/haccp /opt/haccp
 
 # 산출물명은 pom 의 artifactId-version 규칙을 따른다 (haccp-api / 1.0.0)
 COPY --from=build --chown=haccp:haccp /workspace/target/haccp-api-1.0.0.jar /app/app.jar
+
+# 시스템 27건 · 사용자추가 시드 — 기동 시 TemplateImportService 가 파일 볼륨으로 복사한다
+COPY --chown=haccp:haccp docs/templates/new /opt/haccp/template-src/sys
+COPY --chown=haccp:haccp docs/templates/usr /opt/haccp/template-src/usr
 
 # 업로드 볼륨 — 컨테이너를 지워도 문서가 남도록 반드시 마운트해서 쓴다
 ENV APP_FILE_ROOT=/var/haccp/files
 # rhwp CLI 가 PDF 를 만들 때 참조하는 폰트 경로 — fonts-nanum 설치 위치
 ENV APP_RHWP_FONT_PATH=/usr/share/fonts/truetype/nanum
 
-# 아래 두 값은 의도적으로 비워 둔다.
-#   APP_TEMPLATE_IMPORT_ROOT: 값이 있으면 TemplateImportService 가 기동 직후 매니페스트를 검사하고
-#     required 양식이 하나라도 없으면 IllegalStateException 으로 기동을 중단한다.
-#     빈 볼륨으로 올리면 컨테이너가 즉시 죽으므로, 원본을 마운트한 배포에서만
-#     -e APP_TEMPLATE_IMPORT_ROOT=/var/haccp/templates 로 켠다.
-#   APP_RHWP_CLI_PATH: 바이너리를 이미지에 넣지 않으므로(라이선스) 마운트 경로를 실행 시 지정한다.
-#     예) -v /opt/rhwp:/opt/rhwp:ro -e APP_RHWP_CLI_PATH=/opt/rhwp/rhwp
-ENV APP_TEMPLATE_IMPORT_ROOT=""
+# 이미지 안 시드 경로 — compose 가 같은 값으로 고정한다. 빈 볼륨 /var/haccp/templates 로 덮지 않는다
+ENV APP_TEMPLATE_IMPORT_ROOT=/opt/haccp/template-src
+# APP_RHWP_CLI_PATH: 바이너리를 이미지에 넣지 않으므로(라이선스) 마운트 경로를 실행 시 지정한다
 ENV APP_RHWP_CLI_PATH=""
 
 # 컨테이너 내부 통일 포트 — edge upstream(api:7070). 로컬 mvnw 는 application.yml 기본 8081

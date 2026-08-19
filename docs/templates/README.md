@@ -1,6 +1,13 @@
 # templates
 
-표준 양식 HWP 원본(로컬 전용·gitignore). 정본은 `docs/templates/new`(00번부터 27건). `init_volumes.sh` 시드 소스.
+표준·사용자 양식 HWP 시드(git 추적). 배포 시 API 이미지에 구워 기동하면 파일 볼륨으로 복사된다.
+
+| 경로 | 용도 |
+|---|---|
+| `new/` | 시스템 27건. 파일명 `NN.(시스템)한글명.hwp` |
+| `usr/{회사코드}/{양식코드}/` | 사용자추가. 화면 업로드 후 여기 복사하고 커밋 |
+
+사용자 예: `usr/0000/hwp_usr_001/사용자양식.hwp` → 서버 `CustomTemplates/0000/hwp_usr_001/사용자양식.hwp`
 
 ## 관련
 - 목차: `docs/README.md`
