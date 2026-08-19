@@ -40,7 +40,7 @@ public class CycleScheduleGenerator {
 
     /** 주기 규칙 1건 — tbl_schedule_rule 1행 + 상세 목록. */
     public record Rule(
-            // cycle_cd: D 매일 / W 매주 / M 매월 / Q 분기 / H 반기 / Y 매년 (대문자 도메인 유지)
+            // cycle_cd: D 매일 / W 매주 / M 매월 / Q 분기 / H 반기 / Y 매년 / E 비정기(예정일 없음)
             String cycleCd,
             // nonwork_rule: keep 그대로 / prev 이전 평일 / next 다음 평일
             String nonworkRule,
@@ -125,6 +125,9 @@ public class CycleScheduleGenerator {
                     out.addAll(monthDates(cycle, details, startDt, month));
                 }
                 out.removeIf(d -> d.isBefore(begin) || d.isAfter(end));
+            }
+            case "E" -> {
+                // 비정기일 때(= 그때그때 작성) 예정일을 만들지 않는다
             }
             default -> { }
         }

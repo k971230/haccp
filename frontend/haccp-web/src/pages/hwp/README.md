@@ -119,7 +119,7 @@ Jenkins는 `db_sasshaccp/*.sql` migrate를 안 돌린다. 목록 SP 시그니처
 
 좌 사용양식 목록(조회 전용, 50:50) · 우 주기 단일 폼(업서트). 양식 1개 = 주기 0..1건.
 검색: 양식코드 · 양식명 · 사용여부(기본 Y, 빈값=전체). 열: 양식코드 · 양식명 · 구분 · 사용여부.
-반복설정은 주기 콤보에 따라 영역만 교체. 매월 날짜 칩은 파랑, 「말일 실행」은 노랑.
+반복설정은 주기 콤보에 따라 영역만 교체. 매일·비정기(E)는 안내, 매월 날짜 칩은 파랑(auto-fill), 「말일 실행」은 노랑 전폭.
 
 ### 2-2. 파일
 
@@ -129,7 +129,7 @@ Jenkins는 `db_sasshaccp/*.sql` migrate를 안 돌린다. 목록 SP 시그니처
 | API | `api/hwp/docCycleApi.ts` |
 | BE | `com/haccp/hwp/doccycle/{DocCycleController,DocCycleService,DocCycleMapper,CycleScheduleGenerator,DocumentAlarmScheduler}.java` |
 | XML | `resources/mapper/hwp/doccycle/DocCycleMapper.xml` |
-| DB | `db_sasshaccp/85_migrate_doc_cycle.sql` · `86_migrate_doc_cycle_form_use_yn.sql` |
+| DB | `db_sasshaccp/85_migrate_doc_cycle.sql` · `86_migrate_doc_cycle_form_use_yn.sql` · `96_migrate_cycle_e_irregular.sql` |
 
 ### 2-3. 버튼 → 끝단
 
