@@ -1,33 +1,22 @@
 /**
- * bizOpsApi — 시설·재고·공정 DB형 양식 6종 API.
+ * bizOpsApi — 시설점검·검교정대상 HTML 양식 API.
  *
  * 개발자: 박승우
- * 일자: 2026-08-11
+ * 일자: 2026-08-19
  * 코멘트:
  *   1) 역할 기반 screenCode가 API 경로와 양식 화면의 단일 식별자다
  *   2) 삭제는 POST validate-delete → 확인 → delete 순서이며 키는 객체 배열만 전송한다
- *   3) header·rows는 양식별 필드를 가진 JSON이지만 회사코드는 JWT에서 결정되어 보내지 않는다
+ *   3) 폐기·재고·입고·공정은 HWP leaf이며 이 모듈을 쓰지 않는다
  *
- * G-15(STEP 23): BE는 fac/inv/prc 6 base가 잔존한다. 활성 작성 UI는
- * screenRegistry의 facility-equipment-check(BizOpsFormPage)뿐이다.
- * waste/inventory/receiving/process는 HWP leaf(documentApi)로 이전되었고
- * 이 모듈을 HWP 화면에서 import하지 않는다. 잔존 API 삭제는 별도 승인.
- *
- * PIPELINE[HF84] 시설·재고·공정 API
+ * PIPELINE[HF84] 시설·검교정 API
  * PIPELINE[HF3, HF85] 연관 모듈
  */
-// 역할 — 일반 타임아웃 Axios
 import { http } from "./http";
-// 역할 — 공통 응답 래퍼
 import type { CommonResponse } from "@/types/common";
 
 export type BizOpsScreenCode =
   | "facility-equipment-check"
-  | "calibration-target-management"
-  | "waste-disposal-check"
-  | "inventory-check"
-  | "receiving-inspection"
-  | "process-control-check";
+  | "calibration-target-management";
 
 export interface BizOpsListRow {
   docIdx: number;
@@ -51,17 +40,12 @@ export interface BizOpsDetail {
 }
 
 function endpoint(screenCode: BizOpsScreenCode): string {
-  if (screenCode === "facility-equipment-check") return "/api/v1/fac/facility-equipment-check";
   if (screenCode === "calibration-target-management") return "/api/v1/fac/calibration-target-management";
-  if (screenCode === "waste-disposal-check") return "/api/v1/fac/waste-disposal-check";
-  if (screenCode === "inventory-check") return "/api/v1/inv/inventory-check";
-  if (screenCode === "receiving-inspection") return "/api/v1/inv/receiving-inspection";
-  return "/api/v1/prc/process-control-check";
+  return "/api/v1/fac/facility-equipment-check";
 }
 
 export async function listBizOps(
   screenCode: BizOpsScreenCode,
-  // 기간·문서번호·작성자 — 공백이면 SP 전체
   params: { fromDt?: string; toDt?: string; docNo?: string; writer?: string }
 ): Promise<BizOpsListRow[]> {
   const { data } = await http.get<CommonResponse<BizOpsListRow[]>>(`${endpoint(screenCode)}/list`, { params });

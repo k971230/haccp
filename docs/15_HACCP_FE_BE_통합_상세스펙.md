@@ -392,34 +392,29 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 | hygieneApi | list/detail/save/validate/delete | `/api/v1/hyg/{screenCode}/*` |
 | healthCertApi | list/save/del + upload file | `/api/v1/hyg/health-cert/*` |
 | ccpColdApi | list/detail/save/del | `/api/v1/ccp/cold-monitor/*` |
-| ccpFormsApi | list/detail/save/del | `/api/v1/ccp/{metal-monitor\|verification-check\|annual-verification-plan}/*` |
+| ccpFormsApi | list/detail/save/del | `/api/v1/ccp/{metal-monitor\|verification-check}/*` |
 | ccpGenericApi | templates · get · save · del | `/api/v1/ccp/generic-monitor/*` |
-| bizOpsApi | list/detail/save/del | `/api/v1/fac|inv|prc/{screen}/*` — **작성 UI는 `facility-equipment-check`만**. 나머지 base는 API 잔존(§5.7) |
+| bizOpsApi | list/detail/save/del | `/api/v1/fac/{facility-equipment-check\|calibration-target-management}/*` — HTML 2종만 (§5.7) |
 | taskWorkflowApi | today-tasks · notifications · corrective · relations · audit-export(동결) | `/api/v1/tsk/*` · `/api/v1/doc/corrective-actions/*` |
 | api/hwp/docCycleApi | forms(좌측 목록) · get · save · validate-delete · delete | `/api/v1/hwp/doc-cycles/*` — 저장 시 서버가 예정일 재생성 |
 
-### 5.7 BizOps 다중 base — API 잔존 · UI HWP (G-15)
+### 5.7 BizOps HTML 2종 (G-15)
 
-`BizOpsController`는 아래 **6 base × (list/detail/save/validate-delete/delete)** 를 한 컨트롤러에 묶는다.
-메뉴·레지스트리와 혼동하지 말 것: **활성 작성 UI는 tmpl_prp-facility-check DB 1건뿐**이고, 이관된 화면은 `documentApi`(+rhwp)만 호출한다.
+`BizOpsController`는 **시설·검교정 2 base × (list/detail/save/validate-delete/delete)** 만 둔다. 폐기·재고·입고·공정 HTML API는 삭제했고, 그 화면은 `documentApi`(+rhwp)만 호출한다.
 
-| screenCode (구 DB) | API base | BE 상태 | FE 작성 UI | 활성 scrn_cd / tmpl | 비고 |
-|--------------------|----------|---------|------------|---------------------|------|
-| `facility-equipment-check` | `/api/v1/fac/facility-equipment-check` | 잔존·사용 | `BizOpsFormPage` | `facility-equipment-check` / tmpl_prp-facility-check | **유일 활성 BizOps DB 작성** |
-| `calibration-target-management` | `/api/v1/fac/calibration-target-management` | API 잔존 | 없음 (레지스트리 미등록) | use_yn=N | 숨김 · HWP 대체 leaf 없음(자체/외부 검교정은 `calib-*-hwp`) |
-| `waste-disposal-check` | `/api/v1/fac/waste-disposal-check` | API 잔존 | HWP 이전 | `waste-hwp` / WASTE | 구 DB 화면 use_yn=N |
-| `inventory-check` | `/api/v1/inv/inventory-check` | API 잔존 | HWP 이전 | `inventory-hwp` / tmpl_logis-inventory-check | 구 DB 화면 use_yn=N |
-| `receiving-inspection` | `/api/v1/inv/receiving-inspection` | API 잔존 | HWP 이전 | `receiving-insp-hwp` / tmpl_logis-receive-inspect | 구 DB 화면 use_yn=N |
-| `process-control-check` | `/api/v1/prc/process-control-check` | API 잔존 | HWP 이전 | `process-hwp` / PROCESS | 구 DB 화면 use_yn=N |
+| screenCode | API base | BE 상태 | FE 작성 UI | tmpl_cd | 비고 |
+|------------|----------|---------|------------|---------|------|
+| `facility-equipment-check` | `/api/v1/fac/facility-equipment-check` | 사용 | `BizOpsFormPage` 레지스트리 | `html_sys_009` | 메뉴 활성 HTML |
+| `calibration-target-management` | `/api/v1/fac/calibration-target-management` | 사용 | `BizOpsFormPage` (레지스트리 미등록) | `html_sys_010` | 문서함 deep-link · 자체/외부 검교정 HWP는 `calib-*-hwp` |
 
-**FE 호출 검증 (STEP 23, 2026-08-11)**
+**코드 삭제 (2026-08-19)**
 
-| 검사 | 결과 |
-|------|------|
-| `screenRegistry` → `BizOpsFormPage` | `facility-equipment-check` **1건만** |
-| HWP leaf (`waste-hwp` · `inventory-hwp` · `receiving-insp-hwp` · `process-hwp`) | `HwpDocumentEditorPage` → `documentApi` · `userApi`(서명)만. `bizOpsApi` / `/api/v1/fac|inv|prc/` **호출 0** |
-| `BizOpsFormPage` meta에 남은 5 screenCode | 코드 잔존(재활성 대비)이나 **메뉴·레지스트리 경로 없음** → 운영 작성 경로에서 미도달 |
-| 불필요 API 삭제 | **미실시** — STEP 20과 동일하게 별도 승인 후(데이터·SP 의존). 현행은 문서 고정으로 혼동만 제거 |
+| 구 screenCode | 구 API | 현재 |
+|---------------|--------|------|
+| `waste-disposal-check` | `/api/v1/fac/waste-disposal-check` | `waste-hwp` / `hwp_sys_015` |
+| `inventory-check` | `/api/v1/inv/inventory-check` | `inventory-hwp` / `hwp_sys_016` |
+| `receiving-inspection` | `/api/v1/inv/receiving-inspection` | `receiving-insp-hwp` / `hwp_sys_017` |
+| `process-control-check` | `/api/v1/prc/process-control-check` | `process-hwp` / `hwp_sys_028` |
 
 메뉴·이관 한 줄 표 교차: [`07` §6.1·§6.4](14_메뉴_화면_API_DB_전수.md). 판정: [`09` G-15](16_통합완성도_및_부족분.md).
 
@@ -458,7 +453,7 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 | LoginHistoryController | /api/v1/sys/login-history | 1 |
 | AuditLogController | /api/v1/sys/audit-log | 1 |
 | ScreenUsageController | /api/v1/sys/screen-usage-statistics | 1 |
-| BizOpsController | 6 bases × 5 | 30 |
+| BizOpsController | 2 bases × 5 | 10 |
 
 합계: sys는 화면 1개 = Controller 1개로 분할. 나머지 도메인은 기존 표와 같다.
 
@@ -502,7 +497,7 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 | I 냉장 CCP | ColdMonitorPage | ccpColdApi | CcpColdController | sp_tbl_ccp_cold_monitor_* |
 | J 금속/검증 CCP | CcpFormPage | ccpFormsApi | CcpFormsController | sp_tbl_ccp_form_* |
 | K 가열·멸균·여과 | CcpGenericMonitorPage | ccpGenericApi | CcpGenericController | generic monitor SP |
-| L 시설점검 DB | BizOpsFormPage | bizOpsApi | BizOpsController | sp_tbl_biz_ops_* tmpl_prp-facility-check (**활성 1건**, §5.7) |
+| L 시설·검교정 HTML | BizOpsFormPage | bizOpsApi | BizOpsController | sp_tbl_biz_ops_* html_sys_009/010 (§5.7) |
 | M 건강진단 | HealthCertPage | healthCertApi | HealthCertController | sp_tbl_health_cert_* |
 | N HWP leaf | HwpDocumentEditorPage | documentApi | Document+Template | document · hwp_document_c (폐기물·재고·입고·공정 등 구 BizOps 이관 포함) |
 | O 문서함/결재 | DocumentBoxPage | documentApi | DocumentController | document list/inbox |
@@ -691,7 +686,7 @@ flowchart LR
 | G-01 | approval-history | FE O · DEMO 메뉴 leaf 없을 수 있음 |
 | G-03 | migrate 47 이중 파일 | 적용 순서 주의 |
 | G-13 | MasterData equipment/pest · ccpMetal/VerificationApi | **완료** — 2026-08-10 STEP 01 삭제 |
-| G-15 | BizOps 다중 base 혼동 | **완료(문서)** — 2026-08-11 STEP 23. §5.7 표 · HWP 경로 bizOps 호출 0 |
+| G-15 | BizOps HTML 2종 | **완료(코드)** — 2026-08-19. 시설·검교정만 API. 폐기·재고·입고·공정 URL 삭제. §5.7 |
 | G-22 | 멀티탭 로그아웃 | **완료** — 2026-08-11 STEP 24. §3.4 · `authPaths` Path basename |
 | G-23 | 그리드 pref·가상화 | **완료** — 2026-08-11 STEP 25. §3.5 · VIRTUAL_THRESHOLD 정본 |
 | G-24 | 서명 UX | **완료(문서)** — 2026-08-11 STEP 26. [`11` §2.8](18_프레임워크_파일_보안_작성규칙.md) |
@@ -740,7 +735,7 @@ flowchart LR
 
 ## 부록 C. HWP fixedTmplCd (27)
 
-visitor-log→tmpl_admin-visitor-log … surface-test-hwp→tmpl_prp-test-surface — 07 §4.7 정본.
+visitor-log→hwp_sys_001 … surface-test-hwp→hwp_sys_019 — 07 §4.7 정본.
 
 ---
 

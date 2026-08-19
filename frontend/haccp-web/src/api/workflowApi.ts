@@ -236,7 +236,7 @@ export async function createCompanyTemplateCustom(params: {
  *   3) tmplCd가 비면 요청을 보내지 않고 업무 문구로 막는다(필수 쿼리 누락 500 방지)
  */
 export async function listCompanyCheckItems(
-  // 양식 코드 — tmpl_prp-hygiene-daily / tmpl_prp-facility-check / tmpl_ccp-verify-check 등
+  // 양식 코드 — html_sys_007 / html_sys_009 / html_sys_006 등
   tmplCd: string,
 ): Promise<CompanyCheckItem[]> {
   // 공백·미전달일 때(= 선택 전) 서버 MissingServletRequestParameterException 방지

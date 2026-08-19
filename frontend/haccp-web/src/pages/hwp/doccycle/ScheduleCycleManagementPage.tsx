@@ -2,11 +2,11 @@
  * ScheduleCycleManagementPage — 문서주기관리 (좌 양식 목록 50% · 우 주기 설정 50%).
  *
  * 개발자: 박승우
- * 일자: 2026-08-14
+ * 일자: 2026-08-19
  * 코멘트:
  *   1) 좌측은 조회 전용이다 — 양식 등록·삭제는 사용양식 관리 몫이고 이 화면은 주기만 다룬다
  *   2) 양식 1개 = 주기 0..1건이라 우측은 그리드가 아닌 단일 폼이며 저장은 업서트다
- *   3) 반복설정은 주기 콤보에 따라 영역만 바뀐다 — 매일은 안내, 매주는 요일, 매월은 실행일·말일, 분기·반기·매년은 월+일
+ *   3) 반복설정은 주기 콤보에 따라 영역만 바뀐다 — 매일·비정기는 안내, 매주는 요일, 매월은 실행일·말일, 분기·반기·매년은 월+일
  *
  * PIPELINE[HF89] 문서주기관리 화면
  * PIPELINE[HF123, HF124] 연관 모듈
@@ -129,8 +129,8 @@ export default function ScheduleCycleManagementPage() {
 
   const cycleOptions = useMemo(
     () => (cycleCodes.codes.length
-      // 수시(E)는 예정일을 만들 수 없어 이 화면 콤보에서 제외한다
-      ? cycleCodes.codes.filter((code) => code.subCd !== "E").map((code) => ({ value: code.subCd, label: code.codeNm }))
+      // 헤더(*)만 빼고 D/W/M/Q/H/Y/E(비정기)를 모두 보여 준다
+      ? cycleCodes.codes.filter((code) => code.subCd !== "*").map((code) => ({ value: code.subCd, label: code.codeNm }))
       : CYCLE_FALLBACK.map((opt) => ({ value: opt.value, label: opt.label }))),
     [cycleCodes.codes],
   );
@@ -418,12 +418,12 @@ export default function ScheduleCycleManagementPage() {
     `rounded border px-2.5 py-1.5 text-sm ${on
       ? "border-blue-300 bg-blue-50 font-medium text-blue-700"
       : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`;
-  // 매월 1~31 칩 — 자릿수와 무관하게 같은 칸(1과 11이 같은 너비)
+  // 매월 1~31 칩 — 좁은 패널에서도 칸이 겹치지 않게 칸 너비를 채운다
   const monthDayChipClass = (on: boolean) =>
-    `h-9 w-9 shrink-0 inline-flex items-center justify-center rounded border text-sm tabular-nums ${on
+    `h-9 w-full min-w-0 inline-flex items-center justify-center rounded border text-sm tabular-nums ${on
       ? "border-blue-300 bg-blue-50 font-medium text-blue-700"
       : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`;
-  // 말일 실행 — 4행에서 22 시작·30 끝까지 채운다. 꺼져 있어도 노랑 바탕
+  // 말일 실행 — 그리드 밖 한 줄. 꺼져 있어도 노랑 바탕
   const monthEndChipClass = (on: boolean) =>
     `h-9 w-full inline-flex items-center justify-center rounded border px-3 text-sm ${on
       ? "border-amber-400 bg-amber-200 font-semibold text-amber-950"
@@ -639,16 +639,25 @@ export default function ScheduleCycleManagementPage() {
                       />
                     </div>
                     <div className={formLabelClass}>
-                      {/* 담당자 — 선택 시 소속 부서까지 함께 채운다 */}
+                      {/* 담당자 — 선택 시 소속 부서까지 함께 채운다. 버튼은 입력과 한 줄 */}
                       담당자
-                      <div className="flex gap-2">
+                      <div className="flex min-w-0 flex-nowrap items-stretch gap-1">
                         <input
-                          className={formFieldClass}
+                          className={`${formFieldClass} min-w-0 flex-1`}
                           value={form.userNm || form.userId}
                           readOnly
                           placeholder="선택하세요"
                         />
-                        <MesButton variant="secondary" disabled={!canEdit} onClick={openUserLookup}>선택</MesButton>
+                        <MesButton
+                          // 담당자 룩업 — 그리드 셀 버튼과 같은 높이, 입력 옆에 가로로 둔다
+                          variant="search"
+                          size="sm"
+                          className="shrink-0"
+                          disabled={!canEdit}
+                          onClick={openUserLookup}
+                        >
+                          선택
+                        </MesButton>
                       </div>
                     </div>
                     <label className={formLabelClass}>
@@ -669,17 +678,23 @@ export default function ScheduleCycleManagementPage() {
                     </label>
                   </div>
 
-                  <fieldset className="mt-4 rounded border border-slate-200 p-3">
+                  <fieldset className="mt-4 min-w-0 rounded border border-slate-200 p-3">
                     <legend className="px-1 text-sm font-medium text-slate-700">반복 설정</legend>
 
                     {form.cycleCd === "D" ? (
-                      <p className="rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                      <p className="break-words rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
                         매일 반복합니다. 비영업일 처리 설정에 따라 주말 예정일이 이동합니다.
                       </p>
                     ) : null}
 
+                    {form.cycleCd === "E" ? (
+                      <p className="break-words rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                        예정일을 만들지 않습니다. 필요할 때 문서를 작성합니다.
+                      </p>
+                    ) : null}
+
                     {form.cycleCd === "W" ? (
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex min-w-0 flex-wrap gap-1.5">
                         {WEEK_DAYS.map((day) => (
                           <button
                             // 요일 토글 — 선택한 요일마다 예정일이 생긴다
@@ -696,51 +711,35 @@ export default function ScheduleCycleManagementPage() {
                     ) : null}
 
                     {form.cycleCd === "M" ? (
-                      <div className="flex flex-col gap-2">
-                        {[0, 1, 2].map((row) => (
-                          <div
-                            // 실행일 칩 한 줄 — 10칸 그리드 1~10 / 11~20 / 21~30
-                            key={row}
-                            className="grid grid-cols-10 gap-1.5"
-                          >
-                            {Array.from({ length: 10 }, (_, index) => row * 10 + index + 1).map((day) => (
-                              <button
-                                // 실행일 칩 — 고정 칸이라 1과 11이 같은 크기
-                                key={day}
-                                type="button"
-                                className={monthDayChipClass(form.monthDays.includes(day))}
-                                disabled={!canEdit}
-                                onClick={() => toggleMonthDay(day)}
-                              >
-                                {day}
-                              </button>
-                            ))}
-                          </div>
-                        ))}
+                      <div className="flex min-w-0 flex-col gap-2">
                         <div
-                          // 4행 — 31은 21과 세로, 말일은 22 시작·30 끝
-                          className="grid grid-cols-10 gap-1.5"
+                          // 1~31 — 칸 너비에 맞춰 줄바꿈. 10열 고정은 좁은 분할에서 겹친다
+                          className="grid gap-1.5"
+                          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(2.25rem, 1fr))" }}
                         >
-                          <button
-                            // 31일 칩 — 1칸, 1·11·21과 같은 열
-                            type="button"
-                            className={monthDayChipClass(form.monthDays.includes(31))}
-                            disabled={!canEdit}
-                            onClick={() => toggleMonthDay(31)}
-                          >
-                            31
-                          </button>
-                          <button
-                            // 말일 실행 — 9칸. 지정일과 같은 날이면 1회만 실행
-                            type="button"
-                            className={`col-span-9 ${monthEndChipClass(form.monthEnd)}`}
-                            disabled={!canEdit}
-                            onClick={() => setForm((prev) => ({ ...prev, monthEnd: !prev.monthEnd }))}
-                          >
-                            말일 실행
-                          </button>
+                          {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => (
+                            <button
+                              // 실행일 칩 — 칸을 채워 1과 11이 같은 높이
+                              key={day}
+                              type="button"
+                              className={monthDayChipClass(form.monthDays.includes(day))}
+                              disabled={!canEdit}
+                              onClick={() => toggleMonthDay(day)}
+                            >
+                              {day}
+                            </button>
+                          ))}
                         </div>
-                        <div className="space-y-1.5 rounded border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm leading-5 text-blue-900">
+                        <button
+                          // 말일 실행 — 날짜 그리드 밖 한 줄 전체
+                          type="button"
+                          className={monthEndChipClass(form.monthEnd)}
+                          disabled={!canEdit}
+                          onClick={() => setForm((prev) => ({ ...prev, monthEnd: !prev.monthEnd }))}
+                        >
+                          말일 실행
+                        </button>
+                        <div className="space-y-1.5 break-words rounded border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm leading-5 text-blue-900">
                           <p>매달 실행할 날짜를 선택해 주세요.</p>
                           <p>[날짜 선택] 매달 지정한 날짜에 실행 (해당 날짜가 없는 달은 그달의 마지막 날 실행)</p>
                           <p>[매달 말일 실행] 매달 마지막 날에 실행</p>

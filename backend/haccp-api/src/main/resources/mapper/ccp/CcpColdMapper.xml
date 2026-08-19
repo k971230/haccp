@@ -98,7 +98,7 @@ PIPELINE[HB70] MyBatis XML
                END AS target
           FROM tbl_document d
          WHERE d.co_cd = #{coCd}
-           AND d.tmpl_cd = 'CCP_COLD'
+           AND d.tmpl_cd = 'html_sys_001'
            AND d.del_yn = 'N'
            AND d.status NOT IN ('TMP', 'RJT')
            AND d.idx IN

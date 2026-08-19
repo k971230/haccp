@@ -26,7 +26,7 @@ export const PERSIST_ID = "doc-cycle-forms" as const;
 /** 좌우 분할 비율 저장 키 */
 export const SPLIT_KEY = "haccp-split-doc-cycle" as const;
 
-/** 주기 콤보 기본값 — 공통코드 조회 실패 시에도 화면이 비지 않게 한다 */
+/** 주기 콤보 기본값 — 공통코드 조회 실패 시에도 화면이 비지 않게 한다. E는 예정일 없음 */
 export const CYCLE_FALLBACK = [
   { value: "D", label: "매일" },
   { value: "W", label: "매주" },
@@ -34,6 +34,7 @@ export const CYCLE_FALLBACK = [
   { value: "Q", label: "분기" },
   { value: "H", label: "반기" },
   { value: "Y", label: "매년" },
+  { value: "E", label: "비정기" },
 ] as const;
 
 /** 비영업일 처리 기본값 — keep 그대로 / prev 이전 영업일 / next 다음 영업일 */
@@ -168,7 +169,7 @@ export function detailsToForm(base: CycleForm, details?: DocCycleDetail[]): Cycl
  * 코멘트:
  *   1) 폼 상태를 서버 details 배열로 되돌린다 — 주기와 무관한 값은 보내지 않는다
  *   2) 저장 직전에 호출한다
- *   3) 매일은 항상 빈 배열이다(반복설정이 없다)
+ *   3) 매일은 항상 빈 배열이다. 비정기(E)도 예정일이 없어 빈 배열이다
  */
 export function formToDetails(form: CycleForm): DocCycleDetail[] {
   switch (form.cycleCd) {

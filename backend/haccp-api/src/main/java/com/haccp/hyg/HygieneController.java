@@ -1,5 +1,5 @@
 /**
- * HygieneController — 위생관리 DB형 양식 5종 REST API.
+ * HygieneController — 위생관리 DB형 양식(일일·방충) REST API.
  *
  * 개발자: 박승우
  * 일자: 2026-08-06
@@ -40,7 +40,7 @@ public class HygieneController {
     /** 개발자: 박승우 | 일자: 2026-08-06 | 코멘트: 양식별 기준일 구간 목록을 조회하고, 조회 버튼·초기 로드에서 호출하며, 성공 시 목록 배열을 반환한다. */
     @GetMapping("/{screenCode}/list")
     public CommonResponse<List<HygieneListRow>> list(
-            // 의미 화면 ID — daily-hygiene-check 등 5종만 허용
+            // 의미 화면 ID — daily-hygiene-check · pest-control-check 만 허용
             @PathVariable String screenCode,
             // 기준일 시작 YYYYMMDD — 생략 시 하한 없음
             @RequestParam(required = false) String fromDt,

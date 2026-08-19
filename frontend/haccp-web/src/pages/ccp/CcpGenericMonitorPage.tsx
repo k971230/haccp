@@ -135,15 +135,15 @@ const PRESETS: Record<string, ColumnPreset[]> = {
 
 /** 메뉴 양식코드 → 프리셋 강제 (멸균은 소독 kind와 분리) */
 const TMPL_KIND_OVERRIDE: Record<string, string> = {
-  "tmpl_ccp-heat-log": "LMTITMCH",
-  "tmpl_ccp-sanitize-log": "LMTITMST",
-  "tmpl_ccp-filter-log": "LMTITMCF",
+  html_sys_003: "LMTITMCH",
+  html_sys_004: "LMTITMST",
+  html_sys_005: "LMTITMCF",
 };
 
 /** API 비었을 때 leaf 메뉴용 합성 템플릿 */
 const FIXED_TEMPLATES: Record<string, GenericCcpTemplate> = {
-  "tmpl_ccp-heat-log": {
-    tmplCd: "tmpl_ccp-heat-log",
+  html_sys_003: {
+    tmplCd: "html_sys_003",
     tmplNm: "가열 모니터링 일지",
     diaryNo: "C0010",
     diaryNm: "중요관리점관리(가열)",
@@ -154,8 +154,8 @@ const FIXED_TEMPLATES: Record<string, GenericCcpTemplate> = {
     improvementMethodCn: "한계기준 이탈 시 재가열 후 이탈·개선조치를 기록한다.",
     companyUseYn: "Y",
   },
-  "tmpl_ccp-sanitize-log": {
-    tmplCd: "tmpl_ccp-sanitize-log",
+  html_sys_004: {
+    tmplCd: "html_sys_004",
     tmplNm: "멸균 모니터링 일지",
     diaryNo: "C0061",
     diaryNm: "중요관리점관리(멸균)",
@@ -166,8 +166,8 @@ const FIXED_TEMPLATES: Record<string, GenericCcpTemplate> = {
     improvementMethodCn: "한계기준 이탈 시 재멸균 후 이탈·개선조치를 기록한다.",
     companyUseYn: "Y",
   },
-  "tmpl_ccp-filter-log": {
-    tmplCd: "tmpl_ccp-filter-log",
+  html_sys_005: {
+    tmplCd: "html_sys_005",
     tmplNm: "여과 모니터링 일지",
     diaryNo: "C0050",
     diaryNm: "중요관리점관리(여과)",
@@ -196,12 +196,12 @@ function resolveColumns(tmplCd: string | null | undefined, limitItemKind: string
 
 /** 여과는 설비/품명 열 숨김 — 상태·모니터링시간 중심 */
 function showEquipProduct(tmplCd: string | null | undefined): boolean {
-  return tmplCd !== "tmpl_ccp-filter-log";
+  return tmplCd !== "html_sys_005";
 }
 
 function timeLabel(tmplCd: string | null | undefined): string {
-  if (tmplCd === "tmpl_ccp-heat-log") return "측정시간";
-  if (tmplCd === "tmpl_ccp-filter-log") return "모니터링시간";
+  if (tmplCd === "html_sys_003") return "측정시간";
+  if (tmplCd === "html_sys_005") return "모니터링시간";
   return "점검시간";
 }
 

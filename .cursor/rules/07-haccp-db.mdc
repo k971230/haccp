@@ -68,6 +68,8 @@ alwaysApply: false
 | `35`~`42` migrate | 메뉴 IA · HA-* · HWP tmpl · 작성명세 DDL/SP · MFRM admin · DEMO 시드 · 갭보완 |
 | `84_migrate_form_master_type.sql` | 사용양식 구분·파일이력 — `tbl_template.co_cd`, `tbl_company_template_file`, `default/current_file_idx`, `sp_hwp_template_management_*` |
 | `85_migrate_doc_cycle.sql` | 문서주기 — `tbl_schedule_rule UNIQUE(co_cd, tmpl_cd)`·`nonwork_rule`, `tbl_schedule_rule_detail`, `tbl_schedule_task.alarm_*`, `sp_schedule_cycle_management_*` |
+| `86_migrate_doc_cycle_form_use_yn.sql` | 문서주기 좌측 사용여부 검색 |
+| `96_migrate_cycle_e_irregular.sql` | 비정기(E) 허용 · 좌측에서 html_sys_011·hwp_sys_028~038 숨김 |
 
 번호는 의존 순서다. 새 파일은 **뒤 번호로 추가**하고 기존 번호를 재사용하지 않는다.
 
@@ -87,7 +89,7 @@ alwaysApply: false
 - 양식 파일은 덮어쓰지 않는다: `tbl_company_template_file` 이력 + `current_file_idx`(적용) / `default_file_idx`(초기화 복원) (`84`)
 - 문서주기는 **양식당 1건**(`ux_tbl_schedule_rule_tmpl UNIQUE(co_cd, tmpl_cd)`). 반복 상세는 `tbl_schedule_rule_detail.detail_ty`
   = `week-day` / `month-day` / `month-end` / `quarter-month` / `half-month` / `year-month` (kebab), 비영업일 `nonwork_rule` = `keep|prev|next` (`85`)
-- `cycle_cd`는 **대문자 1자 도메인 유지** — `D|W|M|Q|H|Y`(+`E` 수시). 소문자로 바꾸지 않는다(22·51 SP·배치가 함께 걸린다)
+- `cycle_cd`는 **대문자 1자 도메인 유지** — `D|W|M|Q|H|Y|E`(비정기). 소문자로 바꾸지 않는다(22·51 SP·배치가 함께 걸린다). `E`는 예정일을 만들지 않는다 (`96`)
 - 예정일 날짜 계산은 SQL이 아니라 Java `CycleScheduleGenerator`가 한다. SP(`sp_tbl_schedule_task_regen_c_000`)는 전달받은 날짜 배열만 반영한다
 
 ## 적용

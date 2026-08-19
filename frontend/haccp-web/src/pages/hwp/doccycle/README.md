@@ -18,9 +18,9 @@
 - 목록 열: 양식코드 · 양식명 · 구분 · 사용여부
 - 분할 기본 50:50 (범위 약 25~75)
 - 양식 1개 = 주기 0..1건. 우측은 그리드가 아닌 단일 폼(업서트)
-- 반복설정은 주기 콤보에 따라 영역만 교체 — 매일 안내 / 매주 요일 / 매월 실행일(파랑)·말일 실행(노랑) / 분기·반기·매년 월+일
-- 매월 1~31 칩은 고정 칸(`h-9 w-9`). 「말일 실행」은 꺼져 있어도 노랑, 켜면 진한 노랑
-- 담당자는 `openModal("CodeLookup")` 재사용. 고르면 소속 부서가 기본값. 담당부서는 읽기 전용
+- 반복설정은 주기 콤보에 따라 영역만 교체 — 매일·비정기 안내 / 매주 요일 / 매월 실행일(파랑)·말일 실행(노랑, 전폭) / 분기·반기·매년 월+일
+- 매월 1~31 칩은 `auto-fill` 그리드. 「말일 실행」은 날짜 칸 아래 한 줄
+- 담당자 「선택」은 입력과 한 줄(`size="sm"`, 조회 버튼과 같은 높이)
 - 주기 없는 양식 기본값: 당일 · 매일 · 그대로 · 18:00 · 담당 빈값 · 사용 Y
 - 미저장 변경이 있으면 좌측 행 이동 전에 `mesConfirm`
 
@@ -37,7 +37,7 @@
 | 담당자 룩업 | `userApi.listUsers` | `sp_user_management_r_000` | `tbl_user` `tbl_dept` |
 | 마감 알림 배치 | `DocumentAlarmScheduler` | `sp_tbl_notification_task_c_000` | `tbl_schedule_task` |
 
-목록 `useYn` 검색 SP 시그니처는 `86_migrate_doc_cycle_form_use_yn.sql`(Jenkins migrate 안 함, DBeaver/수동).
+목록 `useYn` 검색·비정기(E)·좌측 필터는 `96_migrate_cycle_e_irregular.sql`(Jenkins migrate 안 함, DBeaver/수동). 선행 86.
 
 ## pref 키
 

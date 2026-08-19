@@ -2,7 +2,7 @@
  * CycleScheduleGeneratorTest — 문서주기 예정일 계산 검증.
  *
  * 개발자: 박승우
- * 일자: 2026-08-14
+ * 일자: 2026-08-19
  * 코멘트:
  *   1) 말일·31일 보정, 비영업일 이동(prev/next), 관리 시작일 경계를 값으로 고정한다
  *   2) 규칙 해석이 깨지면 이 테스트가 먼저 실패한다 — DB·Spring 컨텍스트 없이 순수 계산만 본다
@@ -85,5 +85,13 @@ class CycleScheduleGeneratorTest {
                 LocalDate.of(2026, 1, 5), LocalDate.of(2026, 4, 5),
                 LocalDate.of(2026, 7, 5), LocalDate.of(2026, 10, 5)
         ), dates);
+    }
+
+    /** 비정기 — 예정일을 만들지 않는다. 필요할 때 문서를 작성한다. */
+    @Test
+    void eventCycleProducesNoDates() {
+        Rule rule = new Rule("E", "keep", LocalDate.of(2026, 8, 1), List.of());
+        List<LocalDate> dates = generator.generate(rule, LocalDate.of(2026, 8, 1), 12);
+        assertEquals(List.of(), dates);
     }
 }

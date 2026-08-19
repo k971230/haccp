@@ -129,7 +129,7 @@ function blankRows(form: CcpFormCode): CcpRow[] {
       { rowSeq: 3, procNm: "완제품 냉장보관", verifyDesc: "", answerCd: "", recordDesc: "" },
     ];
   }
-  return [{ rowSeq: 1, verifyTarget: "", verifyMethod: "", months: Array.from({ length: 12 }, (_, i) => ({ monthNo: i + 1, planYn: "N" })) }];
+  return [];
 }
 
 /** 감도 O/X 조합으로 결과 미리보기 — 하나라도 ×면 부적합 */
@@ -139,9 +139,8 @@ function metalJudge(row: CcpRow): string {
   return codes.some((c) => c === "X") ? "F" : "P";
 }
 
-/** 기준키 표시 — 연간은 연도, 일지는 YYYY-MM-DD */
-function formatBaseKey(form: CcpFormCode, baseKey: string): string {
-  if (form === "annual-verification-plan") return baseKey;
+/** 기준키 표시 — YYYY-MM-DD */
+function formatBaseKey(_form: CcpFormCode, baseKey: string): string {
   return toInputDate(baseKey);
 }
 
@@ -149,9 +148,7 @@ function formatBaseKey(form: CcpFormCode, baseKey: string): string {
 function detailToBuf(form: CcpFormCode, data: CcpRow, userNm?: string): Buf {
   const detailHeader = (data.header as CcpRow | null) ?? null;
   const rawBase = detailHeader ? value(detailHeader, "baseDt") : "";
-  const baseKey = rawBase
-    ? rawBase.slice(0, form === "annual-verification-plan" ? 4 : 8)
-    : (form === "annual-verification-plan" ? todayYmd().slice(0, 4) : todayYmd());
+  const baseKey = rawBase ? rawBase.slice(0, 8) : todayYmd();
   const nextRows = (form === "metal-monitor" ? data.sensRows : data.rows) as CcpRow[] | undefined;
   const ca = data.corrective as DocCorrectiveValue | null | undefined;
   return {
@@ -177,7 +174,7 @@ function detailToBuf(form: CcpFormCode, data: CcpRow, userNm?: string): Buf {
  * 일자: 2026-08-06
  * 코멘트:
  *   1) CCP 추가 양식 문서형 화면을 draft 세션으로 렌더링한다
- *   2) Metal/Verify/Plan 페이지가 form props로 마운트한다
+ *   2) Metal/Verify 페이지가 form props로 마운트한다
  *   3) API 실패는 업무 토스트만 표시한다
  */
 export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
@@ -225,25 +222,16 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
   const isEdit = editableStatus(status) && (docIdx ? canModify : canWrite);
 
   const listColumns = useMemo<GridColumn<ListMeta>[]>(() => [
-    form === "annual-verification-plan"
-      ? {
-          // 연간 — YYYY 텍스트
-          field: "baseKey",
-          header: "연도",
-          width: 100,
-          editableOnNew: true,
-        }
-      : {
-          // 일지 — YYYY-MM-DD 달력
-          field: "baseDtDisp",
-          header: "기준일",
-          width: 120,
-          editableOnNew: true,
-          type: "date" as const,
-        },
+    {
+      field: "baseDtDisp",
+      header: "기준일",
+      width: 120,
+      editableOnNew: true,
+      type: "date" as const,
+    },
     { field: "docNo", header: "문서", width: 120 },
     { field: "statusNm", header: "상태", width: 80 },
-  ], [form]);
+  ], []);
 
   const limitBanner = useMemo(() => {
     if (!buf) return undefined;
@@ -277,7 +265,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
       replaceServerList(
         server.map((item) => {
           const baseRaw = value(item, "baseDt");
-          const baseKey = baseRaw.slice(0, form === "annual-verification-plan" ? 4 : 8);
+          const baseKey = baseRaw.slice(0, 8);
           const st = value(item, "status");
           return {
             docIdx: Number(value(item, "docIdx")) || null,
@@ -318,7 +306,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
           docIdx: null,
           docNo: "",
           status: null,
-          baseKey: row.baseKey || (form === "annual-verification-plan" ? todayYmd().slice(0, 4) : todayYmd()),
+          baseKey: row.baseKey || todayYmd(),
           header: { mngNm: user?.userNm, checkerNm: user?.userNm, ccpCd: "CCP-2P" },
           rows: blankRows(form),
           passRows: [],
@@ -357,7 +345,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
   const handleNew = () => asyncAction.run(async () => {
     if (!canWrite) return;
     // 당일(당해) 복수 문서 허용 — 기존 기준키 행이 있어도 항상 새 draft
-    const nextKey = form === "annual-verification-plan" ? todayYmd().slice(0, 4) : todayYmd();
+    const nextKey = todayYmd();
     try {
       const data = await detailCcpForm(form, null);
       const next = detailToBuf(form, data, user?.userNm);
@@ -406,9 +394,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
             if (!editableStatus(b.status) && b.docIdx) {
               return { message: MES.inApprovalLocked, rowKey: key };
             }
-            if (form === "annual-verification-plan") {
-              if (!/^\d{4}$/.test(b.baseKey)) return { message: MES.required("연도"), rowKey: key };
-            } else if (!/^\d{8}$/.test(b.baseKey)) {
+            if (!/^\d{8}$/.test(b.baseKey)) {
               return { message: MES.required("기준일"), rowKey: key };
             }
             if (seen.has(b.baseKey)) {
@@ -643,9 +629,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
             // 신규행 기준키 셀 변경 → 버퍼·목록 동기화
             onCellChange={(key, field, cellValue) => {
               if (field !== "baseDtDisp" && field !== "baseKey") return;
-              const next = form === "annual-verification-plan"
-                ? String(cellValue ?? "").replace(/\D/g, "").slice(0, 4)
-                : fromInputDate(String(cellValue ?? ""));
+              const next = fromInputDate(String(cellValue ?? ""));
               const prevBuf = getBuffer(key);
               if (!prevBuf) return;
               putBuffer(key, { ...prevBuf, baseKey: next }, {
@@ -667,9 +651,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
             <DocPaper title={paperTitle} writerNm={value(header, "mngNm") || value(header, "checkerNm") || user?.userNm}>
               <DocFormMeta
                 // 기준일/연도 — 버퍼 baseKey와 좌측 목록 동기
-                baseDtNode={form === "annual-verification-plan" ? (
-                  <DocCellInput type="number" value={baseKey} disabled={!isEdit} onChange={setBaseKey} />
-                ) : (
+                baseDtNode={(
                   <DocCellInput type="date" value={toInputDate(baseKey)} disabled={!isEdit} onChange={(v) => setBaseKey(fromInputDate(v))} />
                 )}
                 managerLabel={form === "metal-monitor" ? "담당자" : "점검자"}
@@ -831,91 +813,7 @@ export function CcpFormPage({ form, screenCode, title }: CcpFormPageProps) {
                     />
                   ) : null}
                 </>
-              ) : (
-                <>
-                  <p className="doc-section-title">연간 검증계획</p>
-                  <div className="overflow-x-auto">
-                    <table className="doc-table">
-                      <thead>
-                        <tr>
-                          <th>검증대상</th><th>검증방법</th>
-                          {Array.from({ length: 12 }, (_, month) => <th key={month}>{month + 1}월</th>)}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rows.map((row, index) => (
-                          <tr key={index} className={cn(selectedRow === index && "doc-row-selected")} onClick={() => setSelectedRow(index)}>
-                            <td>
-                              <DocCellInput
-                                value={value(row, "verifyTarget")}
-                                disabled={!isEdit}
-                                onChange={(v) => patchActive((prev) => ({
-                                  ...prev,
-                                  rows: prev.rows.map((r, i) => (i === index ? { ...r, verifyTarget: v, rowSeq: i + 1 } : r)),
-                                }))}
-                              />
-                            </td>
-                            <td>
-                              <DocCellInput
-                                value={value(row, "verifyMethod")}
-                                disabled={!isEdit}
-                                onChange={(v) => patchActive((prev) => ({
-                                  ...prev,
-                                  rows: prev.rows.map((r, i) => (i === index ? { ...r, verifyMethod: v } : r)),
-                                }))}
-                              />
-                            </td>
-                            {Array.from({ length: 12 }, (_, month) => {
-                              const months = (row.months as CcpRow[] | undefined) ?? [];
-                              const checked = months[month]?.planYn === "Y";
-                              return (
-                                <td key={month} className="text-center">
-                                  <input
-                                    type="checkbox"
-                                    disabled={!isEdit}
-                                    checked={checked}
-                                    onChange={(e) => {
-                                      patchActive((prev) => ({
-                                        ...prev,
-                                        rows: prev.rows.map((r, i) => {
-                                          if (i !== index) return r;
-                                          const curMonths = (r.months as CcpRow[] | undefined) ?? [];
-                                          return {
-                                            ...r,
-                                            months: Array.from({ length: 12 }, (_, n) => ({
-                                              ...curMonths[n],
-                                              monthNo: n + 1,
-                                              planYn: n === month ? (e.target.checked ? "Y" : "N") : (curMonths[n]?.planYn ?? "N"),
-                                            })),
-                                          };
-                                        }),
-                                      }));
-                                    }}
-                                  />
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {isEdit ? (
-                    <DocRowToolbar
-                      onAdd={() => patchActive((prev) => ({ ...prev, rows: [...prev.rows, ...blankRows(form)] }))}
-                      onRemove={() => {
-                        if (selectedRow == null) { mesToast("삭제할 행을 선택하세요.", "warn"); return; }
-                        patchActive((prev) => ({
-                          ...prev,
-                          rows: prev.rows.filter((_, i) => i !== selectedRow).map((r, i) => ({ ...r, rowSeq: i + 1 })),
-                        }));
-                        setSelectedRow(null);
-                      }}
-                      canRemove={selectedRow != null}
-                    />
-                  ) : null}
-                </>
-              )}
+              ) : null}
 
               <DocDeviationFooter
                 // 이탈·개선조치 값

@@ -71,7 +71,7 @@ public class CcpFormsService {
         }
         Map<String, Object> header = mapper.selectDetail(coCd, template(form), docIdx);
         if (header == null) throw new BizException("문서를 찾을 수 없습니다.");
-        // 검증점검표일 때(= tmpl_ccp-verify-check) 모니터링 일지 확인 SPAN을 헤더에 붙인다
+        // 검증점검표일 때(= html_sys_006) 모니터링 일지 확인 SPAN을 헤더에 붙인다
         if ("verification-check".equals(form)) {
             String monitorRmk = mapper.selectVerifyMonitorRmk(coCd, docIdx);
             if (monitorRmk != null) {
@@ -109,7 +109,7 @@ public class CcpFormsService {
                         objectMapper.writeValueAsString(rows), LoginUserContext.userId());
             }
             Long docIdx = requiredResult(result);
-            // 검증점검표일 때(= tmpl_ccp-verify-check) 모니터링 일지 확인 SPAN을 헤더에 저장
+            // 검증점검표일 때(= html_sys_006) 모니터링 일지 확인 SPAN을 헤더에 저장
             if ("verification-check".equals(form)) {
                 mapper.updateVerifyMonitorRmk(
                         LoginUserContext.coCd(),
@@ -175,9 +175,8 @@ public class CcpFormsService {
 
     private String template(String form) {
         return switch (form) {
-            case "metal-monitor" -> "tmpl_ccp-metal-log";
-            case "verification-check" -> "tmpl_ccp-verify-check";
-            case "annual-verification-plan" -> "tmpl_prp-verify-plan";
+            case "metal-monitor" -> "html_sys_002";
+            case "verification-check" -> "html_sys_006";
             default -> throw new BizException("지원하지 않는 CCP 양식입니다.");
         };
     }

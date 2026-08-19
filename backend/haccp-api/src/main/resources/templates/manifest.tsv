@@ -27,10 +27,9 @@ hwp_sys_024	28.(시스템)압축공기필터관리대장.hwp	압축공기필터�
 hwp_sys_025	28.(시스템)회수관리일지.hwp	회수관리일지.hwp	Y
 hwp_sys_026	29.(시스템)육안검사기준.hwp	육안검사기준.hwp	Y
 hwp_sys_027	30.(시스템)육안검사일지.hwp	육안검사일지.hwp	Y
-tmpl_admin-law-health	LAW_HEALTH.hwp	LAW_HEALTH.hwp	N
-tmpl_logis-material-ledger	LAW_MATERIAL.hwp	LAW_MATERIAL.hwp	N
-tmpl_admin-building-ledger	LAW_BUILDING.hwp	LAW_BUILDING.hwp	N
-tmpl_admin-production-ledger	LAW_PRODUCTION.hwp	LAW_PRODUCTION.hwp	N
-tmpl_admin-license-manage	LAW_LICENSE.hwp	LAW_LICENSE.hwp	N
-tmpl_admin-self-test	LAW_SELF_TEST.hwp	LAW_SELF_TEST.hwp	N
-tmpl_admin-cert-manage	LAW_CERT.hwp	LAW_CERT.hwp	N
+hwp_sys_033	LAW_MATERIAL.hwp	LAW_MATERIAL.hwp	N
+hwp_sys_034	LAW_BUILDING.hwp	LAW_BUILDING.hwp	N
+hwp_sys_035	LAW_PRODUCTION.hwp	LAW_PRODUCTION.hwp	N
+hwp_sys_036	LAW_LICENSE.hwp	LAW_LICENSE.hwp	N
+hwp_sys_037	LAW_SELF_TEST.hwp	LAW_SELF_TEST.hwp	N
+hwp_sys_038	LAW_CERT.hwp	LAW_CERT.hwp	N

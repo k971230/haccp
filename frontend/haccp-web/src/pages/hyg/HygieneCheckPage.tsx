@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-07
  * 코멘트:
- *   1) 신규 시 좌측 draft(C)를 쌓고 dirty 전건 검증 후 단건 save를 순차 호출한다
+ *   1) HTML 은 일일위생·방충만 다룬다. 개인·작업장·용수는 HWP leaf 다
  *   2) O/X·방충 콤보·일일 시각은 DocCellSelect·DocCellTime으로 DocForm 셀을 맞춘다
  *   3) 결재 툴바는 저장 문서(docIdx)에만 노출한다
  *
@@ -78,7 +78,7 @@ const PEST_SELECT_OPTIONS = [
 ];
 
 type Entry = Record<string, unknown>;
-type FormKind = "daily" | "personal" | "area" | "pest" | "water";
+type FormKind = "daily" | "pest";
 
 export interface HygienePageProps {
   screenCode: HygieneScreenCode;
@@ -100,51 +100,10 @@ const PEST_YN_COLS: { key: string; label: string; group: string }[] = [
   { key: "ratYn", label: "쥐", group: "설치류" },
   { key: "etcRatYn", label: "기타", group: "설치류" },
 ];
-const PERSONAL_OX: { key: string; label: string }[] = [
-  { key: "healthCd", label: "건강" },
-  { key: "clothCd", label: "복장" },
-  { key: "belongingsCd", label: "장신구" },
-  { key: "workerStateCd", label: "상태" },
-  { key: "anteroomCd", label: "전실" },
-  { key: "handwashCd", label: "손세척" },
-];
-
-const WATER_WEEKS = [1, 2, 3, 4, 5] as const;
 
 function editableStatus(status: string | null | undefined): boolean { return !status || status === "WRK" || status === "RJT"; }
 function asText(value: unknown): string { return value == null ? "" : String(value); }
 function isStd(entry: Entry): boolean { return asText(entry.stdYn) !== "N"; }
-
-/** 기준일~종료일 YYYYMMDD 열거 — 구역 다중 일자 열 (최대 31일) */
-function eachYmd(from: string, to: string): string[] {
-  if (!from || from.length !== 8) return [];
-  const end = to && to.length === 8 ? to : from;
-  const dates: string[] = [];
-  const cur = new Date(Number(from.slice(0, 4)), Number(from.slice(4, 6)) - 1, Number(from.slice(6)));
-  const last = new Date(Number(end.slice(0, 4)), Number(end.slice(4, 6)) - 1, Number(end.slice(6)));
-  while (cur <= last && dates.length < 31) {
-    const y = cur.getFullYear();
-    const m = String(cur.getMonth() + 1).padStart(2, "0");
-    const d = String(cur.getDate()).padStart(2, "0");
-    dates.push(`${y}${m}${d}`);
-    cur.setDate(cur.getDate() + 1);
-  }
-  return dates;
-}
-
-function shortMd(ymd: string): string {
-  return ymd.length === 8 ? `${ymd.slice(4, 6)}/${ymd.slice(6)}` : ymd;
-}
-
-function resultJudgeByDt(entry: Entry, checkDt: string): string {
-  const results = Array.isArray(entry.results) ? (entry.results as Entry[]) : [];
-  return asText(results.find((row) => asText(row.checkDt) === checkDt)?.judgeCd);
-}
-
-function resultJudgeByWeek(entry: Entry, weekNo: number): string {
-  const results = Array.isArray(entry.results) ? (entry.results as Entry[]) : [];
-  return asText(results.find((row) => Number(row.weekNo) === weekNo)?.judgeCd);
-}
 
 /** 좌측 목록 메타 */
 type ListMeta = DocListMeta & {
@@ -242,10 +201,6 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
   const docIdx = buf?.docIdx ?? null;
   const status = buf?.status ?? null;
   const canEdit = editableStatus(status) && (docIdx ? canModify : canWrite);
-  const areaDates = useMemo(
-    () => (kind === "area" && buf ? eachYmd(buf.baseKey, buf.baseDtTo || buf.baseKey) : []),
-    [buf, kind],
-  );
 
   const listColumns = useMemo<GridColumn<ListMeta>[]>(() => [
     // 기준일 — YYYY-MM-DD 달력, 신규 draft만 편집
@@ -288,32 +243,6 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
   }, [replaceServerList, screenCode]);
 
   useEffect(() => { void loadList(); }, [loadList]);
-
-  // 구역 — 기간 변경 시 서명 행을 일자에 맞춘다
-  useEffect(() => {
-    if (kind !== "area" || !canEdit || !buf) return;
-    const nextSigners = areaDates.map((dt) => {
-      const found = buf.signers.find((row) => asText(row.checkDt) === dt);
-      return found ?? { checkDt: dt, writerNm: "", reviewerNm: "", approverNm: "" };
-    });
-    const same = nextSigners.length === buf.signers.length
-      && nextSigners.every((s, i) => asText(s.checkDt) === asText(buf.signers[i]?.checkDt));
-    if (same) return;
-    patchActive((prev) => ({ ...prev, signers: nextSigners }));
-  }, [areaDates, buf, canEdit, kind, patchActive]);
-
-  // 용수 — 1~5주 점검자 행 기본값
-  useEffect(() => {
-    if (kind !== "water" || !canEdit || !buf) return;
-    if (buf.checkers.length === WATER_WEEKS.length) return;
-    patchActive((prev) => ({
-      ...prev,
-      checkers: WATER_WEEKS.map((weekNo) => {
-        const found = prev.checkers.find((row) => Number(row.weekNo) === weekNo);
-        return found ?? { weekNo, checkDt: "", checkerNm: "" };
-      }),
-    }));
-  }, [buf, canEdit, kind, patchActive]);
 
   const handleSelect = useCallback(async (key: string | null) => {
     setSelectedEntry(null);
@@ -403,9 +332,6 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
               return { message: MES.inApprovalLocked, rowKey: key };
             }
             if (!/^\d{8}$/.test(b.baseKey)) return { message: MES.required("기준일"), rowKey: key };
-            if ((kind === "area" || kind === "water") && b.baseDtTo && !/^\d{8}$/.test(b.baseDtTo)) {
-              return { message: MES.required("종료일"), rowKey: key };
-            }
             if (seen.has(b.baseKey)) return { message: `기준키가 중복되었습니다: ${b.baseKey}`, rowKey: key };
             seen.add(b.baseKey);
             if (b.entries.length === 0) return { message: "점검 행이 없습니다.", rowKey: key };
@@ -424,7 +350,6 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
               checkers: b.checkers,
               beforeTime: b.beforeTime,
               duringTime: b.duringTime,
-              cycleNm: kind === "water" ? "1회/주" : "",
             },
             corrective: b.corrective,
           });
@@ -491,33 +416,6 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
     }));
   };
 
-  /**
-   * 개발자: 박승우
-   * 일자: 2026-08-06
-   * 코멘트:
-   *   1) 구역 일자별·용수 주차별 results[] 판정을 갱신한다
-   *   2) O/X 버튼 클릭 시 호출한다
-   *   3) 해당 키 행이 없으면 새로 추가한다
-   */
-  const patchResults = (index: number, match: Entry, judgeCd: string) => {
-    if (!canEdit) return;
-    patchActive((current) => ({
-      ...current,
-      entries: current.entries.map((entry, i) => {
-        if (i !== index) return entry;
-        const results = Array.isArray(entry.results) ? [...(entry.results as Entry[])] : [];
-        const hit = results.findIndex((row) => (
-          match.checkDt != null
-            ? asText(row.checkDt) === asText(match.checkDt)
-            : Number(row.weekNo) === Number(match.weekNo)
-        ));
-        if (hit >= 0) results[hit] = { ...results[hit], judgeCd };
-        else results.push({ ...match, judgeCd });
-        return { ...entry, results };
-      }),
-    }));
-  };
-
   /** 스칼라 OX 키(healthCd·deviceNgCd·judgeCd) — DocCellSelect */
   const scalarOxSelect = (entry: Entry, index: number, key: string) => (
     <DocCellSelect
@@ -529,18 +427,6 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
       options={OX_OPTIONS}
       emptyLabel=""
       onChange={(v) => patch(index, key, v)}
-    />
-  );
-
-  /** results[] 배열용 O/X — 구역 checkDt / 용수 weekNo */
-  const resultsOxSelect = (index: number, match: Entry, current: string) => (
-    <DocCellSelect
-      // 일자·주차 판정
-      value={current}
-      disabled={!canEdit}
-      options={OX_OPTIONS}
-      emptyLabel=""
-      onChange={(v) => patchResults(index, match, v)}
     />
   );
 
@@ -574,10 +460,7 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
   };
 
   const entries = buf?.entries ?? [];
-  const signers = buf?.signers ?? [];
-  const checkers = buf?.checkers ?? [];
   const baseKey = buf?.baseKey ?? "";
-  const baseDtTo = buf?.baseDtTo ?? "";
   const checkerNm = buf?.checkerNm ?? "";
   const beforeTime = buf?.beforeTime ?? "";
   const duringTime = buf?.duringTime ?? "";
@@ -585,35 +468,6 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
   const docNo = buf?.docNo ?? "";
 
   const bodyTable = () => {
-    if (kind === "personal") {
-      return (
-        <table className="doc-table">
-          <thead>
-            <tr>
-              <th>작업자</th>
-              {PERSONAL_OX.map((col) => <th key={col.key}>{col.label}</th>)}
-              <th>비고</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry, index) => (
-              <tr
-                key={index}
-                className={selectedEntry === index ? "doc-row-selected" : undefined}
-                onClick={() => setSelectedEntry(index)}
-              >
-                <td><DocCellInput value={asText(entry.workerNm)} disabled={!canEdit} onChange={(v) => patch(index, "workerNm", v)} /></td>
-                {PERSONAL_OX.map((col) => (
-                  <td key={col.key}>{scalarOxSelect(entry, index, col.key)}</td>
-                ))}
-                <td><DocCellInput value={asText(entry.remark)} disabled={!canEdit} onChange={(v) => patch(index, "remark", v)} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      );
-    }
-
     if (kind === "pest") {
       return (
         <div className="overflow-x-auto">
@@ -648,121 +502,6 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
                     </td>
                   ))}
                   <td><DocCellInput value={asText(entry.remark)} disabled={!canEdit} onChange={(v) => patch(index, "remark", v)} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-    }
-
-    if (kind === "area") {
-      return (
-        <div className="space-y-3">
-          <div className="overflow-x-auto">
-            <table className="doc-table">
-              <thead>
-                <tr>
-                  <th>점검항목</th>
-                  {areaDates.map((dt) => <th key={dt}>{shortMd(dt)}</th>)}
-                  <th>비고</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry, index) => (
-                  <tr key={`${asText(entry.itemCd)}-${index}`}>
-                    <td className="whitespace-normal leading-relaxed">{asText(entry.itemNm)}</td>
-                    {areaDates.map((dt) => (
-                      <td key={dt}>{resultsOxSelect(index, { checkDt: dt }, resultJudgeByDt(entry, dt))}</td>
-                    ))}
-                    <td><DocCellInput value={asText(entry.remark)} disabled={!canEdit} onChange={(v) => patch(index, "remark", v)} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="doc-section-title">일자별 서명</p>
-          <table className="doc-table">
-            <thead>
-              <tr><th>일자</th><th>작성</th><th>검토</th><th>승인</th></tr>
-            </thead>
-            <tbody>
-              {signers.map((row, index) => (
-                <tr key={asText(row.checkDt) || index}>
-                  <td>{shortMd(asText(row.checkDt))}</td>
-                  {(["writerNm", "reviewerNm", "approverNm"] as const).map((key) => (
-                    <td key={key}>
-                      <DocCellInput
-                        value={asText(row[key])}
-                        disabled={!canEdit}
-                        onChange={(v) => patchActive((cur) => ({
-                          ...cur,
-                          signers: cur.signers.map((s, i) => (i === index ? { ...s, [key]: v } : s)),
-                        }))}
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-    }
-
-    if (kind === "water") {
-      return (
-        <div className="space-y-3">
-          <table className="doc-table">
-            <thead>
-              <tr>
-                <th className="w-24">구분</th>
-                <th>점검항목</th>
-                {WATER_WEEKS.map((w) => <th key={w}>{w}주</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry, index) => (
-                <tr key={`${asText(entry.itemCd)}-${index}`}>
-                  <td className="whitespace-normal">{asText(entry.grpNm || entry.grpCd)}</td>
-                  <td className="whitespace-normal leading-relaxed">{asText(entry.itemNm)}</td>
-                  {WATER_WEEKS.map((weekNo) => (
-                    <td key={weekNo}>{resultsOxSelect(index, { weekNo }, resultJudgeByWeek(entry, weekNo))}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="doc-section-title">주차별 점검자</p>
-          <table className="doc-table">
-            <thead>
-              <tr><th>주차</th><th>점검일</th><th>점검자</th></tr>
-            </thead>
-            <tbody>
-              {checkers.map((row, index) => (
-                <tr key={Number(row.weekNo) || index}>
-                  <td>{asText(row.weekNo)}주</td>
-                  <td>
-                    <DocCellInput
-                      type="date"
-                      value={toInputDate(asText(row.checkDt))}
-                      disabled={!canEdit}
-                      onChange={(v) => patchActive((cur) => ({
-                        ...cur,
-                        checkers: cur.checkers.map((c, i) => (i === index ? { ...c, checkDt: fromInputDate(v) } : c)),
-                      }))}
-                    />
-                  </td>
-                  <td>
-                    <DocCellInput
-                      value={asText(row.checkerNm)}
-                      disabled={!canEdit}
-                      onChange={(v) => patchActive((cur) => ({
-                        ...cur,
-                        checkers: cur.checkers.map((c, i) => (i === index ? { ...c, checkerNm: v } : c)),
-                      }))}
-                    />
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -947,19 +686,6 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
                       />
                     ),
                   },
-                  ...(kind === "area" || kind === "water"
-                    ? [{
-                        label: "종료일",
-                        node: (
-                          <DocCellInput
-                            type="date"
-                            value={toInputDate(baseDtTo)}
-                            disabled={!canEdit}
-                            onChange={(v) => patchActive((prev) => ({ ...prev, baseDtTo: fromInputDate(v) }))}
-                          />
-                        ),
-                      }]
-                    : []),
                   ...(kind === "daily"
                     ? [
                         {
@@ -988,9 +714,7 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
                         },
                       ]
                     : []),
-                  ...(kind !== "water"
-                    ? [{ label: "점검자", node: <DocCellInput value={checkerNm} disabled={!canEdit} onChange={(v) => patchActive((p) => ({ ...p, checkerNm: v }))} /> }]
-                    : []),
+                  { label: "점검자", node: <DocCellInput value={checkerNm} disabled={!canEdit} onChange={(v) => patchActive((p) => ({ ...p, checkerNm: v }))} /> },
                 ]}
               />
               <p className="doc-section-title">점검 기록 ({entries.length}항목)</p>
@@ -1005,35 +729,6 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
                   }}
                   canRemove={selectedEntry != null && !isStd(entries[selectedEntry])}
                   addLabel="점검항목 행 추가"
-                />
-              ) : null}
-              {kind === "personal" && canEdit ? (
-                <DocRowToolbar
-                  onAdd={() => patchActive((c) => ({
-                    ...c,
-                    entries: [...c.entries, {
-                      rowSeq: c.entries.length + 1,
-                      workerNm: "",
-                      healthCd: "",
-                      clothCd: "",
-                      belongingsCd: "",
-                      workerStateCd: "",
-                      anteroomCd: "",
-                      handwashCd: "",
-                      remark: "",
-                      stdYn: "N",
-                    }],
-                  }))}
-                  onRemove={() => {
-                    if (selectedEntry == null) { mesToast("삭제할 행을 선택하세요.", "warn"); return; }
-                    patchActive((c) => ({
-                      ...c,
-                      entries: c.entries.filter((_, i) => i !== selectedEntry).map((row, i) => ({ ...row, rowSeq: i + 1 })),
-                    }));
-                    setSelectedEntry(null);
-                  }}
-                  canRemove={selectedEntry != null}
-                  addLabel="작업자 추가"
                 />
               ) : null}
               <DocDeviationFooter
@@ -1064,13 +759,7 @@ export default function HygieneCheckPage({ screenCode, title, kind }: HygienePag
             hint={
               kind === "daily"
                 ? "OX 항목은 판정, 온도(NUM/NUM2)는 수치·단위를 입력합니다. 표준행은 삭제할 수 없습니다."
-                : kind === "area"
-                  ? "기준일~종료일 각 일자 열에 O/X를 입력하고 하단 서명을 작성합니다."
-                  : kind === "water"
-                    ? "1~5주 열에 O/X를 입력하고 주차별 점검자를 기록합니다."
-                    : kind === "pest"
-                      ? "설비 상태(O/X)와 해충·설치류 카운트를 입력합니다."
-                      : "작업자별 위생 판정(O/X)을 입력합니다."
+                : "설비 상태(O/X)와 해충·설치류 카운트를 입력합니다."
             }
           />
         </DocFormSidePanel>

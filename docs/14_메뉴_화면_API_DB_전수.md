@@ -155,44 +155,44 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 
 | 부모 | menu_cd | 메뉴명 | scrn_cd | sort | module | tmplCd | FE Page | 컴포넌트 | FE API | BE Controller | API | Mapper | SP | Cmds |
 |------|---------|--------|---------|------|--------|--------|---------|----------|--------|---------------|-----|--------|----|------|
-| `MWRK` | `daily-hygiene-check` | 일일위생점검표 | `daily-hygiene-check` | 101 | WRK | tmpl_prp-hygiene-daily | HygieneCheckPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | hygieneApi | HygieneController | /api/v1/hyg/daily-hygiene-check/* | HygieneMapper | sp_tbl_hygiene_document_* | add·save·del·search |
-| `MWRK` | `health-cert-record` | 건강진단관리기록부 | `health-cert-record` | 102 | WRK | tmpl_admin-law-health | HealthCertPage | MesEditableGrid·GridCrudButtons·MesButton·Input | healthCertApi | HealthCertController | /api/v1/hyg/health-cert/* | HealthCertMapper | sp_tbl_health_cert_* | add·save·del·search |
-| `MWRK` | `visitor-log` | 입출입대장 | `visitor-log` | 103 | WRK | tmpl_admin-visitor-log | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `pest-control-check` | 방충방서관리점검표 | `pest-control-check` | 104 | WRK | PEST | HygieneCheckPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | hygieneApi | HygieneController | /api/v1/hyg/pest-control-check/* | HygieneMapper | sp_tbl_hygiene_document_* | add·save·del·search |
-| `MWRK` | `ccp-cold-monitor` | 냉장냉동보관모니터링 | `ccp-cold-monitor` | 105 | WRK | tmpl_ccp-cold-log | ColdMonitorPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpColdApi | CcpColdController | /api/v1/ccp/cold-monitor/* | CcpColdMapper | sp_tbl_ccp_cold_monitor_* | add·save·del·search |
-| `MWRK` | `ccp-heat-monitor` | 가열 CCP 모니터링 일지 | `ccp-heat-monitor` | 106 | WRK | tmpl_ccp-heat-log | CcpGenericMonitorPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpGenericApi | CcpGenericController | /api/v1/ccp/generic-monitor/* | CcpGenericMapper | ccp generic SP | add·save·del·search |
-| `MWRK` | `ccp-sanitize-monitor` | 멸균 CCP 모니터링 일지 | `ccp-sanitize-monitor` | 107 | WRK | tmpl_ccp-sanitize-log | CcpGenericMonitorPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpGenericApi | CcpGenericController | /api/v1/ccp/generic-monitor/* | CcpGenericMapper | ccp generic SP | add·save·del·search |
-| `MWRK` | `ccp-filter-monitor` | 여과 CCP 모니터링 일지 | `ccp-filter-monitor` | 108 | WRK | tmpl_ccp-filter-log | CcpGenericMonitorPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpGenericApi | CcpGenericController | /api/v1/ccp/generic-monitor/* | CcpGenericMapper | ccp generic SP | add·save·del·search |
-| `MWRK` | `ccp-metal-monitor` | 금속검출CCP일지 | `ccp-metal-monitor` | 109 | WRK | tmpl_ccp-metal-log | MetalMonitorPage→CcpFormPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpFormsApi | CcpFormsController | /api/v1/ccp/metal-monitor/* | CcpFormsMapper | sp_tbl_ccp_form_* | add·save·del·search |
-| `MWRK` | `ccp-verification-check` | CCP검증점검표 | `ccp-verification-check` | 110 | WRK | tmpl_ccp-verify-check | VerificationCheckPage→CcpFormPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpFormsApi | CcpFormsController | /api/v1/ccp/verification-check/* | CcpFormsMapper | sp_tbl_ccp_form_* | add·save·del·search |
+| `MWRK` | `daily-hygiene-check` | 일일위생점검표 | `daily-hygiene-check` | 101 | WRK | html_sys_007 | HygieneCheckPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | hygieneApi | HygieneController | /api/v1/hyg/daily-hygiene-check/* | HygieneMapper | sp_tbl_hygiene_document_* | add·save·del·search |
+| `MWRK` | `health-cert-record` | 건강진단관리기록부 | `health-cert-record` | 102 | WRK | html_sys_011 | HealthCertPage | MesEditableGrid·GridCrudButtons·MesButton·Input | healthCertApi | HealthCertController | /api/v1/hyg/health-cert/* | HealthCertMapper | sp_tbl_health_cert_* | add·save·del·search |
+| `MWRK` | `visitor-log` | 입출입대장 | `visitor-log` | 103 | WRK | hwp_sys_001 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `pest-control-check` | 방충방서관리점검표 | `pest-control-check` | 104 | WRK | html_sys_008 | HygieneCheckPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | hygieneApi | HygieneController | /api/v1/hyg/pest-control-check/* | HygieneMapper | sp_tbl_hygiene_document_* | add·save·del·search |
+| `MWRK` | `ccp-cold-monitor` | 냉장냉동보관모니터링 | `ccp-cold-monitor` | 105 | WRK | html_sys_001 | ColdMonitorPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpColdApi | CcpColdController | /api/v1/ccp/cold-monitor/* | CcpColdMapper | sp_tbl_ccp_cold_monitor_* | add·save·del·search |
+| `MWRK` | `ccp-heat-monitor` | 가열 CCP 모니터링 일지 | `ccp-heat-monitor` | 106 | WRK | html_sys_003 | CcpGenericMonitorPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpGenericApi | CcpGenericController | /api/v1/ccp/generic-monitor/* | CcpGenericMapper | ccp generic SP | add·save·del·search |
+| `MWRK` | `ccp-sanitize-monitor` | 멸균 CCP 모니터링 일지 | `ccp-sanitize-monitor` | 107 | WRK | html_sys_004 | CcpGenericMonitorPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpGenericApi | CcpGenericController | /api/v1/ccp/generic-monitor/* | CcpGenericMapper | ccp generic SP | add·save·del·search |
+| `MWRK` | `ccp-filter-monitor` | 여과 CCP 모니터링 일지 | `ccp-filter-monitor` | 108 | WRK | html_sys_005 | CcpGenericMonitorPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpGenericApi | CcpGenericController | /api/v1/ccp/generic-monitor/* | CcpGenericMapper | ccp generic SP | add·save·del·search |
+| `MWRK` | `ccp-metal-monitor` | 금속검출CCP일지 | `ccp-metal-monitor` | 109 | WRK | html_sys_002 | MetalMonitorPage→CcpFormPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpFormsApi | CcpFormsController | /api/v1/ccp/metal-monitor/* | CcpFormsMapper | sp_tbl_ccp_form_* | add·save·del·search |
+| `MWRK` | `ccp-verification-check` | CCP검증점검표 | `ccp-verification-check` | 110 | WRK | html_sys_006 | VerificationCheckPage→CcpFormPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpFormsApi | CcpFormsController | /api/v1/ccp/verification-check/* | CcpFormsMapper | sp_tbl_ccp_form_* | add·save·del·search |
 | `MWRK` | `equipment-history` | 설비이력기록부 | `equipment-history` | 111 | WRK | tmpl_prp-equip-card | EquipmentHistoryPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | masterApi·equipmentHistApi | MasterController·EquipmentHistController | /api/v1/bas/equipment/* · /equipment-hist/* · photo | MasterMapper·EquipmentHistMapper | sp_tbl_equipment_hist_* | add·save·del·search |
-| `MWRK` | `facility-equipment-check` | 설비및시설점검표 | `facility-equipment-check` | 112 | WRK | tmpl_prp-facility-check | BizOpsFormPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | bizOpsApi | BizOpsController | /api/v1/fac/facility-equipment-check/* | BizOpsMapper | sp_tbl_biz_ops_* | add·save·del·search |
-| `MWRK` | `visual-insp-standard` | 육안검사기준 | `visual-insp-standard` | 113 | WRK | tmpl_prp-visual-inspect | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `receiving-insp-hwp` | 입고검사일지 | `receiving-insp-hwp` | 114 | WRK | tmpl_logis-receive-inspect | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `submaterial-recv-hwp` | 부자재입고검수점검표 | `submaterial-recv-hwp` | 115 | WRK | tmpl_logis-submat-receive | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `calib-self-hwp` | 자체검교정기록부 | `calib-self-hwp` | 116 | WRK | tmpl_prp-calib-temp | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `calib-ext-hwp` | 외부검교정기록부 | `calib-ext-hwp` | 117 | WRK | tmpl_prp-calib-ext | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `shipment-log-hwp` | 제품출고관리일지 | `shipment-log-hwp` | 118 | WRK | tmpl_logis-shipment-log | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `waste-hwp` | 폐기물처리점검표 | `waste-hwp` | 119 | WRK | WASTE | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `inventory-hwp` | 입출고및재고점검표 | `inventory-hwp` | 120 | WRK | tmpl_logis-inventory-check | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `edu-plan-hwp` | 연간교육계획표 | `edu-plan-hwp` | 121 | WRK | tmpl_admin-edu-plan | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `edu-log-hwp` | 교육및회의결과보고서 | `edu-log-hwp` | 122 | WRK | tmpl_admin-edu-log | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `bad-product-hwp` | 부적합품발생보고서 | `bad-product-hwp` | 123 | WRK | tmpl_admin-bad-product | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `claim-hwp` | 클레임및이물혼입보고서 | `claim-hwp` | 124 | WRK | CLAIM | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `recall-hwp` | 회수결과보고서 | `recall-hwp` | 125 | WRK | RECALL | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `eval-hwp` | 실시상황평가표 | `eval-hwp` | 126 | WRK | EVAL | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `verify-ca-hwp` | 검증개선조치보고서 | `verify-ca-hwp` | 127 | WRK | tmpl_prp-verify-action | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `handover-hwp` | 업무인수인계서 | `handover-hwp` | 128 | WRK | tmpl_admin-handover-doc | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `process-hwp` | 공정관리점검표 | `process-hwp` | 129 | WRK | PROCESS | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `vehicle-hwp` | 차량운행일지 | `vehicle-hwp` | 130 | WRK | tmpl_logis-vehicle-log | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `personal-hyg-hwp` | 개인위생관리점검표 | `personal-hyg-hwp` | 131 | WRK | tmpl_prp-hygiene-personal | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `area-hyg-hwp` | 작업장환경위생점검표 | `area-hyg-hwp` | 132 | WRK | tmpl_prp-hygiene-area | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `water-hwp` | 용수관리점검표 | `water-hwp` | 133 | WRK | WATER | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `verify-plan-hwp` | 연간검증계획서 | `verify-plan-hwp` | 134 | WRK | tmpl_prp-verify-plan | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `verify-check-hwp` | 검증점검표 | `verify-check-hwp` | 135 | WRK | tmpl_prp-verify-check | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `verify-report-hwp` | 검증결과보고서 | `verify-report-hwp` | 136 | WRK | tmpl_prp-verify-report | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `prod-test-hwp` | 제품검사성적서 | `prod-test-hwp` | 137 | WRK | tmpl_prp-test-product | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
-| `MWRK` | `surface-test-hwp` | 표면오염도검사성적서 | `surface-test-hwp` | 138 | WRK | tmpl_prp-test-surface | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `facility-equipment-check` | 설비및시설점검표 | `facility-equipment-check` | 112 | WRK | html_sys_009 | BizOpsFormPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | bizOpsApi | BizOpsController | /api/v1/fac/facility-equipment-check/* | BizOpsMapper | sp_tbl_biz_ops_* | add·save·del·search |
+| `MWRK` | `visual-insp-standard` | 육안검사기준 | `visual-insp-standard` | 113 | WRK | hwp_sys_026 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `receiving-insp-hwp` | 입고검사일지 | `receiving-insp-hwp` | 114 | WRK | hwp_sys_017 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `submaterial-recv-hwp` | 부자재입고검수점검표 | `submaterial-recv-hwp` | 115 | WRK | hwp_sys_029 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `calib-self-hwp` | 자체검교정기록부 | `calib-self-hwp` | 116 | WRK | hwp_sys_014 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `calib-ext-hwp` | 외부검교정기록부 | `calib-ext-hwp` | 117 | WRK | hwp_sys_030 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `shipment-log-hwp` | 제품출고관리일지 | `shipment-log-hwp` | 118 | WRK | hwp_sys_031 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `waste-hwp` | 폐기물처리점검표 | `waste-hwp` | 119 | WRK | hwp_sys_015 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `inventory-hwp` | 입출고및재고점검표 | `inventory-hwp` | 120 | WRK | hwp_sys_016 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `edu-plan-hwp` | 연간교육계획표 | `edu-plan-hwp` | 121 | WRK | hwp_sys_007 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `edu-log-hwp` | 교육및회의결과보고서 | `edu-log-hwp` | 122 | WRK | hwp_sys_008 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `bad-product-hwp` | 부적합품발생보고서 | `bad-product-hwp` | 123 | WRK | hwp_sys_020 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `claim-hwp` | 클레임및이물혼입보고서 | `claim-hwp` | 124 | WRK | hwp_sys_022 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `recall-hwp` | 회수결과보고서 | `recall-hwp` | 125 | WRK | hwp_sys_025 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `eval-hwp` | 실시상황평가표 | `eval-hwp` | 126 | WRK | hwp_sys_032 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `verify-ca-hwp` | 검증개선조치보고서 | `verify-ca-hwp` | 127 | WRK | hwp_sys_006 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `handover-hwp` | 업무인수인계서 | `handover-hwp` | 128 | WRK | hwp_sys_002 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `process-hwp` | 공정관리점검표 | `process-hwp` | 129 | WRK | hwp_sys_028 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `vehicle-hwp` | 차량운행일지 | `vehicle-hwp` | 130 | WRK | hwp_sys_023 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `personal-hyg-hwp` | 개인위생관리점검표 | `personal-hyg-hwp` | 131 | WRK | hwp_sys_009 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `area-hyg-hwp` | 작업장환경위생점검표 | `area-hyg-hwp` | 132 | WRK | hwp_sys_010 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `water-hwp` | 용수관리점검표 | `water-hwp` | 133 | WRK | hwp_sys_021 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `verify-plan-hwp` | 연간검증계획서 | `verify-plan-hwp` | 134 | WRK | hwp_sys_003 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `verify-check-hwp` | 검증점검표 | `verify-check-hwp` | 135 | WRK | hwp_sys_004 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `verify-report-hwp` | 검증결과보고서 | `verify-report-hwp` | 136 | WRK | hwp_sys_005 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `prod-test-hwp` | 제품검사성적서 | `prod-test-hwp` | 137 | WRK | hwp_sys_018 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
+| `MWRK` | `surface-test-hwp` | 표면오염도검사성적서 | `surface-test-hwp` | 138 | WRK | hwp_sys_019 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
 
 ### 4.3 문서 현황·결재 (MAPR)
 
@@ -209,15 +209,15 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 | 부모 | menu_cd | 메뉴명 | scrn_cd | sort | module | tmplCd | FE Page | 컴포넌트 | FE API | BE Controller | API | Mapper | SP | Cmds |
 |------|---------|--------|---------|------|--------|--------|---------|----------|--------|---------------|-----|--------|----|------|
 | `MFRM` | `hwp-template-management` | 사용양식 관리 | `hwp-template-management` | 310 | FRM | — | hwp/hwptemplate/HwpTemplateManagementPage | MesEditableGrid·DocForm*·MesButton | documentApi·hwpTemplateApi | TemplateController·HwpTemplateController (삭제는 Workflow 잔류) | /api/v1/doc/templates/* · /api/v1/hwp/hwp-templates/{list,save,files,apply-file} · /api/v1/bas/company-templates/validate-delete·delete | DocumentMapper·HwpTemplateMapper·WorkflowMapper | sp_hwp_template_management_* · sp_tbl_company_template_d_000 | 인페이지 |
-| `MFRM` | `daily-hyg-item-admin` | 일일위생 점검항목관리 | `daily-hyg-item-admin` | 311 | FRM | tmpl_prp-hygiene-daily | TemplateCheckItemManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/company-check-items/* | WorkflowMapper | sp_tbl_company_check_item_* | add·save·del·search |
-| `MFRM` | `ccp-cold-limit-admin` | 냉장냉동 CCP 기준관리 | `ccp-cold-limit-admin` | 321 | FRM | tmpl_ccp-cold-log | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
-| `MFRM` | `ccp-heat-limit-admin` | 가열 CCP 기준관리 | `ccp-heat-limit-admin` | 322 | FRM | tmpl_ccp-heat-log | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
-| `MFRM` | `ccp-sanitize-limit-admin` | 멸균 CCP 기준관리 | `ccp-sanitize-limit-admin` | 323 | FRM | tmpl_ccp-sanitize-log | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
-| `MFRM` | `ccp-filter-limit-admin` | 여과 CCP 기준관리 | `ccp-filter-limit-admin` | 324 | FRM | tmpl_ccp-filter-log | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
-| `MFRM` | `ccp-metal-limit-admin` | 금속검출 CCP 기준관리 | `ccp-metal-limit-admin` | 325 | FRM | tmpl_ccp-metal-log | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
-| `MFRM` | `ccp-verify-standard-admin` | CCP검증 기준·주기관리 | `ccp-verify-standard-admin` | 326 | FRM | tmpl_ccp-verify-check | TemplateCheckItemManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/company-check-items/* | WorkflowMapper | sp_tbl_company_check_item_* | add·save·del·search |
+| `MFRM` | `daily-hyg-item-admin` | 일일위생 점검항목관리 | `daily-hyg-item-admin` | 311 | FRM | html_sys_007 | TemplateCheckItemManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/company-check-items/* | WorkflowMapper | sp_tbl_company_check_item_* | add·save·del·search |
+| `MFRM` | `ccp-cold-limit-admin` | 냉장냉동 CCP 기준관리 | `ccp-cold-limit-admin` | 321 | FRM | html_sys_001 | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
+| `MFRM` | `ccp-heat-limit-admin` | 가열 CCP 기준관리 | `ccp-heat-limit-admin` | 322 | FRM | html_sys_003 | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
+| `MFRM` | `ccp-sanitize-limit-admin` | 멸균 CCP 기준관리 | `ccp-sanitize-limit-admin` | 323 | FRM | html_sys_004 | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
+| `MFRM` | `ccp-filter-limit-admin` | 여과 CCP 기준관리 | `ccp-filter-limit-admin` | 324 | FRM | html_sys_005 | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
+| `MFRM` | `ccp-metal-limit-admin` | 금속검출 CCP 기준관리 | `ccp-metal-limit-admin` | 325 | FRM | html_sys_002 | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
+| `MFRM` | `ccp-verify-standard-admin` | CCP검증 기준·주기관리 | `ccp-verify-standard-admin` | 326 | FRM | html_sys_006 | TemplateCheckItemManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/company-check-items/* | WorkflowMapper | sp_tbl_company_check_item_* | add·save·del·search |
 | `MFRM` | `ccp-limit-management` | CCP한계기준 관리 | `ccp-limit-management` | 330 | FRM | — | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
-| `MFRM` | `facility-check-item-admin` | 설비시설점검 항목·주기 | `facility-check-item-admin` | 331 | FRM | tmpl_prp-facility-check | TemplateCheckItemManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/company-check-items/* | WorkflowMapper | sp_tbl_company_check_item_* | add·save·del·search |
+| `MFRM` | `facility-check-item-admin` | 설비시설점검 항목·주기 | `facility-check-item-admin` | 331 | FRM | html_sys_009 | TemplateCheckItemManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/company-check-items/* | WorkflowMapper | sp_tbl_company_check_item_* | add·save·del·search |
 | `MFRM` | `schedule-cycle-management` | 문서주기관리 | `schedule-cycle-management` | 340 | FRM | — | hwp/doccycle/ScheduleCycleManagementPage | MesDataGrid·ResizableSplit·PageCard·SearchArea·CodeLookup 모달 | docCycleApi·departmentApi·userApi | DocCycleController (com.haccp.hwp.doccycle) | /api/v1/hwp/doc-cycles/{forms,get,save,validate-delete,delete} | mapper/hwp/doccycle/DocCycleMapper | sp_schedule_cycle_management_* · sp_tbl_schedule_task_regen_c_000 | save·del·search |
 | `MFRM` | `approval-line-management` | 결재선 관리 | `approval-line-management` | 350 | FRM | — | ApprovalLineManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/approval-lines/* | WorkflowMapper | sp_tbl_approval_line_* | add·save·del·search |
 | `MFRM` | `equipment-management` | 설비 이력 | `equipment-history` | 360 | WRK | tmpl_prp-equip-card | EquipmentHistoryPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | masterApi·equipmentHistApi | MasterController·EquipmentHistController | /api/v1/bas/equipment/* · /equipment-hist/* · photo | MasterMapper·EquipmentHistMapper | sp_tbl_equipment_hist_* | add·save·del·search |
@@ -255,33 +255,33 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 
 | scrn_cd | fixedTmplCd | 화면명 |
 |---------|-------------|--------|
-| `visitor-log` | `tmpl_admin-visitor-log` | 입출입대장 |
-| `visual-insp-standard` | `tmpl_prp-visual-inspect` | 육안검사기준 |
-| `receiving-insp-hwp` | `tmpl_logis-receive-inspect` | 입고검사일지 |
-| `submaterial-recv-hwp` | `tmpl_logis-submat-receive` | 부자재입고검수점검표 |
-| `calib-self-hwp` | `tmpl_prp-calib-temp` | 자체검교정기록부 |
-| `calib-ext-hwp` | `tmpl_prp-calib-ext` | 외부검교정기록부 |
-| `shipment-log-hwp` | `tmpl_logis-shipment-log` | 제품출고관리일지 |
-| `waste-hwp` | `WASTE` | 폐기물처리점검표 |
-| `inventory-hwp` | `tmpl_logis-inventory-check` | 입출고및재고점검표 |
-| `edu-plan-hwp` | `tmpl_admin-edu-plan` | 연간교육계획표 |
-| `edu-log-hwp` | `tmpl_admin-edu-log` | 교육및회의결과보고서 |
-| `bad-product-hwp` | `tmpl_admin-bad-product` | 부적합품발생보고서 |
-| `claim-hwp` | `CLAIM` | 클레임및이물혼입보고서 |
-| `recall-hwp` | `RECALL` | 회수결과보고서 |
-| `eval-hwp` | `EVAL` | 실시상황평가표 |
-| `verify-ca-hwp` | `tmpl_prp-verify-action` | 검증개선조치보고서 |
-| `handover-hwp` | `tmpl_admin-handover-doc` | 업무인수인계서 |
-| `process-hwp` | `PROCESS` | 공정관리점검표 |
-| `vehicle-hwp` | `tmpl_logis-vehicle-log` | 차량운행일지 |
-| `personal-hyg-hwp` | `tmpl_prp-hygiene-personal` | 개인위생관리점검표 |
-| `area-hyg-hwp` | `tmpl_prp-hygiene-area` | 작업장환경위생점검표 |
-| `water-hwp` | `WATER` | 용수관리점검표 |
-| `verify-plan-hwp` | `tmpl_prp-verify-plan` | 연간검증계획서 |
-| `verify-check-hwp` | `tmpl_prp-verify-check` | 검증점검표 |
-| `verify-report-hwp` | `tmpl_prp-verify-report` | 검증결과보고서 |
-| `prod-test-hwp` | `tmpl_prp-test-product` | 제품검사성적서 |
-| `surface-test-hwp` | `tmpl_prp-test-surface` | 표면오염도검사성적서 |
+| `visitor-log` | `hwp_sys_001` | 입출입대장 |
+| `visual-insp-standard` | `hwp_sys_026` | 육안검사기준 |
+| `receiving-insp-hwp` | `hwp_sys_017` | 입고검사일지 |
+| `submaterial-recv-hwp` | `hwp_sys_029` | 부자재입고검수점검표 |
+| `calib-self-hwp` | `hwp_sys_014` | 자체검교정기록부 |
+| `calib-ext-hwp` | `hwp_sys_030` | 외부검교정기록부 |
+| `shipment-log-hwp` | `hwp_sys_031` | 제품출고관리일지 |
+| `waste-hwp` | `hwp_sys_015` | 폐기물처리점검표 |
+| `inventory-hwp` | `hwp_sys_016` | 입출고및재고점검표 |
+| `edu-plan-hwp` | `hwp_sys_007` | 연간교육계획표 |
+| `edu-log-hwp` | `hwp_sys_008` | 교육및회의결과보고서 |
+| `bad-product-hwp` | `hwp_sys_020` | 부적합품발생보고서 |
+| `claim-hwp` | `hwp_sys_022` | 클레임및이물혼입보고서 |
+| `recall-hwp` | `hwp_sys_025` | 회수결과보고서 |
+| `eval-hwp` | `hwp_sys_032` | 실시상황평가표 |
+| `verify-ca-hwp` | `hwp_sys_006` | 검증개선조치보고서 |
+| `handover-hwp` | `hwp_sys_002` | 업무인수인계서 |
+| `process-hwp` | `hwp_sys_028` | 공정관리점검표 |
+| `vehicle-hwp` | `hwp_sys_023` | 차량운행일지 |
+| `personal-hyg-hwp` | `hwp_sys_009` | 개인위생관리점검표 |
+| `area-hyg-hwp` | `hwp_sys_010` | 작업장환경위생점검표 |
+| `water-hwp` | `hwp_sys_021` | 용수관리점검표 |
+| `verify-plan-hwp` | `hwp_sys_003` | 연간검증계획서 |
+| `verify-check-hwp` | `hwp_sys_004` | 검증점검표 |
+| `verify-report-hwp` | `hwp_sys_005` | 검증결과보고서 |
+| `prod-test-hwp` | `hwp_sys_018` | 제품검사성적서 |
+| `surface-test-hwp` | `hwp_sys_019` | 표면오염도검사성적서 |
 
 ### 4.8 레지스트리↔메뉴 갭
 
@@ -314,7 +314,7 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 | doc | TemplateController | /api/v1/doc/templates |
 | tsk | TaskController | /api/v1/tsk/* · corrective-actions · audit-export |
 | sys | CommonCode·MenuMgmt·RoleMgmt·Department·User·LoginHistory·AuditLog·ScreenUsage Controller | /api/v1/sys/{resource} · users/…/sign |
-| ops | BizOpsController | /api/v1/fac\|inv\|prc/… (6양식) |
+| ops | BizOpsController | /api/v1/fac/{facility-equipment-check\|calibration-target-management} (HTML 2양식) |
 
 표준: GET list · PUT save · POST validate-delete · POST delete (Body 복합키 배열).
 
@@ -326,35 +326,35 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 
 | scrn_cd | 화면명 | module | tmpl | 대체 |
 |---------|--------|--------|------|------|
-| `annual-verification-plan` | 연간 검증계획서 | CCP | tmpl_prp-verify-plan | verify-plan-hwp |
-| `area-hygiene-check` | 작업장 환경위생 점검표 | HYG | tmpl_prp-hygiene-area | area-hyg-hwp |
+| `annual-verification-plan` | 연간 검증계획서 | CCP | hwp_sys_003 | verify-plan-hwp |
+| `area-hygiene-check` | 작업장 환경위생 점검표 | HYG | hwp_sys_010 | area-hyg-hwp |
 | `audit-export` | 감사자료 출력 | DOC | — | IA 밖 · **G-14 동결 유지**(STEP 20, `@Deprecated`) |
-| `calibration-target-management` | 검·교정 대상 점검표 | FAC | tmpl_prp-calib-target | 숨김 |
+| `calibration-target-management` | 검·교정 대상 점검표 | FAC | html_sys_010 | 숨김 |
 | `ccp-generic-monitor` | 공통 CCP 모니터링 | CCP | — | 유형별 ccp-*-monitor |
 | `ccp-iqf-monitor` | 급속냉동 CCP | CCP | CCP_IQF | 미사용 |
 | `ccp-wash-monitor` | 세척 CCP | CCP | CCP_WASH | 미사용 |
-| `edu-annual-plan` | 연간 교육·훈련 계획서 | EDU | tmpl_admin-edu-plan | edu-plan-hwp |
-| `edu-training-log` | 교육일지 | EDU | tmpl_admin-edu-log | edu-log-hwp |
+| `edu-annual-plan` | 연간 교육·훈련 계획서 | EDU | hwp_sys_007 | edu-plan-hwp |
+| `edu-training-log` | 교육일지 | EDU | hwp_sys_008 | edu-log-hwp |
 | `equipment-management` | 설비마스터등록 | FRM | — | equipment-history (45/46) |
 | `hwp-document-editor` | 문서 작성(한글 양식) | WRK | — | 양식별 hwpLeaf |
-| `inventory-check` | 입·출고 및 재고 점검표 | INV | tmpl_logis-inventory-check | inventory-hwp |
-| `law-building-ledger` | 건축물대장관리 | LAW | tmpl_admin-building-ledger | legal-document-upload |
-| `law-business-license` | 영업등록증관리 | LAW | tmpl_admin-license-manage | legal-document-upload |
-| `law-completion-cert` | 수료증관리 | LAW | tmpl_admin-cert-manage | legal-document-upload |
-| `law-health-cert` | 보건증관리 | LAW | tmpl_admin-law-health | health-cert-record + legal-document-upload |
-| `law-material-ledger` | 원료수불대장관리 | LAW | tmpl_logis-material-ledger | legal-document-upload |
-| `law-production-ledger` | 생산대장관리 | LAW | tmpl_admin-production-ledger | legal-document-upload |
-| `law-self-quality-test` | 자가품질검사관리 | LAW | tmpl_admin-self-test | legal-document-upload |
-| `personal-hygiene-check` | 개인 위생관리 점검표 | HYG | tmpl_prp-hygiene-personal | personal-hyg-hwp |
+| `inventory-check` | 입·출고 및 재고 점검표 | INV | hwp_sys_016 | inventory-hwp |
+| `law-building-ledger` | 건축물대장관리 | LAW | hwp_sys_034 | legal-document-upload |
+| `law-business-license` | 영업등록증관리 | LAW | hwp_sys_036 | legal-document-upload |
+| `law-completion-cert` | 수료증관리 | LAW | hwp_sys_038 | legal-document-upload |
+| `law-health-cert` | 보건증관리 | LAW | html_sys_011 | health-cert-record + legal-document-upload |
+| `law-material-ledger` | 원료수불대장관리 | LAW | hwp_sys_033 | legal-document-upload |
+| `law-production-ledger` | 생산대장관리 | LAW | hwp_sys_035 | legal-document-upload |
+| `law-self-quality-test` | 자가품질검사관리 | LAW | hwp_sys_037 | legal-document-upload |
+| `personal-hygiene-check` | 개인 위생관리 점검표 | HYG | hwp_sys_009 | personal-hyg-hwp |
 | `pest-device-management` | 방충방서 설비·위치관리 | FRM | — | pest-device-history (45) |
-| `process-control-check` | 공정관리 점검표 | PRC | PROCESS | process-hwp |
-| `receiving-inspection` | 입고검사 일지 | INV | tmpl_logis-receive-inspect | receiving-insp-hwp |
+| `process-control-check` | 공정관리 점검표 | PRC | hwp_sys_028 | process-hwp |
+| `receiving-inspection` | 입고검사 일지 | INV | hwp_sys_017 | receiving-insp-hwp |
 | `smart-diary-type-management` | 스마트일지유형 관리 | SET | — | IA 밖 · **G-14 API 폐기**(STEP 20). DB DROP 후속 |
 | `template-check-item-management` | 점검항목관리 | FRM | — | 문서별 admin (47) |
-| `test-product-report` | 제품검사 성적서 | TST | tmpl_prp-test-product | prod-test-hwp |
-| `test-surface-report` | 표면오염도 검사 성적서 | TST | tmpl_prp-test-surface | surface-test-hwp |
-| `waste-disposal-check` | 폐기물 처리 점검표 | FAC | WASTE | waste-hwp |
-| `water-management-check` | 용수관리 점검표 | HYG | WATER | water-hwp |
+| `test-product-report` | 제품검사 성적서 | TST | hwp_sys_018 | prod-test-hwp |
+| `test-surface-report` | 표면오염도 검사 성적서 | TST | hwp_sys_019 | surface-test-hwp |
+| `waste-disposal-check` | 폐기물 처리 점검표 | FAC | hwp_sys_015 | waste-hwp |
+| `water-management-check` | 용수관리 점검표 | HYG | hwp_sys_021 | water-hwp |
 
 ### 6.2 FE dead / 리다이렉트
 
@@ -370,20 +370,16 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 - 범용 점검항목관리 비활성
 - 설비/방충 → 이력 M-D
 
-### 6.4 BizOps 다중 base (G-15) — 07↔08 교차
+### 6.4 BizOps HTML 2종 (G-15) — 07↔08 교차
 
-§6.1의 구 DB `scrn_cd`와 활성 HWP leaf를 BizOps API base와 한곳에 모은다. **계약·호출 검증 정본은 [`08` §5.7](15_HACCP_FE_BE_통합_상세스펙.md).**
+HTML 작성 API는 시설·검교정 2 URL만 남긴다. 폐기·재고·입고·공정은 HWP leaf(`documentApi`)다. **계약 정본은 [`08` §5.7](15_HACCP_FE_BE_통합_상세스펙.md).**
 
-| 구 DB scrn_cd (use_yn=N 또는 숨김) | API base prefix | 활성 작성 UI |
-|----------------------------------|-----------------|--------------|
-| *(활성)* `facility-equipment-check` | `/api/v1/fac/facility-equipment-check` | `BizOpsFormPage` (use_yn=Y) |
-| `calibration-target-management` | `/api/v1/fac/calibration-target-management` | 없음(숨김) |
-| `waste-disposal-check` | `/api/v1/fac/waste-disposal-check` | `waste-hwp` |
-| `inventory-check` | `/api/v1/inv/inventory-check` | `inventory-hwp` |
-| `receiving-inspection` | `/api/v1/inv/receiving-inspection` | `receiving-insp-hwp` |
-| `process-control-check` | `/api/v1/prc/process-control-check` | `process-hwp` |
+| scrn_cd | API base | tmpl_cd | 작성 UI |
+|---------|----------|---------|---------|
+| `facility-equipment-check` | `/api/v1/fac/facility-equipment-check` | `html_sys_009` | `BizOpsFormPage` (레지스트리 활성) |
+| `calibration-target-management` | `/api/v1/fac/calibration-target-management` | `html_sys_010` | API·페이지 있음. 레지스트리 미등록(문서함 deep-link만) |
 
-HWP 이관 4종은 §4.7 `fixedTmplCd`·`documentApi` 경로만 사용한다. 구 BizOps URL을 HWP 화면에서 호출하지 않는다(STEP 23 검증).
+구 DB `waste-disposal-check` · `inventory-check` · `receiving-inspection` · `process-control-check` 의 BizOps URL은 삭제했다. 활성 leaf는 §4.7 `hwp_sys_015`/`016`/`017`/`028`.
 
 ---
 

@@ -2,11 +2,12 @@
 --  SP 4 — 중요관리점(CCP) 냉장보관 모니터링
 --
 --  개발자: 박승우
---  일자: 2026-08-06
+--  일자: 2026-08-19
 --  코멘트:
 --    1) ccp-cold-monitor 전용 — 목록·상세·저장·삭제와 보관고·한계기준 조회를 한 파일에 모은다
 --    2) 저장 시 tbl_document와 헤더·점검행·온도행을 한 트랜잭션으로 맞춘다(Spring @Transactional)
 --    3) 온도 판정은 tbl_storage 개별범위 → tbl_ccp_limit 순으로 읽고, 수동변경(judge_mod_yn=Y)만 예외로 둔다
+--    4) 양식코드는 html_sys_001/002/006. 운영 DB(이미 94/95)에는 이 파일을 다시 돌리지 않는다
 -- ============================================================
 
 SET search_path TO sasshaccp;
@@ -128,7 +129,7 @@ LANGUAGE sql STABLE AS $$
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE h.co_cd = p_co_cd
        AND d.del_yn = 'N'
-       AND d.tmpl_cd = 'tmpl_ccp-cold-log'
+       AND d.tmpl_cd = 'html_sys_001'
        AND (COALESCE(p_from_dt, '') = '' OR h.base_dt >= p_from_dt)
        AND (COALESCE(p_to_dt, '') = '' OR h.base_dt <= p_to_dt)
        AND (COALESCE(p_ccp_cd, '') = '' OR h.ccp_cd = p_ccp_cd)
@@ -322,7 +323,7 @@ BEGIN
       FROM tbl_template t
       LEFT JOIN tbl_company_template ct
         ON ct.co_cd = p_co_cd AND ct.tmpl_cd = t.tmpl_cd AND ct.use_yn = 'Y'
-     WHERE t.tmpl_cd = 'tmpl_ccp-cold-log' AND t.use_yn = 'Y';
+     WHERE t.tmpl_cd = 'html_sys_001' AND t.use_yn = 'Y';
 
     IF v_tmpl_nm IS NULL THEN
         RAISE EXCEPTION 'CCP 냉장보관 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000';
@@ -333,7 +334,7 @@ BEGIN
 
     -- 신규일 때(= doc_idx 없음) 문서·헤더를 만들고, 기존이면 잠금 상태를 검사한 뒤 갱신한다
     IF p_doc_idx IS NULL OR p_doc_idx = 0 THEN
-        v_doc_no := sp_tbl_doc_no_gen_c_000(p_co_cd, 'tmpl_ccp-cold-log', p_base_dt);
+        v_doc_no := sp_tbl_doc_no_gen_c_000(p_co_cd, 'html_sys_001', p_base_dt);
 
         INSERT INTO tbl_document(
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status,
@@ -341,7 +342,7 @@ BEGIN
             retention_until, del_yn, ins_id, ins_dt
         )
         VALUES (
-            p_co_cd, 'tmpl_ccp-cold-log', 'DB', v_doc_no, p_base_dt, v_title, 'WRK',
+            p_co_cd, 'html_sys_001', 'DB', v_doc_no, p_base_dt, v_title, 'WRK',
             v_appr, p_id, now(), 1,
             to_char(
                 (to_date(p_base_dt, 'YYYYMMDD') + (COALESCE(v_retain_m, 24) || ' months')::interval)::date,
@@ -367,7 +368,7 @@ BEGIN
           JOIN tbl_ccp_cold_monitor h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
          WHERE d.co_cd = p_co_cd
            AND d.idx = p_doc_idx
-           AND d.tmpl_cd = 'tmpl_ccp-cold-log'
+           AND d.tmpl_cd = 'html_sys_001'
            AND d.del_yn = 'N';
 
         IF v_doc_idx IS NULL THEN
@@ -502,7 +503,7 @@ CREATE OR REPLACE PROCEDURE sp_tbl_ccp_metal_monitor_d_000(p_co_cd varchar, p_do
 LANGUAGE plpgsql AS $$
 DECLARE v_hdr_idx bigint; v_status varchar(4);
 BEGIN
-    SELECT h.idx,d.status INTO v_hdr_idx,v_status FROM tbl_document d JOIN tbl_ccp_metal_monitor h ON h.doc_idx=d.idx AND h.co_cd=d.co_cd WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd='tmpl_ccp-metal-log' AND d.del_yn='N';
+    SELECT h.idx,d.status INTO v_hdr_idx,v_status FROM tbl_document d JOIN tbl_ccp_metal_monitor h ON h.doc_idx=d.idx AND h.co_cd=d.co_cd WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd='html_sys_002' AND d.del_yn='N';
     IF v_hdr_idx IS NULL THEN RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE='45000'; END IF;
     IF v_status NOT IN ('WRK','RJT') THEN RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 삭제할 수 없습니다.' USING ERRCODE='45000'; END IF;
     DELETE FROM tbl_corrective_action WHERE co_cd=p_co_cd AND src_doc_idx=p_doc_idx;
@@ -519,11 +520,11 @@ CREATE OR REPLACE FUNCTION sp_tbl_ccp_form_detail_r_000(p_co_cd varchar, p_tmpl_
 RETURNS TABLE (doc_idx bigint, hdr_idx bigint, doc_no varchar, base_dt varchar, status varchar, checker_id varchar, checker_nm varchar, dept_cd varchar, confirm_id varchar, rows_json jsonb)
 LANGUAGE plpgsql STABLE AS $$
 BEGIN
-    IF p_tmpl_cd='tmpl_ccp-verify-check' THEN
+    IF p_tmpl_cd='html_sys_006' THEN
         RETURN QUERY SELECT d.idx,h.idx,d.doc_no,h.base_dt,d.status,h.checker_id,h.checker_nm,NULL::varchar,NULL::varchar,
           COALESCE((SELECT jsonb_agg(jsonb_build_object('rowSeq',i.row_seq,'procCd',i.proc_cd,'procNm',i.proc_nm,'itemCd',i.item_cd,'verifyDesc',i.verify_desc,'answerCd',i.answer_cd,'recordDesc',i.record_desc,'refTmplCd',i.ref_tmpl_cd,'refFromDt',i.ref_from_dt,'refToDt',i.ref_to_dt,'refTotalCnt',i.ref_total_cnt,'refOkCnt',i.ref_ok_cnt,'refNgCnt',i.ref_ng_cnt) ORDER BY i.row_seq) FROM tbl_ccp_verify_item i WHERE i.co_cd=p_co_cd AND i.hdr_idx=h.idx),'[]'::jsonb)
         FROM tbl_document d JOIN tbl_ccp_verify_check h ON h.doc_idx=d.idx AND h.co_cd=d.co_cd WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd=p_tmpl_cd AND d.del_yn='N';
-    ELSIF p_tmpl_cd='tmpl_prp-verify-plan' THEN
+    ELSIF p_tmpl_cd='hwp_sys_003' THEN
         RETURN QUERY SELECT d.idx,h.idx,d.doc_no,h.plan_year||'0101',d.status,h.checker_id,NULL::varchar,h.dept_cd,h.confirm_id,
           COALESCE((SELECT jsonb_agg(jsonb_build_object('rowSeq',i.row_seq,'verifyTarget',i.verify_target,'verifyMethod',i.verify_method,'refTmplCd',i.ref_tmpl_cd,'months',(SELECT jsonb_agg(jsonb_build_object('monthNo',m.month_no,'planYn',m.plan_yn,'doneYn',m.done_yn,'doneDocIdx',m.done_doc_idx,'doneDt',m.done_dt) ORDER BY m.month_no) FROM tbl_verify_plan_month m WHERE m.co_cd=p_co_cd AND m.item_idx=i.idx)) ORDER BY i.row_seq) FROM tbl_verify_plan_item i WHERE i.co_cd=p_co_cd AND i.hdr_idx=h.idx),'[]'::jsonb)
         FROM tbl_document d JOIN tbl_verify_plan h ON h.doc_idx=d.idx AND h.co_cd=d.co_cd WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd=p_tmpl_cd AND d.del_yn='N';
@@ -536,26 +537,26 @@ RETURNS bigint
 LANGUAGE plpgsql AS $$
 DECLARE v_doc_idx bigint; v_hdr_idx bigint; v_item_idx bigint; v_status varchar(4); v_name varchar; v_appr varchar; v_retain int; r jsonb; m jsonb;
 BEGIN
-    IF p_tmpl_cd NOT IN ('tmpl_ccp-verify-check','tmpl_prp-verify-plan') THEN RAISE EXCEPTION '지원하지 않는 CCP 양식입니다.' USING ERRCODE='45000'; END IF;
-    IF COALESCE(p_base_dt,'')='' OR (p_tmpl_cd='tmpl_ccp-verify-check' AND length(p_base_dt)<>8) OR (p_tmpl_cd='tmpl_prp-verify-plan' AND length(p_base_dt)<>4) THEN RAISE EXCEPTION '기준일 형식이 올바르지 않습니다.' USING ERRCODE='45000'; END IF;
+    IF p_tmpl_cd NOT IN ('html_sys_006','hwp_sys_003') THEN RAISE EXCEPTION '지원하지 않는 CCP 양식입니다.' USING ERRCODE='45000'; END IF;
+    IF COALESCE(p_base_dt,'')='' OR (p_tmpl_cd='html_sys_006' AND length(p_base_dt)<>8) OR (p_tmpl_cd='hwp_sys_003' AND length(p_base_dt)<>4) THEN RAISE EXCEPTION '기준일 형식이 올바르지 않습니다.' USING ERRCODE='45000'; END IF;
     IF p_rows_json IS NULL OR jsonb_typeof(p_rows_json)<>'array' THEN RAISE EXCEPTION '점검 행 자료가 올바르지 않습니다.' USING ERRCODE='45000'; END IF;
     SELECT COALESCE(ct.tmpl_nm_ovr,t.tmpl_nm),COALESCE(ct.appr_line_cd,'DEFAULT'),COALESCE(ct.retention_month,t.default_retention_month) INTO v_name,v_appr,v_retain FROM tbl_template t LEFT JOIN tbl_company_template ct ON ct.co_cd=p_co_cd AND ct.tmpl_cd=t.tmpl_cd AND ct.use_yn='Y' WHERE t.tmpl_cd=p_tmpl_cd AND t.use_yn='Y';
     IF v_name IS NULL THEN RAISE EXCEPTION '양식이 등록되어 있지 않습니다.' USING ERRCODE='45000'; END IF;
     IF p_doc_idx IS NULL OR p_doc_idx=0 THEN
-      INSERT INTO tbl_document(co_cd,tmpl_cd,doc_kind,doc_no,base_dt,title,status,appr_line_cd,writer_id,write_dt,ver_no,retention_until,del_yn,ins_id) VALUES(p_co_cd,p_tmpl_cd,'DB',sp_tbl_doc_no_gen_c_000(p_co_cd,p_tmpl_cd,p_base_dt||CASE WHEN p_tmpl_cd='tmpl_prp-verify-plan' THEN '0101' ELSE '' END),p_base_dt||CASE WHEN p_tmpl_cd='tmpl_prp-verify-plan' THEN '0101' ELSE '' END,v_name||' ('||p_base_dt||')','WRK',v_appr,p_id,now(),1,to_char((to_date(p_base_dt||CASE WHEN p_tmpl_cd='tmpl_prp-verify-plan' THEN '0101' ELSE '' END,'YYYYMMDD')+(COALESCE(v_retain,24)||' months')::interval)::date,'YYYYMMDD'),'N',p_id) RETURNING idx INTO v_doc_idx;
-      IF p_tmpl_cd='tmpl_ccp-verify-check' THEN INSERT INTO tbl_ccp_verify_check(co_cd,doc_idx,base_dt,checker_id,checker_nm,ins_id) VALUES(p_co_cd,v_doc_idx,p_base_dt,NULLIF(p_checker_id,''),NULLIF(p_checker_nm,''),p_id) RETURNING idx INTO v_hdr_idx;
+      INSERT INTO tbl_document(co_cd,tmpl_cd,doc_kind,doc_no,base_dt,title,status,appr_line_cd,writer_id,write_dt,ver_no,retention_until,del_yn,ins_id) VALUES(p_co_cd,p_tmpl_cd,'DB',sp_tbl_doc_no_gen_c_000(p_co_cd,p_tmpl_cd,p_base_dt||CASE WHEN p_tmpl_cd='hwp_sys_003' THEN '0101' ELSE '' END),p_base_dt||CASE WHEN p_tmpl_cd='hwp_sys_003' THEN '0101' ELSE '' END,v_name||' ('||p_base_dt||')','WRK',v_appr,p_id,now(),1,to_char((to_date(p_base_dt||CASE WHEN p_tmpl_cd='hwp_sys_003' THEN '0101' ELSE '' END,'YYYYMMDD')+(COALESCE(v_retain,24)||' months')::interval)::date,'YYYYMMDD'),'N',p_id) RETURNING idx INTO v_doc_idx;
+      IF p_tmpl_cd='html_sys_006' THEN INSERT INTO tbl_ccp_verify_check(co_cd,doc_idx,base_dt,checker_id,checker_nm,ins_id) VALUES(p_co_cd,v_doc_idx,p_base_dt,NULLIF(p_checker_id,''),NULLIF(p_checker_nm,''),p_id) RETURNING idx INTO v_hdr_idx;
       ELSE INSERT INTO tbl_verify_plan(co_cd,doc_idx,plan_year,dept_cd,checker_id,confirm_id,ins_id) VALUES(p_co_cd,v_doc_idx,p_base_dt,NULLIF(p_dept_cd,''),NULLIF(p_checker_id,''),NULLIF(p_confirm_id,''),p_id) RETURNING idx INTO v_hdr_idx; END IF;
     ELSE
-      SELECT d.idx,d.status,CASE WHEN p_tmpl_cd='tmpl_ccp-verify-check' THEN v.idx ELSE p.idx END INTO v_doc_idx,v_status,v_hdr_idx FROM tbl_document d LEFT JOIN tbl_ccp_verify_check v ON v.doc_idx=d.idx AND v.co_cd=d.co_cd AND p_tmpl_cd='tmpl_ccp-verify-check' LEFT JOIN tbl_verify_plan p ON p.doc_idx=d.idx AND p.co_cd=d.co_cd AND p_tmpl_cd='tmpl_prp-verify-plan' WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd=p_tmpl_cd AND d.del_yn='N';
+      SELECT d.idx,d.status,CASE WHEN p_tmpl_cd='html_sys_006' THEN v.idx ELSE p.idx END INTO v_doc_idx,v_status,v_hdr_idx FROM tbl_document d LEFT JOIN tbl_ccp_verify_check v ON v.doc_idx=d.idx AND v.co_cd=d.co_cd AND p_tmpl_cd='html_sys_006' LEFT JOIN tbl_verify_plan p ON p.doc_idx=d.idx AND p.co_cd=d.co_cd AND p_tmpl_cd='hwp_sys_003' WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd=p_tmpl_cd AND d.del_yn='N';
       IF v_doc_idx IS NULL THEN RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE='45000'; END IF;
       IF v_status IN ('REQ','REV','APV') THEN RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 수정할 수 없습니다.' USING ERRCODE='45000'; END IF;
-      UPDATE tbl_document SET base_dt=p_base_dt||CASE WHEN p_tmpl_cd='tmpl_prp-verify-plan' THEN '0101' ELSE '' END,title=v_name||' ('||p_base_dt||')',upd_id=p_id,upd_dt=now() WHERE co_cd=p_co_cd AND idx=v_doc_idx;
-      IF p_tmpl_cd='tmpl_ccp-verify-check' THEN UPDATE tbl_ccp_verify_check SET base_dt=p_base_dt,checker_id=NULLIF(p_checker_id,''),checker_nm=NULLIF(p_checker_nm,''),upd_id=p_id,upd_dt=now() WHERE co_cd=p_co_cd AND idx=v_hdr_idx; DELETE FROM tbl_ccp_verify_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx;
+      UPDATE tbl_document SET base_dt=p_base_dt||CASE WHEN p_tmpl_cd='hwp_sys_003' THEN '0101' ELSE '' END,title=v_name||' ('||p_base_dt||')',upd_id=p_id,upd_dt=now() WHERE co_cd=p_co_cd AND idx=v_doc_idx;
+      IF p_tmpl_cd='html_sys_006' THEN UPDATE tbl_ccp_verify_check SET base_dt=p_base_dt,checker_id=NULLIF(p_checker_id,''),checker_nm=NULLIF(p_checker_nm,''),upd_id=p_id,upd_dt=now() WHERE co_cd=p_co_cd AND idx=v_hdr_idx; DELETE FROM tbl_ccp_verify_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx;
       ELSE DELETE FROM tbl_verify_plan_month m USING tbl_verify_plan_item i WHERE m.co_cd=p_co_cd AND i.co_cd=p_co_cd AND m.item_idx=i.idx AND i.hdr_idx=v_hdr_idx; UPDATE tbl_verify_plan SET plan_year=p_base_dt,dept_cd=NULLIF(p_dept_cd,''),checker_id=NULLIF(p_checker_id,''),confirm_id=NULLIF(p_confirm_id,''),upd_id=p_id,upd_dt=now() WHERE co_cd=p_co_cd AND idx=v_hdr_idx; DELETE FROM tbl_verify_plan_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx; END IF;
     END IF;
     FOR r IN SELECT * FROM jsonb_array_elements(p_rows_json) LOOP
       IF COALESCE((r->>'rowSeq')::int,0)<=0 THEN RAISE EXCEPTION '행 순번이 올바르지 않습니다.' USING ERRCODE='45000'; END IF;
-      IF p_tmpl_cd='tmpl_ccp-verify-check' THEN INSERT INTO tbl_ccp_verify_item(co_cd,hdr_idx,row_seq,proc_cd,proc_nm,item_cd,verify_desc,answer_cd,record_desc,ref_tmpl_cd,ref_from_dt,ref_to_dt,ref_total_cnt,ref_ok_cnt,ref_ng_cnt,ins_id) VALUES(p_co_cd,v_hdr_idx,(r->>'rowSeq')::int,NULLIF(r->>'procCd',''),NULLIF(r->>'procNm',''),NULLIF(r->>'itemCd',''),COALESCE(NULLIF(r->>'verifyDesc',''),'검증 내용'),NULLIF(r->>'answerCd',''),NULLIF(r->>'recordDesc',''),NULLIF(r->>'refTmplCd',''),NULLIF(r->>'refFromDt',''),NULLIF(r->>'refToDt',''),NULLIF(r->>'refTotalCnt','')::int,NULLIF(r->>'refOkCnt','')::int,NULLIF(r->>'refNgCnt','')::int,p_id);
+      IF p_tmpl_cd='html_sys_006' THEN INSERT INTO tbl_ccp_verify_item(co_cd,hdr_idx,row_seq,proc_cd,proc_nm,item_cd,verify_desc,answer_cd,record_desc,ref_tmpl_cd,ref_from_dt,ref_to_dt,ref_total_cnt,ref_ok_cnt,ref_ng_cnt,ins_id) VALUES(p_co_cd,v_hdr_idx,(r->>'rowSeq')::int,NULLIF(r->>'procCd',''),NULLIF(r->>'procNm',''),NULLIF(r->>'itemCd',''),COALESCE(NULLIF(r->>'verifyDesc',''),'검증 내용'),NULLIF(r->>'answerCd',''),NULLIF(r->>'recordDesc',''),NULLIF(r->>'refTmplCd',''),NULLIF(r->>'refFromDt',''),NULLIF(r->>'refToDt',''),NULLIF(r->>'refTotalCnt','')::int,NULLIF(r->>'refOkCnt','')::int,NULLIF(r->>'refNgCnt','')::int,p_id);
       ELSE INSERT INTO tbl_verify_plan_item(co_cd,hdr_idx,row_seq,verify_target,verify_method,ref_tmpl_cd,ins_id) VALUES(p_co_cd,v_hdr_idx,(r->>'rowSeq')::int,COALESCE(NULLIF(r->>'verifyTarget',''),'검증대상'),NULLIF(r->>'verifyMethod',''),NULLIF(r->>'refTmplCd',''),p_id) RETURNING idx INTO v_item_idx; FOR m IN SELECT * FROM jsonb_array_elements(COALESCE(r->'months','[]'::jsonb)) LOOP INSERT INTO tbl_verify_plan_month(co_cd,item_idx,month_no,plan_yn,done_yn,done_doc_idx,done_dt,ins_id) VALUES(p_co_cd,v_item_idx,(m->>'monthNo')::int,COALESCE(NULLIF(m->>'planYn',''),'N'),COALESCE(NULLIF(m->>'doneYn',''),'N'),NULLIF(m->>'doneDocIdx','')::bigint,NULLIF(m->>'doneDt',''),p_id); END LOOP; END IF;
     END LOOP;
     RETURN v_doc_idx;
@@ -566,15 +567,15 @@ CREATE OR REPLACE PROCEDURE sp_tbl_ccp_form_d_000(p_co_cd varchar, p_tmpl_cd var
 LANGUAGE plpgsql AS $$
 DECLARE v_hdr_idx bigint; v_status varchar(4);
 BEGIN
-    SELECT d.status, CASE WHEN p_tmpl_cd='tmpl_ccp-verify-check' THEN v.idx ELSE p.idx END INTO v_status,v_hdr_idx
+    SELECT d.status, CASE WHEN p_tmpl_cd='html_sys_006' THEN v.idx ELSE p.idx END INTO v_status,v_hdr_idx
       FROM tbl_document d
-      LEFT JOIN tbl_ccp_verify_check v ON v.doc_idx=d.idx AND v.co_cd=d.co_cd AND p_tmpl_cd='tmpl_ccp-verify-check'
-      LEFT JOIN tbl_verify_plan p ON p.doc_idx=d.idx AND p.co_cd=d.co_cd AND p_tmpl_cd='tmpl_prp-verify-plan'
+      LEFT JOIN tbl_ccp_verify_check v ON v.doc_idx=d.idx AND v.co_cd=d.co_cd AND p_tmpl_cd='html_sys_006'
+      LEFT JOIN tbl_verify_plan p ON p.doc_idx=d.idx AND p.co_cd=d.co_cd AND p_tmpl_cd='hwp_sys_003'
      WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd=p_tmpl_cd AND d.del_yn='N';
     IF v_hdr_idx IS NULL THEN RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE='45000'; END IF;
     IF v_status NOT IN ('WRK','RJT') THEN RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 삭제할 수 없습니다.' USING ERRCODE='45000'; END IF;
     DELETE FROM tbl_corrective_action WHERE co_cd=p_co_cd AND src_doc_idx=p_doc_idx;
-    IF p_tmpl_cd='tmpl_ccp-verify-check' THEN
+    IF p_tmpl_cd='html_sys_006' THEN
       DELETE FROM tbl_ccp_verify_item WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx;
       DELETE FROM tbl_ccp_verify_check WHERE co_cd=p_co_cd AND idx=v_hdr_idx;
     ELSE
@@ -614,7 +615,7 @@ BEGIN
       JOIN tbl_ccp_cold_monitor h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
      WHERE d.co_cd = p_co_cd
        AND d.idx = p_doc_idx
-       AND d.tmpl_cd = 'tmpl_ccp-cold-log'
+       AND d.tmpl_cd = 'html_sys_001'
        AND d.del_yn = 'N';
 
     IF v_hdr_idx IS NULL THEN
@@ -670,31 +671,31 @@ RETURNS TABLE (
 LANGUAGE sql STABLE AS $$
     SELECT d.idx,
            CASE p_tmpl_cd
-             WHEN 'tmpl_ccp-metal-log' THEN m.idx
-             WHEN 'tmpl_ccp-verify-check' THEN v.idx
+             WHEN 'html_sys_002' THEN m.idx
+             WHEN 'html_sys_006' THEN v.idx
              ELSE p.idx
            END,
            d.doc_no,
            CASE p_tmpl_cd
-             WHEN 'tmpl_ccp-metal-log' THEN m.base_dt
-             WHEN 'tmpl_ccp-verify-check' THEN v.base_dt
+             WHEN 'html_sys_002' THEN m.base_dt
+             WHEN 'html_sys_006' THEN v.base_dt
              ELSE p.plan_year || '0101'
            END,
            d.title, d.status,
            CASE p_tmpl_cd
-             WHEN 'tmpl_ccp-metal-log' THEN (SELECT count(*)::int FROM tbl_ccp_metal_sens_row r WHERE r.co_cd = p_co_cd AND r.hdr_idx = m.idx)
-             WHEN 'tmpl_ccp-verify-check' THEN (SELECT count(*)::int FROM tbl_ccp_verify_item i WHERE i.co_cd = p_co_cd AND i.hdr_idx = v.idx)
+             WHEN 'html_sys_002' THEN (SELECT count(*)::int FROM tbl_ccp_metal_sens_row r WHERE r.co_cd = p_co_cd AND r.hdr_idx = m.idx)
+             WHEN 'html_sys_006' THEN (SELECT count(*)::int FROM tbl_ccp_verify_item i WHERE i.co_cd = p_co_cd AND i.hdr_idx = v.idx)
              ELSE (SELECT count(*)::int FROM tbl_verify_plan_item i WHERE i.co_cd = p_co_cd AND i.hdr_idx = p.idx)
            END,
            CASE p_tmpl_cd
-             WHEN 'tmpl_ccp-metal-log' THEN (SELECT count(*)::int FROM tbl_ccp_metal_sens_row r WHERE r.co_cd = p_co_cd AND r.hdr_idx = m.idx AND r.judge_cd = 'F')
-             WHEN 'tmpl_ccp-verify-check' THEN (SELECT count(*)::int FROM tbl_ccp_verify_item i WHERE i.co_cd = p_co_cd AND i.hdr_idx = v.idx AND i.answer_cd = 'N')
+             WHEN 'html_sys_002' THEN (SELECT count(*)::int FROM tbl_ccp_metal_sens_row r WHERE r.co_cd = p_co_cd AND r.hdr_idx = m.idx AND r.judge_cd = 'F')
+             WHEN 'html_sys_006' THEN (SELECT count(*)::int FROM tbl_ccp_verify_item i WHERE i.co_cd = p_co_cd AND i.hdr_idx = v.idx AND i.answer_cd = 'N')
              ELSE 0
            END
       FROM tbl_document d
-      LEFT JOIN tbl_ccp_metal_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd AND p_tmpl_cd = 'tmpl_ccp-metal-log'
-      LEFT JOIN tbl_ccp_verify_check v ON v.doc_idx = d.idx AND v.co_cd = d.co_cd AND p_tmpl_cd = 'tmpl_ccp-verify-check'
-      LEFT JOIN tbl_verify_plan p ON p.doc_idx = d.idx AND p.co_cd = d.co_cd AND p_tmpl_cd = 'tmpl_prp-verify-plan'
+      LEFT JOIN tbl_ccp_metal_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd AND p_tmpl_cd = 'html_sys_002'
+      LEFT JOIN tbl_ccp_verify_check v ON v.doc_idx = d.idx AND v.co_cd = d.co_cd AND p_tmpl_cd = 'html_sys_006'
+      LEFT JOIN tbl_verify_plan p ON p.doc_idx = d.idx AND p.co_cd = d.co_cd AND p_tmpl_cd = 'hwp_sys_003'
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd
        AND d.tmpl_cd = p_tmpl_cd
@@ -727,7 +728,7 @@ LANGUAGE sql STABLE AS $$
     SELECT d.idx, h.idx, d.doc_no, h.base_dt, h.ccp_cd, h.fe_size, h.sts_size,
            h.mng_user_id, h.mng_nm, d.status
       FROM tbl_document d JOIN tbl_ccp_metal_monitor h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
-     WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.tmpl_cd = 'tmpl_ccp-metal-log' AND d.del_yn = 'N';
+     WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.tmpl_cd = 'html_sys_002' AND d.del_yn = 'N';
 $$;
 
 -- 39 에서 place_nm 컬럼이 추가되어 OUT 시그니처가 달라진다 — 재실행 안전 DROP
@@ -782,14 +783,14 @@ BEGIN
     IF p_sens_rows_json IS NULL OR jsonb_typeof(p_sens_rows_json) <> 'array' THEN RAISE EXCEPTION '감도 점검 행 자료가 올바르지 않습니다.' USING ERRCODE = '45000'; END IF;
     SELECT COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm), COALESCE(ct.appr_line_cd, 'DEFAULT'), COALESCE(ct.retention_month, t.default_retention_month)
       INTO v_name, v_appr, v_retain FROM tbl_template t LEFT JOIN tbl_company_template ct ON ct.co_cd=p_co_cd AND ct.tmpl_cd=t.tmpl_cd AND ct.use_yn='Y'
-     WHERE t.tmpl_cd='tmpl_ccp-metal-log' AND t.use_yn='Y';
+     WHERE t.tmpl_cd='html_sys_002' AND t.use_yn='Y';
     IF v_name IS NULL THEN RAISE EXCEPTION 'CCP 금속검출 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000'; END IF;
     IF p_doc_idx IS NULL OR p_doc_idx = 0 THEN
         INSERT INTO tbl_document(co_cd,tmpl_cd,doc_kind,doc_no,base_dt,title,status,appr_line_cd,writer_id,write_dt,ver_no,retention_until,del_yn,ins_id)
-        VALUES(p_co_cd,'tmpl_ccp-metal-log','DB',sp_tbl_doc_no_gen_c_000(p_co_cd,'tmpl_ccp-metal-log',p_base_dt),p_base_dt,v_name || ' (' || p_base_dt || ')','WRK',v_appr,p_id,now(),1,to_char((to_date(p_base_dt,'YYYYMMDD')+(COALESCE(v_retain,24)||' months')::interval)::date,'YYYYMMDD'),'N',p_id) RETURNING idx INTO v_doc_idx;
+        VALUES(p_co_cd,'html_sys_002','DB',sp_tbl_doc_no_gen_c_000(p_co_cd,'html_sys_002',p_base_dt),p_base_dt,v_name || ' (' || p_base_dt || ')','WRK',v_appr,p_id,now(),1,to_char((to_date(p_base_dt,'YYYYMMDD')+(COALESCE(v_retain,24)||' months')::interval)::date,'YYYYMMDD'),'N',p_id) RETURNING idx INTO v_doc_idx;
         INSERT INTO tbl_ccp_metal_monitor(co_cd,doc_idx,base_dt,ccp_cd,fe_size,sts_size,mng_user_id,mng_nm,ins_id) VALUES(p_co_cd,v_doc_idx,p_base_dt,p_ccp_cd,p_fe_size,p_sts_size,NULLIF(p_mng_user_id,''),NULLIF(p_mng_nm,''),p_id) RETURNING idx INTO v_hdr_idx;
     ELSE
-        SELECT d.idx,d.status,h.idx INTO v_doc_idx,v_status,v_hdr_idx FROM tbl_document d JOIN tbl_ccp_metal_monitor h ON h.doc_idx=d.idx AND h.co_cd=d.co_cd WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd='tmpl_ccp-metal-log' AND d.del_yn='N';
+        SELECT d.idx,d.status,h.idx INTO v_doc_idx,v_status,v_hdr_idx FROM tbl_document d JOIN tbl_ccp_metal_monitor h ON h.doc_idx=d.idx AND h.co_cd=d.co_cd WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd='html_sys_002' AND d.del_yn='N';
         IF v_doc_idx IS NULL THEN RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE='45000'; END IF;
         IF v_status IN ('REQ','REV','APV') THEN RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 수정할 수 없습니다.' USING ERRCODE='45000'; END IF;
         UPDATE tbl_document SET base_dt=p_base_dt,title=v_name || ' (' || p_base_dt || ')',upd_id=p_id,upd_dt=now() WHERE idx=v_doc_idx AND co_cd=p_co_cd;
