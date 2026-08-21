@@ -48,8 +48,8 @@
 |------|------|
 | `/login` | LoginPage — authApi |
 | `/` | HomeView → today-tasks |
-| `/screen/{scrnCd}` | HaccpShell + SCREEN_REGISTRY |
-| deep-link | `/screen/{scrnCd}?docIdx={n}` — documentNav.ts |
+| `routeOf(scrnCd)` | HaccpShell + SCREEN_REGISTRY. pathname 예 `/docs/ccp/ccp-cold-monitor`. `/screen/{scrnCd}` 없음 |
+| deep-link | `routeOf(scrnCd)?docIdx={n}` — documentNav.ts |
 
 - 메뉴: `GET /api/v1/menu/list` → SideMenu → `isImplemented`
 - 레지스트리: `src/shell/screenRegistry.tsx` — 키 **75**
@@ -67,7 +67,7 @@
 | 0 | 오늘 할 일 | today-tasks | 최상위 leaf |
 | 1 | 문서 작성 | MWRK | DB형 + HWP leaf |
 | 2 | 문서 현황·결재 | MAPR | 결재·문서함·법적서류·개선 |
-| 3 | 문서 기준관리 | MFRM | 양식·admin·주기·결재선·이력 |
+| 3 | 문서 기준관리 | MFRM | 양식·admin·주기·이력 |
 | 4 | 기초정보 관리 | MCOD | 공통코드·마스터 |
 | 5 | 시스템 관리 | MSYS | 회사·사용자·권한·로그·UV/PV |
 
@@ -157,9 +157,10 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 |------|---------|--------|---------|------|--------|--------|---------|----------|--------|---------------|-----|--------|----|------|
 | `MWRK` | `daily-hygiene-check` | 일일위생점검표 | `daily-hygiene-check` | 101 | WRK | html_sys_007 | HygieneCheckPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | hygieneApi | HygieneController | /api/v1/hyg/daily-hygiene-check/* | HygieneMapper | sp_tbl_hygiene_document_* | add·save·del·search |
 | `MWRK` | `health-cert-record` | 건강진단관리기록부 | `health-cert-record` | 102 | WRK | html_sys_011 | HealthCertPage | MesEditableGrid·GridCrudButtons·MesButton·Input | healthCertApi | HealthCertController | /api/v1/hyg/health-cert/* | HealthCertMapper | sp_tbl_health_cert_* | add·save·del·search |
+| `MWRK` | `hygiene-process-check` | 일반위생관리 및 공정점검표 | `hygiene-process-check` | 103 | WRK | html_sys_001 | HygProcessPage | DocFormLayout·HtmlFormPaper·DocumentApprovalToolbar·MesEditableGrid | htmlFormApi | HygProcessController | /api/v1/docs/hyg-process/* | mapper/docs/html/hygprocess | sp_tbl_hyg_process_* | add·save·del·search |
 | `MWRK` | `visitor-log` | 입출입대장 | `visitor-log` | 103 | WRK | hwp_sys_001 | HwpDocumentEditorPage(hwpLeaf) | MesEditableGrid·DocForm*·DocumentApprovalToolbar·rhwp | documentApi·userApi | DocumentController·TemplateController | /api/v1/doc/documents/* · /templates/{tmplCd}/form | DocumentMapper | sp_tbl_document_* · hwp_document_c | 인페이지 |
 | `MWRK` | `pest-control-check` | 방충방서관리점검표 | `pest-control-check` | 104 | WRK | html_sys_008 | HygieneCheckPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | hygieneApi | HygieneController | /api/v1/hyg/pest-control-check/* | HygieneMapper | sp_tbl_hygiene_document_* | add·save·del·search |
-| `MWRK` | `ccp-cold-monitor` | 냉장냉동보관모니터링 | `ccp-cold-monitor` | 105 | WRK | html_sys_001 | ColdMonitorPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpColdApi | CcpColdController | /api/v1/ccp/cold-monitor/* | CcpColdMapper | sp_tbl_ccp_cold_monitor_* | add·save·del·search |
+| `MWRK` | `ccp-cold-monitor` | 냉장냉동보관모니터링 | `ccp-cold-monitor` | 105 | WRK | html_sys_012 | ColdMonitorPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpColdApi | CcpColdController | /api/v1/ccp/cold-monitor/* | CcpColdMapper | sp_tbl_ccp_cold_monitor_* | add·save·del·search |
 | `MWRK` | `ccp-heat-monitor` | 가열 CCP 모니터링 일지 | `ccp-heat-monitor` | 106 | WRK | html_sys_003 | CcpGenericMonitorPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpGenericApi | CcpGenericController | /api/v1/ccp/generic-monitor/* | CcpGenericMapper | ccp generic SP | add·save·del·search |
 | `MWRK` | `ccp-sanitize-monitor` | 멸균 CCP 모니터링 일지 | `ccp-sanitize-monitor` | 107 | WRK | html_sys_004 | CcpGenericMonitorPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpGenericApi | CcpGenericController | /api/v1/ccp/generic-monitor/* | CcpGenericMapper | ccp generic SP | add·save·del·search |
 | `MWRK` | `ccp-filter-monitor` | 여과 CCP 모니터링 일지 | `ccp-filter-monitor` | 108 | WRK | html_sys_005 | CcpGenericMonitorPage | DocFormLayout·SearchToolbar·DocPaper·DocCell·DocumentApprovalToolbar·MesEditableGrid | ccpGenericApi | CcpGenericController | /api/v1/ccp/generic-monitor/* | CcpGenericMapper | ccp generic SP | add·save·del·search |
@@ -209,8 +210,9 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 | 부모 | menu_cd | 메뉴명 | scrn_cd | sort | module | tmplCd | FE Page | 컴포넌트 | FE API | BE Controller | API | Mapper | SP | Cmds |
 |------|---------|--------|---------|------|--------|--------|---------|----------|--------|---------------|-----|--------|----|------|
 | `MFRM` | `hwp-template-management` | 사용양식 관리 | `hwp-template-management` | 310 | FRM | — | hwp/hwptemplate/HwpTemplateManagementPage | MesEditableGrid·DocForm*·MesButton | documentApi·hwpTemplateApi | TemplateController·HwpTemplateController (삭제는 Workflow 잔류) | /api/v1/doc/templates/* · /api/v1/hwp/hwp-templates/{list,save,files,apply-file} · /api/v1/bas/company-templates/validate-delete·delete | DocumentMapper·HwpTemplateMapper·WorkflowMapper | sp_hwp_template_management_* · sp_tbl_company_template_d_000 | 인페이지 |
+| `MFRM` | `hyg-process-template` | 일반위생·공정점검 양식관리 | `hyg-process-template` | 311 | FRM | html_sys_001 | HtmlTemplatePage | ResizableSplit·HtmlFormPaper·MesButton | htmlFormApi | HtmlTemplateController | /api/v1/docs/html-form/* | mapper/docs/html/htmltemplate | sp_tbl_html_form_ver_* | add·save·del·search |
 | `MFRM` | `daily-hyg-item-admin` | 일일위생 점검항목관리 | `daily-hyg-item-admin` | 311 | FRM | html_sys_007 | TemplateCheckItemManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/company-check-items/* | WorkflowMapper | sp_tbl_company_check_item_* | add·save·del·search |
-| `MFRM` | `ccp-cold-limit-admin` | 냉장냉동 CCP 기준관리 | `ccp-cold-limit-admin` | 321 | FRM | html_sys_001 | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
+| `MFRM` | `ccp-cold-limit-admin` | 냉장냉동 CCP 기준관리 | `ccp-cold-limit-admin` | 321 | FRM | html_sys_012 | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
 | `MFRM` | `ccp-heat-limit-admin` | 가열 CCP 기준관리 | `ccp-heat-limit-admin` | 322 | FRM | html_sys_003 | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
 | `MFRM` | `ccp-sanitize-limit-admin` | 멸균 CCP 기준관리 | `ccp-sanitize-limit-admin` | 323 | FRM | html_sys_004 | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
 | `MFRM` | `ccp-filter-limit-admin` | 여과 CCP 기준관리 | `ccp-filter-limit-admin` | 324 | FRM | html_sys_005 | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
@@ -219,7 +221,6 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 | `MFRM` | `ccp-limit-management` | CCP한계기준 관리 | `ccp-limit-management` | 330 | FRM | — | MasterDataPage | MesEditableGrid·GridCrudButtons·MesButton·Input | masterApi | MasterController | GET/PUT/POST /api/v1/bas/ccp-limit/* | MasterMapper | sp_tbl_ccp_limit_* | add·save·del·search |
 | `MFRM` | `facility-check-item-admin` | 설비시설점검 항목·주기 | `facility-check-item-admin` | 331 | FRM | html_sys_009 | TemplateCheckItemManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/company-check-items/* | WorkflowMapper | sp_tbl_company_check_item_* | add·save·del·search |
 | `MFRM` | `schedule-cycle-management` | 문서주기관리 | `schedule-cycle-management` | 340 | FRM | — | hwp/doccycle/ScheduleCycleManagementPage | MesDataGrid·ResizableSplit·PageCard·SearchArea·CodeLookup 모달 | docCycleApi·departmentApi·userApi | DocCycleController (com.haccp.hwp.doccycle) | /api/v1/hwp/doc-cycles/{forms,get,save,validate-delete,delete} | mapper/hwp/doccycle/DocCycleMapper | sp_schedule_cycle_management_* · sp_tbl_schedule_task_regen_c_000 | save·del·search |
-| `MFRM` | `approval-line-management` | 결재선 관리 | `approval-line-management` | 350 | FRM | — | ApprovalLineManagementPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | workflowApi | WorkflowController | /api/v1/bas/approval-lines/* | WorkflowMapper | sp_tbl_approval_line_* | add·save·del·search |
 | `MFRM` | `equipment-management` | 설비 이력 | `equipment-history` | 360 | WRK | tmpl_prp-equip-card | EquipmentHistoryPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | masterApi·equipmentHistApi | MasterController·EquipmentHistController | /api/v1/bas/equipment/* · /equipment-hist/* · photo | MasterMapper·EquipmentHistMapper | sp_tbl_equipment_hist_* | add·save·del·search |
 | `MFRM` | `pest-device-management` | 방충설비 이력 | `pest-device-history` | 370 | BAS | — | PestDeviceHistoryPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | masterApi·pestDeviceHistApi | MasterController·PestDeviceHistController | /api/v1/bas/pest-device/* · /pest-device-hist/* | MasterMapper·PestDeviceHistMapper | pest hist SP | add·save·del·search |
 
@@ -245,6 +246,7 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 | `MSYS` | `department-management` | 부서 관리 | `department-management` | 930 | SYS | — | sys/department/DepartmentManagementPage | MesEditableGrid·GridCrudButtons·PageCard | departmentApi | DepartmentController | GET/PUT/POST /api/v1/sys/department-management/{list,save,validate-delete,delete} | mapper/sys/department/DepartmentMapper | sp_department_management_* | add·save·del·search |
 | `MSYS` | `role-management` | 권한그룹 관리 | `role-management` | 940 | SYS | — | sys/role/RoleManagementPage | MesEditableGrid·GridCrudButtons·PageCard | roleApi | RoleMgmtController | GET/PUT/POST /api/v1/sys/role-management/{list,save,validate-delete,delete} | mapper/sys/role/RoleMgmtMapper | sp_role_management_* | add·save·del·search |
 | `MSYS` | `menu-management` | 메뉴 관리 | `menu-management` | 950 | SYS | — | sys/menu/MenuManagementPage | MesEditableGrid·GridCrudButtons·PageCard | api/sys/menuApi | MenuMgmtController | GET/PUT/POST /api/v1/sys/menu-management/{list,save,validate-delete,delete} | mapper/sys/menu/MenuMgmtMapper | sp_menu_management_* | add·save·del·search |
+| `MSYS` | `approval-line-management` | 결재선 관리 | `approval-line-management` | 960 | SYS | — | sys/approvalline/ApprovalLineManagementPage | MesEditableGrid·GridCrudButtons·ResizableSplit·PageCard·SearchArea·CodeLookup | approvalLineApi | ApprovalLineController (com.haccp.sys.approvalline) | /api/v1/bas/approval-lines/{list,save,validate-delete,delete} | mapper/sys/approvalline/ApprovalLineMapper | sp_tbl_approval_line_* | add·save·del·search |
 | `MSYS` | `login-history` | 로그인 이력 | `login-history` | 970 | SYS | — | sys/loginhistory/LoginHistoryPage | LogPageShell(MesDataGrid) | loginHistoryApi | LoginHistoryController | GET /api/v1/sys/login-history/list | mapper/sys/loginhistory/LoginHistoryMapper | sp_login_history_r_000 | search |
 | `MSYS` | `screen-usage-statistics` | 화면 이용 통계 | `screen-usage-statistics` | 980 | SYS | — | sys/screenusage/ScreenUsageStatisticsPage | LogPageShell(MesDataGrid) | screenUsageApi | ScreenUsageController | GET /api/v1/sys/screen-usage-statistics/list | mapper/sys/screenusage/ScreenUsageMapper | sp_screen_usage_statistics_r_000 | search |
 | `MSYS` | `audit-log` | 변경 감사 로그 | `audit-log` | 990 | SYS | — | sys/auditlog/AuditLogPage | LogPageShell(MesDataGrid) | auditLogApi | AuditLogController | GET /api/v1/sys/audit-log/list | mapper/sys/auditlog/AuditLogMapper | sp_audit_log_r_000 | search |
@@ -304,7 +306,8 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 | bas | MasterController | /api/v1/bas/{masterType} |
 | bas | EquipmentHistController | /api/v1/bas/equipment-hist |
 | bas | PestDeviceHistController | /api/v1/bas/pest-device-hist |
-| workflow | WorkflowController | /api/v1/bas (approval-lines·templates·check-items·schedule·legal-types…) |
+| workflow | WorkflowController | /api/v1/bas (templates·check-items·schedule·legal-types…) |
+| sys | ApprovalLineController | /api/v1/bas/approval-lines (패키지 sys.approvalline, URL 유지) |
 | ccp | CcpColdController | /api/v1/ccp/cold-monitor |
 | ccp | CcpGenericController | /api/v1/ccp/generic-monitor |
 | ccp | CcpFormsController | /api/v1/ccp/{metal-monitor\|verification-check\|…} |
@@ -388,22 +391,22 @@ HTML 작성 API는 시설·검교정 2 URL만 남긴다. 폐기·재고·입고�
 ### 7.1 pages
 
 - `src/pages/auth/LoginPage.tsx`
-- `src/pages/bas/ApprovalLineManagementPage.tsx`
+- `src/pages/sys/approvalline/ApprovalLineManagementPage.tsx`
 - `src/pages/bas/EquipmentHistoryPage.tsx`
 - `src/pages/hwp/hwptemplate/HwpTemplateManagementPage.tsx`
 - `src/pages/bas/MasterDataPage.tsx`
 - `src/pages/bas/PestDeviceHistoryPage.tsx`
-- `src/pages/hwp/doccycle/ScheduleCycleManagementPage.tsx`
+- `src/pages/docs/doccycle/ScheduleCycleManagementPage.tsx`
 - `src/pages/bas/TemplateCheckItemManagementPage.tsx`
 - `src/pages/ccp/CcpFormPage.tsx`
 - `src/pages/ccp/CcpGenericMonitorPage.tsx`
 - `src/pages/ccp/ColdMonitorPage.tsx`
 - `src/pages/ccp/MetalMonitorPage.tsx`
 - `src/pages/ccp/VerificationCheckPage.tsx`
-- `src/pages/doc/CorrectiveActionManagementPage.tsx`
-- `src/pages/doc/DocumentBoxPage.tsx`
-- `src/pages/doc/HwpDocumentEditorPage.tsx`
-- `src/pages/doc/LegalDocumentUploadPage.tsx`
+- `src/pages/docs/corrective/CorrectiveActionManagementPage.tsx`
+- `src/pages/docs/documentbox/DocumentBoxPage.tsx`
+- `src/pages/docs/hwpeditor/HwpDocumentEditorPage.tsx`
+- `src/pages/docs/legalupload/LegalDocumentUploadPage.tsx`
 - `src/pages/hyg/HealthCertPage.tsx`
 - `src/pages/hyg/HygieneCheckPage.tsx`
 - `src/pages/ops/BizOpsFormPage.tsx`
@@ -475,14 +478,15 @@ shell: HaccpShell · SideMenu · screenRegistry · pageCommands · useViewLog ·
 | com.haccp.ccp/CcpFormsMapper | resources/mapper/ccp/CcpFormsMapper.xml |
 | com.haccp.hyg/HygieneMapper | resources/mapper/hyg/HygieneMapper.xml |
 | com.haccp.hyg/HealthCertMapper | resources/mapper/hyg/HealthCertMapper.xml |
-| com.haccp.doc/DocumentMapper | resources/mapper/doc/DocumentMapper.xml |
-| com.haccp.doc/DocCorrectiveMapper | resources/mapper/doc/DocCorrectiveMapper.xml |
+| com.haccp.docs.document/DocumentMapper | resources/mapper/docs/document/DocumentMapper.xml |
+| com.haccp.docs.corrective/DocCorrectiveMapper | resources/mapper/docs/corrective/DocCorrectiveMapper.xml |
 | com.haccp.tsk/TaskMapper | resources/mapper/tsk/TaskMapper.xml |
 | com.haccp.sys.commoncode/CommonCodeMapper | resources/mapper/sys/commoncode/CommonCodeMapper.xml |
 | com.haccp.sys.menu/MenuMgmtMapper | resources/mapper/sys/menu/MenuMgmtMapper.xml |
 | com.haccp.sys.role/RoleMgmtMapper | resources/mapper/sys/role/RoleMgmtMapper.xml |
 | com.haccp.sys.department/DepartmentMapper | resources/mapper/sys/department/DepartmentMapper.xml |
 | com.haccp.sys.user/UserMapper | resources/mapper/sys/user/UserMapper.xml |
+| com.haccp.sys.approvalline/ApprovalLineMapper | resources/mapper/sys/approvalline/ApprovalLineMapper.xml |
 | com.haccp.sys.loginhistory/LoginHistoryMapper | resources/mapper/sys/loginhistory/LoginHistoryMapper.xml |
 | com.haccp.sys.auditlog/AuditLogMapper | resources/mapper/sys/auditlog/AuditLogMapper.xml |
 | com.haccp.sys.screenusage/ScreenUsageMapper | resources/mapper/sys/screenusage/ScreenUsageMapper.xml |

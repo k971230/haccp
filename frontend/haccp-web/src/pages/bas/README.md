@@ -1,15 +1,15 @@
-# bas
+# bas 파이프라인 (FE + BE + DB)
 
-화면 페이지 — `bas` (기준정보: 마스터·이력·결재선·점검항목).
+기준정보·이력. **평탄 폴더.** 손댈 때 sys처럼 나눈다.
 
-손대는 메뉴는 sys와 같이 `pages/bas/{메뉴}/` (Page + Rule + README)로 분할한다. 미리 전 메뉴를 나누지 않는다. 골드: [`pages/sys/README.md`](../sys/README.md).
+마스터 URL은 `tabRoute`의 기초정보 접두 (`/bas/...` 등). `/screen/` 없음.
 
-사용양식·문서주기는 `pages/hwp/` 영역이다.
+| scrnCd | Page | API | Controller | persistId |
+|--------|------|-----|------------|-----------|
+| `product-management` 등 7종 | `MasterDataPage` + `MasterDataPage.rules.ts` | `api/masterApi.ts` | `MasterController` `/api/v1/bas` | `bas-{screenCode}` |
+| `equipment-history` | `EquipmentHistoryPage.tsx` | `api/equipmentHistApi.ts` | `EquipmentHistController` `/api/v1/bas/equipment-hist` | `bas-equipment-history-master` · `-detail` |
+| `pest-device-history` | `PestDeviceHistoryPage.tsx` | `api/pestDeviceHistApi.ts` | `PestDeviceHistController` `/api/v1/bas/pest-device-hist` | `bas-pest-device-history-master` · `-detail` |
 
-## 아직 평탄한 화면
+XML `mapper/bas/`. 패키지 `com.haccp.bas` (평탄). SP `sp_tbl_*` (마스터 타입별).
 
-결재선·점검항목·MasterDataPage·설비/방충이력은 그 메뉴를 손볼 때 같은 규약으로 나눈다.
-
-## 관련
-
-- 정본: `docs/7_에이전트_가이드_FE.md` · `.cursor/rules/09-haccp-frontend.mdc`
+결재선 HTTP는 `/api/v1/bas/approval-lines` 이지만 화면 폴더는 [`pages/sys/approvalline/`](../sys/approvalline/README.md).

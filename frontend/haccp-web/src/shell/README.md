@@ -1,9 +1,16 @@
-# shell
+# shell — 앱 셸 진입
 
-HaccpShell·탭·메뉴·세션·에러 셸.
+정본 이야기: [`docs/11_메인_셸.md`](../../../../docs/11_메인_셸.md). 태그 HF49 대역 [`docs/23_PIPELINE.md`](../../../../docs/23_PIPELINE.md).
 
-## 하위
-- `gridRules/` — 그리드 편집·저장 규칙
+화면마다 `<Route>`가 없다. `AppRoutes`는 `/login`과 `/*`(HaccpShell)만.
 
-## 관련
-- 정본: `docs/7_에이전트_가이드_FE.md` · `docs/3_운영규칙_FE.md`
+| 파일 | 역할 |
+|------|------|
+| `HaccpShell.tsx` | 사이드·탭·본문·상단 명령. 탭 닫힌 뒤 `routeOf` 또는 `/` |
+| `ShellTabBar.tsx` | 열린 탭. Portal 우클릭 메뉴 |
+| `tabRoute.ts` | `scrnCd` ↔ 계층 pathname. basename은 Vite |
+| `screenRegistry.tsx` | `scrnCd` → Page |
+| `SideMenu.tsx` | `menuApi` 2단 트리 |
+| `tabStore` | `stores/tabStore.ts` — 닫기 `afterRemove` |
+
+`gridRules/` — 그리드 잠금·저장 가드. MES `PIPELINE[Fn]` 잔존. 새 파일에 F 접두 금지.

@@ -1,9 +1,10 @@
 # HACCP FE·BE 통합 상세 스펙
 
 > 정본: `15_HACCP_FE_BE_통합_상세스펙.md`  
-> 작성일: 2026-08-10 · 개발자: 박승우  
+> 작성일: 2026-08-21 · 개발자: 박승우  
+> **이 파일은 사람이 읽는 이야기**다. 로그인·그리드 CRUD·DocForm·HWP leaf·삭제·배포를 문장과 다이어그램으로 쓴다. 태그 번호 전수는 [`23_PIPELINE.md`](23_PIPELINE.md).  
 > 범위: **HACCP만** (`haccp-web` + `haccp-api` + `db_sasshaccp`). MES 제외.  
-> 관련: [`00`](1_문서인덱스.md) · [`01`](4_운영규칙_BE.md) · [`04`](10_인증_보안_JWT_BE.md) · [`06`](13_업무_CRUD_BE.md) · [`07`](14_메뉴_화면_API_DB_전수.md) · [`09`](16_통합완성도_및_부족분.md) · [`10`](17_파일구조_컴포넌트_함수지도.md) · [`11` 파일·보안](18_프레임워크_파일_보안_작성규칙.md) · BE [`06`](13_업무_CRUD_BE.md)
+> 관련: [`00`](1_문서인덱스.md) · [`01`](4_운영규칙_BE.md) · [`04`](10_인증_보안_JWT_BE.md) · [`06`](13_업무_CRUD_BE.md) · [`07`](14_메뉴_화면_API_DB_전수.md) · [`09`](16_통합완성도_및_부족분.md) · 파일 찾는 법 [`10`](17_파일구조_컴포넌트_함수지도.md) · [`11` 파일·보안](18_프레임워크_파일_보안_작성규칙.md)
 
 ---
 
@@ -127,13 +128,18 @@ flowchart TB
 
 ### 2.1 요청 파이프라인 (상세)
 
-1. 브라우저 `/screen/{scrnCd}` → `tabRoute` → 셸 탭 open  
-2. `isImplemented(scrnCd)` — 레지스트리 없으면 메뉴 비활성  
-3. Page 마운트 → `PageScrnContext`에 scrnCd → `useAuthStore.can(scrnCd, write|modify|delete|…)`  
-4. `usePageCommands` — 셸 상단 조회/신규/저장/삭제 (화면별 등록)  
-5. API: `http` / `httpFile` / `httpBatch` + Bearer JWT  
-6. BE: `JwtFilter` → Controller → (Service) → Mapper CALL/SELECT SP  
-7. 응답: `CommonResponse<T>` `{ success, data, message }` · 예외는 `GlobalExceptionHandler` → 업무 문구  
+태그 번호 전수는 [`23_PIPELINE.md`](23_PIPELINE.md). 여기는 이야기만.
+
+1. 브라우저 주소 = Vite basename `/haccp/` + 라우터 pathname (예: `/docs/ccp/ccp-cold-monitor`). pathname에 `/haccp`를 다시 넣지 않는다. `/screen/{scrnCd}` 없음.  
+2. `tabRoute.parseRoute` → `scrnCd` → `openTab` · `SCREEN_REGISTRY[scrnCd]` keep-alive. 맵에 없으면 셸이 오늘 할 일.  
+3. `isImplemented(scrnCd)` — 레지스트리 없으면 메뉴 비활성(숨기지 않음)  
+4. Page 마운트 → `PageScrnContext`에 scrnCd → `useAuthStore.can(scrnCd, write|modify|delete|…)`  
+5. `usePageCommands` — 셸 상단 조회/신규/저장/삭제 (화면별 등록)  
+6. API: `http` / `httpFile` / `httpBatch` + Bearer JWT  
+7. BE: `JwtFilter` → Controller → (Service) → Mapper CALL/SELECT SP  
+8. 응답: `CommonResponse<T>` `{ success, data, message }` · 예외는 `GlobalExceptionHandler` → 업무 문구  
+
+탭: `ShellTabBar` + `tabStore`. 닫기는 `afterRemove` 한 번. `navigate`는 셸 `onTabClosed`. 활성 탭이 지워지면 오른쪽 → 왼쪽 → `/`. 홈 탭 고정 없음.
 
 ### 2.2 FE 레이어
 
@@ -155,7 +161,7 @@ flowchart TB
 | `menu` `code` `pref` `log` | 셸 API (Controller→Mapper 직결 가능) |
 | `bas` | 마스터·설비/방충 이력 |
 | `workflow` | 결재선·양식·점검항목·주기·법적유형 |
-| `ccp` `hyg` `ops` `doc` `tsk` `sys` | 업무 |
+| `ccp` `hyg` `ops` `docs` `tsk` `sys` | 업무. 문서는 `com.haccp.docs.{메뉴}` (`document`·`template`·`hwptemplate` …) |
 | `common` | LoginUserContext · BizException · DeleteValidation · response |
 
 DI: `@RequiredArgsConstructor` + `private final`. CUD는 `@Transactional` (로그인 제외).
@@ -486,12 +492,12 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 
 | 유형 | FE Page | FE API | BE | 대표 SP/테이블 |
 |------|---------|--------|-----|----------------|
-| A 시스템 CRUD | CommonCode·Menu·Role·Department·User Page | api/sys/{공통코드·메뉴·권한·부서·사용자}Api | CommonCode·MenuMgmt·RoleMgmt·Department·User Controller | sp_{화면명}_* · tbl_user/dept/role/menu/code |
+| A 시스템 CRUD | CommonCode·Menu·Role·Department·User·ApprovalLine Page | api/sys/{공통코드·메뉴·권한·부서·사용자·결재선}Api | CommonCode·MenuMgmt·RoleMgmt·Department·User·ApprovalLine Controller | sp_{화면명}_* · sp_tbl_approval_line_* |
 | B 시스템 이력 | LoginHistory·AuditLog·ScreenUsage Page (LogPageShell) | loginHistoryApi · auditLogApi · screenUsageApi | LoginHistory·AuditLog·ScreenUsage Controller | login_log · view_stat_daily · audit_log |
 | C 기초 마스터 | MasterDataPage | masterApi | MasterController | sp_tbl_master_* |
 | D CCP 한계 admin | MasterDataPage | masterApi ccp-limit | MasterController | sp_tbl_ccp_limit_* |
 | E 설비/방충 이력 M-D | Equipment/Pest HistoryPage | master+hist API | Master+HistController | equipment_hist / pest hist |
-| F 결재선·주기·점검항목 | ApprovalLine · Schedule · TemplateCheckItem | workflowApi | WorkflowController | 18_sp_workflow |
+| F 주기·점검항목 | Schedule · TemplateCheckItem | docCycleApi · workflowApi | DocCycleController · WorkflowController | 85/96 cycle · 18_sp_workflow |
 | G HWP 양식관리 | hwp/hwptemplate/HwpTemplateManagementPage | document+hwpTemplateApi | Template+HwpTemplate (삭제는 Workflow 잔류) | company_template · form file |
 | H 위생 DB | HygieneCheckPage | hygieneApi | HygieneController | sp_tbl_hygiene_document_* |
 | I 냉장 CCP | ColdMonitorPage | ccpColdApi | CcpColdController | sp_tbl_ccp_cold_monitor_* |
@@ -591,7 +597,7 @@ hwpLeaf(tmplCd) → HwpDocumentEditorPage
 | approval-inbox | 검토·승인·반려 |
 | document-inbox | 상신·취소 + 「작성화면」 deep-link |
 
-Deep-link: `/screen/{scrnCd}?docIdx=` — `documentNav.ts` (tmplCd→scrnCd).
+Deep-link: `routeOf(scrnCd) + ?docIdx=` — `documentNav.routeForDocument` (`tmplCd`→`scrnCd`). 브라우저에는 basename `/haccp/`가 붙는다. `/screen/` 없음.
 
 ---
 

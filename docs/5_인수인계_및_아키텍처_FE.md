@@ -53,10 +53,10 @@ MES와 **별개** DB(`sasshaccp`)·앱. 센서/스마트 HACCP이 아니라 종�
 - 분기: `조건일 때(= 의미)`
 - JSX: `//`만 (`/**` 삽입 금지). 주석에 `*/` 문자열 금지
 - **의미 있는 prop마다 여러 줄** — 한 줄 라벨만이면 미완료
-- PIPELINE: FE `HF*` · BE `HB*` (MES `F`/`B`와 섞지 않음). 새 번호는 루트 `ReadMe.md` HACCP PIPELINE 표
+- PIPELINE: FE `HF*` · BE `HB*` (MES `F`와 섞지 않음). 색인 [`23_PIPELINE.md`](23_PIPELINE.md). 루트 README에 전수 표 없음
 
-**골드 FE:** `shell/HaccpShell.tsx` · `pages/auth/LoginPage.tsx` · DocForm 계열  
-**골드 BE:** `auth/AuthService` + `AuthController` + `AuthMapper.xml` · `doc/Document*`
+**골드 FE:** `shell/HaccpShell.tsx` · `pages/ccp/ColdMonitorPage.tsx` · `pages/auth/LoginPage.tsx` · DocForm 계열  
+**골드 BE:** `auth/AuthService` + `AuthController` + `AuthMapper.xml` · `docs/document/DocumentService` + `mapper/docs/document/`
 
 ### 3-3. 네이밍 Two-Tier
 

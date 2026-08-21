@@ -1,9 +1,7 @@
-# workflow
+# com.haccp.workflow
 
-도메인 `workflow` — 결재 워크플로. Controller·Service·Mapper 인터페이스.
+FE `pages/workflow` 없음. 결재 UI는 문서 툴바 · 결재선 화면은 `pages/sys/approvalline`.
 
-## 하위
-- `dto/` — `workflow` 요청·응답 DTO (JSON camelCase)
+`WorkflowController` 매핑 접두 `/api/v1/bas` (양식·점검항목·주기·법적유형 등). HTTP 경로는 폴더를 옮겨도 바꾸지 않는다.
 
-## 관련
-- 정본: `docs/8_에이전트_가이드_BE.md` · `docs/4_운영규칙_BE.md`
+체인 이야기: `docs/15` 결재 절. XML `mapper/workflow/`.

@@ -1,9 +1,11 @@
-# ccp
+# com.haccp.ccp
 
-도메인 `ccp` — 중요관리점(냉장·모니터링 등). Controller·Service·Mapper 인터페이스.
+정본 체인: FE `frontend/haccp-web/src/pages/ccp/README.md`
 
-## 하위
-- `dto/` — `ccp` 요청·응답 DTO (JSON camelCase)
+평탄 패키지. 손댈 때 `com.haccp.ccp.{메뉴}` 로 나눈다.
 
-## 관련
-- 정본: `docs/8_에이전트_가이드_BE.md` · `docs/4_운영규칙_BE.md`
+- `CcpColdController` `/api/v1/ccp/cold-monitor`
+- `CcpFormsController` `/api/v1/ccp/{form}`
+- `CcpGenericController` `/api/v1/ccp/generic-monitor`
+
+XML `resources/mapper/ccp/`.

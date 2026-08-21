@@ -17,7 +17,7 @@ alwaysApply: false
 
 ## 명명 규약
 
-- 테이블: `tbl_{의미}` — lower_snake, 헤더-디테일은 `tbl_x` / `tbl_x_row`(또는 `_item`)
+- 코드성 값 kebab-case 정본: [`docs/22_코드_케밥_양식매핑.md`](../../docs/22_코드_케밥_양식매핑.md) (menu_cd·scrn_cd·tmpl_cd). 이 파일은 SP·테이블 규약만 다룬다.
 - PK: 전 테이블 `idx bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY`
 - 업무키: 복합 PK 대신 `CONSTRAINT ux_{테이블}_{키} UNIQUE (co_cd, ...)`
 - 인덱스: 일반 `ix_{테이블}_{용도}`, 유니크 `ux_{테이블}_{키}`
@@ -28,7 +28,7 @@ alwaysApply: false
 ## 저장프로시저 규약
 
 - 이름 규약은 **두 갈래가 병존**한다
-  - 테이블 단위(업무 도메인 doc·ccp·hyg·bas·log 적재 등): `sp_tbl_{테이블명}_{r｜c｜d｜u}_{000}`
+  - 테이블 단위(업무 도메인 docs·ccp·hyg·bas·log 적재 등): `sp_tbl_{테이블명}_{r｜c｜d｜u}_{000}`
   - 화면 단위(sys 6도메인 — 공통코드·메뉴·권한·부서·사용자·로그 3화면): `sp_{화면명}_{r｜c｜d｜u}_{000}`
     예: `sp_common_code_management_r_000`, `sp_user_management_sign_u_000`, `sp_screen_usage_statistics_r_000`
   - 신규 화면 전용 SP는 화면명 규약을, 여러 화면이 공유하는 테이블 CRUD는 테이블 규약을 쓴다
@@ -70,11 +70,31 @@ alwaysApply: false
 | `85_migrate_doc_cycle.sql` | 문서주기 — `tbl_schedule_rule UNIQUE(co_cd, tmpl_cd)`·`nonwork_rule`, `tbl_schedule_rule_detail`, `tbl_schedule_task.alarm_*`, `sp_schedule_cycle_management_*` |
 | `86_migrate_doc_cycle_form_use_yn.sql` | 문서주기 좌측 사용여부 검색 |
 | `96_migrate_cycle_e_irregular.sql` | 비정기(E) 허용 · 좌측에서 html_sys_011·hwp_sys_028~038 숨김 |
+| `97_migrate_approval_line_sys.sql` | 결재선 단계 `use_yn` · 검토 기본 N · 메뉴를 `menu-sys-auth`로 이동 · 상신 시 N 단계 생략 |
+| `100_migrate_html_form_hyg_process.sql` | HTML양식 원본 — `html_sys_001` 공정점검표, CCP 냉장은 `html_sys_012`, `tbl_html_form_ver`·`tbl_hyg_process` |
+| `101_migrate_html_form_ver_soft_delete.sql` | HTML 버전 `use_yn` 소프트 삭제 · 적용 중 삭제 차단 · 목록 `idx` |
+| `102_migrate_html_form_ver_cd.sql` | HTML 버전 `ver_cd` 필수 · 활성 행 부분UNIQUE · 복사 SP · 목록 코드/이름 검색 |
+| `103_migrate_html_form_ver_list_ins.sql` | HTML 버전 목록 작성자·작성일시(`YYYY-MM-DD`) |
+| `104_migrate_html_form_ver_nm.sql` | HTML 사용자 버전명 UPDATE (`sp_tbl_html_form_ver_nm_u_000`). 표준 0.1 거부 |
+| `105_migrate_html_input_ty.sql` | HTML 입력유형 `html-input-ty` 5종 · 예/아니오 `judge-yn` · `html_sys_001` kebab 치환 |
+| `106_migrate_hyg_process_sign.sql` | 공정점검 점검자·승인자·확인 서명 스냅샷(이미지 없으면 이름) |
+| `107_migrate_hyg_process_writer.sql` | 공정점검 상세 작성자명·writerId·writerSignYn (`r_001`) |
+| `108_migrate_html_hyg_usr.sql` | 공정점검 자사 양식 `html_hyg_001+` 채번 · 문서주기 좌측 노출 · 예시 `html_hyg_000` |
+| `109_migrate_html_ccp_chk.sql` | CCP 검증점검 자사 양식 `tml_ccp_chk_001+` · 예시 `tml_ccp_chk_000`(12 radio+6 text) |
+| `110_migrate_html_form_split.sql` | 공정점검 `tbl_html_hyg_prc_ver` · CCP `tbl_tml_ccp_chk_ver` 분할 · 코드 `html_hyg_prc_NNN` |
+| `111_migrate_html_ccp_pkg.sql` | CCP-1B 포장 모니터링일지 `tml_ccp_pkg_001+` · 예시 `tml_ccp_pkg_000` · `tbl_tml_ccp_pkg_ver` |
+| `112_migrate_html_ccp_htg.sql` | CCP-2B 가열 모니터링일지 `tml_ccp_htg_001+` · 예시 `tml_ccp_htg_000` · `tbl_tml_ccp_htg_ver` |
+| `113_migrate_html_ccp_mtl.sql` | CCP-3P 금속검출 모니터링일지 `tml_ccp_mtl_001+` · 예시 `tml_ccp_mtl_000` · `tbl_tml_ccp_mtl_ver` |
+| `114_migrate_doc_cycle_appr_line.sql` | 문서주기 결재선 — 목록·단건에 `appr_line_cd`/`appr_line_nm` · 저장 시 `tbl_company_template.appr_line_cd` |
+| `115_migrate_html_paper_title.sql` | HTML 지면 제목·부제·감도캡션 `hdr-title`/`hdr-subtitle`/`hdr-sens-cap` |
+| `116_migrate_mtl_limit_cycle.sql` | 금속검출 한계기준 1행 · 주기 4줄 · `limit-run` 시드 숨김 |
+| `117_migrate_html_form_use_yn.sql` | HTML 양식 원본 사용여부 — 목록 `use_yn`(회사 양식) · 표준 `*_000`은 N · 이름 SP가 `ct.use_yn` 저장 |
+| `118_migrate_menu_url_slugs.sql` | 중분류 menu_cd 개명(`menu-master-sch`·`menu-sys-code`·`menu-sys-logs`) + sort encode SP |
 
 번호는 의존 순서다. 새 파일은 **뒤 번호로 추가**하고 기존 번호를 재사용하지 않는다.
 
-**결재 SP 정본:** `sp_tbl_document_approval_c_000`은 `15_sp_doc.sql` + `33_migrate_cancel_before_review.sql`(apply 후 안전망).  
-`28`에 TMP 기준 결재 정의를 다시 넣지 말 것. 목록 검색 6인자는 `14`/`19`/`20` 본문에 유지한다.
+**결재 SP 정본:** `sp_tbl_document_approval_c_000`은 `15_sp_doc.sql` + `33_migrate_cancel_before_review.sql`(apply 후 안전망) + `97`(단계 `use_yn='Y'`만 스냅샷).  
+`28`에 TMP 기준 결재 정의를 다시 넣지 말 것. **`78`·`85` 재실행 금지.** 목록 검색 6인자는 `14`/`19`/`20` 본문에 유지한다.
 
 ## 양식 42종
 

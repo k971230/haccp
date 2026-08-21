@@ -15,7 +15,7 @@ Spring Boot **3.3.4** · Java **17** · MyBatis **3.0.3** · PG `sasshaccp` · �
 - 삭제: validate-delete → delete · Double Check  
 - 파일: Storage 경유 · multipart 한도 = `APP_FILE_MAX_*`  
 - 테넌트: `LoginUserContext`  
-- 주석: FE와 동일 밀도 · PIPELINE `HB`  
+- 주석: FE와 동일 밀도 · PIPELINE `HB` · 색인 `docs/23_PIPELINE.md`  
 - login에 `@Transactional` 금지  
 
 ## 실행

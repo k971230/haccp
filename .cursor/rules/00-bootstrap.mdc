@@ -7,16 +7,19 @@ alwaysApply: true
 
 에이전트(Agent)는 **어떤 도구 호출·파일 수정 전에도** 아래 순서를 따른다:
 
-1. 루트 `README.md`
-2. `01-project-core.mdc`
-3. `05-handoff-comments.mdc` — FE·BE **동일 밀도** 인수인계 주석
-4. `06-operations.mdc` — 삭제·타임아웃·전역 env
-5. 작업 영역 scoped rule
+1. 루트 `README.md` — E2E 절·읽기 순서
+2. `docs/23_PIPELINE.md` — 태그→파일 색인 (전수 표는 README에 없음)
+3. `docs/15_HACCP_FE_BE_통합_상세스펙.md` — 유형별 이야기 (로그인·CRUD·DocForm·삭제)
+4. 해당 도메인 README (`pages/sys/`, `pages/docs/`, `pages/ccp/` …) → 화면 README가 있으면 그것
+5. `01-project-core.mdc`
+6. `05-handoff-comments.mdc` — FE·BE **동일 밀도** 인수인계 주석
+7. `06-operations.mdc` — 삭제·타임아웃·전역 env
+8. 작업 영역 scoped rule
    - DB: `07-haccp-db.mdc`
    - 백엔드: `08-haccp-backend.mdc`
    - 프론트: `09-haccp-frontend.mdc` · UI: `02-frontend-ui.mdc`
    - 배포: `04-deploy.mdc` · 런북 `docs/20_배포_런북.md`
-6. 에이전트 가이드 — `docs/7_에이전트_가이드_FE.md` · `docs/8_에이전트_가이드_BE.md`
+9. 에이전트 가이드 — `docs/7_에이전트_가이드_FE.md` · `docs/8_에이전트_가이드_BE.md`
 
 ## 필수 행동
 

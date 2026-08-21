@@ -51,7 +51,8 @@ alwaysApply: true
 - UI 아이콘: Lucide React 또는 `.mes-*` CSS (접두사 유지)
 - 허용: `→`, `①②`, `×`(U+00D7), ASCII
 - **코드성 값 kebab-case** — `tmpl_cd`·`scrn_cd`·`menu_cd`·공통코드 등 코드가 들어가는 값은 소문자·하이픈. 신규 대문자/`SNAKE` 금지. 정본 [`docs/22_코드_케밥_양식매핑.md`](../../docs/22_코드_케밥_양식매핑.md)
-- **화면 1개 = 폴더 1개** — 정본 `pages/sys/` · `com.haccp.sys.{메뉴}` · `mapper/sys/{메뉴}` · `api/sys/`. **손대는 메뉴는 그 작업에서 sys와 같이 분할한다.** 미리 전 메뉴를 나누지 않는다. scrnCd·persistId·기존 URL은 폴더를 옮겨도 바꾸지 않는다. 상세 `09-haccp-frontend.mdc` · `08-haccp-backend.mdc`
+- **화면 1개 = 폴더 1개** — 정본 `pages/sys/` · `com.haccp.sys.{메뉴}` · `mapper/sys/{메뉴}` · `api/sys/`. 문서 관리는 `pages/docs/` · `com.haccp.docs.{메뉴}` · `mapper/docs/{메뉴}` · `api/docs/`. **손대는 메뉴는 그 작업에서 sys와 같이 분할한다.** 미리 전 메뉴를 나누지 않는다. scrnCd·persistId·기존 URL은 폴더를 옮겨도 바꾸지 않는다. 상세 `09-haccp-frontend.mdc` · `08-haccp-backend.mdc`
+- **문서 진입:** 루트 `README.md` E2E · PIPELINE 색인 [`docs/23_PIPELINE.md`](../../docs/23_PIPELINE.md) · 유형별 이야기 [`docs/15_HACCP_FE_BE_통합_상세스펙.md`](../../docs/15_HACCP_FE_BE_통합_상세스펙.md)
 
 ## 의도적 미구현
 
