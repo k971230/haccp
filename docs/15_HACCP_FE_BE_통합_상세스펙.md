@@ -411,7 +411,7 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 | screenCode | API base | BE 상태 | FE 작성 UI | tmpl_cd | 비고 |
 |------------|----------|---------|------------|---------|------|
 | `facility-equipment-check` | `/api/v1/fac/facility-equipment-check` | 사용 | `BizOpsFormPage` 레지스트리 | `html_sys_009` | 메뉴 활성 HTML |
-| `calibration-target-management` | `/api/v1/fac/calibration-target-management` | 사용 | `BizOpsFormPage` (레지스트리 미등록) | `html_sys_010` | 문서함 deep-link · 자체/외부 검교정 HWP는 `calib-*-hwp` |
+| `calibration-target-management` | `/api/v1/fac/calibration-target-management` | 사용 | `BizOpsFormPage` (메뉴 숨김 · 레지스트리·`/docs/prp/`만) | `html_sys_010` | 문서함 deep-link · 자체/외부 검교정 HWP는 `calib-*-hwp` |
 
 **코드 삭제 (2026-08-19)**
 

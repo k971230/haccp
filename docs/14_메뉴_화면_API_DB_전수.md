@@ -380,7 +380,7 @@ HTML 작성 API는 시설·검교정 2 URL만 남긴다. 폐기·재고·입고�
 | scrn_cd | API base | tmpl_cd | 작성 UI |
 |---------|----------|---------|---------|
 | `facility-equipment-check` | `/api/v1/fac/facility-equipment-check` | `html_sys_009` | `BizOpsFormPage` (레지스트리 활성) |
-| `calibration-target-management` | `/api/v1/fac/calibration-target-management` | `html_sys_010` | API·페이지 있음. 레지스트리 미등록(문서함 deep-link만) |
+| `calibration-target-management` | `/api/v1/fac/calibration-target-management` | `html_sys_010` | 메뉴 숨김. 레지스트리·`/docs/prp/` 경로만 연결(문서함 deep-link) |
 
 구 DB `waste-disposal-check` · `inventory-check` · `receiving-inspection` · `process-control-check` 의 BizOps URL은 삭제했다. 활성 leaf는 §4.7 `hwp_sys_015`/`016`/`017`/`028`.
 
