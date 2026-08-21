@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-06
  * 코멘트:
- *   1) /api/v1/ccp/cold-monitor 목록·상세·저장·삭제 검증·삭제를 감싼다
+ *   1) /api/v1/docs/ccp/ccp-cold-monitor 목록·상세·저장·삭제 검증·삭제를 감싼다
  *   2) 삭제는 POST validate-delete → delete, Body는 [{ docIdx }] 객체 배열
  *   3) 회사코드는 보내지 않는다 — JWT가 테넌트를 고정한다
  *
@@ -13,10 +13,13 @@
  */
 // 역할 — 일반 타임아웃 Axios
 import { http } from "./http";
+// 역할 — SCREEN_PATH 기준 API 베이스
+import { apiOf } from "@/shell/tabRoute";
 // 역할 — 공통 응답 래퍼
 import type { CommonResponse } from "@/types/common";
 
-/** 목록 행 */
+/** 화면 기본 경로 — SCREEN_PATH ccp-cold-monitor */
+const BASE = apiOf("ccp-cold-monitor");
 export interface ColdMonitorListRow {
   docIdx: number;
   hdrIdx: number;
@@ -144,7 +147,7 @@ export async function listColdMonitors(
   params: { fromDt?: string; toDt?: string; ccpCd?: string; docNo?: string; writer?: string }
 ): Promise<ColdMonitorListRow[]> {
   const { data } = await http.get<CommonResponse<ColdMonitorListRow[]>>(
-    "/api/v1/ccp/cold-monitor/list",
+    `${BASE}/list`,
     { params }
   );
   return data.data ?? [];
@@ -163,7 +166,7 @@ export async function getColdMonitorDetail(
   docIdx?: number | null
 ): Promise<ColdMonitorDetail> {
   const { data } = await http.get<CommonResponse<ColdMonitorDetail>>(
-    "/api/v1/ccp/cold-monitor/detail",
+    `${BASE}/detail`,
     { params: docIdx && docIdx > 0 ? { docIdx } : {} }
   );
   return data.data;
@@ -182,7 +185,7 @@ export async function saveColdMonitor(
   body: ColdMonitorSaveRequest
 ): Promise<number> {
   const { data } = await http.put<CommonResponse<{ docIdx: number }>>(
-    "/api/v1/ccp/cold-monitor/save",
+    `${BASE}/save`,
     body
   );
   return data.data.docIdx;
@@ -200,7 +203,7 @@ export async function validateDeleteColdMonitor(
   // 삭제 키 배열
   keys: { docIdx: number }[]
 ): Promise<void> {
-  await http.post("/api/v1/ccp/cold-monitor/validate-delete", keys);
+  await http.post(`${BASE}/validate-delete`, keys);
 }
 
 /**
@@ -215,5 +218,5 @@ export async function deleteColdMonitor(
   // 삭제 키 배열
   keys: { docIdx: number }[]
 ): Promise<void> {
-  await http.post("/api/v1/ccp/cold-monitor/delete", keys);
+  await http.post(`${BASE}/delete`, keys);
 }

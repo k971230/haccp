@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-19
  * 코멘트:
- *   1) 경로 /api/v1/docs/html-form. 회사코드는 JWT만. 좌 저장은 copy·name
+ *   1) 경로 /api/v1/docs/html/{scrnCd} 5화면. 회사코드는 JWT만. 좌 저장은 copy·name
  *   2) 파일 내보내기·업로드 API는 두지 않는다
  *   3) 삭제는 POST validate-delete → delete
  *
@@ -26,7 +26,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/docs/html-form")
+@RequestMapping({
+        "/api/v1/docs/html/hyg-process-template",
+        "/api/v1/docs/html/ccp-verify-template",
+        "/api/v1/docs/html/ccp-pkg-template",
+        "/api/v1/docs/html/ccp-htg-template",
+        "/api/v1/docs/html/ccp-mtl-template"
+})
 @RequiredArgsConstructor
 public class HtmlTemplateController {
     private final HtmlTemplateService service;

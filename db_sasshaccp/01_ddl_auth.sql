@@ -306,7 +306,7 @@ CREATE TABLE IF NOT EXISTS tbl_menu (
     co_cd      varchar(10)  NOT NULL,
     menu_cd    varchar(40)  NOT NULL,
     menu_nm    varchar(100) NOT NULL,
-    -- 상위 메뉴코드 — kebab 대·중 분류(예: menu-doc-write)까지 수용
+    -- 상위 메뉴코드 — kebab 대·중 분류(예: docs, hwp)까지 수용
     h_menu_cd  varchar(40)  NULL,
     scrn_cd    varchar(30)  NULL,
     sort_no    int          NOT NULL DEFAULT 0,

@@ -9,9 +9,10 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 
 ## 읽기 순서 (주니어·에이전트)
 
-이 파일 E2E 절 → [`docs/23_PIPELINE.md`](docs/23_PIPELINE.md) (태그→파일) → [`docs/15_HACCP_FE_BE_통합_상세스펙.md`](docs/15_HACCP_FE_BE_통합_상세스펙.md) (유형별 이야기) → 해당 도메인 README (`pages/sys/`, `pages/docs/`, `pages/ccp/` …) → 화면 README가 있으면 그 파일 → 소스 주석.
+이 파일 E2E 절 → [`docs/23_PIPELINE.md`](docs/23_PIPELINE.md) (태그→파일) → [`docs/15_HACCP_FE_BE_통합_상세스펙.md`](docs/15_HACCP_FE_BE_통합_상세스펙.md) (유형별 이야기) → 해당 도메인 README (`pages/docs/`, `pages/sys/` …) → 화면 README가 있으면 그 파일 → 소스 주석.
 
-화면마다 `<Route>`가 없다. 식별자는 `scrnCd`. URL은 `tabRoute.routeOf(scrnCd)` 계층 경로다. Vite·Router **basename은 `/haccp/`** 이고, 라우터 pathname에는 `/haccp`를 다시 넣지 않는다 (`/docs/ccp/ccp-cold-monitor`).
+화면마다 `<Route>`가 없다. 식별자는 `scrnCd`. URL은 `tabRoute.routeOf(scrnCd)` 계층 경로다. Vite·Router **basename은 `/haccp/`** 이고, 라우터 pathname에는 `/haccp`를 다시 넣지 않는다 (`/docs/ccp/ccp-cold-monitor`).  
+경로(URL=DB=폴더=패키지) 정본: [`docs/24_URL_DB_폴더_패키지_정본.md`](docs/24_URL_DB_폴더_패키지_정본.md).
 
 ## E2E 요청 흐름
 
@@ -40,7 +41,7 @@ PIPELINE 전수 표는 이 파일이 아니라 [`docs/23_PIPELINE.md`](docs/23_P
 | [`운영.md`](운영.md) | `haccp-deploy` Build Now · 스테이지·스모크·장애 대응 |
 | [`완성.md`](완성.md) | 2026-08-11 타 AI 덤프. **살아 있는 정본 아님** (루트 README · docs/15 · docs/23) |
 
-상세 스펙·런북 정본: [`docs/`](docs/) (`1_`~`23_` · [`docs/README.md`](docs/README.md)).  
+상세 스펙·런북 정본: [`docs/`](docs/) (`1_`~`24_` · [`docs/README.md`](docs/README.md)).  
 배포 런북: [`docs/20_배포_런북.md`](docs/20_배포_런북.md).  
 양식 HWP(로컬): `docs/templates/`. 폴더 역할은 각 디렉터리 `README.md`.
 

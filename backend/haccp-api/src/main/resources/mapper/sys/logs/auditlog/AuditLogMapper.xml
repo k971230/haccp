@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+AuditLogMapper.xml — 변경 감사 이력 화면 SP 호출 매퍼.
+
+개발자: 박승우
+일자: 2026-08-12
+코멘트:
+  1) 조회 sp_audit_log_r_000 · 적재 sp_tbl_audit_log_c_000 두 SP만 호출한다 — 네이티브 SQL 금지
+  2) menuKey는 테이블명·화면코드·메뉴명 어디에 맞아도 통과하도록 SP가 4가지로 비교한다
+  3) 기간은 Controller가 YYYYMMDD로 정규화한 값만 들어온다
+
+PIPELINE[HB92] 감사 이력 MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.sys.logs.auditlog.AuditLogMapper">
+
+    <!--
+      감사 이력 목록 — sp_audit_log_r_000
+      menuKey는 좌측 메뉴 트리 선택값, userId·actionCd는 부분검색 필터로 공백이면 전체다
+    -->
+    <select id="selectRows" resultType="map">
+        SELECT * FROM sp_audit_log_r_000(
+            #{coCd,     jdbcType=VARCHAR},
+            #{fromDt,   jdbcType=VARCHAR},
+            #{toDt,     jdbcType=VARCHAR},
+            #{menuKey,  jdbcType=VARCHAR},
+            #{userId,   jdbcType=VARCHAR},
+            #{actionCd, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      감사 이력 적재 — sp_tbl_audit_log_c_000 (테이블 단위 적재 SP라 sp_tbl_ 접두를 그대로 쓴다)
+      beforeJson·afterJson·reason은 빈 문자열이면 SP가 NULLIF로 NULL을 넣는다
+      원 업무와 같은 트랜잭션이라 저장이 실패하면 이력도 남지 않는다
+    -->
+    <update id="insertAudit" statementType="CALLABLE">
+        CALL sp_tbl_audit_log_c_000(
+            #{coCd,       mode=IN, jdbcType=VARCHAR},
+            #{userId,     mode=IN, jdbcType=VARCHAR},
+            #{tblNm,      mode=IN, jdbcType=VARCHAR},
+            #{tgtIdx,     mode=IN, jdbcType=BIGINT},
+            #{actionCd,   mode=IN, jdbcType=VARCHAR},
+            #{beforeJson, mode=IN, jdbcType=LONGVARCHAR},
+            #{afterJson,  mode=IN, jdbcType=LONGVARCHAR},
+            #{reason,     mode=IN, jdbcType=VARCHAR},
+            #{ipAddr,     mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
+</mapper>

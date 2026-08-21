@@ -72,9 +72,6 @@ export function foldRhwpToolboxes(
   }
 }
 
-/** @deprecated foldRhwpToolboxes 사용 — 하위 호환 별칭 */
-export const foldRhwpIconToolbox = foldRhwpToolboxes;
-
 /**
  * 개발자: 박승우
  * 일자: 2026-08-06

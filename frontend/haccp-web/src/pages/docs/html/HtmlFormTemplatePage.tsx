@@ -32,7 +32,7 @@ import { SYS_YN_MAIN_CD, useCommonCodes } from "@/hooks/useCommonCodes";
 import { toYn, ynOptions } from "@/lib/yn";
 import type { EditableRow } from "@/types/editable";
 import type { HtmlFormPaperProps } from "@/components/form/htmlFormPaperShared";
-import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
+import type { HtmlFormItem, HtmlFormScrnCd } from "@/api/docs/htmlFormApi";
 import {
   copyHtmlFormVersion,
   deleteHtmlFormVersions,
@@ -66,8 +66,8 @@ function withSaved(row: VerListRow): VerListRow {
 }
 
 export interface HtmlFormTemplatePageProps {
-  // 화면코드 — tbl_screen.scrn_cd
-  scrnCd: string;
+  // 화면코드 — tbl_screen.scrn_cd. HTML 양식 원본 5개만
+  scrnCd: HtmlFormScrnCd;
   // 그리드 열 저장 키
   persistId: string;
   // 분할 비율 저장 키
@@ -181,7 +181,7 @@ export function HtmlFormTemplatePage({
     setListLoading(true);
     try {
       const q = searchRef.current;
-      const rows = (await listHtmlFormVersions({
+      const rows = (await listHtmlFormVersions(scrnCd, {
         tmplCd: stdTmplCd,
         verCd: q.qTmplCd,
         verNm: q.qVerNm,
@@ -197,7 +197,7 @@ export function HtmlFormTemplatePage({
     } finally {
       setListLoading(false);
     }
-  }, [stdTmplCd]);
+  }, [scrnCd, stdTmplCd]);
 
   const loadItems = useCallback(async (tmplCd: string) => {
     if (tmplCd === PENDING_KEY) {
@@ -205,8 +205,8 @@ export function HtmlFormTemplatePage({
       return;
     }
     const std = tmplCd === stdTmplCd;
-    setItems(await listHtmlFormItems(std ? stdTmplCd : tmplCd, std ? 0 : 1));
-  }, [pendingItems, stdTmplCd]);
+    setItems(await listHtmlFormItems(scrnCd, std ? stdTmplCd : tmplCd, std ? 0 : 1));
+  }, [pendingItems, scrnCd, stdTmplCd]);
 
   useEffect(() => {
     void action.run(async () => {
@@ -283,7 +283,7 @@ export function HtmlFormTemplatePage({
       return;
     }
     try {
-      const std = await listHtmlFormItems(stdTmplCd, 0);
+      const std = await listHtmlFormItems(scrnCd, stdTmplCd, 0);
       const tmplCd = nextTmplCd(versionsRef.current);
       const row: VerListRow = {
         idx: null,
@@ -350,7 +350,7 @@ export function HtmlFormTemplatePage({
           mesToast("양식명은 필수입니다.", "warn");
           return;
         }
-        keepTmpl = await copyHtmlFormVersion({
+        keepTmpl = await copyHtmlFormVersion(scrnCd, {
           tmplCd: stdTmplCd,
           verNm: draft.verNm.trim(),
         });
@@ -361,7 +361,7 @@ export function HtmlFormTemplatePage({
         copied = true;
         // 복사는 사용 Y. pending에서 N이면 회사 양식만 내린다
         if (toYn(draft.useYn) === "N") {
-          await updateHtmlFormVerNm({
+          await updateHtmlFormVerNm(scrnCd, {
             tmplCd: keepTmpl,
             verNo: 1,
             verNm: draft.verNm.trim(),
@@ -372,7 +372,7 @@ export function HtmlFormTemplatePage({
         setPendingItems(null);
       }
       for (const row of dirty) {
-        await updateHtmlFormVerNm({
+        await updateHtmlFormVerNm(scrnCd, {
           tmplCd: row.tmplCd,
           verNo: row.verNo,
           verNm: row.verNm.trim(),
@@ -413,7 +413,7 @@ export function HtmlFormTemplatePage({
       return;
     }
     try {
-      await saveHtmlFormItems(active.verNo, items, active.tmplCd);
+      await saveHtmlFormItems(scrnCd, active.verNo, items, active.tmplCd);
       setEditing(false);
       await loadItems(active.tmplCd);
       mesToast(MES.saveDone, "success");
@@ -465,10 +465,10 @@ export function HtmlFormTemplatePage({
     }
     try {
       const keys = [{ tmplCd: active.tmplCd, verNo: active.verNo }];
-      await validateDeleteHtmlFormVersions(keys);
+      await validateDeleteHtmlFormVersions(scrnCd, keys);
       const ok = await mesConfirmDanger("선택한 양식을 삭제할까요?");
       if (!ok) return;
-      await deleteHtmlFormVersions(keys);
+      await deleteHtmlFormVersions(scrnCd, keys);
       setEditing(false);
       const tmpl = await loadVersions();
       await loadItems(tmpl);

@@ -7,6 +7,6 @@
 - 자사 저장은 `tml_ccp_chk_001`부터 채번, 테이블 `tbl_tml_ccp_chk_ver`. 문서주기 좌측에 오른다.
 - 우측 수정은 저장한 자사 양식만. 작성 화면(`ccp-verification-check`) 연동은 후속.
 
-scrnCd `ccp-verify-template` · API `/api/v1/docs/html-form`
+scrnCd `ccp-verify-template` · API `/api/v1/docs/html/ccp-verify-template`
 
 지면: `CcpChkPaper.tsx` (이 폴더, `HygPrcPaper` re-export).

@@ -2,7 +2,7 @@
  * taskWorkflowApi — 오늘 할 일·알림·개선조치 API.
  *
  * 개발자: 박승우
- * 일자: 2026-08-07
+ * 일자: 2026-08-21
  * 코멘트:
  *   1) 오늘할일·개선조치 화면의 고정 API 계약만 제공한다
  *   2) 회사·사용자 값은 JWT에서 결정되므로 브라우저 요청에 전송하지 않는다
@@ -27,9 +27,9 @@ async function getRows(url: string, params?: Record<string, string>) {
 export const listTodayTasks = () => getRows("/api/v1/tsk/today-tasks/list");
 export const listNotifications = () => getRows("/api/v1/tsk/notifications/list");
 export const readNotification = (idx: number) => http.put(`/api/v1/tsk/notifications/${idx}/read`);
-export const listCorrectiveActions = (params: Record<string, string>) => getRows("/api/v1/doc/corrective-actions/list", params);
-export const saveCorrectiveAction = (row: WorkflowRow) => http.put("/api/v1/doc/corrective-actions/save", row);
-export const validateDeleteCorrectiveActions = (keys: { idx: number }[]) => http.post("/api/v1/doc/corrective-actions/validate-delete", keys);
-export const deleteCorrectiveActions = (keys: { idx: number }[]) => http.post("/api/v1/doc/corrective-actions/delete", keys);
-export const listDocumentRelations = (docIdx: number) => getRows(`/api/v1/doc/documents/${docIdx}/relations`);
-export const saveDocumentRelation = (docIdx: number, relType: string, tgtDocIdx: number) => http.put(`/api/v1/doc/documents/${docIdx}/relations/save`, { relType, tgtDocIdx });
+export const listCorrectiveActions = (params: Record<string, string>) => getRows("/api/v1/flow/ca/corrective-action-management/list", params);
+export const saveCorrectiveAction = (row: WorkflowRow) => http.put("/api/v1/flow/ca/corrective-action-management/save", row);
+export const validateDeleteCorrectiveActions = (keys: { idx: number }[]) => http.post("/api/v1/flow/ca/corrective-action-management/validate-delete", keys);
+export const deleteCorrectiveActions = (keys: { idx: number }[]) => http.post("/api/v1/flow/ca/corrective-action-management/delete", keys);
+export const listDocumentRelations = (docIdx: number) => getRows(`/api/v1/docs/documents/${docIdx}/relations`);
+export const saveDocumentRelation = (docIdx: number, relType: string, tgtDocIdx: number) => http.put(`/api/v1/docs/documents/${docIdx}/relations/save`, { relType, tgtDocIdx });

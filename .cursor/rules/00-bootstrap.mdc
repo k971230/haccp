@@ -10,7 +10,7 @@ alwaysApply: true
 1. 루트 `README.md` — E2E 절·읽기 순서
 2. `docs/23_PIPELINE.md` — 태그→파일 색인 (전수 표는 README에 없음)
 3. `docs/15_HACCP_FE_BE_통합_상세스펙.md` — 유형별 이야기 (로그인·CRUD·DocForm·삭제)
-4. 해당 도메인 README (`pages/sys/`, `pages/docs/`, `pages/ccp/` …) → 화면 README가 있으면 그것
+4. 해당 도메인 README (`pages/docs/`, `pages/sys/` …) → 화면 README가 있으면 그것. 경로 정본 `docs/24_URL_DB_폴더_패키지_정본.md`
 5. `01-project-core.mdc`
 6. `05-handoff-comments.mdc` — FE·BE **동일 밀도** 인수인계 주석
 7. `06-operations.mdc` — 삭제·타임아웃·전역 env

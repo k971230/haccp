@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-19
  * 코멘트:
- *   1) 경로 /api/v1/docs/hyg-process. 회사코드는 JWT만
+ *   1) 경로 /api/v1/docs/prp/hygiene-process-check. 회사코드는 JWT만
  *   2) 목록·상세 GET, 저장 PUT, 삭제 POST
  *   3) 삭제 Body는 [{ docIdx }]
  *
@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/docs/hyg-process")
+@RequestMapping("/api/v1/docs/prp/hygiene-process-check")
 @RequiredArgsConstructor
 public class HygProcessController {
     private final HygProcessService service;

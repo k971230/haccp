@@ -172,7 +172,7 @@ public class TemplateService {
         // form_path 없을 때(= 법적서류 유형만 등록) formUrl을 비워 클라이언트가 빈 원본을 요청하지 않게 한다
         String formPath = row.getFormPath() == null ? "" : row.getFormPath().trim();
         if (!formPath.isBlank()) {
-            out.setFormUrl("/api/v1/doc/templates/" + row.getTmplCd() + "/form");
+            out.setFormUrl("/api/v1/docs/templates/" + row.getTmplCd() + "/form");
             out.setFormFileNm(row.getFormFileNm());
         }
         out.setSysYn(row.getSysYn());

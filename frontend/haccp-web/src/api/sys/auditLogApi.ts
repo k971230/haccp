@@ -1,5 +1,5 @@
 /**
- * auditLogApi — 변경 감사 로그 화면 API (/api/v1/sys/audit-log).
+ * auditLogApi — 변경 감사 로그 화면 API (SCREEN_PATH).
  *
  * 개발자: 박승우
  * 일자: 2026-08-18
@@ -12,6 +12,8 @@
  */
 // 역할 — 일반 CRUD Axios 인스턴스
 import { http } from "../http";
+// 역할 — SCREEN_PATH 기준 API 베이스
+import { apiOf } from "@/shell/tabRoute";
 // 역할 — 공통 성공 응답 형식
 import type { CommonResponse } from "@/types/common";
 // 역할 — MyBatis Map snake_case → 그리드 camelCase 정규화
@@ -39,7 +41,7 @@ export async function listAuditLog(params: {
   // 행위 필터 — 생략하면 전체
   actionCd?: string;
 }): Promise<SysRow[]> {
-  const { data } = await http.get<CommonResponse<SysRow[]>>("/api/v1/sys/audit-log/list", {
+  const { data } = await http.get<CommonResponse<SysRow[]>>(apiOf("audit-log", "list"), {
     params,
   });
   return camelizeRows<SysRow>(data.data as unknown as Record<string, unknown>[]);

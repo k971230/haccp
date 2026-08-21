@@ -12,7 +12,7 @@
  */
 package com.haccp.docs.html.hygprocess.dto;
 
-import com.haccp.ccp.dto.DocCorrectiveDto;
+import com.haccp.docs.ccp.dto.DocCorrectiveDto;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;

@@ -27,7 +27,7 @@
 
 ## 2. 작업 전 읽을 문서 순서
 
-1. 루트 README E2E · `docs/23` 태그 · `docs/15` 이야기  
+1. 루트 README E2E · `docs/23` 태그 · `docs/15` 이야기 · 경로 `docs/24`  
 2. `01` 운영 · `02` 작성규칙 · `04` 인증  
 3. 해당 도메인 README · 파일 찾는 법 `10`(17) · 파일/보안 `11`(18)  
 4. 코드 골드: `ColdMonitorPage` · `HaccpShell` · `LoginPage`
@@ -38,10 +38,10 @@
 
 | 할 일 | 패턴 |
 |-------|------|
-| 새 화면 | `pages/{영역}/{메뉴}/` Page+Rule+README + `SCREEN_REGISTRY` + `api/{영역}/` + BE + 메뉴/SP |
+| 새 화면 | `pages/{대}/{중}/` Page+Rule+README + `SCREEN_REGISTRY` + `api/{대}/` + BE + 메뉴/SP. 경로 [`24`](24_URL_DB_폴더_패키지_정본.md) |
 | 손대는 메뉴 | 아직 평탄하면 **그 작업에서** sys와 같이 분할. 미리 전 메뉴를 나누지 않는다. `scrnCd`·`persistId`·기존 URL은 유지 |
 | DB형 문서 | `useDocFormSession` + DocForm* — 복붙 Page 금지 |
-| HWP | `hwpLeaf`만 — 양식별 Page 금지 |
+| HWP | 공용 `HwpDocumentEditorPage` + `pages/docs/{중}/` thin Page |
 | 그리드 CRUD | `useEditableRows` · `useGridAccess` · `GridCrudButtons` · `useAsyncAction` |
 | 삭제 | `resolveRowsForDelete` → validate → `mesConfirm` → delete |
 | 권한 | `authStore.can(scrnCd, "read"|"write"|"modify"|"delete"|"print")` |
@@ -81,7 +81,7 @@ npm run dev   # 4173
 
 FE 경로에 Vite basename `/haccp/` 를 **넣지 않는다.** `SCREEN_PATH` 는 `paths("/docs/html", …)` · `paths("/sys/code", …)` 처럼 pathname만.
 
-1. `pages/{영역}/{메뉴}/` Page + Rule + 도메인 README  
+1. `pages/{대}/{중}/` Page + Rule + 도메인 README  
 2. `SCREEN_REGISTRY` 등록  
 3. `tabRoute.ts` `SCREEN_PATH` — `/haccp` 접두 금지. `/screen/{scrnCd}` 도 없음  
 4. `api/{영역}/` + BE Controller/Service/Mapper/SP  

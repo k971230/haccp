@@ -1,24 +1,27 @@
 # com.haccp.sys — 시스템 관리 9화면
 
-정본: `docs/8_에이전트_가이드_BE.md` · `docs/4_운영규칙_BE.md` · FE 파이프라인 표는 `frontend/haccp-web/src/pages/sys/README.md`
+정본: `docs/8_에이전트_가이드_BE.md` · `docs/4_운영규칙_BE.md` · FE 파이프라인 표는 `frontend/haccp-web/src/pages/sys/README.md`  
+경로 정본: `docs/24_URL_DB_폴더_패키지_정본.md`
 
 ## 구조 — 메뉴 1개 = 패키지 1개
 
 ```
 com/haccp/sys/
  ├ SysPayload.java   Map payload · 삭제키 정규화 공용 유틸
- ├ commoncode/ CommonCodeController · CommonCodeService · CommonCodeMapper
- ├ menu/       MenuMgmtController · MenuMgmtService · MenuMgmtMapper
- ├ role/       RoleMgmtController · RoleMgmtService · RoleMgmtMapper
- ├ department/ DepartmentController · DepartmentService · DepartmentMapper
- ├ user/       UserController · UserService · UserMapper   (서명 포함)
- ├ approvalline/ ApprovalLineController · Service · Mapper  (URL /api/v1/bas/approval-lines 유지)
- ├ loginhistory/ LoginHistoryController · Service · Mapper   (조회 전용)
- ├ auditlog/     AuditLogController · Service · Mapper · AuditWriter
- └ screenusage/  ScreenUsageController · Service · Mapper    (조회 전용)
+ ├ code/
+ │   ├ commoncode/ CommonCodeController · CommonCodeService · CommonCodeMapper
+ │   ├ menu/       MenuMgmtController · MenuMgmtService · MenuMgmtMapper
+ │   ├ role/       RoleMgmtController · RoleMgmtService · RoleMgmtMapper
+ │   ├ department/ DepartmentController · DepartmentService · DepartmentMapper
+ │   ├ user/       UserController · UserService · UserMapper   (서명 포함)
+ │   └ approvalline/ ApprovalLineController · Service · Mapper
+ └ logs/
+     ├ loginhistory/ LoginHistoryController · Service · Mapper   (조회 전용)
+     ├ auditlog/     AuditLogController · Service · Mapper · AuditWriter
+     └ screenusage/  ScreenUsageController · Service · Mapper    (조회 전용)
 ```
 
-XML은 `resources/mapper/sys/{같은 폴더명}/*.xml` (`mapper/sys/README.md`).
+XML은 `resources/mapper/sys/{code|logs}/{같은 폴더명}/*.xml` (`mapper/sys/README.md`).
 구 `SystemController`·`SystemService`·`SystemMapper`·`SystemMapper.xml` 단일 허브는 제거되었다. 되살리지 않는다.
 
 **다른 영역도 이번에 손대는 메뉴는 같은 규약으로 분할한다.** 미리 전 메뉴를 나누지 않는다. 상세 `08-haccp-backend.mdc`.
@@ -33,25 +36,18 @@ XML은 `resources/mapper/sys/{같은 폴더명}/*.xml` (`mapper/sys/README.md`).
 | Service | `@Transactional`, `LoginUserContext` 조회, payload 정규화(`SysPayload`), 삭제 Double Check, 파일 I/O | HTTP 타입 의존, 네이티브 SQL |
 | Mapper | SP 호출 시그니처 선언 | 업무 분기 |
 
-## URL 규약 (화면 분할 후에도 유지)
+## URL 규약
+
+HTTP: `/api/v1` + FE `SCREEN_PATH` + 동작.
 
 ```
-GET  /api/v1/sys/{screen-cd}/list
-PUT  /api/v1/sys/{screen-cd}/save
-POST /api/v1/sys/{screen-cd}/validate-delete
-POST /api/v1/sys/{screen-cd}/delete
+GET  /api/v1/sys/code|{logs}/{scrnCd}/list
+PUT  /api/v1/sys/code|{logs}/{scrnCd}/save
+POST /api/v1/sys/code|{logs}/{scrnCd}/validate-delete
+POST /api/v1/sys/code|{logs}/{scrnCd}/delete
 ```
 
-`{screen-cd}`는 `tbl_screen.scrn_cd`이자 FE 라우트 세그먼트다 (`common-code-management` · `menu-management` · `role-management` · `department-management` · `user-management` · `login-history` · `audit-log` · `screen-usage-statistics`).
-
-결재선만 예외로 URL을 옮기지 않는다.
-
-```
-GET  /api/v1/bas/approval-lines/list
-PUT  /api/v1/bas/approval-lines/save
-POST /api/v1/bas/approval-lines/validate-delete
-POST /api/v1/bas/approval-lines/delete
-```
+`{scrnCd}`는 `tbl_screen.scrn_cd` (`common-code-management` · `menu-management` · `role-management` · `department-management` · `user-management` · `approval-line-management` · `login-history` · `audit-log` · `screen-usage-statistics`).
 
 예외적으로 공통코드는 `list` 대신 `groups`·`details` 2개, 권한그룹은 `screens`(GET/PUT)가 추가되고, 서명은 다음 경로를 쓴다.
 
@@ -96,8 +92,8 @@ GET  /api/v1/sys/users/me/sign-info           내 서명 보유여부·파일명
 
 ## 신규 메뉴 추가 시
 
-1. `com.haccp.sys.{메뉴}` 패키지에 Controller·Service·Mapper 3종 + `resources/mapper/sys/{메뉴}/*.xml`
-2. SP는 화면명 기준 `sp_tbl_{화면}_{r|c|d|u}_{nnn}` 신규 작성. 다른 화면 SP를 재사용하지 않는다
+1. `com.haccp.{대}.{중}` 패키지에 Controller·Service·Mapper 3종 + `resources/mapper/{대}/{중}/*.xml`
+2. SP는 화면명 기준 `sp_{화면}_{r|c|d|u}_{nnn}` 또는 `sp_tbl_*`. 다른 화면 SP를 재사용하지 않는다
 3. 삭제가 있으면 `_delete_blocker_r_000`까지 함께 만든다
 4. 폴더 README 작성, 이 문서의 URL·구조 표 갱신
 5. 검증: `./mvnw -q -DskipTests compile`

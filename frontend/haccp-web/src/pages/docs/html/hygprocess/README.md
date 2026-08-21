@@ -5,4 +5,4 @@
 
 지면은 `htmltemplate/HygPrcPaper`. 기준관리와 같은 HTML 이다.
 
-scrnCd `hygiene-process-check` · tmpl_cd `html_sys_001` · API `/api/v1/docs/hyg-process`
+scrnCd `hygiene-process-check` · tmpl_cd `html_sys_001` · API `/api/v1/docs/prp/hygiene-process-check`

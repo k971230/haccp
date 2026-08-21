@@ -1,8 +1,8 @@
 /**
- * docCycleApi — 문서주기관리 API (/api/v1/hwp/doc-cycles).
+ * docCycleApi — 문서주기관리 API (SCREEN_PATH).
  *
  * 개발자: 박승우
- * 일자: 2026-08-14
+ * 일자: 2026-08-21
  * 코멘트:
  *   1) 좌측 양식 목록·우측 주기 단건·저장·삭제만 제공한다 — 예정일 생성은 서버가 저장 시 함께 처리한다
  *   2) 회사코드·작업자는 요청에 넣지 않고 서버 JWT 테넌트로 고정된다
@@ -13,11 +13,13 @@
  */
 // 역할 — 일반 CRUD Axios (10s)
 import { http } from "../http";
+// 역할 — SCREEN_PATH 기준 API 베이스
+import { apiOf } from "@/shell/tabRoute";
 // 역할 — 서버 공통 응답 형식
 import type { CommonResponse } from "@/types/common";
 
-/** 화면 기본 경로 — DocCycleController @RequestMapping과 1:1 */
-const BASE = "/api/v1/hwp/doc-cycles";
+/** 화면 기본 경로 — SCREEN_PATH schedule-cycle-management */
+const BASE = apiOf("schedule-cycle-management");
 
 /** 좌측 양식 목록 1행 — 조회 전용(주기 등록 여부까지 서버가 판단해 내린다) */
 export interface DocCycleFormRow {

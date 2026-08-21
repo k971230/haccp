@@ -5,7 +5,8 @@
 
 ## 패키지
 
-`com.haccp.{auth|menu|code|pref|log|bas|workflow|ccp|hyg|ops|docs|tsk|sys|common}`
+셸: `com.haccp.{auth|menu|code|pref|log|common}`.  
+업무: `com.haccp.{대}.{중}` — 경로 정본 [`24`](24_URL_DB_폴더_패키지_정본.md) (`docs.ccp` · `sys.code` · `flow.ca` …). 공유 허브 `docs.document` · `docs.template` · `workflow`.
 
 ## 레이어
 

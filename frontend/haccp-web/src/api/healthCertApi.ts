@@ -13,8 +13,13 @@
  */
 // 역할 — 일반 CRUD 타임아웃 Axios 인스턴스
 import { http, httpFile } from "./http";
+// 역할 — SCREEN_PATH 기준 API 베이스
+import { apiOf } from "@/shell/tabRoute";
 // 역할 — 서버 공통 성공 응답 타입
 import type { CommonResponse } from "@/types/common";
+
+/** 화면 기본 경로 — SCREEN_PATH health-cert-record */
+const BASE = apiOf("health-cert-record");
 
 /** 건강진단 행 — 그리드 필드와 1:1 camelCase */
 export type HealthCertRow = Record<string, string | number | null | undefined>;
@@ -52,7 +57,7 @@ export async function listHealthCertRows(
   // 성명·사용여부 — 빈 값은 생략 가능
   params: HealthCertListParams
 ): Promise<HealthCertRow[]> {
-  const { data } = await http.get<CommonResponse<HealthCertRow[]>>("/api/v1/hyg/health-cert/list", {
+  const { data } = await http.get<CommonResponse<HealthCertRow[]>>(`${BASE}/list`, {
     params,
   });
   return (data.data ?? []).map(normalizeRow);
@@ -70,7 +75,7 @@ export async function saveHealthCertRows(
   // 저장 행 배열 — personNm·examDt 등 camelCase
   rows: HealthCertRow[]
 ): Promise<void> {
-  await http.put("/api/v1/hyg/health-cert/save", rows);
+  await http.put(`${BASE}/save`, rows);
 }
 
 /**
@@ -85,7 +90,7 @@ export async function validateDeleteHealthCertRows(
   // 업무키 객체 배열 — 단건 삭제여도 [{ idx }]
   keys: Array<{ idx: number }>
 ): Promise<void> {
-  await http.post("/api/v1/hyg/health-cert/validate-delete", keys);
+  await http.post(`${BASE}/validate-delete`, keys);
 }
 
 /**
@@ -100,7 +105,7 @@ export async function deleteHealthCertRows(
   // 삭제 업무키 객체 배열 — 스칼라 배열은 허용하지 않는다
   keys: Array<{ idx: number }>
 ): Promise<void> {
-  await http.post("/api/v1/hyg/health-cert/delete", keys);
+  await http.post(`${BASE}/delete`, keys);
 }
 
 /**
@@ -122,6 +127,6 @@ export async function uploadHealthCertFile(
   form.append("file", file);
   const { data } = await httpFile.post<
     CommonResponse<{ idx: number; filePath: string; fileNm: string }>
-  >(`/api/v1/hyg/health-cert/${idx}/file`, form);
+  >(`${BASE}/${idx}/file`, form);
   return data.data ?? { idx, filePath: "", fileNm: file.name };
 }

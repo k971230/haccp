@@ -1,5 +1,5 @@
 /**
- * roleApi — 권한그룹 관리 화면 API (/api/v1/sys/role-management).
+ * roleApi — 권한그룹 관리 화면 API (SCREEN_PATH).
  *
  * 개발자: 박승우
  * 일자: 2026-08-12
@@ -12,6 +12,8 @@
  */
 // 역할 — 일반 CRUD Axios 인스턴스
 import { http } from "../http";
+// 역할 — SCREEN_PATH 기준 API 베이스
+import { apiOf } from "@/shell/tabRoute";
 // 역할 — 공통 성공 응답 형식
 import type { CommonResponse } from "@/types/common";
 // 역할 — MyBatis Map snake_case → 그리드 camelCase 정규화
@@ -19,8 +21,8 @@ import { camelizeRows } from "@/lib/camelKeys";
 // 역할 — 권한그룹 행·화면권한 행·삭제키 타입
 import type { RoleScreenRow, SysDeleteKey, SysRow } from "./sysTypes";
 
-/** 화면 기본 경로 — Controller @RequestMapping과 1:1 */
-const BASE = "/api/v1/sys/role-management";
+/** 화면 기본 경로 — SCREEN_PATH role-management */
+const BASE = apiOf("role-management");
 
 /**
  * 개발자: 박승우

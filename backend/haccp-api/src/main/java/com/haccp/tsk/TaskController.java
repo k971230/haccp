@@ -2,7 +2,7 @@
  * TaskController — 오늘 할 일·알림·개선조치·감사자료 REST API.
  *
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-08-21
  * 코멘트:
  *   1) 세 역할 기반 화면의 API를 전용 경로로 제공한다
  *   2) 삭제는 POST validate-delete → POST delete 객체 배열 계약만 허용한다
@@ -56,34 +56,34 @@ public class TaskController {
     @PutMapping("/api/v1/tsk/notifications/{idx}/read")
     public CommonResponse<Void> readNotification(@PathVariable Long idx) { service.readNotification(idx); return CommonResponse.ok(null); }
 
-    @GetMapping("/api/v1/doc/corrective-actions/list")
+    @GetMapping("/api/v1/flow/ca/corrective-action-management/list")
     public CommonResponse<List<Map<String, Object>>> correctiveActions(@RequestParam(required = false) String status, @RequestParam(required = false) String fromDt, @RequestParam(required = false) String toDt) {
         return CommonResponse.ok(service.correctiveActions(status, fromDt, toDt));
     }
 
-    @PutMapping("/api/v1/doc/corrective-actions/save")
+    @PutMapping("/api/v1/flow/ca/corrective-action-management/save")
     public CommonResponse<Void> saveCorrectiveAction(@RequestBody Map<String, Object> row) {
         Long idx = row.get("idx") instanceof Number n ? n.longValue() : null;
         service.saveCorrectiveAction(idx, row);
         return CommonResponse.ok(null);
     }
 
-    @PostMapping("/api/v1/doc/corrective-actions/validate-delete")
+    @PostMapping("/api/v1/flow/ca/corrective-action-management/validate-delete")
     public CommonResponse<Void> validateCorrectiveActionDelete(@RequestBody List<Map<String, Long>> keys) {
         service.validateCorrectiveActionDelete(keys);
         return CommonResponse.ok(null);
     }
 
-    @PostMapping("/api/v1/doc/corrective-actions/delete")
+    @PostMapping("/api/v1/flow/ca/corrective-action-management/delete")
     public CommonResponse<Void> deleteCorrectiveActions(@RequestBody List<Map<String, Long>> keys) {
         service.deleteCorrectiveActions(keys);
         return CommonResponse.ok(null);
     }
 
-    @GetMapping("/api/v1/doc/documents/{docIdx}/relations")
+    @GetMapping("/api/v1/docs/documents/{docIdx}/relations")
     public CommonResponse<List<Map<String, Object>>> relations(@PathVariable Long docIdx) { return CommonResponse.ok(service.relations(docIdx)); }
 
-    @PutMapping("/api/v1/doc/documents/{docIdx}/relations/save")
+    @PutMapping("/api/v1/docs/documents/{docIdx}/relations/save")
     public CommonResponse<Void> saveRelation(@PathVariable Long docIdx, @RequestBody Map<String, Object> row) {
         Object target = row.get("tgtDocIdx");
         Long tgtDocIdx = target instanceof Number n ? n.longValue() : null;
@@ -100,7 +100,7 @@ public class TaskController {
      *   3) tbl_audit_log(audit-log 화면)와는 다른 기능 — 절대 혼동·삭제하지 않는다
      */
     @Deprecated(since = "STEP-20-G14", forRemoval = false)
-    @GetMapping("/api/v1/doc/audit-export/list")
+    @GetMapping("/api/v1/docs/audit-export/list")
     public CommonResponse<List<Map<String, Object>>> auditExport(
             // 기간·상태 필터 — 비어 있을 때(= 전체) SP 조건으로 전달
             @RequestParam(required = false) String fromDt,
@@ -119,7 +119,7 @@ public class TaskController {
      *   3) HWP만 있고 PDF가 없으면 서버에서 export-pdf 후 포함한다
      */
     @Deprecated(since = "STEP-20-G14", forRemoval = false)
-    @PostMapping("/api/v1/doc/audit-export/preview-pdf")
+    @PostMapping("/api/v1/docs/audit-export/preview-pdf")
     public ResponseEntity<FileSystemResource> auditPreviewPdf(
             // 선택 문서 키 배열 — [{ docIdx }]
             @RequestBody List<DocumentDeleteItem> keys,

@@ -10,10 +10,12 @@ mapper/docs/
  ├ html/ccphtgtemplate/      CcpHtgTemplateMapper.xml
  ├ html/ccpmtltemplate/      CcpMtlTemplateMapper.xml
  ├ html/hygprocess/          HygProcessMapper.xml
- ├ hwptemplate/ HwpTemplateMapper.xml
- ├ doccycle/    DocCycleMapper.xml
+ ├ hwp/         HwpTemplateMapper.xml
+ ├ ccp/         CcpColdMapper.xml · CcpGenericMapper.xml · CcpFormsMapper.xml
+ ├ prp/         HygieneMapper.xml · HealthCertMapper.xml · BizOpsMapper.xml · EquipmentHistMapper.xml · PestDeviceHistMapper.xml
+ ├ sch/         DocCycleMapper.xml
  ├ document/    DocumentMapper.xml
- └ corrective/  DocCorrectiveMapper.xml
+ └ (개선조치는 mapper/flow/ca/DocCorrectiveMapper.xml)
 ```
 
 `namespace`는 인터페이스 FQCN과 같다. 네이티브 SQL 금지 — SP 호출만.

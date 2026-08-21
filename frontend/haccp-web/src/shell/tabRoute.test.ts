@@ -10,7 +10,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { SCREEN_REGISTRY } from "@/shell/screenRegistry";
-import { SCREEN_PATH, parseRoute, routeOf } from "@/shell/tabRoute";
+import { SCREEN_PATH, apiOf, parseRoute, routeOf } from "@/shell/tabRoute";
 
 describe("tabRoute — 계층 경로", () => {
   it("레지스트리 키마다 SCREEN_PATH 가 있고 왕복한다", () => {
@@ -67,5 +67,29 @@ describe("tabRoute — 계층 경로", () => {
   it("빈 코드는 홈, 없는 코드는 오늘 할 일", () => {
     expect(routeOf("")).toBe("/");
     expect(routeOf("not-a-screen")).toBe("/today-tasks");
+  });
+
+  it("API 는 /api/v1 + SCREEN_PATH + 동작 이고 /haccp 는 없다", () => {
+    expect(apiOf("common-code-management", "save")).toBe(
+      "/api/v1/sys/code/common-code-management/save"
+    );
+    expect(apiOf("hyg-process-template", "versions")).toBe(
+      "/api/v1/docs/html/hyg-process-template/versions"
+    );
+    expect(apiOf("ccp-verify-template")).toBe("/api/v1/docs/html/ccp-verify-template");
+    expect(apiOf("ccp-pkg-template")).toBe("/api/v1/docs/html/ccp-pkg-template");
+    expect(apiOf("ccp-htg-template")).toBe("/api/v1/docs/html/ccp-htg-template");
+    expect(apiOf("ccp-mtl-template")).toBe("/api/v1/docs/html/ccp-mtl-template");
+    expect(apiOf("hwp-template-management", "list")).toBe(
+      "/api/v1/docs/hwp/hwp-template-management/list"
+    );
+    expect(apiOf("schedule-cycle-management", "save")).toBe(
+      "/api/v1/docs/sch/schedule-cycle-management/save"
+    );
+    expect(apiOf("ccp-cold-monitor", "list")).toBe("/api/v1/docs/ccp/ccp-cold-monitor/list");
+    expect(apiOf("approval-line-management", "list")).toBe(
+      "/api/v1/sys/code/approval-line-management/list"
+    );
+    expect(() => apiOf("not-a-screen")).toThrow("not-a-screen");
   });
 });

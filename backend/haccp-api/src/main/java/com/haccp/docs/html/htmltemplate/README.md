@@ -2,7 +2,7 @@
 
 화면 1개 = 패키지 1개. FE `pages/docs/html/htmltemplate/`.
 
-URL `/api/v1/docs/html-form/*`
+URL `/api/v1/docs/html/hyg-process-template/*`
 XML `mapper/docs/html/htmltemplate/HtmlTemplateMapper.xml`
 scrnCd `hyg-process-template`
 

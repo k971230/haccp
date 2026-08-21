@@ -55,7 +55,7 @@ MES와 **별개** DB(`sasshaccp`)·앱. 센서/스마트 HACCP이 아니라 종�
 - **의미 있는 prop마다 여러 줄** — 한 줄 라벨만이면 미완료
 - PIPELINE: FE `HF*` · BE `HB*` (MES `F`와 섞지 않음). 색인 [`23_PIPELINE.md`](23_PIPELINE.md). 루트 README에 전수 표 없음
 
-**골드 FE:** `shell/HaccpShell.tsx` · `pages/ccp/ColdMonitorPage.tsx` · `pages/auth/LoginPage.tsx` · DocForm 계열  
+**골드 FE:** `shell/HaccpShell.tsx` · `pages/docs/ccp/ColdMonitorPage.tsx` · `pages/auth/LoginPage.tsx` · DocForm 계열  
 **골드 BE:** `auth/AuthService` + `AuthController` + `AuthMapper.xml` · `docs/document/DocumentService` + `mapper/docs/document/`
 
 ### 3-3. 네이밍 Two-Tier
@@ -75,7 +75,7 @@ MES와 **별개** DB(`sasshaccp`)·앱. 센서/스마트 HACCP이 아니라 종�
 | 제품 고유 | `HaccpShell` · `HaccpLogo` |
 | storage | `haccp-*` only (`authKeys.ts`) |
 | 페이지 | `{Name}Page.tsx` + 필요 시 `.rules.ts` |
-| API | `api/{domain}Api.ts`만 HTTP |
+| API | `api/{대}/` 화면 전용. 공용 `documentApi` 유지. 경로 [`24`](24_URL_DB_폴더_패키지_정본.md) |
 
 ### 3-5. BE 디렉터리·레이어
 
@@ -101,7 +101,7 @@ Controller → Service(@Transactional CUD) → Mapper+XML → SP
 | 유형 | 핵심 |
 |------|------|
 | DB형 작성 | `useDocFormSession` + `DocFormLayout` + `DocumentApprovalToolbar(writerOnly)` |
-| HWP leaf | `hwpLeaf(tmplCd)` → `HwpDocumentEditorPage` |
+| HWP leaf | 화면별 thin Page → `HwpDocumentEditorPage` |
 | 그리드 CRUD | `useEditableRows` + `MesEditableGrid` + `GridCrudButtons` |
 | M-D | `useSection` + 이중 그리드 |
 | 법적서류 | 패널 CRUD만 · 셸 new/save/del 미등록 |

@@ -81,22 +81,18 @@ BEGIN
        SET sort_no = v.sn, upd_id = 'system', upd_dt = now()
       FROM (VALUES
         ('today-tasks', 1001),
-        ('menu-doc-write', 2000), ('menu-doc-flow', 3000), ('menu-doc-master', 4000),
-        ('menu-base', 5000), ('menu-sys', 6000),
-        ('menu-write-ccp', 2100), ('menu-write-prp', 2200),
-        ('menu-write-logis', 2300), ('menu-write-admin', 2400),
-        ('menu-flow-appr', 3100), ('menu-flow-box', 3200), ('menu-flow-ca', 3300),
-        ('menu-master-sch', 4100), ('menu-master-form', 4200),
-        ('menu-master-html', 4250),
-        ('menu-master-item', 4300), ('menu-master-appr', 4400),
-        ('menu-base-master', 5100),
-        ('menu-sys-code', 6100), ('menu-sys-logs', 6200)
+        ('docs', 2000), ('flow', 3000), ('bas', 5000), ('sys', 6000),
+        ('ccp', 2100), ('prp', 2200), ('logis', 2300), ('admin', 2400),
+        ('sch', 2500), ('hwp', 2600), ('html', 2700), ('appr-hidden', 2800),
+        ('appr', 3100), ('box', 3200), ('ca', 3300),
+        ('master', 5100),
+        ('code', 6100), ('logs', 6200)
       ) AS v(menu_cd, sn)
      WHERE m.menu_cd = v.menu_cd
        AND m.use_yn = 'Y'
        AND (p_co_cd IS NULL OR m.co_cd = p_co_cd);
 
-    -- menu-sys-code leaf: 공통코드 → 메뉴 → 권한그룹 → 부서 → 사용자 → 결재선
+    -- sys/code leaf: 공통코드 → 메뉴 → 권한그룹 → 부서 → 사용자 → 결재선
     UPDATE tbl_menu m
        SET sort_no = v.ord, upd_id = 'system', upd_dt = now()
       FROM (VALUES
@@ -108,28 +104,23 @@ BEGIN
         ('approval-line-management', 6)
       ) AS v(scrn_cd, ord)
      WHERE m.scrn_cd = v.scrn_cd
-       AND m.h_menu_cd = 'menu-sys-code'
+       AND m.h_menu_cd = 'code'
        AND m.use_yn = 'Y'
        AND (p_co_cd IS NULL OR m.co_cd = p_co_cd);
 
     WITH mid AS (
         SELECT * FROM (VALUES
-            ('menu-write-ccp', 2, 1), ('menu-write-prp', 2, 2),
-            ('menu-write-logis', 2, 3), ('menu-write-admin', 2, 4),
-            ('menu-flow-appr', 3, 1), ('menu-flow-box', 3, 2), ('menu-flow-ca', 3, 3),
-            ('menu-master-sch', 4, 1), ('menu-master-form', 4, 2),
-            ('menu-master-html', 4, 3),
-            ('menu-master-item', 4, 4), ('menu-master-appr', 4, 5),
-            ('menu-base-master', 5, 1),
-            ('menu-sys-code', 6, 1), ('menu-sys-logs', 6, 2)
+            ('ccp', 2, 1), ('prp', 2, 2),
+            ('logis', 2, 3), ('admin', 2, 4),
+            ('sch', 2, 5), ('hwp', 2, 6), ('html', 2, 7), ('appr-hidden', 2, 8),
+            ('appr', 3, 1), ('box', 3, 2), ('ca', 3, 3),
+            ('master', 5, 1),
+            ('code', 6, 1), ('logs', 6, 2)
         ) AS t(mid_cd, dae_no, jung_no)
     ),
     ranked AS (
         SELECT m.co_cd, m.menu_cd,
-               (CASE
-                    WHEN mid.mid_cd = 'menu-master-html' THEN 4250
-                    ELSE mid.dae_no * 1000 + mid.jung_no * 100
-                END
+               (mid.dae_no * 1000 + mid.jung_no * 100
                  + ROW_NUMBER() OVER (
                        PARTITION BY m.co_cd, m.h_menu_cd
                        ORDER BY m.sort_no, m.menu_cd

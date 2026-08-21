@@ -9,6 +9,6 @@
 - 자사 저장은 `html_hyg_prc_001`부터 채번, 테이블 `tbl_html_hyg_prc_ver`. 문서주기 좌측에 오른다.
 - 우측 수정은 저장한 자사 양식만. 제목·부제·항목 PUT은 좌 저장과 분리. 입력유형 열은 표 안에 두고 삭제도 같은 행에 둔다.
 
-scrnCd `hyg-process-template` · API `/api/v1/docs/html-form`
+scrnCd `hyg-process-template` · API `/api/v1/docs/html/hyg-process-template`
 
 지면: `HygPrcPaper.tsx` (이 폴더). 작성 화면 `hygprocess` 가 같은 파일을 쓴다.

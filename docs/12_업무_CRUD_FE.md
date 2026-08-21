@@ -22,18 +22,17 @@
 
 ## 메뉴 IA (사이드바)
 
-로그인 랜딩: `today-tasks` (최상위 leaf). 대메뉴 5개 (`36_migrate_menu_sidebar_ia.sql`).
+로그인 랜딩: `today-tasks` (최상위 leaf). 대메뉴 정본은 [`24`](24_URL_DB_폴더_패키지_정본.md) · `120_migrate_menu_url_slugs.sql`.
 
 | 순서 | 메뉴 | menu_cd | 내용 |
 |------|------|---------|------|
 | 0 | 오늘 할 일 | `today-tasks` | KPI·오늘 할 일·최근 문서 (미리보기 패널 없음) |
-| 1 | 문서 작성 | `MWRK` | DB형 점검표 + HWP 문서만 leaf |
-| 2 | 문서 현황·결재 | `MAPR` | 결재함·문서함·이력·법적서류·개선조치 |
-| 3 | 문서 기준관리 | `MFRM` | HWP양식·점검항목·CCP한계·작성주기·설비/방충 |
-| 4 | 기초정보 관리 | `MCOD` | 공통코드·제품·원자재·거래처·창고 등 |
-| 5 | 시스템 관리 | `MSYS` | 회사·사용자·부서·권한·메뉴·결재선·로그 |
+| 1 | 문서 | `docs` | 작성(CCP/PRP/물류/운영) + 기준관리(HWP·HTML·주기). 구 「문서 작성」+「문서 기준관리」 |
+| 2 | 문서 현황·결재 | `flow` | 결재함·문서함·이력·법적서류·개선조치 |
+| 3 | 기초정보 | `bas` | 제품·원자재·거래처·창고 등 마스터 |
+| 4 | 시스템 | `sys` | 공통코드·사용자·부서·권한·메뉴·결재선·로그 |
 
-구 대메뉴(`MCCP`/`MHYG`/…/`MSET`) 및 단독 `hwp-document-editor`·스마트일지·감사추출은 `use_yn=N`.  
+단독 `hwp-document-editor`·스마트일지·감사추출은 `use_yn=N`.  
 smart-diary API는 STEP 20에서 폐기, audit-export는 동결(FE 미노출) — 상세는 09 G-14.
 
 ## 화면 계약
@@ -49,7 +48,7 @@ smart-diary API는 STEP 20에서 폐기, audit-export는 동결(FE 미노출) �
 
 - URL: `routeOf(scrnCd)?docIdx={n}` (basename `/haccp/`). `/screen/` 없음
 - 홈·문서함「작성화면」→ [`src/lib/documentNav.ts`](../frontend/haccp-web/src/lib/documentNav.ts)
-- HWP: [`HwpDocumentEditorPage`](../frontend/haccp-web/src/pages/docs/hwpeditor/HwpDocumentEditorPage.tsx)가 `docIdx`로 원본 로드 (`PageScrnContext` 권한)
+- HWP: [`HwpDocumentEditorPage`](../frontend/haccp-web/src/pages/docs/hwp/HwpDocumentEditorPage.tsx)가 `docIdx`로 원본 로드 (`PageScrnContext` 권한)
 - DB형: 각 작성 페이지 `useDocIdxQuery`로 목록 행 선택
 
 ## 문서번호·양식
