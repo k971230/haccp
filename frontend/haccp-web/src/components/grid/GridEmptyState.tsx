@@ -14,6 +14,8 @@ import { cn } from "@/lib/cn";
 
 interface GridEmptyStateProps {
   colSpan?: number;
+  /** 본문 제목 — 기본 MES.noResult */
+  title?: string;
   hint?: string;
   variant?: "row" | "overlay";
   withFilter?: boolean;
@@ -28,14 +30,14 @@ interface GridEmptyStateProps {
  *   3) 성공 시 정상 반환, 실패 시 예외·가드 메시지
  */
 // 설명 — 조회 결과 없음 — tbody 행 또는 스크롤 영역 오버레이
-export function GridEmptyState({ hint, variant = "row", withFilter }: GridEmptyStateProps) {
+export function GridEmptyState({ hint, title, variant = "row", withFilter }: GridEmptyStateProps) {
 // 설명 — 아이콘·메시지·힌트 공통 콘텐츠
   const content = (
     <>
       <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400 shadow-inner">
         <Database className="h-7 w-7" aria-hidden />
       </div>
-      <p className="text-sm font-semibold text-slate-700">{MES.noResult}</p>
+      <p className="text-sm font-semibold text-slate-700">{title ?? MES.noResult}</p>
       {hint && <p className="mt-1 max-w-xs text-xs text-slate-400">{hint}</p>}
     </>
   );

@@ -7,7 +7,7 @@
 -- 일자: 2026-08-19
 -- 코멘트:
 --   1) CYCLE_CD E 표시를 비정기로 바꾸고, 저장 SP가 E를 받도록 연다(예정일은 생성기가 0건)
---   2) 문서주기 좌측은 html_sys_001~010 · hwp_sys_001~027 · hwp_usr_% 만 보여 준다
+--   2) 문서주기 좌측은 html_sys_001~010·012 · hwp_sys_001~027 · hwp_usr_% 만 보여 준다
 --   3) 사용양식 목록 SP는 95와 같다 — 운영 함수가 옛 정의면 여기서 다시 맞춘다
 --   4) 운영 DB(이미 94/95)에는 이 파일만 추가로 돌린다. 85는 재실행하지 않는다
 -- ============================================================
@@ -79,7 +79,7 @@ RETURNS TABLE(
      WHERE ct.co_cd = p_co_cd
        -- 주기 화면: HTML 001~010 + 사용양식 HWP 001~027 + 사용자추가. 011·028+ 제외
        AND (
-            ct.tmpl_cd ~ '^html_sys_0(0[1-9]|10)$'
+            ct.tmpl_cd ~ '^html_sys_0(0[1-9]|10|12)$'
          OR ct.tmpl_cd ~ '^hwp_sys_0(0[1-9]|1[0-9]|2[0-7])$'
          OR ct.tmpl_cd LIKE 'hwp_usr_%'
        )
@@ -94,7 +94,7 @@ RETURNS TABLE(
 $$;
 
 COMMENT ON FUNCTION sp_schedule_cycle_management_form_r_000(varchar, varchar, varchar, varchar) IS
-  '문서주기관리 좌측 — html_sys_001~010 · hwp_sys_001~027 · hwp_usr_*. html_sys_011·028+ 숨김';
+  '문서주기관리 좌측 — html_sys_001~010·012 · hwp_sys_001~027 · hwp_usr_*. html_sys_011·028+ 숨김';
 
 -- ------------------------------------------------------------
 -- 3. 사용양식 목록 — 95와 동일 필터를 다시 심는다

@@ -1,13 +1,13 @@
 # mapper
 
-도메인별 MyBatis XML. SP 호출은 lower_snake.
+도메인별 MyBatis XML. SP 호출은 lower_snake. 화면 체인은 FE 도메인 README · `docs/15`.
 
 ## 하위
 - `auth/` — MyBatis XML — `auth` (인증·로그인·JWT)
 - `bas/` — MyBatis XML — `bas` (기준정보(회사·사용자·양식 등))
 - `ccp/` — MyBatis XML — `ccp` (중요관리점(냉장·모니터링 등))
 - `code/` — MyBatis XML — `code` (공통코드)
-- `doc/` — MyBatis XML — `doc` (문서·결재·파일)
+- `docs/` — MyBatis XML — `docs` (문서함·사용양식·문서주기·개선조치)
 - `hyg/` — MyBatis XML — `hyg` (위생 점검)
 - `log/` — MyBatis XML — `log` (화면 조회·UV/PV 로그)
 - `menu/` — MyBatis XML — `menu` (메뉴·권한)

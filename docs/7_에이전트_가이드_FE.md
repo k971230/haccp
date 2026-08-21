@@ -27,9 +27,9 @@
 
 ## 2. 작업 전 읽을 문서 순서
 
-1. `00` 인덱스  
+1. 루트 README E2E · `docs/23` 태그 · `docs/15` 이야기  
 2. `01` 운영 · `02` 작성규칙 · `04` 인증  
-3. 업무면 `06`~`09` · 파일위치 `10` · 파일/보안 `11`  
+3. 해당 도메인 README · 파일 찾는 법 `10`(17) · 파일/보안 `11`(18)  
 4. 코드 골드: `ColdMonitorPage` · `HaccpShell` · `LoginPage`
 
 ---
@@ -77,7 +77,22 @@ npm run dev   # 4173
 
 ---
 
-## 6. 하지 말 것
+## 6. 신규 화면 체크리스트
+
+FE 경로에 Vite basename `/haccp/` 를 **넣지 않는다.** `SCREEN_PATH` 는 `paths("/docs/html", …)` · `paths("/sys/code", …)` 처럼 pathname만.
+
+1. `pages/{영역}/{메뉴}/` Page + Rule + 도메인 README  
+2. `SCREEN_REGISTRY` 등록  
+3. `tabRoute.ts` `SCREEN_PATH` — `/haccp` 접두 금지. `/screen/{scrnCd}` 도 없음  
+4. `api/{영역}/` + BE Controller/Service/Mapper/SP  
+5. 메뉴·화면 SQL (`tbl_menu` · `tbl_screen`) — 숨김 화면은 `use_yn='N'` 이어도 레지스트리·경로는 연결할 수 있다  
+6. `docs/23_PIPELINE.md` 태그 (재채번 금지)
+
+골드: `ColdMonitorPage` · `HaccpShell` · `routeOf`/`parseRoute`.
+
+---
+
+## 7. 하지 말 것
 
 - mes-web 포트를 가정하거나 `mes-auth` 키 사용  
 - HTTP DELETE  

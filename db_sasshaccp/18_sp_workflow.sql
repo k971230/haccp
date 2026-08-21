@@ -28,9 +28,13 @@ LANGUAGE sql STABLE AS $$
         'steps', COALESCE((
             SELECT jsonb_agg(jsonb_build_object(
                 'idx', s.idx, 'stepNo', s.step_no, 'roleCd', s.role_cd,
-                'approverId', s.approver_id, 'deptCd', s.dept_cd, 'posCd', s.pos_cd
+                'approverId', s.approver_id, 'approverNm', u.user_nm,
+                'deptCd', s.dept_cd, 'deptNm', d.dept_nm,
+                'useYn', COALESCE(s.use_yn, 'Y')
             ) ORDER BY s.step_no)
               FROM tbl_approval_line_step s
+              LEFT JOIN tbl_user u ON u.co_cd = s.co_cd AND u.user_id = s.approver_id
+              LEFT JOIN tbl_dept d ON d.co_cd = s.co_cd AND d.dept_cd = s.dept_cd
              WHERE s.co_cd = l.co_cd AND s.appr_line_cd = l.appr_line_cd
         ), '[]'::jsonb)
     )
@@ -57,6 +61,8 @@ DECLARE
     v_nm varchar(100) := trim(COALESCE(p_payload ->> 'apprLineNm', ''));
     v_step jsonb;
     v_step_no int;
+    v_role varchar(20);
+    v_use varchar(1);
 BEGIN
     IF v_cd = '' OR v_nm = '' THEN
         RAISE EXCEPTION '결재선 코드와 결재선명은 필수입니다.' USING ERRCODE = '45000';
@@ -80,16 +86,21 @@ BEGIN
     FOR v_step IN SELECT value FROM jsonb_array_elements(p_payload -> 'steps')
     LOOP
         v_step_no := NULLIF(v_step ->> 'stepNo', '')::int;
+        v_role := upper(trim(COALESCE(v_step ->> 'roleCd', '')));
         IF v_step_no IS NULL OR v_step_no < 1
-           OR COALESCE(v_step ->> 'roleCd', '') NOT IN ('WRITE', 'REVIEW', 'APPROVE') THEN
+           OR v_role NOT IN ('WRITE', 'REVIEW', 'APPROVE') THEN
             RAISE EXCEPTION '결재 단계 순번 또는 역할이 올바르지 않습니다.' USING ERRCODE = '45000';
         END IF;
+        v_use := CASE
+            WHEN v_role = 'REVIEW' AND upper(COALESCE(v_step ->> 'useYn', 'N')) = 'N' THEN 'N'
+            ELSE 'Y'
+        END;
         INSERT INTO tbl_approval_line_step(
-            co_cd, appr_line_cd, step_no, role_cd, approver_id, dept_cd, pos_cd, ins_id, ins_dt
+            co_cd, appr_line_cd, step_no, role_cd, approver_id, dept_cd, pos_cd, use_yn, ins_id, ins_dt
         ) VALUES (
-            p_co_cd, v_cd, v_step_no, v_step ->> 'roleCd',
+            p_co_cd, v_cd, v_step_no, v_role,
             NULLIF(v_step ->> 'approverId', ''), NULLIF(v_step ->> 'deptCd', ''),
-            NULLIF(v_step ->> 'posCd', ''), p_id, now()
+            NULL, v_use, p_id, now()
         );
     END LOOP;
 END$$;
@@ -108,6 +119,9 @@ CREATE OR REPLACE PROCEDURE sp_tbl_approval_line_d_000(
 )
 LANGUAGE plpgsql AS $$
 BEGIN
+    IF upper(trim(p_appr_line_cd)) = 'DEFAULT' THEN
+        RAISE EXCEPTION '기본 결재선은 시스템 기본 설정이므로 삭제할 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
     IF EXISTS (
         SELECT 1 FROM tbl_company_template
          WHERE co_cd = p_co_cd AND appr_line_cd = p_appr_line_cd
@@ -121,6 +135,34 @@ BEGIN
     DELETE FROM tbl_approval_line WHERE co_cd = p_co_cd AND appr_line_cd = p_appr_line_cd;
 END$$;
 COMMENT ON PROCEDURE sp_tbl_approval_line_d_000(varchar, varchar, varchar) IS '결재선 삭제 — 양식·문서 참조가 없을 때만 단계와 함께 제거';
+
+-- ------------------------------------------------------------
+-- 3b. 삭제 차단 조회 — sys 매퍼 SP 전용
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_tbl_approval_line_delete_blocker_r_000(
+    -- p_co_cd: JWT 회사코드
+    p_co_cd varchar,
+    -- p_appr_line_cd: 삭제 대상 결재선 코드
+    p_appr_line_cd varchar
+)
+RETURNS TABLE(ref_key varchar, target varchar)
+LANGUAGE sql STABLE AS $$
+    SELECT p_appr_line_cd,
+           CASE WHEN upper(trim(p_appr_line_cd)) = 'DEFAULT'
+                THEN '시스템 기본 설정'::varchar
+                ELSE '사용양식 또는 문서'::varchar
+           END
+     WHERE upper(trim(p_appr_line_cd)) = 'DEFAULT'
+        OR EXISTS (
+        SELECT 1 FROM tbl_company_template
+         WHERE co_cd = p_co_cd AND appr_line_cd = p_appr_line_cd
+     ) OR EXISTS (
+        SELECT 1 FROM tbl_document
+         WHERE co_cd = p_co_cd AND appr_line_cd = p_appr_line_cd AND del_yn = 'N'
+     );
+$$;
+COMMENT ON FUNCTION sp_tbl_approval_line_delete_blocker_r_000(varchar, varchar) IS
+  '결재선 삭제 차단 — 사용양식·문서 참조 시 1행';
 
 -- ------------------------------------------------------------
 -- 4. sp_tbl_company_check_item_manage_r_000 — 숨김 항목 포함 관리 목록

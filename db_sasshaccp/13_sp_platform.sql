@@ -32,16 +32,17 @@ BEGIN
         ('menu-write-ccp', 2100), ('menu-write-prp', 2200),
         ('menu-write-logis', 2300), ('menu-write-admin', 2400),
         ('menu-flow-appr', 3100), ('menu-flow-box', 3200), ('menu-flow-ca', 3300),
-        ('menu-master-doc', 4100), ('menu-master-form', 4200),
+        ('menu-master-sch', 4100), ('menu-master-form', 4200),
+        ('menu-master-html', 4250),
         ('menu-master-item', 4300), ('menu-master-appr', 4400),
         ('menu-base-master', 5100),
-        ('menu-sys-auth', 6100), ('menu-sys-log', 6200)
+        ('menu-sys-code', 6100), ('menu-sys-logs', 6200)
       ) AS v(menu_cd, sn)
      WHERE m.menu_cd = v.menu_cd
        AND m.use_yn = 'Y'
        AND (p_co_cd IS NULL OR m.co_cd = p_co_cd);
 
-    -- menu-sys-auth leaf: 공통코드 → 메뉴 → 권한그룹 → 부서 → 사용자
+    -- menu-sys-code leaf: 공통코드 → 메뉴 → 권한그룹 → 부서 → 사용자 → 결재선
     UPDATE tbl_menu m
        SET sort_no = v.ord, upd_id = 'system', upd_dt = now()
       FROM (VALUES
@@ -49,10 +50,11 @@ BEGIN
         ('menu-management', 2),
         ('role-management', 3),
         ('department-management', 4),
-        ('user-management', 5)
+        ('user-management', 5),
+        ('approval-line-management', 6)
       ) AS v(scrn_cd, ord)
      WHERE m.scrn_cd = v.scrn_cd
-       AND m.h_menu_cd = 'menu-sys-auth'
+       AND m.h_menu_cd = 'menu-sys-code'
        AND m.use_yn = 'Y'
        AND (p_co_cd IS NULL OR m.co_cd = p_co_cd);
 
@@ -61,15 +63,19 @@ BEGIN
             ('menu-write-ccp', 2, 1), ('menu-write-prp', 2, 2),
             ('menu-write-logis', 2, 3), ('menu-write-admin', 2, 4),
             ('menu-flow-appr', 3, 1), ('menu-flow-box', 3, 2), ('menu-flow-ca', 3, 3),
-            ('menu-master-doc', 4, 1), ('menu-master-form', 4, 2),
-            ('menu-master-item', 4, 3), ('menu-master-appr', 4, 4),
+            ('menu-master-sch', 4, 1), ('menu-master-form', 4, 2),
+            ('menu-master-html', 4, 3),
+            ('menu-master-item', 4, 4), ('menu-master-appr', 4, 5),
             ('menu-base-master', 5, 1),
-            ('menu-sys-auth', 6, 1), ('menu-sys-log', 6, 2)
+            ('menu-sys-code', 6, 1), ('menu-sys-logs', 6, 2)
         ) AS t(mid_cd, dae_no, jung_no)
     ),
     ranked AS (
         SELECT m.co_cd, m.menu_cd,
-               (mid.dae_no * 1000 + mid.jung_no * 100
+               (CASE
+                    WHEN mid.mid_cd = 'menu-master-html' THEN 4250
+                    ELSE mid.dae_no * 1000 + mid.jung_no * 100
+                END
                  + ROW_NUMBER() OVER (
                        PARTITION BY m.co_cd, m.h_menu_cd
                        ORDER BY m.sort_no, m.menu_cd
@@ -213,16 +219,17 @@ BEGIN
         (p_co_cd, 'menu-flow-appr',   '결재',            'menu-doc-flow',   NULL, 3100, 'Y', p_id, now()),
         (p_co_cd, 'menu-flow-box',    '문서함·법적서류', 'menu-doc-flow',   NULL, 3200, 'Y', p_id, now()),
         (p_co_cd, 'menu-flow-ca',     '이탈·개선조치',   'menu-doc-flow',   NULL, 3300, 'Y', p_id, now()),
-        (p_co_cd, 'menu-master-doc',  '작성 문서·주기',  'menu-doc-master', NULL, 4100, 'Y', p_id, now()),
+        (p_co_cd, 'menu-master-sch',  '작성 문서·주기',  'menu-doc-master', NULL, 4100, 'Y', p_id, now()),
         (p_co_cd, 'menu-master-form', 'HWP·양식 원본',   'menu-doc-master', NULL, 4200, 'Y', p_id, now()),
+        (p_co_cd, 'menu-master-html', 'HTML양식 원본',   'menu-doc-master', NULL, 4250, 'Y', p_id, now()),
         (p_co_cd, 'menu-master-item', '점검항목/한계',   'menu-doc-master', NULL, 4300, 'Y', p_id, now()),
-        (p_co_cd, 'menu-master-appr', '결재선',          'menu-doc-master', NULL, 4400, 'Y', p_id, now()),
+        (p_co_cd, 'menu-master-appr', '결재선',          'menu-doc-master', NULL, 4400, 'N', p_id, now()),
         (p_co_cd, 'menu-base-master', '기준정보',        'menu-base',       NULL, 5100, 'Y', p_id, now()),
-        (p_co_cd, 'menu-sys-auth',    '권한·사용자·코드', 'menu-sys',        NULL, 6100, 'Y', p_id, now()),
-        (p_co_cd, 'menu-sys-log',     '이력·통계',       'menu-sys',        NULL, 6200, 'Y', p_id, now())
+        (p_co_cd, 'menu-sys-code',    '권한·사용자·코드', 'menu-sys',        NULL, 6100, 'Y', p_id, now()),
+        (p_co_cd, 'menu-sys-logs',     '이력·통계',       'menu-sys',        NULL, 6200, 'Y', p_id, now())
     ON CONFLICT (co_cd, menu_cd) DO UPDATE SET
         menu_nm = EXCLUDED.menu_nm, h_menu_cd = EXCLUDED.h_menu_cd, scrn_cd = NULL,
-        use_yn = 'Y', sort_no = EXCLUDED.sort_no, upd_id = p_id, upd_dt = now();
+        use_yn = EXCLUDED.use_yn, sort_no = EXCLUDED.sort_no, upd_id = p_id, upd_dt = now();
 
     -- 소 leaf — 화면별 중분류 매핑 (menu_cd = menu-{scrn_cd})
     INSERT INTO tbl_menu(co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt)
@@ -237,6 +244,7 @@ BEGIN
         ('ccp-verification-check', 'menu-write-ccp', 110),
         ('process-hwp', 'menu-write-ccp', 129),
         ('daily-hygiene-check', 'menu-write-prp', 101),
+        ('hygiene-process-check', 'menu-write-prp', 103),
         ('health-cert-record', 'menu-write-prp', 102),
         ('pest-control-check', 'menu-write-prp', 104),
         ('facility-equipment-check', 'menu-write-prp', 112),
@@ -273,20 +281,16 @@ BEGIN
         ('document-inbox', 'menu-flow-box', 220),
         ('legal-document-upload', 'menu-flow-box', 240),
         ('corrective-action-management', 'menu-flow-ca', 250),
-        ('schedule-cycle-management', 'menu-master-doc', 340),
+        ('schedule-cycle-management', 'menu-master-sch', 340),
         ('hwp-template-management', 'menu-master-form', 310),
-        ('daily-hyg-item-admin', 'menu-master-item', 311),
-        ('ccp-cold-limit-admin', 'menu-master-item', 321),
-        ('ccp-heat-limit-admin', 'menu-master-item', 322),
-        ('ccp-sanitize-limit-admin', 'menu-master-item', 323),
-        ('ccp-filter-limit-admin', 'menu-master-item', 324),
-        ('ccp-metal-limit-admin', 'menu-master-item', 325),
-        ('ccp-verify-standard-admin', 'menu-master-item', 326),
-        ('facility-check-item-admin', 'menu-master-item', 331),
-        ('ccp-limit-management', 'menu-master-item', 330),
+        ('hyg-process-template', 'menu-master-html', 311),
+        ('ccp-verify-template', 'menu-master-html', 312),
+        ('ccp-pkg-template', 'menu-master-html', 313),
+        ('ccp-htg-template', 'menu-master-html', 314),
+        ('ccp-mtl-template', 'menu-master-html', 315),
         ('equipment-management', 'menu-master-item', 360),
         ('pest-device-management', 'menu-master-item', 370),
-        ('approval-line-management', 'menu-master-appr', 350),
+        ('approval-line-management', 'menu-sys-code', 960),
         ('partner-management', 'menu-base-master', 420),
         ('product-management', 'menu-base-master', 430),
         ('material-management', 'menu-base-master', 440),
@@ -294,14 +298,14 @@ BEGIN
         ('measuring-device-management', 'menu-base-master', 460),
         ('vehicle-management', 'menu-base-master', 470),
         ('work-area-management', 'menu-base-master', 480),
-        ('common-code-management', 'menu-sys-auth', 910),
-        ('menu-management', 'menu-sys-auth', 920),
-        ('role-management', 'menu-sys-auth', 930),
-        ('department-management', 'menu-sys-auth', 940),
-        ('user-management', 'menu-sys-auth', 950),
-        ('login-history', 'menu-sys-log', 970),
-        ('screen-usage-statistics', 'menu-sys-log', 980),
-        ('audit-log', 'menu-sys-log', 990)
+        ('common-code-management', 'menu-sys-code', 910),
+        ('menu-management', 'menu-sys-code', 920),
+        ('role-management', 'menu-sys-code', 930),
+        ('department-management', 'menu-sys-code', 940),
+        ('user-management', 'menu-sys-code', 950),
+        ('login-history', 'menu-sys-logs', 970),
+        ('screen-usage-statistics', 'menu-sys-logs', 980),
+        ('audit-log', 'menu-sys-logs', 990)
       ) AS v(scrn_cd, h_menu_cd, sort_no)
       JOIN tbl_screen s ON s.scrn_cd = v.scrn_cd AND s.use_yn = 'Y'
     ON CONFLICT (co_cd, menu_cd) DO NOTHING;
@@ -320,10 +324,10 @@ BEGIN
     VALUES (p_co_cd, 'DEFAULT', '기본 결재선', p_id, now())
     ON CONFLICT (co_cd, appr_line_cd) DO NOTHING;
 
-    INSERT INTO tbl_approval_line_step(co_cd, appr_line_cd, step_no, role_cd, ins_id, ins_dt)
-    VALUES (p_co_cd, 'DEFAULT', 1, 'WRITE',   p_id, now()),
-           (p_co_cd, 'DEFAULT', 2, 'REVIEW',  p_id, now()),
-           (p_co_cd, 'DEFAULT', 3, 'APPROVE', p_id, now())
+    INSERT INTO tbl_approval_line_step(co_cd, appr_line_cd, step_no, role_cd, use_yn, ins_id, ins_dt)
+    VALUES (p_co_cd, 'DEFAULT', 1, 'WRITE',   'Y', p_id, now()),
+           (p_co_cd, 'DEFAULT', 2, 'REVIEW',  'N', p_id, now()),
+           (p_co_cd, 'DEFAULT', 3, 'APPROVE', 'Y', p_id, now())
     ON CONFLICT (co_cd, appr_line_cd, step_no) DO NOTHING;
 
     UPDATE tbl_company_template SET appr_line_cd = 'DEFAULT', upd_id = p_id, upd_dt = now()

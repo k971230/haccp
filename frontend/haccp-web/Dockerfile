@@ -28,7 +28,7 @@ COPY . .
 # Apache/edge 가 /api 를 API 컨테이너로 넘긴다.
 ARG VITE_API_BASE_URL=""
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
-# 운영 Path 분기 — Apache /haccp/ 프리픽스. 로컬 npm run dev 는 vite 기본 base=/
+# 로컬·운영 모두 Path /haccp/. vite.config base 기본값과 같다. 루트 / 로 빌드하면 Apache 자산 경로가 깨진다
 ARG VITE_BASE=/haccp/
 ENV VITE_BASE=${VITE_BASE}
 

@@ -7,7 +7,30 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 서버 파일(`.env.docker`)과 Jenkins Credentials로만 주입한다.
 예제(`.env.example` · `.env.docker.example`)만 저장소에 둔다.
 
-## 핸드북 (시작은 여기)
+## 읽기 순서 (주니어·에이전트)
+
+이 파일 E2E 절 → [`docs/23_PIPELINE.md`](docs/23_PIPELINE.md) (태그→파일) → [`docs/15_HACCP_FE_BE_통합_상세스펙.md`](docs/15_HACCP_FE_BE_통합_상세스펙.md) (유형별 이야기) → 해당 도메인 README (`pages/sys/`, `pages/docs/`, `pages/ccp/` …) → 화면 README가 있으면 그 파일 → 소스 주석.
+
+화면마다 `<Route>`가 없다. 식별자는 `scrnCd`. URL은 `tabRoute.routeOf(scrnCd)` 계층 경로다. Vite·Router **basename은 `/haccp/`** 이고, 라우터 pathname에는 `/haccp`를 다시 넣지 않는다 (`/docs/ccp/ccp-cold-monitor`).
+
+## E2E 요청 흐름
+
+```
+브라우저 (4173, base /haccp/)
+  → main.tsx [HF1] → AppRoutes [HF2]
+    → 미로그인: /login (LoginPage)
+    → 로그인: HaccpShell [HF49]  (path /*)
+      → tabRoute.parseRoute: pathname → scrnCd
+      → SCREEN_REGISTRY[scrnCd] keep-alive
+      → api/*  http|httpBatch|httpFile + JWT Bearer
+        → JwtFilter → Controller → Service → Mapper.xml → SP → tbl_*
+```
+
+탭 닫기: Zustand `afterRemove`로 배열을 한 번만 갱신한다. `navigate`는 셸 `onTabClosed`만. 활성 탭이 지워지면 **오른쪽 → 왼쪽 → `/`(홈)**. today-tasks를 첫 칸에 고정하지 않는다.
+
+PIPELINE 전수 표는 이 파일이 아니라 [`docs/23_PIPELINE.md`](docs/23_PIPELINE.md)다. 새 모듈은 표에 없는 빈 번호를 쓰고 코드에 `PIPELINE[HFn]`/`[HBn]`을 단다. 같은 번호가 여러 파일에 있으면 클러스터다. 재채번하지 않는다.
+
+## 핸드북
 
 | 문서 | 내용 |
 |------|------|
@@ -15,9 +38,9 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 | [`깃.md`](깃.md) | **팀 인수인계** — 일일위생점검표 예시로 Git Bash 전 구간 |
 | [`개발.md`](개발.md) | 브랜치·FE/BE 규약·인증·Path `/haccp` · 검증 |
 | [`운영.md`](운영.md) | `haccp-deploy` Build Now · 스테이지·스모크·장애 대응 |
-| [`완성.md`](완성.md) | 타 AI 리뷰용 종합 보고서 |
+| [`완성.md`](완성.md) | 2026-08-11 타 AI 덤프. **살아 있는 정본 아님** (루트 README · docs/15 · docs/23) |
 
-상세 스펙·런북 정본: [`docs/`](docs/) (`1_`~`21_` · [`docs/README.md`](docs/README.md)).  
+상세 스펙·런북 정본: [`docs/`](docs/) (`1_`~`23_` · [`docs/README.md`](docs/README.md)).  
 배포 런북: [`docs/20_배포_런북.md`](docs/20_배포_런북.md).  
 양식 HWP(로컬): `docs/templates/`. 폴더 역할은 각 디렉터리 `README.md`.
 

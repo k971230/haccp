@@ -1,6 +1,3 @@
-# tsk
+# com.haccp.tsk
 
-도메인 `tsk` — 오늘 할 일·과제. Controller·Service·Mapper 인터페이스.
-
-## 관련
-- 정본: `docs/8_에이전트_가이드_BE.md` · `docs/4_운영규칙_BE.md`
+정본: FE `pages/tsk/README.md`. `TaskController` · `DailyTaskGenerationJob`. XML `mapper/tsk/`.

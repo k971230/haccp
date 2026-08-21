@@ -1,4 +1,4 @@
-# com.haccp.sys — 시스템 관리 8화면
+# com.haccp.sys — 시스템 관리 9화면
 
 정본: `docs/8_에이전트_가이드_BE.md` · `docs/4_운영규칙_BE.md` · FE 파이프라인 표는 `frontend/haccp-web/src/pages/sys/README.md`
 
@@ -12,6 +12,7 @@ com/haccp/sys/
  ├ role/       RoleMgmtController · RoleMgmtService · RoleMgmtMapper
  ├ department/ DepartmentController · DepartmentService · DepartmentMapper
  ├ user/       UserController · UserService · UserMapper   (서명 포함)
+ ├ approvalline/ ApprovalLineController · Service · Mapper  (URL /api/v1/bas/approval-lines 유지)
  ├ loginhistory/ LoginHistoryController · Service · Mapper   (조회 전용)
  ├ auditlog/     AuditLogController · Service · Mapper · AuditWriter
  └ screenusage/  ScreenUsageController · Service · Mapper    (조회 전용)
@@ -42,6 +43,15 @@ POST /api/v1/sys/{screen-cd}/delete
 ```
 
 `{screen-cd}`는 `tbl_screen.scrn_cd`이자 FE 라우트 세그먼트다 (`common-code-management` · `menu-management` · `role-management` · `department-management` · `user-management` · `login-history` · `audit-log` · `screen-usage-statistics`).
+
+결재선만 예외로 URL을 옮기지 않는다.
+
+```
+GET  /api/v1/bas/approval-lines/list
+PUT  /api/v1/bas/approval-lines/save
+POST /api/v1/bas/approval-lines/validate-delete
+POST /api/v1/bas/approval-lines/delete
+```
 
 예외적으로 공통코드는 `list` 대신 `groups`·`details` 2개, 권한그룹은 `screens`(GET/PUT)가 추가되고, 서명은 다음 경로를 쓴다.
 

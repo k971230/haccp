@@ -29,7 +29,7 @@ import com.haccp.ccp.dto.StorageRow;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteValidation;
-import com.haccp.doc.DocCorrectiveSupport;
+import com.haccp.docs.corrective.DocCorrectiveSupport;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -149,7 +149,7 @@ public class CcpColdService {
         correctiveSupport.saveAutoIfNg(
                 LoginUserContext.coCd(),
                 docIdx,
-                "html_sys_001",
+                "html_sys_012",
                 req.getBaseDt().trim(),
                 req.getCorrective(),
                 hasNg,

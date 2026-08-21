@@ -19,6 +19,7 @@
  *
  * ## 주요 API
  * - loadReturn: 재조회 후 EditableRow[] 동기 반환 → afterMasterLoad 포커스 계산용
+ * - reloadKeepSelection: 저장 후 재조회 — _key·업무키로 선택 유지. 없으면 첫 행으로 떨어지지 않는다
  * - removeNewRow: 신규(C) 행 로컬 제거 + 윗행 { focusKey, focusRow } 반환
  * - getSaveRows: _rowState 있는 행만 (저장 API payload)
  *
@@ -41,6 +42,30 @@ export type RemoveNewRowResult<T> = {
   focusKey: string | null;
   focusRow: EditableRow<T> | null;
 };
+
+/** reloadKeepSelection 반환 — 저장 후 같은 행을 다시 고르기 위한 키·행 */
+export type ReloadKeepResult<T> = {
+  key: string | null;
+  row: EditableRow<T> | null;
+};
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-19
+ * 코멘트:
+ *   1) 재조회 목록에서 저장 전 선택행을 찾는다 — _key 또는 업무키
+ *   2) 저장 성공 후 reloadKeepSelection / 마스터-디테일 우측 재로드에서 호출한다
+ *   3) 키가 없거나 목록에 없으면 null — 첫 행으로 떨어지지 않는다
+ */
+export function pickKeptRow<T extends Record<string, unknown>>(
+  mapped: EditableRow<T>[],
+  rowKey: keyof T,
+  prevKey: string | null | undefined,
+): EditableRow<T> | null {
+  const want = prevKey != null ? String(prevKey).trim() : "";
+  if (!want) return null;
+  return mapped.find((r) => r._key === want || String(r[rowKey] ?? "") === want) ?? null;
+}
 
 // 설명 — 서버 조회 결과 → EditableRow[] 매핑(_key·_original 부여)
 // 업무키/대리키가 비어 있으면(= undefined·null·'') 고유 uid로 대체해 React duplicate key를 막는다
@@ -100,15 +125,21 @@ export function useEditableRows<T extends Record<string, any>>(rowKey: keyof T) 
     [rowKey, setRows],
   );
 
-// 설명 — 재조회 후 이전 선택 키 유지(없으면 첫 행)
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-19
+   * 코멘트:
+   *   1) 재조회 후 저장 전 선택(_key·업무키)을 유지한다
+   *   2) 그리드 저장 성공 뒤에 호출한다 — 조회(검색)는 load 로 포커스를 비운다
+   *   3) 목록에 없으면 key/row 모두 null — 첫 행 자동 선택은 하지 않는다
+   */
   const reloadKeepSelection = useCallback(
-    async (fetchFn: () => Promise<T[]>, prevKey: string | null | undefined): Promise<string | null> => {
+    async (fetchFn: () => Promise<T[]>, prevKey: string | null | undefined): Promise<ReloadKeepResult<T>> => {
       const data = await fetchFn();
       const mapped = mapServerRows(data, rowKey);
       setRows(mapped);
-      if (!prevKey) return mapped[0]?._key ?? null;
-      const found = mapped.find((r) => String(r[rowKey as keyof T]) === prevKey);
-      return found ? found._key : mapped[0]?._key ?? null;
+      const row = pickKeptRow(mapped, rowKey, prevKey);
+      return { key: row?._key ?? null, row };
     },
     [rowKey, setRows],
   );

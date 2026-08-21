@@ -44,6 +44,8 @@ import { SCREEN_REGISTRY, cleanTitle, isImplemented } from "./screenRegistry";
 import { parseRoute, routeOf } from "./tabRoute";
 // 역할 — 좌측 메뉴·트리 조립
 import { SideMenu, buildTree } from "./SideMenu";
+// 역할 — 상단 탭 줄·우클릭 닫기
+import { ShellTabBar } from "./ShellTabBar";
 // 역할 — 홈 화면
 import { HomeView } from "./HomeView";
 // 역할 — 하단 상태 바
@@ -75,7 +77,6 @@ export function HaccpShell() {
   const tabs = useTabStore((s) => s.tabs);
   const activeCd = useTabStore((s) => s.activeCd);
   const openTab = useTabStore((s) => s.openTab);
-  const closeTab = useTabStore((s) => s.closeTab);
   // 사이드바 펼침 여부 — 저장값이 "0"일 때만 접힌 상태로 시작한다
   const [sideOpen, setSideOpen] = useState(() => sessionStorage.getItem(SIDE_KEY) !== "0");
 
@@ -92,15 +93,20 @@ export function HaccpShell() {
 
   // 주소가 화면 경로면 그 화면 탭을 열고 활성화한다 (뒤로가기·새로고침·직접 입력 모두 같은 경로)
   useEffect(() => {
-    // 메뉴가 아직 도착하지 않았을 때(= 탭 제목을 알 수 없음) 기다린다
-    if (!menuQ.data) return;
     const scrn = parseRoute(loc.pathname);
     // 구현된 화면일 때만 탭을 연다 — 준비 중 화면 주소로 들어와도 빈 탭이 생기지 않는다
     if (scrn && isImplemented(scrn)) {
+      // 메뉴가 아직 도착하지 않았을 때(= 탭 제목을 알 수 없음) 기다린다
+      if (!menuQ.data) return;
       const row = menuQ.data.find((r) => r.scrnCd === scrn);
       openTab(scrn, row ? cleanTitle(row.menuNm) : scrn);
+      return;
     }
-  }, [loc.pathname, menuQ.data, openTab]);
+    // 마지막 탭 닫기 URL은 "/". HomeView 가 today-tasks 로 replace. /screen 등 미등록은 오늘 할 일
+    if (loc.pathname !== "/") {
+      nav(routeOf("today-tasks"), { replace: true });
+    }
+  }, [loc.pathname, menuQ.data, nav, openTab]);
 
   const isHome = loc.pathname === "/";
 
@@ -131,16 +137,10 @@ export function HaccpShell() {
     nav(routeOf(scrnCd));
   };
 
-  /** 탭 닫기 — 활성 탭을 닫으면 다음 탭이나 홈으로 주소를 맞춘다 */
-  const doClose = (scrnCd: string) => {
-    // 닫기 전에 활성 여부를 기록한다 — closeTab 후에는 판단할 수 없다
-    const wasActive = scrnCd === useTabStore.getState().activeCd;
-    closeTab(scrnCd);
-    if (wasActive) {
-      const next = useTabStore.getState().activeCd;
-      // replace로 이동해 뒤로가기가 닫은 탭으로 되돌아가지 않게 한다
-      nav(next ? routeOf(next) : "/", { replace: true });
-    }
+  /** 탭을 닫은 뒤 — 스토어가 정한 activeCd 로 URL 을 한 번만 맞춘다. set() 안에서 navigate 하지 않는다 */
+  const onTabClosed = () => {
+    const next = useTabStore.getState().activeCd;
+    nav(next ? routeOf(next) : "/", { replace: true });
   };
 
   return (
@@ -232,36 +232,12 @@ export function HaccpShell() {
       <main className="flex min-h-0 min-w-0 flex-col overflow-hidden">
         {/* 열린 탭이 있을 때만 탭바를 둔다 — 홈만 볼 때 공간을 차지하지 않게 */}
         {tabs.length > 0 && (
-          <div className="flex min-h-8 shrink-0 items-stretch gap-1 overflow-x-auto border-b border-slate-200 bg-white/90 px-2 pt-1.5 shadow-sm">
-            {tabs.map((t) => {
-              const active = t.scrnCd === activeCd;
-              return (
-                <div
-                  key={t.scrnCd}
-                  className={cn(
-                    "relative top-px flex min-h-7 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-t-lg border border-b-0 border-slate-200 px-3 text-mes-ui",
-                    active
-                      ? "border-b-white bg-white font-semibold text-blue-600 shadow-sm"
-                      : "bg-slate-50/80 text-slate-500 hover:bg-white",
-                  )}
-                  onClick={() => go(t.scrnCd)}
-                >
-                  <span className={cn("h-1.5 w-1.5 rounded-full", active ? "bg-blue-600" : "bg-slate-300")} />
-                  <span>{t.title}</span>
-                  <span
-                    className="rounded px-0.5 text-sm text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                    // 닫기 클릭이 탭 선택으로도 처리되지 않게 전파를 막는다
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      doClose(t.scrnCd);
-                    }}
-                  >
-                    ×
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          <ShellTabBar
+            // 탭 칩 좌클릭 — 해당 화면으로 이동
+            onSelect={go}
+            // ×·우클릭 닫기 후 주소 맞춤
+            onClosed={onTabClosed}
+          />
         )}
 
         {/* 화면 영역 — 라우터 Outlet이 아니라 레지스트리로 탭마다 직접 마운트한다(입력값 유지) */}

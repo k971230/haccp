@@ -13,7 +13,7 @@
 | FE/BE | 5173 / 8080 | **4173 / 7070** |
 | DB | `metis` | **`sasshaccp`** |
 | SP | `sp_sk_*` | **`sp_tbl_*`** |
-| 삭제 골드 | ClientController | **DocumentController** + `DeleteValidation` |
+| 삭제 골드 | ClientController | **`com.haccp.docs.document.DocumentService`** + `DeleteValidation` |
 
 ---
 

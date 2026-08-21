@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-06
  * 코멘트:
- *   1) 결재선·사용양식/점검항목·작성주기·내보내기이력·스마트일지매핑 API를 역할별 고정 경로로 제공한다
+ *   1) 사용양식/점검항목·작성주기·내보내기이력·스마트일지매핑 API를 역할별 고정 경로로 제공한다
  *   2) 신규·내보내기·불러오기는 PUT, 삭제는 POST validate-delete→delete 또는 POST delete만 사용한다
  *   3) 화면코드·회사코드·작업자는 URL이나 본문이 아닌 서버 고정 계약과 JWT로 분리한다
  *
@@ -38,29 +38,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class WorkflowController {
     private final WorkflowService service;
-
-    @GetMapping("/approval-lines/list")
-    public CommonResponse<List<Map<String, Object>>> approvalLines() {
-        return CommonResponse.ok(service.approvalLines());
-    }
-
-    @PutMapping("/approval-lines/save")
-    public CommonResponse<Void> saveApprovalLine(@RequestBody Map<String, Object> row) {
-        service.saveApprovalLine(row);
-        return CommonResponse.ok(null);
-    }
-
-    @PostMapping("/approval-lines/validate-delete")
-    public CommonResponse<Void> validateApprovalLineDelete(@RequestBody List<WorkflowDeleteItem> keys) {
-        service.validateApprovalLineDelete(keys);
-        return CommonResponse.ok(null);
-    }
-
-    @PostMapping("/approval-lines/delete")
-    public CommonResponse<Void> deleteApprovalLines(@RequestBody List<WorkflowDeleteItem> keys) {
-        service.deleteApprovalLines(keys);
-        return CommonResponse.ok(null);
-    }
 
     @GetMapping("/company-templates/list")
     public CommonResponse<List<Map<String, Object>>> templates() {

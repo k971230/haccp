@@ -2,11 +2,11 @@
  * dialog — 확인·알림 모달과 토스트를 전역 한 곳에서 띄운다.
  *
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-08-19
  * 코멘트:
- *   1) mesConfirm은 안내(파랑), mesConfirmDanger는 삭제·초기화(빨간 틴트) — 확인/취소 문구는 같다
- *   2) mesConfirmUnsaved는 저장/저장안함/취소 3버튼 — HWP 행 이동 미저장 가드용
- *   3) mes-web의 터치PC(kiosk) 대형 모드는 걷어냈다 — HACCP는 사무실 PC에서만 쓴다
+ *   1) 확인창·토스트는 왼쪽 색 바 + 원형 아이콘 카드
+ *   2) 확인·저장은 MesButton save(파랑), 취소는 danger(빨강). 삭제 확인의 실행 버튼은 '삭제'
+ *   3) 삭제·안내는 왼쪽 바·아이콘 색으로 구분. 저장 완료는 모달로 바꾸지 않는다
  *
  * PIPELINE[HF56] 셸 인프라
  * PIPELINE[HF49] 연관 — 셸
@@ -15,16 +15,16 @@
 import { useEffect } from "react";
 // 역할 — 모달·토스트 전역 상태 스토어
 import { create } from "zustand";
-// 역할 — 톤별 아이콘 (info/success/warn/error)
-import { AlertCircle, AlertTriangle, CheckCircle, Info } from "lucide-react";
 // 역할 — className 병합 유틸
 import { cn } from "@/lib/cn";
-// 역할 — 모달 하단 확인·취소 버튼
+// 역할 — 안내 원형 아이콘 (i / ! / 체크 / X)
+import { AlertTriangle, Check, Info, X } from "lucide-react";
+// 역할 — 확인·취소 색을 저장·삭제 툴바와 같게
 import { MesButton } from "@/components/ui/MesButton";
 // 역할 — 토스트 표시 시간 (OPS_GLOBAL_CONFIG)
 import { TOAST_DURATION_MS, TOAST_ERROR_DURATION_MS } from "@/config/envConfig";
 
-/** 모달·토스트 톤 — 아이콘과 색을 결정한다 */
+/** 모달·토스트 톤 — 확인 빨강·배너 제목색을 결정한다 */
 export type Tone = "info" | "success" | "warn" | "error";
 
 /** 토스트 1건 */
@@ -47,7 +47,7 @@ interface DialogState {
   title: string;
   /** 모달 본문 — 개행이 그대로 반영된다 */
   message: string;
-  /** 아이콘·테두리 색을 정하는 톤 */
+  /** 확인 버튼 색(파랑/빨강)·배너 제목색 */
   tone: Tone;
   /** 확인 버튼 문구 */
   okText: string;
@@ -61,7 +61,7 @@ interface DialogState {
   resolve?: (v: boolean) => void;
   /** unsaved 3버튼 resolve */
   resolveUnsaved?: (v: UnsavedChoice) => void;
-  /** 화면 우하단에 쌓인 토스트 목록 */
+  /** 화면 우측 하단에 쌓인 토스트 목록 */
   toasts: ToastItem[];
   /** 모달을 띄우고 응답을 기다린다 */
   show: (
@@ -163,7 +163,7 @@ export const useDialogStore = create<DialogState>((set, get) => ({
  * 일자: 2026-08-05
  * 코멘트:
  *   1) 확인·취소 모달을 띄우고 사용자 선택을 Promise로 돌려준다
- *   2) 저장·업로드·적용처럼 안내 확인에 쓴다. 확인 버튼은 save(파랑)
+ *   2) 저장·업로드·적용처럼 안내 확인에 쓴다. 확인은 시스템 파랑
  *   3) 확인이면 true, 취소·Escape·백드롭 클릭이면 false다
  */
 export const mesConfirm = (
@@ -178,13 +178,20 @@ export const mesConfirm = (
  * 일자: 2026-08-18
  * 코멘트:
  *   1) 삭제·초기화처럼 되돌리기 어려운 확인에 쓴다
- *   2) 버튼은 취소/확인 그대로이고, 확인만 툴바 초기화와 같은 danger(빨간 틴트)다
+ *   2) 실행 버튼은 '삭제', 제목도 '삭제'. 취소는 툴바 삭제와 같은 빨강
  *   3) 확인이면 true, 취소·Escape·백드롭이면 false다
  */
 export const mesConfirmDanger = (
   // 확인 문구 — MES.deleteConfirm 또는 초기화 질문
   message: string,
-) => useDialogStore.getState().show("confirm", message, { tone: "error" });
+  // 제목·실행 버튼 문구 — 생략하면 삭제
+  o?: Partial<Pick<DialogState, "title" | "okText" | "cancelText">>
+) => useDialogStore.getState().show("confirm", message, {
+  tone: "error",
+  title: o?.title ?? "삭제",
+  okText: o?.okText ?? "삭제",
+  cancelText: o?.cancelText,
+});
 
 /**
  * 개발자: 박승우
@@ -205,14 +212,14 @@ export const mesAlert = (
  * 개발자: 박승우
  * 일자: 2026-08-05
  * 코멘트:
- *   1) 화면 우하단에 스스로 사라지는 토스트를 띄운다
+ *   1) 화면 우측 하단에 스스로 사라지는 안내 카드를 띄운다
  *   2) 저장 완료처럼 흐름을 끊지 않아야 하는 안내에 쓴다
  *   3) 반환값이 없다 — 사용자 응답을 기다리지 않는다
  */
 export const mesToast = (
   // 안내 문구
   message: string,
-  // 톤 — 기본은 성공(초록). 오류는 "error"로 넘겨 더 오래 남긴다
+  // 톤 — 기본은 성공. 오류는 "error"로 넘겨 더 오래 남긴다
   tone: Tone = "success"
 ) => useDialogStore.getState().pushToast(message, tone);
 
@@ -231,20 +238,29 @@ export const mesConfirmUnsaved = (
   o?: Parameters<DialogState["showUnsaved"]>[1]
 ) => useDialogStore.getState().showUnsaved(message, o);
 
-// 톤별 아이콘
-const TONE_ICON = { info: Info, success: CheckCircle, warn: AlertTriangle, error: AlertCircle } as const;
-// 톤별 모달 상단 테두리 색
-const TONE_BORDER = { info: "border-brand-700", success: "border-emerald-600", warn: "border-slate-400", error: "border-brand-800" } as const;
-// 톤별 토스트 배경색
-const TOAST_BG = { info: "bg-brand-700", success: "bg-emerald-600", warn: "bg-slate-600", error: "bg-brand-800" } as const;
+// 배너·확인창 제목 — 톤별 짧은 안내
+const BANNER_KICKER: Record<Tone, string> = {
+  info: "알림",
+  success: "완료",
+  warn: "안내",
+  error: "오류",
+};
+
+// 원형 아이콘 — 정보 i, 경고 !, 성공 체크, 오류 X
+const TONE_ICON = {
+  info: Info,
+  success: Check,
+  warn: AlertTriangle,
+  error: X,
+} as const;
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-05
+ * 일자: 2026-08-19
  * 코멘트:
  *   1) 모달·토스트를 실제로 그리는 호스트 컴포넌트다
- *   2) 앱 루트(셸·로그인 화면)에 한 번만 마운트한다 — 두 번 넣으면 모달이 겹쳐 보인다
- *   3) 열려 있는 동안 Enter는 확인, Escape는 취소로 동작한다
+ *   2) 앱 루트(셸)에 한 번만 마운트한다 — 두 번 넣으면 모달이 겹쳐 보인다
+ *   3) 열려 있는 동안 Enter는 확인, Escape는 취소. unsaved의 Enter는 무시
  */
 export function DialogHost() {
   const {
@@ -276,94 +292,160 @@ export function DialogHost() {
     <>
       {open && (
         <div
-          // 백드롭 — 바깥을 클릭하면 취소로 처리한다
-          className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/40"
+          // 반투명 배경 — 바깥을 클릭하면 취소
+          className="mes-alert-backdrop"
           onClick={() => (kind === "unsaved" ? closeUnsaved("cancel") : close(false))}
         >
           <div
-            // 모달 본체 — 톤에 따라 상단 테두리 색이 바뀐다
-            className={cn("w-full max-w-md overflow-hidden rounded-mes-xl border-t-[3px] bg-white shadow-xl", TONE_BORDER[tone])}
+            // 확인 카드 — 토스트와 같은 왼쪽 바·원형 아이콘. 버튼은 확인·취소만
+            className={cn("mes-notice mes-alert", `mes-notice-tone-${tone}`)}
             // 본체 클릭이 백드롭까지 올라가 모달이 닫히는 것을 막는다
             onClick={(e) => e.stopPropagation()}
             role="dialog"
-            aria-modal
+            aria-modal="true"
+            aria-labelledby="mes-alert-title"
           >
-            <div className="flex items-center gap-2 px-4 pb-1 pt-3 text-sm">
-              <ToneIcon className="h-4 w-4 text-brand-700" aria-hidden />
-              <b>{title}</b>
-            </div>
-            {/* whitespace-pre-line — 문구의 \n을 줄바꿈으로 살린다 */}
-            <div className="whitespace-pre-line px-4 pb-3 text-mes-ui leading-relaxed text-slate-700">{message}</div>
-            <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-2">
-              {/* unsaved — 저장 / 저장 안 함 / 취소 */}
+            <div
+              // 톤 색 세로 바 — 삭제 빨강, 안내 파랑
+              className="mes-notice-bar"
+              aria-hidden
+            />
+            <div className="mes-notice-content">
+              <div className="mes-notice-row">
+                <div
+                  // 원형 아이콘
+                  className="mes-notice-icon"
+                  aria-hidden
+                >
+                  <ToneIcon strokeWidth={2.4} />
+                </div>
+                <div className="mes-notice-copy">
+                  <div
+                    // 제목
+                    id="mes-alert-title"
+                    className="mes-notice-title"
+                  >
+                    {title}
+                  </div>
+                  <div
+                    // 본문 — \n 줄바꿈 유지
+                    className="mes-notice-msg"
+                  >
+                    {message}
+                  </div>
+                </div>
+              </div>
               {kind === "unsaved" ? (
-                <>
+                <div
+                  // 미저장만 3버튼. 일반 확인은 확인·취소만
+                  className="mes-alert-actions"
+                >
                   <MesButton
-                    // 취소 — 행 포커스·문서 유지
-                    variant="secondary"
+                    // 취소 — 툴바 삭제와 같은 빨강
+                    type="button"
+                    size="sm"
+                    variant="danger"
                     onClick={() => closeUnsaved("cancel")}
                   >
                     {cancelText}
                   </MesButton>
                   <MesButton
-                    // 저장 안 함 — 변경 버리고 행 이동
+                    // 저장 안 함
+                    type="button"
+                    size="sm"
                     variant="secondary"
                     onClick={() => closeUnsaved("discard")}
                   >
                     {discardText}
                   </MesButton>
                   <MesButton
-                    // 저장 — 호스트 handleSave 후 행 이동
+                    // 저장 — 툴바 저장과 같은 파랑
+                    type="button"
+                    size="sm"
                     variant="save"
                     autoFocus
                     onClick={() => closeUnsaved("save")}
                   >
                     {saveText}
                   </MesButton>
-                </>
+                </div>
               ) : (
-                <>
-                  {/* confirm일 때만(= 취소 선택지가 있을 때) 취소 버튼을 둔다 */}
-                  {kind === "confirm" && (
+                <div
+                  // 확인·저장(파랑) · 취소(빨강). 삭제 확인은 실행 문구가 '삭제'
+                  className="mes-alert-actions"
+                >
+                  {kind === "confirm" ? (
                     <MesButton
-                      // 취소 — 아무 것도 하지 않고 닫는다
-                      variant="secondary"
+                      // 취소 — 툴바 삭제와 같은 빨강
+                      type="button"
+                      size="sm"
+                      variant="danger"
                       onClick={() => close(false)}
                     >
                       {cancelText}
                     </MesButton>
-                  )}
+                  ) : null}
                   <MesButton
-                    // 삭제·초기화(error·warn)는 툴바 초기화와 같은 danger, 안내는 save(파랑)
-                    variant={kind === "confirm" && (tone === "warn" || tone === "error") ? "danger" : "save"}
-                    // 열리자마자 Enter로 확인할 수 있게 포커스를 준다
+                    // 확인·삭제 실행 — 툴바 저장과 같은 파랑
+                    type="button"
+                    size="sm"
+                    variant="save"
                     autoFocus
                     onClick={() => close(true)}
                   >
                     {okText}
                   </MesButton>
-                </>
+                </div>
               )}
             </div>
           </div>
         </div>
       )}
-      {/* 토스트 스택 — 오래된 것이 위, 새 것이 아래로 쌓인다 */}
-      <div className="fixed bottom-3.5 right-3.5 z-[1100] flex flex-col gap-1.5">
+      <div
+        // 우측 하단 안내 스택
+        className="mes-banner-stack"
+      >
         {toasts.map((t) => {
           const Icon = TONE_ICON[t.tone];
           return (
             <div
               key={t.id}
-              className={cn(
-                "flex max-w-sm cursor-pointer items-center gap-2 rounded-mes px-3 py-2 text-mes-ui text-white shadow-lg",
-                TOAST_BG[t.tone]
-              )}
-              // 다 읽었으면 클릭해서 바로 닫을 수 있다
+              className={cn("mes-notice mes-banner", `mes-notice-tone-${t.tone}`)}
+              // 카드 클릭으로도 닫힘
               onClick={() => dropToast(t.id)}
             >
-              <Icon className="h-4 w-4 shrink-0" aria-hidden />
-              <span>{t.message}</span>
+              <div
+                // 톤 색 세로 바
+                className="mes-notice-bar"
+                aria-hidden
+              />
+              <div className="mes-notice-content">
+                <div className="mes-notice-row">
+                  <div
+                    // 원형 아이콘
+                    className="mes-notice-icon"
+                    aria-hidden
+                  >
+                    <Icon strokeWidth={2.4} />
+                  </div>
+                  <div className="mes-notice-copy">
+                    <div className="mes-notice-title">{BANNER_KICKER[t.tone]}</div>
+                    <div className="mes-notice-msg">{t.message}</div>
+                  </div>
+                  <button
+                    // 닫기 X
+                    type="button"
+                    className="mes-notice-close"
+                    aria-label="닫기"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dropToast(t.id);
+                    }}
+                  >
+                    <X size={16} strokeWidth={2} />
+                  </button>
+                </div>
+              </div>
             </div>
           );
         })}

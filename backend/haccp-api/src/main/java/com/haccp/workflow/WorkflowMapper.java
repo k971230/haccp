@@ -23,14 +23,6 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface WorkflowMapper {
 
-    List<String> selectApprovalLines(@Param("coCd") String coCd);
-
-    void saveApprovalLine(@Param("coCd") String coCd, @Param("payload") String payload, @Param("userId") String userId);
-
-    Map<String, Object> selectApprovalLineBlocker(@Param("coCd") String coCd, @Param("apprLineCd") String apprLineCd);
-
-    void deleteApprovalLine(@Param("coCd") String coCd, @Param("apprLineCd") String apprLineCd, @Param("userId") String userId);
-
     List<Map<String, Object>> selectTemplates(@Param("coCd") String coCd);
 
     void saveCompanyTemplate(

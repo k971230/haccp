@@ -1,10 +1,10 @@
 # sys 파이프라인 (FE + BE + DB)
 
-메뉴바에서 열리는 `sys` 도메인 8화면 정본.
+메뉴바에서 열리는 `sys` 도메인 9화면 정본.
 로컬 UI `http://localhost:4173` · API `http://localhost:7070`
 관련: `docs/7_에이전트_가이드_FE.md` · `docs/3_운영규칙_FE.md` · `docs/8_에이전트_가이드_BE.md` · `docs/4_운영규칙_BE.md`
 
-라우트 규칙: `routeOf(scrnCd)` → `/screen/{scrnCd}` (`shell/tabRoute.ts`)
+라우트 규칙: `routeOf(scrnCd)` → `tabRoute.SCREEN_PATH` 계층 경로 (`shell/tabRoute.ts`). `/screen/{scrnCd}` 없음.
 
 ---
 
@@ -21,6 +21,7 @@ pages/sys/
  ├ role/       RoleManagementPage.tsx · RoleManagementRule.ts · README.md
  ├ department/ DepartmentManagementPage.tsx · DepartmentManagementRule.ts · README.md
  ├ user/       UserManagementPage.tsx · UserManagementRule.ts · README.md
+ ├ approvalline/ ApprovalLineManagementPage.tsx · ApprovalLineManagementRule.ts · README.md
  ├ loginhistory/ LoginHistoryPage.tsx · LoginHistoryRule.ts · README.md
  ├ auditlog/     AuditLogPage.tsx · AuditLogRule.ts · README.md
  ├ screenusage/  ScreenUsageStatisticsPage.tsx · ScreenUsageStatisticsRule.ts · README.md
@@ -51,6 +52,7 @@ pages/sys/
 | `roleApi.ts` | 권한그룹 + 화면권한 |
 | `departmentApi.ts` | 부서 관리 |
 | `userApi.ts` | 사용자 관리 + 서명(내 서명 포함) |
+| `approvalLineApi.ts` | 결재선 관리 (URL `/api/v1/bas/approval-lines` 유지) |
 | `loginHistoryApi.ts` | 로그인 이력 |
 | `auditLogApi.ts` | 변경 감사 로그 |
 | `screenUsageApi.ts` | 화면 이용 통계 |
@@ -67,6 +69,7 @@ pages/sys/
 | 권한그룹 관리 | `role-management` | `role-mgmt-master` |
 | 부서 관리 | `department-management` | `dept-mgmt-master-v2` |
 | 사용자 관리 | `user-management` | `sys-user-management-v2` |
+| 결재선 관리 | `approval-line-management` | `bas-approval-line-header` · `bas-approval-line-steps-v2` |
 | 로그인 이력 | `login-history` | `log-login-history` |
 | 변경 감사 로그 | `audit-log` | `log-audit-log` |
 | 화면 이용 통계 | `screen-usage-statistics` | `log-screen-usage-statistics` |
@@ -82,10 +85,11 @@ java/com/haccp/sys/
  ├ role/       RoleMgmtController · Service · Mapper
  ├ department/ DepartmentController · Service · Mapper
  ├ user/       UserController · Service · Mapper (서명 포함)
+ ├ approvalline/ ApprovalLineController · Service · Mapper (URL은 /api/v1/bas/approval-lines 유지)
  ├ loginhistory/ LoginHistory* (C/S/M, 조회 전용)
  ├ auditlog/     AuditLog* · AuditWriter (조회 + 적재)
  └ screenusage/  ScreenUsage* (C/S/M, 조회 전용)
-resources/mapper/sys/{commoncode,menu,role,department,user,loginhistory,auditlog,screenusage}/*.xml
+resources/mapper/sys/{commoncode,menu,role,department,user,approvalline,loginhistory,auditlog,screenusage}/*.xml
 ```
 
 - 패키지 루트는 `com.haccp` (구 MES 접두 패키지에서 전면 이동 완료)
@@ -272,9 +276,40 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 
 ---
 
-## 6. 로그 3화면 (`login-history` · `audit-log` · `screen-usage-statistics`)
+## 6. 결재선 관리 (`approval-line-management`)
 
-### 6-1. 구조
+### 6-1. 화면
+
+좌 결재선 헤더(행추가·저장·삭제, 기본 32%) · 우 고정 3단계(작성·검토·승인, 저장만). 검토 기본은 사용안함.
+단계 열은 순서 · 역할 · 부서 · 결재자 · 사용. 결재자 셀 버튼은 문서주기 담당자와 같은 `CodeLookup`이며 고르면 소속 부서가 채워진다. 직위코드 없음.
+URL은 `/sys/code/approval-line-management` — 메뉴 중분류 `menu-sys-code`. `/screen/{scrnCd}` 없음.
+
+### 6-2. 파일
+
+| 구분 | 경로 |
+|---|---|
+| FE | `pages/sys/approvalline/ApprovalLineManagementPage.tsx` · `ApprovalLineManagementRule.ts` |
+| 모달 | `components/common/modal/CodeLookupModal.tsx` (`openModal("CodeLookup")`) |
+| API | `api/sys/approvalLineApi.ts` + 룩업 후보 `userApi.listUsers` |
+| BE | `com/haccp/sys/approvalline/{ApprovalLineController,ApprovalLineService,ApprovalLineMapper}.java` |
+| XML | `resources/mapper/sys/approvalline/ApprovalLineMapper.xml` |
+| DB | `db_sasshaccp/97_migrate_approval_line_sys.sql` · `18_sp_workflow.sql` |
+
+### 6-3. 버튼 → 끝단
+
+| 버튼·이벤트 | FE 핸들러 | API | Service | SP | 테이블 |
+|---|---|---|---|---|---|
+| 조회 | `load` → `listApprovalLines` | `GET /api/v1/bas/approval-lines/list` | `list` | `sp_tbl_approval_line_r_000` | `tbl_approval_line` `tbl_approval_line_step` |
+| 행추가 | `handleAdd` → `emptyLine()` | 없음(로컬, 우측에 3단계) | | | |
+| 결재자 룩업 | `openApproverLookup` → `openModal("CodeLookup")` | 없음(FE 사용자 목록 재사용) | | | |
+| 저장 | `handleSave` → `saveApprovalLine` | `PUT .../save` | `save` | `sp_tbl_approval_line_c_000` | 위 |
+| 삭제 | `handleDelete` → `validateDeleteApprovalLines` → `deleteApprovalLines` | `POST .../validate-delete` → `POST .../delete` | `validateDelete`·`delete` | `sp_tbl_approval_line_delete_blocker_r_000` → `sp_tbl_approval_line_d_000` | 위 |
+
+---
+
+## 7. 로그 3화면 (`login-history` · `audit-log` · `screen-usage-statistics`)
+
+### 7-1. 구조
 
 세 화면 모두 **조회 전용**이며 `components/layout/LogPageShell.tsx` 하나를 공유한다. 화면 폴더는 각각 `loginhistory/` · `auditlog/` · `screenusage/` 다.
 
@@ -288,7 +323,7 @@ screenusage/ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE
 - 셸은 인스턴스 상태를 갖는 컴포넌트라 각 Page가 `key={rule.scrnCd}`로 렌더한다. `HaccpShell`이 탭을 `hidden`으로 동시 마운트해도 기간·트리·행이 섞이지 않는다
 - 모듈 레벨 `let`·싱글턴 캐시 금지
 
-### 6-2. 화면별 계약
+### 7-2. 화면별 계약
 
 | 화면 | 트리 | 코드 대분류 | API | SP | 테이블 |
 |---|---|---|---|---|---|
@@ -298,7 +333,7 @@ screenusage/ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE
 
 리프 노드는 서버 조건으로, 폴더 노드는 기간 전건 조회 후 Rule의 `fetchRows`가 하위 키로 FE 필터한다.
 
-### 6-3. 감사 이력은 누가 쌓나
+### 7-3. 감사 이력은 누가 쌓나
 
 `tbl_audit_log`는 화면이 아니라 저장·삭제를 수행한 서비스가 남긴다. 적재기는 `com.haccp.sys.auditlog.AuditWriter` 하나이며 SP는 `sp_tbl_audit_log_c_000`이다.
 
@@ -313,7 +348,7 @@ screenusage/ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE
 
 ---
 
-## 7. 신규 메뉴 추가 절차 (요약)
+## 8. 신규 메뉴 추가 절차 (요약)
 
 1. DB: `db_sasshaccp/`에 `sp_tbl_{화면}_r_000`·`_c_000`·`_delete_blocker_r_000`·`_d_000` migrate 작성 (DROP은 회귀 통과 후 별도 파일)
 2. BE: `com.haccp.{도메인}` 또는 `com.haccp.sys.{메뉴}` 아래 Controller·Service·Mapper + `resources/mapper/{...}/*.xml`(SP 호출 전용)

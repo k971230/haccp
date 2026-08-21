@@ -29,9 +29,9 @@
 | 0 | 오늘 할 일 | `today-tasks` | KPI·오늘 할 일·최근 문서 (미리보기 패널 없음) |
 | 1 | 문서 작성 | `MWRK` | DB형 점검표 + HWP 문서만 leaf |
 | 2 | 문서 현황·결재 | `MAPR` | 결재함·문서함·이력·법적서류·개선조치 |
-| 3 | 문서 기준관리 | `MFRM` | HWP양식·점검항목·CCP한계·작성주기·결재선·설비/방충 |
+| 3 | 문서 기준관리 | `MFRM` | HWP양식·점검항목·CCP한계·작성주기·설비/방충 |
 | 4 | 기초정보 관리 | `MCOD` | 공통코드·제품·원자재·거래처·창고 등 |
-| 5 | 시스템 관리 | `MSYS` | 회사·사용자·부서·권한·메뉴·로그 |
+| 5 | 시스템 관리 | `MSYS` | 회사·사용자·부서·권한·메뉴·결재선·로그 |
 
 구 대메뉴(`MCCP`/`MHYG`/…/`MSET`) 및 단독 `hwp-document-editor`·스마트일지·감사추출은 `use_yn=N`.  
 smart-diary API는 STEP 20에서 폐기, audit-export는 동결(FE 미노출) — 상세는 09 G-14.
@@ -47,9 +47,9 @@ smart-diary API는 STEP 20에서 폐기, audit-export는 동결(FE 미노출) �
 
 ## Deep-link
 
-- URL: `/screen/{scrnCd}?docIdx={n}`
-- 홈·문서함「작성화면」→ [`src/lib/documentNav.ts`](../src/lib/documentNav.ts)
-- HWP: [`HwpDocumentEditorPage`](../src/pages/doc/HwpDocumentEditorPage.tsx)가 `docIdx`로 원본 로드 (`PageScrnContext` 권한)
+- URL: `routeOf(scrnCd)?docIdx={n}` (basename `/haccp/`). `/screen/` 없음
+- 홈·문서함「작성화면」→ [`src/lib/documentNav.ts`](../frontend/haccp-web/src/lib/documentNav.ts)
+- HWP: [`HwpDocumentEditorPage`](../frontend/haccp-web/src/pages/docs/hwpeditor/HwpDocumentEditorPage.tsx)가 `docIdx`로 원본 로드 (`PageScrnContext` 권한)
 - DB형: 각 작성 페이지 `useDocIdxQuery`로 목록 행 선택
 
 ## 문서번호·양식

@@ -5,7 +5,7 @@
 
 ## 패키지
 
-`com.haccp.{auth|menu|code|pref|log|bas|workflow|ccp|hyg|ops|doc|tsk|sys|common}`
+`com.haccp.{auth|menu|code|pref|log|bas|workflow|ccp|hyg|ops|docs|tsk|sys|common}`
 
 ## 레이어
 
@@ -14,8 +14,8 @@ Controller → Service(CUD `@Transactional`) → Mapper+XML → SP
 
 ## 주석 밀도
 
-FE와 **동일**. 골드: `AuthService` · `AuthController` · `AuthMapper.xml` · `Document*`.  
-PIPELINE 접두사 **`HB`**.
+FE와 **동일**. 골드: `AuthService` · `AuthController` · `AuthMapper.xml` · `docs/document/DocumentService` · `mapper/docs/document/`.  
+PIPELINE 접두사 **`HB`**. 색인 [`23_PIPELINE.md`](23_PIPELINE.md).
 
 ## Two-Tier
 
@@ -23,4 +23,4 @@ Java/DTO/JSON camelCase · SQL/SP lower_snake · `map-underscore-to-camel-case: 
 
 ## 파일 지도
 
-FE [`10`](17_파일구조_컴포넌트_함수지도.md) §8 BE 전수.
+파일 찾는 법 [`17`](17_파일구조_컴포넌트_함수지도.md). 태그 [`23_PIPELINE.md`](23_PIPELINE.md).

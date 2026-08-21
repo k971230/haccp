@@ -21,7 +21,7 @@ DB 규약: [`07-haccp-db.mdc`](07-haccp-db.mdc) · 운영: [`06-operations.mdc`]
 ## 패키지
 
 `com.haccp.{영역}` — `auth`, `menu`, `code`, `pref`, `log`, `common`,  
-업무: `tsk`, `ccp`, `hyg`, `doc`, `hwp`, `bas`, `sys`, `ops`, `workflow` …
+업무: `tsk`, `ccp`, `hyg`, `docs`, `bas`, `sys`, `ops`, `workflow` …
 
 ## 화면 패키지 분할 (sys 골드)
 
@@ -32,7 +32,7 @@ DB 규약: [`07-haccp-db.mdc`](07-haccp-db.mdc) · 운영: [`06-operations.mdc`]
 | 패키지 | `com.haccp.{영역}.{메뉴}` — 하이픈 없는 짧은 도메인명 |
 | XML | `resources/mapper/{영역}/{메뉴}/*.xml` — `namespace`는 인터페이스 FQCN |
 | URL | 기존 `/api/v1/{영역}/{리소스}/…` 유지. 폴더 이동만으로 경로를 바꾸지 않는다 |
-| 공유 유틸 | 영역 루트에 둔다 (`SysPayload`, `pages/hwp/formType.ts`와 같은 위치) |
+| 공유 유틸 | 영역 루트에 둔다 (`SysPayload`). 공통코드 문구·sys-yn 판정은 FE `useCommonCodes` |
 
 ## 레이어
 
@@ -78,5 +78,5 @@ Controller (@RestController)
 ## 인수인계·PIPELINE
 
 - 주석: [`05-handoff-comments.mdc`](05-handoff-comments.mdc)
-- 골드: `auth/AuthService.java` · `doc/DocumentService.java` · `mapper/doc/*.xml`
-- 태그 접두 **`HB`** (프론트는 `HF`). 루트 `README.md` PIPELINE 표와 동기화
+- 골드: `auth/AuthService.java` · `docs/document/DocumentService.java` · `mapper/docs/document/*.xml`
+- 태그 접두 **`HB`** (프론트는 `HF`). 색인 [`docs/23_PIPELINE.md`](../../docs/23_PIPELINE.md)
