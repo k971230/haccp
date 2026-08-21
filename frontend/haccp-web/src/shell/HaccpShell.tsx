@@ -102,7 +102,7 @@ export function HaccpShell() {
       openTab(scrn, row ? cleanTitle(row.menuNm) : scrn);
       return;
     }
-    // 홈("/")은 HomeView 가 today-tasks 로 보낸다. /screen 등 미등록 경로는 오늘 할 일로 보낸다
+    // 마지막 탭 닫기 URL은 "/". HomeView 가 today-tasks 로 replace. /screen 등 미등록은 오늘 할 일
     if (loc.pathname !== "/") {
       nav(routeOf("today-tasks"), { replace: true });
     }

@@ -7,6 +7,7 @@
  *   1) 화면 식별자는 계속 tbl_screen.scrn_cd(kebab). 주소창만 대/중/소 계층으로 보여 준다
  *   2) basename /haccp/ 는 Vite·BrowserRouter 가 담당한다. 여기 경로는 /docs/html/... 처럼 접두 없이 둔다
  *   3) /screen/{scrnCd} 는 쓰지 않는다. 맵에 없는 주소는 셸이 오늘 할 일로 보낸다
+ *      Jenkins는 DB migrate를 안 돌린다. 메뉴 클릭은 scrnCd → routeOf 이라 118 menu_cd 개명 전에도 화면은 연다
  *
  * PIPELINE[HF68] 셸 인프라
  * PIPELINE[HF49] 연관 모듈
@@ -21,7 +22,7 @@
  *   3) 마지막 세그먼트는 항상 scrnCd 와 같다
  */
 function paths(
-  // 중분류까지 포함 — 예: /docs/html · /sys/log. 문서주기는 /sch (2단)
+  // 중분류까지 포함 — 예: /docs/html · /sys/logs. 문서주기는 /docs/sch
   prefix: string,
   // 이 접두 아래 둘 화면코드 목록
   cds: readonly string[]

@@ -223,7 +223,7 @@ export function HtmlFormTemplatePage({
    * 코멘트:
    *   1) pending·양식명·사용여부·지면 수정 중이면 미저장이다
    *   2) 행 전환 확인에서 호출한다. 문서주기와 같은 문구
-   *   3) 스냅샷은 목록 행. 지면은 editing 플래그
+   *   3) 목록은 이름·사용여부 스냅샷. 지면은 editing 플래그(항목 JSON 비교 없음)
    */
   const hasUnsaved = (): boolean => {
     if (editing) return true;

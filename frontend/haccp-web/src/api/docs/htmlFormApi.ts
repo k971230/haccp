@@ -1,5 +1,5 @@
 /**
-     * htmlFormApi — HTML 양식 원본·공정점검 작성 API.
+ * htmlFormApi — HTML 양식 원본·공정점검 작성 API.
  *
  * 개발자: 박승우
  * 일자: 2026-08-19

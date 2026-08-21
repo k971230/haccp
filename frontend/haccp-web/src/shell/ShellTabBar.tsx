@@ -16,6 +16,7 @@ import { useCallback, useState } from "react";
 import { cn } from "@/lib/cn";
 // 역할 — 열린 탭·단건 닫기. 배치 닫기는 TabContextMenu → store
 import { useTabStore } from "@/stores/tabStore";
+// 역할 — 우클릭 Portal 메뉴. 배치 닫기는 store afterRemove 한 번
 import { TabContextMenu, type TabCtxMenu } from "./TabContextMenu";
 
 /**

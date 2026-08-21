@@ -261,7 +261,7 @@ export default function HwpTemplateManagementPage() {
    * 코멘트:
    *   1) 좌측 행 선택 시 현재 적용 파일을 인증 요청으로 읽어 rhwp 미리보기에 적재한다
    *   2) 그리드 onActivate·조회 후 자동 선택에서 호출한다
-   *   3) 미저장이면 문서주기와 같이 확인한다. draft·파일 미등록은 안내만 하고 요청하지 않는다
+   *   3) 미저장은 목록 getSaveRows만 본다. rhwp 편집 더티는 추적하지 않는다. 같은 행은 에디터 준비 후 재적재한다
    */
   const handleSelect = (key: string | null) =>
     asyncAct.run(async () => {
