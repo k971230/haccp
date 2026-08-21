@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteValidation;
-import com.haccp.docs.corrective.DocCorrectiveSupport;
+import com.haccp.flow.ca.DocCorrectiveSupport;
 import com.haccp.docs.html.hygprocess.dto.HygProcessDeleteItem;
 import com.haccp.docs.html.hygprocess.dto.HygProcessListRow;
 import com.haccp.docs.html.hygprocess.dto.HygProcessSaveRequest;

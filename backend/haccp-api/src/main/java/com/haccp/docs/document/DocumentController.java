@@ -2,9 +2,9 @@
  * DocumentController — 문서함·결재·첨부 REST API.
  *
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-08-21
  * 코멘트:
- *   1) 문서함은 /api/v1/doc/documents, 결재·첨부는 문서 idx 하위 경로로 제공한다
+ *   1) 문서함은 /api/v1/docs/documents, 결재·첨부는 문서 idx 하위 경로로 제공한다
  *   2) 파일 업·다운로드만 httpFile 계층을 쓰고 나머지는 일반 CRUD 타임아웃에 맞춘다
  *   3) 삭제는 HTTP DELETE가 아닌 validate-delete → POST delete 객체 배열 계약을 지킨다
  *
@@ -49,7 +49,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 /** 문서·결재·첨부 공통 API */
 @RestController
-@RequestMapping("/api/v1/doc/documents")
+@RequestMapping("/api/v1/docs/documents")
 @RequiredArgsConstructor
 public class DocumentController {
 

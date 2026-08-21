@@ -16,22 +16,23 @@ alwaysApply: false
 | 화면 권한 | 조회·등록·수정·삭제·출력 5개 Y/N |
 | JWT | 단일 TTL (`app.jwt.expire-minutes`) |
 
-DB 규약: [`07-haccp-db.mdc`](07-haccp-db.mdc) · 운영: [`06-operations.mdc`](06-operations.mdc)
+DB 규약: [`07-haccp-db.mdc`](07-haccp-db.mdc) · 운영: [`06-operations.mdc`](06-operations.mdc)  
+경로 정본: [`docs/24_URL_DB_폴더_패키지_정본.md`](../../docs/24_URL_DB_폴더_패키지_정본.md)
 
 ## 패키지
 
-`com.haccp.{영역}` — `auth`, `menu`, `code`, `pref`, `log`, `common`,  
-업무: `tsk`, `ccp`, `hyg`, `docs`, `bas`, `sys`, `ops`, `workflow` …
+셸: `auth`, `menu`, `code`, `pref`, `log`, `common`.  
+업무: `com.haccp.{대}.{중}` — URL `SCREEN_PATH` 칸과 동일 (`docs.ccp`, `docs.hwp`, `sys.code`). 공유 허브 `docs.document` · `docs.template` · `workflow` 는 화면 경로와 별개.
 
 ## 화면 패키지 분할 (sys 골드)
 
-`com.haccp.sys.{메뉴}` = Controller · Service · Mapper, XML은 `mapper/sys/{메뉴}/`. **이번에 손대는 메뉴가 허브(평탄 패키지)에 남아 있으면 그 작업에서 동일하게 나눈다.** 미리 전 메뉴를 나누지 않는다.
+`com.haccp.{대}.{중}.{메뉴}` = Controller · Service · Mapper, XML은 `mapper/{대}/{중}/{메뉴}/`. 중 아래 화면이 하나면 `{메뉴}` 단을 생략한다. **이번에 손대는 메뉴가 허브에 남아 있으면 그 작업에서 URL 칸으로 옮긴다.** 미리 전 메뉴를 나누지 않는다.
 
 | 대상 | 규칙 |
 |------|------|
-| 패키지 | `com.haccp.{영역}.{메뉴}` — 하이픈 없는 짧은 도메인명 |
-| XML | `resources/mapper/{영역}/{메뉴}/*.xml` — `namespace`는 인터페이스 FQCN |
-| URL | 기존 `/api/v1/{영역}/{리소스}/…` 유지. 폴더 이동만으로 경로를 바꾸지 않는다 |
+| 패키지 | `com.haccp.{대}.{중}` — URL 슬러그와 동일 (`docs.hwp`, `sys.logs`) |
+| XML | `resources/mapper/{대}/{중}/*.xml` — `namespace`는 인터페이스 FQCN |
+| URL | `/api/v1` + FE `SCREEN_PATH` + 동작. `/haccp` 는 API에 넣지 않는다. 폴더 이동만으로 경로를 바꾸지 않는다. 예외: `/api/v1/docs/documents`, `/api/v1/docs/templates/{tmplCd}/form`, `/api/v1/bas/company-templates`, `/api/v1/bas/{type}`, 셸 `/auth` `/menu` `/code` `/pref` `/log`, 서명 `/api/v1/sys/users` |
 | 공유 유틸 | 영역 루트에 둔다 (`SysPayload`). 공통코드 문구·sys-yn 판정은 FE `useCommonCodes` |
 
 ## 레이어

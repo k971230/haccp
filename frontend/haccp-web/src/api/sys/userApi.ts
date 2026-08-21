@@ -1,5 +1,5 @@
 /**
- * userApi — 사용자 관리 화면 API + 서명 이미지 API (/api/v1/sys/user-management, /api/v1/sys/users).
+ * userApi — 사용자 관리 화면 API + 서명 이미지 API (SCREEN_PATH, 서명은 /api/v1/sys/users).
  *
  * 개발자: 박승우
  * 일자: 2026-08-12
@@ -12,6 +12,8 @@
  */
 // 역할 — 일반 CRUD·파일 Axios 인스턴스
 import { http, httpFile } from "../http";
+// 역할 — SCREEN_PATH 기준 API 베이스
+import { apiOf } from "@/shell/tabRoute";
 // 역할 — 공통 성공 응답 형식
 import type { CommonResponse } from "@/types/common";
 // 역할 — MyBatis Map snake_case → 그리드 camelCase 정규화
@@ -19,8 +21,8 @@ import { camelizeRows } from "@/lib/camelKeys";
 // 역할 — 사용자 행·삭제키 타입
 import type { SysDeleteKey, SysRow } from "./sysTypes";
 
-/** 화면 기본 경로 — Controller @RequestMapping과 1:1 */
-const BASE = "/api/v1/sys/user-management";
+/** 화면 기본 경로 — SCREEN_PATH user-management */
+const BASE = apiOf("user-management");
 /** 서명 이미지 기본 경로 — 화면 경로와 분리된 리소스 경로 */
 const SIGN_BASE = "/api/v1/sys/users";
 

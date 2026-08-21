@@ -2,7 +2,7 @@
 
 화면 1개 = 패키지 1개. FE `pages/docs/html/ccpmtltemplate/`.
 
-URL은 공정점검과 같이 `/api/v1/docs/html-form/*` (Controller는 htmltemplate).
+URL은 화면마다 `/api/v1/docs/html/{scrnCd}/*` (Controller는 htmltemplate).
 XML `mapper/docs/html/ccpmtltemplate/CcpMtlTemplateMapper.xml`
 scrnCd `ccp-mtl-template`
 

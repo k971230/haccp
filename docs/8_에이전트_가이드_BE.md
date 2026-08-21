@@ -10,8 +10,8 @@ Spring Boot **3.3.4** · Java **17** · MyBatis **3.0.3** · PG `sasshaccp` · �
 
 ## 패턴
 
-- 신규 API: Controller + (Service) + Mapper + `resources/mapper/{영역}/{메뉴}/*.xml` + SP  
-- 손대는 메뉴: 허브(평탄 패키지)에 남아 있으면 **그 작업에서** `com.haccp.{영역}.{메뉴}` + `mapper/{영역}/{메뉴}/` 로 분할. 미리 전 메뉴를 나누지 않는다. 기존 URL은 유지. 골드 `com.haccp.sys`  
+- 신규 API: Controller + (Service) + Mapper + `resources/mapper/{대}/{중}/*.xml` + SP  
+- 손대는 메뉴: 허브에 남아 있으면 **그 작업에서** `com.haccp.{대}.{중}` + `mapper/{대}/{중}/` 로 분할. 미리 전 메뉴를 나누지 않는다. 경로 정본 [`24_URL_DB_폴더_패키지_정본.md`](24_URL_DB_폴더_패키지_정본.md). `/api/v1` + FE `SCREEN_PATH` + 동작. `/haccp` 는 API에 넣지 않는다. 골드 `com.haccp.sys`  
 - 삭제: validate-delete → delete · Double Check  
 - 파일: Storage 경유 · multipart 한도 = `APP_FILE_MAX_*`  
 - 테넌트: `LoginUserContext`  
@@ -31,7 +31,7 @@ DB 적용: `db_sasshaccp/apply-all.sh` (운영 절차 준수).
 
 ## 신규 화면
 
-기존 URL은 유지. 패키지는 `com.haccp.{영역}.{메뉴}` + `mapper/{영역}/{메뉴}/`. FE `SCREEN_PATH` 는 pathname만 (`/docs/...`, `/sys/code/...`). `/haccp` 접두는 Vite basename.
+폴더 이동만으로 URL을 바꾸지 않는다. HTTP: `/api/v1` + FE `SCREEN_PATH` + 동작 (`list`·`save`·`validate-delete`·`delete` 및 `groups` 등). `/haccp` 는 API에 넣지 않는다. 패키지는 `com.haccp.{대}.{중}` + `mapper/{대}/{중}/`. FE `SCREEN_PATH` 는 pathname만 (`/docs/ccp/...`, `/sys/code/...`). `/haccp` 접두는 Vite basename.
 
 1. Controller + Service + Mapper XML + SP (`sp_tbl_*`)  
 2. `tbl_screen` · 권한. 메뉴 숨김이어도 API URL은 유지할 수 있다  

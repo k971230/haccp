@@ -12,6 +12,8 @@
  * PIPELINE[HF3, HF85] 연관 모듈
  */
 import { http } from "./http";
+// 역할 — SCREEN_PATH 기준 API 베이스
+import { apiOf } from "@/shell/tabRoute";
 import type { CommonResponse } from "@/types/common";
 
 export type BizOpsScreenCode =
@@ -40,8 +42,7 @@ export interface BizOpsDetail {
 }
 
 function endpoint(screenCode: BizOpsScreenCode): string {
-  if (screenCode === "calibration-target-management") return "/api/v1/fac/calibration-target-management";
-  return "/api/v1/fac/facility-equipment-check";
+  return apiOf(screenCode);
 }
 
 export async function listBizOps(

@@ -5,7 +5,7 @@
  * 일자: 2026-08-18
  * 코멘트:
  *   1) 버튼은 문자열 이름("plus")으로 아이콘을 지정할 수 있게 해 화면마다 lucide를 직접 import하지 않게 한다
- *   2) 대분류 메뉴 아이콘은 모듈코드로 고른다 — mes-web처럼 메뉴명 키워드로 추측하지 않는다
+ *   2) 대분류 메뉴 아이콘은 URL 슬러그(docs/flow/bas/sys)로 고른다 — 메뉴명 키워드로 추측하지 않는다
  *   3) reset은 사용양식 초기화 버튼이 쓴다
  *
  * PIPELINE[HF38] 공통 모듈
@@ -23,7 +23,6 @@ import {
   ClipboardList,
   Database,
   Download,
-  Droplets,
   FileCheck2,
   Filter,
   Folder,
@@ -37,9 +36,7 @@ import {
   Save,
   Search,
   Settings,
-  Thermometer,
   Trash2,
-  Truck,
   Upload,
 } from "lucide-react";
 
@@ -85,45 +82,22 @@ export function resolveMesIcon(
   return null;
 }
 
-/** 모듈코드별 대분류 메뉴 아이콘 — 모듈은 09_seed_platform의 tbl_screen.module_cd와 같다 */
-const MODULE_ICON: Readonly<Record<string, LucideIcon>> = {
-  TSK: ClipboardList,   // 오늘 할 일
-  WRK: FileCheck2,      // 문서 작성
-  APR: ClipboardCheck,  // 문서 현황·결재
-  FRM: Settings,        // 문서 기준관리
-  COD: Database,        // 기초정보 관리
-  SYS: Settings,        // 시스템 관리
-  // 구 모듈(하위 호환)
-  CCP: Thermometer,
-  HYG: Droplets,
-  PRC: ClipboardCheck,
-  FAC: Settings,
-  INV: Truck,
-  DOC: FileCheck2,
-  BAS: Database,
-};
-
 /**
  * 개발자: 박승우
- * 일자: 2026-08-12
+ * 일자: 2026-08-21
  * 코멘트:
- *   1) 대분류 메뉴코드(kebab 또는 구 M+모듈)로 아이콘을 고른다
+ *   1) 대분류 메뉴코드(URL 슬러그)로 아이콘을 고른다
  *   2) 사이드 메뉴가 최상위 노드를 그릴 때 호출한다
  *   3) 매칭이 없으면 폴더 아이콘 — 업체가 메뉴를 추가해도 빈칸이 없다
  */
 export function getModuleIcon(
-  // 대분류 메뉴코드 — menu-doc-write 등 kebab, 또는 구형 MWRK
+  // 대분류 menu_cd — today-tasks · docs · flow · bas · sys
   menuCd: string
 ): LucideIcon {
-  // 오늘 할 일 최상위 leaf
-  if (menuCd === "today-tasks") return MODULE_ICON.TSK ?? Folder;
-  // 3단 IA 대분류 kebab
-  if (menuCd === "menu-doc-write") return MODULE_ICON.WRK ?? Folder;
-  if (menuCd === "menu-doc-flow") return MODULE_ICON.APR ?? Folder;
-  if (menuCd === "menu-doc-master") return MODULE_ICON.FRM ?? Folder;
-  if (menuCd === "menu-base") return MODULE_ICON.COD ?? Folder;
-  if (menuCd === "menu-sys") return MODULE_ICON.SYS ?? Folder;
-  // 구 대메뉴 M + 모듈코드
-  const moduleCd = menuCd.startsWith("M") ? menuCd.slice(1) : menuCd;
-  return MODULE_ICON[moduleCd] ?? Folder;
+  if (menuCd === "today-tasks") return ClipboardList;
+  if (menuCd === "docs") return FileCheck2;
+  if (menuCd === "flow") return ClipboardCheck;
+  if (menuCd === "bas") return Database;
+  if (menuCd === "sys") return Settings;
+  return Folder;
 }

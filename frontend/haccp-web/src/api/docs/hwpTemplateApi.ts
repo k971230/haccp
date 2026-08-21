@@ -1,8 +1,8 @@
 /**
- * hwpTemplateApi — 사용양식관리 API (/api/v1/hwp/hwp-templates, 삭제는 company-templates).
+ * hwpTemplateApi — 사용양식관리 API (SCREEN_PATH, 삭제는 company-templates).
  *
  * 개발자: 박승우
- * 일자: 2026-08-14
+ * 일자: 2026-08-21
  * 코멘트:
  *   1) 목록·저장·파일이력·불러오기/초기화만 이 파일이 담당한다
  *   2) 회사코드·작업자는 요청에 넣지 않고 서버 JWT 테넌트로 고정된다
@@ -12,11 +12,13 @@
  */
 // 역할 — 일반 CRUD Axios (10s)
 import { http } from "../http";
+// 역할 — SCREEN_PATH 기준 API 베이스
+import { apiOf } from "@/shell/tabRoute";
 // 역할 — 서버 공통 응답 형식
 import type { CommonResponse } from "@/types/common";
 
-/** 화면 기본 경로 — HwpTemplateController @RequestMapping과 1:1 */
-const BASE = "/api/v1/hwp/hwp-templates";
+/** 화면 기본 경로 — SCREEN_PATH /docs/hwp/hwp-template-management */
+const BASE = apiOf("hwp-template-management");
 
 /** 사용양식관리 목록 1행 — 구분·현재 파일·버튼 활성 판정 값을 서버가 함께 내린다 */
 export interface HwpTemplateRow {

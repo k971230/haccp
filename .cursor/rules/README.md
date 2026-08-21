@@ -15,4 +15,4 @@
 | 08 | `08-haccp-backend.mdc` | haccp-api | BE 컨벤션 |
 | 09 | `09-haccp-frontend.mdc` | haccp-web | FE 컨벤션 |
 
-문서 본문: 루트 `docs/1_`~`23_`. PIPELINE 색인 `docs/23_PIPELINE.md`.
+문서 본문: 루트 `docs/1_`~`24_`. PIPELINE 색인 `docs/23_PIPELINE.md`. 경로 정본 `docs/24_URL_DB_폴더_패키지_정본.md`.

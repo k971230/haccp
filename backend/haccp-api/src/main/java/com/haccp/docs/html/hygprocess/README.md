@@ -2,7 +2,7 @@
 
 화면 1개 = 패키지 1개. FE `pages/docs/html/hygprocess/`.
 
-URL `/api/v1/docs/hyg-process/*`
+URL `/api/v1/docs/prp/hygiene-process-check/*`
 XML `mapper/docs/html/hygprocess/HygProcessMapper.xml`
 tmpl_cd `html_sys_001` · scrnCd `hygiene-process-check`
 

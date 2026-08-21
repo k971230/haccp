@@ -16,7 +16,8 @@ alwaysApply: false
 | storage | `haccp-*` (`authKeys.ts`) |
 | 메뉴 | 대분류·화면 2단 (`h_menu_cd`) |
 
-UI 마감: [`02-frontend-ui.mdc`](02-frontend-ui.mdc) · 운영: [`06-operations.mdc`](06-operations.mdc)
+UI 마감: [`02-frontend-ui.mdc`](02-frontend-ui.mdc) · 운영: [`06-operations.mdc`](06-operations.mdc)  
+경로 정본: [`docs/24_URL_DB_폴더_패키지_정본.md`](../../docs/24_URL_DB_폴더_패키지_정본.md)
 
 ## 이름 접두사
 
@@ -29,7 +30,7 @@ UI 마감: [`02-frontend-ui.mdc`](02-frontend-ui.mdc) · 운영: [`06-operations
 |------|------|
 | `api/` | 도메인 API → `http.ts` (Axios 3계층) |
 | `shell/` | `HaccpShell`, 메뉴·탭·세션·에러·레지스트리 |
-| `pages/{모듈}/` | 화면 (ccp, hyg, docs, bas, sys …) |
+| `pages/{대}/{중}/` | 화면 — URL `SCREEN_PATH` 칸과 동일 (`docs/hwp`, `sys/logs`) |
 | `components/{ui,grid,layout,form,document}/` | 공용 UI |
 | `config/` | `envConfig.ts` — 매직넘버 금지 |
 | `hooks/`, `stores/`, `types/`, `lib/`, `styles/`, `utils/` | 공통 |
@@ -54,14 +55,14 @@ UI 마감: [`02-frontend-ui.mdc`](02-frontend-ui.mdc) · 운영: [`06-operations
 
 ## 화면 패키지 분할 (sys 골드)
 
-`pages/sys/{메뉴}/` = Page + Rule + README, API는 `api/sys/`. **이번에 손대는 메뉴가 아직 평탄하면 그 작업에서 동일하게 나눈다.** 미리 전 메뉴를 나누지 않는다.
+`pages/{대}/{중}/{메뉴}/` = Page + Rule + README (중 아래 화면이 하나면 `pages/{대}/{중}/`에 둔다). API는 `api/{대}/`. **이번에 손대는 메뉴가 아직 평탄하면 그 작업에서 URL 칸으로 옮긴다.** 미리 전 메뉴를 나누지 않는다.
 
 | 대상 | 규칙 |
 |------|------|
-| 폴더 | `pages/{영역}/{메뉴}/` — 하이픈 없는 짧은 도메인명 (`hwptemplate`, `doccycle`). 사용양식·문서주기는 영역 `docs` |
+| 폴더 | `pages/{대}/{중}/` — URL 슬러그와 동일 (`docs/hwp`, `docs/sch`, `sys/code`). 화면 분할 시 `{메뉴}` 한 단 더 |
 | Page | 렌더·상태·API·핸들러만 |
 | Rule | `SCRN_CD` · `PERSIST_ID` · 컬럼 팩터리 · 잠금 · 순수 변환. JSX/API 없음 |
-| API | `api/{영역}/` — 화면 전용 함수. 공용 파일 I/O(`documentApi`)는 그대로 |
+| API | `api/{대}/` — 화면 전용 함수. 공용 파일 I/O(`documentApi`)는 그대로 |
 | 키 | `scrnCd`·`persistId` 값은 폴더를 옮겨도 **바꾸지 않는다** |
 
 공유 페이지(MasterDataPage·점검항목·HWP 작성기)는 화면마다 복제하지 않고, 그 메뉴를 손볼 때 폴더만 옮긴다.
@@ -75,5 +76,5 @@ UI 마감: [`02-frontend-ui.mdc`](02-frontend-ui.mdc) · 운영: [`06-operations
 ## 인수인계·PIPELINE
 
 - 주석: [`05-handoff-comments.mdc`](05-handoff-comments.mdc)
-- 골드: `shell/HaccpShell.tsx` · `pages/ccp/ColdMonitorPage.tsx` · `pages/auth/LoginPage.tsx`
+- 골드: `shell/HaccpShell.tsx` · `pages/docs/ccp/ColdMonitorPage.tsx` · `pages/auth/LoginPage.tsx`
 - 태그 접두 **`HF`**. 색인 [`docs/23_PIPELINE.md`](../../docs/23_PIPELINE.md)

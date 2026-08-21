@@ -5,6 +5,7 @@
 관련: `docs/7_에이전트_가이드_FE.md` · `docs/3_운영규칙_FE.md` · `docs/8_에이전트_가이드_BE.md` · `docs/4_운영규칙_BE.md`
 
 라우트 규칙: `routeOf(scrnCd)` → `tabRoute.SCREEN_PATH` 계층 경로 (`shell/tabRoute.ts`). `/screen/{scrnCd}` 없음.
+경로 정본: `docs/24_URL_DB_폴더_패키지_정본.md`.
 
 ---
 
@@ -16,15 +17,17 @@
 
 ```
 pages/sys/
- ├ commoncode/ CommonCodePage.tsx · CommonCodeRule.ts · README.md
- ├ menu/       MenuManagementPage.tsx · MenuManagementRule.ts · README.md
- ├ role/       RoleManagementPage.tsx · RoleManagementRule.ts · README.md
- ├ department/ DepartmentManagementPage.tsx · DepartmentManagementRule.ts · README.md
- ├ user/       UserManagementPage.tsx · UserManagementRule.ts · README.md
- ├ approvalline/ ApprovalLineManagementPage.tsx · ApprovalLineManagementRule.ts · README.md
- ├ loginhistory/ LoginHistoryPage.tsx · LoginHistoryRule.ts · README.md
- ├ auditlog/     AuditLogPage.tsx · AuditLogRule.ts · README.md
- ├ screenusage/  ScreenUsageStatisticsPage.tsx · ScreenUsageStatisticsRule.ts · README.md
+ ├ code/
+ │   ├ commoncode/   CommonCodePage.tsx · CommonCodeRule.ts · README.md
+ │   ├ menu/         MenuManagementPage.tsx · MenuManagementRule.ts · README.md
+ │   ├ role/         RoleManagementPage.tsx · RoleManagementRule.ts · README.md
+ │   ├ department/   DepartmentManagementPage.tsx · DepartmentManagementRule.ts · README.md
+ │   ├ user/         UserManagementPage.tsx · UserManagementRule.ts · README.md
+ │   └ approvalline/ ApprovalLineManagementPage.tsx · ApprovalLineManagementRule.ts · README.md
+ ├ logs/
+ │   ├ loginhistory/ LoginHistoryPage.tsx · LoginHistoryRule.ts · README.md
+ │   ├ auditlog/     AuditLogPage.tsx · AuditLogRule.ts · README.md
+ │   └ screenusage/  ScreenUsageStatisticsPage.tsx · ScreenUsageStatisticsRule.ts · README.md
  └ README.md   (이 파일)
 ```
 
@@ -52,7 +55,7 @@ pages/sys/
 | `roleApi.ts` | 권한그룹 + 화면권한 |
 | `departmentApi.ts` | 부서 관리 |
 | `userApi.ts` | 사용자 관리 + 서명(내 서명 포함) |
-| `approvalLineApi.ts` | 결재선 관리 (URL `/api/v1/bas/approval-lines` 유지) |
+| `approvalLineApi.ts` | 결재선 관리 (URL `/api/v1/sys/code/approval-line-management`) |
 | `loginHistoryApi.ts` | 로그인 이력 |
 | `auditLogApi.ts` | 변경 감사 로그 |
 | `screenUsageApi.ts` | 화면 이용 통계 |
@@ -80,16 +83,19 @@ pages/sys/
 ```
 java/com/haccp/sys/
  ├ SysPayload.java   Map payload·삭제키 정규화 공용 유틸
- ├ commoncode/ CommonCodeController · Service · Mapper
- ├ menu/       MenuMgmtController · Service · Mapper
- ├ role/       RoleMgmtController · Service · Mapper
- ├ department/ DepartmentController · Service · Mapper
- ├ user/       UserController · Service · Mapper (서명 포함)
- ├ approvalline/ ApprovalLineController · Service · Mapper (URL은 /api/v1/bas/approval-lines 유지)
- ├ loginhistory/ LoginHistory* (C/S/M, 조회 전용)
- ├ auditlog/     AuditLog* · AuditWriter (조회 + 적재)
- └ screenusage/  ScreenUsage* (C/S/M, 조회 전용)
-resources/mapper/sys/{commoncode,menu,role,department,user,approvalline,loginhistory,auditlog,screenusage}/*.xml
+ ├ code/
+ │   ├ commoncode/ CommonCodeController · Service · Mapper
+ │   ├ menu/       MenuMgmtController · Service · Mapper
+ │   ├ role/       RoleMgmtController · Service · Mapper
+ │   ├ department/ DepartmentController · Service · Mapper
+ │   ├ user/       UserController · Service · Mapper (서명 포함)
+ │   └ approvalline/ ApprovalLineController · Service · Mapper
+ └ logs/
+     ├ loginhistory/ LoginHistory* (C/S/M, 조회 전용)
+     ├ auditlog/     AuditLog* · AuditWriter (조회 + 적재)
+     └ screenusage/  ScreenUsage* (C/S/M, 조회 전용)
+resources/mapper/sys/code/{commoncode,menu,role,department,user,approvalline}/*.xml
+resources/mapper/sys/logs/{loginhistory,auditlog,screenusage}/*.xml
 ```
 
 - 패키지 루트는 `com.haccp` (구 MES 접두 패키지에서 전면 이동 완료)
@@ -99,10 +105,10 @@ resources/mapper/sys/{commoncode,menu,role,department,user,approvalline,loginhis
 ### 0-7. CUD 공통 파이프라인
 
 ```
-조회:  GET  /api/v1/sys/{screen}/list        → Controller → Service → Mapper → SELECT * FROM sp_{화면명}_r_000(...)
-저장:  PUT  /api/v1/sys/{screen}/save        → Controller → Service(@Transactional) → 행 수만큼 CALL sp_{화면명}_c_000(...)
-삭제:  POST /api/v1/sys/{screen}/validate-delete → assertDeletable → sp_{화면명}_delete_blocker_r_000
-       POST /api/v1/sys/{screen}/delete          → assertDeletable(재검사) → CALL sp_{화면명}_d_000(...)
+조회:  GET  /api/v1/sys/code|{logs}/{scrnCd}/list        → Controller → Service → Mapper → SELECT * FROM sp_{화면명}_r_000(...)
+저장:  PUT  /api/v1/sys/code|{logs}/{scrnCd}/save        → Controller → Service(@Transactional) → 행 수만큼 CALL sp_{화면명}_c_000(...)
+삭제:  POST /api/v1/sys/code|{logs}/{scrnCd}/validate-delete → assertDeletable → sp_{화면명}_delete_blocker_r_000
+       POST /api/v1/sys/code|{logs}/{scrnCd}/delete          → assertDeletable(재검사) → CALL sp_{화면명}_d_000(...)
 ```
 
 - HTTP DELETE 금지, 삭제 키는 단건이어도 `[{ idx }]` 배열 (`06-operations.mdc` OPS_DELETE)
@@ -128,17 +134,17 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 
 | 구분 | 경로 |
 |---|---|
-| FE | `pages/sys/commoncode/CommonCodePage.tsx` · `CommonCodeRule.ts` |
+| FE | `pages/sys/code/commoncode/CommonCodePage.tsx` · `CommonCodeRule.ts` |
 | API | `api/sys/commonCodeApi.ts` |
-| BE | `com/haccp/sys/commoncode/{CommonCodeController,CommonCodeService,CommonCodeMapper}.java` |
-| XML | `resources/mapper/sys/commoncode/CommonCodeMapper.xml` |
+| BE | `com/haccp/sys/code/commoncode/{CommonCodeController,CommonCodeService,CommonCodeMapper}.java` |
+| XML | `resources/mapper/sys/code/commoncode/CommonCodeMapper.xml` |
 | DB | `db_sasshaccp/72_migrate_sp_common_code_v2.sql` |
 
 ### 1-3. 버튼 → 끝단
 
 | 버튼·이벤트 | FE 핸들러 | API | Service | SP | 테이블 |
 |---|---|---|---|---|---|
-| 조회(대분류) | `runSearch` → `listCodeGroups` | `GET /api/v1/sys/common-code-management/groups` | `listGroups` | `sp_common_code_management_r_000` | `tbl_code` |
+| 조회(대분류) | `runSearch` → `listCodeGroups` | `GET /api/v1/sys/code/common-code-management/groups` | `listGroups` | `sp_common_code_management_r_000` | `tbl_code` |
 | 대분류 행 선택 | `loadDetails` → `listCodeDetails` ×2 | `GET .../details?mainCd&sysYn` | `listDetails` | `sp_common_code_management_r_001` | `tbl_code` |
 | 행추가 | `handleAddUsr` → `newUsrRow(mainCd)` | 없음(로컬) | | | |
 | 저장 | `handleSaveUsr` → `saveCommonCodes` | `PUT .../save` | `save` | `sp_common_code_management_c_000` | `tbl_code` |
@@ -160,17 +166,17 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 
 | 구분 | 경로 |
 |---|---|
-| FE | `pages/sys/menu/MenuManagementPage.tsx` · `MenuManagementRule.ts` |
+| FE | `pages/sys/code/menu/MenuManagementPage.tsx` · `MenuManagementRule.ts` |
 | API | `api/sys/menuApi.ts` |
-| BE | `com/haccp/sys/menu/{MenuMgmtController,MenuMgmtService,MenuMgmtMapper}.java` |
-| XML | `resources/mapper/sys/menu/MenuMgmtMapper.xml` |
+| BE | `com/haccp/sys/code/menu/{MenuMgmtController,MenuMgmtService,MenuMgmtMapper}.java` |
+| XML | `resources/mapper/sys/code/menu/MenuMgmtMapper.xml` |
 | DB | `db_sasshaccp/73_migrate_sp_menu_mgmt_v2.sql` |
 
 ### 2-3. 버튼 → 끝단
 
 | 버튼·이벤트 | FE 핸들러 | API | Service | SP | 테이블 |
 |---|---|---|---|---|---|
-| 조회 | `runSearch` → `listAdminMenus` | `GET /api/v1/sys/menu-management/list` | `list` | `sp_menu_management_r_000` | `tbl_menu` `tbl_screen` |
+| 조회 | `runSearch` → `listAdminMenus` | `GET /api/v1/sys/code/menu-management/list` | `list` | `sp_menu_management_r_000` | `tbl_menu` `tbl_screen` |
 | 저장 | `handleSave` → `saveMenus` | `PUT .../save` | `save` | `sp_menu_management_c_000` | `tbl_menu` |
 | 삭제 | `handleDelete` → `validateDeleteMenus` → `deleteMenus` | `POST .../validate-delete` → `POST .../delete` | `validateDelete`·`delete` | `sp_menu_management_delete_blocker_r_000` → `sp_menu_management_d_000` | `tbl_menu` `tbl_role_screen` |
 
@@ -189,17 +195,17 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 
 | 구분 | 경로 |
 |---|---|
-| FE | `pages/sys/role/RoleManagementPage.tsx` · `RoleManagementRule.ts` |
+| FE | `pages/sys/code/role/RoleManagementPage.tsx` · `RoleManagementRule.ts` |
 | API | `api/sys/roleApi.ts` + 트리 원본 `api/sys/menuApi.ts` |
-| BE | `com/haccp/sys/role/{RoleMgmtController,RoleMgmtService,RoleMgmtMapper}.java` |
-| XML | `resources/mapper/sys/role/RoleMgmtMapper.xml` |
+| BE | `com/haccp/sys/code/role/{RoleMgmtController,RoleMgmtService,RoleMgmtMapper}.java` |
+| XML | `resources/mapper/sys/code/role/RoleMgmtMapper.xml` |
 | DB | `db_sasshaccp/74_migrate_sp_role_mgmt_v2.sql` |
 
 ### 3-3. 버튼 → 끝단
 
 | 버튼·이벤트 | FE 핸들러 | API | Service | SP | 테이블 |
 |---|---|---|---|---|---|
-| 조회 | `runSearch` → `listRoles` | `GET /api/v1/sys/role-management/list` | `list` | `sp_role_management_r_000` | `tbl_role` |
+| 조회 | `runSearch` → `listRoles` | `GET /api/v1/sys/code/role-management/list` | `list` | `sp_role_management_r_000` | `tbl_role` |
 | 그룹 선택 | `loadTreeAuth` → `listAdminMenus` + `listRoleScreens` | `GET .../screens?usrgrpCd` | `listScreens` | `sp_role_management_screen_r_000` | `tbl_screen` `tbl_role_screen` |
 | 행추가 | `handleAdd` → `newRoleRow()` | 없음(로컬) | | | |
 | 저장(그룹) | `handleSaveRole` → `saveRoles` | `PUT .../save` | `save` | `sp_role_management_c_000` | `tbl_role` |
@@ -220,18 +226,18 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 
 | 구분 | 경로 |
 |---|---|
-| FE | `pages/sys/department/DepartmentManagementPage.tsx` · `DepartmentManagementRule.ts` |
+| FE | `pages/sys/code/department/DepartmentManagementPage.tsx` · `DepartmentManagementRule.ts` |
 | 모달 | `components/common/modal/CodeLookupModal.tsx` (`openModal("CodeLookup")`) |
 | API | `api/sys/departmentApi.ts` |
-| BE | `com/haccp/sys/department/{DepartmentController,DepartmentService,DepartmentMapper}.java` |
-| XML | `resources/mapper/sys/department/DepartmentMapper.xml` |
+| BE | `com/haccp/sys/code/department/{DepartmentController,DepartmentService,DepartmentMapper}.java` |
+| XML | `resources/mapper/sys/code/department/DepartmentMapper.xml` |
 | DB | `db_sasshaccp/75_migrate_sp_dept_mgmt_v2.sql` |
 
 ### 4-3. 버튼 → 끝단
 
 | 버튼·이벤트 | FE 핸들러 | API | Service | SP | 테이블 |
 |---|---|---|---|---|---|
-| 조회 | `runSearch` → `listDepartments` | `GET /api/v1/sys/department-management/list` | `list` | `sp_department_management_r_000` | `tbl_dept`(self JOIN) |
+| 조회 | `runSearch` → `listDepartments` | `GET /api/v1/sys/code/department-management/list` | `list` | `sp_department_management_r_000` | `tbl_dept`(self JOIN) |
 | 상위부서 룩업 | `openHDeptLookup` → `openModal("CodeLookup")` | 없음(FE 목록 재사용) | | | |
 | 행추가 | `handleAdd` → `newDeptRow(treeSel)` | 없음(로컬) | | | |
 | 저장 | `handleSave` → `saveDepartments` | `PUT .../save` | `save` | `sp_department_management_c_000` | `tbl_dept` |
@@ -250,18 +256,18 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 
 | 구분 | 경로 |
 |---|---|
-| FE | `pages/sys/user/UserManagementPage.tsx` · `UserManagementRule.ts` |
+| FE | `pages/sys/code/user/UserManagementPage.tsx` · `UserManagementRule.ts` |
 | 모달 | `components/common/modal/CodeLookupModal.tsx` · `UserSignModal.tsx` |
 | API | `api/sys/userApi.ts` + 룩업 후보 `roleApi.listRoles` · `departmentApi.listDepartments` |
-| BE | `com/haccp/sys/user/{UserController,UserService,UserMapper}.java` |
-| XML | `resources/mapper/sys/user/UserMapper.xml` |
+| BE | `com/haccp/sys/code/user/{UserController,UserService,UserMapper}.java` |
+| XML | `resources/mapper/sys/code/user/UserMapper.xml` |
 | DB | `db_sasshaccp/76_migrate_sp_user_mgmt_v2.sql` |
 
 ### 5-3. 버튼 → 끝단
 
 | 버튼·이벤트 | FE 핸들러 | API | Service | SP | 테이블 |
 |---|---|---|---|---|---|
-| 조회 | `runSearch` → `listUsers` | `GET /api/v1/sys/user-management/list` | `list` | `sp_user_management_r_000` | `tbl_user` `tbl_dept` `tbl_role` |
+| 조회 | `runSearch` → `listUsers` | `GET /api/v1/sys/code/user-management/list` | `list` | `sp_user_management_r_000` | `tbl_user` `tbl_dept` `tbl_role` |
 | 행추가 | `handleAdd` → `newUserRow()` | 없음(로컬) | | | |
 | 저장 | `handleSave` → `saveUsers` | `PUT .../save` | `save` | `sp_user_management_c_000` | `tbl_user` |
 | 삭제 | `handleDelete` → `validateDeleteUsers` → `deleteUsers` | `POST .../validate-delete` → `POST .../delete` | `validateDelete`·`delete` | `sp_user_management_delete_blocker_r_000` → `sp_user_management_d_000` | `tbl_user` `tbl_grid_pref` `tbl_user_noti_pref` |
@@ -282,24 +288,24 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 
 좌 결재선 헤더(행추가·저장·삭제, 기본 32%) · 우 고정 3단계(작성·검토·승인, 저장만). 검토 기본은 사용안함.
 단계 열은 순서 · 역할 · 부서 · 결재자 · 사용. 결재자 셀 버튼은 문서주기 담당자와 같은 `CodeLookup`이며 고르면 소속 부서가 채워진다. 직위코드 없음.
-URL은 `/sys/code/approval-line-management` — 메뉴 중분류 `menu-sys-code`. `/screen/{scrnCd}` 없음.
+URL은 `/sys/code/approval-line-management` — 메뉴 중분류 `code`. `/screen/{scrnCd}` 없음.
 
 ### 6-2. 파일
 
 | 구분 | 경로 |
 |---|---|
-| FE | `pages/sys/approvalline/ApprovalLineManagementPage.tsx` · `ApprovalLineManagementRule.ts` |
+| FE | `pages/sys/code/approvalline/ApprovalLineManagementPage.tsx` · `ApprovalLineManagementRule.ts` |
 | 모달 | `components/common/modal/CodeLookupModal.tsx` (`openModal("CodeLookup")`) |
 | API | `api/sys/approvalLineApi.ts` + 룩업 후보 `userApi.listUsers` |
-| BE | `com/haccp/sys/approvalline/{ApprovalLineController,ApprovalLineService,ApprovalLineMapper}.java` |
-| XML | `resources/mapper/sys/approvalline/ApprovalLineMapper.xml` |
+| BE | `com/haccp/sys/code/approvalline/{ApprovalLineController,ApprovalLineService,ApprovalLineMapper}.java` |
+| XML | `resources/mapper/sys/code/approvalline/ApprovalLineMapper.xml` |
 | DB | `db_sasshaccp/97_migrate_approval_line_sys.sql` · `18_sp_workflow.sql` |
 
 ### 6-3. 버튼 → 끝단
 
 | 버튼·이벤트 | FE 핸들러 | API | Service | SP | 테이블 |
 |---|---|---|---|---|---|
-| 조회 | `load` → `listApprovalLines` | `GET /api/v1/bas/approval-lines/list` | `list` | `sp_tbl_approval_line_r_000` | `tbl_approval_line` `tbl_approval_line_step` |
+| 조회 | `load` → `listApprovalLines` | `GET /api/v1/sys/code/approval-line-management/list` | `list` | `sp_tbl_approval_line_r_000` | `tbl_approval_line` `tbl_approval_line_step` |
 | 행추가 | `handleAdd` → `emptyLine()` | 없음(로컬, 우측에 3단계) | | | |
 | 결재자 룩업 | `openApproverLookup` → `openModal("CodeLookup")` | 없음(FE 사용자 목록 재사용) | | | |
 | 저장 | `handleSave` → `saveApprovalLine` | `PUT .../save` | `save` | `sp_tbl_approval_line_c_000` | 위 |
@@ -311,7 +317,7 @@ URL은 `/sys/code/approval-line-management` — 메뉴 중분류 `menu-sys-code`
 
 ### 7-1. 구조
 
-세 화면 모두 **조회 전용**이며 `components/layout/LogPageShell.tsx` 하나를 공유한다. 화면 폴더는 각각 `loginhistory/` · `auditlog/` · `screenusage/` 다.
+세 화면 모두 **조회 전용**이며 `components/layout/LogPageShell.tsx` 하나를 공유한다. 화면 폴더는 `pages/sys/logs/` 아래 `loginhistory/` · `auditlog/` · `screenusage/` 다.
 
 ```
 loginhistory/LoginHistoryPage           →  <LogPageShell key rule={LOGIN_HISTORY_RULE} />
@@ -327,20 +333,20 @@ screenusage/ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE
 
 | 화면 | 트리 | 코드 대분류 | API | SP | 테이블 |
 |---|---|---|---|---|---|
-| 로그인 이력 | 사용자 평면(`listUsers`) | `login-result` | `GET /api/v1/sys/login-history/list` | `sp_login_history_r_000` | `tbl_login_log` `tbl_user` |
-| 변경 감사 로그 | 메뉴 계층(`listAdminMenus`) | `audit-result` | `GET /api/v1/sys/audit-log/list` | `sp_audit_log_r_000` | `tbl_audit_log` `tbl_user` |
-| 화면 이용 통계 | 메뉴 계층 | 없음 | `GET /api/v1/sys/screen-usage-statistics/list` | `sp_screen_usage_statistics_r_000` | `tbl_view_stat_daily` `tbl_menu` `tbl_screen` |
+| 로그인 이력 | 사용자 평면(`listUsers`) | `login-result` | `GET /api/v1/sys/logs/login-history/list` | `sp_login_history_r_000` | `tbl_login_log` `tbl_user` |
+| 변경 감사 로그 | 메뉴 계층(`listAdminMenus`) | `audit-result` | `GET /api/v1/sys/logs/audit-log/list` | `sp_audit_log_r_000` | `tbl_audit_log` `tbl_user` |
+| 화면 이용 통계 | 메뉴 계층 | 없음 | `GET /api/v1/sys/logs/screen-usage-statistics/list` | `sp_screen_usage_statistics_r_000` | `tbl_view_stat_daily` `tbl_menu` `tbl_screen` |
 
 리프 노드는 서버 조건으로, 폴더 노드는 기간 전건 조회 후 Rule의 `fetchRows`가 하위 키로 FE 필터한다.
 
 ### 7-3. 감사 이력은 누가 쌓나
 
-`tbl_audit_log`는 화면이 아니라 저장·삭제를 수행한 서비스가 남긴다. 적재기는 `com.haccp.sys.auditlog.AuditWriter` 하나이며 SP는 `sp_tbl_audit_log_c_000`이다.
+`tbl_audit_log`는 화면이 아니라 저장·삭제를 수행한 서비스가 남긴다. 적재기는 `com.haccp.sys.logs.auditlog.AuditWriter` 하나이며 SP는 `sp_tbl_audit_log_c_000`이다.
 
 | 대상 테이블 | 남기는 곳 | 행위 |
 |---|---|---|
 | `tbl_code` `tbl_menu` `tbl_role` `tbl_role_screen` `tbl_dept` `tbl_user` | 시스템 관리 5화면 Service의 `save`·`delete` | I·U·D (사용자 서명 업로드·삭제는 U) |
-| `tbl_document` `tbl_document_file` | `doc.DocumentService` | I·U·D·APV·RJT |
+| `tbl_document` `tbl_document_file` | `docs.document.DocumentService` | I·U·D·APV·RJT |
 
 - 대상 테이블은 `audit-target` 공통코드(`sub_cd`=테이블명, `ref1`=화면코드)에 있어야 표시명·트리 필터가 붙는다
 - `after_json`은 화면 payload 그대로이고 `_key`·`_rowState`는 버려지며 `userPw`는 `***`로 가려진다. `before_json`은 남기지 않는다
@@ -351,8 +357,8 @@ screenusage/ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE
 ## 8. 신규 메뉴 추가 절차 (요약)
 
 1. DB: `db_sasshaccp/`에 `sp_tbl_{화면}_r_000`·`_c_000`·`_delete_blocker_r_000`·`_d_000` migrate 작성 (DROP은 회귀 통과 후 별도 파일)
-2. BE: `com.haccp.{도메인}` 또는 `com.haccp.sys.{메뉴}` 아래 Controller·Service·Mapper + `resources/mapper/{...}/*.xml`(SP 호출 전용)
-3. FE: `api/sys/{도메인}Api.ts` → `pages/sys/{도메인}/{화면}Page.tsx` + `{화면}Rule.ts`
+2. BE: `com.haccp.{대}.{중}` 아래 Controller·Service·Mapper + `resources/mapper/{대}/{중}/*.xml`(SP 호출 전용)
+3. FE: `api/{대}/` → `pages/{대}/{중}/{화면}Page.tsx` + `{화면}Rule.ts`. 경로 `docs/24`
 4. 팝업이 필요하면 `components/common/modal/`에 추가하고 `modalTypes.ModalPropsMap`·`GlobalModal` 분기를 늘린다
 5. `shell/screenRegistry.tsx`에 화면코드 엔트리 등록, `tbl_menu`·`tbl_screen` 시드 추가
 6. 폴더 README 작성 + 이 문서의 표 갱신. 변경 추적이 필요한 화면이면 Service에 `AuditWriter.record(...)`를 넣고 `audit-target` 공통코드에 대상 1건을 추가한다

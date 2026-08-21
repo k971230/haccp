@@ -60,6 +60,6 @@ alwaysApply: false
 
 ## 표준 참조
 
-- CRUD: `pages/ccp/ColdMonitorPage.tsx`
+- CRUD: `pages/docs/ccp/ColdMonitorPage.tsx`
 - 검색: `components/layout/SearchArea.tsx`
 - 셸: `shell/HaccpShell.tsx`

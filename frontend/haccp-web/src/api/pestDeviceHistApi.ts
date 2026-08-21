@@ -40,7 +40,7 @@ export async function listPestDeviceHist(
   pestIdx: number
 ): Promise<PestDeviceHistRow[]> {
   const { data } = await http.get<CommonResponse<PestDeviceHistRow[]>>(
-    "/api/v1/bas/pest-device-hist/list",
+    "/api/v1/docs/prp/pest-device-history/list",
     { params: { pestIdx } },
   );
   return data.data ?? [];
@@ -58,7 +58,7 @@ export async function savePestDeviceHist(
   // 저장 행 배열 — UI 단건이어도 배열
   rows: PestDeviceHistRow[]
 ): Promise<void> {
-  await http.put("/api/v1/bas/pest-device-hist/save", rows);
+  await http.put("/api/v1/docs/prp/pest-device-history/save", rows);
 }
 
 /**
@@ -73,7 +73,7 @@ export async function validateDeletePestDeviceHist(
   // 삭제 키 객체 배열 — 단건도 [{ idx }]
   keys: { idx: number }[]
 ): Promise<void> {
-  await http.post("/api/v1/bas/pest-device-hist/validate-delete", keys);
+  await http.post("/api/v1/docs/prp/pest-device-history/validate-delete", keys);
 }
 
 /**
@@ -88,5 +88,5 @@ export async function deletePestDeviceHist(
   // 삭제 키 객체 배열 — 스칼라 배열은 허용하지 않는다
   keys: { idx: number }[]
 ): Promise<void> {
-  await http.post("/api/v1/bas/pest-device-hist/delete", keys);
+  await http.post("/api/v1/docs/prp/pest-device-history/delete", keys);
 }

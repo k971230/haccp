@@ -4,18 +4,20 @@
 
 ```
 mapper/sys/
- ├ commoncode/ CommonCodeMapper.xml
- ├ menu/       MenuMgmtMapper.xml
- ├ role/       RoleMgmtMapper.xml
- ├ department/ DepartmentMapper.xml
- ├ user/       UserMapper.xml
- ├ approvalline/ ApprovalLineMapper.xml
- ├ loginhistory/ LoginHistoryMapper.xml
- ├ auditlog/     AuditLogMapper.xml
- └ screenusage/  ScreenUsageMapper.xml
+ ├ code/
+ │   ├ commoncode/ CommonCodeMapper.xml
+ │   ├ menu/       MenuMgmtMapper.xml
+ │   ├ role/       RoleMgmtMapper.xml
+ │   ├ department/ DepartmentMapper.xml
+ │   ├ user/       UserMapper.xml
+ │   └ approvalline/ ApprovalLineMapper.xml
+ └ logs/
+     ├ loginhistory/ LoginHistoryMapper.xml
+     ├ auditlog/     AuditLogMapper.xml
+     └ screenusage/  ScreenUsageMapper.xml
 ```
 
-`namespace`는 인터페이스 FQCN과 정확히 같다 (`com.haccp.sys.commoncode.CommonCodeMapper`).
+`namespace`는 인터페이스 FQCN과 정확히 같다 (`com.haccp.sys.code.commoncode.CommonCodeMapper`).
 스캔 경로는 `application.yml`의 `mybatis.mapper-locations` (`classpath*:mapper/**/*.xml`).
 
 ## 절대 규약 — 네이티브 SQL 금지
@@ -44,7 +46,7 @@ mapper/sys/
 
 `sp_{화면명}_{r|c|d|u}_{nnn}` — lower_snake, `sp_tbl_` 접두를 쓰지 않는다 (`07-haccp-db.mdc`).
 삭제 검증 전용은 `sp_{화면명}_delete_blocker_r_000`.
-테이블 단위 `sp_tbl_*` 규약은 doc·ccp·hyg·bas 등 업무 도메인과 로그 적재에만 남는다.
+테이블 단위 `sp_tbl_*` 규약은 docs·bas 등 업무 도메인과 로그 적재에만 남는다.
 `AuditLogMapper.insertAudit`이 부르는 `sp_tbl_audit_log_c_000`은 화면이 아니라 `tbl_audit_log` 테이블 단위 적재라 예외적으로 `sp_tbl_` 이름을 그대로 쓴다.
 
 | 폴더 | SP (전명) | 테이블 |

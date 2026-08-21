@@ -17,7 +17,8 @@ alwaysApply: false
 
 ## 명명 규약
 
-- 코드성 값 kebab-case 정본: [`docs/22_코드_케밥_양식매핑.md`](../../docs/22_코드_케밥_양식매핑.md) (menu_cd·scrn_cd·tmpl_cd). 이 파일은 SP·테이블 규약만 다룬다.
+- 코드성 값 kebab-case 정본: [`docs/22_코드_케밥_양식매핑.md`](../../docs/22_코드_케밥_양식매핑.md) (`tmpl_cd` 등). 이 파일은 SP·테이블 규약만 다룬다.
+- 경로(URL=DB `menu_cd`) 정본: [`docs/24_URL_DB_폴더_패키지_정본.md`](../../docs/24_URL_DB_폴더_패키지_정본.md)
 - PK: 전 테이블 `idx bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY`
 - 업무키: 복합 PK 대신 `CONSTRAINT ux_{테이블}_{키} UNIQUE (co_cd, ...)`
 - 인덱스: 일반 `ix_{테이블}_{용도}`, 유니크 `ux_{테이블}_{키}`
@@ -90,6 +91,8 @@ alwaysApply: false
 | `116_migrate_mtl_limit_cycle.sql` | 금속검출 한계기준 1행 · 주기 4줄 · `limit-run` 시드 숨김 |
 | `117_migrate_html_form_use_yn.sql` | HTML 양식 원본 사용여부 — 목록 `use_yn`(회사 양식) · 표준 `*_000`은 N · 이름 SP가 `ct.use_yn` 저장 |
 | `118_migrate_menu_url_slugs.sql` | 중분류 menu_cd 개명(`menu-master-sch`·`menu-sys-code`·`menu-sys-logs`) + sort encode SP |
+| `119_migrate_menu_master_hwp.sql` | 중분류 `menu-master-form`→`menu-master-hwp` (`/docs/hwp/` 접미) + sort encode SP |
+| `120_migrate_menu_url_slugs.sql` | 대/중/소 `menu_cd`를 URL 슬러그와 1:1 (`docs`/`hwp`/`hwp-template-management`). 118·119 미적용 DB도 구 이름을 받아 덮음 |
 
 번호는 의존 순서다. 새 파일은 **뒤 번호로 추가**하고 기존 번호를 재사용하지 않는다.
 

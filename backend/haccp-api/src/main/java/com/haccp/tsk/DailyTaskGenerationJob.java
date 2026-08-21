@@ -14,7 +14,7 @@
 package com.haccp.tsk;
 
 // 역할 — 문서주기 규칙 → 예정일 재생성 (규칙 해석은 이 서비스 한 곳에만 있다)
-import com.haccp.docs.doccycle.DocCycleService;
+import com.haccp.docs.sch.DocCycleService;
 // 역할 — 생성자 주입·Spring 스케줄 실행
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;

@@ -2,9 +2,9 @@
  * TemplateController — 회사 사용 템플릿 목록·HWP 원본 스트림 API.
  *
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-08-21
  * 코멘트:
- *   1) /api/v1/doc/templates에서 JWT 회사별 양식 목록과 원본 파일을 의미적으로 분리해 제공한다
+ *   1) /api/v1/docs/templates에서 JWT 회사별 양식 목록과 원본 파일을 의미적으로 분리해 제공한다
  *   2) 목록은 formUrl·formFileNm만 공개하고, 원본은 서비스의 템플릿 전용 저장소를 통해서만 연다
  *   3) 파일 스트림은 UTF-8 Content-Disposition과 안전한 binary MIME으로 브라우저에 전달한다
  *
@@ -40,7 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 /** HWP 템플릿 전용 REST API */
 @RestController
-@RequestMapping("/api/v1/doc/templates")
+@RequestMapping("/api/v1/docs/templates")
 public class TemplateController {
 
     // 템플릿 테넌트 인가·파일 경계·응답 조립 서비스

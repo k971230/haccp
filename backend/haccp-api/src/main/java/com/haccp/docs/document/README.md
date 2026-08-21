@@ -4,4 +4,4 @@
 
 XML `resources/mapper/docs/document/DocumentMapper.xml`
 
-URL은 `/api/v1/doc/documents/*` · `/api/v1/doc/documents/{idx}/...` 유지.
+URL은 `/api/v1/docs/documents/*` · `/api/v1/docs/documents/{idx}/...` 유지.

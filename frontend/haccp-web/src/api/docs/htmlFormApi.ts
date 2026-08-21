@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-19
  * 코멘트:
- *   1) 기준관리는 /api/v1/docs/html-form, 작성은 /api/v1/docs/hyg-process
+ *   1) 기준관리는 화면별 /docs/html/{scrnCd}, 작성은 /docs/prp/hygiene-process-check
  *   2) 목록·복사는 tmplCd로 공정점검(html_hyg_prc)/검증점검(tml_ccp_chk)/포장일지(tml_ccp_pkg)/가열일지(tml_ccp_htg)/금속검출일지(tml_ccp_mtl) 테이블을 가른다
  *   3) 삭제는 POST validate-delete → delete, Body는 객체 배열
  *
@@ -12,6 +12,8 @@
  */
 // 역할 — 일반 CRUD Axios (10s)
 import { http } from "../http";
+// 역할 — SCREEN_PATH 기준 API 베이스
+import { apiOf } from "@/shell/tabRoute";
 // 역할 — 서버 공통 응답
 import type { CommonResponse } from "@/types/common";
 import type { DocCorrectiveValue } from "@/components/form/DocDeviationFooter";
@@ -91,8 +93,23 @@ export interface HygProcessSaveRequest {
   corrective?: DocCorrectiveValue | null;
 }
 
-const FORM = "/api/v1/docs/html-form";
-const PROC = "/api/v1/docs/hyg-process";
+/** HTML 양식 원본 5화면 — SCREEN_PATH /docs/html/{scrnCd} */
+export type HtmlFormScrnCd =
+  | "hyg-process-template"
+  | "ccp-verify-template"
+  | "ccp-pkg-template"
+  | "ccp-htg-template"
+  | "ccp-mtl-template";
+
+/** 작성 화면 베이스 — SCREEN_PATH hygiene-process-check */
+const PROC = apiOf("hygiene-process-check");
+
+function formOf(
+  // HTML 양식 원본 화면코드 — 5개만
+  scrnCd: HtmlFormScrnCd
+): string {
+  return apiOf(scrnCd);
+}
 
 function n(v: unknown): number {
   const x = Number(v);
@@ -212,12 +229,15 @@ export function asItem(raw: Record<string, unknown>, index = 0): HtmlFormItem {
 }
 
 /** 좌측 양식 목록 — 예시 html_hyg_prc_000 포함. verCd·verNm 빈값이면 전체 */
-export async function listHtmlFormVersions(params?: {
+export async function listHtmlFormVersions(
+  // HTML 양식 원본 화면코드 — 5개만. URL 화이트리스트와 같다
+  scrnCd: HtmlFormScrnCd,
+  params?: {
   tmplCd?: string;
   verCd?: string;
   verNm?: string;
 }): Promise<HtmlFormVerRow[]> {
-  const { data } = await http.get<CommonResponse<Record<string, unknown>[]>>(`${FORM}/versions`, {
+  const { data } = await http.get<CommonResponse<Record<string, unknown>[]>>(`${formOf(scrnCd)}/versions`, {
     params: {
       tmplCd: params?.tmplCd ?? "",
       verCd: params?.verCd ?? "",
@@ -228,21 +248,29 @@ export async function listHtmlFormVersions(params?: {
 }
 
 /** 양식 항목 — html_hyg_prc_000 이면 시드 */
-export async function listHtmlFormItems(tmplCd = HTML_HYG_PRC_000, verNo = 0): Promise<HtmlFormItem[]> {
-  const { data } = await http.get<CommonResponse<Record<string, unknown>[]>>(`${FORM}/items`, {
+export async function listHtmlFormItems(
+  // HTML 양식 원본 화면코드
+  scrnCd: HtmlFormScrnCd,
+  tmplCd = HTML_HYG_PRC_000,
+  verNo = 0
+): Promise<HtmlFormItem[]> {
+  const { data } = await http.get<CommonResponse<Record<string, unknown>[]>>(`${formOf(scrnCd)}/items`, {
     params: { tmplCd, verNo },
   });
   return (data.data ?? []).map((row, i) => asItem(row, i));
 }
 
 /** 표준 시드 복사 — 좌 저장이 pending을 INSERT. 새 tmplCd 반환 */
-export async function copyHtmlFormVersion(body: {
+export async function copyHtmlFormVersion(
+  // HTML 양식 원본 화면코드
+  scrnCd: HtmlFormScrnCd,
+  body: {
   tmplCd?: string;
   srcVerNo?: number;
   verCd?: string;
   verNm: string;
 }): Promise<string> {
-  const { data } = await http.put<CommonResponse<{ tmplCd?: string }>>(`${FORM}/copy`, {
+  const { data } = await http.put<CommonResponse<{ tmplCd?: string }>>(`${formOf(scrnCd)}/copy`, {
     srcVerNo: 0,
     ...body,
   });
@@ -250,24 +278,38 @@ export async function copyHtmlFormVersion(body: {
 }
 
 /** 사용자 버전 항목 저장 */
-export async function saveHtmlFormItems(verNo: number, items: HtmlFormItem[], tmplCd: string): Promise<void> {
-  await http.put(`${FORM}/items`, { tmplCd, verNo, items });
+export async function saveHtmlFormItems(
+  // HTML 양식 원본 화면코드
+  scrnCd: HtmlFormScrnCd,
+  verNo: number,
+  items: HtmlFormItem[],
+  tmplCd: string
+): Promise<void> {
+  await http.put(`${formOf(scrnCd)}/items`, { tmplCd, verNo, items });
 }
 
 /** 작성 신규 적용 — 좌 저장에서만 호출 */
-export async function applyHtmlFormVersion(verNo: number, tmplCd = HTML_SYS_001): Promise<void> {
-  await http.put(`${FORM}/apply`, { tmplCd, verNo });
+export async function applyHtmlFormVersion(
+  // HTML 양식 원본 화면코드
+  scrnCd: HtmlFormScrnCd,
+  verNo: number,
+  tmplCd = HTML_SYS_001
+): Promise<void> {
+  await http.put(`${formOf(scrnCd)}/apply`, { tmplCd, verNo });
 }
 
 /** 사용자 버전명·회사 사용여부 — 좌 저장이 바뀐 이름·useYn을 커밋. 표준은 서버가 막는다 */
-export async function updateHtmlFormVerNm(body: {
+export async function updateHtmlFormVerNm(
+  // HTML 양식 원본 화면코드
+  scrnCd: HtmlFormScrnCd,
+  body: {
   tmplCd?: string;
   verNo: number;
   verNm: string;
   // 회사 양식 사용여부 Y/N. 없으면 서버가 Y
   useYn?: string;
 }): Promise<void> {
-  await http.put(`${FORM}/name`, {
+  await http.put(`${formOf(scrnCd)}/name`, {
     tmplCd: body.tmplCd ?? HTML_HYG_PRC_000,
     verNo: body.verNo,
     verNm: body.verNm,
@@ -276,13 +318,21 @@ export async function updateHtmlFormVerNm(body: {
 }
 
 /** 삭제 검증 — 표준은 서버가 막는다 */
-export async function validateDeleteHtmlFormVersions(keys: { tmplCd: string; verNo: number }[]): Promise<void> {
-  await http.post(`${FORM}/validate-delete`, keys);
+export async function validateDeleteHtmlFormVersions(
+  // HTML 양식 원본 화면코드
+  scrnCd: HtmlFormScrnCd,
+  keys: { tmplCd: string; verNo: number }[]
+): Promise<void> {
+  await http.post(`${formOf(scrnCd)}/validate-delete`, keys);
 }
 
 /** 자사 양식 삭제 */
-export async function deleteHtmlFormVersions(keys: { tmplCd: string; verNo: number }[]): Promise<void> {
-  await http.post(`${FORM}/delete`, keys);
+export async function deleteHtmlFormVersions(
+  // HTML 양식 원본 화면코드
+  scrnCd: HtmlFormScrnCd,
+  keys: { tmplCd: string; verNo: number }[]
+): Promise<void> {
+  await http.post(`${formOf(scrnCd)}/delete`, keys);
 }
 
 /** 작성 목록 */

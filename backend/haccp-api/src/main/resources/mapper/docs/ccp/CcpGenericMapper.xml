@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CcpGenericMapper.xml — 가열·세척 등 공통 CCP 모니터링 조회·저장·삭제.
+
+개발자: 박승우
+일자: 2026-08-06
+코멘트:
+  1) 템플릿 조회는 스마트 기준일지와 내부 매핑을 기준으로 한 공통 화면 후보만 반환한다
+  2) 상세는 헤더와 행·셀 JSON을 한 방 조회한다
+  3) 삭제는 validate-delete Double Check 후 SP를 호출한다
+
+PIPELINE[HB96] 공통 CCP MyBatis XML
+PIPELINE[HB95, HB94, HF94] 연관 모듈
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.docs.ccp.CcpGenericMapper">
+    <!-- 공통 CCP 템플릿과 대표 공공 기준일지 — 회사 양식 사용 설정을 함께 확인 -->
+    <select id="selectTemplates" resultType="map">
+        SELECT t.tmpl_cd, t.tmpl_nm, d.diary_no, d.diary_nm, d.limit_item_kind,
+               d.critical_limit_cn, d.monitoring_cycle_cn, d.monitoring_method_cn, d.improvement_method_cn,
+               coalesce(ct.use_yn, 'N') AS company_use_yn
+          FROM tbl_smart_diary_map m
+          JOIN tbl_smart_diary_type d ON d.diary_no = m.diary_no AND d.use_yn = 'Y'
+          JOIN tbl_template t ON t.tmpl_cd = m.tmpl_cd AND t.use_yn = 'Y'
+          LEFT JOIN tbl_company_template ct ON ct.co_cd = #{coCd} AND ct.tmpl_cd = t.tmpl_cd
+         WHERE m.impl_status = 'GENERIC_CCP'
+           AND m.preferred_yn = 'Y'
+           AND coalesce(ct.use_yn, 'N') = 'Y'
+         ORDER BY d.sort_no, t.sort_no
+    </select>
+
+    <!-- 상세 — sp_tbl_ccp_generic_monitor_r_000 -->
+    <select id="selectDetail" resultType="map">
+        SELECT * FROM sp_tbl_ccp_generic_monitor_r_000(
+            #{coCd, mode=IN, jdbcType=VARCHAR},
+            #{docIdx, mode=IN, jdbcType=BIGINT}
+        )
+    </select>
+
+    <!-- 공통 CCP 저장 — rowsJson의 cells는 EAV 행으로 저장된다 -->
+    <select id="save" resultType="long">
+        SELECT sp_tbl_ccp_generic_monitor_c_000(
+            #{coCd, mode=IN, jdbcType=VARCHAR}, #{docIdx, mode=IN, jdbcType=BIGINT},
+            #{baseDt, mode=IN, jdbcType=VARCHAR}, #{tmplCd, mode=IN, jdbcType=VARCHAR},
+            #{ccpCd, mode=IN, jdbcType=VARCHAR}, #{diaryNo, mode=IN, jdbcType=VARCHAR},
+            #{limitItemKind, mode=IN, jdbcType=VARCHAR}, #{mngUserId, mode=IN, jdbcType=VARCHAR},
+            #{mngNm, mode=IN, jdbcType=VARCHAR}, CAST(#{rowsJson, mode=IN, jdbcType=VARCHAR} AS jsonb),
+            #{userId, mode=IN, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 삭제 차단 — 결재 진행·완료 문서 -->
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
+        SELECT d.doc_no AS ref_key,
+               CASE d.status
+                    WHEN 'REQ' THEN '결재요청'
+                    WHEN 'REV' THEN '결재검토'
+                    WHEN 'APV' THEN '결재완료'
+                    ELSE d.status
+               END AS target
+          FROM tbl_document d
+          JOIN tbl_ccp_generic_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
+         WHERE d.co_cd = #{coCd}
+           AND d.del_yn = 'N'
+           AND d.status NOT IN ('TMP', 'RJT')
+           AND d.idx IN
+           <foreach collection="docIdxs" item="id" open="(" separator="," close=")">
+               #{id}
+           </foreach>
+         ORDER BY d.doc_no
+         LIMIT 1
+    </select>
+
+    <!-- 삭제 — 임시·반려만 -->
+    <update id="deleteMonitor" statementType="CALLABLE">
+        CALL sp_tbl_ccp_generic_monitor_d_000(
+            #{coCd, mode=IN, jdbcType=VARCHAR},
+            #{docIdx, mode=IN, jdbcType=BIGINT},
+            #{userId, mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+</mapper>

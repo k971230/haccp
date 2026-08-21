@@ -1,5 +1,5 @@
 /**
- * loginHistoryApi — 로그인 이력 화면 API (/api/v1/sys/login-history).
+ * loginHistoryApi — 로그인 이력 화면 API (SCREEN_PATH).
  *
  * 개발자: 박승우
  * 일자: 2026-08-18
@@ -12,6 +12,8 @@
  */
 // 역할 — 일반 CRUD Axios 인스턴스
 import { http } from "../http";
+// 역할 — SCREEN_PATH 기준 API 베이스
+import { apiOf } from "@/shell/tabRoute";
 // 역할 — 공통 성공 응답 형식
 import type { CommonResponse } from "@/types/common";
 // 역할 — MyBatis Map snake_case → 그리드 camelCase 정규화
@@ -37,7 +39,7 @@ export async function listLoginHistory(params: {
   // 결과 필터 S|F|L — 생략하면 전체
   resultCd?: string;
 }): Promise<SysRow[]> {
-  const { data } = await http.get<CommonResponse<SysRow[]>>("/api/v1/sys/login-history/list", {
+  const { data } = await http.get<CommonResponse<SysRow[]>>(apiOf("login-history", "list"), {
     params,
   });
   return camelizeRows<SysRow>(data.data as unknown as Record<string, unknown>[]);

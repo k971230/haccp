@@ -40,7 +40,7 @@ export async function listEquipmentHist(
   equipIdx: number
 ): Promise<EquipmentHistRow[]> {
   const { data } = await http.get<CommonResponse<EquipmentHistRow[]>>(
-    "/api/v1/bas/equipment-hist/list",
+    "/api/v1/docs/prp/equipment-history/list",
     { params: { equipIdx } },
   );
   return data.data ?? [];
@@ -58,7 +58,7 @@ export async function saveEquipmentHist(
   // 저장 행 배열 — UI 단건이어도 배열
   rows: EquipmentHistRow[]
 ): Promise<void> {
-  await http.put("/api/v1/bas/equipment-hist/save", rows);
+  await http.put("/api/v1/docs/prp/equipment-history/save", rows);
 }
 
 /**
@@ -73,7 +73,7 @@ export async function validateDeleteEquipmentHist(
   // 삭제 키 객체 배열 — 단건도 [{ idx }]
   keys: { idx: number }[]
 ): Promise<void> {
-  await http.post("/api/v1/bas/equipment-hist/validate-delete", keys);
+  await http.post("/api/v1/docs/prp/equipment-history/validate-delete", keys);
 }
 
 /**
@@ -88,5 +88,5 @@ export async function deleteEquipmentHist(
   // 삭제 키 객체 배열 — 스칼라 배열은 허용하지 않는다
   keys: { idx: number }[]
 ): Promise<void> {
-  await http.post("/api/v1/bas/equipment-hist/delete", keys);
+  await http.post("/api/v1/docs/prp/equipment-history/delete", keys);
 }

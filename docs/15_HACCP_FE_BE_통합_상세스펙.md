@@ -4,7 +4,7 @@
 > 작성일: 2026-08-21 · 개발자: 박승우  
 > **이 파일은 사람이 읽는 이야기**다. 로그인·그리드 CRUD·DocForm·HWP leaf·삭제·배포를 문장과 다이어그램으로 쓴다. 태그 번호 전수는 [`23_PIPELINE.md`](23_PIPELINE.md).  
 > 범위: **HACCP만** (`haccp-web` + `haccp-api` + `db_sasshaccp`). MES 제외.  
-> 관련: [`00`](1_문서인덱스.md) · [`01`](4_운영규칙_BE.md) · [`04`](10_인증_보안_JWT_BE.md) · [`06`](13_업무_CRUD_BE.md) · [`07`](14_메뉴_화면_API_DB_전수.md) · [`09`](16_통합완성도_및_부족분.md) · 파일 찾는 법 [`10`](17_파일구조_컴포넌트_함수지도.md) · [`11` 파일·보안](18_프레임워크_파일_보안_작성규칙.md)
+> 관련: [`00`](1_문서인덱스.md) · [`01`](4_운영규칙_BE.md) · [`04`](10_인증_보안_JWT_BE.md) · [`06`](13_업무_CRUD_BE.md) · [`07`](14_메뉴_화면_API_DB_전수.md) · [`09`](16_통합완성도_및_부족분.md) · 파일 찾는 법 [`10`](17_파일구조_컴포넌트_함수지도.md) · [`11` 파일·보안](18_프레임워크_파일_보안_작성규칙.md) · 경로 [`24`](24_URL_DB_폴더_패키지_정본.md)
 
 ---
 
@@ -25,7 +25,7 @@
 | 11 | 운영 규약 (삭제·테넌트·응답) |
 | 12 | 동결·갭·교차검증 |
 
-메뉴 leaf 한 줄 표는 **07**이 정본이다. 본 문서는 **호출 체인·계약·환경**을 더 깊게 적는다.
+메뉴 leaf 한 줄 표는 **14**가 정본이다. 폴더·패키지·URL은 **24**와 `SCREEN_PATH`다. 본 문서는 **호출 체인·계약·환경**을 더 깊게 적는다.
 
 ---
 
@@ -161,7 +161,7 @@ flowchart TB
 | `menu` `code` `pref` `log` | 셸 API (Controller→Mapper 직결 가능) |
 | `bas` | 마스터·설비/방충 이력 |
 | `workflow` | 결재선·양식·점검항목·주기·법적유형 |
-| `ccp` `hyg` `ops` `docs` `tsk` `sys` | 업무. 문서는 `com.haccp.docs.{메뉴}` (`document`·`template`·`hwptemplate` …) |
+| `docs` `flow` `bas` `sys` `tsk` | 업무. 화면 패키지는 `com.haccp.{대}.{중}` (`docs.ccp`·`docs.hwp`·`sys.code` …). 공유 허브 `docs.document` · `docs.template` |
 | `common` | LoginUserContext · BizException · DeleteValidation · response |
 
 DI: `@RequiredArgsConstructor` + `private final`. CUD는 `@Transactional` (로그인 제외).
@@ -294,13 +294,18 @@ sequenceDiagram
 |------|------|
 | pages/auth | LoginPage |
 | pages/tsk | TodayTasksPage |
-| pages/sys | commoncode/ · menu/ · role/ · department/ · user/ · loginhistory/ · auditlog/ · screenusage/ |
-| pages/bas | MasterData · Equipment/Pest History · ApprovalLine · TemplateCheckItem |
-| pages/hwp | hwptemplate/ · doccycle/ |
-| pages/ccp | Cold · Generic · Metal · Verification · CcpFormPage |
-| pages/hyg | HygieneCheck · HealthCert |
-| pages/ops | BizOpsFormPage |
-| pages/doc | HwpDocumentEditor · DocumentBox · LegalDocumentUpload · CorrectiveAction |
+| pages/sys/code | commoncode/ · menu/ · role/ · department/ · user/ · approvalline/ |
+| pages/sys/logs | loginhistory/ · auditlog/ · screenusage/ |
+| pages/bas/master | MasterDataPage (7종) |
+| pages/docs/hwp | 사용양식 · 공용 HWP 에디터 |
+| pages/docs/sch | 문서주기 |
+| pages/docs/ccp | Cold · Generic · Metal · Verification · CcpFormPage · process-hwp |
+| pages/docs/prp | Hygiene · HealthCert · BizOps · 설비/방충 이력 · PRP HWP leaf |
+| pages/docs/html | HTML양식 원본 5화면 · hygprocess 작성 |
+| pages/docs/logis · admin | 물류·운영 HWP leaf |
+| pages/flow/box | DocumentBox · LegalDocumentUpload |
+| pages/flow/appr | 결재함·이력은 DocumentBox mode |
+| pages/flow/ca | CorrectiveAction |
 
 ### 4.2 FE api
 
@@ -310,7 +315,7 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 
 ### 4.3 BE java 패키지 ↔ mapper XML
 
-동일 도메인명: `src/main/java/com/haccp/{pkg}` ↔ `resources/mapper/{pkg}/*.xml`
+`src/main/java/com/haccp/{대}/{중}` ↔ `resources/mapper/{대}/{중}/*.xml`. 정본 [`24`](24_URL_DB_폴더_패키지_정본.md).
 
 ### 4.4 DB
 
@@ -339,14 +344,14 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 
 | FE | Method | URL |
 |----|--------|-----|
-| commonCodeApi | GET/PUT/POST | `/api/v1/sys/common-code-management/{list,save,validate-delete,delete}` |
-| menuApi | GET/PUT/POST | `/api/v1/sys/menu-management/{list,save,validate-delete,delete}` |
-| roleApi | GET/PUT/POST | `/api/v1/sys/role-management/{list,save,validate-delete,delete}` · screens |
-| departmentApi | GET/PUT/POST | `/api/v1/sys/department-management/{list,save,validate-delete,delete}` |
-| userApi | GET/PUT/POST | `/api/v1/sys/user-management/{list,save,validate-delete,delete}` · `/users/{id\|me}/sign` |
-| loginHistoryApi | GET | `/api/v1/sys/login-history/list` |
-| auditLogApi | GET | `/api/v1/sys/audit-log/list` |
-| screenUsageApi | GET | `/api/v1/sys/screen-usage-statistics/list` |
+| commonCodeApi | GET/PUT/POST | `/api/v1/sys/code/common-code-management/{groups,details,save,validate-delete,delete}` |
+| menuApi | GET/PUT/POST | `/api/v1/sys/code/menu-management/{list,save,validate-delete,delete}` |
+| roleApi | GET/PUT/POST | `/api/v1/sys/code/role-management/{list,save,validate-delete,delete}` · screens |
+| departmentApi | GET/PUT/POST | `/api/v1/sys/code/department-management/{list,save,validate-delete,delete}` |
+| userApi | GET/PUT/POST | `/api/v1/sys/code/user-management/{list,save,validate-delete,delete}` · `/users/{id\|me}/sign` |
+| loginHistoryApi | GET | `/api/v1/sys/logs/login-history/list` |
+| auditLogApi | GET | `/api/v1/sys/logs/audit-log/list` |
+| screenUsageApi | GET | `/api/v1/sys/logs/screen-usage-statistics/list` |
 
 이력 3종은 list만. 서명은 `userApi`가 소유한다. `company-management`는 온보딩 외 미노출.
 
@@ -356,19 +361,19 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 |----|-----|
 | list/save/validate/delete Master | `/api/v1/bas/{type}/*` type=product\|material\|partner\|storage\|equipment\|measuring-device\|pest-device\|vehicle\|work-area\|ccp-limit |
 | equipment photo | POST `/api/v1/bas/equipment/{idx}/photo` |
-| equipmentHist list/save/del | `/api/v1/bas/equipment-hist/*` |
-| pestDeviceHist list/save/del | `/api/v1/bas/pest-device-hist/*` |
+| equipmentHist list/save/del | `/api/v1/docs/prp/equipment-history/*` |
+| pestDeviceHist list/save/del | `/api/v1/docs/prp/pest-device-history/*` |
 
 ### 5.4 workflowApi
 
 | FE | URL |
 |----|-----|
-| approval-lines CRUD | `/api/v1/bas/approval-lines/{list,save,validate-delete,delete}` |
+| approval-lines CRUD | `/api/v1/sys/code/approval-line-management/{list,save,validate-delete,delete}` |
 | company-templates | list/save/validate-delete/delete · create-custom(multipart) |
 | saveLegalType | PUT `/api/v1/bas/legal-types/save` |
 | company-check-items | list?tmplCd · save · validate-delete · delete |
 | company-forms | list · clone · activate · form-items list/save |
-| hwp-templates | `/api/v1/hwp/hwp-templates/{list,save,files,apply-file}` — 사용양식 목록·저장·파일이력·불러오기/초기화 |
+| hwp-templates | `/api/v1/docs/hwp/hwp-template-management/{list,save,files,apply-file}` — 사용양식 목록·저장·파일이력·불러오기/초기화 |
 | schedule-rules | list/save/validate-delete/delete (구 단일 그리드 API — 화면은 5.9 doc-cycles 사용) |
 | template-export-hist | list · get · export · import |
 | ~~smart-diary~~ | **폐기** (STEP 20 / G-14) — BE 엔드포인트 제거. DB DROP은 별도 승인 |
@@ -377,10 +382,10 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 
 | FE | URL | 클라이언트 |
 |----|-----|------------|
-| listDocumentTemplates | GET `/api/v1/doc/templates/list` | http |
+| listDocumentTemplates | GET `/api/v1/docs/templates/list` | http |
 | loadHwpTemplateFile(formUrl) | GET formUrl | httpFile blob |
-| saveHwpTemplateForm | POST `/api/v1/doc/templates/{tmplCd}/form` | httpFile |
-| listDocuments | GET `/api/v1/doc/documents/list` | http |
+| saveHwpTemplateForm | POST `/api/v1/docs/templates/{tmplCd}/form` | httpFile |
+| listDocuments | GET `/api/v1/docs/documents/list` | http |
 | listApprovalInbox/History | GET `…/approval-inbox` · `…/approval-history` | http |
 | getDocumentDetail | GET `…/documents/{docIdx}` | http |
 | saveHwpDocument | PUT `…/documents/hwp/save` | http |
@@ -395,14 +400,14 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 
 | 모듈 | FE | Base |
 |------|-----|------|
-| hygieneApi | list/detail/save/validate/delete | `/api/v1/hyg/{screenCode}/*` |
-| healthCertApi | list/save/del + upload file | `/api/v1/hyg/health-cert/*` |
-| ccpColdApi | list/detail/save/del | `/api/v1/ccp/cold-monitor/*` |
-| ccpFormsApi | list/detail/save/del | `/api/v1/ccp/{metal-monitor\|verification-check}/*` |
-| ccpGenericApi | templates · get · save · del | `/api/v1/ccp/generic-monitor/*` |
-| bizOpsApi | list/detail/save/del | `/api/v1/fac/{facility-equipment-check\|calibration-target-management}/*` — HTML 2종만 (§5.7) |
-| taskWorkflowApi | today-tasks · notifications · corrective · relations · audit-export(동결) | `/api/v1/tsk/*` · `/api/v1/doc/corrective-actions/*` |
-| api/hwp/docCycleApi | forms(좌측 목록) · get · save · validate-delete · delete | `/api/v1/hwp/doc-cycles/*` — 저장 시 서버가 예정일 재생성 |
+| hygieneApi | list/detail/save/validate/delete | `/api/v1/docs/prp/{daily-hygiene-check\|pest-control-check}/*` |
+| healthCertApi | list/save/del + upload file | `/api/v1/docs/prp/health-cert-record/*` |
+| ccpColdApi | list/detail/save/del | `/api/v1/docs/ccp/ccp-cold-monitor/*` |
+| ccpFormsApi | list/detail/save/del | `/api/v1/docs/ccp/{ccp-metal-monitor\|ccp-verification-check}/*` |
+| ccpGenericApi | templates · get · save · del | `/api/v1/docs/ccp/{ccp-heat-monitor\|ccp-sanitize-monitor\|ccp-filter-monitor}/*` |
+| bizOpsApi | list/detail/save/del | `/api/v1/docs/prp/{facility-equipment-check\|calibration-target-management}/*` — HTML 2종만 (§5.7) |
+| taskWorkflowApi | today-tasks · notifications · corrective · relations · audit-export(동결) | `/api/v1/tsk/*` · `/api/v1/flow/ca/corrective-action-management/*` |
+| api/docs/docCycleApi | forms(좌측 목록) · get · save · validate-delete · delete | `/api/v1/docs/sch/schedule-cycle-management/*` — 저장 시 서버가 예정일 재생성 |
 
 ### 5.7 BizOps HTML 2종 (G-15)
 
@@ -410,8 +415,8 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 
 | screenCode | API base | BE 상태 | FE 작성 UI | tmpl_cd | 비고 |
 |------------|----------|---------|------------|---------|------|
-| `facility-equipment-check` | `/api/v1/fac/facility-equipment-check` | 사용 | `BizOpsFormPage` 레지스트리 | `html_sys_009` | 메뉴 활성 HTML |
-| `calibration-target-management` | `/api/v1/fac/calibration-target-management` | 사용 | `BizOpsFormPage` (메뉴 숨김 · 레지스트리·`/docs/prp/`만) | `html_sys_010` | 문서함 deep-link · 자체/외부 검교정 HWP는 `calib-*-hwp` |
+| `facility-equipment-check` | `/api/v1/docs/prp/facility-equipment-check` | 사용 | `BizOpsFormPage` 레지스트리 | `html_sys_009` | 메뉴 활성 HTML |
+| `calibration-target-management` | `/api/v1/docs/prp/calibration-target-management` | 사용 | `BizOpsFormPage` (메뉴 숨김 · 레지스트리·`/docs/prp/`만) | `html_sys_010` | 문서함 deep-link · 자체/외부 검교정 HWP는 `calib-*-hwp` |
 
 **코드 삭제 (2026-08-19)**
 
@@ -438,27 +443,27 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 | PrefController | /api/v1/pref/grid | 2 |
 | ViewLogController | /api/v1/log/view | 1 |
 | MasterController | /api/v1/bas | 5 |
-| EquipmentHistController | /api/v1/bas/equipment-hist | 4 |
-| DocCycleController (`hwp.doccycle`) | /api/v1/hwp/doc-cycles | 5 |
-| HwpTemplateController (`hwp.hwptemplate`) | /api/v1/hwp/hwp-templates | 4 |
-| PestDeviceHistController | /api/v1/bas/pest-device-hist | 4 |
+| EquipmentHistController | /api/v1/docs/prp/equipment-history | 4 |
+| DocCycleController (`docs.sch`) | /api/v1/docs/sch/schedule-cycle-management | 5 |
+| HwpTemplateController (`docs.hwp`) | /api/v1/docs/hwp/hwp-template-management | 4 |
+| PestDeviceHistController | /api/v1/docs/prp/pest-device-history | 4 |
 | WorkflowController | /api/v1/bas | 30+ |
-| CcpColdController | /api/v1/ccp/cold-monitor | 5 |
-| CcpGenericController | /api/v1/ccp/generic-monitor | 5 |
-| CcpFormsController | /api/v1/ccp/{form} | 5 |
-| HygieneController | /api/v1/hyg/{screenCode} | 5 |
-| HealthCertController | /api/v1/hyg/health-cert | 5 |
-| DocumentController | /api/v1/doc/documents | 11 |
-| TemplateController | /api/v1/doc/templates | 3 |
+| CcpColdController | /api/v1/docs/ccp/ccp-cold-monitor | 5 |
+| CcpGenericController | /api/v1/docs/ccp/{ccp-heat-monitor\|ccp-sanitize-monitor\|ccp-filter-monitor} | 5 |
+| CcpFormsController | /api/v1/docs/ccp/{ccp-metal-monitor\|ccp-verification-check} | 5 |
+| HygieneController | /api/v1/docs/prp/{daily-hygiene-check\|pest-control-check} | 5 |
+| HealthCertController | /api/v1/docs/prp/health-cert-record | 5 |
+| DocumentController | /api/v1/docs/documents | 11 |
+| TemplateController | /api/v1/docs/templates | 3 |
 | TaskController | (full path) | 11 |
-| CommonCodeController | /api/v1/sys/common-code-management | 4 |
-| MenuMgmtController | /api/v1/sys/menu-management | 4 |
-| RoleMgmtController | /api/v1/sys/role-management | 6 |
-| DepartmentController | /api/v1/sys/department-management | 4 |
-| UserController | /api/v1/sys/user-management · /users | 8 |
-| LoginHistoryController | /api/v1/sys/login-history | 1 |
-| AuditLogController | /api/v1/sys/audit-log | 1 |
-| ScreenUsageController | /api/v1/sys/screen-usage-statistics | 1 |
+| CommonCodeController | /api/v1/sys/code/common-code-management | 4 |
+| MenuMgmtController | /api/v1/sys/code/menu-management | 4 |
+| RoleMgmtController | /api/v1/sys/code/role-management | 6 |
+| DepartmentController | /api/v1/sys/code/department-management | 4 |
+| UserController | /api/v1/sys/code/user-management · /users | 8 |
+| LoginHistoryController | /api/v1/sys/logs/login-history | 1 |
+| AuditLogController | /api/v1/sys/logs/audit-log | 1 |
+| ScreenUsageController | /api/v1/sys/logs/screen-usage-statistics | 1 |
 | BizOpsController | 2 bases × 5 | 10 |
 
 합계: sys는 화면 1개 = Controller 1개로 분할. 나머지 도메인은 기존 표와 같다.
@@ -498,7 +503,7 @@ documentApi · hygieneApi · healthCertApi · ccpColdApi · ccpFormsApi · ccpGe
 | D CCP 한계 admin | MasterDataPage | masterApi ccp-limit | MasterController | sp_tbl_ccp_limit_* |
 | E 설비/방충 이력 M-D | Equipment/Pest HistoryPage | master+hist API | Master+HistController | equipment_hist / pest hist |
 | F 주기·점검항목 | Schedule · TemplateCheckItem | docCycleApi · workflowApi | DocCycleController · WorkflowController | 85/96 cycle · 18_sp_workflow |
-| G HWP 양식관리 | hwp/hwptemplate/HwpTemplateManagementPage | document+hwpTemplateApi | Template+HwpTemplate (삭제는 Workflow 잔류) | company_template · form file |
+| G HWP 양식관리 | docs/hwp/HwpTemplateManagementPage | document+hwpTemplateApi | Template+HwpTemplate (삭제는 Workflow 잔류) | company_template · form file |
 | H 위생 DB | HygieneCheckPage | hygieneApi | HygieneController | sp_tbl_hygiene_document_* |
 | I 냉장 CCP | ColdMonitorPage | ccpColdApi | CcpColdController | sp_tbl_ccp_cold_monitor_* |
 | J 금속/검증 CCP | CcpFormPage | ccpFormsApi | CcpFormsController | sp_tbl_ccp_form_* |
@@ -528,7 +533,7 @@ Page
 ### 7.3 HWP leaf 체인
 
 ```
-hwpLeaf(tmplCd) → HwpDocumentEditorPage
+화면별 thin Page → HwpDocumentEditorPage
  ├─ 목록 MesEditableGrid (tmpl 고정 필터)
  ├─ rhwp editor (@rhwp/editor)
  ├─ saveHwpDocument → uploadDocumentFile(HWP_SRC)
@@ -536,7 +541,7 @@ hwpLeaf(tmplCd) → HwpDocumentEditorPage
  └─ DocumentApprovalToolbar (상신·취소)
 ```
 
-양식 원본: GET/POST `/api/v1/doc/templates/{tmplCd}/form` (form_path 없으면 400 — 법적유형은 formUrl 생략).
+양식 원본: GET/POST `/api/v1/docs/templates/{tmplCd}/form` (form_path 없으면 400 — 법적유형은 formUrl 생략).
 
 ### 7.4 법적서류 M-D 체인
 

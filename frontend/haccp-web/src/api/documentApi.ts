@@ -2,9 +2,9 @@
  * documentApi — 문서함·결재·첨부 API.
  *
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-08-21
  * 코멘트:
- *   1) DB형·HWP형 공통 문서 목록·상세·결재·파일 요청을 /api/v1/doc/documents에 연결한다
+ *   1) DB형·HWP형 공통 문서 목록·상세·결재·파일 요청을 /api/v1/docs/documents에 연결한다
  *   2) 파일 업로드·다운로드는 httpFile(120초)을 사용하고, 나머지는 일반 http를 사용한다
  *   3) 삭제는 OPS_DELETE 순서대로 validate-delete와 delete를 분리한다
  *
@@ -118,7 +118,7 @@ export interface DocumentTemplateRow {
  */
 export async function listDocumentTemplates(): Promise<DocumentTemplateRow[]> {
   const { data } = await http.get<CommonResponse<DocumentTemplateRow[]>>(
-    "/api/v1/doc/templates/list"
+    "/api/v1/docs/templates/list"
   );
   return data.data ?? [];
 }
@@ -155,7 +155,7 @@ export async function saveHwpTemplateForm(
 ): Promise<void> {
   const form = new FormData();
   form.append("file", file);
-  await httpFile.post(`/api/v1/doc/templates/${encodeURIComponent(tmplCd)}/form`, form);
+  await httpFile.post(`/api/v1/docs/templates/${encodeURIComponent(tmplCd)}/form`, form);
 }
 
 /** 통합 문서함 조회 */
@@ -171,7 +171,7 @@ export async function listDocuments(
   }
 ): Promise<DocumentListRow[]> {
   const { data } = await http.get<CommonResponse<Record<string, unknown>[]>>(
-    "/api/v1/doc/documents/list",
+    "/api/v1/docs/documents/list",
     { params }
   );
   // doc_no → docNo — MesEditableGrid field 바인딩
@@ -185,7 +185,7 @@ export async function listApprovalInbox(params: {
   keyword?: string;
 }): Promise<DocumentListRow[]> {
   const { data } = await http.get<CommonResponse<Record<string, unknown>[]>>(
-    "/api/v1/doc/documents/approval-inbox",
+    "/api/v1/docs/documents/approval-inbox",
     { params }
   );
   return camelizeRows<DocumentListRow & Record<string, unknown>>(data.data);
@@ -198,7 +198,7 @@ export async function listApprovalHistory(params: {
   keyword?: string;
 }): Promise<DocumentListRow[]> {
   const { data } = await http.get<CommonResponse<Record<string, unknown>[]>>(
-    "/api/v1/doc/documents/approval-history",
+    "/api/v1/docs/documents/approval-history",
     { params }
   );
   return camelizeRows<DocumentListRow & Record<string, unknown>>(data.data);
@@ -210,7 +210,7 @@ export async function getDocumentDetail(
   docIdx: number
 ): Promise<DocumentDetail> {
   const { data } = await http.get<CommonResponse<DocumentDetail>>(
-    `/api/v1/doc/documents/${docIdx}`
+    `/api/v1/docs/documents/${docIdx}`
   );
   const detail = data.data;
   if (!detail) return detail;
@@ -230,7 +230,7 @@ export async function saveHwpDocument(
   body: HwpDocumentSaveRequest
 ): Promise<HwpDocumentSaveResult> {
   const { data } = await http.put<CommonResponse<HwpDocumentSaveResult>>(
-    "/api/v1/doc/documents/hwp/save",
+    "/api/v1/docs/documents/hwp/save",
     body
   );
   return data.data;
@@ -241,7 +241,7 @@ export async function processDocumentApproval(
   // REQUEST/REVIEW/APPROVE/REJECT 처리 계약
   body: { docIdx: number; actionCd: string; opinion?: string }
 ): Promise<void> {
-  await http.put("/api/v1/doc/documents/approval", body);
+  await http.put("/api/v1/docs/documents/approval", body);
 }
 
 /** 파일 업로드 — HWPX·PDF·사진·일반첨부 */
@@ -257,7 +257,7 @@ export async function uploadDocumentFile(
   form.append("fileKind", fileKind);
   form.append("file", file);
   const { data } = await httpFile.post<CommonResponse<DocumentFileRow>>(
-    `/api/v1/doc/documents/${docIdx}/files`,
+    `/api/v1/docs/documents/${docIdx}/files`,
     form
   );
   return data.data;
@@ -268,7 +268,7 @@ export async function downloadDocumentFile(
   // 파일 idx
   fileIdx: number
 ): Promise<Blob> {
-  const { data } = await httpFile.get(`/api/v1/doc/documents/files/${fileIdx}/download`, {
+  const { data } = await httpFile.get(`/api/v1/docs/documents/files/${fileIdx}/download`, {
     responseType: "blob",
   });
   return data as Blob;
@@ -283,7 +283,7 @@ export async function exportDocumentPdf(
   docIdx: number
 ): Promise<DocumentFileRow> {
   const { data } = await httpFile.post<CommonResponse<DocumentFileRow>>(
-    `/api/v1/doc/documents/${docIdx}/export-pdf`
+    `/api/v1/docs/documents/${docIdx}/export-pdf`
   );
   return data.data;
 }
@@ -293,7 +293,7 @@ export async function validateDeleteDocument(
   // 객체 배열 — 스칼라 배열 금지
   keys: { docIdx: number }[]
 ): Promise<void> {
-  await http.post("/api/v1/doc/documents/validate-delete", keys);
+  await http.post("/api/v1/docs/documents/validate-delete", keys);
 }
 
 /** HWP 문서 삭제 */
@@ -301,7 +301,7 @@ export async function deleteDocument(
   // 객체 배열 — validate-delete와 동일
   keys: { docIdx: number }[]
 ): Promise<void> {
-  await http.post("/api/v1/doc/documents/delete", keys);
+  await http.post("/api/v1/docs/documents/delete", keys);
 }
 
 /**

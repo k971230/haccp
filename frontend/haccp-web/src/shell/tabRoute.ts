@@ -7,7 +7,7 @@
  *   1) 화면 식별자는 계속 tbl_screen.scrn_cd(kebab). 주소창만 대/중/소 계층으로 보여 준다
  *   2) basename /haccp/ 는 Vite·BrowserRouter 가 담당한다. 여기 경로는 /docs/html/... 처럼 접두 없이 둔다
  *   3) /screen/{scrnCd} 는 쓰지 않는다. 맵에 없는 주소는 셸이 오늘 할 일로 보낸다
- *      Jenkins는 DB migrate를 안 돌린다. 메뉴 클릭은 scrnCd → routeOf 이라 118 menu_cd 개명 전에도 화면은 연다
+ *      Jenkins는 DB migrate를 안 돌린다. 메뉴 클릭은 scrnCd → routeOf 이라 120 menu_cd 개명 전에도 화면은 연다
  *
  * PIPELINE[HF68] 셸 인프라
  * PIPELINE[HF49] 연관 모듈
@@ -32,7 +32,7 @@ function paths(
 
 /**
  * 화면코드 → 라우터 pathname 정본.
- * URL taxonomy 와 pages/ 폴더는 1:1이 아니다. 새 화면은 레지스트리 키와 여기 한 줄을 같이 넣는다.
+ * URL taxonomy 와 pages/{대}/{중}/ · tbl_menu.menu_cd 가 1:1 이다. 새 화면은 레지스트리 키와 여기 한 줄을 같이 넣는다.
  */
 export const SCREEN_PATH: Record<string, string> = {
   // 랜딩 — 중분류 없음
@@ -41,7 +41,7 @@ export const SCREEN_PATH: Record<string, string> = {
   // 문서 주기 — 문서 기준관리 대분류 아래 중분류 sch
   ...paths("/docs/sch", ["schedule-cycle-management"]),
 
-  // 문서 기준 — HWP·HTML 양식
+  // 문서 기준 — HWP·HTML 양식. 중분류 hwp / html
   ...paths("/docs/hwp", ["hwp-template-management"]),
   ...paths("/docs/html", [
     "hyg-process-template",
@@ -193,4 +193,23 @@ export function parseRoute(
   pathname: string
 ): string | null {
   return PATH_SCREEN[normalizePath(pathname)] ?? null;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-21
+ * 코멘트:
+ *   1) 화면 API 경로를 SCREEN_PATH 와 같은 중분류/scrnCd 로 만든다. /haccp 는 넣지 않는다
+ *   2) sys/docs API 파일이 BASE·동작 URL 을 조립할 때 호출한다
+ *   3) 맵에 없는 코드면 throw. axios baseURL 은 호스트만이라 여기 /api/v1 을 붙인다
+ */
+export function apiOf(
+  // tbl_screen.scrn_cd — SCREEN_PATH 키와 같아야 한다
+  scrnCd: string,
+  // 동작 칸 — list · save · validate-delete · delete · groups 등. 빈 값이면 화면 베이스만
+  action = ""
+): string {
+  const path = SCREEN_PATH[scrnCd];
+  if (!path) throw new Error(scrnCd);
+  return action ? `/api/v1${path}/${action}` : `/api/v1${path}`;
 }

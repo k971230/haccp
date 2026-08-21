@@ -13,6 +13,8 @@
  */
 // 역할 — 일반 CRUD Axios
 import { http } from "./http";
+// 역할 — SCREEN_PATH 기준 API 베이스
+import { apiOf } from "@/shell/tabRoute";
 // 역할 — 서버 공통 응답
 import type { CommonResponse } from "@/types/common";
 
@@ -65,7 +67,7 @@ export async function listHygiene(
   params: { fromDt?: string; toDt?: string; docNo?: string; writer?: string }
 ): Promise<HygieneListRow[]> {
   const { data } = await http.get<CommonResponse<HygieneListRow[]>>(
-    `/api/v1/hyg/${screenCode}/list`,
+    `${apiOf(screenCode)}/list`,
     { params }
   );
   return data.data ?? [];
@@ -77,7 +79,7 @@ export async function getHygieneDetail(
   docIdx?: number | null
 ): Promise<HygieneDetail> {
   const { data } = await http.get<CommonResponse<HygieneDetail>>(
-    `/api/v1/hyg/${screenCode}/detail`,
+    `${apiOf(screenCode)}/detail`,
     { params: docIdx ? { docIdx } : {} }
   );
   return data.data;
@@ -89,7 +91,7 @@ export async function saveHygiene(
   body: HygieneSaveRequest
 ): Promise<number> {
   const { data } = await http.put<CommonResponse<{ docIdx: number }>>(
-    `/api/v1/hyg/${screenCode}/save`,
+    `${apiOf(screenCode)}/save`,
     body
   );
   return data.data.docIdx;
@@ -100,7 +102,7 @@ export async function validateDeleteHygiene(
   screenCode: HygieneScreenCode,
   keys: { docIdx: number }[]
 ): Promise<void> {
-  await http.post(`/api/v1/hyg/${screenCode}/validate-delete`, keys);
+  await http.post(`${apiOf(screenCode)}/validate-delete`, keys);
 }
 
 /** 삭제 — validate-delete 통과와 사용자 확인 뒤에만 호출한다. */
@@ -108,5 +110,5 @@ export async function deleteHygiene(
   screenCode: HygieneScreenCode,
   keys: { docIdx: number }[]
 ): Promise<void> {
-  await http.post(`/api/v1/hyg/${screenCode}/delete`, keys);
+  await http.post(`${apiOf(screenCode)}/delete`, keys);
 }

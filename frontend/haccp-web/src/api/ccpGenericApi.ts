@@ -13,6 +13,8 @@
  */
 // 역할 — Axios 공통 HTTP 인스턴스
 import { http } from "./http";
+// 역할 — SCREEN_PATH 기준 API 베이스
+import { apiOf } from "@/shell/tabRoute";
 // 역할 — 공통 서버 응답
 import type { CommonResponse } from "@/types/common";
 
@@ -78,27 +80,54 @@ export interface GenericCcpSaveRequest {
   rows: GenericCcpRow[];
 }
 
-export async function listGenericCcpTemplates(): Promise<GenericCcpTemplate[]> {
-  const { data } = await http.get<CommonResponse<GenericCcpTemplate[]>>("/api/v1/ccp/generic-monitor/templates");
+/** 가열·살균·여과 화면 — 공유 서비스, URL 은 화면마다 다름 */
+export type CcpGenericScrnCd =
+  | "ccp-heat-monitor"
+  | "ccp-sanitize-monitor"
+  | "ccp-filter-monitor";
+
+export async function listGenericCcpTemplates(
+  // 화면코드 — SCREEN_PATH 3개만
+  scrnCd: CcpGenericScrnCd
+): Promise<GenericCcpTemplate[]> {
+  const { data } = await http.get<CommonResponse<GenericCcpTemplate[]>>(
+    `${apiOf(scrnCd)}/templates`
+  );
   return data.data ?? [];
 }
 
-export async function getGenericCcpDetail(docIdx: number): Promise<GenericCcpDetail> {
-  const { data } = await http.get<CommonResponse<GenericCcpDetail>>(`/api/v1/ccp/generic-monitor/${docIdx}`);
+export async function getGenericCcpDetail(
+  // 화면코드
+  scrnCd: CcpGenericScrnCd,
+  docIdx: number
+): Promise<GenericCcpDetail> {
+  const { data } = await http.get<CommonResponse<GenericCcpDetail>>(`${apiOf(scrnCd)}/${docIdx}`);
   return data.data;
 }
 
-export async function saveGenericCcpMonitor(req: GenericCcpSaveRequest): Promise<number> {
-  const { data } = await http.put<CommonResponse<{ docIdx: number }>>("/api/v1/ccp/generic-monitor/save", req);
+export async function saveGenericCcpMonitor(
+  // 화면코드
+  scrnCd: CcpGenericScrnCd,
+  req: GenericCcpSaveRequest
+): Promise<number> {
+  const { data } = await http.put<CommonResponse<{ docIdx: number }>>(`${apiOf(scrnCd)}/save`, req);
   return data.data?.docIdx ?? 0;
 }
 
 /** 삭제 사전 검증 — OPS_DELETE */
-export async function validateDeleteGenericCcp(keys: { docIdx: number }[]): Promise<void> {
-  await http.post("/api/v1/ccp/generic-monitor/validate-delete", keys);
+export async function validateDeleteGenericCcp(
+  // 화면코드
+  scrnCd: CcpGenericScrnCd,
+  keys: { docIdx: number }[]
+): Promise<void> {
+  await http.post(`${apiOf(scrnCd)}/validate-delete`, keys);
 }
 
 /** 임시·반려 문서 삭제 */
-export async function deleteGenericCcp(keys: { docIdx: number }[]): Promise<void> {
-  await http.post("/api/v1/ccp/generic-monitor/delete", keys);
+export async function deleteGenericCcp(
+  // 화면코드
+  scrnCd: CcpGenericScrnCd,
+  keys: { docIdx: number }[]
+): Promise<void> {
+  await http.post(`${apiOf(scrnCd)}/delete`, keys);
 }
