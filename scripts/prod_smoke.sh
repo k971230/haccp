@@ -134,8 +134,9 @@ echo "==> 6) approval-history leaf (STEP 03 회귀, scrnCd)"
 echo "==> 7) 냉장 CCP 목록"
 FROM_DT="$(smoke_ymd 7)"
 TO_DT="$(smoke_ymd 0)"
+# SCREEN_PATH · CcpColdController 와 동일. 구 /api/v1/ccp/cold-monitor 는 없다
 fetch "$TMP/cold.json" \
-  "$BASE_URL/api/v1/ccp/cold-monitor/list?fromDt=${FROM_DT}&toDt=${TO_DT}" \
+  "$BASE_URL/api/v1/docs/ccp/ccp-cold-monitor/list?fromDt=${FROM_DT}&toDt=${TO_DT}" \
   -H "Authorization: Bearer $TOKEN"
 [ "$(jget "$TMP/cold.json" success)" = "true" ] || { echo "cold-monitor 실패"; cat "$TMP/cold.json" >&2; exit 1; }
 
