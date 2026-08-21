@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) 관리 화면 고정 입력 계약·양식 내보내기/불러오기·스마트일지 매핑을 SP 호출로 조정한다
  *   2) 요청 본문의 회사·사용자 값은 받지 않고 JWT 컨텍스트의 테넌트와 작업자만 사용한다
- *   3) 결재선·작성주기 삭제는 validate-delete와 delete에서 같은 검증을 두 번 수행한다
+ *   3) 작성주기 삭제는 validate-delete와 delete에서 같은 검증을 두 번 수행한다
  *
  * PIPELINE[HB91] 워크플로 관리 Service
  * PIPELINE[HB88, HB92, HB90] 연관 모듈
@@ -21,8 +21,8 @@ import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteValidation;
 // 역할 — 템플릿 볼륨 저장·한글 파일명 규칙 (S3 교체 시 Storage만 교체)
-import com.haccp.doc.TemplateFileNames;
-import com.haccp.doc.TemplateFileStorage;
+import com.haccp.docs.template.TemplateFileNames;
+import com.haccp.docs.template.TemplateFileStorage;
 import com.haccp.workflow.dto.WorkflowDeleteItem;
 // 역할 — 컬렉션·시각 채번
 import java.time.LocalDateTime;
@@ -44,34 +44,6 @@ public class WorkflowService {
     private final ObjectMapper objectMapper;
     // 템플릿 볼륨 — 자사 업로드가 문서 첨부 트리와 섞이지 않게 경계를 둔다
     private final TemplateFileStorage templateFileStorage;
-
-    public List<Map<String, Object>> approvalLines() {
-        List<Map<String, Object>> rows = new ArrayList<>();
-        for (String payload : mapper.selectApprovalLines(LoginUserContext.coCd())) {
-            rows.add(readJson(payload));
-        }
-        return rows;
-    }
-
-    @Transactional
-    public void saveApprovalLine(Map<String, Object> row) {
-        requireText(row, "apprLineCd", "결재선 코드를 입력하세요.");
-        requireText(row, "apprLineNm", "결재선명을 입력하세요.");
-        mapper.saveApprovalLine(LoginUserContext.coCd(), writeJson(row), LoginUserContext.userId());
-    }
-
-    public void validateApprovalLineDelete(List<WorkflowDeleteItem> keys) {
-        assertApprovalLinesDeletable(LoginUserContext.coCd(), keys);
-    }
-
-    @Transactional
-    public void deleteApprovalLines(List<WorkflowDeleteItem> keys) {
-        String coCd = LoginUserContext.coCd();
-        assertApprovalLinesDeletable(coCd, keys);
-        for (WorkflowDeleteItem key : keys) {
-            mapper.deleteApprovalLine(coCd, key.getApprLineCd(), LoginUserContext.userId());
-        }
-    }
 
     /**
      * 개발자: 박승우
@@ -577,19 +549,6 @@ public class WorkflowService {
         normalizeScheduleKeys(keys);
         for (WorkflowDeleteItem key : keys) {
             mapper.deleteScheduleRule(LoginUserContext.coCd(), key.getIdx(), LoginUserContext.userId());
-        }
-    }
-
-    private void assertApprovalLinesDeletable(String coCd, List<WorkflowDeleteItem> keys) {
-        DeleteValidation.requireItems(keys, "삭제할 결재선을 선택하세요.");
-        for (WorkflowDeleteItem key : keys) {
-            if (key == null || text(key.getApprLineCd()).isBlank()) {
-                throw new BizException("삭제할 결재선 코드가 올바르지 않습니다.");
-            }
-            Map<String, Object> blocker = mapper.selectApprovalLineBlocker(coCd, key.getApprLineCd().trim());
-            if (blocker != null) {
-                throw new BizException("선택한 결재선 '" + key.getApprLineCd().trim() + "'이(가) 사용양식 또는 문서에서 참조 중이므로 삭제할 수 없습니다.");
-            }
         }
     }
 

@@ -86,16 +86,17 @@ BEGIN
         ('menu-write-ccp', 2100), ('menu-write-prp', 2200),
         ('menu-write-logis', 2300), ('menu-write-admin', 2400),
         ('menu-flow-appr', 3100), ('menu-flow-box', 3200), ('menu-flow-ca', 3300),
-        ('menu-master-doc', 4100), ('menu-master-form', 4200),
+        ('menu-master-sch', 4100), ('menu-master-form', 4200),
+        ('menu-master-html', 4250),
         ('menu-master-item', 4300), ('menu-master-appr', 4400),
         ('menu-base-master', 5100),
-        ('menu-sys-auth', 6100), ('menu-sys-log', 6200)
+        ('menu-sys-code', 6100), ('menu-sys-logs', 6200)
       ) AS v(menu_cd, sn)
      WHERE m.menu_cd = v.menu_cd
        AND m.use_yn = 'Y'
        AND (p_co_cd IS NULL OR m.co_cd = p_co_cd);
 
-    -- menu-sys-auth leaf: 공통코드 → 메뉴 → 권한그룹 → 부서 → 사용자
+    -- menu-sys-code leaf: 공통코드 → 메뉴 → 권한그룹 → 부서 → 사용자 → 결재선
     UPDATE tbl_menu m
        SET sort_no = v.ord, upd_id = 'system', upd_dt = now()
       FROM (VALUES
@@ -103,10 +104,11 @@ BEGIN
         ('menu-management', 2),
         ('role-management', 3),
         ('department-management', 4),
-        ('user-management', 5)
+        ('user-management', 5),
+        ('approval-line-management', 6)
       ) AS v(scrn_cd, ord)
      WHERE m.scrn_cd = v.scrn_cd
-       AND m.h_menu_cd = 'menu-sys-auth'
+       AND m.h_menu_cd = 'menu-sys-code'
        AND m.use_yn = 'Y'
        AND (p_co_cd IS NULL OR m.co_cd = p_co_cd);
 
@@ -115,15 +117,19 @@ BEGIN
             ('menu-write-ccp', 2, 1), ('menu-write-prp', 2, 2),
             ('menu-write-logis', 2, 3), ('menu-write-admin', 2, 4),
             ('menu-flow-appr', 3, 1), ('menu-flow-box', 3, 2), ('menu-flow-ca', 3, 3),
-            ('menu-master-doc', 4, 1), ('menu-master-form', 4, 2),
-            ('menu-master-item', 4, 3), ('menu-master-appr', 4, 4),
+            ('menu-master-sch', 4, 1), ('menu-master-form', 4, 2),
+            ('menu-master-html', 4, 3),
+            ('menu-master-item', 4, 4), ('menu-master-appr', 4, 5),
             ('menu-base-master', 5, 1),
-            ('menu-sys-auth', 6, 1), ('menu-sys-log', 6, 2)
+            ('menu-sys-code', 6, 1), ('menu-sys-logs', 6, 2)
         ) AS t(mid_cd, dae_no, jung_no)
     ),
     ranked AS (
         SELECT m.co_cd, m.menu_cd,
-               (mid.dae_no * 1000 + mid.jung_no * 100
+               (CASE
+                    WHEN mid.mid_cd = 'menu-master-html' THEN 4250
+                    ELSE mid.dae_no * 1000 + mid.jung_no * 100
+                END
                  + ROW_NUMBER() OVER (
                        PARTITION BY m.co_cd, m.h_menu_cd
                        ORDER BY m.sort_no, m.menu_cd

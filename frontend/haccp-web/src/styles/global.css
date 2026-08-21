@@ -37,6 +37,23 @@ PIPELINE[HF49] 연관 모듈
   /* ── 페이지 ── */
   .mes-page { @apply flex h-full min-h-0 flex-col gap-2; }
 
+  /* ── 셸 탭 우클릭 메뉴 ── */
+  .mes-tab-ctx {
+    @apply fixed z-[9999] min-w-[160px] rounded-lg border border-slate-200 bg-white py-1 text-mes-ui shadow-lg;
+  }
+  .mes-tab-ctx-item {
+    @apply block w-full cursor-pointer select-none whitespace-nowrap border-0 bg-transparent px-4 py-1.5 text-left font-normal text-slate-800;
+  }
+  .mes-tab-ctx-item:hover:not(:disabled) {
+    @apply bg-slate-100;
+  }
+  .mes-tab-ctx-item:disabled {
+    @apply cursor-default text-slate-400;
+  }
+  .mes-tab-ctx-divider {
+    @apply my-1 h-px bg-slate-200;
+  }
+
   /* ── 사이드바 (밝은 아코디언, 검은 텍스트) ── */
   .mes-sidebar {
     @apply flex flex-col overflow-hidden border-r border-sidebar-border bg-sidebar-bg text-sidebar-text shadow-sm;
@@ -339,6 +356,8 @@ PIPELINE[HF49] 연관 모듈
   .mes-grid-badge-red { @apply bg-rose-600 text-white; }
   /* 권한그룹·부서·서명 등 코드 팝업 컬럼 */
   .mes-grid-badge-purple { @apply bg-violet-600 text-white; }
+  /* 미저장 — 점선 뱃지. 적용 라디오만 바꾼 뒤 좌 저장 전 */
+  .mes-grid-badge-dash { @apply border border-dashed border-amber-500 bg-white py-0 text-amber-700; }
 
   /* ── 셀 ── */
   .mes-cell { @apply min-h-4 leading-snug; }
@@ -861,6 +880,122 @@ PIPELINE[HF49] 연관 모듈
     @apply flex max-w-sm cursor-pointer items-center gap-2 rounded-lg px-4 py-3 text-lg font-semibold text-white shadow-lg;
   }
 
+  /* 안내 카드 — 확인창·토스트 공통 (왼쪽 색 바 + 원형 아이콘) */
+  .mes-alert-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgb(0 0 0 / 0.4);
+  }
+  .mes-notice {
+    display: flex;
+    overflow: hidden;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 10px 28px rgb(15 23 42 / 0.12);
+  }
+  .mes-notice-bar {
+    width: 6px;
+    flex-shrink: 0;
+  }
+  .mes-notice-content {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+  }
+  .mes-notice-row {
+    display: flex;
+    min-width: 0;
+    gap: 12px;
+    padding: 14px 14px 12px 12px;
+  }
+  .mes-notice-icon {
+    display: flex;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    color: #fff;
+  }
+  .mes-notice-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  .mes-notice-copy {
+    min-width: 0;
+    flex: 1;
+  }
+  .mes-notice-title {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #1f2937;
+  }
+  .mes-notice-msg {
+    margin-top: 2px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #6b7280;
+    white-space: pre-line;
+  }
+  .mes-notice-close {
+    display: flex;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+  }
+  .mes-notice-close:hover {
+    color: #6b7280;
+  }
+  .mes-notice-tone-info .mes-notice-bar,
+  .mes-notice-tone-info .mes-notice-icon { background: #3b82f6; }
+  .mes-notice-tone-success .mes-notice-bar,
+  .mes-notice-tone-success .mes-notice-icon { background: #22c55e; }
+  .mes-notice-tone-warn .mes-notice-bar,
+  .mes-notice-tone-warn .mes-notice-icon { background: #f59e0b; }
+  .mes-notice-tone-error .mes-notice-bar,
+  .mes-notice-tone-error .mes-notice-icon { background: #ef4444; }
+
+  .mes-alert {
+    width: 440px;
+    max-width: calc(100vw - 32px);
+  }
+  .mes-alert-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 0 16px 14px;
+  }
+
+  .mes-banner-stack {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1100;
+    display: flex;
+    width: min(380px, calc(100vw - 32px));
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+  .mes-banner {
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
   /* ── 수량 키패드 (450×600) ── */
   .touch-modal-pad .touch-modal-body {
     @apply flex min-h-0 flex-col p-4;
@@ -894,6 +1029,382 @@ PIPELINE[HF49] 연관 모듈
   .doc-paper-title { @apply text-lg font-bold text-slate-900; }
   .doc-paper-subtitle { @apply mt-1 text-xs leading-relaxed text-slate-500; }
   .doc-paper-body { @apply space-y-4; }
+
+  /* HTML 양식 A4 — DocPaper(max-w-5xl)와 분리 */
+  .doc-paper-a4 {
+    width: 210mm;
+    min-height: 297mm;
+    margin-left: auto;
+    margin-right: auto;
+    background: #fff;
+    padding: 12mm 10mm;
+    box-shadow: 0 1px 4px rgb(15 23 42 / 0.12);
+    border: 1px solid #d7dde8;
+    box-sizing: border-box;
+  }
+  .doc-paper-fill {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    background: #fff;
+    padding: 4px 6px 8px;
+    border: 0;
+    box-shadow: none;
+    box-sizing: border-box;
+  }
+  .html-form-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 11px;
+  }
+  .html-form-table th,
+  .html-form-table td {
+    border: 1px solid #334155;
+    padding: 3px 4px;
+    vertical-align: middle;
+  }
+  .html-form-table th {
+    background: #dbeaf7;
+    text-align: center;
+    font-weight: 600;
+  }
+  /* 주기·관리 본문 칸 — 헤더와 같은 연한 파랑 */
+  .html-form-axis {
+    background: #dbeaf7;
+  }
+  .html-form-banner {
+    margin-bottom: 0;
+  }
+  .html-form-body {
+    margin-top: -1px;
+  }
+  /* 본문 열 비율 10 = 주기1 관리1 점검내용4 예1 아니오1 값2 */
+  .html-form-cycle-col {
+    width: 10%;
+  }
+  .html-form-grp-col {
+    width: 10%;
+  }
+  .html-form-item-col {
+    width: 40%;
+  }
+  .html-form-yn-col {
+    width: 10%;
+    text-align: center;
+  }
+  .html-form-val-col {
+    width: 20%;
+  }
+  .html-form-cell-ta {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 2.2rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-sizing: border-box;
+    resize: vertical;
+    text-align: inherit;
+  }
+  .html-form-title-cell {
+    height: 3.6rem;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .html-form-title {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .html-form-subtitle {
+    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  /* 제목·부제 수정 — cell-ta min-height 를 쓰면 결재란이 커진다 */
+  .html-form-title-input,
+  .html-form-subtitle-input {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: center;
+    box-sizing: border-box;
+    resize: none;
+  }
+  .html-form-title-input {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.3;
+    min-height: 2rem;
+  }
+  .html-form-subtitle-input {
+    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 600;
+    min-height: 1.1rem;
+  }
+  /* 수정 모드 본문 — 입력유형·삭제 열이 표 안에 들어가게 비율을 나눈다 */
+  .html-form-body-edit .html-form-cycle-col,
+  .html-form-body-edit .html-form-grp-col {
+    width: 9%;
+  }
+  .html-form-body-edit .html-form-item-col {
+    width: 54%;
+  }
+  .html-form-body-edit .html-form-type-col {
+    width: 8%;
+    max-width: 5.4rem;
+  }
+  .html-form-body-edit .html-form-row-col {
+    width: 14%;
+    min-width: 6.2rem;
+  }
+  .html-form-stamp-role {
+    width: 1.8rem;
+    max-width: 1.8rem;
+  }
+  .html-form-stamp {
+    width: 4.4rem;
+    max-width: 4.4rem;
+  }
+  .html-form-stamp-cell {
+    width: 4.4rem;
+    height: 3.2rem;
+    padding: 2px;
+    text-align: center;
+    vertical-align: middle;
+    background: #fff;
+  }
+  .html-form-sign {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.8rem;
+    gap: 2px;
+  }
+  .html-form-sign img {
+    max-height: 2.4rem;
+    max-width: 100%;
+    object-fit: contain;
+  }
+  .html-form-sign-input {
+    display: block;
+    width: 100%;
+    margin: 0;
+    border: 0;
+    padding: 2px 0;
+    background: transparent;
+    text-align: center;
+    font-size: 11px;
+    box-sizing: border-box;
+  }
+  .html-form-pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .html-form-temp {
+    border: 2px solid #dc2626 !important;
+    min-width: 3.5rem;
+  }
+  .html-form-type {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    font-size: 11px;
+    line-height: 1.3;
+    padding: 1px 2px;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    box-sizing: border-box;
+  }
+  .html-form-type-col {
+    width: 5.4rem;
+    max-width: 5.4rem;
+  }
+  .html-form-row-col {
+    width: 1%;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .html-form-row-tools {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .html-form-drag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 2px;
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    cursor: grab;
+  }
+  .html-form-drag:active {
+    cursor: grabbing;
+  }
+  .html-form-drag-over {
+    outline: 2px solid #38bdf8;
+    outline-offset: -2px;
+  }
+  .html-form-foot {
+    margin-top: -1px;
+  }
+  .html-form-foot-note { width: 26%; }
+  .html-form-foot-improve { width: 42%; }
+  .html-form-foot-sign { width: 16%; }
+  .html-form-foot td {
+    padding: 0;
+    height: 3.2rem;
+    vertical-align: top;
+  }
+  .html-form-foot-input {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 3.2rem;
+    margin: 0;
+    border: 0;
+    padding: 4px;
+    background: transparent;
+    box-sizing: border-box;
+    font-size: 11px;
+    resize: vertical;
+  }
+  .ccp-pkg-axis {
+    width: 12%;
+  }
+  .ccp-pkg-long {
+    display: block;
+    min-height: 5.5rem;
+    height: auto;
+    field-sizing: content;
+    overflow: hidden;
+    resize: none;
+  }
+  .ccp-pkg-prod { width: 14%; }
+  .ccp-pkg-time { width: 10%; }
+  .ccp-pkg-temp { width: 14%; }
+  .ccp-pkg-min { width: 8%; }
+  .ccp-pkg-sec { width: 8%; }
+  .ccp-pkg-sign { width: 14%; }
+  .ccp-htg-sec { width: 16%; }
+  .ccp-mtl-prod { width: 10%; }
+  .ccp-mtl-time { width: 8%; }
+  .ccp-mtl-ox { width: 8%; }
+  .ccp-mtl-sign { width: 10%; }
+  /* 판정 적합·부적합 — 공정점검 예/아니오와 같이 반 가름 */
+  .ccp-pf-yn {
+    width: 7%;
+    text-align: center;
+  }
+  .ccp-mtl-na {
+    display: block;
+    text-align: center;
+    font-weight: 600;
+  }
+  .ccp-mtl-na-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  /* 감도열 헤더 문구 — cell-ta 를 쓰면 15px 로 찌그러진다 */
+  .ccp-mtl-hdr-input {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 1px 0;
+    border: 0;
+    background: transparent;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    box-sizing: border-box;
+  }
+  .ccp-mtl-cap {
+    caption-side: top;
+    text-align: left;
+    font-weight: 700;
+    padding: 4px 6px;
+    min-height: 1.4rem;
+  }
+  .ccp-mtl-cap-input {
+    display: block;
+    width: 100%;
+    min-height: 1.2rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+    box-sizing: border-box;
+  }
+  .ccp-log-body td {
+    padding: 1px 4px;
+    height: 1.6rem;
+    vertical-align: middle;
+  }
+  .ccp-log-body .html-form-sign {
+    min-height: 1.4rem;
+  }
+  .ccp-log-body .html-form-sign img {
+    max-height: 1.2rem;
+  }
+  .html-form-row-add {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 6px;
+    min-height: 1.4rem;
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+  /* 행 추가 버튼이 있을 때 — 위아래 표에 붙지 않게 */
+  .html-form-row-add:has(button) {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .html-form-row-add .ccp-mtl-cap-input {
+    flex: 1;
+    min-width: 0;
+  }
+  .ccp-pkg-num-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+  .ccp-pkg-num {
+    width: 3.4rem;
+    text-align: right;
+  }
+  .ccp-pkg-judge-opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin: 0 4px;
+    white-space: nowrap;
+  }
 
   .doc-stamp {
     @apply border-collapse text-center text-[11px];
@@ -975,5 +1486,17 @@ PIPELINE[HF49] 연관 모듈
   aside, header { display: none !important; }
   body * { visibility: hidden; }
   .mes-tab-active, .mes-tab-active * { visibility: visible; }
-  .doc-paper, .doc-paper * { visibility: visible; }
+  .doc-paper, .doc-paper *,
+  .doc-paper-a4, .doc-paper-a4 *,
+  .doc-paper-fill, .doc-paper-fill * { visibility: visible; }
+  .doc-paper-a4,
+  .doc-paper-fill {
+    box-shadow: none;
+    border: 0;
+  }
+  .html-form-no-print,
+  .html-form-no-print * {
+    display: none !important;
+    visibility: hidden !important;
+  }
 }

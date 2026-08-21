@@ -489,3 +489,109 @@ COMMENT ON COLUMN tbl_water_check_checker.ins_id     IS '최초입력자 ID';
 COMMENT ON COLUMN tbl_water_check_checker.ins_dt     IS '최초입력일시';
 COMMENT ON COLUMN tbl_water_check_checker.upd_id     IS '최종수정자 ID';
 COMMENT ON COLUMN tbl_water_check_checker.upd_dt     IS '최종수정일시';
+
+-- ------------------------------------------------------------
+-- 10. tbl_html_form_ver — HTML 양식 회사 버전 (표준은 tbl_check_item, ver_no=0 가상)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tbl_html_form_ver (
+    idx      bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    co_cd    varchar(10) NOT NULL,
+    tmpl_cd  varchar(40) NOT NULL,
+    ver_no   int         NOT NULL,
+    ver_cd   varchar(20) NOT NULL,
+    ver_nm   varchar(100) NOT NULL,
+    apply_yn varchar(1)  NOT NULL DEFAULT 'N',
+    use_yn   varchar(1)  NOT NULL DEFAULT 'Y',
+    ins_id   varchar(20) NULL,
+    ins_dt   timestamp   NULL DEFAULT now(),
+    upd_id   varchar(20) NULL,
+    upd_dt   timestamp   NULL,
+    CONSTRAINT ux_tbl_html_form_ver UNIQUE (co_cd, tmpl_cd, ver_no),
+    CONSTRAINT ck_tbl_html_form_ver_no CHECK (ver_no >= 1),
+    CONSTRAINT ck_tbl_html_form_ver_apply CHECK (apply_yn IN ('Y', 'N')),
+    CONSTRAINT ck_tbl_html_form_ver_use CHECK (use_yn IN ('Y', 'N'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_tbl_html_form_ver_apply
+    ON tbl_html_form_ver (co_cd, tmpl_cd) WHERE apply_yn = 'Y';
+CREATE UNIQUE INDEX IF NOT EXISTS ux_tbl_html_form_ver_cd
+    ON tbl_html_form_ver (co_cd, tmpl_cd, ver_cd) WHERE use_yn = 'Y';
+COMMENT ON TABLE  tbl_html_form_ver            IS 'HTML 양식 회사 버전 — 표준은 tbl_check_item. PK=idx, ver_no는 표시 순번';
+COMMENT ON COLUMN tbl_html_form_ver.co_cd      IS '회사코드 — 테넌트 키';
+COMMENT ON COLUMN tbl_html_form_ver.tmpl_cd    IS '양식코드 — html_sys_001 등';
+COMMENT ON COLUMN tbl_html_form_ver.ver_no     IS '표시 순번 — 1부터. 0은 표준 가상행. 항목·작성 문서가 참조하므로 재사용 금지';
+COMMENT ON COLUMN tbl_html_form_ver.ver_cd     IS '버전코드 — 표준 가상행 0.1. 활성(use_yn=Y)만 업체+양식당 유니크. 삭제 후 재사용 가능';
+COMMENT ON COLUMN tbl_html_form_ver.ver_nm     IS '버전명 — 유니크 아님';
+COMMENT ON COLUMN tbl_html_form_ver.apply_yn   IS '작성 신규 적용 Y/N — 업체+양식당 1건. 없으면 표준';
+COMMENT ON COLUMN tbl_html_form_ver.use_yn     IS '사용여부 — N=소프트 삭제';
+
+CREATE TABLE IF NOT EXISTS tbl_html_form_ver_item (
+    idx        bigint       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    co_cd      varchar(10)  NOT NULL,
+    tmpl_cd    varchar(40)  NOT NULL,
+    ver_no     int          NOT NULL,
+    item_cd    varchar(20)  NOT NULL,
+    sort_no    int          NOT NULL DEFAULT 0,
+    cycle_nm   varchar(50)  NULL,
+    grp_nm     varchar(100) NULL,
+    item_nm    text         NOT NULL,
+    input_type varchar(10)  NOT NULL DEFAULT 'YN',
+    unit_nm    varchar(20)  NULL,
+    ins_id     varchar(20)  NULL,
+    ins_dt     timestamp    NULL DEFAULT now(),
+    upd_id     varchar(20)  NULL,
+    upd_dt     timestamp    NULL,
+    CONSTRAINT ux_tbl_html_form_ver_item UNIQUE (co_cd, tmpl_cd, ver_no, item_cd)
+);
+COMMENT ON TABLE  tbl_html_form_ver_item            IS 'HTML 양식 회사 버전 항목 — 개행은 text 그대로';
+COMMENT ON COLUMN tbl_html_form_ver_item.item_nm    IS '점검내용 — U+000A 개행 보존';
+COMMENT ON COLUMN tbl_html_form_ver_item.input_type IS 'YN | NUM | TEXT | YN_NUM';
+
+-- ------------------------------------------------------------
+-- 11. tbl_hyg_process — 일반위생관리 및 공정점검표 작성
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tbl_hyg_process (
+    idx          bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    co_cd        varchar(10) NOT NULL,
+    doc_idx      bigint      NOT NULL,
+    base_dt      varchar(8)  NOT NULL,
+    checker_nm   varchar(50) NULL,
+    ver_no       int         NOT NULL DEFAULT 0,
+    special_note text        NULL,
+    improve_note text        NULL,
+    action_nm    text        NULL,
+    confirm_nm   text        NULL,
+    ins_id       varchar(20) NULL,
+    ins_dt       timestamp   NULL DEFAULT now(),
+    upd_id       varchar(20) NULL,
+    upd_dt       timestamp   NULL,
+    CONSTRAINT ux_tbl_hyg_process UNIQUE (doc_idx)
+);
+COMMENT ON TABLE  tbl_hyg_process              IS '일반위생·공정점검 헤더 — tbl_document.idx 1:1';
+COMMENT ON COLUMN tbl_hyg_process.ver_no       IS '작성 시점 적용 버전 — 0=표준';
+COMMENT ON COLUMN tbl_hyg_process.special_note IS '특이사항 — 개행 보존';
+COMMENT ON COLUMN tbl_hyg_process.improve_note IS '개선조치 및 결과';
+COMMENT ON COLUMN tbl_hyg_process.action_nm    IS '조치';
+COMMENT ON COLUMN tbl_hyg_process.confirm_nm   IS '확인';
+
+CREATE TABLE IF NOT EXISTS tbl_hyg_process_item (
+    idx        bigint       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    co_cd      varchar(10)  NOT NULL,
+    hdr_idx    bigint       NOT NULL,
+    sort_no    int          NOT NULL,
+    item_cd    varchar(20)  NOT NULL,
+    cycle_nm   varchar(50)  NULL,
+    grp_nm     varchar(100) NULL,
+    item_nm    text         NULL,
+    input_type varchar(10)  NOT NULL DEFAULT 'YN',
+    unit_nm    varchar(20)  NULL,
+    yn         varchar(1)   NULL,
+    val_nm     text         NULL,
+    ins_id     varchar(20)  NULL,
+    ins_dt     timestamp    NULL DEFAULT now(),
+    upd_id     varchar(20)  NULL,
+    upd_dt     timestamp    NULL,
+    CONSTRAINT ux_tbl_hyg_process_item UNIQUE (hdr_idx, sort_no)
+);
+COMMENT ON TABLE  tbl_hyg_process_item         IS '공정점검 항목 스냅샷 + 예/아니오·값';
+COMMENT ON COLUMN tbl_hyg_process_item.yn      IS 'Y=예 N=아니오';
+COMMENT ON COLUMN tbl_hyg_process_item.val_nm  IS '온도 등 값 — text, 개행 보존';

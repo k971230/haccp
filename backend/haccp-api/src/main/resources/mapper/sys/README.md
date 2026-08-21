@@ -9,6 +9,7 @@ mapper/sys/
  ├ role/       RoleMgmtMapper.xml
  ├ department/ DepartmentMapper.xml
  ├ user/       UserMapper.xml
+ ├ approvalline/ ApprovalLineMapper.xml
  ├ loginhistory/ LoginHistoryMapper.xml
  ├ auditlog/     AuditLogMapper.xml
  └ screenusage/  ScreenUsageMapper.xml
@@ -53,6 +54,7 @@ mapper/sys/
 | role | `sp_role_management_r_000` · `sp_role_management_c_000` · `sp_role_management_delete_blocker_r_000` · `sp_role_management_d_000` · `sp_role_management_screen_r_000` · `sp_role_management_screen_c_000` | `tbl_role` `tbl_role_screen` `tbl_screen` `tbl_user` |
 | department | `sp_department_management_r_000` · `sp_department_management_c_000` · `sp_department_management_delete_blocker_r_000` · `sp_department_management_d_000` | `tbl_dept` `tbl_user` |
 | user | `sp_user_management_r_000` · `sp_user_management_c_000` · `sp_user_management_delete_blocker_r_000` · `sp_user_management_d_000` · `sp_user_management_sign_info_r_000` · `sp_user_management_sign_r_000` · `sp_user_management_sign_u_000` | `tbl_user` `tbl_dept` `tbl_role` `tbl_grid_pref` `tbl_user_noti_pref` |
+| approvalline | `sp_tbl_approval_line_r_000` · `sp_tbl_approval_line_c_000` · `sp_tbl_approval_line_delete_blocker_r_000` · `sp_tbl_approval_line_d_000` | `tbl_approval_line` `tbl_approval_line_step` |
 | loginhistory | `sp_login_history_r_000` | `tbl_login_log` `tbl_user` |
 | auditlog | `sp_audit_log_r_000` · `sp_tbl_audit_log_c_000`(AuditWriter 적재) | `tbl_audit_log` `tbl_user` |
 | screenusage | `sp_screen_usage_statistics_r_000` | `tbl_view_stat_daily` `tbl_menu` `tbl_screen` |

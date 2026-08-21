@@ -14,25 +14,6 @@ PIPELINE[HB88, HB90] 연관 모듈
 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.haccp.workflow.WorkflowMapper">
-    <!-- 결재선 헤더와 단계 배열 JSON 목록 -->
-    <select id="selectApprovalLines" resultType="string">
-        SELECT payload::text FROM sp_tbl_approval_line_r_000(#{coCd, jdbcType=VARCHAR})
-    </select>
-    <!-- 결재선 저장 — 헤더와 단계 배열을 동일 트랜잭션에서 교체 -->
-    <update id="saveApprovalLine" statementType="CALLABLE">
-        CALL sp_tbl_approval_line_c_000(#{coCd, jdbcType=VARCHAR}, CAST(#{payload, jdbcType=VARCHAR} AS jsonb), #{userId, jdbcType=VARCHAR})
-    </update>
-    <!-- 결재선 삭제 사전 차단 — 양식·문서 참조 중 첫 사유만 반환 -->
-    <select id="selectApprovalLineBlocker" resultType="map">
-        SELECT #{apprLineCd} AS ref_key, '사용양식 또는 문서' AS target
-         WHERE EXISTS (SELECT 1 FROM tbl_company_template WHERE co_cd = #{coCd} AND appr_line_cd = #{apprLineCd})
-            OR EXISTS (SELECT 1 FROM tbl_document WHERE co_cd = #{coCd} AND appr_line_cd = #{apprLineCd} AND del_yn = 'N')
-    </select>
-    <!-- 결재선 삭제 — SP도 참조 여부를 다시 확인 -->
-    <update id="deleteApprovalLine" statementType="CALLABLE">
-        CALL sp_tbl_approval_line_d_000(#{coCd, jdbcType=VARCHAR}, #{apprLineCd, jdbcType=VARCHAR}, #{userId, jdbcType=VARCHAR})
-    </update>
-
     <!-- 업체 사용양식 — 기존 플랫폼 SP가 표준 양식과 업체 오버라이드를 결합 -->
     <select id="selectTemplates" resultType="map">
         SELECT * FROM sp_tbl_company_template_r_000(#{coCd, jdbcType=VARCHAR}, '', '')

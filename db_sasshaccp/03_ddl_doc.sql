@@ -130,6 +130,8 @@ CREATE TABLE IF NOT EXISTS tbl_approval_line_step (
     approver_id  varchar(20) NULL,
     dept_cd      varchar(20) NULL,
     pos_cd       varchar(20) NULL,
+    -- 단계 사용여부 — N이면 상신 스냅샷에서 빠진다. 검토 기본은 사용안함(13·97)
+    use_yn       varchar(1)  NOT NULL DEFAULT 'Y',
     ins_id       varchar(20) NULL,
     ins_dt       timestamp   NULL DEFAULT now(),
     upd_id       varchar(20) NULL,
@@ -144,7 +146,8 @@ COMMENT ON COLUMN tbl_approval_line_step.step_no      IS '단계 순번 — 1부
 COMMENT ON COLUMN tbl_approval_line_step.role_cd      IS '역할 — WRITE:작성자, REVIEW:검토자, APPROVE:승인자';
 COMMENT ON COLUMN tbl_approval_line_step.approver_id  IS '결재자 로그인 ID — NULL이면(= 직위 기준 지정) dept_cd·pos_cd로 대상자를 찾는다';
 COMMENT ON COLUMN tbl_approval_line_step.dept_cd      IS '결재 부서코드 — approver_id 미지정 시 사용';
-COMMENT ON COLUMN tbl_approval_line_step.pos_cd       IS '결재 직위코드 — approver_id 미지정 시 사용';
+COMMENT ON COLUMN tbl_approval_line_step.pos_cd       IS '결재 직위코드 — 화면은 쓰지 않는다. 결재자 선택 시 부서만 채운다';
+COMMENT ON COLUMN tbl_approval_line_step.use_yn       IS '단계 사용여부 Y/N — N이면 상신 스냅샷에서 빠진다';
 COMMENT ON COLUMN tbl_approval_line_step.ins_id       IS '최초입력자 ID';
 COMMENT ON COLUMN tbl_approval_line_step.ins_dt       IS '최초입력일시';
 COMMENT ON COLUMN tbl_approval_line_step.upd_id       IS '최종수정자 ID';
@@ -239,7 +242,7 @@ CREATE TABLE IF NOT EXISTS tbl_check_item (
     item_cd    varchar(20)  NOT NULL,
     grp_cd     varchar(20)  NULL,
     grp_nm     varchar(100) NULL,
-    item_nm    varchar(500) NOT NULL,
+    item_nm    text         NOT NULL,
     input_type varchar(10)  NOT NULL DEFAULT 'OX',
     unit_nm    varchar(20)  NULL,
     method_nm  varchar(100) NULL,
@@ -259,7 +262,7 @@ COMMENT ON COLUMN tbl_check_item.item_cd    IS '항목코드 — 템플릿 내 �
 COMMENT ON COLUMN tbl_check_item.grp_cd     IS '항목 구분코드 — BEFORE(작업 전), DURING(작업 중), AFTER(작업 후), TANK(저장탱크) 등';
 COMMENT ON COLUMN tbl_check_item.grp_nm     IS '항목 구분명 — A4 표 좌측 병합 셀에 출력';
 COMMENT ON COLUMN tbl_check_item.item_nm    IS '점검항목 문구 — 표준기준서 원문';
-COMMENT ON COLUMN tbl_check_item.input_type IS '입력유형 — OX(양호/불량), YN(예/아니오), JUDGE(적합/부적합), NUM(수치), TEXT(서술), TIME(시각)';
+COMMENT ON COLUMN tbl_check_item.input_type IS '입력유형 — OX(양호/불량), YN(예/아니오), YN_NUM(예아니오+수치), JUDGE(적합/부적합), NUM(수치), TEXT(서술), TIME(시각)';
 COMMENT ON COLUMN tbl_check_item.unit_nm    IS '단위 — input_type=NUM일 때 표기';
 COMMENT ON COLUMN tbl_check_item.method_nm  IS '점검방법 — 육안 등. 시설·설비 점검표처럼 표에 방법 열이 있는 양식에서만 사용';
 COMMENT ON COLUMN tbl_check_item.cycle_nm   IS '점검주기 — 1회/일 등. 방법 열과 함께 출력';

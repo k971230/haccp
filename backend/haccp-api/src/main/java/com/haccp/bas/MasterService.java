@@ -28,7 +28,7 @@ import com.haccp.common.exception.BizException;
 // 역할 — 배열 삭제 검증 공통
 import com.haccp.common.validation.DeleteValidation;
 // 역할 — 문서·사진 파일 저장소
-import com.haccp.doc.DocumentFileStorage;
+import com.haccp.docs.document.DocumentFileStorage;
 // 역할 — 목록·맵 타입
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

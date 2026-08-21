@@ -15,7 +15,8 @@ import { routeOf } from "@/shell/tabRoute";
 
 /** tmpl_cd → 작성 화면코드 — html_sys / hwp_sys 키. 옛 kebab 은 기존 문서용 */
 const TMPL_SCREEN: Record<string, string> = {
-  html_sys_001: "ccp-cold-monitor",
+  html_sys_001: "hygiene-process-check",
+  html_sys_012: "ccp-cold-monitor",
   html_sys_002: "ccp-metal-monitor",
   html_sys_003: "ccp-heat-monitor",
   html_sys_004: "ccp-sanitize-monitor",

@@ -20,7 +20,7 @@ export type GridRowBase = object;
 
 /** 그리드 셀 데이터 타입 — 렌더·편집기·포맷 결정 */
 export type GridColumnType =
-  | "text" | "number" | "amount" | "date" | "datetime" | "code" | "checkbox";
+  | "text" | "number" | "amount" | "date" | "datetime" | "code" | "checkbox" | "radio";
 
 /** 그리드 컬럼 정의 — 헤더·너비·편집·검증·셀버튼 등 */
 export interface GridColumn<T> {
@@ -35,7 +35,7 @@ export interface GridColumn<T> {
   /** type==='code' 일 때 subCd→codeNm 표시용 코드맵 */
   codeMap?: Record<string, string>;
   /** code 컬럼 상태 배지 — true: 기본 purple(코드·팝업), 객체: 코드/라벨별 색 */
-  badge?: boolean | Partial<Record<string, "blue" | "amber" | "green" | "gray" | "red" | "purple">>;
+  badge?: boolean | Partial<Record<string, "blue" | "amber" | "green" | "gray" | "red" | "purple" | "dash">>;
   /** type==='code' 편집 시 <select> 옵션 */
   codeOptions?: { value: string; label: string }[];
   /** 터치 키오스크 NumPad 포맷 — time: HH:mm (4자리) */
@@ -75,6 +75,28 @@ export interface GridColumn<T> {
   inputMode?: "text" | "numeric" | "decimal" | "tel" | "email";
   /** HTML maxlength + 입력 상한 (sanitize와 함께 쓰면 이중 방어) */
   maxLength?: number;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-19
+ * 코멘트:
+ *   1) 그리드 내부 code 콤보에 빈 option을 둘지 한곳에서 판정한다
+ *   2) MesEditableGrid select 렌더에서 호출한다 — 검색영역 「전체」는 해당 없음
+ *   3) required · useYn · 옵션이 Y/N뿐이면 빈칸 없이 사용/미사용만 둔다
+ */
+export function codeSelectHasEmptyOption(col: {
+  required?: boolean;
+  field: string;
+  codeOptions?: { value: string; label?: string }[];
+}): boolean {
+  if (col.required) return false;
+  if (col.field === "useYn") return false;
+  const opts = col.codeOptions ?? [];
+  if (opts.length === 0) return true;
+  const vals = [...new Set(opts.map((o) => String(o.value).toUpperCase()))];
+  if (vals.length > 0 && vals.every((v) => v === "Y" || v === "N")) return false;
+  return true;
 }
 
 /** useGridAccess 결과 — 잠금 판정·잠금 시도 콜백 전달용 */

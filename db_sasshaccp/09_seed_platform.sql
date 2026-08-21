@@ -5,7 +5,7 @@
 --  일자: 2026-08-19
 --  코멘트:
 --    1) 전역 카탈로그만 넣는다 — 업체 데이터(회사·사용자·메뉴·기준정보)는 업체 등록 SP가 복사 생성
---    2) 신규 설치 정본 — HTML html_sys_001~011, HWP hwp_sys_001~038
+--    2) 신규 설치 정본 — HTML html_sys_001~012, HWP hwp_sys_001~038
 --       사용양식 관리에 보이는 시스템 HWP 는 001~027 이다. 028~038 은 메뉴용이며 목록에서 숨긴다
 --    3) 재실행 안전 — 전부 ON CONFLICT DO UPDATE(업서트). idx는 IDENTITY라 값을 지정하지 않는다
 --
@@ -16,7 +16,7 @@
 SET search_path TO sasshaccp;
 
 -- ------------------------------------------------------------
--- 1. tbl_template — html_sys_001~011 + hwp_sys_001~038
+-- 1. tbl_template — html_sys_001~012 + hwp_sys_001~038
 --    doc_kind html = 전용 HTML 화면 + DB 저장 (반복·수치·자동판정)
 --    doc_kind hwp  = rhwp 문서작성형 (서술·사진·저빈도, 관리정보만 DB화)
 -- ------------------------------------------------------------
@@ -24,7 +24,7 @@ INSERT INTO tbl_template
     (tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd, default_cycle_cd, default_retention_month, impl_yn, sort_no, ins_id)
 VALUES
     -- HTML 전용 화면
-    ('html_sys_001', 'CCP 냉장·냉동 보관 모니터링 일지', '2-1', 'html','CCP', 'ccp-cold-monitor',              'D', 24, 'Y', 101, 'system'),
+    ('html_sys_001', '일반위생관리 및 공정점검표',       '1',   'html','HYG', 'hygiene-process-check',         'D', 24, 'Y', 101, 'system'),
     ('html_sys_002', 'CCP 금속검출 모니터링 일지',       '2-2', 'html','CCP', 'ccp-metal-monitor',             'D', 24, 'Y', 102, 'system'),
     ('html_sys_003', '가열 모니터링 일지',               NULL,  'html','CCP', 'ccp-heat-monitor',              'D', 24, 'Y', 103, 'system'),
     ('html_sys_004', '멸균 모니터링 일지',               NULL,  'html','CCP', 'ccp-sanitize-monitor',          'D', 24, 'Y', 104, 'system'),
@@ -35,6 +35,7 @@ VALUES
     ('html_sys_009', '시설·설비·처리도구 점검표',         '14',  'html','FAC', 'facility-equipment-check',      'W', 24, 'Y', 109, 'system'),
     ('html_sys_010', '검·교정 대상',                      '15',  'html','FAC', 'calibration-target-management', 'Y', 36, 'Y', 110, 'system'),
     ('html_sys_011', '보건증관리',                        NULL,  'html','LAW', 'health-cert-record',            'E', 36, 'Y', 111, 'system'),
+    ('html_sys_012', 'CCP 냉장·냉동 보관 모니터링 일지', '2-1', 'html','CCP', 'ccp-cold-monitor',              'D', 24, 'Y', 112, 'system'),
 
     -- HWP 시스템 001~027 (사용양식 목록)
     ('hwp_sys_001', '외부인출입기록부',           '00', 'hwp', 'DOC', 'visitor-log',           'E', 36, 'Y',  1, 'system'),
@@ -144,7 +145,7 @@ INSERT INTO tbl_screen (scrn_cd, scrn_nm, module_cd, tmpl_cd, sort_no, ins_id) V
     -- TSK — 업무 시작점
     ('today-tasks', '오늘 할 일',                 'TSK', NULL,           10, 'system'),
     -- CCP — 중요관리점
-    ('ccp-cold-monitor', '냉장·냉동 보관',             'CCP', 'html_sys_001',    110, 'system'),
+    ('ccp-cold-monitor', '냉장·냉동 보관',             'CCP', 'html_sys_012',    110, 'system'),
     ('ccp-metal-monitor', 'CCP 금속검출 모니터링',      'CCP', 'html_sys_002',    120, 'system'),
     ('ccp-verification-check', 'CCP 검증점검표',         'CCP', 'html_sys_006',    130, 'system'),
     ('annual-verification-plan', '연간 검증계획서',      'CCP', 'hwp_sys_003',     140, 'system'),
@@ -156,6 +157,12 @@ INSERT INTO tbl_screen (scrn_cd, scrn_nm, module_cd, tmpl_cd, sort_no, ins_id) V
     ('ccp-iqf-monitor', '급속냉동 CCP',                  'CCP', 'CCP_IQF',     155, 'system'),
     -- HYG — 위생관리
     ('daily-hygiene-check', '일일 위생 점검일지',        'HYG', 'html_sys_007',   210, 'system'),
+    ('hygiene-process-check', '일반위생관리 및 공정점검표', 'HYG', 'html_sys_001', 211, 'system'),
+    ('hyg-process-template', '일반위생·공정점검 양식관리', 'SET', 'html_sys_001', 1311, 'system'),
+    ('ccp-verify-template', '중요관리점(CCP) 검증점검표', 'SET', 'html_sys_006', 1312, 'system'),
+    ('ccp-pkg-template', '중요관리점(CCP-1B) 모니터링일지', 'SET', NULL, 1313, 'system'),
+    ('ccp-htg-template', '중요관리점(CCP-2B) 모니터링일지', 'SET', NULL, 1314, 'system'),
+    ('ccp-mtl-template', '중요관리점(CCP-3P) 모니터링일지', 'SET', NULL, 1315, 'system'),
     ('personal-hygiene-check', '개인 위생관리 점검표',  'HYG', 'hwp_sys_009',    220, 'system'),
     ('area-hygiene-check', '작업장 환경위생 점검표',    'HYG', 'hwp_sys_010',    230, 'system'),
     ('pest-control-check', '방충·방서 점검표',          'HYG', 'html_sys_008',   240, 'system'),

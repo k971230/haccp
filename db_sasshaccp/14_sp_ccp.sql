@@ -7,7 +7,7 @@
 --    1) ccp-cold-monitor 전용 — 목록·상세·저장·삭제와 보관고·한계기준 조회를 한 파일에 모은다
 --    2) 저장 시 tbl_document와 헤더·점검행·온도행을 한 트랜잭션으로 맞춘다(Spring @Transactional)
 --    3) 온도 판정은 tbl_storage 개별범위 → tbl_ccp_limit 순으로 읽고, 수동변경(judge_mod_yn=Y)만 예외로 둔다
---    4) 양식코드는 html_sys_001/002/006. 운영 DB(이미 94/95)에는 이 파일을 다시 돌리지 않는다
+--    4) 양식코드는 html_sys_012/002/006. 운영은 100 적용 후 이 파일을 CREATE OR REPLACE 로 다시 실행한다
 -- ============================================================
 
 SET search_path TO sasshaccp;
@@ -129,7 +129,7 @@ LANGUAGE sql STABLE AS $$
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE h.co_cd = p_co_cd
        AND d.del_yn = 'N'
-       AND d.tmpl_cd = 'html_sys_001'
+       AND d.tmpl_cd = 'html_sys_012'
        AND (COALESCE(p_from_dt, '') = '' OR h.base_dt >= p_from_dt)
        AND (COALESCE(p_to_dt, '') = '' OR h.base_dt <= p_to_dt)
        AND (COALESCE(p_ccp_cd, '') = '' OR h.ccp_cd = p_ccp_cd)
@@ -323,7 +323,7 @@ BEGIN
       FROM tbl_template t
       LEFT JOIN tbl_company_template ct
         ON ct.co_cd = p_co_cd AND ct.tmpl_cd = t.tmpl_cd AND ct.use_yn = 'Y'
-     WHERE t.tmpl_cd = 'html_sys_001' AND t.use_yn = 'Y';
+     WHERE t.tmpl_cd = 'html_sys_012' AND t.use_yn = 'Y';
 
     IF v_tmpl_nm IS NULL THEN
         RAISE EXCEPTION 'CCP 냉장보관 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000';
@@ -334,7 +334,7 @@ BEGIN
 
     -- 신규일 때(= doc_idx 없음) 문서·헤더를 만들고, 기존이면 잠금 상태를 검사한 뒤 갱신한다
     IF p_doc_idx IS NULL OR p_doc_idx = 0 THEN
-        v_doc_no := sp_tbl_doc_no_gen_c_000(p_co_cd, 'html_sys_001', p_base_dt);
+        v_doc_no := sp_tbl_doc_no_gen_c_000(p_co_cd, 'html_sys_012', p_base_dt);
 
         INSERT INTO tbl_document(
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status,
@@ -342,7 +342,7 @@ BEGIN
             retention_until, del_yn, ins_id, ins_dt
         )
         VALUES (
-            p_co_cd, 'html_sys_001', 'DB', v_doc_no, p_base_dt, v_title, 'WRK',
+            p_co_cd, 'html_sys_012', 'DB', v_doc_no, p_base_dt, v_title, 'WRK',
             v_appr, p_id, now(), 1,
             to_char(
                 (to_date(p_base_dt, 'YYYYMMDD') + (COALESCE(v_retain_m, 24) || ' months')::interval)::date,
@@ -368,7 +368,7 @@ BEGIN
           JOIN tbl_ccp_cold_monitor h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
          WHERE d.co_cd = p_co_cd
            AND d.idx = p_doc_idx
-           AND d.tmpl_cd = 'html_sys_001'
+           AND d.tmpl_cd = 'html_sys_012'
            AND d.del_yn = 'N';
 
         IF v_doc_idx IS NULL THEN
@@ -615,7 +615,7 @@ BEGIN
       JOIN tbl_ccp_cold_monitor h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
      WHERE d.co_cd = p_co_cd
        AND d.idx = p_doc_idx
-       AND d.tmpl_cd = 'html_sys_001'
+       AND d.tmpl_cd = 'html_sys_012'
        AND d.del_yn = 'N';
 
     IF v_hdr_idx IS NULL THEN

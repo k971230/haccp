@@ -1,12 +1,12 @@
 /**
- * workflowApi — 결재선·사용양식/점검항목·작성주기 관리 API.
+ * workflowApi — 사용양식/점검항목·작성주기 관리 API.
  *
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-08-19
  * 코멘트:
- *   1) 역할 기반 관리·내보내기이력·스마트일지매핑 고정 REST 경로만 제공하며 임의 리소스명을 받지 않는다
+ *   1) 역할 기반 관리·내보내기이력 고정 REST 경로만 제공하며 임의 리소스명을 받지 않는다
  *   2) 회사코드는 요청 본문에 넣지 않고 로그인 JWT의 테넌트 범위를 서버가 고정한다
- *   3) 삭제는 결재선·작성주기는 validate-delete→delete, 스마트일지매핑은 POST delete 단건을 사용한다
+ *   3) 결재선은 api/sys/approvalLineApi.ts 로 분리했다
  *
  * PIPELINE[HF86] 워크플로 관리 API
  * PIPELINE[HF3, HF87, HF88, HF89] 연관 모듈
@@ -17,21 +17,6 @@ import { http } from "./http";
 import { httpFile } from "./http";
 // 역할 — 서버 공통 응답
 import type { CommonResponse } from "@/types/common";
-
-export interface ApprovalStep {
-  stepNo: number;
-  roleCd: "WRITE" | "REVIEW" | "APPROVE";
-  approverId?: string | null;
-  deptCd?: string | null;
-  posCd?: string | null;
-}
-
-export interface ApprovalLine {
-  apprLineCd: string;
-  apprLineNm: string;
-  useYn: "Y" | "N";
-  steps: ApprovalStep[];
-}
 
 export interface CompanyTemplate {
   tmplCd: string;
@@ -126,23 +111,6 @@ export interface ScheduleRule {
   insDt?: string | null;
   updId?: string | null;
   updDt?: string | null;
-}
-
-export async function listApprovalLines(): Promise<ApprovalLine[]> {
-  const { data } = await http.get<CommonResponse<ApprovalLine[]>>("/api/v1/bas/approval-lines/list");
-  return data.data ?? [];
-}
-
-export async function saveApprovalLine(row: ApprovalLine): Promise<void> {
-  await http.put("/api/v1/bas/approval-lines/save", row);
-}
-
-export async function validateDeleteApprovalLines(keys: { apprLineCd: string }[]): Promise<void> {
-  await http.post("/api/v1/bas/approval-lines/validate-delete", keys);
-}
-
-export async function deleteApprovalLines(keys: { apprLineCd: string }[]): Promise<void> {
-  await http.post("/api/v1/bas/approval-lines/delete", keys);
 }
 
 export async function listCompanyTemplates(): Promise<CompanyTemplate[]> {

@@ -157,6 +157,34 @@ ON CONFLICT (tmpl_cd, item_cd) DO UPDATE SET
     input_type = EXCLUDED.input_type, sort_no = EXCLUDED.sort_no, upd_id = 'system', upd_dt = now();
 
 -- ------------------------------------------------------------
+-- 6b. tml_ccp_chk_000 — 중요관리점(CCP) 검증점검표 기준관리 예시
+--     12 radio + 공정별 관찰·인터뷰 text. html_sys_006(작성 12항목)은 그대로 둔다
+-- ------------------------------------------------------------
+INSERT INTO tbl_check_item (tmpl_cd, item_cd, grp_cd, grp_nm, item_nm, input_type, unit_nm, cycle_nm, sort_no, ins_id) VALUES
+    ('tml_ccp_chk_000', 'V11', 'raw-cold',  '원료육 냉장보관', '종사자가 주기적으로 냉장보관고 온도를 확인하고, 그 내용을 기록하고 있습니까?', 'radio', NULL, '월간', 1, 'system'),
+    ('tml_ccp_chk_000', 'V12', 'raw-cold',  '원료육 냉장보관', '종사자가 원료육 냉장보관 공정 모니터링 방법을 정확히 알고 있습니까?', 'radio', NULL, '월간', 2, 'system'),
+    ('tml_ccp_chk_000', 'V13', 'raw-cold',  '원료육 냉장보관', '종사자가 한계기준 이탈 시 실시해야 하는 개선조치 방법을 알고 있으며, 이탈 및 개선조치 내용이 기록되고 있습니까?', 'radio', NULL, '월간', 3, 'system'),
+    ('tml_ccp_chk_000', 'V14', 'raw-cold',  '원료육 냉장보관', '온도측정장치는 주기적으로 검·교정이 이루어지고 있습니까?', 'radio', NULL, '월간', 4, 'system'),
+    ('tml_ccp_chk_000', 'V15', 'raw-cold',  '원료육 냉장보관', '모니터링 행동 관찰 :      월       일        시', 'text', NULL, '월간', 5, 'system'),
+    ('tml_ccp_chk_000', 'V16', 'raw-cold',  '원료육 냉장보관', '모니터링 담당자 인터뷰 :      월        일       시', 'text', NULL, '월간', 6, 'system'),
+    ('tml_ccp_chk_000', 'V21', 'metal',     '금속검출',        '종사자가 주기적으로 시편을 통해 금속검출기의 감도 이상 유무를 확인하고 있습니까?', 'radio', NULL, '월간', 7, 'system'),
+    ('tml_ccp_chk_000', 'V22', 'metal',     '금속검출',        '종사자가 금속검출 공정 모니터링 방법을 정확히 알고 있습니까?', 'radio', NULL, '월간', 8, 'system'),
+    ('tml_ccp_chk_000', 'V23', 'metal',     '금속검출',        '종사자가 한계기준 이탈 시 실시해야 하는 개선조치 방법을 알고 있으며, 이탈 및 개선조치 내용이 기록되고 있습니까?', 'radio', NULL, '월간', 9, 'system'),
+    ('tml_ccp_chk_000', 'V24', 'metal',     '금속검출',        '금속검출기는 연 1회 검·교정(또는 정기점검)이 이루어지고 있습니까?', 'radio', NULL, '월간', 10, 'system'),
+    ('tml_ccp_chk_000', 'V25', 'metal',     '금속검출',        '모니터링 행동 관찰 :      월       일        시', 'text', NULL, '월간', 11, 'system'),
+    ('tml_ccp_chk_000', 'V26', 'metal',     '금속검출',        '모니터링 담당자 인터뷰 :      월        일       시', 'text', NULL, '월간', 12, 'system'),
+    ('tml_ccp_chk_000', 'V31', 'prod-cold', '완제품 냉장보관', '종사자가 주기적으로 냉장보관고 온도를 확인하고, 그 내용을 기록하고 있습니까?', 'radio', NULL, '월간', 13, 'system'),
+    ('tml_ccp_chk_000', 'V32', 'prod-cold', '완제품 냉장보관', '종사자가 완제품 냉장보관 공정 모니터링 방법을 정확히 알고 있습니까?', 'radio', NULL, '월간', 14, 'system'),
+    ('tml_ccp_chk_000', 'V33', 'prod-cold', '완제품 냉장보관', '종사자가 한계기준 이탈 시 실시해야 하는 개선조치 방법을 알고 있으며, 이탈 및 개선조치 내용이 기록되고 있습니까?', 'radio', NULL, '월간', 15, 'system'),
+    ('tml_ccp_chk_000', 'V34', 'prod-cold', '완제품 냉장보관', '온도측정장치는 주기적으로 검·교정이 이루어지고 있습니까?', 'radio', NULL, '월간', 16, 'system'),
+    ('tml_ccp_chk_000', 'V35', 'prod-cold', '완제품 냉장보관', '모니터링 행동 관찰 :      월       일        시', 'text', NULL, '월간', 17, 'system'),
+    ('tml_ccp_chk_000', 'V36', 'prod-cold', '완제품 냉장보관', '모니터링 담당자 인터뷰 :      월        일       시', 'text', NULL, '월간', 18, 'system')
+ON CONFLICT (tmpl_cd, item_cd) DO UPDATE SET
+    grp_cd = EXCLUDED.grp_cd, grp_nm = EXCLUDED.grp_nm, item_nm = EXCLUDED.item_nm,
+    input_type = EXCLUDED.input_type, unit_nm = EXCLUDED.unit_nm, cycle_nm = EXCLUDED.cycle_nm,
+    sort_no = EXCLUDED.sort_no, upd_id = 'system', upd_dt = now();
+
+-- ------------------------------------------------------------
 -- 7. hwp_sys_017 — 입고검사 일지
 --    원료육(MEAT_*)과 부재료(SUB) 검사항목 세트가 다르다.
 --    화면은 tbl_recv_inspect.recv_gbn 값에 따라 해당 grp_cd 항목만 보여준다
@@ -188,3 +216,38 @@ INSERT INTO tbl_check_item (tmpl_cd, item_cd, grp_cd, grp_nm, item_nm, input_typ
 ON CONFLICT (tmpl_cd, item_cd) DO UPDATE SET
     grp_cd = EXCLUDED.grp_cd, grp_nm = EXCLUDED.grp_nm, item_nm = EXCLUDED.item_nm,
     input_type = EXCLUDED.input_type, sort_no = EXCLUDED.sort_no, upd_id = 'system', upd_dt = now();
+
+-- ------------------------------------------------------------
+-- html_sys_001 — 일반위생관리 및 공정점검표
+--    주기(cycle_nm)·관리(grp_nm)·점검내용. 온도 행은 YN_NUM
+-- ------------------------------------------------------------
+INSERT INTO tbl_check_item (tmpl_cd, item_cd, grp_cd, grp_nm, item_nm, input_type, unit_nm, cycle_nm, sort_no, ins_id) VALUES
+    ('html_sys_001', 'hp-01', 'personal', '개인위생', '종업원이 청결한 위생복·위생모·위생화 등을 착용하였는가?', 'YN', NULL, '일일(작업전)', 1, 'system'),
+    ('html_sys_001', 'hp-02', 'personal', '개인위생', '종업원의 건강상태(피부병·상처 등)는 양호한가?', 'YN', NULL, '일일(작업전)', 2, 'system'),
+    ('html_sys_001', 'hp-03', 'personal', '개인위생', '시계·반지 등 장신구를 착용하지 않았는가?', 'YN', NULL, '일일(작업전)', 3, 'system'),
+    ('html_sys_001', 'hp-04', 'personal', '개인위생', '손 세척·소독 후 작업에 임하였는가?', 'YN', NULL, '일일(작업전)', 4, 'system'),
+    ('html_sys_001', 'hp-05', 'pest', '방충방서', '방충·방서 설비(포충등·트랩·방충망)가 정상 작동하는가?', 'YN', NULL, '일일(작업전)', 5, 'system'),
+    ('html_sys_001', 'hp-06', 'pest', '방충방서', '출입문·창호의 밀폐 상태는 양호한가?', 'YN', NULL, '일일(작업전)', 6, 'system'),
+    ('html_sys_001', 'hp-07', 'equip', '설비', '작업 설비·도구가 청결하고 정상 작동하는가?', 'YN', NULL, '일일(작업전)', 7, 'system'),
+    ('html_sys_001', 'hp-08', 'recv', '입고보관', '원료·부자재의 입고 보관 상태가 적절한가?', 'YN', NULL, '일일(작업전)', 8, 'system'),
+    ('html_sys_001', 'hp-09', 'recv', '입고보관', '냉장고 1 온도', 'YN_NUM', '℃', '일일(작업전)', 9, 'system'),
+    ('html_sys_001', 'hp-10', 'recv', '입고보관', '냉장고 2 온도', 'YN_NUM', '℃', '일일(작업전)', 10, 'system'),
+    ('html_sys_001', 'hp-11', 'recv', '입고보관', '냉동실 온도', 'YN_NUM', '℃', '일일(작업전)', 11, 'system'),
+    ('html_sys_001', 'hp-12', 'process', '공정관리', '청결구역과 일반구역이 구분되어 작업하는가?', 'YN', NULL, '일일(작업중)', 12, 'system'),
+    ('html_sys_001', 'hp-13', 'process', '공정관리', '식육을 오염되지 않도록 위생적으로 처리·포장하는가?', 'YN', NULL, '일일(작업중)', 13, 'system'),
+    ('html_sys_001', 'hp-14', 'process', '공정관리', '작업장 온도', 'YN_NUM', '℃', '일일(작업중)', 14, 'system'),
+    ('html_sys_001', 'hp-15', 'process', '공정관리', '내포장실 온도', 'YN_NUM', '℃', '일일(작업중)', 15, 'system'),
+    ('html_sys_001', 'hp-16', 'process', '공정관리', '작업 중 흡연·음식물 섭취를 하지 않았는가?', 'YN', NULL, '일일(작업중)', 16, 'system'),
+    ('html_sys_001', 'hp-17', 'pest', '방충방서', '작업 종료 후 방충·방서 설비를 점검하였는가?', 'YN', NULL, '일일(작업후)', 17, 'system'),
+    ('html_sys_001', 'hp-18', 'clean', '청소소독', '작업장·설비·도구를 세척·소독하였는가?', 'YN', NULL, '일일(작업후)', 18, 'system'),
+    ('html_sys_001', 'hp-19', 'equip', '설비', '설비 전원 차단 및 이상 유무를 확인하였는가?', 'YN', NULL, '일일(작업후)', 19, 'system'),
+    ('html_sys_001', 'hp-20', 'inspect', '점검', '일일 점검 결과를 기록·보고하였는가?', 'YN', NULL, '일일(작업후)', 20, 'system'),
+    ('html_sys_001', 'hp-21', 'store', '보관', '잔여 원료·제품을 지정 장소에 보관하였는가?', 'YN', NULL, '일일(작업후)', 21, 'system'),
+    ('html_sys_001', 'hp-22', 'recv-in', '검수', '입고 원료의 온도·포장·표시가 기준에 적합한가?', 'YN', NULL, '입고(입고시)', 22, 'system'),
+    ('html_sys_001', 'hp-23', 'recv-in', '검수', '유통기한 경과·이물·변질 여부를 확인하였는가?', 'YN', NULL, '입고(입고시)', 23, 'system'),
+    ('html_sys_001', 'hp-24', 'ship', '운송', '출하 차량의 청결·온도 상태가 적절한가?', 'YN', NULL, '운송(출하시)', 24, 'system'),
+    ('html_sys_001', 'hp-25', 'ship', '운송', '제품 적재 시 교차오염을 방지하였는가?', 'YN', NULL, '운송(출하시)', 25, 'system')
+ON CONFLICT (tmpl_cd, item_cd) DO UPDATE SET
+    grp_cd = EXCLUDED.grp_cd, grp_nm = EXCLUDED.grp_nm, item_nm = EXCLUDED.item_nm,
+    input_type = EXCLUDED.input_type, unit_nm = EXCLUDED.unit_nm, cycle_nm = EXCLUDED.cycle_nm,
+    sort_no = EXCLUDED.sort_no, upd_id = 'system', upd_dt = now();

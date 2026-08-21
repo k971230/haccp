@@ -667,6 +667,8 @@ BEGIN
               FROM tbl_approval_line_step
              WHERE co_cd = p_co_cd
                AND appr_line_cd = COALESCE(v_line, 'DEFAULT')
+               -- 사용안함(N) 단계는 상신 스냅샷에 넣지 않는다(검토 기본 미사용)
+               AND upper(COALESCE(use_yn, 'Y')) = 'Y'
              ORDER BY step_no
         LOOP
             INSERT INTO tbl_document_approval(

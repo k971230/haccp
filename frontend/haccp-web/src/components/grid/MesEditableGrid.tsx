@@ -15,7 +15,7 @@ import { useCallback, useContext, useEffect, useRef, useState, type KeyboardEven
 // 역할 — 화면코드 — pref 저장 키
 import { PageScrnContext } from "@/shell/pageCommands";
 // 역할 — 그리드 컬럼·접근제어 Props 타입
-import type { GridColumn, GridAccessProps } from "@/types/grid";
+import { codeSelectHasEmptyOption, type GridColumn, type GridAccessProps } from "@/types/grid";
 // 역할 — 편집 행 타입
 import type { EditableRow } from "@/types/editable";
 // 역할 — gridRules 잠금 판정용 행 타입
@@ -72,6 +72,10 @@ interface MesEditableGridProps<T extends Record<string, any>> extends GridAccess
   selectionResetKey?: number | string;
   /** 하단 총 N건 푸터 — 헤더에 건수를 안 두는 화면은 false */
   showFooter?: boolean;
+  /** 빈 그리드 제목 — 마스터 미선택 디테일은 MES.noInfo */
+  emptyTitle?: string;
+  /** 빈 그리드 힌트 — 기본은 조회 조건 안내 */
+  emptyHint?: string;
 }
 
 // 설명 — 숫자 셀 표시 포맷 — 천단위 구분
@@ -114,7 +118,7 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
 // 설명 — 필터·정렬·CSV용 셀 텍스트 변환
   const cellText = useCallback((row: ER, c: GridColumn<ER>): string => {
     const v = row[c.field];
-    if (c.type === "checkbox") return isYnChecked(v) ? "Y" : "N";
+    if (c.type === "checkbox" || c.type === "radio") return isYnChecked(v) ? "Y" : "N";
     if (c.type === "code") return c.codeMap?.[String(v)] ?? String(v ?? "");
     if (c.type === "number" || c.type === "amount") return numFmt(v);
     return v === null || v === undefined ? "" : String(v);
@@ -268,7 +272,7 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
       const ac = view.activeCell;
       const row = rows.find((r) => r._key === ac.rowKey);
       const c = cols.find((x) => x.field === ac.field);
-      if (row && c && canEdit(row, c, row._rowState === "C") && c.type !== "checkbox") {
+      if (row && c && canEdit(row, c, row._rowState === "C") && c.type !== "checkbox" && c.type !== "radio") {
         setEditCell({ rowKey: ac.rowKey, field: ac.field }, true);
       }
     } else if (e.key === "Delete" || e.key === "Backspace") {
@@ -276,7 +280,7 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
       const ac = view.activeCell;
       const row = rows.find((r) => r._key === ac.rowKey);
       const c = cols.find((x) => x.field === ac.field);
-      if (row && c && canEdit(row, c, row._rowState === "C")) {
+      if (row && c && canEdit(row, c, row._rowState === "C") && c.type !== "checkbox" && c.type !== "radio") {
         changeCell(row, c, c.type === "number" || c.type === "amount" ? null : "", row._rowState === "C");
       }
     }
@@ -317,7 +321,7 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
   };
 
   const isEditing = (row: ER, c: GridColumn<ER>) =>
-    c.type !== "checkbox"
+    c.type !== "checkbox" && c.type !== "radio"
     && view.activeCell?.rowKey === row._key
     && view.activeCell.field === c.field
     && view.activeCell.isEditing;
@@ -373,22 +377,22 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
       >
         <div className={cn("mes-cell mes-cellwrap mes-cell-checkbox", `mes-align-${align}`)}>
           <input
-            // HTML button/input type
-            // 폼 안 조회 버튼은 submit
-            type="checkbox"
-            // 추가 Tailwind/CSS 클래스
-            // 기본 스타일 위에 병합(cn)
-            className="h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-100"
-            // 체크박스 선택 여부
-            // 제어 컴포넌트 value
+            // radio=이력 팝업과 같은 원형. checkbox=사각. 행 높이 26px에 맞춤
+            type={c.type === "radio" ? "radio" : "checkbox"}
+            // 라디오는 열 단위 1건 — persistId+field 로 묶는다
+            name={c.type === "radio" ? `${props.persistId ?? "mes-grid"}-${c.field}` : undefined}
+            className={c.type === "radio"
+              ? "h-3.5 w-3.5 border-slate-300"
+              : "h-3.5 w-3.5 rounded border-slate-300 text-brand-700 focus:ring-brand-100"}
+            // 체크·라디오 선택 여부
             checked={checked}
-            // 비활성 여부
-            // true이거나 loading이면 클릭 불가
             disabled={!editableCell || lockedCell}
-            // 값 변경 콜백
-            // 입력·체크·셀렉트 공통
             onChange={(e) => {
               if (!rowActive) props.onActivate?.(row);
+              if (c.type === "radio") {
+                if (e.target.checked) changeCell(row, c, "Y", isNew);
+                return;
+              }
               changeCell(row, c, e.target.checked ? "Y" : "N", isNew);
             }}
           />
@@ -487,7 +491,7 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
                 // 열 너비 고정(ADR-032) — th와 동일 width=min=max(pref→col.width→120), 데이터 길이와 무관 · pin sticky 병합
                 const cellStyle = { ...colWidthStyle(view.widthOf(c)), ...pin };
 
-                if (c.type === "checkbox") {
+                if (c.type === "checkbox" || c.type === "radio") {
                   return renderCheckboxCell(row, c, isNew, editableCell, lockedCell, align);
                 }
 
@@ -581,8 +585,8 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
                           // 입력·체크·셀렉트 공통
                           onChange={(e) => changeCell(row, c, e.target.value, isNew)}
                         >
-                          {/* 필수 콤보(useYn 등)일 때(= required) 빈 option 생략 — 빈값 선택 불가 */}
-                          {!c.required && <option value=""></option>}
+                          {/* 검색 「전체」와 달리 그리드 내부 Y/N·필수 콤보는 빈 option 없음 */}
+                          {codeSelectHasEmptyOption(c) && <option value=""></option>}
                           {c.codeOptions?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>{cellBtn}
                       </div>
@@ -702,7 +706,16 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
           </table>
         </div>
         {!loading && view.displayRows.length === 0 && (
-          <GridEmptyState variant="overlay" withFilter={view.showFilter} hint="조회 조건을 변경해 다시 조회하세요." />
+          <GridEmptyState
+            // 오버레이 — 테이블 헤더는 남기고 본문만 빈 안내
+            variant="overlay"
+            // 필터행이 있으면 헤더+필터 높이만큼 아래로
+            withFilter={view.showFilter}
+            // 마스터 미선택 디테일은 noInfo, 그 외는 조회 없음
+            title={props.emptyTitle}
+            // 힌트가 없으면 조회 조건 안내
+            hint={props.emptyHint ?? "조회 조건을 변경해 다시 조회하세요."}
+          />
         )}
         <GridLoadingOverlay show={!!loading} />
       </div>

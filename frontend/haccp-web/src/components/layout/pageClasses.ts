@@ -42,6 +42,10 @@ export const gridHeadClass =
 export const gridPanelClass =
   "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm";
 
+/** 좌우 분할 패널 — gridPanelClass + h-full + p-2. 문서주기·사용양식·HTML양식 원본 */
+export const splitPanelClass =
+  "flex min-h-0 h-full flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm p-2";
+
 /** 3분할 우측 메인 컬럼 */
 /**
  * 개발자: 박승우

@@ -1,0 +1,890 @@
+/**
+ * htmlFormPaperShared — HTML 양식 지면 공통 타입·서명 슬롯.
+ *
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) 헤더·풋터·서명 칸을 공유한다. 본문 표 HTML 은 양식별
+ *   2) 공정점검·검증점검은 HygPrcPaper 한 벌. 포장·가열·금속은 헤더·풋터·개선조치만 공유
+ *   3) 저장 API 는 호출하지 않는다
+ *
+ * PIPELINE[HF135] HTML 양식 지면 공통
+ */
+// 역할 — 서명 Blob URL 수명 · 행추가 슬롯 children
+import { useEffect, useState, type ReactNode } from "react";
+// 역할 — 항목 패치
+import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
+// 역할 — 서명 이미지 Blob (signYn=Y 이고 id 있을 때)
+import { fetchUserSignBlob } from "@/api/sys/userApi";
+// 역할 — 적합/부적합 공통코드
+import { JUDGE_PF_MAIN_CD, useCommonCodes } from "@/hooks/useCommonCodes";
+
+export type HtmlFormPaperMode = "template" | "write";
+export type HtmlFormPaperVariant = "a4" | "fill";
+
+export interface HtmlFormHeader {
+  title: string;
+  // 제목 아래 부제 — 기본 (매일 작성)
+  subtitle?: string;
+  baseDt: string;
+  checkerNm: string;
+  writerNm?: string;
+  // 작성자 로그인 ID — 서명 조회. 입력란 없음
+  writerId?: string;
+  // 작성자 서명 여부 Y|N
+  writerSignYn?: string;
+  approverNm?: string;
+  // 점검자 로그인 ID — 서명 조회
+  checkerId?: string;
+  // 점검자 서명 스냅샷 여부 Y|N
+  checkerSignYn?: string;
+  // 승인자 로그인 ID
+  approverId?: string;
+  // 승인자 서명 스냅샷 여부 Y|N
+  approverSignYn?: string;
+  // 확인 로그인 ID — 풋터
+  confirmId?: string;
+  // 확인 서명 스냅샷 여부 Y|N
+  confirmSignYn?: string;
+}
+
+export interface HtmlFormFooter {
+  specialNote: string;
+  improveNote: string;
+  actionNm: string;
+  confirmNm: string;
+}
+
+/** 지면 제목·부제·표 사이 캡션 — 점검 행이 아니다. item_cd varchar(20) */
+export const PAPER_HDR = {
+  TITLE: "hdr-title",
+  SUBTITLE: "hdr-subtitle",
+  SENS_CAP: "hdr-sens-cap",
+  // 기록 표와 다음 표 사이 — 높이는 감도 캡션과 같다
+  GAP_CAP: "hdr-gap-cap",
+} as const;
+
+/** 부제 기본 — 화면 Rule PAPER_SUBTITLE 이 비었을 때. 검증점검은 매월 */
+export const PAPER_DEFAULT_SUBTITLE = "(매일 작성)";
+
+/** 본문 표에서 빼는 메타 항목 */
+export function isPaperHdrItem(
+  // 항목코드
+  itemCd: string,
+): boolean {
+  return (Object.values(PAPER_HDR) as string[]).includes(itemCd);
+}
+
+/** 점검 행만 — 제목·부제·캡션 제외 */
+export function paperBodyItems(
+  // 양식 항목 전체
+  items: HtmlFormItem[],
+): HtmlFormItem[] {
+  return items.filter((row) => !isPaperHdrItem(row.itemCd));
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) 기준관리 수정·작성 편집 가능 여부를 한곳에서 정한다
+ *   2) 공정점검·포장·가열·금속 지면이 같이 쓴다
+ *   3) 표준 잠금이면 templateEdit 는 false
+ */
+export function htmlFormPaperEdit(
+  // 기준관리=template, 작성=write
+  mode: HtmlFormPaperMode,
+  // 표준 잠금
+  locked: boolean,
+  // 셀 편집 권한
+  editable: boolean,
+  // 기준관리 수정 버튼 이후
+  editing?: boolean,
+): { templateEdit: boolean; writeEdit: boolean } {
+  return {
+    templateEdit: mode === "template" && !!editing && editable && !locked,
+    writeEdit: mode === "write" && editable,
+  };
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) 적합/부적합 헤더 문구를 공통코드 JUDGE_PF 에서 읽는다
+ *   2) 포장·가열·금속 기록 표가 같이 쓴다
+ *   3) 코드 없으면 적합·부적합
+ */
+export function useJudgePfLabels(): { passNm: string; failNm: string } {
+  const judgePf = useCommonCodes(JUDGE_PF_MAIN_CD);
+  return {
+    // P = 적합
+    passNm: judgePf.label("P", "적합"),
+    // F = 부적합
+    failNm: judgePf.label("F", "부적합"),
+  };
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) item_cd 한 건을 찾는다
+ *   2) 포장·가열·금속 한계기준 칸이 쓴다
+ *   3) 없으면 undefined
+ */
+export function htmlFormItemOf(
+  // 양식 항목 전체
+  items: HtmlFormItem[],
+  // item_cd
+  cd: string,
+): HtmlFormItem | undefined {
+  return items.find((row) => row.itemCd === cd);
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) item_cd 의 itemNm
+ *   2) 없으면 빈 문자열
+ *   3) 한계기준 값 칸이 쓴다
+ */
+export function htmlFormItemNm(
+  // 양식 항목 전체
+  items: HtmlFormItem[],
+  // item_cd
+  cd: string,
+): string {
+  return htmlFormItemOf(items, cd)?.itemNm ?? "";
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) item_cd 한 건만 패치한다
+ *   2) onItemsChange 없으면 no-op
+ *   3) 공정점검·포장·가열·금속이 같이 쓴다
+ */
+export function patchHtmlFormItem(
+  // 양식 항목 전체
+  items: HtmlFormItem[],
+  // 대상 item_cd
+  itemCd: string,
+  // 덮어쓸 필드
+  patch: Partial<HtmlFormItem>,
+  // 항목 배열 교체
+  onItemsChange?: (next: HtmlFormItem[]) => void,
+): void {
+  if (!onItemsChange) return;
+  onItemsChange(items.map((row) => (row.itemCd === itemCd ? { ...row, ...patch } : row)));
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) item_cd 여러 건을 한 번에 패치한다
+ *   2) 한계기준 한 칸 저장 때 나머지 한계 행 itemNm 을 비운다
+ *   3) 한 번만 onItemsChange 해서 앞 패치가 덮이지 않게 한다
+ */
+export function patchHtmlFormItemNms(
+  // 양식 항목 전체
+  items: HtmlFormItem[],
+  // item_cd → itemNm
+  nms: Record<string, string>,
+  // 항목 배열 교체
+  onItemsChange?: (next: HtmlFormItem[]) => void,
+): void {
+  if (!onItemsChange) return;
+  onItemsChange(items.map((row) => (row.itemCd in nms ? { ...row, itemNm: nms[row.itemCd] } : row)));
+}
+
+/** 메타 항목 문구. 없으면 fallback */
+export function paperHdrNm(
+  // 양식 항목 전체
+  items: HtmlFormItem[],
+  // hdr-title / hdr-subtitle / hdr-sens-cap / hdr-gap-cap
+  cd: string,
+  // 시드·화면 기본 문구
+  fallback: string,
+): string {
+  const row = htmlFormItemOf(items, cd);
+  if (row) return row.itemNm ?? "";
+  return fallback;
+}
+
+/** 메타 항목 문구 저장. 없으면 행을 붙인다 */
+export function patchPaperHdr(
+  // 양식 항목 전체
+  items: HtmlFormItem[],
+  // hdr-title / hdr-subtitle / hdr-sens-cap / hdr-gap-cap
+  cd: string,
+  // 새 문구
+  itemNm: string,
+  // 항목 배열 교체
+  onItemsChange?: (next: HtmlFormItem[]) => void,
+): void {
+  if (!onItemsChange) return;
+  if (items.some((row) => row.itemCd === cd)) {
+    onItemsChange(items.map((row) => (row.itemCd === cd ? { ...row, itemNm } : row)));
+    return;
+  }
+  onItemsChange([
+    ...items,
+    {
+      itemCd: cd,
+      sortNo: 0,
+      cycleNm: "",
+      grpNm: "hdr",
+      itemNm,
+      inputType: "text",
+    },
+  ]);
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) 결재란 왼쪽 제목·부제. 수정 모드면 입력
+ *   2) 저장은 hdr-title / hdr-subtitle 항목. 없으면 화면 기본 문구
+ *   3) 5개 HTML 지면이 같이 쓴다
+ */
+export function PaperTitleCell({
+  // 화면 기본 제목·부제
+  header,
+  // 양식 항목 — 저장된 제목이 있으면 그걸 쓴다
+  items,
+  // 기준관리 수정 중
+  templateEdit,
+  // 항목 배열 교체
+  onItemsChange,
+}: {
+  header: HtmlFormHeader;
+  items: HtmlFormItem[];
+  templateEdit: boolean;
+  onItemsChange?: (next: HtmlFormItem[]) => void;
+}) {
+  const title = paperHdrNm(items, PAPER_HDR.TITLE, header.title);
+  const subtitle = paperHdrNm(items, PAPER_HDR.SUBTITLE, header.subtitle || "");
+  return (
+    <>
+      {templateEdit ? (
+        <textarea
+          // 지면 제목 — 자사 양식만. 여러 줄 허용
+          className="html-form-title-input html-form-pre"
+          rows={2}
+          value={title}
+          onChange={(e) => patchPaperHdr(items, PAPER_HDR.TITLE, e.target.value, onItemsChange)}
+        />
+      ) : (
+        <div className="html-form-title">{title}</div>
+      )}
+      {templateEdit ? (
+        <textarea
+          // 부제 — (매일 작성) 등
+          className="html-form-subtitle-input html-form-pre"
+          rows={1}
+          value={subtitle}
+          onChange={(e) => patchPaperHdr(items, PAPER_HDR.SUBTITLE, e.target.value, onItemsChange)}
+        />
+      ) : (
+        <div className="html-form-subtitle">{subtitle}</div>
+      )}
+    </>
+  );
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) 제목·결재·일자·점검자. 작성·수정이 같은 표·같은 칸 크기
+ *   2) 일자 라벨만 화면이 넘긴다. 포장·가열·금속은 작성일자, 공정·검증은 점검일자
+ *   3) 5개 HTML 지면이 같이 쓴다
+ */
+export function HtmlFormBanner({
+  // 제목·부제·일자·서명
+  header,
+  // 저장된 제목·부제
+  items,
+  // 기준관리=template, 작성=write
+  mode,
+  // 기준관리 수정 중
+  templateEdit,
+  // 작성 편집
+  writeEdit,
+  // 작성일자 / 점검일자
+  dateLabel,
+  onHeaderChange,
+  onItemsChange,
+}: {
+  header: HtmlFormHeader;
+  items: HtmlFormItem[];
+  mode: HtmlFormPaperMode;
+  templateEdit: boolean;
+  writeEdit: boolean;
+  dateLabel: string;
+  onHeaderChange?: (patch: Partial<HtmlFormHeader>) => void;
+  onItemsChange?: (next: HtmlFormItem[]) => void;
+}) {
+  return (
+    <table
+      // 제목·결재·일자 전용. 본문 열 폭과 섞이지 않게 분리
+      className="html-form-table html-form-banner"
+    >
+      <thead>
+        <tr>
+          <th
+            // 제목+부제 — 결재란 왼쪽
+            colSpan={3}
+            rowSpan={2}
+            className="html-form-title-cell"
+          >
+            <PaperTitleCell
+              // 제목·부제 — 수정 때 입력
+              header={{ ...header, subtitle: header.subtitle || PAPER_DEFAULT_SUBTITLE }}
+              items={items}
+              templateEdit={templateEdit}
+              onItemsChange={onItemsChange}
+            />
+          </th>
+          <th
+            // 결재 세로칸
+            rowSpan={2}
+            className="html-form-stamp-role"
+          >
+            결재
+          </th>
+          <th className="html-form-stamp">작성자</th>
+          <th className="html-form-stamp">승인자</th>
+        </tr>
+        <tr>
+          <td className="html-form-stamp-cell">
+            <SignSlot
+              // 작성자 — 서명 있으면 이미지, 없으면 이름
+              name={header.writerNm || ""}
+              userId={header.writerId}
+              signYn={header.writerSignYn}
+              editable={false}
+            />
+          </td>
+          <td className="html-form-stamp-cell">
+            <SignSlot
+              // 승인자
+              name={header.approverNm || ""}
+              userId={header.approverId}
+              signYn={header.approverSignYn}
+              editable={writeEdit}
+              onChange={(value) => onHeaderChange?.({ approverNm: value })}
+            />
+          </td>
+        </tr>
+        <tr>
+          <th>{dateLabel}</th>
+          <td
+            // 일자 값 — 라벨만 파랑
+            colSpan={2}
+          >
+            {mode === "write" ? (
+              <input
+                // 일자 YYYY-MM-DD
+                className="html-form-sign-input"
+                value={header.baseDt}
+                disabled={!writeEdit}
+                onChange={(e) => onHeaderChange?.({ baseDt: e.target.value })}
+              />
+            ) : (
+              header.baseDt
+            )}
+          </td>
+          <th>점검자</th>
+          <td colSpan={2}>
+            <SignSlot
+              // 점검자 — 서명 있으면 이미지, 없으면 이름
+              name={header.checkerNm}
+              userId={header.checkerId}
+              signYn={header.checkerSignYn}
+              editable={writeEdit}
+              onChange={(value) => onHeaderChange?.({ checkerNm: value })}
+            />
+          </td>
+        </tr>
+      </thead>
+    </table>
+  );
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) 개선조치 방법 한 행. 포장·가열·금속이 같이 쓴다
+ *   2) 칸 높이(ccp-pkg-long)는 세 지면이 같다. 문구만 다르다
+ *   3) 공정점검·검증점검은 풋터만 쓴다
+ */
+export function CcpCorrectiveBlock({
+  // 저장된 조치 문구
+  value,
+  // 기준관리 수정 중
+  templateEdit,
+  // itemNm 패치
+  onChange,
+}: {
+  value: string;
+  templateEdit: boolean;
+  onChange: (next: string) => void;
+}) {
+  return (
+    <table className="html-form-table html-form-body">
+      <tbody>
+        <tr>
+          <th className="html-form-axis ccp-pkg-axis">개선조치 방법</th>
+          <td>
+            {templateEdit ? (
+              <textarea
+                // 이탈 시 조치 문구. 글이 많으면 칸이 늘어난다
+                className="html-form-cell-ta html-form-pre ccp-pkg-long"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+              />
+            ) : (
+              <span className="html-form-pre ccp-pkg-long">{value}</span>
+            )}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) 하단 4열. 입력 칸 높이(html-form-foot)는 전 지면이 같다
+ *   2) 첫 열·조치 열 제목만 화면이 넘긴다. 값은 footer
+ *   3) 포장·가열·금속·공정점검·검증점검이 같이 쓴다
+ */
+export function HtmlFormFootTable({
+  // 확인 서명 조회
+  header,
+  // 이탈·조치 값
+  footer,
+  // 작성 편집
+  writeEdit,
+  // 한계기준 이탈내용 / 특이사항
+  noteLabel,
+  // 조치자 / 조치
+  actionLabel,
+  onFooterChange,
+}: {
+  header: HtmlFormHeader;
+  footer: HtmlFormFooter;
+  writeEdit: boolean;
+  noteLabel: string;
+  actionLabel: string;
+  onFooterChange?: (patch: Partial<HtmlFormFooter>) => void;
+}) {
+  return (
+    <table className="html-form-table html-form-foot">
+      <thead>
+        <tr>
+          <th className="html-form-foot-note">{noteLabel}</th>
+          <th className="html-form-foot-improve">개선조치 및 결과</th>
+          <th className="html-form-foot-sign">{actionLabel}</th>
+          <th className="html-form-foot-sign">확인</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <textarea
+              // 첫 열 — 작성만 입력. 기준관리는 미리보기
+              className="html-form-foot-input html-form-pre"
+              value={footer.specialNote}
+              disabled={!writeEdit}
+              onChange={(e) => onFooterChange?.({ specialNote: e.target.value })}
+            />
+          </td>
+          <td>
+            <textarea
+              // 개선조치 및 결과
+              className="html-form-foot-input html-form-pre"
+              value={footer.improveNote}
+              disabled={!writeEdit}
+              onChange={(e) => onFooterChange?.({ improveNote: e.target.value })}
+            />
+          </td>
+          <td>
+            <input
+              // 조치자·조치
+              className="html-form-foot-input"
+              value={footer.actionNm}
+              disabled={!writeEdit}
+              onChange={(e) => onFooterChange?.({ actionNm: e.target.value })}
+            />
+          </td>
+          <td>
+            <SignSlot
+              // 확인 — 서명 있으면 이미지
+              name={footer.confirmNm}
+              userId={header.confirmId}
+              signYn={header.confirmSignYn}
+              editable={writeEdit}
+              onChange={(value) => onFooterChange?.({ confirmNm: value })}
+            />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) 포장·가열 한계기준 2건을 한 칸 문자열로 만든다
+ *   2) 시드 2행이면 `항목명 : 값` 을 줄바꿈으로 잇는다. 수정 후 1행이면 그대로
+ *   3) trim 하면 Enter 개행이 사라져서 쓰지 않는다
+ */
+function joinLimitText(
+  // 한계기준 행 — label 은 기록 표 열 제목(cycleNm)
+  rows: { label?: string; itemNm: string }[],
+): string {
+  const filled = rows.filter((row) => (row.itemNm ?? "") !== "");
+  if (filled.length === 0) return "";
+  if (filled.length === 1) return filled[0].itemNm;
+  return filled.map((row) => {
+    const label = (row.label || "").trim();
+    return label ? `${label} : ${row.itemNm}` : row.itemNm;
+  }).join("\n");
+}
+
+/** 한계기준·주기·방법 한 칸 — 수정이면 textarea */
+function CcpTextCell({
+  // 저장된 문구
+  value,
+  // 기준관리 수정 중
+  templateEdit,
+  // 주기·방법·한계기준처럼 여러 줄
+  long = false,
+  // itemNm 패치
+  onChange,
+}: {
+  value: string;
+  templateEdit: boolean;
+  long?: boolean;
+  onChange: (next: string) => void;
+}) {
+  const cls = long ? "html-form-cell-ta html-form-pre ccp-pkg-long" : "html-form-cell-ta html-form-pre";
+  if (templateEdit) {
+    return (
+      <textarea
+        // 자사 양식만 입력. Enter 는 개행. 글이 많으면 칸이 늘어난다
+        className={cls}
+        cols={1}
+        rows={2}
+        value={value}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.stopPropagation();
+        }}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    );
+  }
+  return <span className={long ? "html-form-pre ccp-pkg-long" : "html-form-pre"}>{value}</span>;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) 포장·가열·금속 한계기준은 한 칸 텍스트. 포장·가열 2건은 줄바꿈
+ *   2) 주기·방법도 같은 표. 글이 많으면 ccp-pkg-long 이 칸을 키운다
+ *   3) 세 지면이 같이 쓴다
+ */
+export function CcpLimitHeaderTable({
+  // 한계기준 값 — 포장·가열은 온도·시간 2건을 한 칸으로 합친다
+  limitRows,
+  // 주기 item_cd·문구
+  cycle,
+  // 방법 item_cd·문구
+  method,
+  // 기준관리 수정 중
+  templateEdit,
+  // itemNm 패치 — 한계 한 칸이면 나머지 한계 행은 빈칸
+  onPatch,
+}: {
+  limitRows: { cd: string; itemNm: string; label?: string }[];
+  cycle: { cd: string; itemNm: string };
+  method: { cd: string; itemNm: string };
+  templateEdit: boolean;
+  onPatch: (nms: Record<string, string>) => void;
+}) {
+  const first = limitRows[0];
+  const limitText = joinLimitText(limitRows);
+  return (
+    <table
+      // 한계기준·주기·방법
+      className="html-form-table html-form-body"
+    >
+      <colgroup>
+        <col className="ccp-pkg-axis" />
+        <col />
+      </colgroup>
+      <tbody>
+        <tr>
+          <th
+            // 한계기준 세로 라벨 — 값 한 칸
+            className="html-form-axis"
+          >
+            한계기준
+          </th>
+          <td>
+            <CcpTextCell
+              // 한계기준 값 — 2건이면 항목명 : 값 두 줄. Enter 개행 유지
+              value={limitText}
+              templateEdit={templateEdit}
+              long
+              onChange={(next) => {
+                if (!first) return;
+                const nms: Record<string, string> = { [first.cd]: next };
+                for (const row of limitRows.slice(1)) nms[row.cd] = "";
+                onPatch(nms);
+              }}
+            />
+          </td>
+        </tr>
+        <tr>
+          <th className="html-form-axis">주기</th>
+          <td>
+            <CcpTextCell
+              // 점검 주기
+              value={cycle.itemNm}
+              templateEdit={templateEdit}
+              long
+              onChange={(next) => onPatch({ [cycle.cd]: next })}
+            />
+          </td>
+        </tr>
+        <tr>
+          <th className="html-form-axis">방법</th>
+          <td>
+            <CcpTextCell
+              // 모니터링 방법
+              value={method.itemNm}
+              templateEdit={templateEdit}
+              long
+              onChange={(next) => onPatch({ [method.cd]: next })}
+            />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) 기록 표와 한계기준 사이를 벌린다. 금속은 시드 제목, 포장·가열은 빈칸
+ *   2) 수정 때 입력. 저장은 hdr-sens-cap
+ *   3) 세 CCP 일지가 같이 쓴다
+ */
+export function CcpLogCaption({
+  // 양식 항목
+  items,
+  // 시드·빈칸
+  fallback,
+  // 기준관리 수정 중
+  templateEdit,
+  // 항목 배열 교체
+  onItemsChange,
+}: {
+  items: HtmlFormItem[];
+  fallback: string;
+  templateEdit: boolean;
+  onItemsChange?: (next: HtmlFormItem[]) => void;
+}) {
+  const cap = paperHdrNm(items, PAPER_HDR.SENS_CAP, fallback);
+  return (
+    <caption
+      // 기록 표 위 제목·간격
+      className="ccp-mtl-cap"
+    >
+      {templateEdit ? (
+        <input
+          // 캡션 — 포장·가열은 빈칸으로 시작
+          className="ccp-mtl-cap-input"
+          value={cap}
+          onChange={(e) => patchPaperHdr(items, PAPER_HDR.SENS_CAP, e.target.value, onItemsChange)}
+        />
+      ) : (
+        cap || "\u00a0"
+      )}
+    </caption>
+  );
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) 기록 표와 다음 표 사이. 높이는 감도 캡션(ccp-mtl-cap)과 같다
+ *   2) 수정 때 문구 입력. 저장은 hdrCd(기본 hdr-gap-cap). 행 추가 버튼은 인쇄 숨김
+ *   3) 포장·가열·공정·검증은 fallback 빈칸. 금속만 통과량 제목 기본 문구
+ */
+export function HtmlFormRowAddSlot({
+  // 양식 항목
+  items,
+  // 기준관리 수정 중
+  templateEdit,
+  // 항목 배열 교체
+  onItemsChange,
+  // 저장 item_cd — 기본 표 사이 간격
+  hdrCd = PAPER_HDR.GAP_CAP,
+  // 저장된 행이 없을 때 보여줄 문구. 금속 통과량 제목
+  fallback = "",
+  // 행 추가 버튼. 없으면 캡션만
+  children,
+}: {
+  items: HtmlFormItem[];
+  templateEdit: boolean;
+  onItemsChange?: (next: HtmlFormItem[]) => void;
+  hdrCd?: string;
+  fallback?: string;
+  children?: ReactNode;
+}) {
+  const cap = paperHdrNm(items, hdrCd, fallback);
+  return (
+    <div
+      // 감도 캡션과 같은 높이. 문구는 인쇄한다
+      className="html-form-row-add"
+    >
+      {templateEdit ? (
+        <input
+          // 표 사이 문구 — 비어 있으면 간격만
+          className="ccp-mtl-cap-input"
+          value={cap}
+          onChange={(e) => patchPaperHdr(items, hdrCd, e.target.value, onItemsChange)}
+        />
+      ) : (
+        <span className="ccp-mtl-cap-input">{cap || "\u00a0"}</span>
+      )}
+      {children ? (
+        <div
+          // 행 추가 — 인쇄 숨김
+          className="html-form-no-print"
+        >
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export interface HtmlFormPaperProps {
+  // 기준관리=template, 작성=write
+  mode: HtmlFormPaperMode;
+  // 표준이면 항목 잠금
+  locked: boolean;
+  // 작성·기준관리 입력 가능
+  editable: boolean;
+  // 기준관리 수정 버튼 이후만 셀 편집
+  editing?: boolean;
+  // a4=인쇄 폭, fill=패널 채움
+  variant?: HtmlFormPaperVariant;
+  // 상단 제목·일자·점검자·결재
+  header: HtmlFormHeader;
+  // 점검 행
+  items: HtmlFormItem[];
+  // 하단 4열 — 특이사항·개선조치 및 결과·조치·확인
+  footer: HtmlFormFooter;
+  onHeaderChange?: (patch: Partial<HtmlFormHeader>) => void;
+  onItemsChange?: (items: HtmlFormItem[]) => void;
+  onFooterChange?: (patch: Partial<HtmlFormFooter>) => void;
+  selectedIndex?: number | null;
+  onSelectIndex?: (index: number) => void;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-20
+ * 코멘트:
+ *   1) 저장 후 서명이 있으면 이미지를, 없으면 이름을 그린다
+ *   2) 작성자·승인자·점검자·풋터 확인란이 쓴다
+ *   3) Blob URL은 unmount 때 해제한다
+ */
+export function SignSlot({
+  // 표시·입력 이름
+  name,
+  // 서명 조회용 사용자 ID — signYn=Y 일 때만
+  userId,
+  // 문서 스냅샷 여부 Y|N
+  signYn,
+  // 작성 편집
+  editable,
+  // 이름 변경 — 저장 전엔 텍스트만
+  onChange,
+}: {
+  name: string;
+  userId?: string;
+  signYn?: string;
+  editable: boolean;
+  onChange?: (value: string) => void;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const id = (userId || "").trim();
+    if (signYn !== "Y" || !id) {
+      setUrl(null);
+      return;
+    }
+    let objectUrl = "";
+    let cancelled = false;
+    // ponytail: 화면은 현재 사용자 서명을 받는다. 문서 bytea GET이 생기면 스냅샷으로 교체
+    void fetchUserSignBlob(id)
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl);
+          return;
+        }
+        setUrl(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setUrl(null);
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [userId, signYn]);
+
+  return (
+    <div className="html-form-sign">
+      {url ? (
+        <img
+          // 사용자 서명 이미지 — 저장 시점 스냅샷과 같은 사람
+          src={url}
+          alt=""
+        />
+      ) : null}
+      {editable ? (
+        <input
+          // 이름 — 서명이 있어도 바꿀 수 있다. 저장하면 다시 매칭
+          className="html-form-sign-input"
+          value={name}
+          onChange={(e) => onChange?.(e.target.value)}
+        />
+      ) : url ? null : (
+        <span className="html-form-pre">{name}</span>
+      )}
+    </div>
+  );
+}

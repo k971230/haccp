@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+DocCorrectiveMapper.xml — 문서형 이탈 푸터 SP.
+
+개발자: 박승우
+일자: 2026-08-06
+코멘트:
+  1) 조회 FUNCTION / 저장 PROCEDURE
+  2) payloadJson은 camelCase jsonb
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.docs.corrective.DocCorrectiveMapper">
+
+    <select id="selectByDoc" resultType="com.haccp.ccp.dto.DocCorrectiveDto">
+        SELECT * FROM sp_tbl_doc_corrective_r_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{docIdx, mode=IN, jdbcType=BIGINT}
+        )
+    </select>
+
+    <update id="upsertByDoc" statementType="CALLABLE">
+        CALL sp_tbl_doc_corrective_u_000(
+            #{coCd,        mode=IN, jdbcType=VARCHAR},
+            #{docIdx,      mode=IN, jdbcType=BIGINT},
+            #{tmplCd,      mode=IN, jdbcType=VARCHAR},
+            #{baseDt,      mode=IN, jdbcType=VARCHAR},
+            CAST(#{payloadJson, mode=IN, jdbcType=VARCHAR} AS jsonb),
+            #{userId,      mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+</mapper>

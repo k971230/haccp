@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CcpHtgTemplateMapper.xml — CCP-2B 가열 모니터링일지 양식 SP.
+
+개발자: 박승우
+일자: 2026-08-20
+코멘트:
+  1) 저장 테이블 tbl_tml_ccp_htg_ver. 검증점검은 CcpVerifyTemplateMapper
+  2) JWT coCd를 첫 인자로 넘긴다
+  3) 복사는 FUNCTION이 tml_ccp_htg_NNN을 반환
+
+PIPELINE[HB133] CCP-2B 가열일지 양식 XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.docs.html.ccphtgtemplate.CcpHtgTemplateMapper">
+
+    <!-- 좌측 양식 목록 — 예시 tml_ccp_htg_000 + 자사 tml_ccp_htg_NNN -->
+    <select id="selectVersions" resultType="map">
+        SELECT * FROM sp_tbl_tml_ccp_htg_ver_r_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{verCd, jdbcType=VARCHAR},
+            #{verNm, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 우측 지면 항목 — 예시이면 tbl_check_item tml_ccp_htg_000 -->
+    <select id="selectItems" resultType="map">
+        SELECT * FROM sp_tbl_tml_ccp_htg_ver_item_r_000(#{coCd}, #{tmplCd}, #{verNo})
+    </select>
+
+    <!-- 자사 양식 추가 — tml_ccp_htg_NNN 채번. 반환 tmpl_cd -->
+    <select id="copyVersion" resultType="string">
+        SELECT sp_tbl_tml_ccp_htg_ver_copy_c_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{srcVerNo, jdbcType=INTEGER},
+            #{verCd, jdbcType=VARCHAR},
+            #{verNm, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 사용자 버전 항목 전체 교체 -->
+    <update id="saveItems" statementType="CALLABLE">
+        CALL sp_tbl_tml_ccp_htg_ver_item_u_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{verNo, jdbcType=INTEGER},
+            CAST(#{items, jdbcType=VARCHAR} AS jsonb),
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!-- 작성 신규 적용 — 호환 -->
+    <update id="applyVersion" statementType="CALLABLE">
+        CALL sp_tbl_tml_ccp_htg_ver_apply_u_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{verNo, jdbcType=INTEGER},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!-- 자사 양식명·회사 사용여부 — 버전 소프트삭제는 건드리지 않는다 -->
+    <update id="updateVerNm" statementType="CALLABLE">
+        CALL sp_tbl_tml_ccp_htg_ver_nm_u_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{verNo, jdbcType=INTEGER},
+            #{verNm, jdbcType=VARCHAR},
+            #{useYn, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!-- 삭제 차단 -->
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
+        SELECT * FROM sp_tbl_tml_ccp_htg_ver_delete_blocker_r_000(#{coCd}, #{tmplCd}, #{verNo})
+        LIMIT 1
+    </select>
+
+    <!-- 자사 양식 삭제 -->
+    <update id="deleteVersion" statementType="CALLABLE">
+        CALL sp_tbl_tml_ccp_htg_ver_d_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{verNo, jdbcType=INTEGER},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+</mapper>

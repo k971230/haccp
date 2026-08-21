@@ -11,7 +11,7 @@ import type { GridColumn } from "@/types/grid";
 import { cn } from "@/lib/cn";
 
 // 설명 — 상태 배지 색상 톤
-export type GridBadgeTone = "blue" | "amber" | "green" | "gray" | "red" | "purple";
+export type GridBadgeTone = "blue" | "amber" | "green" | "gray" | "red" | "purple" | "dash";
 
 // 설명 — 한글 상태 라벨 → 기본 배지 톤 매핑
 const LABEL_TONES: Record<string, GridBadgeTone> = {

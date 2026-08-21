@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+HwpTemplateMapper.xml — 사용양식관리 sp_hwp_template_management_* 호출.
+
+개발자: 박승우
+일자: 2026-08-14
+코멘트:
+  1) 조회는 TABLE FUNCTION, 저장·적용은 PostgreSQL PROCEDURE를 호출한다
+  2) Map 결과는 snake_case 키로 돌아오며 Service toCamelMaps가 API 계약으로 바꾼다
+  3) 삭제는 법적서류와 공유하는 sp_tbl_company_template_d_000 을 WorkflowMapper가 그대로 부른다
+
+PIPELINE[HB123] 사용양식 MyBatis XML
+PIPELINE[HB92, HB88] 연관 모듈
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.docs.hwptemplate.HwpTemplateMapper">
+
+    <!--
+      사용양식 목록 — 시스템양식 예제+자사양식 전부(html 전용 화면 양식 포함).
+      구분·현재 파일명·사용유무·기본/현재 파일·이력건수 (미사용 포함).
+      tmplCd·tmplNm은 SP 내부 LIKE 이며 공백이면 전체다.
+    -->
+    <select id="selectHwpTemplates" resultType="map">
+        SELECT * FROM sp_hwp_template_management_r_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{tmplNm, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      사용양식 저장 — 신규는 자사양식(sys_yn=usr) 강제, 수정은 양식명·사용유무만.
+      sysYn 은 파라미터에 없다.
+    -->
+    <update id="saveHwpTemplate" statementType="CALLABLE">
+        CALL sp_hwp_template_management_c_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{tmplNm, jdbcType=VARCHAR},
+            #{useYn, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!--
+      양식 파일 이력 — 불러오기 목록. 삭제(del_yn=Y) 이력은 제외한다.
+    -->
+    <select id="selectHwpTemplateFiles" resultType="map">
+        SELECT * FROM sp_hwp_template_management_file_r_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      불러오기·초기화 — fileIdx NULL이면 기본 제공본으로 복원한다.
+    -->
+    <update id="applyHwpTemplateFile" statementType="CALLABLE">
+        CALL sp_hwp_template_management_current_u_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{fileIdx, jdbcType=BIGINT},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+
+</mapper>

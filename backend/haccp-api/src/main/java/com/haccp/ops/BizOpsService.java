@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteValidation;
-import com.haccp.doc.DocCorrectiveSupport;
+import com.haccp.docs.corrective.DocCorrectiveSupport;
 import com.haccp.ops.dto.BizOpsDeleteItem;
 import com.haccp.ops.dto.BizOpsSaveRequest;
 import java.util.ArrayList;

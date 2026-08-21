@@ -24,15 +24,27 @@ import VerificationCheckPage from "@/pages/ccp/VerificationCheckPage";
 // 역할 — 위생 DB형 (일일·방충)
 import HygieneCheckPage from "@/pages/hyg/HygieneCheckPage";
 // 역할 — 통합 문서함·결재함·결재이력
-import DocumentBoxPage from "@/pages/doc/DocumentBoxPage";
+import DocumentBoxPage from "@/pages/docs/documentbox/DocumentBoxPage";
 // 역할 — 법적서류 그리드 첨부
-import LegalDocumentUploadPage from "@/pages/doc/LegalDocumentUploadPage";
+import LegalDocumentUploadPage from "@/pages/docs/legalupload/LegalDocumentUploadPage";
 // 역할 — 건강진단관리기록부 인원 그리드
 import HealthCertPage from "@/pages/hyg/HealthCertPage";
 // 역할 — rhwp HWP 문서형 작성·일자별 업로드
-import HwpDocumentEditorPage from "@/pages/doc/HwpDocumentEditorPage";
+import HwpDocumentEditorPage from "@/pages/docs/hwpeditor/HwpDocumentEditorPage";
 // 역할 — HWP 양식 파일 관리
-import HwpTemplateManagementPage from "@/pages/hwp/hwptemplate/HwpTemplateManagementPage";
+import HwpTemplateManagementPage from "@/pages/docs/hwptemplate/HwpTemplateManagementPage";
+// 역할 — HTML 양식 원본(공정점검 버전)
+import HtmlTemplatePage from "@/pages/docs/html/htmltemplate/HtmlTemplatePage";
+// 역할 — HTML 양식 원본(CCP 검증점검)
+import CcpVerifyTemplatePage from "@/pages/docs/html/ccpverifytemplate/CcpVerifyTemplatePage";
+// 역할 — HTML 양식 원본(CCP-1B 포장 모니터링일지)
+import CcpPkgTemplatePage from "@/pages/docs/html/ccppkgtemplate/CcpPkgTemplatePage";
+// 역할 — HTML 양식 원본(CCP-2B 가열 모니터링일지)
+import CcpHtgTemplatePage from "@/pages/docs/html/ccphtgtemplate/CcpHtgTemplatePage";
+// 역할 — HTML 양식 원본(CCP-3P 금속검출 모니터링일지)
+import CcpMtlTemplatePage from "@/pages/docs/html/ccpmtltemplate/CcpMtlTemplatePage";
+// 역할 — 일반위생관리 및 공정점검표 작성
+import HygProcessPage from "@/pages/docs/html/hygprocess/HygProcessPage";
 // 역할 — 권한그룹 좌 메뉴권한 트리 + 우 마스터 그리드
 import RoleManagementPage from "@/pages/sys/role/RoleManagementPage";
 // 역할 — 부서 좌 트리 + 우 그리드
@@ -41,21 +53,20 @@ import DepartmentManagementPage from "@/pages/sys/department/DepartmentManagemen
 import MenuManagementPage from "@/pages/sys/menu/MenuManagementPage";
 // 역할 — 공통코드 대분류·시스템·사용자 3그리드
 import CommonCodePage from "@/pages/sys/commoncode/CommonCodePage";
+// 역할 — 결재선 좌 목록 · 우 단계
+import ApprovalLineManagementPage from "@/pages/sys/approvalline/ApprovalLineManagementPage";
 // 역할 — 기초정보·한계기준 마스터
 import MasterDataPage from "@/pages/bas/MasterDataPage";
 // 역할 — 설비카드 이력 M-D
 import EquipmentHistoryPage from "@/pages/bas/EquipmentHistoryPage";
 // 역할 — 방충설비 이력 M-D
 import PestDeviceHistoryPage from "@/pages/bas/PestDeviceHistoryPage";
-// 역할 — 결재선·점검항목·작성주기
-import ApprovalLineManagementPage from "@/pages/bas/ApprovalLineManagementPage";
-import TemplateCheckItemManagementPage from "@/pages/bas/TemplateCheckItemManagementPage";
-import ScheduleCycleManagementPage from "@/pages/hwp/doccycle/ScheduleCycleManagementPage";
+import ScheduleCycleManagementPage from "@/pages/docs/doccycle/ScheduleCycleManagementPage";
 // 역할 — 설비·시설 점검 DB형
 import BizOpsFormPage from "@/pages/ops/BizOpsFormPage";
 // 역할 — 오늘 할 일·개선조치
 import TodayTasksPage from "@/pages/tsk/TodayTasksPage";
-import CorrectiveActionManagementPage from "@/pages/doc/CorrectiveActionManagementPage";
+import CorrectiveActionManagementPage from "@/pages/docs/corrective/CorrectiveActionManagementPage";
 // 역할 — 사용자 관리 그리드
 import UserManagementPage from "@/pages/sys/user/UserManagementPage";
 // 역할 — 로그 3화면 (각자 LogPageShell + Rule)
@@ -94,6 +105,7 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   "role-management": RoleManagementPage,
   "menu-management": MenuManagementPage,
   "common-code-management": CommonCodePage,
+  "approval-line-management": ApprovalLineManagementPage,
   "login-history": LoginHistoryPage,
   "screen-usage-statistics": ScreenUsageStatisticsPage,
   "audit-log": AuditLogPage,
@@ -108,33 +120,23 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   "work-area-management": () => <MasterDataPage screenCode="work-area-management" />,
 
   // 문서 기준관리
-  "ccp-limit-management": () => <MasterDataPage screenCode="ccp-limit-management" />,
+  // 일지설정 세트(좌 목록+우 업무): 사용양식·HTML 5·문서주기. 슈퍼 셸로 합치지 않음. pages/docs/README.md
   // 시설·설비 관리 메뉴는 이력 M-D로 통합 — 구 화면코드 진입도 동일 화면
   "equipment-management": EquipmentHistoryPage,
   // 포충등·트랩 관리 메뉴는 방충 이력 M-D로 통합
   "pest-device-management": PestDeviceHistoryPage,
-  "approval-line-management": ApprovalLineManagementPage,
-  // template-check-item-management — 문서별 admin으로 분할 완료, 레지스트리·메뉴 제거(migrate 47)
+  // approval-line-management 는 시스템 관리로 이동
   "hwp-template-management": HwpTemplateManagementPage,
+  "hyg-process-template": HtmlTemplatePage,
+  "ccp-verify-template": CcpVerifyTemplatePage,
+  "ccp-pkg-template": CcpPkgTemplatePage,
+  "ccp-htg-template": CcpHtgTemplatePage,
+  "ccp-mtl-template": CcpMtlTemplatePage,
   "schedule-cycle-management": ScheduleCycleManagementPage,
-  // 문서별 기준관리 (C3)
-  "daily-hyg-item-admin": () => (
-    <TemplateCheckItemManagementPage screenCode="daily-hyg-item-admin" fixedTmplCd="html_sys_007" />
-  ),
-  "ccp-cold-limit-admin": () => <MasterDataPage screenCode="ccp-cold-limit-admin" />,
-  "ccp-heat-limit-admin": () => <MasterDataPage screenCode="ccp-heat-limit-admin" />,
-  "ccp-sanitize-limit-admin": () => <MasterDataPage screenCode="ccp-sanitize-limit-admin" />,
-  "ccp-filter-limit-admin": () => <MasterDataPage screenCode="ccp-filter-limit-admin" />,
-  "ccp-metal-limit-admin": () => <MasterDataPage screenCode="ccp-metal-limit-admin" />,
-  "ccp-verify-standard-admin": () => (
-    <TemplateCheckItemManagementPage screenCode="ccp-verify-standard-admin" fixedTmplCd="html_sys_006" />
-  ),
-  "facility-check-item-admin": () => (
-    <TemplateCheckItemManagementPage screenCode="facility-check-item-admin" fixedTmplCd="html_sys_009" />
-  ),
 
   // 문서 작성 — DB
   "daily-hygiene-check": () => <HygieneCheckPage screenCode="daily-hygiene-check" title="일일위생점검표" kind="daily" />,
+  "hygiene-process-check": HygProcessPage,
   "pest-control-check": () => <HygieneCheckPage screenCode="pest-control-check" title="방충방서관리점검표" kind="pest" />,
   "ccp-cold-monitor": ColdMonitorPage,
   "ccp-metal-monitor": MetalMonitorPage,
@@ -143,6 +145,8 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   "ccp-filter-monitor": () => <CcpGenericMonitorPage screenCode="ccp-filter-monitor" defaultTmplCd="html_sys_005" />,
   "ccp-verification-check": VerificationCheckPage,
   "facility-equipment-check": () => <BizOpsFormPage screenCode="facility-equipment-check" />,
+  // 메뉴 숨김(use_yn=N). 문서함 html_sys_010 deep-link 전용. SQL·Page 삭제 금지
+  "calibration-target-management": () => <BizOpsFormPage screenCode="calibration-target-management" />,
   // 건강진단관리기록부 — 인원 그리드·첨부 (HA-HYG-02)
   "health-cert-record": HealthCertPage,
 
