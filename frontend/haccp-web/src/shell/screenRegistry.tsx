@@ -71,6 +71,14 @@ import CcpHtgTemplatePage from "@/pages/docs/html/ccphtgtemplate/CcpHtgTemplateP
 import CcpMtlTemplatePage from "@/pages/docs/html/ccpmtltemplate/CcpMtlTemplatePage";
 // 역할 — 일반위생관리 및 공정점검표 작성
 import HygProcessPage from "@/pages/docs/html/hygprocess/HygProcessPage";
+// 역할 — 양식 작성 — HYG 위생공정 (사용여부 예인 자사 양식)
+import { HygProcessDraftPage } from "@/pages/draft/hyg/HygProcessDraftPage";
+// 역할 — 양식 작성 — CCP 검증점검 (HYG 와 같은 공통 화면)
+import { CcpVerifyDraftPage } from "@/pages/draft/ccp/CcpVerifyDraftPage";
+// 역할 — 양식 작성 — CCP 모니터링일지 3종 (포장·가열·금속검출)
+import { CcpPkgDraftPage } from "@/pages/draft/ccp-monitoring/CcpPkgDraftPage";
+import { CcpHtgDraftPage } from "@/pages/draft/ccp-monitoring/CcpHtgDraftPage";
+import { CcpMtlDraftPage } from "@/pages/draft/ccp-monitoring/CcpMtlDraftPage";
 // 역할 — 권한그룹 좌 메뉴권한 트리 + 우 마스터 그리드
 import RoleManagementPage from "@/pages/sys/code/role/RoleManagementPage";
 // 역할 — 부서 좌 트리 + 우 그리드
@@ -146,6 +154,13 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   // 문서 작성 — DB
   "daily-hygiene-check": () => <HygieneCheckPage screenCode="daily-hygiene-check" title="일일위생점검표" kind="daily" />,
   "hygiene-process-check": HygProcessPage,
+
+  // 양식 작성 — draft 대분류. 양식관리 사용여부 예인 자사 양식만 쓴다
+  "hyg-process": HygProcessDraftPage,
+  "ccp-verify": CcpVerifyDraftPage,
+  "ccp-pkg": CcpPkgDraftPage,
+  "ccp-htg": CcpHtgDraftPage,
+  "ccp-mtl": CcpMtlDraftPage,
   "pest-control-check": () => <HygieneCheckPage screenCode="pest-control-check" title="방충방서관리점검표" kind="pest" />,
   "ccp-cold-monitor": ColdMonitorPage,
   "ccp-metal-monitor": MetalMonitorPage,

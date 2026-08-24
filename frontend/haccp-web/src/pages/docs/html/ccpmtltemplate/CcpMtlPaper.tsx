@@ -18,6 +18,13 @@ import {
   HtmlFormBanner,
   HtmlFormFootTable,
   HtmlFormRowAddSlot,
+  LOG_PHASE,
+  appendLogRow,
+  appendPassRow,
+  logRowsOf,
+  patchLogRow,
+  patchPassRow,
+  removeLogRow,
   SignSlot,
   htmlFormItemNm,
   htmlFormItemOf,
@@ -25,14 +32,16 @@ import {
   patchHtmlFormItem,
   patchHtmlFormItemNms,
   useJudgePfLabels,
+  type HtmlFormLogRow,
   type HtmlFormPaperProps,
+  type HtmlFormPassRow,
+  type LogPhase,
 } from "@/components/form/htmlFormPaperShared";
 // 역할 — 항목 패치
 import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
 // 역할 — 작성 화면 중간 행 추가
 import { MesButton } from "@/components/ui/MesButton";
-// 역할 — 작성 중간 행 키
-import { useState } from "react";
+
 
 /** 시드 item_cd — tbl_check_item tml_ccp_mtl_000 */
 export const MTL_ITEM = {
@@ -78,15 +87,25 @@ export function CcpMtlPaper({
   items,
   // 하단 이탈·조치
   footer,
+  // 작성 감도행 — 없으면(= 기준관리) 예전처럼 빈 예시 행을 고정으로 그린다
+  logRows,
+  // 작성 통과량행 — MTL 두 번째 표
+  passRows,
   onHeaderChange,
   onItemsChange,
   onFooterChange,
+  onLogRowsChange,
+  onPassRowsChange,
 }: HtmlFormPaperProps) {
   // 적합/부적합 헤더 — 공통코드 JUDGE_PF
   const { passNm, failNm } = useJudgePfLabels();
   const { templateEdit, writeEdit } = htmlFormPaperEdit(mode, locked, editable, editing);
-  // 작성만 중간 행. 미리보기는 작업 전·빈행·작업 후·빈행 4행
-  const [midKeys, setMidKeys] = useState<string[]>([]);
+  // 작성 제어 렌더 여부 — logRows 를 받은 mode=write 에서만. 기준관리는 항상 false
+  const writeRows = writeEdit && !!logRows && !!onLogRowsChange;
+  const rows = logRows ?? [];
+  // 통과량 표 제어 렌더 여부 — 감도표와 따로 판단한다
+  const writePass = writeEdit && !!passRows && !!onPassRowsChange;
+  const pass = passRows ?? [];
 
   // 항목 패치 — 한계기준·주기·방법·개선조치·감도열
   const patchItem = (cd: string, patch: Partial<HtmlFormItem>) => {
@@ -192,50 +211,62 @@ export function CcpMtlPaper({
           </tr>
         </thead>
         <tbody>
-          <SensRow
-            // 작업 전 — 해당 없음 체크는 이 행. 아래에 빈 예시 행
-            rowKey="mtl-before"
-            label="작업 전"
-            fixed
-            hdrs={hdrs}
-            templateEdit={templateEdit}
-            writeEdit={writeEdit}
-            onNaChange={(cd, na) => patchItem(cd, { unitNm: na ? "Y" : "N" })}
-          />
-          <SensRow
-            // 작업 전 아래 빈 행 — 미리보기 예시. 해당 없음과 무관
-            rowKey="mtl-before-empty"
-            hdrs={hdrs}
-            templateEdit={templateEdit}
-            writeEdit={writeEdit}
-          />
-          {writeEdit ? midKeys.map((key) => (
-            <SensRow
-              // 작성 중간 행 — 품명 입력. 해당 없음과 무관, O/X
-              key={key}
-              rowKey={key}
-              hdrs={hdrs}
-              templateEdit={templateEdit}
-              writeEdit={writeEdit}
-            />
-          )) : null}
-          <SensRow
-            // 작업 후 — 해당 없음 체크는 이 행
-            rowKey="mtl-after"
-            label="작업 후"
-            fixed
-            hdrs={hdrs}
-            templateEdit={templateEdit}
-            writeEdit={writeEdit}
-            onNaChange={(cd, na) => patchItem(cd, { unitNm: na ? "Y" : "N" })}
-          />
-          <SensRow
-            // 작업 후 아래 빈 행 — 미리보기 예시
-            rowKey="mtl-after-empty"
-            hdrs={hdrs}
-            templateEdit={templateEdit}
-            writeEdit={writeEdit}
-          />
+          {writeRows ? (
+            // 작성 — 저장된 감도행을 영역별로 그린다. 영역 첫 줄만 라벨·해당 없음을 단다
+            (["BEFORE", "AFTER"] as LogPhase[]).flatMap((phase) =>
+              logRowsOf(rows, phase).map((row, idx) => (
+                <SensRow
+                  key={`mtl-${phase}-${row.rowSeq}`}
+                  rowKey={`mtl-${phase}-${row.rowSeq}`}
+                  label={idx === 0 ? (phase === "BEFORE" ? "작업 전" : "작업 후") : undefined}
+                  fixed={idx === 0}
+                  hdrs={hdrs}
+                  templateEdit={templateEdit}
+                  writeEdit={writeEdit}
+                  row={row}
+                  // 영역 첫 줄은 라벨 행이라 지우지 않는다
+                  onRemove={idx === 0 ? undefined : () => onLogRowsChange?.(removeLogRow(rows, row.rowSeq))}
+                  onPatch={(patch) => onLogRowsChange?.(patchLogRow(rows, row.rowSeq, patch))}
+                />
+              )))
+          ) : (
+            <>
+              <SensRow
+                // 작업 전 — 해당 없음 체크는 이 행
+                rowKey="mtl-before"
+                label="작업 전"
+                fixed
+                hdrs={hdrs}
+                templateEdit={templateEdit}
+                writeEdit={writeEdit}
+                onNaChange={(cd, na) => patchItem(cd, { unitNm: na ? "Y" : "N" })}
+              />
+              <SensRow
+                // 작업 전 아래 빈 행 — 미리보기 예시. 해당 없음과 무관
+                rowKey="mtl-before-empty"
+                hdrs={hdrs}
+                templateEdit={templateEdit}
+                writeEdit={writeEdit}
+              />
+              <SensRow
+                // 작업 후 — 해당 없음 체크는 이 행
+                rowKey="mtl-after"
+                label="작업 후"
+                fixed
+                hdrs={hdrs}
+                templateEdit={templateEdit}
+                writeEdit={writeEdit}
+                onNaChange={(cd, na) => patchItem(cd, { unitNm: na ? "Y" : "N" })}
+              />
+              <SensRow
+                // 작업 후 아래 빈 행 — 미리보기 예시
+                rowKey="mtl-after-empty"
+                hdrs={hdrs}
+                templateEdit={templateEdit}
+                writeEdit={writeEdit}
+              />
+            </>
+          )}
         </tbody>
       </table>
       <HtmlFormRowAddSlot
@@ -248,15 +279,37 @@ export function CcpMtlPaper({
         // 수정한 제목을 hdr-gap-cap 으로 붙인다
         onItemsChange={onItemsChange}
       >
-        {writeEdit ? (
+        {writeRows ? (
+          <>
+            <MesButton
+              // 감도표 작업 전 영역 끝에만 붙인다 — 작업 후·통과량 행 수는 그대로다
+              size="sm"
+              variant="add"
+              icon="plus"
+              onClick={() => onLogRowsChange?.(appendLogRow(rows, LOG_PHASE.BEFORE))}
+            >
+              작업 전 행 추가
+            </MesButton>
+            <MesButton
+              // 감도표 작업 후 영역 끝에만 붙인다
+              size="sm"
+              variant="add"
+              icon="plus"
+              onClick={() => onLogRowsChange?.(appendLogRow(rows, LOG_PHASE.AFTER))}
+            >
+              작업 후 행 추가
+            </MesButton>
+          </>
+        ) : null}
+        {writePass ? (
           <MesButton
-            // 작업 전과 후 사이에 품명 행을 끼운다
+            // 아래 통과량 표 끝에만 붙인다 — 「금속검출기 제품 통과」 문구 오른쪽
             size="sm"
             variant="add"
             icon="plus"
-            onClick={() => setMidKeys((keys) => [...keys, `mtl-mid-${Date.now()}`])}
+            onClick={() => onPassRowsChange?.(appendPassRow(pass))}
           >
-            행 추가
+            제품 통과 행 추가
           </MesButton>
         ) : null}
       </HtmlFormRowAddSlot>
@@ -274,42 +327,23 @@ export function CcpMtlPaper({
           </tr>
         </thead>
         <tbody>
-          {Array.from({ length: PASS_CNT }, (_, i) => (
-            <tr key={`pass-${i}`}>
-              <td>
-                <input
-                  // 품명 — 문자
-                  className="html-form-sign-input"
-                  disabled={!writeEdit}
-                  readOnly={!writeEdit}
-                />
-              </td>
-              <td>
-                <input
-                  // 통과량
-                  className="html-form-sign-input"
-                  disabled={!writeEdit}
-                  readOnly={!writeEdit}
-                />
-              </td>
-              <td>
-                <input
-                  // 검출량
-                  className="html-form-sign-input"
-                  disabled={!writeEdit}
-                  readOnly={!writeEdit}
-                />
-              </td>
-              <td>
-                <input
-                  // 특이사항
-                  className="html-form-sign-input"
-                  disabled={!writeEdit}
-                  readOnly={!writeEdit}
-                />
-              </td>
-            </tr>
-          ))}
+          {writePass ? (
+            // 작성 — 저장된 통과량 행. 행 추가로 만든 행은 우측 × 로 지운다
+            pass.map((row, idx) => (
+              <PassRow
+                key={`pass-${row.rowSeq}`}
+                row={row}
+                writeEdit={writeEdit}
+                // 기본 4행은 남기고 추가분만 지운다
+                onRemove={idx < PASS_CNT ? undefined : () => onPassRowsChange?.(pass.filter((r) => r.rowSeq !== row.rowSeq))}
+                onPatch={(patch) => onPassRowsChange?.(patchPassRow(pass, row.rowSeq, patch))}
+              />
+            ))
+          ) : (
+            Array.from({ length: PASS_CNT }, (_, i) => (
+              <PassRow key={`pass-${i}`} writeEdit={writeEdit} />
+            ))
+          )}
         </tbody>
       </table>
 
@@ -336,16 +370,16 @@ type HdrCol = { cd: string; label: string; na: boolean };
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-20
+ * 일자: 2026-08-24
  * 코멘트:
- *   1) 감도 표 한 행. 미리보기는 작업 전·빈행·작업 후·빈행
- *   2) 해당 없음 체크는 작업 전·후만. 헤더에는 두지 않는다
- *   3) 판정은 적합/부적합 칸 라디오. 기록 행 품명은 흰색
+ *   1) 감도 표 한 행. row 를 주면(= 작성) 제어 입력, 안 주면(= 기준관리) 예전처럼 빈 미리보기 칸이다
+ *   2) 품명은 영역 첫 줄만 고정 라벨(작업 전/작업 후), 나머지는 입력이다
+ *   3) 감도 5칸은 O/X 라디오. 해당 없음 열은 고정행에서만 문구로 대체한다
  */
 function SensRow({
   // 라디오 name — 행마다 다르게
   rowKey,
-  // 품명 고정 라벨. 없으면 빈칸
+  // 품명 고정 라벨. 없으면 품명 입력
   label,
   // 고정행이면 해당 없음 적용
   fixed = false,
@@ -355,6 +389,12 @@ function SensRow({
   writeEdit,
   // 열 단위 해당 없음
   onNaChange,
+  // 작성 감도 행 — 없으면 미리보기(비제어)
+  row,
+  // 칸 수정 — 작성만
+  onPatch,
+  // 행 삭제 — 추가한 행만
+  onRemove,
 }: {
   rowKey: string;
   label?: string;
@@ -363,7 +403,14 @@ function SensRow({
   templateEdit: boolean;
   writeEdit: boolean;
   onNaChange?: (cd: string, na: boolean) => void;
+  row?: HtmlFormLogRow;
+  onPatch?: (patch: Partial<Omit<HtmlFormLogRow, "cells">> & { cells?: Record<string, string> }) => void;
+  onRemove?: () => void;
 }) {
+  // 제어 입력 공통 — 미리보기(row 없음)는 value 를 붙이지 않는다
+  const bind = (get: () => string, set: (v: string) => void) => (row
+    ? { value: get(), onChange: (e: { target: { value: string } }) => set(e.target.value) }
+    : {});
   return (
     <tr>
       <td>
@@ -373,6 +420,7 @@ function SensRow({
             className="html-form-sign-input"
             disabled={!writeEdit}
             readOnly={!writeEdit}
+            {...bind(() => row?.productNm ?? "", (v) => onPatch?.({ productNm: v }))}
           />
         )}
       </td>
@@ -382,6 +430,7 @@ function SensRow({
           className="html-form-sign-input"
           disabled={!writeEdit}
           readOnly={!writeEdit}
+          {...bind(() => row?.checkTime ?? "", (v) => onPatch?.({ checkTime: v }))}
         />
       </td>
       {hdrs.map((col) => (
@@ -413,6 +462,10 @@ function SensRow({
                   type="radio"
                   name={`mtl-ox-${rowKey}-${col.cd}`}
                   disabled={!writeEdit}
+                  {...(row
+                    ? { checked: (row.cells?.[col.cd] ?? "") === "O",
+                        onChange: () => onPatch?.({ cells: { [col.cd]: "O" } }) }
+                    : {})}
                 />
                 O
               </label>
@@ -422,6 +475,10 @@ function SensRow({
                   type="radio"
                   name={`mtl-ox-${rowKey}-${col.cd}`}
                   disabled={!writeEdit}
+                  {...(row
+                    ? { checked: (row.cells?.[col.cd] ?? "") === "X",
+                        onChange: () => onPatch?.({ cells: { [col.cd]: "X" } }) }
+                    : {})}
                 />
                 X
               </label>
@@ -435,6 +492,7 @@ function SensRow({
           type="radio"
           name={`mtl-pf-${rowKey}`}
           disabled={!writeEdit}
+          {...(row ? { checked: row.judgeCd === "P", onChange: () => onPatch?.({ judgeCd: "P", judgeModYn: "Y" }) } : {})}
         />
       </td>
       <td className="text-center ccp-pf-yn">
@@ -443,14 +501,110 @@ function SensRow({
           type="radio"
           name={`mtl-pf-${rowKey}`}
           disabled={!writeEdit}
+          {...(row ? { checked: row.judgeCd === "F", onChange: () => onPatch?.({ judgeCd: "F", judgeModYn: "Y" }) } : {})}
         />
       </td>
       <td>
-        <SignSlot
-          // 행 서명 — 이미지 또는 이름. 미리보기는 빈칸
-          name=""
-          editable={writeEdit}
+        <span className="flex items-center justify-center gap-1">
+          <SignSlot
+            // 행 서명 — 이미지 또는 이름. 미리보기는 빈칸
+            name={row?.checkerNm ?? ""}
+            editable={writeEdit}
+            onChange={row ? (v) => onPatch?.({ checkerNm: v }) : undefined}
+          />
+          {onRemove ? (
+            <MesButton
+              // 행 추가로 만든 행만 지운다 — 영역 첫 줄은 버튼이 없다
+              size="sm"
+              variant="ghost"
+              title="행 삭제"
+              onClick={onRemove}
+            >
+              ×
+            </MesButton>
+          ) : null}
+        </span>
+      </td>
+    </tr>
+  );
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) 통과량 표 한 행 — 품명·통과량·검출량·특이사항
+ *   2) row 를 주면(= 작성) 제어 입력, 안 주면(= 기준관리) 예전처럼 빈 미리보기 칸이다
+ *   3) 기본 4행은 삭제 버튼이 없고 행 추가로 만든 행만 지운다
+ */
+function PassRow({
+  // 작성 통과량 행 — 없으면 미리보기(비제어)
+  row,
+  // 작성 편집
+  writeEdit,
+  // 칸 수정 — 작성만
+  onPatch,
+  // 행 삭제 — 추가한 행만
+  onRemove,
+}: {
+  row?: HtmlFormPassRow;
+  writeEdit: boolean;
+  onPatch?: (patch: Partial<HtmlFormPassRow>) => void;
+  onRemove?: () => void;
+}) {
+  const bind = (get: () => string, set: (v: string) => void) => (row
+    ? { value: get(), onChange: (e: { target: { value: string } }) => set(e.target.value) }
+    : {});
+  return (
+    <tr>
+      <td>
+        <input
+          // 품명 — 문자
+          className="html-form-sign-input"
+          disabled={!writeEdit}
+          readOnly={!writeEdit}
+          {...bind(() => row?.productNm ?? "", (v) => onPatch?.({ productNm: v }))}
         />
+      </td>
+      <td>
+        <input
+          // 통과량
+          className="html-form-sign-input"
+          disabled={!writeEdit}
+          readOnly={!writeEdit}
+          {...bind(() => row?.passQty ?? "", (v) => onPatch?.({ passQty: v }))}
+        />
+      </td>
+      <td>
+        <input
+          // 검출량
+          className="html-form-sign-input"
+          disabled={!writeEdit}
+          readOnly={!writeEdit}
+          {...bind(() => row?.detectQty ?? "", (v) => onPatch?.({ detectQty: v }))}
+        />
+      </td>
+      <td>
+        <span className="flex items-center gap-1">
+          <input
+            // 특이사항
+            className="html-form-sign-input"
+            disabled={!writeEdit}
+            readOnly={!writeEdit}
+            {...bind(() => row?.remark ?? "", (v) => onPatch?.({ remark: v }))}
+          />
+          {onRemove ? (
+            <MesButton
+              // 행 추가로 만든 행만 지운다 — 기본 4행은 버튼이 없다
+              size="sm"
+              variant="ghost"
+              title="행 삭제"
+              onClick={onRemove}
+            >
+              ×
+            </MesButton>
+          ) : null}
+        </span>
       </td>
     </tr>
   );

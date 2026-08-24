@@ -5,7 +5,9 @@
  * 일자: 2026-08-20
  * 코멘트:
  *   1) 기준관리 미리보기는 원본 일지 레이아웃. 한계기준·주기·방법·개선조치는 텍스트
- *   2) 미리보기는 작업 전·빈행·작업 종료·빈행 4행. 칸은 비운다. 중간 행은 작성에서 넣는다
+ *   2) mode=template 은 예전 그대로 미리보기 4행 고정(입력 불가·행추가 없음). 기준관리 동작을 바꾸지 않는다
+ *      mode=write 는 logRows 를 제어 렌더한다 — 작업 전/작업 종료를 phaseCd 로 갈라 행 추가·삭제·저장
+ *      (옛 코멘트) 미리보기는 작업 전·빈행·작업 종료·빈행 4행. 칸은 비운다. 중간 행은 작성에서 넣는다
  *   3) 판정은 적합/부적합 반 가름 라디오. 기록 행 품명은 흰색. 서명은 이미지 또는 이름
  *
  * PIPELINE[HF133] CCP-2B 가열일지 지면
@@ -18,21 +20,27 @@ import {
   HtmlFormBanner,
   HtmlFormFootTable,
   HtmlFormRowAddSlot,
+  LOG_PHASE,
   SignSlot,
+  appendLogRow,
+  logRowsOf,
+  patchLogRow,
+  removeLogRow,
   htmlFormItemNm,
   htmlFormItemOf,
   htmlFormPaperEdit,
   patchHtmlFormItem,
   patchHtmlFormItemNms,
   useJudgePfLabels,
+  type HtmlFormLogRow,
   type HtmlFormPaperProps,
+  type LogPhase,
 } from "@/components/form/htmlFormPaperShared";
 // 역할 — 항목 패치
 import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
 // 역할 — 작성 화면 중간 행 추가
 import { MesButton } from "@/components/ui/MesButton";
-// 역할 — 작성 중간 행 키
-import { useState } from "react";
+
 
 /** 시드 item_cd — tbl_check_item tml_ccp_htg_000 */
 export const HTG_ITEM = {
@@ -68,15 +76,19 @@ export function CcpHtgPaper({
   items,
   // 하단 이탈·조치
   footer,
+  // 작성 기록 행 — 없으면(= 기준관리) 예전처럼 빈 예시 행을 고정으로 그린다
+  logRows,
   onHeaderChange,
   onItemsChange,
   onFooterChange,
+  onLogRowsChange,
 }: HtmlFormPaperProps) {
   // 적합/부적합 헤더 — 공통코드 JUDGE_PF
   const { passNm, failNm } = useJudgePfLabels();
   const { templateEdit, writeEdit } = htmlFormPaperEdit(mode, locked, editable, editing);
-  // 작성만 중간 행. 미리보기는 작업 전·빈행·작업 종료·빈행 4행
-  const [midKeys, setMidKeys] = useState<string[]>([]);
+  // 작성 제어 렌더 여부 — logRows 를 받은 mode=write 에서만. 기준관리는 항상 false
+  const writeRows = writeEdit && !!logRows && !!onLogRowsChange;
+  const rows = logRows ?? [];
 
   // 항목 패치 — 한계기준·주기·방법·개선조치 itemNm
   const patchItem = (cd: string, patch: Partial<HtmlFormItem>) => {
@@ -173,36 +185,47 @@ export function CcpHtgPaper({
           </tr>
         </thead>
         <tbody>
-          <HeatLogRow
-            // 작업 전 — 칸은 비움. 아래에 빈 예시 행
-            rowKey="htg-before"
-            label="작업 전"
-            writeEdit={writeEdit}
-          />
-          <HeatLogRow
-            // 작업 전 아래 빈 행 — 미리보기 예시
-            rowKey="htg-before-empty"
-            writeEdit={writeEdit}
-          />
-          {writeEdit ? midKeys.map((key) => (
-            <HeatLogRow
-              // 작성 중간 행 — 품명 입력
-              key={key}
-              rowKey={key}
-              writeEdit={writeEdit}
-            />
-          )) : null}
-          <HeatLogRow
-            // 작업 종료 — 칸은 비움
-            rowKey="htg-after"
-            label="작업 종료"
-            writeEdit={writeEdit}
-          />
-          <HeatLogRow
-            // 작업 종료 아래 빈 행 — 미리보기 예시
-            rowKey="htg-after-empty"
-            writeEdit={writeEdit}
-          />
+          {writeRows ? (
+            // 작성 — 저장된 기록행을 영역별로 그린다. 영역 첫 줄만 라벨을 달고 나머지는 품명 입력
+            (["BEFORE", "AFTER"] as LogPhase[]).flatMap((phase) =>
+              logRowsOf(rows, phase).map((row, idx) => (
+                <HeatLogRow
+                  key={`htg-${phase}-${row.rowSeq}`}
+                  rowKey={`htg-${phase}-${row.rowSeq}`}
+                  label={idx === 0 ? (phase === "BEFORE" ? "작업 전" : "작업 종료") : undefined}
+                  writeEdit={writeEdit}
+                  row={row}
+                  // 영역 첫 줄은 라벨 행이라 지우지 않는다
+                  onRemove={idx === 0 ? undefined : () => onLogRowsChange?.(removeLogRow(rows, row.rowSeq))}
+                  onPatch={(patch) => onLogRowsChange?.(patchLogRow(rows, row.rowSeq, patch))}
+                />
+              )))
+          ) : (
+            <>
+              <HeatLogRow
+                // 작업 전 — 칸은 비움. 아래에 빈 예시 행
+                rowKey="htg-before"
+                label="작업 전"
+                writeEdit={writeEdit}
+              />
+              <HeatLogRow
+                // 작업 전 아래 빈 행 — 미리보기 예시
+                rowKey="htg-before-empty"
+                writeEdit={writeEdit}
+              />
+              <HeatLogRow
+                // 작업 종료 — 칸은 비움
+                rowKey="htg-after"
+                label="작업 종료"
+                writeEdit={writeEdit}
+              />
+              <HeatLogRow
+                // 작업 종료 아래 빈 행 — 미리보기 예시
+                rowKey="htg-after-empty"
+                writeEdit={writeEdit}
+              />
+            </>
+          )}
         </tbody>
       </table>
       <HtmlFormRowAddSlot
@@ -211,16 +234,27 @@ export function CcpHtgPaper({
         templateEdit={templateEdit}
         onItemsChange={onItemsChange}
       >
-        {writeEdit ? (
-          <MesButton
-            // 작업 전과 종료 사이에 품명 행을 끼운다
-            size="sm"
-            variant="add"
-            icon="plus"
-            onClick={() => setMidKeys((keys) => [...keys, `htg-mid-${Date.now()}`])}
-          >
-            행 추가
-          </MesButton>
+        {writeRows ? (
+          <>
+            <MesButton
+              // 작업 전 영역 끝에만 행을 붙인다 — 작업 종료 행 수는 그대로다
+              size="sm"
+              variant="add"
+              icon="plus"
+              onClick={() => onLogRowsChange?.(appendLogRow(rows, LOG_PHASE.BEFORE))}
+            >
+              작업 전 행 추가
+            </MesButton>
+            <MesButton
+              // 작업 종료 영역 끝에만 행을 붙인다
+              size="sm"
+              variant="add"
+              icon="plus"
+              onClick={() => onLogRowsChange?.(appendLogRow(rows, LOG_PHASE.AFTER))}
+            >
+              작업 종료 행 추가
+            </MesButton>
+          </>
         ) : null}
       </HtmlFormRowAddSlot>
 
@@ -245,24 +279,38 @@ export function CcpHtgPaper({
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-20
+ * 일자: 2026-08-24
  * 코멘트:
- *   1) 기록 표 한 행. 미리보기는 작업 전·빈행·작업 종료·빈행. 칸은 비움
- *   2) 품명은 고정 라벨. 온도·시간은 숫자. 단위는 헤더
- *   3) 판정은 적합/부적합 칸 라디오. 서명은 이미지 또는 이름
+ *   1) 기록 표 한 행. row 를 주면(= 작성) 제어 입력, 안 주면(= 기준관리) 예전처럼 빈 미리보기 칸이다
+ *   2) 품명은 영역 첫 줄만 고정 라벨(작업 전/작업 종료), 나머지는 입력이다
+ *   3) 온도·시간은 숫자. 단위는 열 제목. 판정은 적합/부적합 칸 라디오
  */
 function HeatLogRow({
   // 라디오 name — 행마다 다르게
   rowKey,
-  // 품명 고정값 — 작업 전 / 작업 종료. 없으면 빈칸
+  // 품명 고정값 — 작업 전 / 작업 종료. 없으면 품명 입력
   label,
   // 작성 편집
   writeEdit,
+  // 작성 기록 행 — 없으면 미리보기(비제어)
+  row,
+  // 칸 수정 — 작성만
+  onPatch,
+  // 행 삭제 — 추가한 행만. 영역 첫 줄은 넘기지 않는다
+  onRemove,
 }: {
   rowKey: string;
   label?: string;
   writeEdit: boolean;
+  row?: HtmlFormLogRow;
+  onPatch?: (patch: Partial<Omit<HtmlFormLogRow, "cells">> & { cells?: Record<string, string> }) => void;
+  onRemove?: () => void;
 }) {
+  // 제어 입력 공통 — 미리보기(row 없음)는 value 를 붙이지 않는다
+  const bind = (get: () => string, set: (v: string) => void) => (row
+    ? { value: get(), onChange: (e: { target: { value: string } }) => set(e.target.value) }
+    : {});
+  const cell = (cd: string) => row?.cells?.[cd] ?? "";
   return (
     <tr>
       <td>
@@ -272,6 +320,7 @@ function HeatLogRow({
             className="html-form-sign-input"
             disabled={!writeEdit}
             readOnly={!writeEdit}
+            {...bind(() => row?.productNm ?? "", (v) => onPatch?.({ productNm: v }))}
           />
         )}
       </td>
@@ -281,6 +330,7 @@ function HeatLogRow({
           className="html-form-sign-input"
           disabled={!writeEdit}
           readOnly={!writeEdit}
+          {...bind(() => row?.checkTime ?? "", (v) => onPatch?.({ checkTime: v }))}
         />
       </td>
       <td>
@@ -292,6 +342,7 @@ function HeatLogRow({
           step="0.1"
           disabled={!writeEdit}
           readOnly={!writeEdit}
+          {...bind(() => cell("temp"), (v) => onPatch?.({ cells: { temp: v } }))}
         />
       </td>
       <td>
@@ -303,6 +354,7 @@ function HeatLogRow({
           min={0}
           disabled={!writeEdit}
           readOnly={!writeEdit}
+          {...bind(() => cell("time"), (v) => onPatch?.({ cells: { time: v } }))}
         />
       </td>
       <td className="text-center ccp-pf-yn">
@@ -311,6 +363,7 @@ function HeatLogRow({
           type="radio"
           name={`htg-pf-${rowKey}`}
           disabled={!writeEdit}
+          {...(row ? { checked: row.judgeCd === "P", onChange: () => onPatch?.({ judgeCd: "P" }) } : {})}
         />
       </td>
       <td className="text-center ccp-pf-yn">
@@ -319,14 +372,29 @@ function HeatLogRow({
           type="radio"
           name={`htg-pf-${rowKey}`}
           disabled={!writeEdit}
+          {...(row ? { checked: row.judgeCd === "F", onChange: () => onPatch?.({ judgeCd: "F" }) } : {})}
         />
       </td>
       <td>
-        <SignSlot
-          // 행 서명 — 이미지 또는 이름. 미리보기는 빈칸
-          name=""
-          editable={writeEdit}
-        />
+        <span className="flex items-center justify-center gap-1">
+          <SignSlot
+            // 행 서명 — 이미지 또는 이름. 미리보기는 빈칸
+            name={row?.checkerNm ?? ""}
+            editable={writeEdit}
+            onChange={row ? (v) => onPatch?.({ checkerNm: v }) : undefined}
+          />
+          {onRemove ? (
+            <MesButton
+              // 행 추가로 만든 행만 지운다 — 영역 첫 줄은 버튼이 없다
+              size="sm"
+              variant="ghost"
+              title="행 삭제"
+              onClick={onRemove}
+            >
+              ×
+            </MesButton>
+          ) : null}
+        </span>
       </td>
     </tr>
   );
