@@ -31,6 +31,8 @@ public interface HygProcessMapper {
      */
     List<HygProcessListRow> selectList(
             @Param("coCd") String coCd,
+            // tmplCd: 양식코드 — 이 화면은 html_sys_001 고정. 121에서 SP 가 양식별로 열렸다
+            @Param("tmplCd") String tmplCd,
             @Param("fromDt") String fromDt,
             @Param("toDt") String toDt,
             @Param("docNo") String docNo,
@@ -47,6 +49,8 @@ public interface HygProcessMapper {
      */
     String selectDetail(
             @Param("coCd") String coCd,
+            // tmplCd: 신규일 때 어느 양식의 항목을 깔지 정한다
+            @Param("tmplCd") String tmplCd,
             @Param("docIdx") Long docIdx
     );
 
@@ -60,6 +64,8 @@ public interface HygProcessMapper {
      */
     Long save(
             @Param("coCd") String coCd,
+            // tmplCd: 작성 양식코드 — 신규는 SP 가 사용여부 Y 를 확인한다
+            @Param("tmplCd") String tmplCd,
             @Param("docIdx") Long docIdx,
             @Param("baseDt") String baseDt,
             @Param("checkerNm") String checkerNm,
@@ -93,6 +99,8 @@ public interface HygProcessMapper {
      */
     DeleteBlocker selectDeleteBlocker(
             @Param("coCd") String coCd,
+            // tmplCd: 차단 검사 범위를 이 화면 양식으로 좁힌다
+            @Param("tmplCd") String tmplCd,
             @Param("docIdxs") List<Long> docIdxs
     );
 

@@ -49,7 +49,7 @@ public class HygProcessService {
      *   3) 공백 조건은 SP에서 전체
      */
     public List<HygProcessListRow> list(String fromDt, String toDt, String docNo, String writer) {
-        return mapper.selectList(LoginUserContext.coCd(), nvl(fromDt), nvl(toDt), nvl(docNo), nvl(writer));
+        return mapper.selectList(LoginUserContext.coCd(), TMPL_CD, nvl(fromDt), nvl(toDt), nvl(docNo), nvl(writer));
     }
 
     /**
@@ -63,7 +63,7 @@ public class HygProcessService {
     public JsonNode detail(Long docIdx) {
         try {
             ObjectNode root = (ObjectNode) objectMapper.readTree(
-                    mapper.selectDetail(LoginUserContext.coCd(), docIdx));
+                    mapper.selectDetail(LoginUserContext.coCd(), TMPL_CD, docIdx));
             if (docIdx != null && docIdx > 0) {
                 root.set("corrective", objectMapper.valueToTree(
                         correctiveSupport.load(LoginUserContext.coCd(), docIdx)));
@@ -99,6 +99,7 @@ public class HygProcessService {
             payload.put("confirmNm", note(req.getConfirmNm()));
             Long docIdx = mapper.save(
                     LoginUserContext.coCd(),
+                    TMPL_CD,
                     req.getDocIdx(),
                     req.getBaseDt().trim(),
                     nvl(req.getCheckerNm()),
@@ -174,7 +175,7 @@ public class HygProcessService {
             docIdxs.add(docIdx);
         }
         DeleteValidation.throwIfBlocked(
-                mapper.selectDeleteBlocker(LoginUserContext.coCd(), docIdxs),
+                mapper.selectDeleteBlocker(LoginUserContext.coCd(), TMPL_CD, docIdxs),
                 "문서"
         );
     }
