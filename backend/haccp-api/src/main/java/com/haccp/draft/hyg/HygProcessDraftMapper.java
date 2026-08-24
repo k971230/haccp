@@ -13,8 +13,8 @@
 package com.haccp.draft.hyg;
 
 import com.haccp.common.validation.DeleteBlocker;
-import com.haccp.draft.hyg.dto.HygProcessDraftFormRow;
-import com.haccp.draft.hyg.dto.HygProcessDraftListRow;
+import com.haccp.draft.dto.DraftFormRow;
+import com.haccp.draft.dto.DraftListRow;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -30,7 +30,7 @@ public interface HygProcessDraftMapper {
      *   2) 화면 진입 시 한 번, 신규 작성 콤보가 쓴다
      *   3) 없으면 빈 목록 — 화면이 양식관리로 안내한다
      */
-    List<HygProcessDraftFormRow> selectForms(
+    List<DraftFormRow> selectForms(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // stdTmplCd: 계열 예시코드 html_hyg_prc_000 — SP 가 이 값으로 테이블을 가른다
@@ -45,7 +45,7 @@ public interface HygProcessDraftMapper {
      *   2) 좌측 그리드가 호출한다
      *   3) tmplCd 빈값이면 공정점검 계열 전체. 결재여부는 화면이 거른다
      */
-    List<HygProcessDraftListRow> selectList(
+    List<DraftListRow> selectList(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // tmplCd: 양식코드 부분검색. 빈값이면 전체

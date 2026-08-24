@@ -20,13 +20,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
-import com.haccp.common.validation.DeleteValidation;
+import com.haccp.draft.DraftSupport;
 import com.haccp.docs.ccp.dto.DocCorrectiveDto;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftDeleteItem;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftFormRow;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftListRow;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftRow;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftSaveRequest;
+import com.haccp.draft.dto.DraftDeleteItem;
+import com.haccp.draft.dto.DraftFormRow;
+import com.haccp.draft.dto.DraftListRow;
+import com.haccp.draft.dto.DraftLogRow;
+import com.haccp.draft.dto.DraftSaveRequest;
 import com.haccp.flow.ca.DocCorrectiveSupport;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -83,7 +83,7 @@ public class CcpLogDraftService {
      *   2) 화면 진입 시 한 번 호출한다
      *   3) 없으면 빈 목록 — 화면이 양식관리 등록을 안내한다
      */
-    public List<CcpLogDraftFormRow> forms(
+    public List<DraftFormRow> forms(
             // family: 포장·가열 구분
             Family family
     ) {
@@ -98,7 +98,7 @@ public class CcpLogDraftService {
      *   2) 조회 버튼·초기 로드·저장/삭제/전송 후 호출한다
      *   3) 결재 여부는 파생값이라 화면이 거른다
      */
-    public List<CcpLogDraftListRow> list(
+    public List<DraftListRow> list(
             // family: 포장·가열 구분
             Family family,
             // tmplCd: 양식코드 부분검색
@@ -115,8 +115,8 @@ public class CcpLogDraftService {
             String writerNm
     ) {
         return mapper.selectList(
-                LoginUserContext.coCd(), family.prefix(), nvl(tmplCd), nvl(tmplNm),
-                nvl(fromDt), nvl(toDt), nvl(writerId), nvl(writerNm));
+                LoginUserContext.coCd(), family.prefix(), DraftSupport.nvl(tmplCd), DraftSupport.nvl(tmplNm),
+                DraftSupport.nvl(fromDt), DraftSupport.nvl(toDt), DraftSupport.nvl(writerId), DraftSupport.nvl(writerNm));
     }
 
     /**
@@ -135,7 +135,7 @@ public class CcpLogDraftService {
             // docIdx: tbl_document.idx. null·0 이면 신규
             Long docIdx
     ) {
-        String tmpl = requireUsrTmpl(family, tmplCd);
+        String tmpl = DraftSupport.requireUsrTmpl(tmplCd, family.prefix(), family.std());
         String coCd = LoginUserContext.coCd();
         ObjectNode root = objectMapper.createObjectNode();
         ObjectNode header = objectMapper.createObjectNode();
@@ -145,13 +145,13 @@ public class CcpLogDraftService {
                 : null;
         // 저장된 문서일 때(= docIdx 있음) 헤더·기록행을 서버 값으로 채운다
         if (saved != null) {
-            header.put("docIdx", asLong(saved.get("docIdx")));
-            header.put("docNo", asText(saved.get("docNo")));
-            header.put("status", asText(saved.get("status")));
-            header.put("baseDt", asText(saved.get("baseDt")));
-            header.put("tmplCd", asText(saved.get("tmplCd")));
-            header.put("checkerNm", asText(saved.get("mngNm")));
-            root.set("logRows", readJson(asText(saved.get("rowsJson"))));
+            header.put("docIdx", DraftSupport.asLong(saved.get("docIdx")));
+            header.put("docNo", DraftSupport.asText(saved.get("docNo")));
+            header.put("status", DraftSupport.asText(saved.get("status")));
+            header.put("baseDt", DraftSupport.asText(saved.get("baseDt")));
+            header.put("tmplCd", DraftSupport.asText(saved.get("tmplCd")));
+            header.put("checkerNm", DraftSupport.asText(saved.get("mngNm")));
+            root.set("logRows", readJson(DraftSupport.asText(saved.get("rowsJson"))));
         } else {
             header.putNull("docIdx");
             header.put("docNo", "");
@@ -166,10 +166,10 @@ public class CcpLogDraftService {
                 mapper.selectFormItems(coCd, family.key(), tmpl, saved == null ? 1 : verNoOf(saved))));
         // 지면 하단 4칸 — 저장할 컬럼이 없어 개선조치 테이블에서 읽는다
         DocCorrectiveDto ca = (docIdx != null && docIdx > 0) ? correctiveSupport.load(coCd, docIdx) : null;
-        header.put("specialNote", ca == null ? "" : nvl(ca.getDeviationDesc()));
-        header.put("improveNote", ca == null ? "" : nvl(ca.getActionDesc()));
-        header.put("actionNm", ca == null ? "" : nvl(ca.getActionUserNm()));
-        header.put("confirmNm", ca == null ? "" : nvl(ca.getConfirmUserNm()));
+        header.put("specialNote", ca == null ? "" : DraftSupport.nvl(ca.getDeviationDesc()));
+        header.put("improveNote", ca == null ? "" : DraftSupport.nvl(ca.getActionDesc()));
+        header.put("actionNm", ca == null ? "" : DraftSupport.nvl(ca.getActionUserNm()));
+        header.put("confirmNm", ca == null ? "" : DraftSupport.nvl(ca.getConfirmUserNm()));
         root.set("header", header);
         root.set("corrective", objectMapper.valueToTree(ca));
         // 이 계열은 통과량 표가 없다 — 화면이 빈 배열을 그대로 받는다
@@ -190,13 +190,13 @@ public class CcpLogDraftService {
             // family: 포장·가열 구분
             Family family,
             // req: 양식코드·일자·점검자·기록행·하단 4칸
-            CcpLogDraftSaveRequest req
+            DraftSaveRequest req
     ) {
-        if (req == null || nvl(req.getBaseDt()).length() != 8) {
+        if (req == null || DraftSupport.nvl(req.getBaseDt()).length() != 8) {
             throw new BizException("일자를 입력하세요.");
         }
-        String tmpl = requireUsrTmpl(family, req.getTmplCd());
-        List<CcpLogDraftRow> rows = req.getLogRows() == null ? List.of() : req.getLogRows();
+        String tmpl = DraftSupport.requireUsrTmpl(req.getTmplCd(), family.prefix(), family.std());
+        List<DraftLogRow> rows = req.getLogRows() == null ? List.of() : req.getLogRows();
         if (rows.isEmpty()) {
             throw new BizException("점검 행이 없습니다.");
         }
@@ -207,7 +207,7 @@ public class CcpLogDraftService {
                     req.getDocIdx(),
                     req.getBaseDt().trim(),
                     tmpl,
-                    nvl(req.getCheckerNm()),
+                    DraftSupport.nvl(req.getCheckerNm()),
                     objectMapper.writeValueAsString(toGenericRows(rows)),
                     LoginUserContext.userId()
             );
@@ -231,31 +231,31 @@ public class CcpLogDraftService {
      */
     private List<Map<String, Object>> toGenericRows(
             // rows: 화면 기록행 — 작업 전/종료가 phaseCd 로 섞여 있다
-            List<CcpLogDraftRow> rows
+            List<DraftLogRow> rows
     ) {
         List<Map<String, Object>> out = new ArrayList<>();
         int seq = 0;
-        for (CcpLogDraftRow row : rows) {
+        for (DraftLogRow row : rows) {
             seq += 1;
             Map<String, Object> one = new LinkedHashMap<>();
             one.put("rowSeq", row.getRowSeq() == null || row.getRowSeq() <= 0 ? seq : row.getRowSeq());
-            one.put("phaseCd", nvl(row.getPhaseCd()));
-            one.put("checkTime", nvl(row.getCheckTime()));
-            one.put("productNm", nvl(row.getProductNm()));
+            one.put("phaseCd", DraftSupport.nvl(row.getPhaseCd()));
+            one.put("checkTime", DraftSupport.nvl(row.getCheckTime()));
+            one.put("productNm", DraftSupport.nvl(row.getProductNm()));
             one.put("equipNm", "");
-            one.put("judgeCd", nvl(row.getJudgeCd()));
-            one.put("judgeModYn", nvl(row.getJudgeModYn()).isEmpty() ? "N" : row.getJudgeModYn());
-            one.put("checkerId", nvl(row.getCheckerId()));
-            one.put("checkerNm", nvl(row.getCheckerNm()));
-            one.put("signYn", nvl(row.getSignYn()).isEmpty() ? "N" : row.getSignYn());
+            one.put("judgeCd", DraftSupport.nvl(row.getJudgeCd()));
+            one.put("judgeModYn", DraftSupport.nvl(row.getJudgeModYn()).isEmpty() ? "N" : row.getJudgeModYn());
+            one.put("checkerId", DraftSupport.nvl(row.getCheckerId()));
+            one.put("checkerNm", DraftSupport.nvl(row.getCheckerNm()));
+            one.put("signYn", DraftSupport.nvl(row.getSignYn()).isEmpty() ? "N" : row.getSignYn());
             List<Map<String, Object>> cells = new ArrayList<>();
             if (row.getCells() != null) {
                 for (Map.Entry<String, String> cell : row.getCells().entrySet()) {
-                    String val = nvl(cell.getValue());
+                    String val = DraftSupport.nvl(cell.getValue());
                     Map<String, Object> one2 = new LinkedHashMap<>();
                     one2.put("itemCd", cell.getKey());
                     // 숫자로 읽히면 numVal, 아니면 txtVal — 지면 온도·분·초는 숫자다
-                    if (isNumeric(val)) {
+                    if (DraftSupport.isNumeric(val)) {
                         one2.put("numVal", val);
                         one2.put("txtVal", "");
                     } else {
@@ -281,17 +281,17 @@ public class CcpLogDraftService {
      */
     private void saveFooter(
             String coCd, Long docIdx, String tmplCd,
-            CcpLogDraftSaveRequest req, List<CcpLogDraftRow> rows
+            DraftSaveRequest req, List<DraftLogRow> rows
     ) {
         DocCorrectiveDto ca = req.getCorrective();
         if (ca == null) {
             ca = new DocCorrectiveDto();
-            ca.setDeviationDesc(note(req.getSpecialNote()));
-            ca.setActionDesc(note(req.getImproveNote()));
-            ca.setActionUserNm(nvl(req.getActionNm()));
-            ca.setConfirmUserNm(nvl(req.getConfirmNm()));
+            ca.setDeviationDesc(DraftSupport.note(req.getSpecialNote()));
+            ca.setActionDesc(DraftSupport.note(req.getImproveNote()));
+            ca.setActionUserNm(DraftSupport.nvl(req.getActionNm()));
+            ca.setConfirmUserNm(DraftSupport.nvl(req.getConfirmNm()));
         }
-        boolean hasNg = rows.stream().anyMatch(r -> "F".equalsIgnoreCase(nvl(r.getJudgeCd())));
+        boolean hasNg = rows.stream().anyMatch(r -> "F".equalsIgnoreCase(DraftSupport.nvl(r.getJudgeCd())));
         correctiveSupport.saveAutoIfNg(
                 coCd, docIdx, tmplCd, req.getBaseDt().trim(), ca, hasNg, LoginUserContext.userId());
     }
@@ -306,9 +306,9 @@ public class CcpLogDraftService {
      */
     public void validateDelete(
             // keys: [{ docIdx }] 객체 배열
-            List<CcpLogDraftDeleteItem> keys
+            List<DraftDeleteItem> keys
     ) {
-        assertDeletable(keys);
+        DraftSupport.assertDeletable(keys, (ids) -> mapper.selectDeleteBlocker(LoginUserContext.coCd(), ids));
     }
 
     /**
@@ -322,44 +322,15 @@ public class CcpLogDraftService {
     @Transactional(timeout = 60)
     public int delete(
             // keys: [{ docIdx }] 객체 배열
-            List<CcpLogDraftDeleteItem> keys
+            List<DraftDeleteItem> keys
     ) {
-        assertDeletable(keys);
-        for (CcpLogDraftDeleteItem key : keys) {
+        DraftSupport.assertDeletable(keys, (ids) -> mapper.selectDeleteBlocker(LoginUserContext.coCd(), ids));
+        for (DraftDeleteItem key : keys) {
             mapper.delete(LoginUserContext.coCd(), key.getDocIdx(), LoginUserContext.userId());
         }
         return keys.size();
     }
 
-    /** 삭제 키 정규화·전송 이후 차단 Double Check. */
-    private void assertDeletable(List<CcpLogDraftDeleteItem> keys) {
-        DeleteValidation.requireItems(keys, "삭제할 문서를 선택하세요.");
-        List<Long> docIdxs = new ArrayList<>();
-        for (CcpLogDraftDeleteItem key : keys) {
-            Long docIdx = DeleteValidation.requirePositive(key.getDocIdx(), "삭제할 문서번호가 올바르지 않습니다.");
-            key.setDocIdx(docIdx);
-            docIdxs.add(docIdx);
-        }
-        DeleteValidation.throwIfBlocked(
-                mapper.selectDeleteBlocker(LoginUserContext.coCd(), docIdxs), "문서");
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-24
-     * 코멘트:
-     *   1) 이 화면이 다루는 자사 양식코드인지 확인한다
-     *   2) 상세·저장 진입에서 호출한다
-     *   3) 빈값이거나 접두가 다르거나 예시(000)면 BizException
-     */
-    private static String requireUsrTmpl(Family family, String tmplCd) {
-        String tmpl = nvl(tmplCd);
-        // 예시 000 이거나 접두가 다를 때(= 이 화면 범위 밖) 거부한다
-        if (tmpl.isEmpty() || !tmpl.startsWith(family.prefix()) || tmpl.equals(family.std())) {
-            throw new BizException("작성할 양식을 선택하세요.");
-        }
-        return tmpl;
-    }
 
     /** rows_json 문자열을 JSON 배열로 — SP 가 jsonb 를 문자열로 준다 */
     private JsonNode readJson(String raw) {
@@ -380,37 +351,5 @@ public class CcpLogDraftService {
         } catch (NumberFormatException e) {
             return 1;
         }
-    }
-
-    private static boolean isNumeric(String value) {
-        if (value == null || value.isBlank()) return false;
-        try {
-            Double.parseDouble(value.trim());
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    private static Long asLong(Object v) {
-        if (v == null) return null;
-        try {
-            return Long.valueOf(String.valueOf(v));
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private static String asText(Object v) {
-        return v == null ? "" : String.valueOf(v);
-    }
-
-    private static String nvl(String value) {
-        return value == null ? "" : value.trim();
-    }
-
-    /** 개행 보존 — 끝 공백 trim 금지 */
-    private static String note(String value) {
-        return value == null ? "" : value;
     }
 }

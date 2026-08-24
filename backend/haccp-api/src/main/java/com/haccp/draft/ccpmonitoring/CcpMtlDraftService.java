@@ -21,14 +21,14 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
-import com.haccp.common.validation.DeleteValidation;
+import com.haccp.draft.DraftSupport;
 import com.haccp.docs.ccp.dto.DocCorrectiveDto;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftDeleteItem;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftFormRow;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftListRow;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftPassRow;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftRow;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftSaveRequest;
+import com.haccp.draft.dto.DraftDeleteItem;
+import com.haccp.draft.dto.DraftFormRow;
+import com.haccp.draft.dto.DraftListRow;
+import com.haccp.draft.dto.DraftPassRow;
+import com.haccp.draft.dto.DraftLogRow;
+import com.haccp.draft.dto.DraftSaveRequest;
 import com.haccp.flow.ca.DocCorrectiveSupport;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -67,7 +67,7 @@ public class CcpMtlDraftService {
      *   2) 화면 진입 시 한 번 호출한다
      *   3) 없으면 빈 목록 — 화면이 양식관리 등록을 안내한다
      */
-    public List<CcpLogDraftFormRow> forms() {
+    public List<DraftFormRow> forms() {
         return mapper.selectForms(LoginUserContext.coCd(), STD_TMPL_CD);
     }
 
@@ -79,12 +79,12 @@ public class CcpMtlDraftService {
      *   2) 조회 버튼·초기 로드·저장/삭제/전송 후 호출한다
      *   3) 결재 여부는 파생값이라 화면이 거른다
      */
-    public List<CcpLogDraftListRow> list(
+    public List<DraftListRow> list(
             String tmplCd, String tmplNm, String fromDt, String toDt, String writerId, String writerNm
     ) {
         return mapper.selectList(
-                LoginUserContext.coCd(), nvl(tmplCd), nvl(tmplNm),
-                nvl(fromDt), nvl(toDt), nvl(writerId), nvl(writerNm));
+                LoginUserContext.coCd(), DraftSupport.nvl(tmplCd), DraftSupport.nvl(tmplNm),
+                DraftSupport.nvl(fromDt), DraftSupport.nvl(toDt), DraftSupport.nvl(writerId), DraftSupport.nvl(writerNm));
     }
 
     /**
@@ -101,7 +101,7 @@ public class CcpMtlDraftService {
             // docIdx: tbl_document.idx. null·0 이면 신규
             Long docIdx
     ) {
-        String tmpl = requireUsrTmpl(tmplCd);
+        String tmpl = DraftSupport.requireUsrTmpl(tmplCd, USR_TMPL_PREFIX, STD_TMPL_CD);
         String coCd = LoginUserContext.coCd();
         ObjectNode root = objectMapper.createObjectNode();
         ObjectNode header = objectMapper.createObjectNode();
@@ -113,23 +113,23 @@ public class CcpMtlDraftService {
                 : null;
         // 저장된 문서일 때(= docIdx 있음) 헤더·감도행·통과량행을 서버 값으로 채운다
         if (head != null) {
-            Long hdrIdx = asLong(head.get("hdrIdx"));
-            header.put("docIdx", asLong(head.get("docIdx")));
-            header.put("docNo", asText(head.get("docNo")));
-            header.put("status", asText(head.get("status")));
-            header.put("baseDt", asText(head.get("baseDt")));
+            Long hdrIdx = DraftSupport.asLong(head.get("hdrIdx"));
+            header.put("docIdx", DraftSupport.asLong(head.get("docIdx")));
+            header.put("docNo", DraftSupport.asText(head.get("docNo")));
+            header.put("status", DraftSupport.asText(head.get("status")));
+            header.put("baseDt", DraftSupport.asText(head.get("baseDt")));
             header.put("tmplCd", tmpl);
-            header.put("checkerNm", asText(head.get("mngNm")));
+            header.put("checkerNm", DraftSupport.asText(head.get("mngNm")));
             for (Map<String, Object> row : mapper.selectSensRows(coCd, hdrIdx)) {
                 logRows.add(toLogRowNode(row));
             }
             for (Map<String, Object> row : mapper.selectPassRows(coCd, hdrIdx)) {
                 ObjectNode one = objectMapper.createObjectNode();
-                one.put("rowSeq", asInt(row.get("rowSeq")));
-                one.put("productNm", asText(row.get("productNm")));
-                one.put("passQty", asText(row.get("passQty")));
-                one.put("detectQty", asText(row.get("detectQty")));
-                one.put("remark", asText(row.get("remark")));
+                one.put("rowSeq", DraftSupport.asInt(row.get("rowSeq")));
+                one.put("productNm", DraftSupport.asText(row.get("productNm")));
+                one.put("passQty", DraftSupport.asText(row.get("passQty")));
+                one.put("detectQty", DraftSupport.asText(row.get("detectQty")));
+                one.put("remark", DraftSupport.asText(row.get("remark")));
                 passRows.add(one);
             }
         } else {
@@ -144,10 +144,10 @@ public class CcpMtlDraftService {
         root.set("items", objectMapper.valueToTree(mapper.selectFormItems(coCd, tmpl, 1)));
         // 지면 하단 4칸 — 저장할 컬럼이 없어 개선조치 테이블에서 읽는다
         DocCorrectiveDto ca = (docIdx != null && docIdx > 0) ? correctiveSupport.load(coCd, docIdx) : null;
-        header.put("specialNote", ca == null ? "" : nvl(ca.getDeviationDesc()));
-        header.put("improveNote", ca == null ? "" : nvl(ca.getActionDesc()));
-        header.put("actionNm", ca == null ? "" : nvl(ca.getActionUserNm()));
-        header.put("confirmNm", ca == null ? "" : nvl(ca.getConfirmUserNm()));
+        header.put("specialNote", ca == null ? "" : DraftSupport.nvl(ca.getDeviationDesc()));
+        header.put("improveNote", ca == null ? "" : DraftSupport.nvl(ca.getActionDesc()));
+        header.put("actionNm", ca == null ? "" : DraftSupport.nvl(ca.getActionUserNm()));
+        header.put("confirmNm", ca == null ? "" : DraftSupport.nvl(ca.getConfirmUserNm()));
         root.set("header", header);
         root.set("logRows", logRows);
         root.set("passRows", passRows);
@@ -165,18 +165,18 @@ public class CcpMtlDraftService {
      */
     private ObjectNode toLogRowNode(Map<String, Object> row) {
         ObjectNode one = objectMapper.createObjectNode();
-        one.put("rowSeq", asInt(row.get("rowSeq")));
-        one.put("phaseCd", asText(row.get("phaseCd")));
-        one.put("productNm", asText(row.get("productNm")));
-        one.put("checkTime", asText(row.get("checkTime")));
-        one.put("judgeCd", asText(row.get("judgeCd")));
-        one.put("judgeModYn", asText(row.get("judgeModYn")));
-        one.put("checkerId", asText(row.get("checkerId")));
-        one.put("checkerNm", asText(row.get("checkerNm")));
+        one.put("rowSeq", DraftSupport.asInt(row.get("rowSeq")));
+        one.put("phaseCd", DraftSupport.asText(row.get("phaseCd")));
+        one.put("productNm", DraftSupport.asText(row.get("productNm")));
+        one.put("checkTime", DraftSupport.asText(row.get("checkTime")));
+        one.put("judgeCd", DraftSupport.asText(row.get("judgeCd")));
+        one.put("judgeModYn", DraftSupport.asText(row.get("judgeModYn")));
+        one.put("checkerId", DraftSupport.asText(row.get("checkerId")));
+        one.put("checkerNm", DraftSupport.asText(row.get("checkerNm")));
         one.put("signYn", "N");
         ObjectNode cells = objectMapper.createObjectNode();
         for (String[] pair : SENS_CELLS) {
-            cells.put(pair[0], asText(row.get(pair[1])));
+            cells.put(pair[0], DraftSupport.asText(row.get(pair[1])));
         }
         one.set("cells", cells);
         return one;
@@ -193,13 +193,13 @@ public class CcpMtlDraftService {
     @Transactional(timeout = 60)
     public Long save(
             // req: 양식코드·일자·점검자·감도행·통과량행·하단 4칸
-            CcpLogDraftSaveRequest req
+            DraftSaveRequest req
     ) {
-        if (req == null || nvl(req.getBaseDt()).length() != 8) {
+        if (req == null || DraftSupport.nvl(req.getBaseDt()).length() != 8) {
             throw new BizException("일자를 입력하세요.");
         }
-        String tmpl = requireUsrTmpl(req.getTmplCd());
-        List<CcpLogDraftRow> rows = req.getLogRows() == null ? List.of() : req.getLogRows();
+        String tmpl = DraftSupport.requireUsrTmpl(req.getTmplCd(), USR_TMPL_PREFIX, STD_TMPL_CD);
+        List<DraftLogRow> rows = req.getLogRows() == null ? List.of() : req.getLogRows();
         if (rows.isEmpty()) {
             throw new BizException("감도 점검 행이 없습니다.");
         }
@@ -211,7 +211,7 @@ public class CcpMtlDraftService {
                     req.getBaseDt().trim(),
                     // ccp_cd 는 NOT NULL — 자사 양식은 양식코드를 그대로 넣는다
                     tmpl,
-                    nvl(req.getCheckerNm()),
+                    DraftSupport.nvl(req.getCheckerNm()),
                     objectMapper.writeValueAsString(toSensRows(rows)),
                     objectMapper.writeValueAsString(toPassRows(req.getPassRows())),
                     LoginUserContext.userId(),
@@ -223,12 +223,12 @@ public class CcpMtlDraftService {
             DocCorrectiveDto ca = req.getCorrective();
             if (ca == null) {
                 ca = new DocCorrectiveDto();
-                ca.setDeviationDesc(note(req.getSpecialNote()));
-                ca.setActionDesc(note(req.getImproveNote()));
-                ca.setActionUserNm(nvl(req.getActionNm()));
-                ca.setConfirmUserNm(nvl(req.getConfirmNm()));
+                ca.setDeviationDesc(DraftSupport.note(req.getSpecialNote()));
+                ca.setActionDesc(DraftSupport.note(req.getImproveNote()));
+                ca.setActionUserNm(DraftSupport.nvl(req.getActionNm()));
+                ca.setConfirmUserNm(DraftSupport.nvl(req.getConfirmNm()));
             }
-            boolean hasNg = rows.stream().anyMatch(r -> "F".equalsIgnoreCase(nvl(r.getJudgeCd())));
+            boolean hasNg = rows.stream().anyMatch(r -> "F".equalsIgnoreCase(DraftSupport.nvl(r.getJudgeCd())));
             correctiveSupport.saveAutoIfNg(
                     coCd, docIdx, tmpl, req.getBaseDt().trim(), ca, hasNg, LoginUserContext.userId());
             return docIdx;
@@ -245,24 +245,24 @@ public class CcpMtlDraftService {
      *   2) 저장이 호출한다
      *   3) rowSeq 는 1부터 다시 매긴다. SP 가 0 이하를 거부한다
      */
-    private List<Map<String, Object>> toSensRows(List<CcpLogDraftRow> rows) {
+    private List<Map<String, Object>> toSensRows(List<DraftLogRow> rows) {
         List<Map<String, Object>> out = new ArrayList<>();
         int seq = 0;
-        for (CcpLogDraftRow row : rows) {
+        for (DraftLogRow row : rows) {
             seq += 1;
             Map<String, Object> one = new LinkedHashMap<>();
             one.put("rowSeq", seq);
             // 작업 전/작업 후 — 안 넘기면 SP 가 DURING 으로 넣는다
-            one.put("phaseCd", nvl(row.getPhaseCd()));
-            one.put("productNm", nvl(row.getProductNm()));
-            one.put("checkTime", nvl(row.getCheckTime()));
-            one.put("judgeCd", nvl(row.getJudgeCd()));
-            one.put("judgeModYn", nvl(row.getJudgeModYn()).isEmpty() ? "N" : row.getJudgeModYn());
-            one.put("checkerId", nvl(row.getCheckerId()));
-            one.put("checkerNm", nvl(row.getCheckerNm()));
+            one.put("phaseCd", DraftSupport.nvl(row.getPhaseCd()));
+            one.put("productNm", DraftSupport.nvl(row.getProductNm()));
+            one.put("checkTime", DraftSupport.nvl(row.getCheckTime()));
+            one.put("judgeCd", DraftSupport.nvl(row.getJudgeCd()));
+            one.put("judgeModYn", DraftSupport.nvl(row.getJudgeModYn()).isEmpty() ? "N" : row.getJudgeModYn());
+            one.put("checkerId", DraftSupport.nvl(row.getCheckerId()));
+            one.put("checkerNm", DraftSupport.nvl(row.getCheckerNm()));
             Map<String, String> cells = row.getCells() == null ? Map.of() : row.getCells();
             for (String[] pair : SENS_CELLS) {
-                one.put(pair[1], nvl(cells.get(pair[0])));
+                one.put(pair[1], DraftSupport.nvl(cells.get(pair[0])));
             }
             out.add(one);
         }
@@ -277,18 +277,18 @@ public class CcpMtlDraftService {
      *   2) 저장이 호출한다
      *   3) 빈 목록이면 빈 배열 — SP 가 COALESCE 로 받는다
      */
-    private List<Map<String, Object>> toPassRows(List<CcpLogDraftPassRow> rows) {
+    private List<Map<String, Object>> toPassRows(List<DraftPassRow> rows) {
         List<Map<String, Object>> out = new ArrayList<>();
         if (rows == null) return out;
         int seq = 0;
-        for (CcpLogDraftPassRow row : rows) {
+        for (DraftPassRow row : rows) {
             seq += 1;
             Map<String, Object> one = new LinkedHashMap<>();
             one.put("rowSeq", seq);
-            one.put("productNm", nvl(row.getProductNm()));
-            one.put("passQty", nvl(row.getPassQty()));
-            one.put("detectQty", nvl(row.getDetectQty()));
-            one.put("remark", nvl(row.getRemark()));
+            one.put("productNm", DraftSupport.nvl(row.getProductNm()));
+            one.put("passQty", DraftSupport.nvl(row.getPassQty()));
+            one.put("detectQty", DraftSupport.nvl(row.getDetectQty()));
+            one.put("remark", DraftSupport.nvl(row.getRemark()));
             out.add(one);
         }
         return out;
@@ -302,8 +302,8 @@ public class CcpMtlDraftService {
      *   2) 확인창 전에 호출한다
      *   3) 전송·결재완료 문서는 차단
      */
-    public void validateDelete(List<CcpLogDraftDeleteItem> keys) {
-        assertDeletable(keys);
+    public void validateDelete(List<DraftDeleteItem> keys) {
+        DraftSupport.assertDeletable(keys, (ids) -> mapper.selectDeleteBlocker(LoginUserContext.coCd(), ids));
     }
 
     /**
@@ -317,76 +317,16 @@ public class CcpMtlDraftService {
     @Transactional(timeout = 60)
     public int delete(
             // keys: [{ docIdx }] 객체 배열
-            List<CcpLogDraftDeleteItem> keys,
+            List<DraftDeleteItem> keys,
             // tmplCd: 삭제 대상 양식코드 — SP 가 문서를 이 코드로 찾는다
             String tmplCd
     ) {
-        assertDeletable(keys);
-        String tmpl = requireUsrTmpl(tmplCd);
-        for (CcpLogDraftDeleteItem key : keys) {
+        DraftSupport.assertDeletable(keys, (ids) -> mapper.selectDeleteBlocker(LoginUserContext.coCd(), ids));
+        String tmpl = DraftSupport.requireUsrTmpl(tmplCd, USR_TMPL_PREFIX, STD_TMPL_CD);
+        for (DraftDeleteItem key : keys) {
             mapper.delete(LoginUserContext.coCd(), key.getDocIdx(), LoginUserContext.userId(), tmpl);
         }
         return keys.size();
     }
 
-    /** 삭제 키 정규화·전송 이후 차단 Double Check. */
-    private void assertDeletable(List<CcpLogDraftDeleteItem> keys) {
-        DeleteValidation.requireItems(keys, "삭제할 문서를 선택하세요.");
-        List<Long> docIdxs = new ArrayList<>();
-        for (CcpLogDraftDeleteItem key : keys) {
-            Long docIdx = DeleteValidation.requirePositive(key.getDocIdx(), "삭제할 문서번호가 올바르지 않습니다.");
-            key.setDocIdx(docIdx);
-            docIdxs.add(docIdx);
-        }
-        DeleteValidation.throwIfBlocked(
-                mapper.selectDeleteBlocker(LoginUserContext.coCd(), docIdxs), "문서");
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-24
-     * 코멘트:
-     *   1) 이 화면이 다루는 자사 양식코드인지 확인한다
-     *   2) 상세·저장·삭제 진입에서 호출한다
-     *   3) 빈값이거나 접두가 다르거나 예시(000)면 BizException
-     */
-    private static String requireUsrTmpl(String tmplCd) {
-        String tmpl = nvl(tmplCd);
-        // 예시 000 이거나 접두가 다를 때(= 이 화면 범위 밖) 거부한다
-        if (tmpl.isEmpty() || !tmpl.startsWith(USR_TMPL_PREFIX) || tmpl.equals(STD_TMPL_CD)) {
-            throw new BizException("작성할 양식을 선택하세요.");
-        }
-        return tmpl;
-    }
-
-    private static Long asLong(Object v) {
-        if (v == null) return null;
-        try {
-            return Long.valueOf(String.valueOf(v));
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private static int asInt(Object v) {
-        if (v == null) return 0;
-        try {
-            return Integer.parseInt(String.valueOf(v));
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
-
-    private static String asText(Object v) {
-        return v == null ? "" : String.valueOf(v);
-    }
-
-    private static String nvl(String value) {
-        return value == null ? "" : value.trim();
-    }
-
-    /** 개행 보존 — 끝 공백 trim 금지 */
-    private static String note(String value) {
-        return value == null ? "" : value;
-    }
 }

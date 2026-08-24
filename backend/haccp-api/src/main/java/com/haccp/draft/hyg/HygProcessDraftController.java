@@ -14,10 +14,10 @@ package com.haccp.draft.hyg;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.haccp.common.response.CommonResponse;
-import com.haccp.draft.hyg.dto.HygProcessDraftDeleteItem;
-import com.haccp.draft.hyg.dto.HygProcessDraftFormRow;
-import com.haccp.draft.hyg.dto.HygProcessDraftListRow;
-import com.haccp.draft.hyg.dto.HygProcessDraftSaveRequest;
+import com.haccp.draft.dto.DraftDeleteItem;
+import com.haccp.draft.dto.DraftFormRow;
+import com.haccp.draft.dto.DraftListRow;
+import com.haccp.draft.dto.DraftSaveRequest;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +44,7 @@ public class HygProcessDraftController {
      *   3) 성공 시 양식 배열. 없으면 빈 배열
      */
     @GetMapping("/forms")
-    public CommonResponse<List<HygProcessDraftFormRow>> forms() {
+    public CommonResponse<List<DraftFormRow>> forms() {
         return CommonResponse.ok(service.forms());
     }
 
@@ -57,7 +57,7 @@ public class HygProcessDraftController {
      *   3) 성공 시 목록 배열
      */
     @GetMapping("/list")
-    public CommonResponse<List<HygProcessDraftListRow>> list(
+    public CommonResponse<List<DraftListRow>> list(
             // tmplCd: 양식코드 부분검색. 없으면 자사 양식 전체
             @RequestParam(required = false) String tmplCd,
             // tmplNm: 양식명 부분검색
@@ -103,7 +103,7 @@ public class HygProcessDraftController {
     @PutMapping("/save")
     public CommonResponse<Map<String, Long>> save(
             // req: 양식코드·일자·점검자·항목·하단 4칸
-            @RequestBody HygProcessDraftSaveRequest req
+            @RequestBody DraftSaveRequest req
     ) {
         return CommonResponse.ok(Map.of("docIdx", service.save(req)));
     }
@@ -119,7 +119,7 @@ public class HygProcessDraftController {
     @PostMapping("/validate-delete")
     public CommonResponse<Void> validateDelete(
             // keys: 복합키 객체 배열. UI 단건이어도 1건 배열
-            @RequestBody List<HygProcessDraftDeleteItem> keys
+            @RequestBody List<DraftDeleteItem> keys
     ) {
         service.validateDelete(keys);
         return CommonResponse.ok(null);
@@ -136,7 +136,7 @@ public class HygProcessDraftController {
     @PostMapping("/delete")
     public CommonResponse<Void> delete(
             // keys: 복합키 객체 배열
-            @RequestBody List<HygProcessDraftDeleteItem> keys
+            @RequestBody List<DraftDeleteItem> keys
     ) {
         service.delete(keys);
         return CommonResponse.ok(null);

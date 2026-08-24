@@ -1063,3 +1063,28 @@ export function SignSlot({
     </div>
   );
 }
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) 지면 입력칸을 제어 입력으로 만드는 props 를 돌려준다
+ *   2) 작성(mode="write") 지면의 행 컴포넌트에서 한 번 만들어 칸마다 편다
+ *   3) row 가 없을 때(= 기존 template 미리보기)는 빈 객체다 — value 를 붙이지 않아 비제어 상태를 그대로 둔다
+ *
+ * 세 지면(포장·가열·금속검출)이 같은 코드를 갖고 있어 한 곳으로 모은다.
+ */
+export function inputBinder(
+  // present: 이 행이 실제 데이터 행인지 — 미리보기 행이면 null/undefined
+  present: unknown,
+) {
+  return (
+    // get: 현재 값을 읽는다
+    get: () => string,
+    // set: 바뀐 값을 행에 반영한다
+    set: (v: string) => void,
+  ) =>
+    present
+      ? { value: get(), onChange: (e: { target: { value: string } }) => set(e.target.value) }
+      : {};
+}

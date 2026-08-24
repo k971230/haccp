@@ -13,8 +13,8 @@
 package com.haccp.draft.ccpmonitoring;
 
 import com.haccp.common.validation.DeleteBlocker;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftFormRow;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftListRow;
+import com.haccp.draft.dto.DraftFormRow;
+import com.haccp.draft.dto.DraftListRow;
 import java.util.List;
 import java.util.Map;
 import org.apache.ibatis.annotations.Mapper;
@@ -31,7 +31,7 @@ public interface CcpLogDraftMapper {
      *   2) 화면 진입 시 한 번, 양식 선택 팝업이 쓴다
      *   3) family 로 포장(pkg)·가열(htg) SP 를 가른다
      */
-    List<CcpLogDraftFormRow> selectForms(
+    List<DraftFormRow> selectForms(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // family: pkg | htg — XML choose 가 계열 SP 를 고른다
@@ -67,7 +67,7 @@ public interface CcpLogDraftMapper {
      *   2) 좌측 그리드가 호출한다
      *   3) 결재 여부는 DOC_STATUS 파생이라 화면이 거른다
      */
-    List<CcpLogDraftListRow> selectList(
+    List<DraftListRow> selectList(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // tmplPfx: 양식군 접두 tml_ccp_pkg_ · tml_ccp_htg_

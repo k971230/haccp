@@ -16,10 +16,10 @@ package com.haccp.draft.ccpmonitoring;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.haccp.common.response.CommonResponse;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftDeleteItem;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftFormRow;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftListRow;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftSaveRequest;
+import com.haccp.draft.dto.DraftDeleteItem;
+import com.haccp.draft.dto.DraftFormRow;
+import com.haccp.draft.dto.DraftListRow;
+import com.haccp.draft.dto.DraftSaveRequest;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -37,53 +37,103 @@ import org.springframework.web.bind.annotation.RestController;
 public class CcpMtlDraftController {
     private final CcpMtlDraftService service;
 
-    /** 작성 가능 양식 — 양식관리 사용여부 예 */
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-24
+     * 코멘트:
+     *   1) 작성에 쓸 수 있는 자사 양식(사용여부 예)만 조회한다
+     *   2) 화면 진입 시 한 번 호출한다
+     *   3) 성공 시 양식 배열. 없으면 빈 배열
+     */
     @GetMapping("/forms")
-    public CommonResponse<List<CcpLogDraftFormRow>> forms() {
+    public CommonResponse<List<DraftFormRow>> forms() {
         return CommonResponse.ok(service.forms());
     }
 
-    /** 좌측 작성 목록 — 일자 구간·양식코드·양식명·작성자ID·작성자명 */
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-24
+     * 코멘트:
+     *   1) 일자 구간·양식코드·양식명·작성자ID·작성자명으로 작성 목록을 조회한다
+     *   2) 조회 버튼이 호출한다
+     *   3) 성공 시 목록 배열
+     */
     @GetMapping("/list")
-    public CommonResponse<List<CcpLogDraftListRow>> list(
+    public CommonResponse<List<DraftListRow>> list(
+            // tmplCd: 양식코드 부분검색. 없으면 이 화면 자사 양식 전체
             @RequestParam(required = false) String tmplCd,
+            // tmplNm: 양식명 부분검색
             @RequestParam(required = false) String tmplNm,
+            // fromDt: 일자 시작 YYYYMMDD
             @RequestParam(required = false) String fromDt,
+            // toDt: 일자 종료 YYYYMMDD
             @RequestParam(required = false) String toDt,
+            // writerId: 작성자 ID 부분검색
             @RequestParam(required = false) String writerId,
+            // writerNm: 작성자명 부분검색
             @RequestParam(required = false) String writerNm
     ) {
         return CommonResponse.ok(service.list(tmplCd, tmplNm, fromDt, toDt, writerId, writerNm));
     }
 
-    /** 상세 또는 신규 기본행 — header·items·logRows(감도)·passRows(통과량)·corrective */
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-24
+     * 코멘트:
+     *   1) 문서 1건의 지면 값을 내린다. docIdx 가 없으면 신규 기본행을 만든다
+     *   2) 좌측 목록에서 행을 고르거나 행을 추가·저장한 뒤 호출한다
+     *   3) 성공 시 header·items·logRows(감도)·passRows(통과량)·corrective
+     */
     @GetMapping("/detail")
     public CommonResponse<JsonNode> detail(
+            // tmplCd: 조회할 양식코드 — 이 화면 자사 양식만 통과한다
             @RequestParam String tmplCd,
+            // docIdx: 조회할 문서 idx. 없으면 신규 기본행을 만든다
             @RequestParam(required = false) Long docIdx
     ) {
         return CommonResponse.ok(service.detail(tmplCd, docIdx));
     }
 
-    /** 저장 — 전송하지 않는다. 전송대기를 유지한다 */
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-24
+     * 코멘트:
+     *   1) 우측 지면 값을 저장한다. 전송하지 않고 전송대기를 유지한다
+     *   2) 우측 저장 버튼이 호출한다 — 좌측 저장으로 문서가 만들어진 뒤다
+     *   3) 성공 시 { docIdx }. 필수값은 전송 직전 화면이 본다
+     */
     @PutMapping("/save")
-    public CommonResponse<Map<String, Long>> save(@RequestBody CcpLogDraftSaveRequest req) {
+    public CommonResponse<Map<String, Long>> save(@RequestBody DraftSaveRequest req) {
         return CommonResponse.ok(Map.of("docIdx", service.save(req)));
     }
 
-    /** 삭제 검증 — 확인창 전. Body [{ docIdx }] */
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-24
+     * 코멘트:
+     *   1) 삭제해도 되는 문서인지 먼저 본다 (OPS_DELETE Double Check)
+     *   2) 삭제 확인창을 띄우기 전에 호출한다
+     *   3) 전송 이후 문서가 섞이면 참조 차단 문구로 실패한다
+     */
     @PostMapping("/validate-delete")
-    public CommonResponse<Void> validateDelete(@RequestBody List<CcpLogDraftDeleteItem> keys) {
+    public CommonResponse<Void> validateDelete(@RequestBody List<DraftDeleteItem> keys) {
         service.validateDelete(keys);
         return CommonResponse.ok(null);
     }
 
-    /** 삭제 — HTTP DELETE 금지, POST 만 쓴다. SP 가 양식코드로 문서를 찾는다 */
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-24
+     * 코멘트:
+     *   1) 문서와 딸린 지면 값을 지운다
+     *   2) 삭제 확인창에서 예를 고르면 호출한다
+     *   3) validate-delete 와 같은 검사를 서버에서 한 번 더 한다
+     */
     @PostMapping("/delete")
     public CommonResponse<Void> delete(
-            // tmplCd: 삭제 대상 양식코드
+            // tmplCd: 삭제 대상 양식코드 — SP 가 양식으로 문서를 찾는다
             @RequestParam String tmplCd,
-            @RequestBody List<CcpLogDraftDeleteItem> keys
+            @RequestBody List<DraftDeleteItem> keys
     ) {
         service.delete(keys, tmplCd);
         return CommonResponse.ok(null);

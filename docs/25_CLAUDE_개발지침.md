@@ -317,6 +317,50 @@ FE 는 `DocumentApprovalToolbar` 를 그대로 얹고, 작성 화면은 `writerA
 3. 유사 화면 N 개가 같은 프레임을 쓰면 **공통 Page 컴포넌트 + 화면별 Rule/Paper** 로 나눈다 (`HtmlFormTemplatePage` 패턴). 화면마다 복제하지 않는다.
 4. 공유 페이지(MasterDataPage · 점검항목 · HWP 작성기)는 복제 금지. 그 메뉴를 손볼 때 폴더만 옮긴다.
 
+### 14.1 양식 작성(draft) 화면 패턴 — 5화면 골드
+
+`/draft/**` 의 작성 화면 5개(`hyg-process` · `ccp-verify` · `ccp-pkg` · `ccp-htg` · `ccp-mtl`)는
+**공통 1개 + 화면별 얇은 래퍼** 로만 되어 있다. 6번째 작성 화면도 이 틀을 그대로 따른다.
+
+| 층 | 파일 | 성격 |
+| --- | --- | --- |
+| FE 화면 | `pages/draft/HtmlFormDraftPage.tsx` | 좌우 50:50 · 검색 6조건 · 저장/전송/삭제/모두전송 — **공통 1개** |
+| FE 규칙 | `pages/draft/htmlFormDraftShared.ts` | 전송 3상태 판정 · 그리드 컬럼 · 전송 필수값 — **공통 1개** |
+| FE 래퍼 | `pages/draft/{hyg,ccp,ccp-monitoring}/*DraftPage.tsx` + `*DraftRule.ts` | 화면당 35~50줄. 지면 컴포넌트 · API · 라벨만 지정 |
+| FE 계약 | `api/draft/htmlFormDraftTypes.ts` | `HtmlFormDraftApi` 6개 메서드 — 화면은 어느 도메인인지 모른다 |
+| FE API | `api/draft/*DraftApi.ts` | 경로만 다르다. 같은 계약 3개는 팩터리(`makeCcpMonitoringApi`) 하나로 만든다 |
+| BE 공용 | `com.haccp.draft.DraftSupport` | `requireUsrTmpl` · `assertDeletable` · `nvl/note/asText/asLong/asInt/isNumeric` |
+| BE DTO | `com.haccp.draft.dto.Draft*` | 5화면 공용. 화면 패키지 밑에 DTO 를 다시 만들지 않는다 |
+| BE 화면 | `com.haccp.draft.{hyg,ccp,ccpmonitoring}` | Controller = 경로·양식군 고정, Service = 업무, Mapper = SP 호출 |
+
+지켜야 할 것:
+
+1. **DTO·유틸을 화면 패키지에 복제하지 않는다.** 규칙 08 「공유 유틸은 영역 루트에 둔다」 — `com.haccp.draft` 루트가 그 자리다.
+2. **계약이 같고 경로만 다르면 파일을 복제하지 않는다.** BE 는 `Family` enum(포장·가열), FE 는 API 팩터리로 묶는다.
+3. **전송·전송취소는 만들지 않는다.** 문서 허브 `processDocumentApproval(REQUEST | CANCEL)` 를 그대로 쓴다.
+4. **저장 시 서버는 일자만 본다.** 나머지 필수값은 전송 직전 화면(`validateForTransfer`)이 본다 — 바꿀 곳이 한 군데다.
+5. **삭제는 `POST validate-delete` → `POST delete`.** 양쪽 다 `DraftSupport.assertDeletable` 을 부른다 (OPS_DELETE Double Check).
+
+### 14.2 지면(Paper) 이중 모드 — 기준관리 화면을 건드리지 않는다
+
+지면 컴포넌트(`CcpPkgPaper` · `CcpHtgPaper` · `CcpMtlPaper` …)는 **양식관리 미리보기와 작성 화면이 같은 파일**이다.
+`mode` 로만 갈린다.
+
+```
+mode="template" → 기존 미리보기 그대로. 고정 4행, 입력 비활성 (기존 화면 동작 불변)
+mode="write"    → logRows/passRows 를 받아 실제 입력. 행 추가·삭제
+```
+
+- 분기는 `const writeRows = writeEdit && !!logRows && !!onLogRowsChange;` 한 줄로 잡고,
+  `false` 가지에는 **기존 미리보기 JSX 를 손대지 않고** 그대로 둔다.
+- 행 조작은 직접 배열을 만지지 말고 `htmlFormPaperShared` 의
+  `logRowsOf` · `appendLogRow` · `patchLogRow` · `removeLogRow` · `appendPassRow` · `patchPassRow` 를 쓴다.
+- 입력칸은 `inputBinder(row)` 로 묶는다 — 미리보기 행이면 `value` 를 붙이지 않아 비제어 상태를 그대로 둔다.
+- 한 표 안에서 구간이 나뉘면(작업 전 / 작업 후) 행에 `phaseCd`(`BEFORE` · `AFTER`)를 둔다.
+  DB `phase_cd` 와 같은 칸이며, 저장된 값이 둘 중 하나가 아니면 화면은 `BEFORE` 로 붙여 옛 문서가 자리를 잃지 않게 한다.
+
+**작성 화면을 붙인다고 기준관리(`/docs/html/**`) 지면의 눈에 보이는 동작이 바뀌면 잘못 만든 것이다.**
+
 ---
 
 ## 15. 금지사항

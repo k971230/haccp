@@ -19,7 +19,7 @@ PIPELINE[HB135] 위생공정 작성 XML
       use_yn 은 tbl_company_template.use_yn 이라 「사용여부 = 예」와 같은 값이다.
       표준 예시 html_hyg_prc_000 은 항상 미사용이지만 가상행이라 코드로 한 번 더 뺀다.
     -->
-    <select id="selectForms" resultType="com.haccp.draft.hyg.dto.HygProcessDraftFormRow">
+    <select id="selectForms" resultType="com.haccp.draft.dto.DraftFormRow">
         SELECT v.tmpl_cd, v.ver_nm, v.ver_no, v.use_yn,
                <!-- 양식 등록일자 — 팝업 첫 컬럼. SP 가 YYYY-MM-DD 문자열로 준다 -->
                v.ins_dt
@@ -35,7 +35,7 @@ PIPELINE[HB135] 위생공정 작성 XML
       상단 검색 6개 중 결재여부는 DOC_STATUS 파생이라 화면이 거른다.
       문서번호·통합작성자(5·6번 인자)는 이 화면 검색조건이 아니라 빈값을 넘긴다.
     -->
-    <select id="selectList" resultType="com.haccp.draft.hyg.dto.HygProcessDraftListRow">
+    <select id="selectList" resultType="com.haccp.draft.dto.DraftListRow">
         SELECT * FROM sp_tbl_hyg_process_r_000(
             #{coCd}, #{tmplCd}, #{fromDt}, #{toDt}, '', '',
             #{tmplNm}, #{writerId}, #{writerNm}

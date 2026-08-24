@@ -13,8 +13,8 @@
 package com.haccp.draft.ccpmonitoring;
 
 import com.haccp.common.validation.DeleteBlocker;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftFormRow;
-import com.haccp.draft.ccpmonitoring.dto.CcpLogDraftListRow;
+import com.haccp.draft.dto.DraftFormRow;
+import com.haccp.draft.dto.DraftListRow;
 import java.util.List;
 import java.util.Map;
 import org.apache.ibatis.annotations.Mapper;
@@ -31,7 +31,7 @@ public interface CcpMtlDraftMapper {
      *   2) 화면 진입 시 한 번, 양식 선택 팝업이 쓴다
      *   3) 없으면 빈 목록 — 화면이 양식관리 등록을 안내한다
      */
-    List<CcpLogDraftFormRow> selectForms(
+    List<DraftFormRow> selectForms(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // stdTmplCd: 계열 예시코드 tml_ccp_mtl_000
@@ -63,7 +63,7 @@ public interface CcpMtlDraftMapper {
      *   2) 좌측 그리드가 호출한다
      *   3) 자사 양식(tml_ccp_mtl_NNN)만 — 기존 금속검출 일지는 대상이 아니다
      */
-    List<CcpLogDraftListRow> selectList(
+    List<DraftListRow> selectList(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // tmplCd: 양식코드 부분검색

@@ -20,13 +20,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
-import com.haccp.common.validation.DeleteValidation;
-import com.haccp.draft.hyg.dto.HygProcessDraftDeleteItem;
-import com.haccp.draft.hyg.dto.HygProcessDraftFormRow;
-import com.haccp.draft.hyg.dto.HygProcessDraftListRow;
-import com.haccp.draft.hyg.dto.HygProcessDraftSaveRequest;
+import com.haccp.draft.DraftSupport;
+import com.haccp.draft.dto.DraftDeleteItem;
+import com.haccp.draft.dto.DraftFormRow;
+import com.haccp.draft.dto.DraftListRow;
+import com.haccp.draft.dto.DraftSaveRequest;
 import com.haccp.flow.ca.DocCorrectiveSupport;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +53,7 @@ public class HygProcessDraftService {
      *   2) 화면 진입 시 한 번 호출한다
      *   3) 없으면 빈 목록 — 화면이 양식관리 등록을 안내한다
      */
-    public List<HygProcessDraftFormRow> forms() {
+    public List<DraftFormRow> forms() {
         return mapper.selectForms(LoginUserContext.coCd(), STD_TMPL_CD);
     }
 
@@ -66,7 +65,7 @@ public class HygProcessDraftService {
      *   2) 조회 버튼·초기 로드·저장/삭제/전송 후 호출한다
      *   3) 공백 조건은 SP 가 전체로 본다. 결재여부는 파생값이라 화면이 거른다
      */
-    public List<HygProcessDraftListRow> list(
+    public List<DraftListRow> list(
             // tmplCd: 양식코드 부분검색. 빈값이면 자사 양식 전체
             String tmplCd,
             // tmplNm: 양식명 부분검색
@@ -81,8 +80,8 @@ public class HygProcessDraftService {
             String writerNm
     ) {
         return mapper.selectList(
-                LoginUserContext.coCd(), nvl(tmplCd), nvl(tmplNm),
-                nvl(fromDt), nvl(toDt), nvl(writerId), nvl(writerNm));
+                LoginUserContext.coCd(), DraftSupport.nvl(tmplCd), DraftSupport.nvl(tmplNm),
+                DraftSupport.nvl(fromDt), DraftSupport.nvl(toDt), DraftSupport.nvl(writerId), DraftSupport.nvl(writerNm));
     }
 
     /**
@@ -99,7 +98,7 @@ public class HygProcessDraftService {
             // docIdx: tbl_document.idx. null·0 이면 신규
             Long docIdx
     ) {
-        String tmpl = requireUsrTmpl(tmplCd);
+        String tmpl = DraftSupport.requireUsrTmpl(tmplCd, USR_TMPL_PREFIX, STD_TMPL_CD);
         try {
             ObjectNode root = (ObjectNode) objectMapper.readTree(
                     mapper.selectDetail(LoginUserContext.coCd(), tmpl, docIdx));
@@ -127,26 +126,26 @@ public class HygProcessDraftService {
     @Transactional(timeout = 60)
     public Long save(
             // req: 양식코드·일자·점검자·항목·하단 4칸
-            HygProcessDraftSaveRequest req
+            DraftSaveRequest req
     ) {
-        if (req == null || nvl(req.getBaseDt()).length() != 8) {
+        if (req == null || DraftSupport.nvl(req.getBaseDt()).length() != 8) {
             throw new BizException("일자를 입력하세요.");
         }
-        String tmpl = requireUsrTmpl(req.getTmplCd());
+        String tmpl = DraftSupport.requireUsrTmpl(req.getTmplCd(), USR_TMPL_PREFIX, STD_TMPL_CD);
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("verNo", req.getVerNo() == null ? 0 : req.getVerNo());
             payload.put("items", req.getItems() == null ? List.of() : req.getItems());
-            payload.put("specialNote", note(req.getSpecialNote()));
-            payload.put("improveNote", note(req.getImproveNote()));
-            payload.put("actionNm", note(req.getActionNm()));
-            payload.put("confirmNm", note(req.getConfirmNm()));
+            payload.put("specialNote", DraftSupport.note(req.getSpecialNote()));
+            payload.put("improveNote", DraftSupport.note(req.getImproveNote()));
+            payload.put("actionNm", DraftSupport.note(req.getActionNm()));
+            payload.put("confirmNm", DraftSupport.note(req.getConfirmNm()));
             Long docIdx = mapper.save(
                     LoginUserContext.coCd(),
                     tmpl,
                     req.getDocIdx(),
                     req.getBaseDt().trim(),
-                    nvl(req.getCheckerNm()),
+                    DraftSupport.nvl(req.getCheckerNm()),
                     objectMapper.writeValueAsString(payload),
                     LoginUserContext.userId()
             );
@@ -157,9 +156,9 @@ public class HygProcessDraftService {
             mapper.snapshotSigns(
                     LoginUserContext.coCd(),
                     docIdx,
-                    nvl(req.getCheckerNm()),
-                    nvl(req.getApproverNm()),
-                    nvl(req.getConfirmNm())
+                    DraftSupport.nvl(req.getCheckerNm()),
+                    DraftSupport.nvl(req.getApproverNm()),
+                    DraftSupport.nvl(req.getConfirmNm())
             );
             // 점검행에 아니오가 하나라도 있을 때(= 부적합) 개선조치를 자동 생성한다
             boolean hasNg = req.getItems() != null && req.getItems().stream().anyMatch(row -> {
@@ -191,9 +190,9 @@ public class HygProcessDraftService {
      */
     public void validateDelete(
             // keys: [{ docIdx }] 객체 배열
-            List<HygProcessDraftDeleteItem> keys
+            List<DraftDeleteItem> keys
     ) {
-        assertDeletable(keys);
+        DraftSupport.assertDeletable(keys, (ids) -> mapper.selectDeleteBlocker(LoginUserContext.coCd(), ids));
     }
 
     /**
@@ -207,59 +206,13 @@ public class HygProcessDraftService {
     @Transactional(timeout = 60)
     public int delete(
             // keys: [{ docIdx }] 객체 배열
-            List<HygProcessDraftDeleteItem> keys
+            List<DraftDeleteItem> keys
     ) {
-        assertDeletable(keys);
-        for (HygProcessDraftDeleteItem key : keys) {
+        DraftSupport.assertDeletable(keys, (ids) -> mapper.selectDeleteBlocker(LoginUserContext.coCd(), ids));
+        for (DraftDeleteItem key : keys) {
             mapper.delete(LoginUserContext.coCd(), key.getDocIdx(), LoginUserContext.userId());
         }
         return keys.size();
     }
 
-    /** 삭제 키 정규화·전송 이후 차단 Double Check. */
-    private void assertDeletable(
-            // keys: UI 단건이어도 List 로 받아 All-or-Nothing 검증
-            List<HygProcessDraftDeleteItem> keys
-    ) {
-        DeleteValidation.requireItems(keys, "삭제할 문서를 선택하세요.");
-        List<Long> docIdxs = new ArrayList<>();
-        for (HygProcessDraftDeleteItem key : keys) {
-            Long docIdx = DeleteValidation.requirePositive(key.getDocIdx(), "삭제할 문서번호가 올바르지 않습니다.");
-            key.setDocIdx(docIdx);
-            docIdxs.add(docIdx);
-        }
-        DeleteValidation.throwIfBlocked(
-                mapper.selectDeleteBlocker(LoginUserContext.coCd(), docIdxs),
-                "문서"
-        );
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-24
-     * 코멘트:
-     *   1) 이 화면이 다루는 자사 양식코드인지 확인한다
-     *   2) 상세·저장 진입에서 호출한다
-     *   3) 빈값이거나 접두가 다르거나 예시(000)면 BizException
-     */
-    private static String requireUsrTmpl(
-            // tmplCd: 화면이 넘긴 양식코드
-            String tmplCd
-    ) {
-        String tmpl = nvl(tmplCd);
-        // 예시 000 이거나 접두가 다를 때(= 이 화면 범위 밖) 거부한다
-        if (tmpl.isEmpty() || !tmpl.startsWith(USR_TMPL_PREFIX) || tmpl.equals(STD_TMPL_CD)) {
-            throw new BizException("작성할 양식을 선택하세요.");
-        }
-        return tmpl;
-    }
-
-    private static String nvl(String value) {
-        return value == null ? "" : value.trim();
-    }
-
-    /** 개행 보존 — 끝 공백 trim 금지 */
-    private static String note(String value) {
-        return value == null ? "" : value;
-    }
 }

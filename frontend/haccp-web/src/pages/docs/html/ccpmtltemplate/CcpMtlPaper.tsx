@@ -27,6 +27,7 @@ import {
   removeLogRow,
   SignSlot,
   htmlFormItemNm,
+  inputBinder,
   htmlFormItemOf,
   htmlFormPaperEdit,
   patchHtmlFormItem,
@@ -407,10 +408,8 @@ function SensRow({
   onPatch?: (patch: Partial<Omit<HtmlFormLogRow, "cells">> & { cells?: Record<string, string> }) => void;
   onRemove?: () => void;
 }) {
-  // 제어 입력 공통 — 미리보기(row 없음)는 value 를 붙이지 않는다
-  const bind = (get: () => string, set: (v: string) => void) => (row
-    ? { value: get(), onChange: (e: { target: { value: string } }) => set(e.target.value) }
-    : {});
+  // 제어 입력 공통 — inputBinder 가 미리보기 행이면 빈 props 를 준다
+  const bind = inputBinder(row);
   return (
     <tr>
       <td>
@@ -552,9 +551,7 @@ function PassRow({
   onPatch?: (patch: Partial<HtmlFormPassRow>) => void;
   onRemove?: () => void;
 }) {
-  const bind = (get: () => string, set: (v: string) => void) => (row
-    ? { value: get(), onChange: (e: { target: { value: string } }) => set(e.target.value) }
-    : {});
+  const bind = inputBinder(row);
   return (
     <tr>
       <td>

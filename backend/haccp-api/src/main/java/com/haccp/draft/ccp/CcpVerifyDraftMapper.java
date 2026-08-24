@@ -15,8 +15,8 @@
 package com.haccp.draft.ccp;
 
 import com.haccp.common.validation.DeleteBlocker;
-import com.haccp.draft.ccp.dto.CcpVerifyDraftFormRow;
-import com.haccp.draft.ccp.dto.CcpVerifyDraftListRow;
+import com.haccp.draft.dto.DraftFormRow;
+import com.haccp.draft.dto.DraftListRow;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -32,7 +32,7 @@ public interface CcpVerifyDraftMapper {
      *   2) 화면 진입 시 한 번, 양식 선택 팝업이 쓴다
      *   3) 없으면 빈 목록 — 화면이 양식관리로 안내한다
      */
-    List<CcpVerifyDraftFormRow> selectForms(
+    List<DraftFormRow> selectForms(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // stdTmplCd: 계열 예시코드 tml_ccp_chk_000 — SP 가 이 값으로 테이블을 가른다
@@ -47,7 +47,7 @@ public interface CcpVerifyDraftMapper {
      *   2) 좌측 그리드가 호출한다
      *   3) tmplCd 빈값이면 자사 검증점검 양식 전체. 결재 여부는 화면이 거른다
      */
-    List<CcpVerifyDraftListRow> selectList(
+    List<DraftListRow> selectList(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // tmplCd: 양식코드 부분검색. 빈값이면 전체

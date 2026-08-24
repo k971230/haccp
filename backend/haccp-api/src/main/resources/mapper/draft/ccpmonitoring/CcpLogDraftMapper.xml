@@ -19,7 +19,7 @@ PIPELINE[HB139] CCP 모니터링 작성 XML
       use_yn 은 tbl_company_template.use_yn 이라 「사용여부 = 예」와 같은 값이다.
       표준 예시 *_000 은 가상행이라 코드로 한 번 더 뺀다.
     -->
-    <select id="selectForms" resultType="com.haccp.draft.ccpmonitoring.dto.CcpLogDraftFormRow">
+    <select id="selectForms" resultType="com.haccp.draft.dto.DraftFormRow">
         SELECT v.tmpl_cd, v.ver_nm, v.ver_no, v.use_yn, v.ins_dt
           FROM
         <choose>
@@ -50,7 +50,7 @@ PIPELINE[HB139] CCP 모니터링 작성 XML
     </select>
 
     <!-- 좌측 작성 목록 — 결재 여부는 DOC_STATUS 파생이라 화면이 거른다 -->
-    <select id="selectList" resultType="com.haccp.draft.ccpmonitoring.dto.CcpLogDraftListRow">
+    <select id="selectList" resultType="com.haccp.draft.dto.DraftListRow">
         SELECT * FROM sp_ccp_log_r_000(
             #{coCd}, #{tmplPfx}, #{tmplCd}, #{tmplNm}, #{fromDt}, #{toDt}, #{writerId}, #{writerNm}
         )
