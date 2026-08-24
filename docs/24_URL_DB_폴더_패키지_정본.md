@@ -49,6 +49,7 @@ flowchart LR
 | `docs` | `ccp`, `prp`, `logis`, `admin`, `sch`, `hwp`, `html` | 문서 작성·기준관리 통합. 표시명 「문서」 |
 | `docs` | `appr-hidden` | **대분류가 아니다.** `docs` 아래 숨김 중분류(`use_yn=N`). URL에 노출되지 않음. `flow`의 `appr`과 구분 |
 | `flow` | `box`, `appr`, `ca` | 문서함, 전자결재, 개선조치. 표시명 「문서 현황·결재」 |
+| `draft` | `hyg`, `ccp-chk`, `ccp-monitoring` | 양식 작성. 표시명 「양식 작성」 — HYG 양식·CCP 양식 형제 메뉴. 중분류는 `docs` 의 `html`·`ccp` 와 `menu_cd` 가 겹칠 수 없어 `hyg`·`ccp-chk` 를 쓴다 (`UNIQUE (co_cd, menu_cd)`). 자바 패키지는 하이픈 불가라 `ccp-chk` → `com.haccp.draft.ccp`, `ccp-monitoring` → `com.haccp.draft.ccpmonitoring` |
 | `bas` | `master` | 기초정보 관리 |
 | `sys` | `code`, `logs` | `code` = 공통코드·사이트/메뉴/권한·사용자·부서·결재선. `logs` = 감사로그·로그인·화면통계 |
 

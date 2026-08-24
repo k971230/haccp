@@ -29,6 +29,7 @@
 | HF80–HF85 | CCP·문서 API/화면 |
 | HF98–HF99 | sys 화면(클러스터) |
 | HF120–HF135 | DocForm · HTML 양식 |
+| HF172–HF180 | 양식 작성(draft) — HYG·CCP·CCP 모니터링 |
 
 ## BE 주요 대역 (안내)
 
@@ -41,6 +42,7 @@
 | HB83–HB91 | 문서·템플릿 |
 | HB92–HB94 | sys Mapper/Service 클러스터 |
 | HB123–HB134 | 사용양식 · HTML 양식 |
+| HB135–HB143 | 양식 작성(draft) — HYG·CCP·CCP 모니터링 |
 
 ## FE (`PIPELINE[HFn]`)
 
@@ -118,6 +120,15 @@
 | `HF162` | 1 | `fe:shell/loginPrefs.ts` |
 | `HF169` | 1 | `fe:components/ui/HaccpLogo.tsx` |
 | `HF171` | 1 | `fe:lib/sanitize.ts` |
+| `HF172` | 4 | `fe:api/draft/htmlFormDraftTypes.ts`<br>`fe:api/draft/hygProcessDraftApi.ts`<br>`fe:pages/draft/htmlFormDraftShared.ts`<br>`fe:pages/draft/hyg/HygProcessDraftRule.ts` |
+| `HF173` | 2 | `fe:pages/draft/HtmlFormDraftPage.tsx`<br>`fe:pages/draft/hyg/HygProcessDraftPage.tsx` |
+| `HF174` | 1 | `fe:pages/draft/HtmlFormLookupModal.tsx` |
+| `HF175` | 2 | `fe:api/draft/ccpVerifyDraftApi.ts`<br>`fe:pages/draft/ccp/CcpVerifyDraftRule.ts` |
+| `HF176` | 1 | `fe:pages/draft/ccp/CcpVerifyDraftPage.tsx` |
+| `HF177` | 2 | `fe:api/draft/ccpMonitoringDraftApi.ts`<br>`fe:pages/draft/htmlFormLogRows.test.ts` |
+| `HF178` | 2 | `fe:pages/draft/ccp-monitoring/CcpPkgDraftPage.tsx`<br>`fe:pages/draft/ccp-monitoring/CcpPkgDraftRule.ts` |
+| `HF179` | 2 | `fe:pages/draft/ccp-monitoring/CcpHtgDraftPage.tsx`<br>`fe:pages/draft/ccp-monitoring/CcpHtgDraftRule.ts` |
+| `HF180` | 2 | `fe:pages/draft/ccp-monitoring/CcpMtlDraftPage.tsx`<br>`fe:pages/draft/ccp-monitoring/CcpMtlDraftRule.ts` |
 
 ## BE (`PIPELINE[HBn]`)
 
@@ -209,6 +220,15 @@
 | `HB132` | 2 | `be:docs/html/ccppkgtemplate/CcpPkgTemplateMapper.java`<br>`xml:docs/html/ccppkgtemplate/CcpPkgTemplateMapper.xml` |
 | `HB133` | 2 | `be:docs/html/ccphtgtemplate/CcpHtgTemplateMapper.java`<br>`xml:docs/html/ccphtgtemplate/CcpHtgTemplateMapper.xml` |
 | `HB134` | 2 | `be:docs/html/ccpmtltemplate/CcpMtlTemplateMapper.java`<br>`xml:docs/html/ccpmtltemplate/CcpMtlTemplateMapper.xml` |
+| `HB135` | 7 | `be:draft/hyg/HygProcessDraftMapper.java`<br>`be:draft/hyg/HygProcessDraftService.java`<br>`be:draft/hyg/dto/HygProcessDraftDeleteItem.java`<br>`be:draft/hyg/dto/HygProcessDraftFormRow.java`<br>`be:draft/hyg/dto/HygProcessDraftListRow.java`<br>`be:draft/hyg/dto/HygProcessDraftSaveRequest.java`<br>`xml:draft/hyg/HygProcessDraftMapper.xml` |
+| `HB136` | 1 | `be:draft/hyg/HygProcessDraftController.java` |
+| `HB137` | 7 | `be:draft/ccp/CcpVerifyDraftMapper.java`<br>`be:draft/ccp/CcpVerifyDraftService.java`<br>`be:draft/ccp/dto/CcpVerifyDraftDeleteItem.java`<br>`be:draft/ccp/dto/CcpVerifyDraftFormRow.java`<br>`be:draft/ccp/dto/CcpVerifyDraftListRow.java`<br>`be:draft/ccp/dto/CcpVerifyDraftSaveRequest.java`<br>`xml:draft/ccp/CcpVerifyDraftMapper.xml` |
+| `HB138` | 1 | `be:draft/ccp/CcpVerifyDraftController.java` |
+| `HB139` | 9 | `be:draft/ccpmonitoring/CcpLogDraftMapper.java`<br>`be:draft/ccpmonitoring/CcpLogDraftService.java`<br>`be:draft/ccpmonitoring/dto/CcpLogDraftDeleteItem.java`<br>`be:draft/ccpmonitoring/dto/CcpLogDraftFormRow.java`<br>`be:draft/ccpmonitoring/dto/CcpLogDraftListRow.java`<br>`be:draft/ccpmonitoring/dto/CcpLogDraftPassRow.java`<br>`be:draft/ccpmonitoring/dto/CcpLogDraftRow.java`<br>`be:draft/ccpmonitoring/dto/CcpLogDraftSaveRequest.java`<br>`xml:draft/ccpmonitoring/CcpLogDraftMapper.xml` |
+| `HB140` | 3 | `be:draft/ccpmonitoring/CcpMtlDraftMapper.java`<br>`be:draft/ccpmonitoring/CcpMtlDraftService.java`<br>`xml:draft/ccpmonitoring/CcpMtlDraftMapper.xml` |
+| `HB141` | 1 | `be:draft/ccpmonitoring/CcpPkgDraftController.java` |
+| `HB142` | 1 | `be:draft/ccpmonitoring/CcpHtgDraftController.java` |
+| `HB143` | 1 | `be:draft/ccpmonitoring/CcpMtlDraftController.java` |
 
 ## 충돌·확인 필요
 
