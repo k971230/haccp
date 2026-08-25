@@ -17,7 +17,6 @@ SET search_path TO sasshaccp;
 --
 --
 
-\restrict RWP3s4eSPU733p5eystfoNOYK42k9vFc6MkNESrfW6OcuZUNCifiPniCWsUYsPq
 
 
 SET statement_timeout = 0;
@@ -986,5 +985,4 @@ SELECT pg_catalog.setval('sasshaccp.tbl_user_idx_seq', 5, true);
 --
 --
 
-\unrestrict RWP3s4eSPU733p5eystfoNOYK42k9vFc6MkNESrfW6OcuZUNCifiPniCWsUYsPq
 
