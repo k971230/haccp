@@ -8,7 +8,7 @@ com/haccp/docs/
  ├ ccp/                      CCP 작성
  ├ prp/                      PRP 위생·설비·이력
  ├ sch/                      문서주기 — URL /api/v1/docs/sch/schedule-cycle-management
- ├ html/htmltemplate         HTML양식 원본 Controller·Service — URL /api/v1/docs/html/{scrnCd} 5화면
+ ├ html/htmltemplate         HTML양식 원본 Controller·Service — URL /api/v1/docs/html-form/{scrnCd} 5화면
  ├ html/ccpverifytemplate    CCP 검증점검 양식 Mapper (Controller는 htmltemplate 공유)
  ├ html/ccppkgtemplate       CCP-1B 포장일지 Mapper
  ├ html/ccphtgtemplate       CCP-2B 가열일지 Mapper

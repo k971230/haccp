@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+HtmlTemplateMapper.xml — HTML 양식 버전 SP.
+
+개발자: 박승우
+일자: 2026-08-19
+코멘트:
+  1) 공정점검만. 저장 테이블 tbl_html_hyg_prc_ver. CCP는 CcpVerifyTemplateMapper
+  2) JWT coCd를 첫 인자로 넘긴다. 목록은 양식코드·양식명 LIKE
+  3) 복사는 FUNCTION이 html_hyg_prc_NNN을 반환
+
+PIPELINE[HB130] HTML양식 원본 XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.docs.htmlform.htmltemplate.HtmlTemplateMapper">
+
+    <!-- 좌측 양식 목록 — 예시 html_hyg_prc_000 + 자사 html_hyg_prc_NNN -->
+    <select id="selectVersions" resultType="map">
+        SELECT * FROM sp_tbl_html_hyg_prc_ver_r_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{verCd, jdbcType=VARCHAR},
+            #{verNm, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 우측 지면 항목 — 예시·시드이면 tbl_check_item -->
+    <select id="selectItems" resultType="map">
+        SELECT * FROM sp_tbl_html_hyg_prc_ver_item_r_000(#{coCd}, #{tmplCd}, #{verNo})
+    </select>
+
+    <!-- 자사 양식 추가 — html_hyg_prc_NNN 채번. 반환 tmpl_cd -->
+    <select id="copyVersion" resultType="string">
+        SELECT sp_tbl_html_hyg_prc_ver_copy_c_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{srcVerNo, jdbcType=INTEGER},
+            #{verCd, jdbcType=VARCHAR},
+            #{verNm, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!-- 사용자 버전 항목 전체 교체 -->
+    <update id="saveItems" statementType="CALLABLE">
+        CALL sp_tbl_html_hyg_prc_ver_item_u_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{verNo, jdbcType=INTEGER},
+            CAST(#{items, jdbcType=VARCHAR} AS jsonb),
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!-- 작성 신규 적용 — 좌 저장에서만 호출 -->
+    <update id="applyVersion" statementType="CALLABLE">
+        CALL sp_tbl_html_hyg_prc_ver_apply_u_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{verNo, jdbcType=INTEGER},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!-- 자사 양식명·회사 사용여부 — 좌 저장이 바뀐 이름·useYn을 커밋. 표준은 SP가 거부 -->
+    <update id="updateVerNm" statementType="CALLABLE">
+        CALL sp_tbl_html_hyg_prc_ver_nm_u_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{verNo, jdbcType=INTEGER},
+            #{verNm, jdbcType=VARCHAR},
+            #{useYn, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!-- 삭제 차단 — 표준·작성 문서·오늘 할 일 -->
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
+        SELECT * FROM sp_tbl_html_hyg_prc_ver_delete_blocker_r_000(#{coCd}, #{tmplCd}, #{verNo})
+        LIMIT 1
+    </select>
+
+    <!-- 자사 양식 삭제 — 주기·사용양식 정리 후 use_yn=N -->
+    <update id="deleteVersion" statementType="CALLABLE">
+        CALL sp_tbl_html_hyg_prc_ver_d_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
+            #{verNo, jdbcType=INTEGER},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+</mapper>
