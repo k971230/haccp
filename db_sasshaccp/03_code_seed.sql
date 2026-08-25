@@ -12,7 +12,6 @@
 --    main_cd : UPPER_SNAKE. 코드 그룹 이름이며 화면·서버가 문자열로만 쓴다
 --    sub_cd  : UPPER_SNAKE. 업무 표에 저장되는 값과 **같은 표기**다
 --              예) tbl_schedule_rule.nonwork_rule = 'KEEP' 이면 sub_cd 도 'KEEP'
---              예외 AUDIT_TARGET — 표 이름(tbl_document)이라 그대로 둔다
 --              코드와 데이터를 같이 올린다 — 04_migrate_code_upper.sql 참조
 --    sys_yn  : 이 파일이 까는 코드는 전부 'Y'. 업체가 화면에서 추가한 것만 'N'
 --
@@ -157,18 +156,7 @@ INSERT INTO tmp_code(main_cd, sub_cd, code_nm, sort_no, ref1) VALUES
 ('AUDIT_RESULT', 'APV',        '승인',          4, NULL),
 ('AUDIT_RESULT', 'RJT',        '반려',          5, NULL),
 ('AUDIT_RESULT', 'JUDGE_MOD',  '판정 수동변경', 6, NULL),
-('AUDIT_RESULT', 'CO_SWITCH',  '업체 전환',     7, NULL),
-
--- 감사 대상 — tbl_audit_log.tbl_nm (표 이름 그대로 저장). ref1 은 대응 화면코드
-('AUDIT_TARGET', '*',                 '감사 대상 메뉴', 0, NULL),
-('AUDIT_TARGET', 'tbl_document',      '문서함',        1, 'document-inbox'),
-('AUDIT_TARGET', 'tbl_document_file', '문서 파일',     2, 'document-inbox'),
-('AUDIT_TARGET', 'tbl_code',          '공통코드 관리', 3, 'common-code-management'),
-('AUDIT_TARGET', 'tbl_menu',          '메뉴 관리',     4, 'menu-management'),
-('AUDIT_TARGET', 'tbl_role',          '권한그룹 관리', 5, 'role-management'),
-('AUDIT_TARGET', 'tbl_role_screen',   '화면 권한',     6, 'role-management'),
-('AUDIT_TARGET', 'tbl_dept',          '부서 관리',     7, 'department-management'),
-('AUDIT_TARGET', 'tbl_user',          '사용자 관리',   8, 'user-management');
+('AUDIT_RESULT', 'CO_SWITCH',  '업체 전환',     7, NULL);
 
 -- 없으면 넣고, 있으면 이름·정렬·사용여부를 시드에 맞춘다
 INSERT INTO tbl_code(co_cd, main_cd, sub_cd, code_nm, sort_no, ref1, sys_yn, use_yn, ins_id, ins_dt)

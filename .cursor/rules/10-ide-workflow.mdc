@@ -1,0 +1,52 @@
+---
+description: IDE 별 실행·규칙 적용 — 백엔드 IntelliJ · 프론트 VSCode/Cursor · 에이전트 Claude Code
+alwaysApply: true
+---
+
+# IDE 와 규칙 적용
+
+이 저장소는 **한 벌의 규칙**을 쓴다. 도구가 달라도 결과물이 같아야 한다.
+
+## 규칙 정본은 `.cursor/rules/` 하나다
+
+| 도구 | 규칙을 읽는 법 |
+|---|---|
+| **Cursor** | `.cursor/rules/*.mdc` 를 자동으로 읽는다 (정본) |
+| **Claude Code** | 루트 `CLAUDE.md` → `.cursor/rules/` 를 가리킨다 |
+| **그 밖의 에이전트** | 루트 `AGENTS.md` → 같은 곳을 가리킨다 |
+| **IntelliJ · VSCode (사람)** | `.editorconfig` + 각 README. 규칙 본문은 `.cursor/rules/` 를 읽는다 |
+
+**규칙을 복제하지 않는다.** `CLAUDE.md`·`AGENTS.md` 는 진입점이며 본문을 옮겨 적지 않는다.
+복제하면 한쪽만 고쳐져 서로 다른 답을 준다.
+
+## 담당 도구
+
+| 영역 | 도구 | 실행 |
+|---|---|---|
+| 백엔드 `backend/haccp-api` | **IntelliJ IDEA** | `HaccpApiApplication` Run · 포트 7070 |
+| 프론트 `frontend/haccp-web` | **VSCode / Cursor** | `npm run dev` · 포트 4173 |
+| DB `db_sasshaccp` | DBeaver · psql | `00_ddl` → `01_sp` → `02_seed` → `03_code_seed` → `05_form_seed` |
+
+## 어느 도구에서든 지켜야 하는 것
+
+- **한국어** 응답·주석·커밋
+- **이모지 금지** — 소스 주석·규칙·커밋·UI 문구 (`01-project-core`)
+- **인수인계 주석** — FE·BE 동일 밀도 (`05-handoff-comments`)
+- **URL = DB = 폴더 = 패키지** (`01-project-core`)
+- **폴더마다 README.md 하나** — 그 폴더가 무엇을 맡고 무엇을 안 맡는지 적는다
+- git commit/push 는 **사용자가 명시할 때만**
+- Windows 셸에서 명령 연결은 `;` (`&&` 지양)
+
+## 바꿀 때 같이 바꿀 것
+
+화면 하나를 추가·이동하면 아래가 **전부** 같이 움직인다. 하나라도 빠지면 화면이 안 열린다.
+
+```
+FE  shell/tabRoute.ts SCREEN_PATH      pages/{대}/{중}/
+    shell/screenRegistry.tsx           README.md
+BE  com.haccp.{대}.{중}                 mapper/{대}/{중}/
+    common/auth/ScreenAuthResolver     README.md
+DB  tbl_screen · tbl_role_screen · tbl_menu
+```
+
+`scrnCd` 와 `persistId` 는 폴더·URL 이 바뀌어도 **바꾸지 않는다** — 사용자가 저장한 그리드 열 너비가 날아간다.

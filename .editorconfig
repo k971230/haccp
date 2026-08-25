@@ -1,0 +1,19 @@
+# 도구가 달라도 파일 모양이 같게 — IntelliJ(백) · VSCode/Cursor(프론트) 공통
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{ts,tsx,js,jsx,mjs,json,css,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{bat,cmd}]
+end_of_line = crlf

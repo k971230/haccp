@@ -10,8 +10,7 @@
 --       신형 소문자(num·radio·text)가 같은 컬럼에 공존했다. 이번에 한 벌로 맞춘다
 --    3) 한 번 돌린 DB 에 다시 돌려도 안전하다 — 이미 대문자면 그대로다
 --
---  예외 — AUDIT_TARGET.sub_cd 는 표 이름(tbl_document)이라 바꾸지 않는다.
---  tbl_audit_log.tbl_nm 에 이미 쌓인 감사 이력과 짝이며, 감사 기록은 고쳐 쓰지 않는다.
+--  AUDIT_TARGET 은 읽는 코드가 없어 그룹째 지웠다 (03_code_seed.sql). 예외가 없다.
 --
 --  적용: psql -f 04_migrate_code_upper.sql   (03_code_seed.sql 보다 먼저)
 -- ============================================================
@@ -79,12 +78,10 @@ UPDATE tbl_ccp_verify_item  SET answer_cd = upper(answer_cd)
 
 -- ------------------------------------------------------------
 -- 5. 공통코드 sub_cd — 위 데이터와 같은 규칙으로
---    AUDIT_TARGET 은 표 이름이라 제외한다
 -- ------------------------------------------------------------
 UPDATE tbl_code
    SET sub_cd = replace(upper(sub_cd), '-', '_'), upd_id = 'system', upd_dt = now()
  WHERE sub_cd <> '*'
-   AND main_cd <> 'AUDIT_TARGET'
    AND sub_cd <> replace(upper(sub_cd), '-', '_');
 
 COMMIT;
@@ -93,4 +90,4 @@ COMMIT;
 -- SELECT DISTINCT input_type FROM tbl_check_item ORDER BY 1;
 -- SELECT DISTINCT nonwork_rule FROM tbl_schedule_rule;
 -- SELECT DISTINCT doc_kind FROM tbl_document UNION SELECT DISTINCT doc_kind FROM tbl_template;
--- SELECT main_cd, sub_cd FROM tbl_code WHERE sub_cd ~ '[a-z]' ORDER BY 1,2;   -- AUDIT_TARGET 만
+-- SELECT main_cd, sub_cd FROM tbl_code WHERE sub_cd ~ '[a-z]' ORDER BY 1,2;   -- 0건이어야 한다

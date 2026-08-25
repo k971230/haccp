@@ -52,9 +52,9 @@ alwaysApply: true
 - 허용: `→`, `①②`, `×`(U+00D7), ASCII
 - **경로성 값 kebab-case** — `tmpl_cd`·`scrn_cd`·`menu_cd` 처럼 URL·폴더·패키지에 그대로 실리는 값은 소문자·하이픈. 정본 [`docs/22_코드_케밥_양식매핑.md`](../../docs/22_코드_케밥_양식매핑.md)
 - **공통코드 `main_cd` 는 UPPER_SNAKE** (2026-08-25 확정) — `DOC_STATUS`·`HTML_INPUT_TY`. 코드 그룹 이름은 URL 에 실리지 않고 화면·서버가 문자열로만 쓴다. 정본 시드 `db_sasshaccp/03_code_seed.sql`
-- **공통코드 `sub_cd` 는 업무 테이블에 저장되는 값 그대로** — 대소문자를 바꾸지 않는다.
-  `tbl_schedule_rule.nonwork_rule = 'keep'` 이면 `sub_cd` 도 `keep`, `doc_kind = 'html'` 이면 `html`.
-  여기를 대문자로 바꾸면 라벨이 안 붙고 콤보가 빈 값이 된다
+- **공통코드 `sub_cd` 도 UPPER_SNAKE** — 업무 표에 저장되는 값과 **같은 표기**다.
+  `tbl_schedule_rule.nonwork_rule = 'KEEP'` · `input_type = 'RADIO'` · `doc_kind = 'HTML'`.
+  코드만 바꾸고 데이터를 안 바꾸면 라벨이 안 붙고 콤보가 빈 값이 된다 — **항상 같이 옮긴다**
 - **URL = DB = 폴더 = 패키지** — `/haccp`·`/api/v1` 다음이 대/중/소(scrnCd). DB 대·중 `menu_cd`는 그 슬러그, 소 leaf `menu_cd`는 `scrnCd`. FE `pages/{대}/{중}/` · BE `com.haccp.{대}.{중}` · `mapper/{대}/{중}/`. 예: `/docs/hwp/hwp-template-management`. **손대는 메뉴는 그 작업에서 이 칸에 둔다.** 미리 전 메뉴를 나누지 않는다. `scrnCd`·`persistId`는 폴더를 옮겨도 바꾸지 않는다. 경로 정본 [`docs/24_URL_DB_폴더_패키지_정본.md`](../../docs/24_URL_DB_폴더_패키지_정본.md). 케밥·양식코드는 [`docs/22_코드_케밥_양식매핑.md`](../../docs/22_코드_케밥_양식매핑.md)
 - **문서 진입:** 루트 `README.md` E2E · PIPELINE 색인 [`docs/23_PIPELINE.md`](../../docs/23_PIPELINE.md) · 유형별 이야기 [`docs/15_HACCP_FE_BE_통합_상세스펙.md`](../../docs/15_HACCP_FE_BE_통합_상세스펙.md)
 

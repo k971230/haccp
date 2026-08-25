@@ -54,7 +54,10 @@ frontend/haccp-web/test-results/
 
 # ── IDE / OS ───────────────────────────────────────────
 .idea/
-.vscode/
+.vscode/*
+# 팀 공용 설정은 올린다 — 도구가 달라도 같은 규칙이 걸리게 (10-ide-workflow)
+!.vscode/settings.json
+!.vscode/extensions.json
 *.iml
 .DS_Store
 Thumbs.db

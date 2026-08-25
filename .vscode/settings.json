@@ -1,0 +1,18 @@
+{
+  "editor.formatOnSave": false,
+  "editor.codeActionsOnSave": { "source.fixAll.eslint": "explicit" },
+  "eslint.workingDirectories": ["frontend/haccp-web"],
+  "typescript.tsdk": "frontend/haccp-web/node_modules/typescript/lib",
+  "files.eol": "\n",
+  "files.exclude": {
+    "**/target": true,
+    "**/dist": true,
+    "**/node_modules": true,
+    "**/playwright-report": true
+  },
+  "search.exclude": {
+    "**/target": true,
+    "**/dist": true,
+    "**/node_modules": true
+  }
+}
