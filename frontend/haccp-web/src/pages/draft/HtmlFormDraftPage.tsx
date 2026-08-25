@@ -653,13 +653,25 @@ export function HtmlFormDraftPage({
     if (target.length > 0 && !canDelete) return mesToast("삭제 권한이 없습니다.", "warn");
     try {
       if (target.length > 0) {
-        const docKeys = target.map((r) => ({ docIdx: Number(r.docIdx) }));
-        await api.validateDelete(docKeys);
+        // 양식코드별로 묶는다 — 금속검출은 서버가 양식코드로 문서를 찾는다.
+        // 묶지 않고 부르면 양식코드가 비어 "양식 코드를 선택하세요." 로 막힌다
+        const byTmpl = new Map<string, { docIdx: number }[]>();
+        for (const row of target) {
+          const tmplCd = row.tmplCd ?? "";
+          const bucket = byTmpl.get(tmplCd) ?? [];
+          bucket.push({ docIdx: Number(row.docIdx) });
+          byTmpl.set(tmplCd, bucket);
+        }
+        for (const [tmplCd, docKeys] of byTmpl) {
+          await api.validateDelete(docKeys, tmplCd);
+        }
         const label = target.length === 1
           ? (target[0].docNo || target[0].tmplNm || "")
           : `${target.length}건을`;
         if (!await mesConfirmDanger(MES.deleteConfirm(label))) return;
-        await api.remove(docKeys);
+        for (const [tmplCd, docKeys] of byTmpl) {
+          await api.remove(docKeys, tmplCd);
+        }
       }
       for (const row of drafts) {
         if (row._key) removeDraft(row._key);
@@ -754,7 +766,7 @@ export function HtmlFormDraftPage({
       return mesToast("전송대기 문서만 전송할 수 있습니다.", "warn");
     }
     // 필수값 기준은 공통 규칙 한곳 — 기준이 바뀌면 validateForTransfer 만 고친다
-    const invalid = validateForTransfer(cur.baseKey, cur.items);
+    const invalid = validateForTransfer(cur.baseKey, cur.items, cur.logRows);
     if (invalid) return mesToast(invalid, "warn");
     if (!await mesConfirm("전송하시겠습니까?\n전송 후에는 수정·삭제할 수 없습니다.")) return;
     try {
@@ -808,7 +820,7 @@ export function HtmlFormDraftPage({
           user,
         );
         // 필수값이 빈 건은 전송 가능 건이 아니다
-        if (validateForTransfer(cur.baseKey, cur.items)) {
+        if (validateForTransfer(cur.baseKey, cur.items, cur.logRows)) {
           skipped += 1;
           continue;
         }

@@ -21,8 +21,8 @@ import type { ScreenGridRules } from "@/shell/gridRules/types";
 import { MES } from "@/shell/messages";
 // 역할 — 입력유형별 라디오·숫자·문자 판정
 import { htmlFormInputLayout, type HtmlFormItem } from "@/api/docs/htmlFormApi";
-// 역할 — 지면 메타 항목(제목·부제·캡션) 제외
-import { paperBodyItems } from "@/components/form/htmlFormPaperShared";
+// 역할 — 지면 메타 항목(제목·부제·캡션) 제외 · 기록 표 행 타입
+import { paperBodyItems, type HtmlFormLogRow } from "@/components/form/htmlFormPaperShared";
 
 /** 결재 여부 3단계 — 화면 표시 단위 */
 export type SendState = "wait" | "sent" | "done";
@@ -235,8 +235,13 @@ export function validateForTransfer(
   baseKey: string,
   // 지면 항목 전체 — 제목·부제 메타 포함
   items: HtmlFormItem[],
+  // 기록 표 행 — CCP 모니터링일지 작성만 채워 온다. 있으면 이쪽이 사용자 입력이다
+  logRows?: HtmlFormLogRow[],
 ): string | null {
   if (!/^\d{8}$/.test(baseKey)) return MES.required("일자");
+  // 기록 표가 있는 화면일 때(= CCP 모니터링) items 는 한계기준·주기·방법 안내문이라 입력값이 아니다.
+  // 사용자가 채우는 곳은 기록 표뿐이므로 그 행만 본다
+  if (logRows && logRows.length > 0) return validateLogRows(logRows);
   const body = paperBodyItems(items);
   if (body.length === 0) return "점검 행이 없습니다.";
   for (const item of body) {
@@ -250,6 +255,28 @@ export function validateForTransfer(
     if (layout.valueCell && !String(item.valNm ?? "").trim()) {
       return MES.required(label);
     }
+  }
+  return null;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
+ * 코멘트:
+ *   1) 기록 표(CCP 포장·가열·금속검출)의 전송 필수값을 본다
+ *   2) validateForTransfer 가 기록 표가 있는 화면에서만 호출한다
+ *   3) 시각·판정만 필수다. 품명은 구간 첫 줄이 라벨이라 비어 있는 게 정상이고,
+ *      금속검출 칸은 해당 없음 열이 있어 값 유무로 막지 않는다
+ */
+function validateLogRows(
+  // rows: 기록 표 전체 행
+  rows: HtmlFormLogRow[],
+): string | null {
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i];
+    const where = `${i + 1}번째 기록 행`;
+    if (!String(row.checkTime ?? "").trim()) return `${where}의 시각을 입력하세요.`;
+    if (!String(row.judgeCd ?? "").trim()) return `${where}의 판정을 선택하세요.`;
   }
   return null;
 }
