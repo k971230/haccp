@@ -68,6 +68,7 @@ import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
 // 역할 — 작성 화면 공통 API 계약
 import type { HtmlFormDraftApi, HtmlFormDraftForm } from "@/api/draft/htmlFormDraftTypes";
 // 역할 — 양식 선택 팝업 (일자·양식코드·양식명)
+import { HtmlFormDeviationSignal } from "./HtmlFormDeviationSignal";
 import { HtmlFormLookupModal } from "./HtmlFormLookupModal";
 // 역할 — 공통 규칙(결재 여부 3단계·잠금·컬럼·필수값)
 import {
@@ -127,6 +128,8 @@ type Buf = {
   confirmNm: string;
   confirmId: string;
   confirmSignYn: string;
+  // 이탈·개선조치 문서 표시 — 사용자가 직접 켠 값. 근거가 있으면 화면이 자동으로 켠다
+  deviationYn: boolean;
   // 기록 표 행 — CCP 모니터링일지 작성만 쓴다. 다른 화면은 빈 배열이다
   logRows: HtmlFormLogRow[];
   // 금속검출 통과량 표 행 — MTL 만
@@ -154,6 +157,7 @@ function emptyBuf(
     verNo: 0, items: [],
     specialNote: "", improveNote: "", actionNm: "", confirmNm: "",
     confirmId: "", confirmSignYn: "N",
+    deviationYn: false,
     logRows: [], passRows: [],
   };
 }
@@ -204,6 +208,8 @@ function detailToBuf(
     confirmNm: asText(header.confirmNm),
     confirmId: asText(header.confirmId),
     confirmSignYn: asYn(header.confirmSignYn),
+    // 이탈 표시는 저장 컬럼이 없다 — 다시 읽을 때는 아래 근거로 화면이 판단한다
+    deviationYn: false,
     // 기록행 — CCP 모니터링일지만 채워 온다. 나머지 화면은 빈 배열
     logRows: detail.logRows ?? [],
     passRows: detail.passRows ?? [],
@@ -274,6 +280,12 @@ export function HtmlFormDraftPage({
     replaceServerList, removeDraft, saveAll, getBuffer, putBuffer,
   } = useDocFormSession<Buf, ListMeta>();
 
+  // 저장 콜백 안에서 최신 활성 키·목록을 본다 — 콜백이 만들어진 시점 값이 아니라 실행 시점 값이 필요하다
+  const activeKeyRef = useRef<string | null>(activeKey);
+  const listRowsRef = useRef(listRows);
+  activeKeyRef.current = activeKey;
+  listRowsRef.current = listRows;
+
   const listGrid = useGridAccess(htmlFormDraftGridRules, {
     scrnCd,
     gridRole: "single",
@@ -288,6 +300,12 @@ export function HtmlFormDraftPage({
   const activeRow = listRows.find((r) => r._key === activeKey) ?? null;
   // 저장 안 한 변경이 남아 있을 때(= C·U) 전송 전에 저장을 먼저 묻는다
   const activeDirty = !!activeRow?._rowState;
+  // 이탈·개선조치 근거 — 부적합 판정 행이 있거나 이탈내용·개선조치가 입력됐을 때
+  const deviationForced = !!buf && (
+    (buf.logRows ?? []).some((r) => r.judgeCd === "F")
+    || !!buf.specialNote.trim()
+    || !!buf.improveNote.trim()
+  );
 
   /**
    * 개발자: 박승우
@@ -485,6 +503,9 @@ export function HtmlFormDraftPage({
         };
       },
       afterAll: async () => {
+        // 저장 직전 활성 행의 버퍼 — 신규 저장이면 임시 키라 목록 재조회 뒤 사라진다
+        const activeBefore = activeKeyRef.current;
+        const activeBuf = activeBefore ? getBuffer(activeBefore) : null;
         await loadList();
         for (const idx of savedIdxs) {
           try {
@@ -500,6 +521,14 @@ export function HtmlFormDraftPage({
             mesError(e);
           }
         }
+        // 활성 행이 신규였을 때(= 임시 키) 서버 키로 다시 잡는다.
+        // 이걸 안 하면 우측에서 고친 값이 목록의 어느 행과도 이어지지 않아
+        // 다음 저장에서 "저장할 변경 내용이 없습니다." 로 튕긴다
+        const activeDocIdx = activeBuf?.docIdx ?? null;
+        const activeNow = activeBefore && listRowsRef.current.some((r) => r._key === activeBefore);
+        if (!activeNow && activeDocIdx && savedIdxs.includes(activeDocIdx)) {
+          await handleSelect(String(activeDocIdx));
+        }
       },
     });
     if (err) {
@@ -507,7 +536,7 @@ export function HtmlFormDraftPage({
       return false;
     }
     return true;
-  }, [api, getBuffer, loadList, putBuffer, saveAll, user]);
+  }, [api, getBuffer, handleSelect, loadList, putBuffer, saveAll, user]);
 
   /**
    * 개발자: 박승우
@@ -1103,6 +1132,7 @@ export function HtmlFormDraftPage({
               </div>
               <div className="min-h-0 flex-1 overflow-auto">
                 {buf && buf.tmplCd ? (
+                  <>
                   <PaperComponent
                     // 작성 모드 — 기준관리(template)가 아니다
                     mode="write"
@@ -1172,6 +1202,14 @@ export function HtmlFormDraftPage({
                       return next;
                     })}
                   />
+                    <HtmlFormDeviationSignal
+                      // 부적합 행이나 이탈·개선 입력이 있을 때(= 근거 있음) 자동으로 켜고 잠근다
+                      forced={deviationForced}
+                      checked={buf.deviationYn}
+                      editable={canEdit}
+                      onChange={(next) => patchActive((cur) => ({ ...cur, deviationYn: next }))}
+                    />
+                  </>
                 ) : (
                   <p className="p-6 text-sm text-slate-500">
                     {buf

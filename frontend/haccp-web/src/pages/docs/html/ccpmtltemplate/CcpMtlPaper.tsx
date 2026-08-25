@@ -26,8 +26,9 @@ import {
   patchPassRow,
   removeLogRow,
   SignSlot,
+  CELL_KIND,
+  HtmlFormCellInput,
   htmlFormItemNm,
-  inputBinder,
   htmlFormItemOf,
   htmlFormPaperEdit,
   patchHtmlFormItem,
@@ -408,28 +409,28 @@ function SensRow({
   onPatch?: (patch: Partial<Omit<HtmlFormLogRow, "cells">> & { cells?: Record<string, string> }) => void;
   onRemove?: () => void;
 }) {
-  // 제어 입력 공통 — inputBinder 가 미리보기 행이면 빈 props 를 준다
-  const bind = inputBinder(row);
   return (
     <tr>
       <td>
         {label ? label : (
-          <input
+          <HtmlFormCellInput
             // 빈 행·작성 중간 품명 — 문자. 해당 없음과 무관
-            className="html-form-sign-input"
-            disabled={!writeEdit}
-            readOnly={!writeEdit}
-            {...bind(() => row?.productNm ?? "", (v) => onPatch?.({ productNm: v }))}
+            kind={CELL_KIND.TEXT}
+            title="품명"
+            editable={writeEdit}
+            value={row ? row?.productNm ?? "" : undefined}
+            onChange={row ? (v) => onPatch?.({ productNm: v }) : undefined}
           />
         )}
       </td>
       <td>
-        <input
+        <HtmlFormCellInput
           // 통과시간 — 미리보기는 빈칸. 콜론 자리표시 없음
-          className="html-form-sign-input"
-          disabled={!writeEdit}
-          readOnly={!writeEdit}
-          {...bind(() => row?.checkTime ?? "", (v) => onPatch?.({ checkTime: v }))}
+          kind={CELL_KIND.TIME}
+          title="시각"
+          editable={writeEdit}
+          value={row ? row?.checkTime ?? "" : undefined}
+          onChange={row ? (v) => onPatch?.({ checkTime: v }) : undefined}
         />
       </td>
       {hdrs.map((col) => (
@@ -551,44 +552,47 @@ function PassRow({
   onPatch?: (patch: Partial<HtmlFormPassRow>) => void;
   onRemove?: () => void;
 }) {
-  const bind = inputBinder(row);
   return (
     <tr>
       <td>
-        <input
+        <HtmlFormCellInput
           // 품명 — 문자
-          className="html-form-sign-input"
-          disabled={!writeEdit}
-          readOnly={!writeEdit}
-          {...bind(() => row?.productNm ?? "", (v) => onPatch?.({ productNm: v }))}
+          kind={CELL_KIND.TEXT}
+          title="품명"
+          editable={writeEdit}
+          value={row ? row?.productNm ?? "" : undefined}
+          onChange={row ? (v) => onPatch?.({ productNm: v }) : undefined}
         />
       </td>
       <td>
-        <input
+        <HtmlFormCellInput
           // 통과량
-          className="html-form-sign-input"
-          disabled={!writeEdit}
-          readOnly={!writeEdit}
-          {...bind(() => row?.passQty ?? "", (v) => onPatch?.({ passQty: v }))}
+          kind={CELL_KIND.NUM}
+          title="통과량"
+          editable={writeEdit}
+          value={row ? row?.passQty ?? "" : undefined}
+          onChange={row ? (v) => onPatch?.({ passQty: v }) : undefined}
         />
       </td>
       <td>
-        <input
+        <HtmlFormCellInput
           // 검출량
-          className="html-form-sign-input"
-          disabled={!writeEdit}
-          readOnly={!writeEdit}
-          {...bind(() => row?.detectQty ?? "", (v) => onPatch?.({ detectQty: v }))}
+          kind={CELL_KIND.NUM}
+          title="검출량"
+          editable={writeEdit}
+          value={row ? row?.detectQty ?? "" : undefined}
+          onChange={row ? (v) => onPatch?.({ detectQty: v }) : undefined}
         />
       </td>
       <td>
         <span className="flex items-center gap-1">
-          <input
+          <HtmlFormCellInput
             // 특이사항
-            className="html-form-sign-input"
-            disabled={!writeEdit}
-            readOnly={!writeEdit}
-            {...bind(() => row?.remark ?? "", (v) => onPatch?.({ remark: v }))}
+            kind={CELL_KIND.TEXT}
+            title="특이사항"
+            editable={writeEdit}
+            value={row ? row?.remark ?? "" : undefined}
+            onChange={row ? (v) => onPatch?.({ remark: v }) : undefined}
           />
           {onRemove ? (
             <MesButton

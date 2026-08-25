@@ -4,8 +4,8 @@
  * 개발자: 박승우
  * 일자: 2026-08-06
  * 코멘트:
- *   1) MultipartFile을 HaccpLogBooks/{회사코드}/{일자}/{양식코드} 하위에 저장하고 상대 경로만 DB에 남긴다
- *   2) 파일명은 경로 조작 문자를 제거하고 UUID를 앞에 붙여 같은 이름의 덮어쓰기를 막는다
+ *   1) MultipartFile을 HaccpLogBooks/{회사코드}/{양식코드}/{일자} 하위에 저장하고 상대 경로만 DB에 남긴다
+ *   2) 파일명은 {일자}_{원본명}_{연번}.{확장자} — 연번은 같은 이름이 있으면 올라간다
  *   3) 읽기·삭제는 상대 경로가 root 안에 있을 때만 허용해 다른 파일 접근을 차단한다
  *
  * PIPELINE[HB85] doc 파일 저장
@@ -17,14 +17,12 @@ package com.haccp.docs.document;
 import com.haccp.common.exception.BizException;
 // 역할 — 경로 세그먼트 정규화
 import com.haccp.docs.template.TemplateFileNames;
-// 역할 — 난수 파일명
-import java.util.UUID;
 // 역할 — 로컬 파일 입출력
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.FileAlreadyExistsException;
 // 역할 — 연월 경로
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -39,8 +37,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class DocumentFileStorage {
 
-    // 상대 경로의 일자 폴더 형식 — 하루 단위로 묶어 운영자가 눈으로 찾는다
+    // 상대 경로의 일자 폴더·파일명 접두 형식 — 하루 단위로 묶어 운영자가 눈으로 찾는다
     private static final DateTimeFormatter FILE_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    // 같은 날 같은 이름의 최대 연번 — 넘으면 파일명을 바꾸라고 알린다
+    private static final int SEQ_MAX = 999;
 
     // 파일 저장 루트 — .env APP_FILE_ROOT에서만 받는다
     private final Path root;
@@ -70,20 +71,67 @@ public class DocumentFileStorage {
      *   2) 문서 첨부·PDF 저장 직전에 쓴다 — DB에는 이 상대 경로만 남는다
      *   3) tmplCd가 공백일 때(= 양식과 무관한 첨부, 설비 사진 등) 타입 폴더를 생략한다
      */
-    private String logbookRelativePath(
-            // JWT 회사코드 — 테넌트 물리 분리 세그먼트
+    private String logbookFolder(
+            // JWT 회사코드 — 테넌트 물리 분리 세그먼트. 절대 빼지 않는다
             String coCd,
-            // 문서 양식코드 tmpl_cd — 타입 폴더
+            // 문서 양식코드 tmpl_cd — 양식 폴더. 양식과 무관한 첨부는 공백
             String tmplCd,
-            // 경로 조작 문자를 제거한 원본 파일명
-            String safeOriginalName
+            // 저장일 YYYY-MM-DD
+            String dateFolder
     ) {
         String type = TemplateFileNames.segment(tmplCd);
         return logbookDirectory
                 + "/" + TemplateFileNames.segment(coCd)
-                + "/" + FILE_DATE.format(LocalDate.now())
                 + (type.isBlank() ? "" : "/" + type)
-                + "/" + UUID.randomUUID() + "_" + safeOriginalName;
+                + "/" + dateFolder;
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) {YYYY-MM-DD}_{원본명}_{연번}.{확장자} 로 이름을 짓고 비어 있는 연번에 실제로 쓴다
+     *   2) save·saveFromPath 가 공통으로 호출한다 — 파일명 규칙이 두 곳으로 갈라지지 않게 한다
+     *   3) 같은 이름이 이미 있으면 연번을 올려 다시 쓴다. 미리 존재를 확인하지 않고 생성 실패로
+     *      판정하므로 두 사람이 같은 순간 저장해도 한쪽이 덮이지 않는다
+     */
+    private String storeWithSeq(
+            // JWT 회사코드
+            String coCd,
+            // 문서 양식코드
+            String tmplCd,
+            // 경로 조작 문자를 제거한 원본 파일명
+            String safeOriginalName,
+            // 목적지에 실제로 쓰는 동작 — 이미 있으면 FileAlreadyExistsException 이 나야 한다
+            TargetWriter writer
+    ) {
+        String dateFolder = FILE_DATE.format(LocalDate.now());
+        String folder = logbookFolder(coCd, tmplCd, dateFolder);
+        int dot = safeOriginalName.lastIndexOf('.');
+        // 확장자는 원본을 따른다 — hwp·hwpx·pdf·jpg 가 한 저장소를 함께 쓴다
+        String stem = dot > 0 ? safeOriginalName.substring(0, dot) : safeOriginalName;
+        String ext = dot > 0 ? safeOriginalName.substring(dot) : "";
+        for (int seq = 1; seq <= SEQ_MAX; seq++) {
+            String relative = folder + "/" + dateFolder + "_" + stem
+                    + "_" + String.format("%03d", seq) + ext;
+            Path target = resolve(relative);
+            try {
+                Files.createDirectories(target.getParent());
+                writer.writeTo(target);
+                return relative.replace('\\', '/');
+            } catch (FileAlreadyExistsException e) {
+                // 그 연번이 이미 있을 때(= 같은 날 재저장·동시 저장) 다음 번호로 넘어간다
+            } catch (IOException e) {
+                throw new BizException("파일을 저장하지 못했습니다.");
+            }
+        }
+        throw new BizException("같은 이름의 파일이 너무 많습니다. 파일명을 바꿔 저장하세요.");
+    }
+
+    /** 목적지에 쓰는 동작 — 이미 있으면 FileAlreadyExistsException 을 던지는 복사만 넘긴다 */
+    @FunctionalInterface
+    private interface TargetWriter {
+        void writeTo(Path target) throws IOException;
     }
 
     /**
@@ -104,18 +152,12 @@ public class DocumentFileStorage {
     ) {
         validate(file);
         String original = safeName(file.getOriginalFilename());
-        String relative = logbookRelativePath(coCd, tmplCd, original);
-        Path target = resolve(relative);
-
-        try {
-            Files.createDirectories(target.getParent());
+        // REPLACE_EXISTING 을 주지 않아야 이미 있는 이름에서 예외가 나고 연번이 올라간다
+        return storeWithSeq(coCd, tmplCd, original, (target) -> {
             try (InputStream input = file.getInputStream()) {
-                Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(input, target);
             }
-            return relative.replace('\\', '/');
-        } catch (IOException e) {
-            throw new BizException("파일을 저장하지 못했습니다.");
-        }
+        });
     }
 
     /**
@@ -146,11 +188,8 @@ public class DocumentFileStorage {
                 throw new BizException("파일 크기가 허용 한도를 초과했습니다.");
             }
             String original = safeName(originalName);
-            String relative = logbookRelativePath(coCd, tmplCd, original);
-            Path target = resolve(relative);
-            Files.createDirectories(target.getParent());
-            Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-            return relative.replace('\\', '/');
+            // REPLACE_EXISTING 을 주지 않아야 이미 있는 이름에서 예외가 나고 연번이 올라간다
+            return storeWithSeq(coCd, tmplCd, original, (target) -> Files.copy(source, target));
         } catch (BizException e) {
             throw e;
         } catch (IOException e) {

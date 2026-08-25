@@ -26,8 +26,9 @@ import {
   logRowsOf,
   patchLogRow,
   removeLogRow,
+  CELL_KIND,
+  HtmlFormCellInput,
   htmlFormItemNm,
-  inputBinder,
   htmlFormItemOf,
   htmlFormPaperEdit,
   patchHtmlFormItem,
@@ -307,53 +308,49 @@ function HeatLogRow({
   onPatch?: (patch: Partial<Omit<HtmlFormLogRow, "cells">> & { cells?: Record<string, string> }) => void;
   onRemove?: () => void;
 }) {
-  // 제어 입력 공통 — inputBinder 가 미리보기 행이면 빈 props 를 준다
-  const bind = inputBinder(row);
   const cell = (cd: string) => row?.cells?.[cd] ?? "";
   return (
     <tr>
       <td>
         {label ? label : (
-          <input
+          <HtmlFormCellInput
             // 빈 행·작성 중간 품명 — 문자
-            className="html-form-sign-input"
-            disabled={!writeEdit}
-            readOnly={!writeEdit}
-            {...bind(() => row?.productNm ?? "", (v) => onPatch?.({ productNm: v }))}
+            kind={CELL_KIND.TEXT}
+            title="품명"
+            editable={writeEdit}
+            value={row ? row?.productNm ?? "" : undefined}
+            onChange={row ? (v) => onPatch?.({ productNm: v }) : undefined}
           />
         )}
       </td>
       <td>
-        <input
+        <HtmlFormCellInput
           // 측정시각 — 미리보기는 빈칸. 콜론 자리표시 없음
-          className="html-form-sign-input"
-          disabled={!writeEdit}
-          readOnly={!writeEdit}
-          {...bind(() => row?.checkTime ?? "", (v) => onPatch?.({ checkTime: v }))}
+          kind={CELL_KIND.TIME}
+          title="시각"
+          editable={writeEdit}
+          value={row ? row?.checkTime ?? "" : undefined}
+          onChange={row ? (v) => onPatch?.({ checkTime: v }) : undefined}
         />
       </td>
       <td>
-        <input
+        <HtmlFormCellInput
           // 가열온도 — 숫자만. 미리보기는 빈칸. 단위는 열 제목
-          className="html-form-sign-input ccp-pkg-num"
-          type="number"
-          inputMode="decimal"
-          step="0.1"
-          disabled={!writeEdit}
-          readOnly={!writeEdit}
-          {...bind(() => cell("temp"), (v) => onPatch?.({ cells: { temp: v } }))}
+          kind={CELL_KIND.NUM}
+          title="온도"
+          editable={writeEdit}
+          value={row ? cell("temp") : undefined}
+          onChange={row ? (v) => onPatch?.({ cells: { temp: v } }) : undefined}
         />
       </td>
       <td>
-        <input
+        <HtmlFormCellInput
           // 가열시간 — 숫자만. 미리보기는 빈칸. 단위는 열 제목
-          className="html-form-sign-input ccp-pkg-num"
-          type="number"
-          inputMode="numeric"
-          min={0}
-          disabled={!writeEdit}
-          readOnly={!writeEdit}
-          {...bind(() => cell("time"), (v) => onPatch?.({ cells: { time: v } }))}
+          kind={CELL_KIND.DURATION}
+          title="가열시간"
+          editable={writeEdit}
+          value={row ? cell("time") : undefined}
+          onChange={row ? (v) => onPatch?.({ cells: { time: v } }) : undefined}
         />
       </td>
       <td className="text-center ccp-pf-yn">

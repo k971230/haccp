@@ -25,8 +25,9 @@ import {
   logRowsOf,
   patchLogRow,
   removeLogRow,
+  CELL_KIND,
+  HtmlFormCellInput,
   htmlFormItemNm,
-  inputBinder,
   htmlFormItemOf,
   htmlFormPaperEdit,
   patchHtmlFormItem,
@@ -308,68 +309,62 @@ function LogPreviewRow({
   onPatch?: (patch: Partial<Omit<HtmlFormLogRow, "cells">> & { cells?: Record<string, string> }) => void;
   onRemove?: () => void;
 }) {
-  // 제어 입력 공통 — inputBinder 가 미리보기 행이면 빈 props 를 준다
-  const bind = inputBinder(row);
   const cell = (cd: string) => row?.cells?.[cd] ?? "";
   return (
     <tr>
       <td>
         {label ? label : (
-          <input
+          <HtmlFormCellInput
             // 작성 중간 품명 — 문자. 작업 전·종료는 고정 라벨
-            className="html-form-sign-input"
-            disabled={!writeEdit}
-            readOnly={!writeEdit}
-            {...bind(() => row?.productNm ?? "", (v) => onPatch?.({ productNm: v }))}
+            kind={CELL_KIND.TEXT}
+            title="품명"
+            editable={writeEdit}
+            value={row ? row?.productNm ?? "" : undefined}
+            onChange={row ? (v) => onPatch?.({ productNm: v }) : undefined}
           />
         )}
       </td>
       <td>
-        <input
+        <HtmlFormCellInput
           // 측정시각 — 작성만. 미리보기는 빈칸
-          className="html-form-sign-input"
-          disabled={!writeEdit}
-          readOnly={!writeEdit}
-          {...bind(() => row?.checkTime ?? "", (v) => onPatch?.({ checkTime: v }))}
+          kind={CELL_KIND.TIME}
+          title="시각"
+          editable={writeEdit}
+          value={row ? row?.checkTime ?? "" : undefined}
+          onChange={row ? (v) => onPatch?.({ checkTime: v }) : undefined}
         />
       </td>
       <td>
         <span className="ccp-pkg-num-wrap">
-          <input
+          <HtmlFormCellInput
             // 작업장 온도 — 숫자만. 미리보기는 빈칸
-            className="html-form-sign-input ccp-pkg-num"
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            disabled={!writeEdit}
-            readOnly={!writeEdit}
-            {...bind(() => cell("temp"), (v) => onPatch?.({ cells: { temp: v } }))}
+            kind={CELL_KIND.NUM}
+            title="온도"
+            editable={writeEdit}
+            value={row ? cell("temp") : undefined}
+            onChange={row ? (v) => onPatch?.({ cells: { temp: v } }) : undefined}
           />
           <span>℃</span>
         </span>
       </td>
       <td>
-        <input
+        <HtmlFormCellInput
           // 포장 소진시간 분 — 숫자만
-          className="html-form-sign-input ccp-pkg-num"
-          type="number"
-          inputMode="numeric"
-          min={0}
-          disabled={!writeEdit}
-          readOnly={!writeEdit}
-          {...bind(() => cell("min"), (v) => onPatch?.({ cells: { min: v } }))}
+          kind={CELL_KIND.NUM}
+          title="분"
+          editable={writeEdit}
+          value={row ? cell("min") : undefined}
+          onChange={row ? (v) => onPatch?.({ cells: { min: v } }) : undefined}
         />
       </td>
       <td>
-        <input
+        <HtmlFormCellInput
           // 포장 소진시간 초 — 숫자만
-          className="html-form-sign-input ccp-pkg-num"
-          type="number"
-          inputMode="numeric"
-          min={0}
-          disabled={!writeEdit}
-          readOnly={!writeEdit}
-          {...bind(() => cell("sec"), (v) => onPatch?.({ cells: { sec: v } }))}
+          kind={CELL_KIND.NUM}
+          title="초"
+          editable={writeEdit}
+          value={row ? cell("sec") : undefined}
+          onChange={row ? (v) => onPatch?.({ cells: { sec: v } }) : undefined}
         />
       </td>
       <td className="text-center ccp-pf-yn">
