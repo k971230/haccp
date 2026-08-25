@@ -18,7 +18,10 @@ import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteBlocker;
 import com.haccp.common.validation.DeleteValidation;
 import com.haccp.draft.dto.DraftDeleteItem;
+import com.haccp.draft.dto.DraftLogRow;
+import com.haccp.draft.dto.DraftPassRow;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.Function;
 
@@ -159,5 +162,61 @@ public final class DraftSupport {
         } catch (NumberFormatException e) {
             return false;
         }
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 신규 문서의 기록 표 기본행을 만든다 — 구간(작업 전·작업 후)마다 라벨 행 1줄
+     *   2) 상세 조회의 신규 분기에서 호출한다
+     *   3) 값은 비워 둔다. 저장 SP 가 행 0건을 막으므로 이 기본행이 있어야 좌측 저장이 된다
+     */
+    public static List<DraftLogRow> seedLogRows(
+            // phaseCds: 구간 코드 순서 — BEFORE, AFTER
+            String... phaseCds
+    ) {
+        List<DraftLogRow> rows = new ArrayList<>();
+        int seq = 0;
+        for (String phaseCd : phaseCds) {
+            DraftLogRow row = new DraftLogRow();
+            // rowSeq 는 1부터 — SP 가 0 이하를 거부한다
+            row.setRowSeq(++seq);
+            row.setPhaseCd(phaseCd);
+            row.setProductNm("");
+            row.setCheckTime("");
+            row.setJudgeCd("");
+            row.setJudgeModYn("N");
+            row.setCheckerNm("");
+            row.setSignYn("N");
+            row.setCells(new LinkedHashMap<>());
+            rows.add(row);
+        }
+        return rows;
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 신규 문서의 통과량 표 기본행을 만든다 — 지면 미리보기와 같은 줄 수
+     *   2) 금속검출 상세 조회의 신규 분기에서 호출한다
+     *   3) 값은 비워 둔다. 사용자가 「제품 통과 행 추가」로 더 붙인다
+     */
+    public static List<DraftPassRow> seedPassRows(
+            // count: 기본 줄 수 — 지면 PASS_CNT 와 같은 값
+            int count
+    ) {
+        List<DraftPassRow> rows = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            DraftPassRow row = new DraftPassRow();
+            row.setRowSeq(i);
+            row.setProductNm("");
+            row.setPassQty("");
+            row.setDetectQty("");
+            row.setRemark("");
+            rows.add(row);
+        }
+        return rows;
     }
 }

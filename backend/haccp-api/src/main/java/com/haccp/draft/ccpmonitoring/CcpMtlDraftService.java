@@ -47,6 +47,9 @@ public class CcpMtlDraftService {
     private static final String USR_TMPL_PREFIX = "tml_ccp_mtl_";
 
     /** 감도 5칸 — 지면 감도열 item_cd(MTL_HDR)와 DB 컬럼(camelCase) 대응 */
+    /** 신규 문서 통과량 기본 줄 수 — 지면 CcpMtlPaper.PASS_CNT 와 같은 값 */
+    private static final int PASS_ROW_CNT = 4;
+
     private static final String[][] SENS_CELLS = {
         { "hdr-fe", "feOnlyCd" },
         { "hdr-sus", "stsOnlyCd" },
@@ -139,6 +142,9 @@ public class CcpMtlDraftService {
             header.put("baseDt", "");
             header.put("tmplCd", tmpl);
             header.put("checkerNm", "");
+            // 신규 — 감도 구간별 1줄, 통과량 기본 4줄. 행이 0건이면 좌측 저장 SP 가 막는다
+            logRows.addAll((ArrayNode) objectMapper.valueToTree(DraftSupport.seedLogRows("BEFORE", "AFTER")));
+            passRows.addAll((ArrayNode) objectMapper.valueToTree(DraftSupport.seedPassRows(PASS_ROW_CNT)));
         }
         // 양식 항목 — 한계기준·주기·방법·감도열·개선조치
         root.set("items", objectMapper.valueToTree(mapper.selectFormItems(coCd, tmpl, 1)));

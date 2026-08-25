@@ -125,7 +125,7 @@ public class CcpLogDraftService {
      * 코멘트:
      *   1) 헤더·양식항목·기록행·개선조치를 한 JSON 으로 조립한다
      *   2) 좌측 행 클릭·양식 선택이 호출한다
-     *   3) docIdx 가 없으면 신규 — 양식 항목만 싣고 기록행은 빈 배열이다
+     *   3) docIdx 가 없으면 신규 — 양식 항목과 구간별 기본행 1줄씩(작업 전·작업 종료)을 싣는다
      */
     public JsonNode detail(
             // family: 포장·가열 구분
@@ -159,7 +159,8 @@ public class CcpLogDraftService {
             header.put("baseDt", "");
             header.put("tmplCd", tmpl);
             header.put("checkerNm", "");
-            root.set("logRows", objectMapper.createArrayNode());
+            // 신규 — 구간별 라벨 행 1줄씩 깔아 준다. 행이 0건이면 좌측 저장 SP 가 막는다
+            root.set("logRows", objectMapper.valueToTree(DraftSupport.seedLogRows("BEFORE", "AFTER")));
         }
         // 양식 항목 — 한계기준·주기·방법·개선조치. 지면 상단이 쓴다
         root.set("items", objectMapper.valueToTree(
