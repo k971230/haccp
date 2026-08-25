@@ -232,19 +232,21 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 | `ccp-monitoring` | `ccp-pkg` | CCP 포장 모니터링일지 작성 | `ccp-pkg` | 4301 | CCP | tml_ccp_pkg_NNN | draft/HtmlFormDraftPage + draft/ccp-monitoring/CcpPkgDraftPage·Rule | 좌측 공통 동일 · 지면 CcpPkgPaper(mode=write 기록행 제어) | ccpMonitoringDraftApi·documentApi(approval) | CcpPkgDraftController (com.haccp.draft.ccpmonitoring) | /api/v1/draft/ccp-monitoring/ccp-pkg/{forms,list,detail,save,validate-delete,delete} | mapper/draft/ccpmonitoring/CcpLogDraftMapper | sp_ccp_log_r_000 · sp_tbl_ccp_generic_monitor_* | add·save·del·search·print·transfer |
 | `ccp-monitoring` | `ccp-htg` | CCP 가열 모니터링일지 작성 | `ccp-htg` | 4302 | CCP | tml_ccp_htg_NNN | 위와 같음 (CcpHtgPaper) | 좌측 공통 동일 | 위와 같음 | CcpHtgDraftController | /api/v1/draft/ccp-monitoring/ccp-htg/* | 위와 같음 | 위와 같음 | 위와 같음 |
 | `ccp-monitoring` | `ccp-mtl` | CCP 금속검출 모니터링일지 작성 | `ccp-mtl` | 4303 | CCP | tml_ccp_mtl_NNN | 위와 같음 (CcpMtlPaper · 표 2개) | 좌측 공통 동일 | 위와 같음 | CcpMtlDraftController | /api/v1/draft/ccp-monitoring/ccp-mtl/* | mapper/draft/ccpmonitoring/CcpMtlDraftMapper | sp_ccp_mtl_r_000 · sp_tbl_ccp_metal_monitor_* | 위와 같음 |
+| `hwp-doc` | `hwp-write` | HWP 양식 작성 | `hwp-write` | 4401 | DOC | 사용여부 예인 HWP 양식 전체 | draft/HtmlFormDraftPage + draft/hwp-doc/HwpDraftPage·HwpEditorPane·Rule | 좌측 공통 동일 · 우측 rhwp 편집기(renderDetail) · HwpTaskLookupModal | hwpDraftApi·documentApi(templates·files·approval) | HwpDraftController (com.haccp.draft.hwp) | /api/v1/draft/hwp-doc/hwp-write/{forms,list,tasks,detail,save,validate-delete,delete} · POST /api/v1/docs/documents/{docIdx}/files · PUT /api/v1/docs/documents/approval | mapper/draft/hwp/HwpDraftMapper | sp_draft_hwp_r_000 · sp_draft_hwp_task_r_000 · sp_tbl_hwp_document_c_000 · sp_tbl_document_d_000 | add·save·del·search·print·transfer |
 
 대분류 `draft`(표시명 「양식 작성」)는 121에서 추가하고 123에서 CCP 를 형제로 붙였다.
-중분류는 `docs` 아래 `html`·`ccp` 와 `menu_cd` 가 겹치지 않게 `hyg`·`ccp-chk` 를 쓴다 (`tbl_menu UNIQUE (co_cd, menu_cd)`).
+중분류는 `docs` 아래 `html`·`ccp`·`hwp` 와 `menu_cd` 가 겹치지 않게 `hyg`·`ccp-chk`·`hwp-doc` 을 쓴다 (`tbl_menu UNIQUE (co_cd, menu_cd)`).
 자바 패키지는 하이픈을 못 쓰므로 `ccp-chk` → `com.haccp.draft.ccp` 다.
 
 ```
 양식 작성 (draft)
  ├─ HYG 양식 (hyg)              기준 /docs/html/hyg-process-template → 작성 /draft/hyg/hyg-process
  ├─ CCP 양식 (ccp-chk)          기준 /docs/html/ccp-verify-template  → 작성 /draft/ccp-chk/ccp-verify
- └─ CCP 모니터링 (ccp-monitoring)
-     ├─ ccp-pkg  기준 /docs/html/ccp-pkg-template → 작성 /draft/ccp-monitoring/ccp-pkg
-     ├─ ccp-htg  기준 /docs/html/ccp-htg-template → 작성 /draft/ccp-monitoring/ccp-htg
-     └─ ccp-mtl  기준 /docs/html/ccp-mtl-template → 작성 /draft/ccp-monitoring/ccp-mtl
+ ├─ CCP 모니터링 (ccp-monitoring)
+ │   ├─ ccp-pkg  기준 /docs/html/ccp-pkg-template → 작성 /draft/ccp-monitoring/ccp-pkg
+ │   ├─ ccp-htg  기준 /docs/html/ccp-htg-template → 작성 /draft/ccp-monitoring/ccp-htg
+ │   └─ ccp-mtl  기준 /docs/html/ccp-mtl-template → 작성 /draft/ccp-monitoring/ccp-mtl
+ └─ HWP 문서 (hwp-doc)          기준 /docs/hwp/hwp-template-management → 작성 /draft/hwp-doc/hwp-write
 ```
 
 CCP 모니터링 3화면은 지면에 기록 표가 있다. `mode="template"`(기준관리)은 예전 그대로 미리보기 4행 고정이고,
