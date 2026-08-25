@@ -100,10 +100,16 @@ export function htmlFormPaperEdit(
   editable: boolean,
   // 기준관리 수정 버튼 이후
   editing?: boolean,
-): { templateEdit: boolean; writeEdit: boolean } {
+): { templateEdit: boolean; writeEdit: boolean; writeView: boolean } {
   return {
     templateEdit: mode === "template" && !!editing && editable && !locked,
     writeEdit: mode === "write" && editable,
+    /**
+     * 저장된 실제 데이터를 그리는가 — 고칠 수 있는가와 다른 축이다.
+     * 전송한 문서·결재 미리보기는 editable=false 지만 값은 그대로 보여야 한다.
+     * 이 둘을 한 조건으로 묶으면 잠긴 문서가 빈 예시 지면으로 보인다.
+     */
+    writeView: mode === "write",
   };
 }
 

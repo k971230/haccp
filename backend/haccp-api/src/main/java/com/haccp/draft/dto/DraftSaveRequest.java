@@ -51,4 +51,10 @@ public class DraftSaveRequest {
     private String confirmNm;
     // 이탈·개선조치 푸터 — 화면이 따로 넘기면 우선한다
     private DocCorrectiveDto corrective;
+
+    /**
+     * 이탈여부 Y/N — HWP 작성 목록의 이탈여부 칸이 보낸다.
+     * HTML 5화면은 지면 하단 시그널과 이탈내용으로 판단하므로 넘기지 않는다.
+     */
+    private String deviationYn;
 }

@@ -66,6 +66,8 @@ export interface HtmlFormDraftListRow {
   status: string;
   rowCnt?: number;
   ngCnt?: number;
+  /** 이탈여부 Y/N — HWP 작성 목록만 채워 온다. 미완료 수(ngCnt)와 다른 축이다 */
+  deviationYn?: string | null;
 }
 
 /** 상세 — 헤더 JSON + 점검행 + 이탈 푸터 */
@@ -121,6 +123,8 @@ export interface HtmlFormDraftSaveRequest {
   actionNm?: string;
   confirmNm?: string;
   corrective?: DocCorrectiveValue | null;
+  /** 이탈여부 Y/N — HWP 작성 목록의 이탈여부 칸만 보낸다 */
+  deviationYn?: string;
   /** 기록 표 행 — CCP 모니터링일지 작성만 채운다 */
   logRows?: HtmlFormLogRow[];
   /** 금속검출 통과량 표 행 — MTL 작성만 채운다 */

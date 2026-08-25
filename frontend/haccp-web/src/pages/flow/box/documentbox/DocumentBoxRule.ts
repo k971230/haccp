@@ -50,12 +50,12 @@ export const APPR_HIST_PERSIST_ID = "doc-box-approval-history" as const;
  * 일자: 2026-08-19
  * 코멘트:
  *   1) mode별 tbl_screen.scrn_cd
- *   2) 권한·pref 키에 쓴다
- *   3) 폴더를 옮겨도 값을 바꾸지 않는다
+ *   2) 권한 조회에 쓴다
+ *   3) 결재 2화면은 2026-08-25 에 approval-inbox·approval-history 에서 개명했다 (마이그레이션 127)
  */
 export function scrnCdOf(mode: DocumentBoxMode): string {
-  if (mode === "approval") return "approval-inbox";
-  if (mode === "history") return "approval-history";
+  if (mode === "approval") return "sign-ready";
+  if (mode === "history") return "sign-ok";
   return "document-inbox";
 }
 
@@ -63,9 +63,10 @@ export function scrnCdOf(mode: DocumentBoxMode): string {
  * 개발자: 박승우
  * 일자: 2026-08-19
  * 코멘트:
- *   1) 목록 그리드 persistId — 문서함/결재함/이력을 분리한다
+ *   1) 목록 그리드 persistId — 문서함/결재대기/결재완료를 분리한다
  *   2) 열 너비 저장이 화면마다 달라야 해서 키를 나눈다
- *   3) 값 변경 금지
+ *   3) 값 변경 금지 — 화면코드를 sign-ready·sign-ok 로 개명해도 이 키는 그대로 둔다.
+ *      바꾸면 사용자가 저장해 둔 열 너비가 전부 초기화된다
  */
 export function listPersistIdOf(mode: DocumentBoxMode): string {
   if (mode === "approval") return "doc-approval-inbox";

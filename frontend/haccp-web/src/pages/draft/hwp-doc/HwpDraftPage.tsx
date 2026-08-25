@@ -7,7 +7,8 @@
  *   1) 공통 HtmlFormDraftPage 에 rhwp 편집기·오늘 할일 팝업·본문 업로드만 얹는다.
  *      검색·목록·행 추가·저장·전송·삭제·전송취소는 HTML 작성 5화면과 같은 코드가 처리한다
  *   2) 우측이 지면(Paper)이 아니라 rhwp 라서 renderDetail 로 그린다 — 그 자리만 다르고 나머지는 형제 화면과 같다
- *   3) 본문은 문서 첨부(HWP_SRC)로 오간다. 저장하면 rhwp 에서 뽑아 올리고, 열면 내려받아 연다
+ *   3) 본문은 문서 첨부(HWP_SRC)로 오간다. 좌측 저장이 첫 파일을 만들고,
+ *      이후 칸 저장은 그 파일을 덮어쓴다. dirty 는 목록 _rowState 와 섞지 않는다
  *
  * 양식 파일·PDF 변환은 기존 HWP 편집 화면과 같은 API 를 쓴다. 새 경로를 만들지 않는다.
  *
@@ -71,13 +72,22 @@ export function HwpDraftPage() {
   // 오늘 할일 팝업 — 행 추가가 열고, 고르거나 취소하면 약속을 이행한다
   const [tasks, setTasks] = useState<HwpDraftTask[] | null>(null);
   const pickResolveRef = useRef<((pick: HtmlFormDraftPick | null) => void) | null>(null);
+  // 본문 dirty — rhwp 칸 입력. 목록 행 _rowState 와 다른 축이다
+  const editorDirtyRef = useRef(false);
+  const isBodyDirty = useCallback(() => editorDirtyRef.current, []);
+  const clearBodyDirty = useCallback(() => {
+    editorDirtyRef.current = false;
+  }, []);
+  const markBodyDirty = useCallback(() => {
+    editorDirtyRef.current = true;
+  }, []);
 
   /**
    * 개발자: 박승우
    * 일자: 2026-08-25
    * 코멘트:
-   *   1) 저장이 끝나면 편집기 내용을 본문 파일로 올린다
-   *   2) 공통 화면이 좌측·우측 저장 뒤에 호출한다
+   *   1) 저장이 끝나면 편집기 내용을 본문 파일로 올린다 — 첫 저장이면 생성, 이후면 덮어쓰기
+   *   2) 공통 화면이 좌측 저장·본문만 dirty 인 우측 저장 뒤에 호출한다
    *   3) 편집기가 아직 없으면 아무것도 올리지 않는다 — 좌측 저장만 한 경우다
    */
   const uploadBody = useCallback(async (
@@ -92,6 +102,7 @@ export function HwpDraftPage() {
     await uploadDocumentFile(docIdx, HWP_SRC_KIND, new File([Uint8Array.from(bytes)], fileNm, {
       type: "application/vnd.hancom.hwpx",
     }));
+    editorDirtyRef.current = false;
     try {
       await editor.notifySaved(fileNm);
     } catch {
@@ -151,16 +162,31 @@ export function HwpDraftPage() {
         pickBeforeAdd={pickBeforeAdd}
         // 저장 뒤 본문 업로드 — 이 화면만 파일이 따로 있다
         afterSave={uploadBody}
+        // 본문 dirty 여부 — 목록이 깨끗해도 칸 입력이면 덮어쓰기를 탄다
+        // 이탈여부 — 우측이 rhwp 편집기라 지면 하단 시그널을 둘 자리가 없다. 목록 칸으로 켠다
+      showDeviationColumn
+      isBodyDirty={isBodyDirty}
+        // 본문 저장·로드 성공 뒤 dirty 해제
+        clearBodyDirty={clearBodyDirty}
         // 우측 — 지면 대신 rhwp 편집기. 여는 일은 패널의 useEffect 가 한다
         renderDetail={({ buf, docIdx, canEdit, files }) => {
           nameRef.current = { baseKey: buf?.baseKey ?? "", tmplNm: buf?.tmplNm ?? "" };
           return (
             <HwpEditorPane
+              // 부모가 저장 때 쓰는 편집기 참조
               editorRef={editorRef}
+              // 열린 문서의 양식코드 — 비면 양식 원본을 열 수 없다
               tmplCd={buf?.tmplCd ?? ""}
+              // 저장된 문서 idx — 없으면 양식 원본을 연다
               docIdx={docIdx}
+              // 우측을 고칠 수 있는 상태인지 — 저장 전·전송 이후는 false
               canEdit={canEdit}
+              // 문서 첨부 목록 — 최신 HWP_SRC 를 연다
               files={files}
+              // 칸 입력 dirty — 목록 행 상태는 건드리지 않는다
+              onDirty={markBodyDirty}
+              // 파일을 연 뒤 깨끗 — 로드가 본문 변경으로 안 보이게
+              onClean={clearBodyDirty}
             />
           );
         }}

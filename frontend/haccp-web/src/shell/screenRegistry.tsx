@@ -25,6 +25,7 @@ import VerificationCheckPage from "@/pages/docs/ccp/VerificationCheckPage";
 import HygieneCheckPage from "@/pages/docs/prp/HygieneCheckPage";
 // 역할 — 통합 문서함·결재함·결재이력
 import DocumentBoxPage from "@/pages/flow/box/documentbox/DocumentBoxPage";
+import ApprovalAttachPage from "@/pages/flow/appr/attach/ApprovalAttachPage";
 // 역할 — 법적서류 그리드 첨부
 import LegalDocumentUploadPage from "@/pages/flow/box/legalupload/LegalDocumentUploadPage";
 // 역할 — 건강진단관리기록부 인원 그리드
@@ -211,8 +212,9 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
 
   // 문서 현황·결재
   "document-inbox": () => <DocumentBoxPage mode="inbox" />,
-  "approval-inbox": () => <DocumentBoxPage mode="approval" />,
-  "approval-history": () => <DocumentBoxPage mode="history" />,
+  "sign-ready": () => <DocumentBoxPage mode="approval" />,
+  "sign-ok": () => <DocumentBoxPage mode="history" />,
+  "attach": ApprovalAttachPage,
   "legal-document-upload": LegalDocumentUploadPage,
   "corrective-action-management": CorrectiveActionManagementPage,
 };

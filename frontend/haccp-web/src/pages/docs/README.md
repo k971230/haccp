@@ -80,8 +80,8 @@ pages/docs/
 | CCP-3P 금속검출 양식 | `ccp-mtl-template` | `ccp-mtl-template-list-v2` |
 | 문서주기 | `schedule-cycle-management` | `doc-cycle-forms` |
 | 문서함 | `document-inbox` | `doc-document-inbox` |
-| 결재함 | `approval-inbox` | `doc-approval-inbox` |
-| 결재이력 | `approval-history` | `doc-approval-history` |
+| 결재 대기 | `sign-ready` | `doc-approval-inbox` |
+| 결재 완료 | `sign-ok` | `doc-approval-history` |
 | 법적서류 | `legal-document-upload` | `legal-tmpl-list` · `legal-doc-list` |
 | 개선조치 | `corrective-action-management` | `doc-corrective-actions` |
 | HWP leaf | 각 scrnCd | `hwp-document-list-{scrnCd}` |

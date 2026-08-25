@@ -101,12 +101,14 @@ export function CcpMtlPaper({
 }: HtmlFormPaperProps) {
   // 적합/부적합 헤더 — 공통코드 JUDGE_PF
   const { passNm, failNm } = useJudgePfLabels();
-  const { templateEdit, writeEdit } = htmlFormPaperEdit(mode, locked, editable, editing);
+  const { templateEdit, writeEdit, writeView } = htmlFormPaperEdit(mode, locked, editable, editing);
   // 작성 제어 렌더 여부 — logRows 를 받은 mode=write 에서만. 기준관리는 항상 false
-  const writeRows = writeEdit && !!logRows && !!onLogRowsChange;
+  // 저장된 기록행이 있으면 그린다 — 잠긴 문서·결재 미리보기도 값이 보여야 한다
+  const writeRows = writeView && !!logRows;
   const rows = logRows ?? [];
   // 통과량 표 제어 렌더 여부 — 감도표와 따로 판단한다
-  const writePass = writeEdit && !!passRows && !!onPassRowsChange;
+  // 통과량 표도 같다 — 값 표시와 편집 가능은 다른 축이다
+  const writePass = writeView && !!passRows;
   const pass = passRows ?? [];
 
   // 항목 패치 — 한계기준·주기·방법·개선조치·감도열

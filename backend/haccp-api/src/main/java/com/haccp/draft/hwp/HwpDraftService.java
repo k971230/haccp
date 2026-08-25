@@ -27,6 +27,8 @@ import com.haccp.draft.dto.DraftFormRow;
 import com.haccp.draft.dto.DraftListRow;
 import com.haccp.draft.dto.DraftSaveRequest;
 import com.haccp.draft.dto.DraftTaskRow;
+import com.haccp.docs.ccp.dto.DocCorrectiveDto;
+import com.haccp.flow.ca.DocCorrectiveSupport;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -44,6 +46,8 @@ public class HwpDraftService {
 
     private final HwpDraftMapper mapper;
     private final DocumentService documentService;
+    // 이탈여부 칸 — 켜면 개선조치 행을 만들어 이탈·개선조치 화면에 올린다
+    private final DocCorrectiveSupport correctiveSupport;
 
     /** 작성 가능 양식 — 사용양식 관리에서 사용여부 예로 둔 HWP 양식 */
     public List<DraftFormRow> forms() {
@@ -115,7 +119,18 @@ public class HwpDraftService {
             // docIdx: tbl_document.idx
             Long docIdx
     ) {
-        return documentService.detail(docIdx);
+        // 문서 허브는 회사코드만 지킨다. 이 화면은 HWP 만 연다 — HTML 헤더가 섞이면 거절
+        Map<String, Object> out = documentService.detail(docIdx);
+        Object headerObj = out.get("header");
+        String kind = "";
+        if (headerObj instanceof Map<?, ?> header) {
+            Object raw = header.get("docKind");
+            kind = raw == null ? "" : String.valueOf(raw);
+        }
+        if (!"hwp".equalsIgnoreCase(kind)) {
+            throw new BizException("HWP 문서가 아닙니다.");
+        }
+        return out;
     }
 
     /**
@@ -144,7 +159,50 @@ public class HwpDraftService {
         if (hwp.getTmplCd().isEmpty()) {
             throw new BizException("작성할 양식을 선택하세요.");
         }
-        return documentService.saveHwpDocument(hwp, requestMeta);
+        Long docIdx = documentService.saveHwpDocument(hwp, requestMeta);
+        applyDeviation(docIdx, hwp, req);
+        return docIdx;
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 목록 이탈여부 칸을 개선조치 행으로 옮긴다 — 지면이 없는 화면이라 이 칸이 이탈 신호다
+     *   2) HWP 저장 직후 호출한다
+     *   3) 켜면 빈 개선조치 행을 만들고, 실제 조치 작성은 이탈·개선조치 화면에서 한다
+     *
+     * 끌 때는 이미 적어 둔 조치가 있으면 지우지 않는다.
+     * 여기서 넘기는 corrective 는 항상 비어 있어(HWP 는 지면 푸터가 없다) 그대로 넘기면
+     * SP 가 개선조치 행을 삭제해 다른 화면에서 쓴 내용이 사라진다.
+     */
+    private void applyDeviation(
+            // docIdx: 방금 저장한 문서
+            Long docIdx,
+            // hwp: 양식코드·기준일 — 개선조치 행에 같이 남긴다
+            HwpDocumentSaveRequest hwp,
+            // req: 화면이 보낸 저장 요청
+            DraftSaveRequest req
+    ) {
+        String coCd = LoginUserContext.coCd();
+        boolean on = "Y".equalsIgnoreCase(DraftSupport.nvl(req.getDeviationYn()));
+        // 껐을 때(= 이탈 아님) 내용이 남아 있으면 손대지 않는다. 목록은 다시 Y 로 보인다
+        if (!on) {
+            DocCorrectiveDto existing = correctiveSupport.load(coCd, docIdx);
+            boolean written = existing != null
+                    && (!DraftSupport.nvl(existing.getDeviationDesc()).isEmpty()
+                        || !DraftSupport.nvl(existing.getActionDesc()).isEmpty());
+            if (written) return;
+        }
+        correctiveSupport.saveAutoIfNg(
+                coCd,
+                docIdx,
+                hwp.getTmplCd(),
+                hwp.getBaseDt(),
+                req.getCorrective(),
+                on,
+                LoginUserContext.userId()
+        );
     }
 
     /**

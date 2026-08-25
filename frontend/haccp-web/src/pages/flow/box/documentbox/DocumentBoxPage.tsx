@@ -1,12 +1,12 @@
 /**
- * DocumentBoxPage — 통합 문서함·결재 패널 (document-inbox/approval-inbox).
+ * DocumentBoxPage — 통합 문서함·결재 패널 (document-inbox/sign-ready/sign-ok).
  *
  * 개발자: 박승우
  * 일자: 2026-08-06
  * 코멘트:
  *   1) 공통 DocFormSearchToolbar로 기간·문서번호·작성자를 조회하고 타입·상태 필터를 얹는다
  *   2) 목록은 MesEditableGrid selectable + 타입(docKind) 컬럼으로 값을 camelCase 정규화해 표시한다
- *   3) 결재함 모드에서는 REQ/REV만 남기고 문서 작성·삭제는 숨긴다
+ *   3) 결재 모드(sign-ready·sign-ok)에서는 문서 작성·삭제를 숨기고 본문 미리보기를 낸다
  *
  * PIPELINE[HF83] DOC 화면
  * PIPELINE[HF82, HF29, HF39, HF56, HF120] 연관 모듈
@@ -33,28 +33,22 @@ import {
   type DocFormSearchValues,
 } from "@/components/form/DocFormSearchToolbar";
 // 역할 — 토스트·확인
-import { mesConfirmDanger, mesToast } from "@/shell/dialog";
+import { mesToast } from "@/shell/dialog";
 // 역할 — 오류 업무 문구
 import { mesError } from "@/shell/errors";
-// 역할 — 공통 메시지
-import { MES } from "@/shell/messages";
 // 역할 — 셸 조회·삭제 명령
 import { usePageCommands } from "@/shell/pageCommands";
-// 역할 — 화면 경로·문서 작성 deep-link
-import { routeOf } from "@/shell/tabRoute";
+// 역할 — 문서 작성 deep-link
 import { routeForDocument } from "@/lib/documentNav";
 // 역할 — URL ?docIdx= 자동 선택
 import { useDocIdxQuery } from "@/hooks/useDocIdxQuery";
 import type { EditableRow } from "@/types/editable";
 import {
-  deleteDocument,
   downloadDocumentFile,
   getDocumentDetail,
   listApprovalHistory,
   listApprovalInbox,
   listDocuments,
-  uploadDocumentFile,
-  validateDeleteDocument,
   type DocumentDetail,
   type DocumentListRow,
 } from "@/api/documentApi";
@@ -64,6 +58,8 @@ import { listDocumentRelations, saveDocumentRelation, type WorkflowRow } from "@
 import { useCommonCodes } from "@/hooks/useCommonCodes";
 // 역할 — 공통 결재 툴바
 import { DocumentApprovalToolbar } from "@/components/document/DocumentApprovalToolbar";
+// 역할 — 결재 대상 문서 본문 미리보기 (HWP/HTML 분기는 이 컴포넌트가 한다)
+import { ApprovalDocumentPreview } from "@/components/document/ApprovalDocumentPreview";
 // 역할 — Blob URL 해제 대기 — 파일 API 타임아웃과 동일
 import { API_TIMEOUT_FILE_MS } from "@/config/envConfig";
 // 역할 — 양식 유형(hwp/html) 정규화·라벨 — DB 정본은 소문자
@@ -90,6 +86,9 @@ interface DocumentBoxPageProps {
   mode: DocumentBoxMode;
 }
 
+/** 문서함에 모이는 상태 — 결재까지 끝난 문서 */
+const DONE_STATUS = "APV";
+
 /**
  * 개발자: 박승우
  * 일자: 2026-08-06
@@ -105,9 +104,8 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
   const screenCd = scrnCdOf(boxMode);
   const canWrite = useAuthStore((s) => s.can(screenCd, "write"));
   const canModify = useAuthStore((s) => s.can(screenCd, "modify"));
-  const canDelete = useAuthStore((s) => s.can("document-inbox", "delete"));
   const asyncAct = useAsyncAction();
-  const { codes: statusCodes, label: statusLabel } = useCommonCodes("DOC_STATUS");
+  const { label: statusLabel } = useCommonCodes("DOC_STATUS");
   const { label: roleLabel } = useCommonCodes("APPR_ROLE");
   const { label: resultLabel } = useCommonCodes("APPR_RESULT");
 
@@ -115,25 +113,19 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
   const [search, setSearch] = useState<DocFormSearchValues>(() => defaultDocFormSearch());
   const searchRef = useRef(search);
   searchRef.current = search;
-  // 화면 추가 필터 — 상태·타입 (문서함만)
-  const [status, setStatus] = useState("");
+  // 화면 추가 필터 — 타입 (문서함만). 상태는 승인완료 고정이라 필터를 두지 않는다
   const [docKind, setDocKind] = useState("");
-  const statusRef = useRef(status);
-  statusRef.current = status;
   const docKindRef = useRef(docKind);
   docKindRef.current = docKind;
 
   const [rows, setRows] = useState<DocumentListRow[]>([]);
   const [selected, setSelected] = useState<DocumentListRow | null>(null);
   const [detail, setDetail] = useState<DocumentDetail | null>(null);
-  const [uploadKind, setUploadKind] = useState<"ATTACH" | "PHOTO" | "HWP_SRC" | "PDF">("ATTACH");
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [relations, setRelations] = useState<WorkflowRow[]>([]);
   const [relationType, setRelationType] = useState("PLAN_REPORT");
   const [relationDocIdx, setRelationDocIdx] = useState("");
   const [listLoading, setListLoading] = useState(false);
   const [listActiveKey, setListActiveKey] = useState<string | null>(null);
-  const [selKeys, setSelKeys] = useState<string[]>([]);
   const [selReset, setSelReset] = useState(0);
 
   const listColumns = useMemo(() => buildListColumns(), []);
@@ -172,7 +164,6 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
    */
   const loadList = useCallback(async () => {
     const q = searchRef.current;
-    const st = statusRef.current;
     const kind = docKindRef.current;
     setListLoading(true);
     try {
@@ -192,18 +183,18 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
           keyword: q.docNo.trim() || q.writer.trim() || undefined,
         });
       } else {
+        // 문서함 — 결재까지 끝난 문서만 모아 보는 보관함이다. 진행 중 문서는 결재 화면에서 본다
         list = await listDocuments({
           fromDt: q.fromDt,
           toDt: q.toDt,
           keyword: q.docNo.trim() || undefined,
           writerId: q.writer.trim() || undefined,
-          status: st || undefined,
+          status: DONE_STATUS,
         });
       }
       let next = list;
       if (boxMode === "inbox" && kind) next = next.filter((row) => toDocKind(row.docKind) === kind);
       setRows(next);
-      setSelKeys([]);
       setSelReset((n) => n + 1);
     } catch (e) {
       mesError(e);
@@ -219,7 +210,6 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
       setListActiveKey(String(row.docIdx));
       setDetail(await getDocumentDetail(row.docIdx));
       setRelations(await listDocumentRelations(row.docIdx));
-      setUploadFile(null);
     } catch (e) {
       mesError(e);
     }
@@ -235,28 +225,6 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
     const row = rows.find((r) => r.docIdx === openDocIdx);
     if (row) void loadDetail(row);
   }, [openDocIdx, rows, loadDetail]);
-
-  const editableFile = detail?.header.status === "WRK" || detail?.header.status === "RJT";
-
-  /** 첨부 업로드 */
-  const handleUpload = () =>
-    asyncAct.run(async () => {
-      if (!selected || !uploadFile) {
-        mesToast("업로드할 파일을 선택하세요.", "warn");
-        return;
-      }
-      if (!editableFile) {
-        mesToast(MES.inApprovalLocked, "warn");
-        return;
-      }
-      try {
-        await uploadDocumentFile(selected.docIdx, uploadKind, uploadFile);
-        mesToast("파일이 첨부되었습니다.", "success");
-        await loadDetail(selected);
-      } catch (e) {
-        mesError(e);
-      }
-    }, "upload");
 
   /** 첨부 다운로드 */
   const handleDownload = async (fileIdx: number, name: string) => {
@@ -290,48 +258,9 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
       }
     }, "relation");
 
-  /**
-   * 개발자: 박승우
-   * 일자: 2026-08-06
-   * 코멘트:
-   *   1) 체크 선택 행 또는 활성 행의 HWP 임시·반려 문서를 삭제한다
-   *   2) 문서함 삭제 버튼·셸 del에서 호출한다
-   *   3) DB형은 양식 화면 삭제를 안내한다
-   */
-  const handleDelete = () =>
-    asyncAct.run(async () => {
-      const targets = listRows.filter((row) => selKeys.includes(row._key));
-      const focus = targets.length > 0
-        ? targets
-        : selected
-          ? listRows.filter((row) => row.docIdx === selected.docIdx)
-          : [];
-      if (focus.length === 0) {
-        mesToast(MES.selectRow, "warn");
-        return;
-      }
-      const nonHwp = focus.find((row) => !isHwpKind(row.docKind));
-      if (nonHwp) {
-        mesToast("DB형 문서는 해당 양식 화면에서 삭제하세요.", "warn");
-        return;
-      }
-      try {
-        const keys = focus.map((row) => ({ docIdx: row.docIdx }));
-        await validateDeleteDocument(keys);
-        if (!(await mesConfirmDanger(MES.deleteConfirm(`${focus.length}건`)))) return;
-        await deleteDocument(keys);
-        mesToast(MES.deleteDone, "success");
-        setSelected(null);
-        setDetail(null);
-        await loadList();
-      } catch (e) {
-        mesError(e);
-      }
-    }, "del");
-
   usePageCommands({
+    // 세 화면 모두 조회 전용 — 셸 삭제 명령을 붙이지 않는다
     search: () => { void asyncAct.run(loadList, "search"); },
-    del: boxMode === "inbox" ? () => { void handleDelete(); } : undefined,
   });
 
   return (
@@ -349,63 +278,25 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
         actionBusy={asyncAct.isBusy()}
         // 상태·타입 필터 — 문서함만
         extraFilters={boxMode === "inbox" ? (
-          <>
-            <label className="flex flex-col gap-1 text-xs text-slate-600">
-              상태
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="h-mes-input rounded-mes border border-slate-300 bg-white px-2 text-sm"
-              >
-                <option value="">전체</option>
-                {statusCodes.filter((c) => c.subCd !== "TMP").map((code) => (
-                  <option key={code.subCd} value={code.subCd}>{code.codeNm}</option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-slate-600">
-              타입
-              <select
-                value={docKind}
-                onChange={(e) => setDocKind(e.target.value)}
-                className="h-mes-input rounded-mes border border-slate-300 bg-white px-2 text-sm"
-              >
-                {DOC_KIND_OPTIONS.map((opt) => (
-                  <option key={opt.value || "ALL"} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </label>
-          </>
+          <label className="flex flex-col gap-1 text-xs text-slate-600">
+            타입
+            <select
+              value={docKind}
+              onChange={(e) => setDocKind(e.target.value)}
+              className="h-mes-input rounded-mes border border-slate-300 bg-white px-2 text-sm"
+            >
+              {DOC_KIND_OPTIONS.map((opt) => (
+                <option key={opt.value || "ALL"} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </label>
         ) : undefined}
-        // 문서함: 작성·삭제 / 결재함·이력: 안내
-        actions={boxMode === "inbox" ? (
-          <>
-            <MesButton
-              // HWP 문서 작성 화면
-              variant="add"
-              onClick={() => navigate(routeOf("handover-hwp"))}
-            >
-              신규
-            </MesButton>
-            <MesButton
-              // 저장은 양식·상세에서 — 목록 헤더 자리만 맞춤
-              variant="save"
-              disabled
-            >
-              저장
-            </MesButton>
-            <MesButton
-              // 체크/선택 HWP 문서 삭제
-              variant="danger"
-              disabled={!canDelete || asyncAct.isBusy("del")}
-              onClick={() => void handleDelete()}
-            >
-              삭제
-            </MesButton>
-          </>
-        ) : (
+        // 세 화면 모두 조회 전용 — 무엇을 모아 둔 목록인지만 알린다
+        actions={(
           <span className="text-xs text-slate-400">
-            {boxMode === "approval" ? "내 결재 대기" : "내가 처리한 결재"}
+            {boxMode === "approval" ? "내 결재 대기"
+              : boxMode === "history" ? "내가 처리한 결재"
+                : "결재 완료 문서"}
           </span>
         )}
       />
@@ -443,9 +334,6 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
             activeKey={listActiveKey}
             // 행 클릭 시 우측 상세 로드
             onActivate={(row) => { void loadDetail(row); }}
-            // 다중 선택 체크박스 — 삭제 대상
-            selectable
-            onSelectionChange={(picked) => setSelKeys(picked.map((row) => row._key))}
             selectionResetKey={selReset}
             showRowNum
           />
@@ -476,10 +364,14 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
                     docIdx={detail.header.docIdx}
                     // WRK/REQ/REV/APV/RJT
                     status={detail.header.status}
-                    // 결재함·문서함 쓰기/수정 권한
-                    canApprove={canWrite || canModify}
-                    // 문서함·이력 — 상신·취소만 / 결재함 — 검토·승인·반려
+                    // 문서함은 조회 전용 — 결재 버튼을 내지 않는다
+                    canApprove={boxMode !== "inbox" && (canWrite || canModify)}
+                    // 문서함·결재완료 — 상신·취소만 / 결재대기 — 검토·승인·반려
                     writerActionsOnly={boxMode !== "approval"}
+                    // 결재완료(sign-ok) 에서만 본인 결재를 되돌리는 「취소」를 낸다
+                    approverUndo={boxMode === "history"}
+                    // 대기 단계 역할 — 검토 단계면 「승인」이 REVIEW 를 보낸다
+                    pendingRoleCd={detail.approvals.find((step) => step.resultCd === "W")?.roleCd}
                     // 결재 후 목록·상세 재조회
                     onApproved={() => {
                       void loadList();
@@ -487,16 +379,16 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
                     }}
                     // 상태 라벨 — 공통코드
                     statusLabel={statusLabel(detail.header.status, detail.header.status ?? "")}
-                    // 양식 작성 화면으로 — DB형 화면 또는 HWP 에디터
-                    onEdit={() => {
+                    // 양식 작성 화면으로 — 문서함만. 결재자는 문서를 고치지 않는다
+                    onEdit={boxMode !== "inbox" ? undefined : () => {
                       navigate(routeForDocument({
                         docIdx: detail.header.docIdx,
                         tmplCd: detail.header.tmplCd,
                         docKind: detail.header.docKind,
                       }));
                     }}
-                    // PDF/HWP 첨부 미리보기 — 새 탭 Blob URL
-                    onPreview={() => {
+                    // 첨부 미리보기 — 문서함만. 결재 2화면은 본문을 옆 패널에 띄운다
+                    onPreview={boxMode !== "inbox" ? undefined : () => {
                       const file = detail.files.find((f) => f.fileKind === "PDF")
                         ?? detail.files.find((f) => f.fileKind === "HWP_SRC")
                         ?? detail.files[0];
@@ -518,6 +410,27 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
                   />
                 </div>
               </section>
+
+              {(
+                <section className="flex min-h-0 flex-col overflow-hidden rounded border border-slate-100">
+                  <div className={gridHeadClass}>
+                    {/* 보이는 그리드명 — 본문을 확인하는 자리 */}
+                    <b>문서 미리보기</b>
+                  </div>
+                  <div className="h-[32rem] min-h-0 overflow-auto">
+                    <ApprovalDocumentPreview
+                      // 선택 문서 1건만 그린다 — 목록 전체를 미리 그리지 않는다
+                      docIdx={detail.header.docIdx}
+                      tmplCd={detail.header.tmplCd}
+                      tmplNm={detail.header.tmplNm}
+                      // hwp:rhwp 본문 · html:작성 지면
+                      docKind={detail.header.docKind}
+                      // HWP 본문(HWP_SRC)을 찾는 데 쓴다
+                      files={detail.files}
+                    />
+                  </div>
+                </section>
+              )}
 
               <section className="flex min-h-0 flex-col overflow-hidden rounded border border-slate-100">
                 <div className={gridHeadClass}>
@@ -543,53 +456,29 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
                 </div>
               </section>
 
-              <section>
-                <h3 className="mb-2 text-sm font-semibold text-slate-700">관련 문서</h3>
-                <div className="mb-2 flex flex-wrap gap-2">
-                  <select value={relationType} onChange={(e) => setRelationType(e.target.value)} className="h-8 rounded border border-slate-300 px-2 text-xs">
-                    <option value="PLAN_REPORT">검증계획 → 검증보고</option>
-                    <option value="hwp_sys_007_LOG">교육계획 → 교육일지</option>
-                    <option value="html_sys_010_LOG">검교정대상 → 검교정일지</option>
-                    <option value="RECV_INVENTORY">입고검사 → 재고</option>
-                  </select>
-                  <Input value={relationDocIdx} onChange={(e) => setRelationDocIdx(e.target.value)} placeholder="대상 문서번호" className="w-32" />
-                  <MesButton variant="secondary" size="sm" disabled={asyncAct.isBusy("relation")} onClick={() => void handleSaveRelation()}>연결</MesButton>
-                </div>
-                {relations.map((relation) => (
-                  <p key={String(relation.idx)} className="border-t border-slate-100 py-1 text-xs">
-                    {String(relation.relType ?? "")}: {String(relation.tgtDocNo ?? "")} {String(relation.tgtTitle ?? "")}
-                  </p>
-                ))}
-              </section>
+              {boxMode === "inbox" && (
+                <section>
+                  <h3 className="mb-2 text-sm font-semibold text-slate-700">관련 문서</h3>
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    <select value={relationType} onChange={(e) => setRelationType(e.target.value)} className="h-8 rounded border border-slate-300 px-2 text-xs">
+                      <option value="PLAN_REPORT">검증계획 → 검증보고</option>
+                      <option value="hwp_sys_007_LOG">교육계획 → 교육일지</option>
+                      <option value="html_sys_010_LOG">검교정대상 → 검교정일지</option>
+                      <option value="RECV_INVENTORY">입고검사 → 재고</option>
+                    </select>
+                    <Input value={relationDocIdx} onChange={(e) => setRelationDocIdx(e.target.value)} placeholder="대상 문서번호" className="w-32" />
+                    <MesButton variant="secondary" size="sm" disabled={asyncAct.isBusy("relation")} onClick={() => void handleSaveRelation()}>연결</MesButton>
+                  </div>
+                  {relations.map((relation) => (
+                    <p key={String(relation.idx)} className="border-t border-slate-100 py-1 text-xs">
+                      {String(relation.relType ?? "")}: {String(relation.tgtDocNo ?? "")} {String(relation.tgtTitle ?? "")}
+                    </p>
+                  ))}
+                </section>
+              )}
 
               <section>
                 <h3 className="mb-2 text-sm font-semibold text-slate-700">첨부 파일</h3>
-                {editableFile && (
-                  <div className="mb-2 flex flex-wrap items-center gap-2 rounded bg-slate-50 p-2">
-                    <select
-                      value={uploadKind}
-                      onChange={(e) => setUploadKind(e.target.value as typeof uploadKind)}
-                      className="h-8 rounded border border-slate-300 px-2 text-xs"
-                    >
-                      <option value="ATTACH">일반첨부</option>
-                      <option value="PHOTO">사진</option>
-                      <option value="HWP_SRC">HWPX 원본</option>
-                      <option value="PDF">PDF</option>
-                    </select>
-                    <Input
-                      type="file"
-                      onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
-                      className="max-w-64"
-                    />
-                    <MesButton
-                      variant="secondary"
-                      disabled={!uploadFile || asyncAct.isBusy("upload")}
-                      onClick={() => void handleUpload()}
-                    >
-                      첨부
-                    </MesButton>
-                  </div>
-                )}
                 {detail.files.length === 0 ? (
                   <p className="text-xs text-slate-400">첨부 파일이 없습니다.</p>
                 ) : (

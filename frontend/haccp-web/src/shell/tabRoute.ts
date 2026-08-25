@@ -111,9 +111,11 @@ export const SCREEN_PATH: Record<string, string> = {
   ...paths("/draft/ccp-monitoring", ["ccp-pkg", "ccp-htg", "ccp-mtl"]),
   ...paths("/draft/hwp-doc", ["hwp-write"]),
 
-  // 문서 현황 — 문서함 / 결재함 / 개선조치 (결재선 sys/code 와 구분)
+  // 문서 현황 — 문서함 / 결재 / 개선조치 (결재선 sys/code 와 구분)
   ...paths("/flow/box", ["document-inbox", "legal-document-upload"]),
-  ...paths("/flow/appr", ["approval-inbox", "approval-history"]),
+  // 결재 3화면 — 첨부(내가 상신) · 대기(내 차례) · 완료(내가 처리)
+  // 구 approval-inbox·approval-history 를 개명했다. 마이그레이션 127 이 DB 를 같이 옮긴다
+  ...paths("/flow/appr", ["attach", "sign-ready", "sign-ok"]),
   ...paths("/flow/ca", ["corrective-action-management"]),
 
   // 기초정보

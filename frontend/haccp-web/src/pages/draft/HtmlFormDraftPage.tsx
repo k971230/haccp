@@ -50,21 +50,14 @@ import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
 import { MesButton } from "@/components/ui/MesButton";
 import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 지면 공통 props·제목 메타를 뺀 점검 행
-import {
-  paperBodyItems,
-  type HtmlFormLogRow,
-  type HtmlFormPaperProps,
-  type HtmlFormPassRow,
-} from "@/components/form/htmlFormPaperShared";
+import { paperBodyItems, type HtmlFormPaperProps } from "@/components/form/htmlFormPaperShared";
 // 역할 — 전송(REQUEST)·전송취소(CANCEL) 공통 결재 API
 import { processDocumentApproval } from "@/api/documentApi";
 // 역할 — 일자 YYYYMMDD ↔ input[type=date]
-import { fromInputDate, toInputDate, todayYmd } from "@/lib/docDateTime";
+import { fromInputDate, toInputDate } from "@/lib/docDateTime";
 // 역할 — 그리드·편집 행 타입
 import type { GridColumn } from "@/types/grid";
 import type { EditableRow } from "@/types/editable";
-// 역할 — 지면 항목 타입
-import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
 // 역할 — 작성 화면 공통 API 계약
 import type { HtmlFormDraftApi, HtmlFormDraftFile, HtmlFormDraftForm } from "@/api/draft/htmlFormDraftTypes";
 // 역할 — 양식 선택 팝업 (일자·양식코드·양식명)
@@ -78,21 +71,15 @@ import {
   canEditDetail,
   canModifyDoc,
   canSendDoc,
+  detailToDraftBuf,
+  draftPaperViewProps,
+  emptyDraftBuf,
   htmlFormDraftGridRules,
   sendStateOf,
   validateForTransfer,
+  type HtmlFormDraftBuf,
   type SendState,
 } from "./htmlFormDraftShared";
-
-/** 문자열 정규화 — SP 가 null 을 주는 칸이 있다 */
-function asText(value: unknown): string {
-  return value == null ? "" : String(value);
-}
-
-/** Y/N 정규화 — 서명 스냅샷 여부 */
-function asYn(value: unknown): string {
-  return String(value ?? "").trim().toUpperCase() === "Y" ? "Y" : "N";
-}
 
 /** 좌측 목록 행 메타 — 세션 공통 메타 + 작성 화면 표시 칸 */
 type ListMeta = DocListMeta & {
@@ -101,120 +88,14 @@ type ListMeta = DocListMeta & {
   baseDtDisp?: string;
   writerNm?: string;
   sendState?: SendState;
+  // 이탈여부 Y/N — 목록 칸을 쓰는 화면(HWP)만 채운다
+  deviationYn?: string;
 };
 
-/** 우측 지면 편집 버퍼 — 문서 1건 */
-type Buf = {
-  docIdx: number | null;
-  docNo: string;
-  tmplCd: string;
-  tmplNm: string;
-  status: string | null;
-  baseKey: string;
-  writerNm: string;
-  writerId: string;
-  writerSignYn: string;
-  checkerNm: string;
-  checkerId: string;
-  checkerSignYn: string;
-  approverNm: string;
-  approverId: string;
-  approverSignYn: string;
-  verNo: number;
-  items: HtmlFormItem[];
-  specialNote: string;
-  improveNote: string;
-  actionNm: string;
-  confirmNm: string;
-  confirmId: string;
-  confirmSignYn: string;
-  // 이탈·개선조치 문서 표시 — 사용자가 직접 켠 값. 근거가 있으면 화면이 자동으로 켠다
-  deviationYn: boolean;
-  // 기록 표 행 — CCP 모니터링일지 작성만 쓴다. 다른 화면은 빈 배열이다
-  logRows: HtmlFormLogRow[];
-  // 금속검출 통과량 표 행 — MTL 만
-  passRows: HtmlFormPassRow[];
-};
+/** 우측 지면 편집 버퍼 — 문서 1건. 모양은 공통(htmlFormDraftShared)이 갖는다 */
+type Buf = HtmlFormDraftBuf;
 
-/**
- * 개발자: 박승우
- * 일자: 2026-08-24
- * 코멘트:
- *   1) 양식 미선택 신규 행의 빈 버퍼를 만든다 — 일자만 오늘로 찍는다
- *   2) 행 추가가 호출한다
- *   3) 팝업에서 양식을 고르면 그 양식 상세로 교체된다
- */
-function emptyBuf(
-  // 로그인 사용자 — 작성자·점검자 기본값
-  user?: { userNm?: string; userId?: string } | null,
-): Buf {
-  return {
-    docIdx: null, docNo: "", tmplCd: "", tmplNm: "", status: null,
-    baseKey: todayYmd(),
-    writerNm: user?.userNm ?? "", writerId: user?.userId ?? "", writerSignYn: "N",
-    checkerNm: user?.userNm ?? "", checkerId: "", checkerSignYn: "N",
-    approverNm: "", approverId: "", approverSignYn: "N",
-    verNo: 0, items: [],
-    specialNote: "", improveNote: "", actionNm: "", confirmNm: "",
-    confirmId: "", confirmSignYn: "N",
-    deviationYn: false,
-    logRows: [], passRows: [],
-  };
-}
 
-/**
- * 개발자: 박승우
- * 일자: 2026-08-24
- * 코멘트:
- *   1) 상세 API 응답을 지면 편집 버퍼로 옮긴다
- *   2) 행 선택·양식 선택·저장 후 재적재에서 호출한다
- *   3) 작성자·점검자 이름이 비면 로그인 사용자로 채운다
- */
-function detailToBuf(
-  // 상세 API 응답 — header·items
-  detail: {
-    header: Record<string, unknown> | null;
-    items: HtmlFormItem[];
-    logRows?: HtmlFormLogRow[];
-    passRows?: HtmlFormPassRow[];
-  },
-  // 신규일 때 채울 양식코드·양식명
-  form: { tmplCd: string; tmplNm: string },
-  // 로그인 사용자 — 이름 기본값
-  user?: { userNm?: string; userId?: string } | null,
-): Buf {
-  const header = detail.header ?? {};
-  return {
-    docIdx: Number(header.docIdx) || null,
-    docNo: asText(header.docNo),
-    tmplCd: asText(header.tmplCd) || form.tmplCd,
-    tmplNm: asText(header.tmplNm) || form.tmplNm,
-    status: asText(header.status) || null,
-    baseKey: asText(header.baseDt) || todayYmd(),
-    writerNm: asText(header.writerNm) || user?.userNm || "",
-    writerId: asText(header.writerId) || user?.userId || "",
-    writerSignYn: asYn(header.writerSignYn),
-    checkerNm: asText(header.checkerNm) || user?.userNm || "",
-    checkerId: asText(header.checkerId),
-    checkerSignYn: asYn(header.checkerSignYn),
-    approverNm: asText(header.approverNm),
-    approverId: asText(header.approverId),
-    approverSignYn: asYn(header.approverSignYn),
-    verNo: Number(header.verNo) || 0,
-    items: detail.items ?? [],
-    specialNote: asText(header.specialNote),
-    improveNote: asText(header.improveNote),
-    actionNm: asText(header.actionNm),
-    confirmNm: asText(header.confirmNm),
-    confirmId: asText(header.confirmId),
-    confirmSignYn: asYn(header.confirmSignYn),
-    // 이탈 표시는 저장 컬럼이 없다 — 다시 읽을 때는 아래 근거로 화면이 판단한다
-    deviationYn: false,
-    // 기록행 — CCP 모니터링일지만 채워 온다. 나머지 화면은 빈 배열
-    logRows: detail.logRows ?? [],
-    passRows: detail.passRows ?? [],
-  };
-}
 
 export interface HtmlFormDraftPageProps {
   // 화면코드 — tbl_screen.scrn_cd. 권한·그리드 pref·API 베이스 기준
@@ -248,6 +129,20 @@ export interface HtmlFormDraftPageProps {
    * 던지면 저장 자체가 실패로 처리된다
    */
   afterSave?: (docIdx: number) => Promise<void>;
+  /**
+   * HWP 본문 dirty — 목록 _rowState 와 다른 축. HTML 5화면은 넘기지 않는다.
+   * 목록이 깨끗한 채 칸만 고쳤을 때 덮어쓰기 저장을 타게 한다
+   */
+  isBodyDirty?: () => boolean;
+  /**
+   * 본문 dirty 해제 — 헤더 PUT 저장이 본문도 올렸을 때 호출한다
+   */
+  clearBodyDirty?: () => void;
+  /**
+   * 좌측 목록에 이탈여부 칸을 둔다 — HWP 작성만 켠다.
+   * HTML 5화면은 지면 하단 시그널(HtmlFormDeviationSignal)이 같은 일을 하므로 두 곳에 두지 않는다.
+   */
+  showDeviationColumn?: boolean;
 }
 
 /** 행 추가 팝업이 고른 값 — 양식과 일자, 이미 만들어진 문서가 있으면 그 idx */
@@ -292,6 +187,9 @@ export function HtmlFormDraftPage({
   renderDetail,
   pickBeforeAdd,
   afterSave,
+  isBodyDirty,
+  clearBodyDirty,
+  showDeviationColumn = false,
 }: HtmlFormDraftPageProps) {
   const user = useAuthStore((s) => s.user);
   const canWrite = useAuthStore((s) => s.can(scrnCd, "write"));
@@ -381,6 +279,8 @@ export function HtmlFormDraftPage({
         writerNm: r.writerNm ?? "",
         sendState: sendStateOf(r.status),
         ngCnt: r.ngCnt ?? 0,
+        // 서버가 안 주는 화면(HTML)은 N — 칸 자체를 그리지 않는다
+        deviationYn: (r.deviationYn ?? "N").toUpperCase() === "Y" ? "Y" : "N",
       }))
       .filter((r) => !q.sendState || r.sendState === q.sendState);
     replaceServerList(mapped, (r) => String(r.docIdx));
@@ -422,12 +322,12 @@ export function HtmlFormDraftPage({
   const handleSelect = useCallback((key: string | null) => {
     return selectKey(key, async (_k, row) => {
       // 아직 양식을 안 고른 행일 때(= 팝업 전) 상세를 부를 수 없다
-      if (!row.tmplCd) return emptyBuf(user);
+      if (!row.tmplCd) return emptyDraftBuf(user);
       try {
         const detail = await api.detail(row.tmplCd, row.docIdx ?? null);
         // 첨부 목록 — 우측을 직접 그리는 화면(HWP)이 본문을 여는 데 쓴다
         setDetailFiles(detail.files ?? []);
-        return detailToBuf(detail, { tmplCd: row.tmplCd, tmplNm: row.tmplNm }, user);
+        return detailToDraftBuf(detail, { tmplCd: row.tmplCd, tmplNm: row.tmplNm }, user);
       } catch (error) {
         mesError(error);
         return null;
@@ -461,7 +361,7 @@ export function HtmlFormDraftPage({
     }
     // 행 추가 전에 고르는 화면일 때(= HWP 오늘 할일) 먼저 묻는다. 취소하면 아래 양식 선택 팝업으로 간다
     const picked = pickBeforeAdd ? await pickBeforeAdd() : null;
-    const next = emptyBuf(user);
+    const next = emptyDraftBuf(user);
     if (picked?.baseDt && /^\d{8}$/.test(picked.baseDt)) next.baseKey = picked.baseDt;
     const key = addDraft({
       docIdx: null,
@@ -497,7 +397,7 @@ export function HtmlFormDraftPage({
     try {
       const detail = await api.detail(tmplCd, null);
       setDetailFiles(detail.files ?? []);
-      const next = detailToBuf(detail, { tmplCd, tmplNm }, user);
+      const next = detailToDraftBuf(detail, { tmplCd, tmplNm }, user);
       // 이미 찍어 둔 일자는 유지한다 — 팝업은 양식만 바꾼다
       next.baseKey = prev.baseKey;
       next.docIdx = null;
@@ -546,6 +446,10 @@ export function HtmlFormDraftPage({
           // 기록 표 행 — 행 추가로 만든 행까지 그대로 DB 로 간다
           logRows: b.logRows,
           passRows: b.passRows,
+          // 이탈여부 — 목록 칸을 쓰는 화면만. 서버가 개선조치 행을 만들거나 지운다
+          deviationYn: showDeviationColumn
+            ? ((row as EditableRow<ListMeta>).deviationYn ?? "N")
+            : undefined,
         });
         // 저장 뒤 화면이 더 할 일 — HWP 는 여기서 본문 파일을 올린다. 실패하면 저장도 실패로 본다
         if (afterSave) await afterSave(saved);
@@ -559,6 +463,7 @@ export function HtmlFormDraftPage({
             sendState: "wait" as SendState,
             baseKey: b.baseKey,
             baseDtDisp: toInputDate(b.baseKey),
+            deviationYn: (row as EditableRow<ListMeta>).deviationYn ?? "N",
           },
         };
       },
@@ -569,7 +474,7 @@ export function HtmlFormDraftPage({
             const b = getBuffer(String(idx));
             const detail = await api.detail(b?.tmplCd ?? "", idx);
             setDetailFiles(detail.files ?? []);
-            const next = detailToBuf(detail, { tmplCd: b?.tmplCd ?? "", tmplNm: b?.tmplNm ?? "" }, user);
+            const next = detailToDraftBuf(detail, { tmplCd: b?.tmplCd ?? "", tmplNm: b?.tmplNm ?? "" }, user);
             putBuffer(String(idx), next, {
               status: next.status,
               sendState: sendStateOf(next.status),
@@ -591,8 +496,10 @@ export function HtmlFormDraftPage({
       mesToast(err.message, "warn");
       return false;
     }
+    // 헤더 PUT 저장이 본문 업로드까지 했으면 dirty 도 같이 내린다
+    clearBodyDirty?.();
     return true;
-  }, [afterSave, api, getBuffer, handleSelect, loadList, putBuffer, saveAll, user]);
+  }, [afterSave, api, clearBodyDirty, getBuffer, handleSelect, loadList, putBuffer, saveAll, showDeviationColumn, user]);
 
   /**
    * 개발자: 박승우
@@ -622,13 +529,35 @@ export function HtmlFormDraftPage({
 
   /**
    * 개발자: 박승우
-   * 일자: 2026-08-24
+   * 일자: 2026-08-25
    * 코멘트:
-   *   1) 우측 지면 작성값(점검·하단)을 저장한다 — docIdx 가 있어야 한다
+   *   1) 우측 작성값을 저장한다 — HTML 은 지면, HWP 는 본문 파일
    *   2) 우측 작성 후 저장·셸 저장·전송 전 저장이 호출한다
-   *   3) 필수값은 전송 때 validateForTransfer 가 본다
+   *   3) 목록 dirty 면 헤더 PUT + afterSave. 본문만 dirty 면 파일 덮어쓰기만. 필수값은 전송 때 본다
    */
   const runSaveDetail = useCallback(async (): Promise<boolean> => {
+    const listDirty = listRowsRef.current.some((r) => r._rowState === "C" || r._rowState === "U");
+    // 목록이 깨끗할 때(= 일자·양식은 그대로) 본문만 고친 경우 — 메타 PUT 없이 파일만 덮어쓴다
+    if (!listDirty) {
+      if (!isBodyDirty?.()) {
+        mesToast("저장할 변경 내용이 없습니다.", "warn");
+        return false;
+      }
+      const key = activeKeyRef.current;
+      const b = key ? getBuffer(key) : null;
+      if (!b?.docIdx) {
+        mesToast("왼쪽에서 기본정보를 먼저 저장하세요.", "warn");
+        return false;
+      }
+      // 전송 이후일 때(= 전송·결재완료) 본문 덮어쓰기도 막는다
+      if (!canModifyDoc(b.status)) {
+        mesToast("전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.", "warn");
+        return false;
+      }
+      if (afterSave) await afterSave(b.docIdx);
+      clearBodyDirty?.();
+      return true;
+    }
     return persistSave((dirty, getBuf) => {
       for (const row of dirty) {
         const key = row._key;
@@ -644,11 +573,14 @@ export function HtmlFormDraftPage({
         // (그 행들은 좌측 저장과 같은 기본정보 규칙만 통과하면 함께 커밋된다)
         if (key !== activeKey) continue;
         if (!b.docIdx) return { message: "왼쪽에서 기본정보를 먼저 저장하세요.", rowKey: key };
-        if (paperBodyItems(b.items).length === 0) return { message: "점검 행이 없습니다.", rowKey: key };
+        // HWP 는 점검 행이 없다 — renderDetail 화면은 지면 행 검사를 생략한다
+        if (!renderDetail && paperBodyItems(b.items).length === 0) {
+          return { message: "점검 행이 없습니다.", rowKey: key };
+        }
       }
       return null;
     });
-  }, [activeKey, persistSave]);
+  }, [activeKey, afterSave, clearBodyDirty, getBuffer, isBodyDirty, persistSave, renderDetail]);
 
   /**
    * 개발자: 박승우
@@ -774,7 +706,7 @@ export function HtmlFormDraftPage({
     if (!activeKey || !docIdx || !buf) return;
     try {
       const detail = await api.detail(buf.tmplCd, docIdx);
-      const next = detailToBuf(detail, { tmplCd: buf.tmplCd, tmplNm: buf.tmplNm }, user);
+      const next = detailToDraftBuf(detail, { tmplCd: buf.tmplCd, tmplNm: buf.tmplNm }, user);
       putBuffer(activeKey, next, {
         status: next.status,
         sendState: sendStateOf(next.status),
@@ -813,8 +745,8 @@ export function HtmlFormDraftPage({
     if (!activeKey || !buf) return mesToast(MES.selectRow, "warn");
     // docIdx 없을 때(= 좌측 기본정보 미저장) 전송 불가
     if (!buf.docIdx) return mesToast("왼쪽에서 기본정보를 먼저 저장하세요.", "warn");
-    // 변경분이 남았을 때(= 미저장) 작성 후 저장을 먼저 묻는다
-    if (!await ensureSavedBeforeSend(activeDirty)) return;
+    // 변경분이 남았을 때(= 목록 또는 본문 미저장) 작성 후 저장을 먼저 묻는다
+    if (!await ensureSavedBeforeSend(activeDirty || !!isBodyDirty?.())) return;
     // 저장 뒤 세션 키가 docIdx 로 바뀌므로 버퍼를 다시 읽는다
     const cur = getBuffer(activeKey) ?? buf;
     const sendIdx = cur.docIdx;
@@ -853,8 +785,8 @@ export function HtmlFormDraftPage({
     if (picked.some((r) => !r.docIdx)) {
       return mesToast("왼쪽에서 기본정보를 먼저 저장하세요.", "warn");
     }
-    // 후보 중 변경분이 있으면 작성 후 저장부터 한다
-    const dirty = picked.some((r) => !!r._rowState);
+    // 후보 중 변경분이 있으면 작성 후 저장부터 한다 — 본문 dirty 도 같은 축으로 본다
+    const dirty = picked.some((r) => !!r._rowState) || !!isBodyDirty?.();
     if (!await ensureSavedBeforeSend(dirty)) return;
 
     try {
@@ -870,7 +802,7 @@ export function HtmlFormDraftPage({
           continue;
         }
         // 버퍼가 없는 행(= 아직 열어 보지 않음)은 필수값 검사를 위해 상세를 읽는다
-        const cur = b ?? detailToBuf(
+        const cur = b ?? detailToDraftBuf(
           await api.detail(row.tmplCd, idx),
           { tmplCd: row.tmplCd, tmplNm: row.tmplNm },
           user,
@@ -942,8 +874,8 @@ export function HtmlFormDraftPage({
       // 양식코드 버튼 — 그 행의 양식 선택 팝업을 연다
       const key = (row as EditableRow<ListMeta>)._key;
       if (key) setLookupKey(key);
-    }) as GridColumn<ListMeta>[],
-    [],
+    }, showDeviationColumn) as GridColumn<ListMeta>[],
+    [showDeviationColumn],
   );
 
   // 팝업이 열린 행 — 현재 양식코드를 강조하려고 같이 찾는다
@@ -1042,32 +974,8 @@ export function HtmlFormDraftPage({
                     // 저장 전이거나 전송 이후면 잠금
                     locked={!canEdit}
                     editable={canEdit}
-                    // 제목·부제·일자·결재란. 서명이 있으면 이미지, 없으면 이름
-                    header={{
-                      title: buf.tmplNm || paperTitle,
-                      subtitle: paperSubtitle,
-                      baseDt: toInputDate(buf.baseKey),
-                      writerNm: buf.writerNm,
-                      writerId: buf.writerId,
-                      writerSignYn: buf.writerSignYn,
-                      checkerNm: buf.checkerNm,
-                      checkerId: buf.checkerId,
-                      checkerSignYn: buf.checkerSignYn,
-                      approverNm: buf.approverNm,
-                      approverId: buf.approverId,
-                      approverSignYn: buf.approverSignYn,
-                      confirmId: buf.confirmId,
-                      confirmSignYn: buf.confirmSignYn,
-                    }}
-                    // 점검 행 — 예/아니오·숫자·문자
-                    items={buf.items}
-                    // 하단 4열 — 특이사항·개선조치 및 결과·조치·확인
-                    footer={{
-                      specialNote: buf.specialNote,
-                      improveNote: buf.improveNote,
-                      actionNm: buf.actionNm,
-                      confirmNm: buf.confirmNm,
-                    }}
+                    // 헤더·점검 행·하단 4열·기록 표 — 결재 미리보기와 같은 값을 쓴다
+                    {...draftPaperViewProps(buf, { paperTitle, paperSubtitle })}
                     onHeaderChange={(patch) => patchActive((cur) => {
                       const next = { ...cur };
                       if (patch.baseDt != null) next.baseKey = fromInputDate(patch.baseDt);
@@ -1089,10 +997,8 @@ export function HtmlFormDraftPage({
                       return next;
                     }, patch.baseDt != null ? { baseDtDisp: patch.baseDt } : undefined)}
                     onItemsChange={(items) => patchActive((cur) => ({ ...cur, items }))}
-                    // 기록 표 행 — 작성에서만 제어 렌더된다. 기준관리 화면은 이 prop 을 안 받는다
-                    logRows={buf.logRows}
+                    // 기록 표 행 값은 위 spread 가 넘긴다. 여기는 편집 콜백만 붙인다
                     onLogRowsChange={(logRows) => patchActive((cur) => ({ ...cur, logRows }))}
-                    passRows={buf.passRows}
                     onPassRowsChange={(passRows) => patchActive((cur) => ({ ...cur, passRows }))}
                     onFooterChange={(patch) => patchActive((cur) => {
                       const next = { ...cur, ...patch };

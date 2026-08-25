@@ -94,3 +94,36 @@ export function todayYmd(): string {
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}${m}${day}`;
 }
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
+ * 코멘트:
+ *   1) 서버 타임스탬프를 사용자가 읽는 「YYYY-MM-DD HH:MM」 으로 바꾼다
+ *   2) 결재 요청일·처리일처럼 화면에 그대로 노출되는 칸에 쓴다
+ *   3) 값이 없거나 해석되지 않으면 대시 한 글자 — ISO 원문을 사용자에게 보여 주지 않는다
+ */
+export function toDisplayDateTime(value: string | null | undefined): string {
+  const raw = (value ?? "").trim();
+  if (!raw) return "-";
+  const at = new Date(raw);
+  if (Number.isNaN(at.getTime())) return "-";
+  const y = at.getFullYear();
+  const m = String(at.getMonth() + 1).padStart(2, "0");
+  const d = String(at.getDate()).padStart(2, "0");
+  const hh = String(at.getHours()).padStart(2, "0");
+  const mm = String(at.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${d} ${hh}:${mm}`;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
+ * 코멘트:
+ *   1) YYYYMMDD 를 사용자가 읽는 「YYYY-MM-DD」 로 바꾼다
+ *   2) 기준일처럼 화면에 그대로 노출되는 칸에 쓴다
+ *   3) 8자리가 아니면 대시 한 글자 — toInputDate 는 input 전용이라 빈 문자열을 준다
+ */
+export function toDisplayDate(ymd: string | null | undefined): string {
+  return toInputDate(ymd) || "-";
+}

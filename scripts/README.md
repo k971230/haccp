@@ -22,6 +22,7 @@ HACCP 운영·검증 스크립트. 정본 절차는 [`docs/20_배포_런북.md`]
 | `prod_smoke.sh` | 배포 후 HTTP 스모크 (`SMOKE_USER`/`SMOKE_PASS`는 env만) |
 | `smoke_env.sh` | 스모크 공통 env (`prod_smoke`가 source) |
 | `db_migrate_dryrun.sh` | (수동) SQL 문법 dry-run — Jenkins CI에서 제거됨 |
+| `archive_hwp_logbooks.sh` | HaccpLogBooks 를 `_legacy/날짜` 로 이동 (즉시 삭제 금지). `SRC`·`DEST` env |
 
 ## 감사·훅
 

@@ -43,6 +43,8 @@
 | HB92–HB94 | sys Mapper/Service 클러스터 |
 | HB123–HB134 | 사용양식 · HTML 양식 |
 | HB135–HB143 | 양식 작성(draft) — HYG·CCP·CCP 모니터링 |
+| HB144 | HWP 작성(draft hwp-write) |
+| HB145 | 화면 권한 인터셉터 |
 
 ## FE (`PIPELINE[HFn]`)
 
@@ -85,7 +87,7 @@
 | `HF85` | 3 | `fe:pages/bas/master/MasterDataPage.tsx`<br>`fe:pages/docs/ccp/CcpFormPage.tsx`<br>`fe:pages/docs/prp/BizOpsFormPage.tsx` |
 | `HF86` | 2 | `fe:api/workflowApi.ts`<br>`fe:api/sys/approvalLineApi.ts` |
 | `HF87` | 3 | `fe:api/taskWorkflowApi.ts`<br>`fe:pages/sys/code/approvalline/ApprovalLineManagementPage.tsx`<br>`fe:pages/sys/code/approvalline/ApprovalLineManagementRule.ts` |
-| `HF88` | 1 | `fe:pages/tsk/TodayTasksPage.tsx` |
+| `HF88` | 3 | `fe:lib/docStatus.ts`<br>`fe:pages/tsk/TodayTasksPage.tsx`<br>`fe:pages/tsk/TodayTasksRule.ts` |
 | `HF89` | 4 | `fe:pages/flow/ca/corrective/CorrectiveActionManagementPage.tsx`<br>`fe:pages/flow/ca/corrective/CorrectiveActionManagementRule.ts`<br>`fe:pages/docs/sch/ScheduleCycleManagementPage.tsx`<br>`fe:pages/docs/sch/ScheduleCycleManagementRule.ts` |
 | `HF92` | 13 | `fe:api/sys/auditLogApi.ts`<br>`fe:api/sys/commonCodeApi.ts`<br>`fe:api/sys/departmentApi.ts`<br>`fe:api/sys/loginHistoryApi.ts`<br>`fe:api/sys/menuApi.ts`<br>`fe:api/sys/roleApi.ts`<br>`fe:api/sys/screenUsageApi.ts`<br>`fe:api/sys/sysTypes.ts`<br>`fe:api/sys/userApi.ts`<br>`fe:components/layout/PageCard.tsx`<br>`fe:components/layout/ResizableSplit.tsx`<br>`fe:components/layout/TreePanelSearch.tsx`<br>`fe:lib/treeFilter.ts` |
 | `HF93` | 1 | `fe:components/layout/pageClasses.ts` |
@@ -229,6 +231,8 @@
 | `HB141` | 1 | `be:draft/ccpmonitoring/CcpPkgDraftController.java` |
 | `HB142` | 1 | `be:draft/ccpmonitoring/CcpHtgDraftController.java` |
 | `HB143` | 1 | `be:draft/ccpmonitoring/CcpMtlDraftController.java` |
+| `HB144` | 4 | `be:draft/hwp/HwpDraftController.java`<br>`be:draft/hwp/HwpDraftMapper.java`<br>`be:draft/hwp/HwpDraftService.java`<br>`xml:draft/hwp/HwpDraftMapper.xml` |
+| `HB145` | 4 | `be:common/auth/ScreenAuthAction.java`<br>`be:common/auth/ScreenAuthInterceptor.java`<br>`be:common/auth/ScreenAuthMatch.java`<br>`be:common/auth/ScreenAuthResolver.java` |
 
 ## 충돌·확인 필요
 

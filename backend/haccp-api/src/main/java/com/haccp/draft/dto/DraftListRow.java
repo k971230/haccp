@@ -44,4 +44,7 @@ public class DraftListRow {
     private Integer rowCnt;
     // 부적합 건수 — 계열별로 yn='N' 또는 judge_cd='F'
     private Integer ngCnt;
+
+    /** 이탈여부 Y/N — 개선조치가 붙어 있으면 Y. 미완료 수(ngCnt)와 다른 축이다 */
+    private String deviationYn;
 }

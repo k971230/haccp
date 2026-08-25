@@ -29,13 +29,8 @@ import { cn } from "@/lib/cn";
 import type { GridColumn } from "@/types/grid";
 // 역할 — 오늘 할일 행
 import type { HwpDraftTask } from "@/api/draft/hwpDraftApi";
-
-/** 할일 상태 표시 — 코드값을 사용자 문구로 바꾼다. 새 코드 도메인을 만들지 않는다 */
-const TASK_STATUS_NM: Record<string, string> = {
-  TODO: "예정",
-  ING: "진행",
-  LATE: "지연",
-};
+// 역할 — 일정 과제 상태 문구 (오늘 할 일 그리드와 공유)
+import { TASK_STATUS_NM } from "@/lib/docStatus";
 
 /** 팝업 그리드 행 — 상태 문구를 미리 붙인다 */
 type TaskLookupRow = HwpDraftTask & { statusNm: string };

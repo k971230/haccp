@@ -173,6 +173,24 @@ public interface DocumentMapper {
             @Param("userId") String userId
     );
 
+    /** 문서 비고 저장 — 결재 완료 전까지만. 잠금·소유 검증은 SP가 한다 */
+    void saveRemark(
+            @Param("coCd") String coCd,
+            @Param("docIdx") Long docIdx,
+            @Param("remark") String remark,
+            @Param("userId") String userId
+    );
+
+    /**
+     * 결재취소 — 본인이 처리한 마지막 단계를 되돌린다.
+     * 기존 결재 전이 SP와 섞지 않는다 (되돌리기는 검증·복구 규칙이 다르다).
+     */
+    void undoApproval(
+            @Param("coCd") String coCd,
+            @Param("docIdx") Long docIdx,
+            @Param("userId") String userId
+    );
+
     void processApproval(
             @Param("coCd") String coCd,
             @Param("docIdx") Long docIdx,
@@ -181,6 +199,14 @@ public interface DocumentMapper {
             @Param("userId") String userId
     );
 
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 전송(REQ·REV)·결재완료(APV) 문서의 첫 건만 돌려 삭제를 막는다
+     *   2) validate-delete·delete Double Check 가 호출한다
+     *   3) 전송대기(WRK)·반려(RJT)는 null — 보존기간은 공식 기록 보관용이라 여기 쓰지 않는다
+     */
     DeleteBlocker selectDocumentDeleteBlocker(
             @Param("coCd") String coCd,
             @Param("docIdxs") List<Long> docIdxs

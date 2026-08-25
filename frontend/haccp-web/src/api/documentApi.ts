@@ -65,6 +65,8 @@ export interface DocumentDetail {
   header: DocumentListRow & {
     baseDtTo?: string | null;
     apprLineCd?: string | null;
+    // 상신 일시 — 결재 첨부 화면의 결재요청일
+    writeDt?: string | null;
     reviewerId?: string | null;
     reviewerNm?: string | null;
     reviewDt?: string | null;
@@ -73,6 +75,7 @@ export interface DocumentDetail {
     approveDt?: string | null;
     rejectReason?: string | null;
     retentionUntil?: string | null;
+    remark?: string | null;
   };
   approvals: DocumentApprovalRow[];
   files: DocumentFileRow[];
@@ -272,6 +275,24 @@ export async function downloadDocumentFile(
     responseType: "blob",
   });
   return data as Blob;
+}
+
+/** 첨부 삭제 — 결재 진행·완료 문서는 SP가 막는다. HTTP DELETE 금지 → POST */
+export async function deleteDocumentFile(
+  // 파일 idx
+  fileIdx: number
+): Promise<void> {
+  await http.post(`/api/v1/docs/documents/files/${fileIdx}/delete`);
+}
+
+/** 문서 비고 저장 — 결재 완료 전까지만 고칠 수 있다 */
+export async function saveDocumentRemark(
+  // 문서 idx
+  docIdx: number,
+  // 비고 본문 — 빈 문자열이면 지운다
+  remark: string
+): Promise<void> {
+  await http.put(`/api/v1/docs/documents/${docIdx}/remark`, { remark });
 }
 
 /**

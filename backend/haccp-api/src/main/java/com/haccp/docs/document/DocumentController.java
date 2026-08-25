@@ -225,6 +225,46 @@ public class DocumentController {
 
     /**
      * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 문서 첨부 1건을 삭제한다 — 메타와 물리 파일을 같이 지운다
+     *   2) 결재 첨부(attach) 화면의 첨부 삭제 버튼이 호출한다
+     *   3) 결재 진행·완료 문서는 SP가 막는다. 성공 시 void. HTTP DELETE 는 쓰지 않는다
+     */
+    @PostMapping("/files/{fileIdx}/delete")
+    public CommonResponse<Void> deleteFile(
+            // 파일 대리키
+            @PathVariable Long fileIdx,
+            // 감사 IP 추출 원천
+            HttpServletRequest http
+    ) {
+        service.deleteFile(fileIdx, RequestMeta.of(http));
+        return CommonResponse.ok(null);
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 문서 비고를 저장한다 — 결재 완료(APV) 전까지만 고칠 수 있다
+     *   2) 결재 첨부(attach) 화면의 비고 저장 버튼이 호출한다
+     *   3) 작성자 본인 문서만. 잠금·소유 검증은 SP가 한다
+     */
+    @PutMapping("/{docIdx}/remark")
+    public CommonResponse<Void> saveRemark(
+            // 문서 idx
+            @PathVariable Long docIdx,
+            // { remark } — 빈 문자열이면 지운다
+            @RequestBody Map<String, String> body,
+            // 감사 IP 추출 원천
+            HttpServletRequest http
+    ) {
+        service.saveRemark(docIdx, body.get("remark"), RequestMeta.of(http));
+        return CommonResponse.ok(null);
+    }
+
+    /**
+     * 개발자: 박승우
      * 일자: 2026-08-06
      * 코멘트:
      *   1) 결재 요청·검토·승인·반려를 한 API에서 처리한다

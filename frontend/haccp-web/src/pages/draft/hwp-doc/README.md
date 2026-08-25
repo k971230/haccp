@@ -50,3 +50,20 @@ HYG·CCP검증·CCP모니터링과 **같은 화면**이며, 이 폴더는 우측
 - 서버 — `com.haccp.draft.hwp` (저장·상세·삭제는 문서 허브 `DocumentService` 위임)
 - DB — `db_sasshaccp/125_migrate_hwp_draft.sql`
 - 양식 파일 — 사용양식 관리 `/docs/hwp/hwp-template-management`
+
+## 이탈여부 (목록 칸)
+
+우측이 rhwp 편집기라 HTML 5화면처럼 **지면 하단에 이탈 시그널을 둘 자리가 없다**.
+그래서 좌측 목록에 「이탈여부」 체크 칸을 두고 거기서 켠다 — 뜻은 지면 시그널과 같다.
+
+- 켜고 저장하면 개선조치 행이 생기고 **이탈·개선조치 화면(`/flow/ca`)** 목록에 올라온다.
+  실제 조치 내용은 거기서 적는다 — 이 화면은 「이탈이 있었다」만 표시한다
+- 끄면 개선조치 행을 지운다. 단 **이미 조치를 적어 둔 건은 지우지 않는다**
+  (`HwpDraftService.applyDeviation`) — 다른 화면에서 쓴 내용이 사라지면 안 된다
+- 전송 이후 행은 `htmlFormDraftGridRules.isRowEditLocked` 가 행 전체를 잠근다
+
+칸 노출은 `HtmlFormDraftPage` 의 `showDeviationColumn` 하나로 켠다.
+HTML 5화면은 켜지 않는다 — 지면 시그널과 두 곳에 두면 값이 갈린다.
+
+목록 SP 의 `deviation_yn` 은 완료 여부와 무관하게 개선조치가 붙어 있으면 Y 다
+(`130_migrate_hwp_draft_deviation.sql`). 미완료 수(`ng_cnt`)와 다른 축이다.

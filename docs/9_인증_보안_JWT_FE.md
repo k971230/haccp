@@ -56,7 +56,7 @@ MES와 차이: **아이디만 로그인**(회사 콤보 없음) · 권한 **5종
 | `print` | 출력 | CSV/PDF 등 |
 
 FE: `useAuthStore.getState().can(scrnCd, perm)` — 값이 `"Y"`일 때만.  
-BE: 업무 API는 JWT 필수. 화면별 권한은 주로 FE 게이트 + SP/테넌트 격리. 메뉴는 SP가 role과 결합.
+BE: 업무 API는 JWT 필수. 화면 권한은 FE 게이트 + `ScreenAuthInterceptor`(tbl_role_screen). 메뉴는 SP가 role과 결합.
 
 ---
 

@@ -49,6 +49,15 @@ UNION ALL
 SELECT '할일 연결(끊기만 함)', count(*) FROM tbl_schedule_task t
   WHERE EXISTS (SELECT 1 FROM tbl_document d WHERE d.idx = t.doc_idx AND d.doc_kind = 'hwp');
 
+-- 양식코드·상태별 건수 — 어느 옛 화면 계열이 몇 건인지 보고 삭제 범위를 확정한다
+-- (1단계 합계만으로는 process-hwp·vehicle-hwp 등이 섞인 줄 모른다)
+SELECT d.tmpl_cd, t.tmpl_nm, d.status, count(*) AS 건수
+FROM tbl_document d
+LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+WHERE d.doc_kind = 'hwp'
+GROUP BY d.tmpl_cd, t.tmpl_nm, d.status
+ORDER BY 건수 DESC, d.tmpl_cd;
+
 -- ------------------------------------------------------------
 -- 2. 삭제 — 위 건수를 확인한 뒤 이 블록을 실행한다
 --    한 트랜잭션으로 묶여 중간에 실패하면 아무것도 지워지지 않는다

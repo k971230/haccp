@@ -88,6 +88,18 @@ export const DASHBOARD_POLLING_MS = parsePositiveInt(
   10_000
 );
 
+/** 오늘 할 일 최근 문서 조회 일수 — 오늘을 포함한다 */
+export const TODAY_TASKS_RECENT_DAYS = parsePositiveInt(
+  import.meta.env.VITE_TODAY_TASKS_RECENT_DAYS,
+  7
+);
+
+/** 오늘 할 일 최근 문서 페이지 크기 — SP OFFSET/LIMIT */
+export const TODAY_TASKS_PAGE_SIZE = parsePositiveInt(
+  import.meta.env.VITE_TODAY_TASKS_PAGE_SIZE,
+  20
+);
+
 /** 화면 조회 로그 전송 주기(ms) — 모아둔 UV/PV 이벤트를 이 간격으로 배치 전송한다 */
 export const VIEW_LOG_FLUSH_MS = parsePositiveInt(
   import.meta.env.VITE_VIEW_LOG_FLUSH_MS,

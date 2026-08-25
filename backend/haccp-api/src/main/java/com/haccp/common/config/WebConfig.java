@@ -1,31 +1,54 @@
 /**
- * WebConfig.java — Spring MVC CORS 설정.
+ * WebConfig.java — Spring MVC CORS·화면 권한 인터셉터.
  *
  * 주요 역할:
  *     1. /api/** 경로에 CORS 허용 출처·메서드·헤더 등록
  *     2. JwtFilter 401 응답과 동일한 allowed-origins 설정 공유
+ *     3. ScreenAuthInterceptor 를 /api/** 에 등록 — JWT 다음 단계의 화면 권한
  *
  * PIPELINE[HB5] Spring 설정
- * PIPELINE[HB3, HB19] 연관 모듈
+ * PIPELINE[HB3, HB19, HB145] 연관 모듈
  */
 package com.haccp.common.config;
 
+// 역할 — 화면 권한 인터셉터
+import com.haccp.common.auth.ScreenAuthInterceptor;
 // 역할 — @Value 설정 주입
 import org.springframework.beans.factory.annotation.Value;
 // 역할 — @Configuration 등록
 import org.springframework.context.annotation.Configuration;
 // 역할 — CORS 매핑 API
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+// 역할 — 인터셉터 등록
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 // 역할 — WebMvcConfigurer 확장
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/** CORS 설정 — 허용 출처는 환경설정(app.cors.allowed-origins, 콤마 구분)으로 분리. */
+/** CORS·화면 권한 — 허용 출처는 환경설정(app.cors.allowed-origins, 콤마 구분)으로 분리. */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
     // CORS 허용 출처 배열 — 기본값 localhost:4173 (haccp-web Vite 개발 서버. mes-web 5173과 구분)
     @Value("${app.cors.allowed-origins:http://localhost:4173}")
     private String[] allowedOrigins;
+
+    // 화면 권한 — JwtFilter 가 LoginUser 를 채운 뒤 컨트롤러 앞에서 대조한다
+    private final ScreenAuthInterceptor screenAuthInterceptor;
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) CORS 설정과 화면 권한 인터셉터를 한 MVC 설정에 둔다
+     *   2) Spring 이 빈을 만들 때 인터셉터를 주입한다
+     *   3) 인터셉터가 없으면 기동이 실패한다 — 권한 검사를 빼 놓고 올리지 않는다
+     */
+    public WebConfig(
+            // 경로 → tbl_role_screen 대조
+            ScreenAuthInterceptor screenAuthInterceptor
+    ) {
+        this.screenAuthInterceptor = screenAuthInterceptor;
+    }
     /**
      * 개발자: 박승우
      * 일자: 2026-07-10
@@ -53,5 +76,22 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowCredentials(
                         false
                 );
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 인증된 /api 요청에 화면 권한 인터셉터를 붙인다
+     *   2) MVC 초기화 때 한 번 등록한다
+     *   3) 로그인(JwtFilter 공개 경로)은 필터에서 이미 빠지므로 여기까지 오지 않는다
+     */
+    @Override
+    public void addInterceptors(
+            // Spring 인터셉터 등록 객체
+            InterceptorRegistry registry
+    ) {
+        registry.addInterceptor(screenAuthInterceptor)
+                .addPathPatterns("/api/**");
     }
 }

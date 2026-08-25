@@ -17,6 +17,8 @@ interface ImportMetaEnv {
   readonly VITE_SEARCH_DEBOUNCE_MS?: string;
   readonly VITE_API_RETRY_COUNT?: string;
   readonly VITE_DASHBOARD_POLLING_MS?: string;
+  readonly VITE_TODAY_TASKS_RECENT_DAYS?: string;
+  readonly VITE_TODAY_TASKS_PAGE_SIZE?: string;
   readonly VITE_VIEW_LOG_FLUSH_MS?: string;
   readonly VITE_TOAST_DURATION_MS?: string;
   readonly VITE_TOAST_ERROR_DURATION_MS?: string;

@@ -479,7 +479,7 @@ public class DocumentService {
      * 개발자: 박승우
      * 일자: 2026-08-06
      * 코멘트:
-     *   1) 상신·검토·승인·반려 중 하나를 처리한다
+     *   1) 상신·상신취소·검토·승인·반려·결재취소 중 하나를 처리한다
      *   2) 문서 결재 패널의 버튼이 호출한다
      *   3) 성공 시 문서 상태를 갱신하고 APV/RJT 감사 이력을 남긴다
      */
@@ -492,7 +492,7 @@ public class DocumentService {
     ) {
         Long docIdx = DeleteValidation.requirePositive(req.getDocIdx(), "문서번호가 올바르지 않습니다.");
         String action = text(req.getActionCd()).toUpperCase();
-        if (!List.of("REQUEST", "CANCEL", "REVIEW", "APPROVE", "REJECT").contains(action)) {
+        if (!List.of("REQUEST", "CANCEL", "REVIEW", "APPROVE", "REJECT", "UNDO").contains(action)) {
             throw new BizException("결재 처리 구분이 올바르지 않습니다.");
         }
         String coCd = LoginUserContext.coCd();
@@ -500,7 +500,12 @@ public class DocumentService {
         if (before == null) {
             throw new BizException("문서를 찾을 수 없습니다.");
         }
-        mapper.processApproval(coCd, docIdx, action, text(req.getOpinion()), LoginUserContext.userId());
+        // 결재취소는 되돌리기 규칙이 달라 전용 SP 를 탄다 — 전이 SP 는 손대지 않는다
+        if ("UNDO".equals(action)) {
+            mapper.undoApproval(coCd, docIdx, LoginUserContext.userId());
+        } else {
+            mapper.processApproval(coCd, docIdx, action, text(req.getOpinion()), LoginUserContext.userId());
+        }
         Map<String, Object> after = mapper.selectDocument(coCd, docIdx);
         audit(
                 "tbl_document",
@@ -512,9 +517,37 @@ public class DocumentService {
                 },
                 before,
                 after,
-                action.equals("REJECT") ? text(req.getOpinion()) : null,
+                // 반려 사유·결재취소 사유를 감사 이력 메모로 남긴다
+                action.equals("REJECT") || action.equals("UNDO") ? text(req.getOpinion()) : null,
                 requestMeta
         );
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 문서 비고를 저장한다 — 첨부와 달리 결재 완료(APV) 직전까지 고칠 수 있다
+     *   2) 결재 첨부(attach) 화면의 비고 저장 버튼이 호출한다
+     *   3) 작성자 본인·잠금 검증은 SP가 하고, 여기서는 감사 이력만 남긴다
+     */
+    @Transactional
+    public void saveRemark(
+            // 문서 대리키
+            Long docIdx,
+            // 비고 본문 — null·빈 문자열이면 지운다
+            String remark,
+            // 감사 로그용 요청 IP
+            RequestMeta requestMeta
+    ) {
+        Long requiredDocIdx = DeleteValidation.requirePositive(docIdx, "문서번호가 올바르지 않습니다.");
+        String coCd = LoginUserContext.coCd();
+        Map<String, Object> before = mapper.selectDocument(coCd, requiredDocIdx);
+        if (before == null) {
+            throw new BizException("문서를 찾을 수 없습니다.");
+        }
+        mapper.saveRemark(coCd, requiredDocIdx, text(remark), LoginUserContext.userId());
+        audit("tbl_document", requiredDocIdx, "U", before, mapper.selectDocument(coCd, requiredDocIdx), null, requestMeta);
     }
 
     /**
@@ -564,7 +597,7 @@ public class DocumentService {
         }
     }
 
-    /** 삭제 대상 정규화·결재·보존기간 차단 */
+    /** 삭제 대상 정규화·전송·결재완료 차단 — 보존기간은 초안 삭제 자물쇠가 아니다 */
     private void assertDeletable(String coCd, List<DocumentDeleteItem> keys) {
         DeleteValidation.requireItems(keys, "삭제할 문서를 선택하세요.");
         List<Long> docIdxs = new ArrayList<>();

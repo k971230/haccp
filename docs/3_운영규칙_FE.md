@@ -92,6 +92,8 @@ useAsyncAction.run(fn, "del")
 | `VITE_SEARCH_DEBOUNCE_MS` | 300 | 검색 디바운스 |
 | `VITE_API_RETRY_COUNT` | 2 | GET 재시도 |
 | `VITE_DASHBOARD_POLLING_MS` | 10000 | 폴링 |
+| `VITE_TODAY_TASKS_RECENT_DAYS` | 7 | 오늘 할 일 최근 문서 일수 |
+| `VITE_TODAY_TASKS_PAGE_SIZE` | 20 | 오늘 할 일 최근 문서 페이지 |
 | `VITE_VIEW_LOG_FLUSH_MS` | 30000 | UV 버퍼 flush |
 | `VITE_TOAST_*_MS` | 2600 / 5000 | 토스트 |
 

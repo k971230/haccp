@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) OPS_DELETE 계약에 따라 UI 단건도 객체 배열 [{ docIdx }]로 받는다
  *   2) validate-delete와 delete가 같은 타입을 공유해 사전·실제 검증을 일치시킨다
- *   3) 문서 상태·보존기간 검증은 Service와 SP에서 이중으로 수행한다
+ *   3) 문서 상태 검증은 Service와 SP에서 이중으로 수행한다. 보존기간은 삭제 차단에 쓰지 않는다
  *
  * PIPELINE[HB81] doc DTO
  * PIPELINE[HB51] 연관 모듈
