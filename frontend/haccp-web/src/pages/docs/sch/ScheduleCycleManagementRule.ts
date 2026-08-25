@@ -39,9 +39,9 @@ export const CYCLE_FALLBACK = [
 
 /** 비영업일 처리 기본값 — keep 그대로 / prev 이전 영업일 / next 다음 영업일 */
 export const NONWORK_FALLBACK = [
-  { value: "keep", label: "그대로" },
-  { value: "prev", label: "이전 영업일" },
-  { value: "next", label: "다음 영업일" },
+  { value: "KEEP", label: "그대로" },
+  { value: "PREV", label: "이전 영업일" },
+  { value: "NEXT", label: "다음 영업일" },
 ] as const;
 
 /** 요일 토글 — ISO 요일(1 월 ~ 7 일) */
@@ -124,7 +124,7 @@ export function emptyForm(): CycleForm {
   return {
     baseDt: todayInput(),
     cycleCd: "D",
-    nonworkRule: "keep",
+    nonworkRule: "KEEP",
     dueTime: "18:00",
     deptCd: "",
     deptNm: "",

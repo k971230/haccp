@@ -1206,6 +1206,18 @@ PIPELINE[HF49] 연관 모듈
     font-size: 11px;
     box-sizing: border-box;
   }
+  /* time 입력은 text-align 이 안 먹는다 — 내부 필드 묶음을 가운데로 민다 */
+  .html-form-sign-input[type="time"] {
+    text-align: center;
+  }
+  .html-form-sign-input[type="time"]::-webkit-datetime-edit {
+    display: flex;
+    justify-content: center;
+  }
+  /* 시계 아이콘이 칸 폭을 먹고 값을 왼쪽으로 밀어낸다 */
+  .html-form-sign-input[type="time"]::-webkit-calendar-picker-indicator {
+    display: none;
+  }
   .html-form-pre {
     white-space: pre-wrap;
     word-break: break-word;

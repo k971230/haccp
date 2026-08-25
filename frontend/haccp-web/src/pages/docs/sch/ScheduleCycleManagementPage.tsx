@@ -208,7 +208,7 @@ export default function ScheduleCycleManagementPage() {
           ...base,
           baseDt: ymdToInput(rule.baseDt) || base.baseDt,
           cycleCd: String(rule.cycleCd ?? base.cycleCd).toUpperCase(),
-          nonworkRule: String(rule.nonworkRule ?? "keep").toLowerCase(),
+          nonworkRule: String(rule.nonworkRule ?? "KEEP").toUpperCase(),
           dueTime: hhmmToInput(rule.dueTime ?? "1800"),
           deptCd: String(rule.deptCd ?? ""),
           deptNm: String(rule.deptNm ?? ""),

@@ -1103,7 +1103,7 @@ export const CELL_KIND = {
   NUM: "num",
   // 측정시각·통과시간 — 시:분 콤보
   TIME: "time",
-  // 가열시간 등 소요시간 — 시:분:초 콤보
+  // 가열시간 등 소요시간 — 시:분 콤보 (초는 받지 않는다)
   DURATION: "duration",
 } as const;
 export type CellKind = (typeof CELL_KIND)[keyof typeof CELL_KIND];
@@ -1181,8 +1181,8 @@ export function HtmlFormCellInput({
         // 시간 콤보 — 브라우저 기본 입력기라 형식이 어긋난 값이 들어올 수 없다
         {...common}
         type="time"
-        // 소요시간은 초까지 받는다 — 가열시간 18분 30초 = 00:18:30
-        step={kind === CELL_KIND.DURATION ? 1 : undefined}
+        // 분 단위까지만 받는다 — 초를 열면 칸이 넓어지고 현장에서 쓰지도 않는다
+        step={60}
         {...(controlled
           ? { value: value ?? "", onChange: (e) => onChange?.(e.target.value) }
           : {})}

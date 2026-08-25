@@ -118,34 +118,39 @@ function s(v: unknown): string {
 }
 
 const HTML_INPUT_TY_LEGACY: Record<string, string> = {
-  YN: "radio",
-  YN_NUM: "radio-num",
-  YN_TEXT: "radio-text",
-  NUM: "num",
-  TEXT: "text",
+  // 구형 표기 — 2026-08-25 이전 데이터. 04_migrate_code_upper.sql 가 DB 를 올렸지만
+  // 외부에서 들어온 옛 값이 남아 있을 수 있어 읽기 쪽 방어는 유지한다
+  YN: "RADIO",
+  OX: "RADIO",
+  JUDGE: "RADIO",
+  YN_NUM: "RADIO_NUM",
+  NUM2: "RADIO_NUM",
+  YN_TEXT: "RADIO_TEXT",
+  "RADIO-NUM": "RADIO_NUM",
+  "RADIO-TEXT": "RADIO_TEXT",
 };
 
-/** kebab 입력유형 → 라디오·숫자·문자. 값칸은 num||text */
+/** 입력유형 → 라디오·숫자·문자. 값칸은 num||text. 공통코드 HTML_INPUT_TY 와 같은 키다 */
 const HTML_INPUT_LAYOUT: Record<string, { radio: boolean; num: boolean; text: boolean }> = {
-  radio: { radio: true, num: false, text: false },
-  "radio-num": { radio: true, num: true, text: false },
-  "radio-text": { radio: true, num: false, text: true },
-  num: { radio: false, num: true, text: false },
-  text: { radio: false, num: false, text: true },
+  RADIO: { radio: true, num: false, text: false },
+  RADIO_NUM: { radio: true, num: true, text: false },
+  RADIO_TEXT: { radio: true, num: false, text: true },
+  NUM: { radio: false, num: true, text: false },
+  TEXT: { radio: false, num: false, text: true },
 };
 
 const HTML_INPUT_TY_LABEL: Record<string, string> = {
-  radio: "라디오",
-  "radio-num": "라디오 숫자",
-  "radio-text": "라디오 문자",
-  num: "숫자",
-  text: "문자",
+  RADIO: "라디오",
+  RADIO_NUM: "라디오 숫자",
+  RADIO_TEXT: "라디오 문자",
+  NUM: "숫자",
+  TEXT: "문자",
 };
 
-export const HTML_INPUT_DEFAULT_TY = "radio";
+export const HTML_INPUT_DEFAULT_TY = "RADIO";
 export const HTML_INPUT_DEFAULT_UNIT = "℃";
 
-/** 공통코드 html-input-ty 미로드 때 콤보 */
+/** 공통코드 HTML_INPUT_TY 미로드 때 콤보 */
 export const FALLBACK_HTML_INPUT_TY = Object.keys(HTML_INPUT_LAYOUT).map((subCd) => ({
   subCd,
   codeNm: HTML_INPUT_TY_LABEL[subCd] ?? subCd,
@@ -157,17 +162,17 @@ export type HtmlFormInputFlags = { radio: boolean; num: boolean; text: boolean; 
  * 개발자: 박승우
  * 일자: 2026-08-20
  * 코멘트:
- *   1) 입력유형을 html-input-ty kebab 으로 맞춘다
+ *   1) 입력유형을 HTML_INPUT_TY UPPER_SNAKE 로 맞춘다
  *   2) 목록·저장 전 호출한다
- *   3) 옛 YN 계열이면 대응 코드, 맵에 없으면 radio
+ *   3) 옛 YN·OX 계열이면 대응 코드, 맵에 없으면 RADIO
  */
 export function normalizeHtmlInputTy(raw: string): string {
   const t = (raw || "").trim();
   if (!t) return HTML_INPUT_DEFAULT_TY;
-  const mapped = HTML_INPUT_TY_LEGACY[t.toUpperCase()];
-  if (mapped) return mapped;
-  const lower = t.toLowerCase();
-  return HTML_INPUT_LAYOUT[lower] ? lower : HTML_INPUT_DEFAULT_TY;
+  // 하이픈 표기·소문자 모두 UPPER_SNAKE 한 벌로 모은다
+  const key = t.toUpperCase().replace(/-/g, "_");
+  if (HTML_INPUT_LAYOUT[key]) return key;
+  return HTML_INPUT_TY_LEGACY[t.toUpperCase()] ?? HTML_INPUT_DEFAULT_TY;
 }
 
 /**
@@ -176,10 +181,10 @@ export function normalizeHtmlInputTy(raw: string): string {
  * 코멘트:
  *   1) 입력유형 한 번으로 라디오·숫자·문자·값칸을 정한다
  *   2) 공정점검·검증점검 행 렌더와 유형 콤보가 호출한다
- *   3) 맵에 없으면 radio
+ *   3) 맵에 없으면 RADIO
  */
 export function htmlFormInputLayout(raw: string): HtmlFormInputFlags {
-  const row = HTML_INPUT_LAYOUT[normalizeHtmlInputTy(raw)] ?? HTML_INPUT_LAYOUT.radio;
+  const row = HTML_INPUT_LAYOUT[normalizeHtmlInputTy(raw)] ?? HTML_INPUT_LAYOUT.RADIO;
   return { radio: row.radio, num: row.num, text: row.text, valueCell: row.num || row.text };
 }
 

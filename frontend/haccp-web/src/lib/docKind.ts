@@ -4,21 +4,21 @@
  * 개발자: 박승우
  * 일자: 2026-08-13
  * 코멘트:
- *   1) DB 정본은 소문자 hwp·html 이다 (51 migrate 에서 HWP·DB 값을 치환했다)
+ *   1) DB 정본은 대문자 HWP·HTML 이다 (04_migrate_code_upper.sql 에서 올렸다)
  *   2) 화면 비교·라벨·송신은 이 유틸만 쓴다 — 대문자 리터럴을 화면마다 두지 않는다
- *   3) 레거시 대문자(HWP·DB)·hwpx 가 섞여 와도 같은 값으로 본다
+ *   3) 레거시 소문자·DB·hwpx 가 섞여 와도 같은 값으로 본다
  */
 
 // 한글 문서작성형 — rhwp 편집기 + HWP/HWPX 원본 파일
-export const DOC_KIND_HWP = "hwp";
+export const DOC_KIND_HWP = "HWP";
 // DB 입력형 — 전용 HTML 화면 + DB 저장 (물리 원본 없음)
-export const DOC_KIND_HTML = "html";
+export const DOC_KIND_HTML = "HTML";
 
 /**
  * 개발자: 박승우
  * 일자: 2026-08-13
  * 코멘트:
- *   1) 서버·그리드에서 온 유형값을 정본 소문자로 바꾼다
+ *   1) 서버·그리드에서 온 유형값을 정본 대문자로 바꾼다
  *   2) 비교·필터·콤보 값 정규화에 쓴다
  *   3) 빈 값일 때(= 미지정) 빈 문자열을 그대로 돌려준다
  */
@@ -26,9 +26,9 @@ export function toDocKind(
   // 원본 유형값 — hwp·html·HWP·DB·hwpx 모두 허용
   value?: string | null,
 ): string {
-  const kind = String(value ?? "").trim().toLowerCase();
-  if (kind === "hwp" || kind === "hwpx") return DOC_KIND_HWP;
-  if (kind === "html" || kind === "db") return DOC_KIND_HTML;
+  const kind = String(value ?? "").trim().toUpperCase();
+  if (kind === "HWP" || kind === "HWPX") return DOC_KIND_HWP;
+  if (kind === "HTML" || kind === "DB") return DOC_KIND_HTML;
   return kind;
 }
 

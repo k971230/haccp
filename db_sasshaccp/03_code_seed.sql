@@ -10,10 +10,10 @@
 --
 --  명명 규칙 (2026-08-25 확정)
 --    main_cd : UPPER_SNAKE. 코드 그룹 이름이며 화면·서버가 문자열로만 쓴다
---    sub_cd  : **업무 테이블에 저장되는 값 그대로**. 대소문자를 바꾸지 않는다
---              예) tbl_schedule_rule.nonwork_rule = 'keep' 이면 sub_cd 도 'keep'
---                  tbl_document.doc_kind = 'html' 이면 sub_cd 도 'html'
---              여기를 대문자로 바꾸면 라벨이 안 붙고 콤보가 빈 값이 된다
+--    sub_cd  : UPPER_SNAKE. 업무 표에 저장되는 값과 **같은 표기**다
+--              예) tbl_schedule_rule.nonwork_rule = 'KEEP' 이면 sub_cd 도 'KEEP'
+--              예외 AUDIT_TARGET — 표 이름(tbl_document)이라 그대로 둔다
+--              코드와 데이터를 같이 올린다 — 04_migrate_code_upper.sql 참조
 --    sys_yn  : 이 파일이 까는 코드는 전부 'Y'. 업체가 화면에서 추가한 것만 'N'
 --
 --  적용: psql -v co_cd=0000 -f 03_code_seed.sql
@@ -76,49 +76,49 @@ INSERT INTO tmp_code(main_cd, sub_cd, code_nm, sort_no, ref1) VALUES
 ('CYCLE_CD',    'Y',        '매년',        6, NULL),
 ('CYCLE_CD',    'E',        '비정기',      7, NULL),
 
--- 비영업일 처리 — tbl_schedule_rule.nonwork_rule (소문자 저장)
+-- 비영업일 처리 — tbl_schedule_rule.nonwork_rule
 ('NONWORK_RULE', '*',       '비영업일 처리', 0, NULL),
-('NONWORK_RULE', 'keep',    '그대로',      1, NULL),
-('NONWORK_RULE', 'prev',    '이전 영업일', 2, NULL),
-('NONWORK_RULE', 'next',    '다음 영업일', 3, NULL),
+('NONWORK_RULE', 'KEEP',    '그대로',      1, NULL),
+('NONWORK_RULE', 'PREV',    '이전 영업일', 2, NULL),
+('NONWORK_RULE', 'NEXT',    '다음 영업일', 3, NULL),
 
 -- 판정(적합/부적합) — 기록 표 judge_cd
 ('JUDGE_PF',    '*',        '판정(적합/부적합)', 0, NULL),
 ('JUDGE_PF',    'P',        '적합',        1, NULL),
 ('JUDGE_PF',    'F',        '부적합',      2, NULL),
 
--- 예·아니오 — 지면 점검 항목 yn (소문자 저장)
+-- 예·아니오 — 지면 점검 항목 yn
 ('JUDGE_YN',    '*',        '예·아니오',   0, NULL),
-('JUDGE_YN',    'y',        '예',          1, NULL),
-('JUDGE_YN',    'n',        '아니오',      2, NULL),
+('JUDGE_YN',    'Y',        '예',          1, NULL),
+('JUDGE_YN',    'N',        '아니오',      2, NULL),
 
--- 지면 입력유형 — tbl_*_ver_item.input_type (소문자 저장)
+-- 지면 입력유형 — tbl_*_ver_item.input_type
 ('HTML_INPUT_TY', '*',          'HTML입력유형', 0, NULL),
-('HTML_INPUT_TY', 'radio',      '라디오',      1, NULL),
-('HTML_INPUT_TY', 'radio-num',  '라디오 숫자', 2, NULL),
-('HTML_INPUT_TY', 'radio-text', '라디오·문자', 3, NULL),
-('HTML_INPUT_TY', 'num',        '숫자',        4, NULL),
-('HTML_INPUT_TY', 'text',       '문자',        5, NULL),
+('HTML_INPUT_TY', 'RADIO',      '라디오',      1, NULL),
+('HTML_INPUT_TY', 'RADIO_NUM',  '라디오 숫자', 2, NULL),
+('HTML_INPUT_TY', 'RADIO_TEXT', '라디오·문자', 3, NULL),
+('HTML_INPUT_TY', 'NUM',        '숫자',        4, NULL),
+('HTML_INPUT_TY', 'TEXT',       '문자',        5, NULL),
 
--- 사용여부 — 화면 콤보 (소문자 저장)
+-- 사용여부 — 화면 콤보
 ('USE_YN',      '*',        '사용여부',    0, NULL),
-('USE_YN',      'y',        '사용',        1, NULL),
-('USE_YN',      'n',        '미사용',      2, NULL),
+('USE_YN',      'Y',        '사용',        1, NULL),
+('USE_YN',      'N',        '미사용',      2, NULL),
 
--- 시스템유무 — 양식 구분 콤보 (소문자 저장)
+-- 시스템유무 — 양식 구분 콤보
 ('SYS_YN',      '*',        '시스템유무',  0, NULL),
-('SYS_YN',      'sys',      '시스템',      1, NULL),
-('SYS_YN',      'usr',      '사용자',      2, NULL),
+('SYS_YN',      'SYS',      '시스템',      1, NULL),
+('SYS_YN',      'USR',      '사용자',      2, NULL),
 
--- 양식구분 — 양식관리 목록 (소문자 저장)
+-- 양식구분 — 양식관리 목록
 ('SRC_TY',      '*',        '양식구분',    0, NULL),
-('SRC_TY',      'sys',      '시스템',      1, NULL),
-('SRC_TY',      'usr',      '사용자',      2, NULL),
+('SRC_TY',      'SYS',      '시스템',      1, NULL),
+('SRC_TY',      'USR',      '사용자',      2, NULL),
 
--- 양식타입 — tbl_template.doc_kind (소문자 저장)
+-- 양식타입 — tbl_template.doc_kind
 ('TMPL_TY',     '*',        '양식타입',    0, NULL),
-('TMPL_TY',     'html',     'HTML',        1, NULL),
-('TMPL_TY',     'hwp',      'HWP',         2, NULL),
+('TMPL_TY',     'HTML',     'HTML',        1, NULL),
+('TMPL_TY',     'HWP',      'HWP',         2, NULL),
 
 -- 개선조치 상태 — tbl_corrective_action.status
 ('CA_STATUS',   '*',        '개선조치 상태', 0, NULL),
