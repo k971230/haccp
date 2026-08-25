@@ -63,4 +63,4 @@ DB(`tbl_document_file`)에는 경로만 넣고 파일 자체는 **서버 디스�
 사진이 많이 붙는 양식이 있어 바이너리를 DB 에 넣지 않는다.
 다운로드는 인증된 API 를 거치고, 물리 경로는 응답에 넣지 않는다.
 
-DB `127_migrate_appr_screens.sql` — 화면·권한·메뉴 등록 + `tbl_document.remark` 컬럼.
+DB `db_sasshaccp/01_sp.sql` — 화면·권한·메뉴 등록 + `tbl_document.remark` 컬럼.

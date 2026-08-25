@@ -592,7 +592,7 @@ Page
 | APPROVE | → APV | 승인자 |
 | REJECT | → RJT | 검토/승인 |
 
-정본 SP: `sp_tbl_document_approval_c_000` (`15_sp_doc.sql` + migrate **33**).
+정본 SP: `sp_tbl_document_approval_c_000` (`db_sasshaccp/01_sp.sql` + migrate **33**).
 
 ### 8.3 작성 vs 결재 UI
 

@@ -138,7 +138,7 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 | API | `api/sys/commonCodeApi.ts` |
 | BE | `com/haccp/sys/code/commoncode/{CommonCodeController,CommonCodeService,CommonCodeMapper}.java` |
 | XML | `resources/mapper/sys/code/commoncode/CommonCodeMapper.xml` |
-| DB | `db_sasshaccp/72_migrate_sp_common_code_v2.sql` |
+| DB | `db_sasshaccp/02_seed.sql` |
 
 ### 1-3. 버튼 → 끝단
 
@@ -170,7 +170,7 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 | API | `api/sys/menuApi.ts` |
 | BE | `com/haccp/sys/code/menu/{MenuMgmtController,MenuMgmtService,MenuMgmtMapper}.java` |
 | XML | `resources/mapper/sys/code/menu/MenuMgmtMapper.xml` |
-| DB | `db_sasshaccp/73_migrate_sp_menu_mgmt_v2.sql` |
+| DB | `db_sasshaccp/02_seed.sql` |
 
 ### 2-3. 버튼 → 끝단
 
@@ -199,7 +199,7 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 | API | `api/sys/roleApi.ts` + 트리 원본 `api/sys/menuApi.ts` |
 | BE | `com/haccp/sys/code/role/{RoleMgmtController,RoleMgmtService,RoleMgmtMapper}.java` |
 | XML | `resources/mapper/sys/code/role/RoleMgmtMapper.xml` |
-| DB | `db_sasshaccp/74_migrate_sp_role_mgmt_v2.sql` |
+| DB | `db_sasshaccp/01_sp.sql` |
 
 ### 3-3. 버튼 → 끝단
 
@@ -231,7 +231,7 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 | API | `api/sys/departmentApi.ts` |
 | BE | `com/haccp/sys/code/department/{DepartmentController,DepartmentService,DepartmentMapper}.java` |
 | XML | `resources/mapper/sys/code/department/DepartmentMapper.xml` |
-| DB | `db_sasshaccp/75_migrate_sp_dept_mgmt_v2.sql` |
+| DB | `db_sasshaccp/01_sp.sql` |
 
 ### 4-3. 버튼 → 끝단
 
@@ -261,7 +261,7 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 | API | `api/sys/userApi.ts` + 룩업 후보 `roleApi.listRoles` · `departmentApi.listDepartments` |
 | BE | `com/haccp/sys/code/user/{UserController,UserService,UserMapper}.java` |
 | XML | `resources/mapper/sys/code/user/UserMapper.xml` |
-| DB | `db_sasshaccp/76_migrate_sp_user_mgmt_v2.sql` |
+| DB | `db_sasshaccp/01_sp.sql` |
 
 ### 5-3. 버튼 → 끝단
 
@@ -299,7 +299,7 @@ URL은 `/sys/code/approval-line-management` — 메뉴 중분류 `code`. `/scree
 | API | `api/sys/approvalLineApi.ts` + 룩업 후보 `userApi.listUsers` |
 | BE | `com/haccp/sys/code/approvalline/{ApprovalLineController,ApprovalLineService,ApprovalLineMapper}.java` |
 | XML | `resources/mapper/sys/code/approvalline/ApprovalLineMapper.xml` |
-| DB | `db_sasshaccp/97_migrate_approval_line_sys.sql` · `18_sp_workflow.sql` |
+| DB | `db_sasshaccp/01_sp.sql` |
 
 ### 6-3. 버튼 → 끝단
 

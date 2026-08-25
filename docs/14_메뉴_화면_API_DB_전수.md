@@ -61,7 +61,7 @@
 
 ## §1 메뉴 IA·DB 스키마 스펙
 
-### 1.1 사이드바 IA ([`24`](24_URL_DB_폴더_패키지_정본.md) · `120_migrate_menu_url_slugs.sql`)
+### 1.1 사이드바 IA ([`24`](24_URL_DB_폴더_패키지_정본.md) · `db_sasshaccp/02_seed.sql`)
 
 | 순서 | 표시 | menu_cd | 역할 |
 |------|------|---------|------|
@@ -73,7 +73,7 @@
 
 소분류 leaf `menu_cd` = `scrn_cd`.
 
-### 1.2 테이블 스펙 (`01_ddl_auth.sql`)
+### 1.2 테이블 스펙 (`db_sasshaccp/00_ddl.sql`)
 
 **tbl_screen** — scrn_cd(UK)·scrn_nm·module_cd·tmpl_cd·sort_no·use_yn  
 **tbl_menu** — co_cd·menu_cd(UK with co)·menu_nm·h_menu_cd·scrn_cd·sort_no·use_yn  

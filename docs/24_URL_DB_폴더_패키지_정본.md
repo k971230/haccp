@@ -83,7 +83,7 @@ flowchart LR
 
 ## 6. DB 마이그레이션 및 이력
 
-적용 SQL: [`db_sasshaccp/120_migrate_menu_url_slugs.sql`](../db_sasshaccp/120_migrate_menu_url_slugs.sql). 절차는 [`20_배포_런북.md`](20_배포_런북.md) §14.
+적용 SQL: `db_sasshaccp/02_seed.sql`. 절차는 [`20_배포_런북.md`](20_배포_런북.md) §14.
 
 - **수동 실행:** Jenkins는 migrate를 돌리지 않는다. 로컬·운영 모두 운영자가 120을 직접 실행해야 사이드바가 정본 코드로 갱신된다.
 - **제약조건:** `UNIQUE (co_cd, menu_cd)` 때문에 대분류 2개 행을 동시에 `docs`로 UPDATE하지 않는다. 120은 한쪽을 개명하고 자식을 재부모한 뒤 빈 행을 지운다. `h_menu_cd`는 varchar이며 FK가 아니다.

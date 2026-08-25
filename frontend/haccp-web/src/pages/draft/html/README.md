@@ -22,7 +22,7 @@ URL `/draft/html`. 양식관리에서 **사용여부 = 예**로 둔 자사 HTML 
 `draft` 아래 중분류가 `hyg`·`ccp-chk` 두 개였는데 **`html` 하나로 합쳤다**.
 `menu_cd` 는 `tbl_menu UNIQUE (co_cd, menu_cd)` 때문에 전 트리에서 유일해야 해서,
 docs 쪽이 쓰던 `html` 을 `html-form` 으로 개명하고 이 자리를 비웠다
-(`132_migrate_menu_purge.sql`).
+(`db_sasshaccp/02_seed.sql`).
 
 `scrnCd`·`persistId` 는 그대로다 — 폴더·URL 이 바뀌어도 그 값은 안 바꾼다(`09-haccp-frontend`).
 사용자가 저장해 둔 그리드 열 너비가 보존된다.

@@ -1,6 +1,6 @@
 # com.haccp.sys.code.menu — 메뉴 관리
 
-화면코드 `menu-management` · XML `resources/mapper/sys/code/menu/MenuMgmtMapper.xml` · SP `db_sasshaccp/73_migrate_sp_menu_mgmt_v2.sql`
+화면코드 `menu-management` · XML `resources/mapper/sys/code/menu/MenuMgmtMapper.xml` · SP `db_sasshaccp/02_seed.sql`
 
 ## 엔드포인트
 

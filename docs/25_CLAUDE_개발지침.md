@@ -199,7 +199,7 @@ Controller(@RestController) → Service(@Service, CUD 는 @Transactional(timeout
 
 ## 8. 메뉴 등록 규칙
 
-신규 화면 1개당 SQL 4블록 (`db_sasshaccp/100_migrate_html_form_hyg_process.sql` 3장이 표준 예시).
+신규 화면 1개당 SQL 4블록 (`db_sasshaccp/01_sp.sql` 3장이 표준 예시).
 
 ```sql
 -- 1) 화면 마스터

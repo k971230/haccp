@@ -39,4 +39,4 @@
 한계기준 이탈내용·개선조치·조치자·확인은 저장할 컬럼이 없어 `tbl_corrective_action` 으로 간다.
 신규 컬럼·테이블을 만들지 않았다.
 
-API `/api/v1/draft/ccp-monitoring/{scrnCd}` · BE `com.haccp.draft.ccpmonitoring` · DB `124_migrate_ccp_log_draft.sql`
+API `/api/v1/draft/ccp-monitoring/{scrnCd}` · BE `com.haccp.draft.ccpmonitoring` · DB `db_sasshaccp/01_sp.sql`

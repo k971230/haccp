@@ -50,4 +50,4 @@ HTTP `DELETE` 를 쓰지 않는다. `POST validate-delete` → `POST delete` 두
 
 - DTO — `com.haccp.draft.dto` (5화면 공용). 이 패키지에 DTO 를 다시 만들지 않는다
 - 공용 유틸 — `com.haccp.draft.DraftSupport`
-- DB — `db_sasshaccp/125_migrate_hwp_draft.sql`
+- DB — `db_sasshaccp/01_sp.sql`

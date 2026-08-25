@@ -96,7 +96,7 @@ BE: 업무 API는 JWT 필수. 화면 권한은 FE 게이트 + `ScreenAuthInterce
 
 ## 6. 로그인 이력·시스템 화면
 
-- 테이블: `tbl_login_log` (`02_ddl_log.sql`) — result S/F/L
+- 테이블: `tbl_login_log` (`db_sasshaccp/00_ddl.sql`) — result S/F/L
 - 조회: `LoginHistoryController` `GET /api/v1/sys/login-history/list`
 - FE: `pages/sys/loginhistory/LoginHistoryPage` + `LoginHistoryRule` (`LogPageShell`)
 

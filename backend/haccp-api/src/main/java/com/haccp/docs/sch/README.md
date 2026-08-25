@@ -2,7 +2,7 @@
 
 화면 1개 = 패키지 1개. 파이프라인 표는 FE `pages/docs/README.md` 2장 · 이 패키지 상위 `com.haccp.docs/README.md`.
 
-XML `resources/mapper/docs/sch/DocCycleMapper.xml` · SP `db_sasshaccp/85_migrate_doc_cycle.sql` · `86_migrate_doc_cycle_form_use_yn.sql` · `96_migrate_cycle_e_irregular.sql` · `114_migrate_doc_cycle_appr_line.sql`
+XML `resources/mapper/docs/sch/DocCycleMapper.xml` · SP `db_sasshaccp/01_sp.sql`
 
 ## 엔드포인트
 
@@ -24,4 +24,4 @@ XML `resources/mapper/docs/sch/DocCycleMapper.xml` · SP `db_sasshaccp/85_migrat
 | `DocumentAlarmScheduler` | 마감 임박 알림 — `app.schedule.alarm-cron` |
 
 일일 배치: `tsk/DailyTaskGenerationJob` → `DocCycleService.regenerateAllCompanies()` → `TaskService.generateAllCompanies()`.
-목록 `useYn` 검색은 `86_migrate_doc_cycle_form_use_yn.sql`. 비정기(E)·좌측 숨김은 `96_migrate_cycle_e_irregular.sql`. 결재선은 `114_migrate_doc_cycle_appr_line.sql`(사용양식 `appr_line_cd`). Jenkins migrate 안 함.
+목록 `useYn` 검색은 `db_sasshaccp/01_sp.sql`. 비정기(E)·좌측 숨김은 `db_sasshaccp/01_sp.sql`. 결재선은 `db_sasshaccp/01_sp.sql`(사용양식 `appr_line_cd`). Jenkins migrate 안 함.

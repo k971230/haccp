@@ -78,7 +78,7 @@ HYG·CCP 는 **형제 화면**이며 UI·업무 흐름이 같다.
 
 중분류 `menu_cd` 는 `tbl_menu UNIQUE (co_cd, menu_cd)` 때문에 전 트리에서 유일해야 한다.
 2026-08-25 정리에서 docs 쪽 `html` 을 `html-form` 으로 개명하고 이 대분류가 `html` 을 가져갔다
-(`132_migrate_menu_purge.sql`). BE 패키지는 `com.haccp.draft.html` 이다.
+(`db_sasshaccp/02_seed.sql`). BE 패키지는 `com.haccp.draft.html` 이다.
 
 ## 공통 업무 규칙
 

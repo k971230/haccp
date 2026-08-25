@@ -37,7 +37,7 @@
 | 결재선 룩업 | `approvalLineApi.listApprovalLines` | `sp_tbl_approval_line_r_000` | `tbl_approval_line` `tbl_approval_line_step` |
 | 마감 알림 배치 | `DocumentAlarmScheduler` | `sp_tbl_notification_task_c_000` | `tbl_schedule_task` |
 
-목록 `useYn` 검색·비정기(E)·좌측 필터는 `96_migrate_cycle_e_irregular.sql`(Jenkins migrate 안 함, DBeaver/수동). 선행 86. 결재선은 `114_migrate_doc_cycle_appr_line.sql`.
+목록 `useYn` 검색·비정기(E)·좌측 필터는 `db_sasshaccp/01_sp.sql`(Jenkins migrate 안 함, DBeaver/수동). 선행 86. 결재선은 `db_sasshaccp/01_sp.sql`.
 
 HTTP `/api/v1/docs/sch/schedule-cycle-management`. 결재선 룩업은 `/api/v1/sys/code/approval-line-management`.
 

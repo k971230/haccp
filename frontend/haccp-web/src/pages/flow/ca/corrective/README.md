@@ -29,7 +29,7 @@
 | 저장 | `saveCorrectiveAction` | `sp_tbl_corrective_action_c_000` | 위 |
 | 삭제 | `validateDeleteCorrectiveActions` → `deleteCorrectiveActions` | `sp_tbl_corrective_action_d_000` | 위 |
 
-조회 SP는 `129_migrate_corrective_search.sql` 에서 검색 조건을 일자·양식·작성자로 바꾸고
+조회 SP는 `db_sasshaccp/01_sp.sql` 에서 검색 조건을 일자·양식·작성자로 바꾸고
 문서 정보(양식명·문서번호·기준일·작성자)를 함께 돌려주도록 고쳤다.
 
 ## pref 키

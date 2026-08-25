@@ -28,12 +28,12 @@ HWP leaf 양식·`doc_kind`·`scrn_cd` 1:1 (`37`).
 
 | SP | 정본 파일 | 계약 |
 |----|-----------|------|
-| `sp_tbl_document_approval_c_000` | `15_sp_doc.sql` + **`33` 재적용** | REQUEST=`WRK`/`RJT`, CANCEL→`WRK`, 서명 후 CANCEL 차단 |
+| `sp_tbl_document_approval_c_000` | `db_sasshaccp/01_sp.sql` + **`33` 재적용** | REQUEST=`WRK`/`RJT`, CANCEL→`WRK`, 서명 후 CANCEL 차단 |
 | `sp_tbl_ccp_cold_monitor_r_000` 등 목록 | `14`/`19`/`20` (6인자) | `30`과 동일 |
 | `sp_tbl_document_appr_inbox_r_000` | `31` | 결재함 |
 | 재고 양식 | `20` + `09`/`34`/`37` | `tmpl_logis-inventory-check` · 작성 화면 `inventory-hwp` |
 
-`28_migrate_wave1_remain.sql`은 **결재 SP를 덮어쓰지 않는다.**
+`db_sasshaccp/01_sp.sql`은 **결재 SP를 덮어쓰지 않는다.**
 
 ## 환경 의존
 
@@ -41,7 +41,7 @@ HWP leaf 양식·`doc_kind`·`scrn_cd` 1:1 (`37`).
 |-----|------|
 | `APP_FILE_ROOT` | 첨부·서명·HWP 볼륨 |
 | `APP_RHWP_CLI_PATH` | HWP→PDF |
-| DB `search_path` | `sasshaccp` (`00_schema.sql`) |
+| DB `search_path` | `sasshaccp` (`db_sasshaccp/00_ddl.sql`) |
 
 ## 명세 구현 (38~42)
 

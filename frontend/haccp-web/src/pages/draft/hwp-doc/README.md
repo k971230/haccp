@@ -48,7 +48,7 @@ HYG·CCP검증·CCP모니터링과 **같은 화면**이며, 이 폴더는 우측
 ## 연관
 
 - 서버 — `com.haccp.draft.hwp` (저장·상세·삭제는 문서 허브 `DocumentService` 위임)
-- DB — `db_sasshaccp/125_migrate_hwp_draft.sql`
+- DB — `db_sasshaccp/01_sp.sql`
 - 양식 파일 — 사용양식 관리 `/docs/hwp/hwp-template-management`
 
 ## 이탈여부 (목록 칸)
@@ -66,4 +66,4 @@ HYG·CCP검증·CCP모니터링과 **같은 화면**이며, 이 폴더는 우측
 HTML 5화면은 켜지 않는다 — 지면 시그널과 두 곳에 두면 값이 갈린다.
 
 목록 SP 의 `deviation_yn` 은 완료 여부와 무관하게 개선조치가 붙어 있으면 Y 다
-(`130_migrate_hwp_draft_deviation.sql`). 미완료 수(`ng_cnt`)와 다른 축이다.
+(`db_sasshaccp/01_sp.sql`). 미완료 수(`ng_cnt`)와 다른 축이다.

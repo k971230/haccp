@@ -22,7 +22,7 @@
 
 ## 메뉴 IA (사이드바)
 
-로그인 랜딩: `today-tasks` (최상위 leaf). 대메뉴 정본은 [`24`](24_URL_DB_폴더_패키지_정본.md) · `120_migrate_menu_url_slugs.sql`.
+로그인 랜딩: `today-tasks` (최상위 leaf). 대메뉴 정본은 [`24`](24_URL_DB_폴더_패키지_정본.md) · `db_sasshaccp/02_seed.sql`.
 
 | 순서 | 메뉴 | menu_cd | 내용 |
 |------|------|---------|------|
@@ -66,4 +66,4 @@ DB→HWP 전환분(`tmpl_prp-hygiene-personal`·`WASTE` 등)은 `doc_kind=HWP` +
 - 목록 SP는 6인자(`doc_no`,`writer`). 본문만 재적용해도 `14`/`19`/`20`이 정본이다.
 - 재고 양식코드는 `tmpl_logis-inventory-check` (구 `INV` 금지).
 - 결재 SP는 `WRK` — `28`에 TMP 결재 정의를 다시 넣지 말 것. 보강은 `33`.
-- 신규 테넌트 메뉴 시드: `13_sp_platform.sql` `sp_tbl_company_init_c_000` (IA 5부모 + today-tasks).
+- 신규 테넌트 메뉴 시드: `db_sasshaccp/01_sp.sql` `sp_tbl_company_init_c_000` (IA 5부모 + today-tasks).

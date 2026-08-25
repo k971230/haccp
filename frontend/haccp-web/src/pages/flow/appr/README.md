@@ -32,7 +32,7 @@ URL `/flow/appr`. 문서 흐름의 결재 구간 3화면이다.
 ## 화면코드 개명 (2026-08-25)
 
 구 `approval-inbox` → `sign-ready` · `approval-history` → `sign-ok` 로 바꿨다.
-DB 는 `db_sasshaccp/127_migrate_appr_screens.sql` 이 화면·권한·메뉴를 같이 옮긴다.
+DB 는 `db_sasshaccp/01_sp.sql` 이 화면·권한·메뉴를 같이 옮긴다.
 
 **그리드 pref 키(`doc-approval-inbox`·`doc-approval-history`)는 바꾸지 않았다** —
 바꾸면 사용자가 저장해 둔 열 너비가 전부 초기화된다.

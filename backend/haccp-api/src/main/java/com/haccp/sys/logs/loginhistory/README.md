@@ -1,6 +1,6 @@
 # com.haccp.sys.logs.loginhistory — 로그인 이력 (조회)
 
-화면코드 `login-history` · XML `resources/mapper/sys/logs/loginhistory/LoginHistoryMapper.xml` · SP `db_sasshaccp/77_migrate_sp_log_screens_v2.sql`
+화면코드 `login-history` · XML `resources/mapper/sys/logs/loginhistory/LoginHistoryMapper.xml` · SP `db_sasshaccp/01_sp.sql`
 
 ## 엔드포인트
 

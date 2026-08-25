@@ -1,6 +1,6 @@
 # com.haccp.sys.logs.auditlog — 변경 감사 로그 (조회) + 적재기
 
-화면코드 `audit-log` · XML `resources/mapper/sys/logs/auditlog/AuditLogMapper.xml` · SP `db_sasshaccp/77_migrate_sp_log_screens_v2.sql`
+화면코드 `audit-log` · XML `resources/mapper/sys/logs/auditlog/AuditLogMapper.xml` · SP `db_sasshaccp/01_sp.sql`
 
 ## 엔드포인트
 

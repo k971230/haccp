@@ -2,7 +2,7 @@
 
 화면 1개 = 패키지 1개. 파이프라인 표는 FE `pages/docs/README.md` 1장 · 이 패키지 상위 `com.haccp.docs/README.md`.
 
-XML `resources/mapper/docs/hwp/HwpTemplateMapper.xml` · SP `db_sasshaccp/84_migrate_form_master_type.sql` · `87_migrate_hwp_template_list_all.sql`
+XML `resources/mapper/docs/hwp/HwpTemplateMapper.xml` · SP `db_sasshaccp/01_sp.sql`
 
 ## 엔드포인트
 
@@ -25,4 +25,4 @@ XML `resources/mapper/docs/hwp/HwpTemplateMapper.xml` · SP `db_sasshaccp/84_mig
 
 삭제는 법적서류 업로드도 `/api/v1/bas/company-templates/{validate-delete,delete}` 를 쓰므로 **Workflow에 잔류**한다. 그 메뉴를 손볼 때 이전한다.
 파일 업로드 I/O는 `docs.template.TemplateService.saveForm` 그대로.
-목록 SP는 `87_migrate_hwp_template_list_all.sql` — 시스템양식 예제 전부(html 포함). Jenkins migrate 안 함.
+목록 SP는 `db_sasshaccp/01_sp.sql` — 시스템양식 예제 전부(html 포함). Jenkins migrate 안 함.

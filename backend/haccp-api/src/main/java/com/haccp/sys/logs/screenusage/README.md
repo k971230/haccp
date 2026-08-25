@@ -1,6 +1,6 @@
 # com.haccp.sys.logs.screenusage — 화면 이용 통계 (조회)
 
-화면코드 `screen-usage-statistics` · XML `resources/mapper/sys/logs/screenusage/ScreenUsageMapper.xml` · SP `db_sasshaccp/77_migrate_sp_log_screens_v2.sql`
+화면코드 `screen-usage-statistics` · XML `resources/mapper/sys/logs/screenusage/ScreenUsageMapper.xml` · SP `db_sasshaccp/01_sp.sql`
 
 ## 엔드포인트
 

@@ -29,7 +29,7 @@
 전역 콤보(`useCommonCodes`)도 `sp_common_code_management_r_001`을 쓰므로 이 SP를 고치면 **전 화면 콤보가 함께 바뀐다**.
 사용양식·문서주기 구분 문구(`sys-yn`)도 여기 행이 정본이다. HTML 공정점검 입력유형은 `html-input-ty`, 예/아니오는 `judge-yn`. FE에 별도 formType 파일을 두지 않는다.
 
-조회는 회사코드 완전 격리다(`WHERE c.co_cd = p_co_cd`). 표준코드 `0000`을 상속받지 않으므로 신규 업체는 온보딩 SP(`sp_tbl_company_init_c_000`)가 표준코드를 복제해 넣는다. 기존 업체분은 `db_sasshaccp/70_migrate_code_tenant_copy.sql`로 백필했다.
+조회는 회사코드 완전 격리다(`WHERE c.co_cd = p_co_cd`). 표준코드 `0000`을 상속받지 않으므로 신규 업체는 온보딩 SP(`sp_tbl_company_init_c_000`)가 표준코드를 복제해 넣는다. 기존 업체분은 `db_sasshaccp/02_seed.sql`로 백필했다.
 
 ## pref 키
 
