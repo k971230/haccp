@@ -11,8 +11,8 @@ draft/
 
 | 화면 | URL 중분류 | 자바 패키지 | 기준 양식관리 |
 |---|---|---|---|
-| `hyg-process` | `hyg` | `com.haccp.draft.hyg` | `hyg-process-template` |
-| `ccp-verify` | `ccp-chk` | `com.haccp.draft.ccp` | `ccp-verify-template` |
+| `hyg-process` | `html` | `com.haccp.draft.html` | `hyg-process-template` |
+| `ccp-verify` | `html` | `com.haccp.draft.html` | `ccp-verify-template` |
 
 중분류 `menu_cd` 는 `tbl_menu UNIQUE (co_cd, menu_cd)` 때문에 전 트리에서 유일해야 한다.
 `docs` 아래 `html`·`ccp` 가 이미 있어 이 대분류는 `hyg`·`ccp-chk` 를 쓴다.

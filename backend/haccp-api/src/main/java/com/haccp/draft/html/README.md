@@ -7,7 +7,7 @@ XML `mapper/draft/ccp/CcpVerifyDraftMapper.xml`
 scrnCd `ccp-verify` · 양식 `tml_ccp_chk_001` 이상(사용여부 Y 자사 양식만)
 
 중분류 슬러그는 `ccp-chk` 다 — `tbl_menu UNIQUE (co_cd, menu_cd)` 때문에 `docs` 아래 `ccp` 와 겹칠 수 없다.
-자바 패키지는 하이픈을 못 쓰므로 `com.haccp.draft.ccp` 로 둔다(`docs.ccp` 와는 다른 네임스페이스다).
+자바 패키지는 `com.haccp.draft.html` — FE SCREEN_PATH `/draft/html` 과 같은 칸이다.
 
 ## 데이터
 
