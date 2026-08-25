@@ -225,8 +225,8 @@ export function CcpMtlPaper({
                   templateEdit={templateEdit}
                   writeEdit={writeEdit}
                   row={row}
-                  // 영역 첫 줄은 라벨 행이라 지우지 않는다
-                  onRemove={idx === 0 ? undefined : () => onLogRowsChange?.(removeLogRow(rows, row.rowSeq))}
+                  // 작성 때는 첫 줄도 지운다. 표가 통째로 비면 저장 SP 가 막으므로 마지막 한 줄만 남긴다
+                  onRemove={rows.length > 1 ? () => onLogRowsChange?.(removeLogRow(rows, row.rowSeq)) : undefined}
                   onPatch={(patch) => onLogRowsChange?.(patchLogRow(rows, row.rowSeq, patch))}
                 />
               )))

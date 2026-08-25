@@ -1388,6 +1388,12 @@ PIPELINE[HF49] 연관 모듈
     flex: 1;
     min-width: 0;
   }
+  /* 행 추가 버튼 묶음 — 버튼끼리 붙지 않게 띄운다 */
+  .html-form-row-add .html-form-no-print {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
   .ccp-pkg-num-wrap {
     display: flex;
     align-items: center;
