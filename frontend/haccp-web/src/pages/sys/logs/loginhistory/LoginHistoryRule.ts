@@ -33,7 +33,7 @@ export const LOGIN_HISTORY_RULE: LogRule = {
   treeKind: "user",
   rangeDays: RANGE_DAYS,
   // 결과 컬럼 코드 대분류 — 성공/실패/로그아웃
-  codeGroup: "login-result",
+  codeGroup: "LOGIN_RESULT",
 
   /** 컬럼 — 결과는 공통코드 라벨로 표시한다 */
   buildColumns: (codeMap, codeOptions) => [

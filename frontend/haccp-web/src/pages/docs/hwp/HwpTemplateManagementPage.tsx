@@ -104,7 +104,7 @@ export default function HwpTemplateManagementPage() {
     extra: { canWrite, canModify, canDelete: canDeleteAuth },
   });
   const asyncAct = useAsyncAction();
-  const useCodes = useCommonCodes("use-yn");
+  const useCodes = useCommonCodes("USE_YN");
   // 목록 구분 문구 — 시스템제공/사용자추가. 불러오기 src-ty 와 섞지 않는다
   const sysYnCodes = useCommonCodes(SYS_YN_MAIN_CD);
 

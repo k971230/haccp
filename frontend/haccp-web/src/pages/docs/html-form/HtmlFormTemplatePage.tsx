@@ -108,7 +108,7 @@ export function HtmlFormTemplatePage({
   const canEdit = canWrite || canModify;
   const action = useAsyncAction();
   const sysYnCodes = useCommonCodes(SYS_YN_MAIN_CD);
-  const useCodes = useCommonCodes("use-yn");
+  const useCodes = useCommonCodes("USE_YN");
   const useOpts = useMemo(
     () => (useCodes.codes.length
       ? useCodes.codes.map((code) => ({ value: String(code.subCd).toUpperCase(), label: code.codeNm }))

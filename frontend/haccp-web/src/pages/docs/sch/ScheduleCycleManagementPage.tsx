@@ -96,7 +96,7 @@ export default function ScheduleCycleManagementPage() {
   const asyncAct = useAsyncAction();
   const openModal = useModalStore((state) => state.openModal);
   const cycleCodes = useCommonCodes("CYCLE_CD");
-  const nonworkCodes = useCommonCodes("nonwork-rule");
+  const nonworkCodes = useCommonCodes("NONWORK_RULE");
   // 목록 구분 문구 — 시스템제공/사용자추가. 불러오기 src-ty 와 섞지 않는다
   const sysYnCodes = useCommonCodes(SYS_YN_MAIN_CD);
 

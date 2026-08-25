@@ -34,7 +34,7 @@ export const SPLIT_KEY = "haccp-split-hwp-template" as const;
 export const FILE_HIST_PERSIST_ID = "hwp-template-file-hist-3" as const;
 
 /** 파일 이력 양식구분 공통코드 대분류 — sys 시스템, usr 사용자 */
-export const SRC_TY_MAIN_CD = "src-ty" as const;
+export const SRC_TY_MAIN_CD = "SRC_TY" as const;
 
 /** 좌측 그리드 행 — 서버 목록 + 신규 draft */
 export type TmplListRow = HwpTemplateRow;

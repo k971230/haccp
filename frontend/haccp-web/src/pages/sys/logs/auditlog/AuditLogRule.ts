@@ -33,7 +33,7 @@ export const AUDIT_LOG_RULE: LogRule = {
   treeKind: "menu",
   rangeDays: RANGE_DAYS,
   // 행위 컬럼 코드 대분류 — 등록/수정/삭제
-  codeGroup: "audit-result",
+  codeGroup: "AUDIT_RESULT",
 
   /** 컬럼 — 행위는 공통코드 라벨로 표시한다 */
   buildColumns: (codeMap, codeOptions) => [
