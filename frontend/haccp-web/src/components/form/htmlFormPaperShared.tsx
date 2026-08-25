@@ -788,6 +788,54 @@ export function HtmlFormRowAddSlot({
   );
 }
 
+/** 작업 전/작업 종료 구분 — DB phase_cd. 지면 행 추가 버튼이 이 값으로 영역을 가른다 */
+export const LOG_PHASE = {
+  BEFORE: "BEFORE",
+  AFTER: "AFTER",
+} as const;
+export type LogPhase = (typeof LOG_PHASE)[keyof typeof LOG_PHASE];
+
+/**
+ * 기록 표 1행 — CCP 포장·가열 기록표와 금속 감도표가 같이 쓴다.
+ * 양식마다 다른 칸(온도·분·초·Fe만·SUS만 …)은 cells 에 item_cd → 값으로 담는다.
+ * BE 가 계열별로 cells 를 실제 컬럼(generic _cell · metal sens_row)으로 편다.
+ */
+export interface HtmlFormLogRow {
+  // 저장 순번 — 영역 안 정렬. 신규 행은 화면이 뒤에 붙인다
+  rowSeq: number;
+  // 작업 전/작업 종료 — 이 값으로만 영역을 가른다. DOM 위치로 판단하지 않는다
+  phaseCd: LogPhase;
+  // 품명 — 고정 라벨 행(작업 전/작업 종료)은 화면이 라벨을 대신 그린다
+  productNm: string;
+  // 측정시각·통과시간
+  checkTime: string;
+  // 판정 P=적합 F=부적합. 빈값이면 미판정
+  judgeCd: string;
+  // 판정 수동수정 여부 Y/N — 금속은 서버가 자동 판정하므로 Y 여야 사용자 값이 남는다
+  judgeModYn?: string;
+  // 행 서명 이름
+  checkerNm: string;
+  // 서명 이미지 스냅샷 여부 Y/N
+  signYn: string;
+  // 양식별 입력칸 — 예: PKG temp·min·sec / HTG temp·time / MTL fe-only·sts-only…
+  cells: Record<string, string>;
+  // 영역 첫 줄 고정 라벨 행 여부 — 작업 전/작업 종료. 삭제 불가
+  fixedYn?: string;
+}
+
+/** 금속검출 통과량 표 1행 — MTL 두 번째 표 전용 */
+export interface HtmlFormPassRow {
+  rowSeq: number;
+  // 품명
+  productNm: string;
+  // 통과량
+  passQty: string;
+  // 검출량
+  detectQty: string;
+  // 특이사항
+  remark: string;
+}
+
 export interface HtmlFormPaperProps {
   // 기준관리=template, 작성=write
   mode: HtmlFormPaperMode;
@@ -808,8 +856,135 @@ export interface HtmlFormPaperProps {
   onHeaderChange?: (patch: Partial<HtmlFormHeader>) => void;
   onItemsChange?: (items: HtmlFormItem[]) => void;
   onFooterChange?: (patch: Partial<HtmlFormFooter>) => void;
+  /**
+   * 기록 표 행 — mode="write" 에서만 쓴다.
+   * 넘기지 않으면(= 기준관리 미리보기) 지면이 예전처럼 빈 예시 행을 고정으로 그린다.
+   */
+  logRows?: HtmlFormLogRow[];
+  onLogRowsChange?: (rows: HtmlFormLogRow[]) => void;
+  /** 금속검출 통과량 표 행 — MTL 작성에서만 쓴다 */
+  passRows?: HtmlFormPassRow[];
+  onPassRowsChange?: (rows: HtmlFormPassRow[]) => void;
   selectedIndex?: number | null;
   onSelectIndex?: (index: number) => void;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) 한 영역(작업 전/작업 종료)의 행만 순서대로 뽑는다
+ *   2) 지면이 영역별로 행을 그릴 때 호출한다
+ *   3) logRows 가 없으면(= 기준관리 미리보기) 빈 배열
+ */
+export function logRowsOf(
+  // 기록 행 전체
+  rows: HtmlFormLogRow[] | undefined,
+  // 뽑을 영역
+  phase: LogPhase,
+): HtmlFormLogRow[] {
+  return (rows ?? []).filter((r) => r.phaseCd === phase).sort((a, b) => a.rowSeq - b.rowSeq);
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) 지정한 영역 끝에 빈 행을 붙인다 — 다른 영역 행은 건드리지 않는다
+ *   2) 영역별 「행 추가」 버튼이 호출한다
+ *   3) rowSeq 는 전체 최대값+1 이라 영역이 섞여도 키가 겹치지 않는다
+ */
+export function appendLogRow(
+  // 기록 행 전체
+  rows: HtmlFormLogRow[],
+  // 붙일 영역
+  phase: LogPhase,
+): HtmlFormLogRow[] {
+  const nextSeq = rows.reduce((max, r) => Math.max(max, r.rowSeq), 0) + 1;
+  return [...rows, {
+    rowSeq: nextSeq,
+    phaseCd: phase,
+    productNm: "",
+    checkTime: "",
+    judgeCd: "",
+    judgeModYn: "N",
+    checkerNm: "",
+    signYn: "N",
+    cells: {},
+  }];
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) 기록 행 한 건을 부분 수정한다
+ *   2) 지면 입력 onChange 가 호출한다
+ *   3) rowSeq 로 찾는다 — 영역이 달라도 rowSeq 는 유일하다
+ */
+export function patchLogRow(
+  // 기록 행 전체
+  rows: HtmlFormLogRow[],
+  // 대상 행 순번
+  rowSeq: number,
+  // 덮어쓸 칸
+  patch: Partial<Omit<HtmlFormLogRow, "cells">> & { cells?: Record<string, string> },
+): HtmlFormLogRow[] {
+  return rows.map((r) => (r.rowSeq === rowSeq
+    ? { ...r, ...patch, cells: patch.cells ? { ...r.cells, ...patch.cells } : r.cells }
+    : r));
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) 행 추가로 만든 행을 뺀다
+ *   2) 행 우측 삭제 버튼이 호출한다
+ *   3) 고정 라벨 행(작업 전/작업 종료)은 호출부가 버튼을 안 그린다
+ */
+export function removeLogRow(
+  // 기록 행 전체
+  rows: HtmlFormLogRow[],
+  // 지울 행 순번
+  rowSeq: number,
+): HtmlFormLogRow[] {
+  return rows.filter((r) => r.rowSeq !== rowSeq);
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) 금속 통과량 표 끝에 빈 행을 붙인다
+ *   2) 「금속검출기 제품 통과」 옆 행 추가 버튼이 호출한다
+ *   3) rowSeq 는 최대값+1
+ */
+export function appendPassRow(
+  // 통과량 행 전체
+  rows: HtmlFormPassRow[],
+): HtmlFormPassRow[] {
+  const nextSeq = rows.reduce((max, r) => Math.max(max, r.rowSeq), 0) + 1;
+  return [...rows, { rowSeq: nextSeq, productNm: "", passQty: "", detectQty: "", remark: "" }];
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) 통과량 행 한 건을 부분 수정한다
+ *   2) 지면 입력 onChange 가 호출한다
+ *   3) rowSeq 로 찾는다
+ */
+export function patchPassRow(
+  // 통과량 행 전체
+  rows: HtmlFormPassRow[],
+  // 대상 행 순번
+  rowSeq: number,
+  // 덮어쓸 칸
+  patch: Partial<HtmlFormPassRow>,
+): HtmlFormPassRow[] {
+  return rows.map((r) => (r.rowSeq === rowSeq ? { ...r, ...patch } : r));
 }
 
 /**
@@ -887,4 +1062,29 @@ export function SignSlot({
       )}
     </div>
   );
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) 지면 입력칸을 제어 입력으로 만드는 props 를 돌려준다
+ *   2) 작성(mode="write") 지면의 행 컴포넌트에서 한 번 만들어 칸마다 편다
+ *   3) row 가 없을 때(= 기존 template 미리보기)는 빈 객체다 — value 를 붙이지 않아 비제어 상태를 그대로 둔다
+ *
+ * 세 지면(포장·가열·금속검출)이 같은 코드를 갖고 있어 한 곳으로 모은다.
+ */
+export function inputBinder(
+  // present: 이 행이 실제 데이터 행인지 — 미리보기 행이면 null/undefined
+  present: unknown,
+) {
+  return (
+    // get: 현재 값을 읽는다
+    get: () => string,
+    // set: 바뀐 값을 행에 반영한다
+    set: (v: string) => void,
+  ) =>
+    present
+      ? { value: get(), onChange: (e: { target: { value: string } }) => set(e.target.value) }
+      : {};
 }

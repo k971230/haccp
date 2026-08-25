@@ -104,6 +104,12 @@ export const SCREEN_PATH: Record<string, string> = {
     "handover-hwp",
   ]),
 
+  // 양식 작성 — 사용 중인 양식을 골라 일자별로 쓴다. HYG·CCP 형제 화면
+  // 중분류 슬러그는 tbl_menu UNIQUE (co_cd, menu_cd) 때문에 docs 의 html·ccp 와 겹칠 수 없다
+  ...paths("/draft/hyg", ["hyg-process"]),
+  ...paths("/draft/ccp-chk", ["ccp-verify"]),
+  ...paths("/draft/ccp-monitoring", ["ccp-pkg", "ccp-htg", "ccp-mtl"]),
+
   // 문서 현황 — 문서함 / 결재함 / 개선조치 (결재선 sys/code 와 구분)
   ...paths("/flow/box", ["document-inbox", "legal-document-upload"]),
   ...paths("/flow/appr", ["approval-inbox", "approval-history"]),

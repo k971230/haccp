@@ -223,6 +223,43 @@ Job: DailyTaskGenerationJob `0 5 0 * * *` · ViewStatDailyJob `0 15 0 * * *` (As
 | `prp` | `equipment-management` | 설비 이력 | `equipment-history` | 360 | WRK | tmpl_prp-equip-card | EquipmentHistoryPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | masterApi·equipmentHistApi | MasterController·EquipmentHistController | /api/v1/bas/equipment/* · /api/v1/docs/prp/equipment-history/* · photo | MasterMapper·EquipmentHistMapper | sp_tbl_equipment_hist_* | add·save·del·search |
 | `prp` | `pest-device-management` | 방충설비 이력 | `pest-device-history` | 370 | BAS | — | PestDeviceHistoryPage | MesEditableGrid·GridCrudButtons·PageCard·SearchArea | masterApi·pestDeviceHistApi | MasterController·PestDeviceHistController | /api/v1/bas/pest-device/* · /api/v1/docs/prp/pest-device-history/* | MasterMapper·PestDeviceHistMapper | pest hist SP | add·save·del·search |
 
+### 4.4-1 양식 작성 (`draft`)
+
+| 부모 | menu_cd | 메뉴명 | scrn_cd | sort | module | tmplCd | FE Page | 컴포넌트 | FE API | BE Controller | API | Mapper | SP | Cmds |
+|------|---------|--------|---------|------|--------|--------|---------|----------|--------|---------------|-----|--------|----|------|
+| `hyg` | `hyg-process` | HYG 위생공정 양식 작성 | `hyg-process` | 4101 | HYG | html_hyg_prc_NNN | draft/HtmlFormDraftPage + draft/hyg/HygProcessDraftPage·Rule | PageCard·SearchArea·ResizableSplit·MesEditableGrid(selectable)·HtmlFormLookupModal·MesButton·HygPrcPaper | hygProcessDraftApi·documentApi(approval) | HygProcessDraftController (com.haccp.draft.hyg) | /api/v1/draft/hyg/hyg-process/{forms,list,detail,save,validate-delete,delete} · PUT /api/v1/docs/documents/approval | mapper/draft/hyg/HygProcessDraftMapper | sp_tbl_hyg_process_* · sp_tbl_html_hyg_prc_ver_r_000 · sp_tbl_document_approval_c_000 | add·save·del·search·print·transfer |
+| `ccp-chk` | `ccp-verify` | CCP 검증점검 양식 작성 | `ccp-verify` | 4201 | CCP | tml_ccp_chk_NNN | draft/HtmlFormDraftPage + draft/ccp/CcpVerifyDraftPage·Rule | HYG 와 동일 (공통 화면 공유) · 지면 CcpChkPaper | ccpVerifyDraftApi·documentApi(approval) | CcpVerifyDraftController (com.haccp.draft.ccp) | /api/v1/draft/ccp-chk/ccp-verify/{forms,list,detail,save,validate-delete,delete} · PUT /api/v1/docs/documents/approval | mapper/draft/ccp/CcpVerifyDraftMapper | sp_ccp_verify_* · sp_tbl_tml_ccp_chk_ver_r_000 · sp_tbl_document_approval_c_000 | add·save·del·search·print·transfer |
+| `ccp-monitoring` | `ccp-pkg` | CCP 포장 모니터링일지 작성 | `ccp-pkg` | 4301 | CCP | tml_ccp_pkg_NNN | draft/HtmlFormDraftPage + draft/ccp-monitoring/CcpPkgDraftPage·Rule | 좌측 공통 동일 · 지면 CcpPkgPaper(mode=write 기록행 제어) | ccpMonitoringDraftApi·documentApi(approval) | CcpPkgDraftController (com.haccp.draft.ccpmonitoring) | /api/v1/draft/ccp-monitoring/ccp-pkg/{forms,list,detail,save,validate-delete,delete} | mapper/draft/ccpmonitoring/CcpLogDraftMapper | sp_ccp_log_r_000 · sp_tbl_ccp_generic_monitor_* | add·save·del·search·print·transfer |
+| `ccp-monitoring` | `ccp-htg` | CCP 가열 모니터링일지 작성 | `ccp-htg` | 4302 | CCP | tml_ccp_htg_NNN | 위와 같음 (CcpHtgPaper) | 좌측 공통 동일 | 위와 같음 | CcpHtgDraftController | /api/v1/draft/ccp-monitoring/ccp-htg/* | 위와 같음 | 위와 같음 | 위와 같음 |
+| `ccp-monitoring` | `ccp-mtl` | CCP 금속검출 모니터링일지 작성 | `ccp-mtl` | 4303 | CCP | tml_ccp_mtl_NNN | 위와 같음 (CcpMtlPaper · 표 2개) | 좌측 공통 동일 | 위와 같음 | CcpMtlDraftController | /api/v1/draft/ccp-monitoring/ccp-mtl/* | mapper/draft/ccpmonitoring/CcpMtlDraftMapper | sp_ccp_mtl_r_000 · sp_tbl_ccp_metal_monitor_* | 위와 같음 |
+
+대분류 `draft`(표시명 「양식 작성」)는 121에서 추가하고 123에서 CCP 를 형제로 붙였다.
+중분류는 `docs` 아래 `html`·`ccp` 와 `menu_cd` 가 겹치지 않게 `hyg`·`ccp-chk` 를 쓴다 (`tbl_menu UNIQUE (co_cd, menu_cd)`).
+자바 패키지는 하이픈을 못 쓰므로 `ccp-chk` → `com.haccp.draft.ccp` 다.
+
+```
+양식 작성 (draft)
+ ├─ HYG 양식 (hyg)              기준 /docs/html/hyg-process-template → 작성 /draft/hyg/hyg-process
+ ├─ CCP 양식 (ccp-chk)          기준 /docs/html/ccp-verify-template  → 작성 /draft/ccp-chk/ccp-verify
+ └─ CCP 모니터링 (ccp-monitoring)
+     ├─ ccp-pkg  기준 /docs/html/ccp-pkg-template → 작성 /draft/ccp-monitoring/ccp-pkg
+     ├─ ccp-htg  기준 /docs/html/ccp-htg-template → 작성 /draft/ccp-monitoring/ccp-htg
+     └─ ccp-mtl  기준 /docs/html/ccp-mtl-template → 작성 /draft/ccp-monitoring/ccp-mtl
+```
+
+CCP 모니터링 3화면은 지면에 기록 표가 있다. `mode="template"`(기준관리)은 예전 그대로 미리보기 4행 고정이고,
+`mode="write"`(작성)에서만 기록행이 제어 렌더된다 — 기준관리 화면 동작은 바뀌지 않는다.
+작업 전/작업 종료는 행의 `phase_cd` 로 가른다. 신규 테이블·컬럼 없이 기존 CCP 작성 테이블을 그대로 쓴다.
+
+두 화면은 FE 공통 `pages/draft/HtmlFormDraftPage` + `htmlFormDraftShared` 를 공유해 UI·업무 흐름이 같다
+(양식관리 5화면이 `HtmlFormTemplatePage` 를 공유하는 것과 같은 패턴). 테이블·SP 는 각자 것을 쓴다 —
+HYG `tbl_hyg_process`, CCP `tbl_ccp_verify_check`(기존 CCP 테이블. HYG 를 복제하지 않는다).
+
+양식관리에서 사용여부 = 예인 자사 양식만 작성 대상이며, 전송·전송취소는 문서 허브 결재 API(REQUEST/CANCEL)를 그대로 쓴다.
+상단 검색 6개(일자·양식코드·양식명·작성자ID·작성자명·결재 여부) 중 결재 여부는 `DOC_STATUS` 파생이라 화면이 거른다.
+좌측 양식코드/양식명은 팝업 전용(`HtmlFormLookupModal`), 상단 검색 양식코드는 직접 입력이다.
+오른쪽 상세는 왼쪽 기본정보를 저장한 뒤에만 편집할 수 있다.
+
 ### 4.5 기초정보 (`bas`)
 
 | 부모 | menu_cd | 메뉴명 | scrn_cd | sort | module | tmplCd | FE Page | 컴포넌트 | FE API | BE Controller | API | Mapper | SP | Cmds |

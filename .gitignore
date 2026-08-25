@@ -57,3 +57,6 @@ frontend/haccp-web/test-results/
 .DS_Store
 Thumbs.db
 docker-compose.e2e-local.yml
+
+# Cygwin/Git Bash 크래시 덤프
+*.stackdump

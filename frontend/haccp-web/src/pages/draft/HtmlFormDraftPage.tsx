@@ -1,0 +1,1204 @@
+/**
+ * HtmlFormDraftPage — 양식 작성 공통 화면 (상단 검색 · 좌 작성 목록 50% · 우 상세 50%).
+ *
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) HYG(hyg-process)·CCP(ccp-verify)가 같은 프레임을 쓴다. 화면별로 다른 것은 config 뿐이다
+ *      — 양식관리 5화면이 HtmlFormTemplatePage 를 공유하는 것과 같은 패턴이다
+ *   2) 상단은 검색 전용(일자·양식코드·양식명·작성자ID·작성자명·결재 여부). 작성 입력과 섞지 않는다
+ *   3) 오른쪽 상세는 왼쪽 기본정보(저장)를 한 뒤에만 수정할 수 있다 — docIdx 없으면 지면이 잠긴다
+ *
+ * 전송·전송취소는 문서 허브 결재 API(processDocumentApproval REQUEST/CANCEL)를 그대로 쓴다.
+ * 필수값은 저장 때 보지 않고 전송 직전에 htmlFormDraftShared.validateForTransfer 만 본다.
+ *
+ * PIPELINE[HF173] 양식 작성 공통 화면
+ */
+// 역할 — 상태·메모·초기 조회·화면별 지면 컴포넌트 타입
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+// 역할 — 로그인 사용자·화면 권한
+import { useAuthStore } from "@/stores/authStore";
+// 역할 — 비동기 중복 실행 차단·busy
+import { useAsyncAction } from "@/hooks/useAsyncAction";
+// 역할 — 좌측 draft·건별 버퍼·일괄 저장 세션
+import { useDocFormSession, type DocListMeta } from "@/hooks/useDocFormSession";
+// 역할 — URL ?docIdx= 자동 선택
+import { useDocIdxQuery } from "@/hooks/useDocIdxQuery";
+// 역할 — 그리드 잠금·권한
+import { useGridAccess } from "@/hooks/useGridAccess";
+// 역할 — 셸 상단 툴바(조회·행추가·저장·삭제·인쇄·전송) 연결
+import { usePageCommands } from "@/shell/pageCommands";
+// 역할 — 확인·토스트
+import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
+// 역할 — 오류 업무 문구
+import { mesError } from "@/shell/errors";
+// 역할 — 공통 안내 문구
+import { MES } from "@/shell/messages";
+// 역할 — 페이지 카드·검색 영역·좌우 분할
+import { PageCard } from "@/components/layout/PageCard";
+import {
+  SearchArea,
+  SearchButton,
+  SearchDateRange,
+  SearchField,
+  SearchSelect,
+} from "@/components/layout/SearchArea";
+import { ResizableSplit } from "@/components/layout/ResizableSplit";
+import { gridHeadClass, pageRootClass, splitPanelClass } from "@/components/layout/pageClasses";
+// 역할 — 편집 그리드·표준 버튼·입력
+import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
+import { MesButton } from "@/components/ui/MesButton";
+import { searchInputClass } from "@/components/ui/Input";
+// 역할 — 지면 공통 props·제목 메타를 뺀 점검 행
+import {
+  paperBodyItems,
+  type HtmlFormLogRow,
+  type HtmlFormPaperProps,
+  type HtmlFormPassRow,
+} from "@/components/form/htmlFormPaperShared";
+// 역할 — 전송(REQUEST)·전송취소(CANCEL) 공통 결재 API
+import { processDocumentApproval } from "@/api/documentApi";
+// 역할 — 일자 YYYYMMDD ↔ input[type=date]
+import { fromInputDate, toInputDate, todayYmd } from "@/lib/docDateTime";
+// 역할 — 그리드·편집 행 타입
+import type { GridColumn } from "@/types/grid";
+import type { EditableRow } from "@/types/editable";
+// 역할 — 지면 항목 타입
+import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
+// 역할 — 작성 화면 공통 API 계약
+import type { HtmlFormDraftApi, HtmlFormDraftForm } from "@/api/draft/htmlFormDraftTypes";
+// 역할 — 양식 선택 팝업 (일자·양식코드·양식명)
+import { HtmlFormLookupModal } from "./HtmlFormLookupModal";
+// 역할 — 공통 규칙(결재 여부 3단계·잠금·컬럼·필수값)
+import {
+  SEND_STATE_NM,
+  buildDraftListColumns,
+  canCancelSendDoc,
+  canEditDetail,
+  canModifyDoc,
+  canSendDoc,
+  htmlFormDraftGridRules,
+  sendStateOf,
+  validateForTransfer,
+  type SendState,
+} from "./htmlFormDraftShared";
+
+/** 문자열 정규화 — SP 가 null 을 주는 칸이 있다 */
+function asText(value: unknown): string {
+  return value == null ? "" : String(value);
+}
+
+/** Y/N 정규화 — 서명 스냅샷 여부 */
+function asYn(value: unknown): string {
+  return String(value ?? "").trim().toUpperCase() === "Y" ? "Y" : "N";
+}
+
+/** 좌측 목록 행 메타 — 세션 공통 메타 + 작성 화면 표시 칸 */
+type ListMeta = DocListMeta & {
+  tmplCd: string;
+  tmplNm: string;
+  baseDtDisp?: string;
+  writerNm?: string;
+  sendState?: SendState;
+};
+
+/** 우측 지면 편집 버퍼 — 문서 1건 */
+type Buf = {
+  docIdx: number | null;
+  docNo: string;
+  tmplCd: string;
+  tmplNm: string;
+  status: string | null;
+  baseKey: string;
+  writerNm: string;
+  writerId: string;
+  writerSignYn: string;
+  checkerNm: string;
+  checkerId: string;
+  checkerSignYn: string;
+  approverNm: string;
+  approverId: string;
+  approverSignYn: string;
+  verNo: number;
+  items: HtmlFormItem[];
+  specialNote: string;
+  improveNote: string;
+  actionNm: string;
+  confirmNm: string;
+  confirmId: string;
+  confirmSignYn: string;
+  // 기록 표 행 — CCP 모니터링일지 작성만 쓴다. 다른 화면은 빈 배열이다
+  logRows: HtmlFormLogRow[];
+  // 금속검출 통과량 표 행 — MTL 만
+  passRows: HtmlFormPassRow[];
+};
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) 양식 미선택 신규 행의 빈 버퍼를 만든다 — 일자만 오늘로 찍는다
+ *   2) 행 추가가 호출한다
+ *   3) 팝업에서 양식을 고르면 그 양식 상세로 교체된다
+ */
+function emptyBuf(
+  // 로그인 사용자 — 작성자·점검자 기본값
+  user?: { userNm?: string; userId?: string } | null,
+): Buf {
+  return {
+    docIdx: null, docNo: "", tmplCd: "", tmplNm: "", status: null,
+    baseKey: todayYmd(),
+    writerNm: user?.userNm ?? "", writerId: user?.userId ?? "", writerSignYn: "N",
+    checkerNm: user?.userNm ?? "", checkerId: "", checkerSignYn: "N",
+    approverNm: "", approverId: "", approverSignYn: "N",
+    verNo: 0, items: [],
+    specialNote: "", improveNote: "", actionNm: "", confirmNm: "",
+    confirmId: "", confirmSignYn: "N",
+    logRows: [], passRows: [],
+  };
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) 상세 API 응답을 지면 편집 버퍼로 옮긴다
+ *   2) 행 선택·양식 선택·저장 후 재적재에서 호출한다
+ *   3) 작성자·점검자 이름이 비면 로그인 사용자로 채운다
+ */
+function detailToBuf(
+  // 상세 API 응답 — header·items
+  detail: {
+    header: Record<string, unknown> | null;
+    items: HtmlFormItem[];
+    logRows?: HtmlFormLogRow[];
+    passRows?: HtmlFormPassRow[];
+  },
+  // 신규일 때 채울 양식코드·양식명
+  form: { tmplCd: string; tmplNm: string },
+  // 로그인 사용자 — 이름 기본값
+  user?: { userNm?: string; userId?: string } | null,
+): Buf {
+  const header = detail.header ?? {};
+  return {
+    docIdx: Number(header.docIdx) || null,
+    docNo: asText(header.docNo),
+    tmplCd: asText(header.tmplCd) || form.tmplCd,
+    tmplNm: asText(header.tmplNm) || form.tmplNm,
+    status: asText(header.status) || null,
+    baseKey: asText(header.baseDt) || todayYmd(),
+    writerNm: asText(header.writerNm) || user?.userNm || "",
+    writerId: asText(header.writerId) || user?.userId || "",
+    writerSignYn: asYn(header.writerSignYn),
+    checkerNm: asText(header.checkerNm) || user?.userNm || "",
+    checkerId: asText(header.checkerId),
+    checkerSignYn: asYn(header.checkerSignYn),
+    approverNm: asText(header.approverNm),
+    approverId: asText(header.approverId),
+    approverSignYn: asYn(header.approverSignYn),
+    verNo: Number(header.verNo) || 0,
+    items: detail.items ?? [],
+    specialNote: asText(header.specialNote),
+    improveNote: asText(header.improveNote),
+    actionNm: asText(header.actionNm),
+    confirmNm: asText(header.confirmNm),
+    confirmId: asText(header.confirmId),
+    confirmSignYn: asYn(header.confirmSignYn),
+    // 기록행 — CCP 모니터링일지만 채워 온다. 나머지 화면은 빈 배열
+    logRows: detail.logRows ?? [],
+    passRows: detail.passRows ?? [],
+  };
+}
+
+export interface HtmlFormDraftPageProps {
+  // 화면코드 — tbl_screen.scrn_cd. 권한·그리드 pref·API 베이스 기준
+  scrnCd: string;
+  // 그리드 열 너비·정렬 저장 키. 값을 바꾸면 사용자 설정이 초기화된다
+  persistId: string;
+  // 좌우 분할 비율 저장 키
+  splitKey: string;
+  // 지면 제목 기본값 — 양식명이 없을 때만 쓴다
+  paperTitle: string;
+  // 지면 부제 — HYG (매일 작성) · CCP (매월 작성)
+  paperSubtitle: string;
+  // 좌측 패널 제목
+  listTitle?: string;
+  // 우측 지면 — 화면별 Paper 컴포넌트
+  PaperComponent: ComponentType<HtmlFormPaperProps>;
+  // 화면별 작성 API 묶음 — 경로·테이블은 여기가 정한다
+  api: HtmlFormDraftApi;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) 상단 검색 + 좌 작성 목록 + 우 상세를 한 화면에서 본다
+ *   2) HYG·CCP 작성 메뉴가 config 와 API 만 바꿔 연다
+ *   3) 전송·전송취소는 저장된 문서만. 결재완료는 결재 쪽에서 취소한다
+ */
+export function HtmlFormDraftPage({
+  scrnCd,
+  persistId,
+  splitKey,
+  paperTitle,
+  paperSubtitle,
+  listTitle = "작성 목록",
+  PaperComponent,
+  api,
+}: HtmlFormDraftPageProps) {
+  const user = useAuthStore((s) => s.user);
+  const canWrite = useAuthStore((s) => s.can(scrnCd, "write"));
+  const canModify = useAuthStore((s) => s.can(scrnCd, "modify"));
+  const canDelete = useAuthStore((s) => s.can(scrnCd, "delete"));
+  const action = useAsyncAction();
+
+  // 작성 가능 양식 — 사용여부 예인 자사 양식만. 양식 선택 팝업 목록
+  const [forms, setForms] = useState<HtmlFormDraftForm[]>([]);
+  // 상단 검색 조건 6개 — 작성 입력과 별개다
+  const [search, setSearch] = useState({
+    fromDt: "", toDt: "", tmplCd: "", tmplNm: "", writerId: "", writerNm: "", sendState: "",
+  });
+  const searchRef = useRef(search);
+  searchRef.current = search;
+
+  // 양식 선택 팝업을 연 행 키 — null 이면 닫힘
+  const [lookupKey, setLookupKey] = useState<string | null>(null);
+  // 체크된 행 키 — 모두 전송·삭제 대상
+  const [selKeys, setSelKeys] = useState<string[]>([]);
+  // 체크 초기화 트리거 — 조회·삭제·전송 후 올린다
+  const [selReset, setSelReset] = useState(0);
+
+  const {
+    listRows, activeKey, activeBuffer: buf, addDraft, selectKey, patchActive,
+    replaceServerList, removeDraft, saveAll, getBuffer, putBuffer,
+  } = useDocFormSession<Buf, ListMeta>();
+
+  const listGrid = useGridAccess(htmlFormDraftGridRules, {
+    scrnCd,
+    gridRole: "single",
+    readOnly: !(canWrite || canModify),
+  });
+
+  const docIdx = buf?.docIdx ?? null;
+  const status = buf?.status ?? null;
+  // 오른쪽 상세는 저장된 전송대기 문서만 편집한다 — 저장 전 신규 행은 잠금
+  const canEdit = canEditDetail(docIdx, status, canModify || canWrite);
+  const canSend = canSendDoc(docIdx, status);
+  const activeRow = listRows.find((r) => r._key === activeKey) ?? null;
+  // 저장 안 한 변경이 남아 있을 때(= C·U) 전송 전에 저장을 먼저 묻는다
+  const activeDirty = !!activeRow?._rowState;
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 서버 목록을 좌측에 싣는다. 결재 여부는 화면 3단계로 묶는다
+   *   2) 조회·저장·삭제·전송 후 호출한다
+   *   3) 결재 여부 검색은 DOC_STATUS 파생값이라 여기서 거른다. 신규 draft 는 유지된다
+   */
+  const loadList = useCallback(async () => {
+    const q = searchRef.current;
+    const rows = await api.list({
+      tmplCd: q.tmplCd,
+      tmplNm: q.tmplNm,
+      fromDt: q.fromDt,
+      toDt: q.toDt,
+      writerId: q.writerId,
+      writerNm: q.writerNm,
+    });
+    const mapped = rows
+      .map((r) => ({
+        docIdx: r.docIdx,
+        docNo: r.docNo,
+        tmplCd: r.tmplCd,
+        tmplNm: r.tmplNm ?? "",
+        status: r.status,
+        baseKey: r.baseDt,
+        baseDtDisp: toInputDate(r.baseDt),
+        writerNm: r.writerNm ?? "",
+        sendState: sendStateOf(r.status),
+        ngCnt: r.ngCnt ?? 0,
+      }))
+      .filter((r) => !q.sendState || r.sendState === q.sendState);
+    replaceServerList(mapped, (r) => String(r.docIdx));
+  }, [api, replaceServerList]);
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 진입 시 작성 가능 양식과 목록을 한 번 읽는다
+   *   2) 양식이 없으면 양식관리 등록을 안내한다
+   *   3) 최초 1회만 — 이후는 조회 버튼
+   */
+  useEffect(() => {
+    void action.run(async () => {
+      try {
+        const rows = await api.listForms();
+        setForms(rows);
+        if (rows.length === 0) {
+          mesToast("사용 중인 양식이 없습니다. 양식관리에서 사용여부를 예로 설정하세요.", "warn");
+        }
+        await loadList();
+      } catch (e) {
+        mesError(e);
+      }
+    }, "search");
+    // 최초 1회
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 행을 열어 우측 상세에 싣는다. 버퍼가 있으면 서버를 다시 부르지 않는다
+   *   2) 행 클릭·양식 선택·저장·전송 후 재적재에서 호출한다
+   *   3) 양식 미선택 신규 행은 서버를 부르지 않고 빈 버퍼를 준다
+   */
+  const handleSelect = useCallback((key: string | null) => {
+    return selectKey(key, async (_k, row) => {
+      // 아직 양식을 안 고른 행일 때(= 팝업 전) 상세를 부를 수 없다
+      if (!row.tmplCd) return emptyBuf(user);
+      try {
+        const detail = await api.detail(row.tmplCd, row.docIdx ?? null);
+        return detailToBuf(detail, { tmplCd: row.tmplCd, tmplNm: row.tmplNm }, user);
+      } catch (error) {
+        mesError(error);
+        return null;
+      }
+    });
+  }, [api, selectKey, user]);
+
+  // 문서함 등에서 ?docIdx= 로 들어오면 그 문서를 연다
+  const openDocIdx = useDocIdxQuery();
+  const deepLinkRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (openDocIdx == null || deepLinkRef.current === openDocIdx) return;
+    if (!listRows.some((r) => r.docIdx === openDocIdx)) return;
+    deepLinkRef.current = openDocIdx;
+    void handleSelect(String(openDocIdx));
+  }, [openDocIdx, listRows, handleSelect]);
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 오늘 날짜·양식 미선택·로그인 작성자로 좌측 draft 행을 붙인다
+   *   2) 행 추가 버튼이 호출한다
+   *   3) 양식은 행의 양식코드 버튼(팝업)에서 고른다 — 추가 직후 팝업을 연다
+   */
+  const handleAdd = () => action.run(async () => {
+    if (!canWrite) return mesToast("등록 권한이 없습니다.", "warn");
+    if (forms.length === 0) {
+      mesToast("사용 중인 양식이 없습니다. 양식관리에서 사용여부를 예로 설정하세요.", "warn");
+      return;
+    }
+    const next = emptyBuf(user);
+    const key = addDraft({
+      docIdx: null,
+      docNo: "",
+      tmplCd: "",
+      tmplNm: "",
+      status: null,
+      baseKey: next.baseKey,
+      baseDtDisp: toInputDate(next.baseKey),
+      writerNm: user?.userNm ?? "",
+      sendState: "wait",
+      ngCnt: 0,
+    }, next);
+    setLookupKey(key);
+  }, "add");
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 팝업에서 고른 양식코드·양식명을 그 작성 행과 버퍼에 반영한다
+   *   2) 양식 선택 팝업이 확정할 때 호출한다
+   *   3) 고른 양식의 빈 점검표를 상세로 실어 오른쪽에 보여 준다(저장 전이라 편집은 잠김)
+   */
+  const applyForm = (key: string, tmplCd: string, tmplNm: string) => action.run(async () => {
+    const prev = getBuffer(key);
+    if (!prev) return;
+    try {
+      const detail = await api.detail(tmplCd, null);
+      const next = detailToBuf(detail, { tmplCd, tmplNm }, user);
+      // 이미 찍어 둔 일자는 유지한다 — 팝업은 양식만 바꾼다
+      next.baseKey = prev.baseKey;
+      next.docIdx = null;
+      next.docNo = "";
+      next.status = null;
+      putBuffer(key, next, { tmplCd, tmplNm });
+      if (activeKey !== key) await handleSelect(key);
+    } catch (error) {
+      mesError(error);
+    }
+  }, "form");
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) dirty 전건을 검증·저장한다 — validate 만 좌/우 저장마다 다르다
+   *   2) runSaveHeader·runSaveDetail 이 공통으로 호출한다
+   *   3) 저장 후 목록을 다시 읽고 버퍼를 서버 값으로 교체한다. 성공하면 true
+   */
+  const persistSave = useCallback(async (
+    // dirty 행 검증 — 좌측 헤더·우측 작성 저장마다 규칙이 다르다
+    validate: (
+      dirty: EditableRow<ListMeta>[],
+      getBuf: (key: string) => Buf | null,
+    ) => { message: string; rowKey?: string } | null,
+  ): Promise<boolean> => {
+    const savedIdxs: number[] = [];
+    const err = await saveAll({
+      validate,
+      saveOne: async (_row, b) => {
+        const saved = await api.save({
+          tmplCd: b.tmplCd,
+          docIdx: b.docIdx,
+          baseDt: b.baseKey,
+          checkerNm: b.checkerNm,
+          approverNm: b.approverNm,
+          verNo: b.verNo,
+          items: paperBodyItems(b.items),
+          specialNote: b.specialNote,
+          improveNote: b.improveNote,
+          actionNm: b.actionNm,
+          confirmNm: b.confirmNm,
+          // 기록 표 행 — 행 추가로 만든 행까지 그대로 DB 로 간다
+          logRows: b.logRows,
+          passRows: b.passRows,
+        });
+        savedIdxs.push(saved);
+        return {
+          docIdx: saved,
+          listMeta: {
+            docIdx: saved,
+            status: "WRK",
+            sendState: "wait" as SendState,
+            baseKey: b.baseKey,
+            baseDtDisp: toInputDate(b.baseKey),
+          },
+        };
+      },
+      afterAll: async () => {
+        await loadList();
+        for (const idx of savedIdxs) {
+          try {
+            const b = getBuffer(String(idx));
+            const detail = await api.detail(b?.tmplCd ?? "", idx);
+            const next = detailToBuf(detail, { tmplCd: b?.tmplCd ?? "", tmplNm: b?.tmplNm ?? "" }, user);
+            putBuffer(String(idx), next, {
+              status: next.status,
+              sendState: sendStateOf(next.status),
+              writerNm: next.writerNm,
+            });
+          } catch (e) {
+            mesError(e);
+          }
+        }
+      },
+    });
+    if (err) {
+      mesToast(err.message, "warn");
+      return false;
+    }
+    return true;
+  }, [api, getBuffer, loadList, putBuffer, saveAll, user]);
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 좌측 기본정보(일자·양식코드)만 저장한다 — docIdx 를 만든다
+   *   2) 좌측 저장 버튼이 호출한다
+   *   3) 점검 행 개수는 보지 않는다 — BE 도 items 빈 배열을 허용한다
+   */
+  const runSaveHeader = useCallback(async (): Promise<boolean> => {
+    return persistSave((dirty, getBuf) => {
+      for (const row of dirty) {
+        const key = row._key;
+        if (!key) continue;
+        const b = getBuf(key);
+        if (!b) return { message: "편집 내용이 없습니다.", rowKey: key };
+        // 전송 이후일 때(= 전송·결재완료) 저장 자체를 막는다. 서버도 다시 막는다
+        if (!canModifyDoc(b.status) && b.docIdx) {
+          return { message: "전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.", rowKey: key };
+        }
+        if (!b.tmplCd) return { message: "양식코드 버튼을 눌러 양식을 선택하세요.", rowKey: key };
+        if (!/^\d{8}$/.test(b.baseKey)) return { message: MES.required("일자"), rowKey: key };
+      }
+      return null;
+    });
+  }, [persistSave]);
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 우측 지면 작성값(점검·하단)을 저장한다 — docIdx 가 있어야 한다
+   *   2) 우측 작성 후 저장·셸 저장·전송 전 저장이 호출한다
+   *   3) 필수값은 전송 때 validateForTransfer 가 본다
+   */
+  const runSaveDetail = useCallback(async (): Promise<boolean> => {
+    return persistSave((dirty, getBuf) => {
+      for (const row of dirty) {
+        const key = row._key;
+        if (!key) continue;
+        const b = getBuf(key);
+        if (!b) return { message: "편집 내용이 없습니다.", rowKey: key };
+        if (!canModifyDoc(b.status) && b.docIdx) {
+          return { message: "전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.", rowKey: key };
+        }
+        if (!b.tmplCd) return { message: "양식코드 버튼을 눌러 양식을 선택하세요.", rowKey: key };
+        if (!/^\d{8}$/.test(b.baseKey)) return { message: MES.required("일자"), rowKey: key };
+        // 지면 규칙은 지금 열려 있는 문서에만 건다 — 아직 저장 안 한 다른 행이 우측 저장·전송을 막지 않게 한다
+        // (그 행들은 좌측 저장과 같은 기본정보 규칙만 통과하면 함께 커밋된다)
+        if (key !== activeKey) continue;
+        if (!b.docIdx) return { message: "왼쪽에서 기본정보를 먼저 저장하세요.", rowKey: key };
+        if (paperBodyItems(b.items).length === 0) return { message: "점검 행이 없습니다.", rowKey: key };
+      }
+      return null;
+    });
+  }, [activeKey, persistSave]);
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 좌측 일자·양식코드 등록만 저장한다 — 전송하지 않는다
+   *   2) 좌측 저장 버튼이 호출한다
+   *   3) 성공하면 오른쪽 작성 안내 토스트
+   */
+  const handleSaveHeader = () => action.run(async () => {
+    try {
+      if (await runSaveHeader()) {
+        mesToast("기본정보를 저장했습니다. 오른쪽에서 작성하세요.", "success");
+      }
+    } catch (error) {
+      mesError(error);
+    }
+  }, "saveHeader");
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 우측 지면 작성값만 저장한다 — 전송하지 않고 전송대기를 유지한다
+   *   2) 우측 작성 후 저장·셸 저장 명령이 호출한다
+   *   3) 성공하면 저장 완료 토스트
+   */
+  const handleSaveDetail = () => action.run(async () => {
+    try {
+      if (await runSaveDetail()) mesToast(MES.saveDone, "success");
+    } catch (error) {
+      mesError(error);
+    }
+  }, "save");
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 삭제 가능한 문서를 지우고 목록·상세를 정리한다 — 좌·우 삭제가 같은 업무 규칙을 쓴다
+   *   2) 좌측 삭제(체크 행)·우측 삭제(현재 문서)가 호출한다
+   *   3) 저장 전 draft 는 서버를 부르지 않고 행만 뺀다. 전송 이후는 대상에서 빼고 안내한다
+   */
+  const deleteRows = useCallback(async (keys: string[]): Promise<void> => {
+    if (keys.length === 0) return mesToast(MES.selectRow, "warn");
+    const rows = keys
+      .map((key) => listRows.find((r) => r._key === key))
+      .filter((r): r is EditableRow<ListMeta> => !!r);
+    // 저장 전 행은 로컬에서만 뺀다
+    const drafts = rows.filter((r) => r._rowState === "C");
+    const saved = rows.filter((r) => r._rowState !== "C" && r.docIdx);
+    // 전송·결재완료 행은 대상에서 빼고 사용자에게 알린다
+    const locked = saved.filter((r) => r.sendState !== "wait");
+    const target = saved.filter((r) => r.sendState === "wait");
+    if (target.length === 0 && drafts.length === 0) {
+      return mesToast("전송한 문서는 삭제할 수 없습니다. 전송취소 후 삭제하세요.", "warn");
+    }
+    if (target.length > 0 && !canDelete) return mesToast("삭제 권한이 없습니다.", "warn");
+    try {
+      if (target.length > 0) {
+        const docKeys = target.map((r) => ({ docIdx: Number(r.docIdx) }));
+        await api.validateDelete(docKeys);
+        const label = target.length === 1
+          ? (target[0].docNo || target[0].tmplNm || "")
+          : `${target.length}건을`;
+        if (!await mesConfirmDanger(MES.deleteConfirm(label))) return;
+        await api.remove(docKeys);
+      }
+      for (const row of drafts) {
+        if (row._key) removeDraft(row._key);
+      }
+      if (target.length > 0) {
+        mesToast(
+          locked.length > 0
+            ? `${target.length}건을 삭제했습니다. 전송한 ${locked.length}건은 제외했습니다.`
+            : MES.deleteDone,
+          "success",
+        );
+        await loadList();
+        await handleSelect(null);
+      }
+      setSelKeys([]);
+      setSelReset((n) => n + 1);
+    } catch (error) {
+      mesError(error);
+    }
+  }, [api, canDelete, handleSelect, listRows, loadList, removeDraft]);
+
+  /** 좌측 삭제 — 체크된 행, 없으면 현재 행 */
+  const handleDeleteLeft = () => action.run(
+    async () => { await deleteRows(selKeys.length > 0 ? selKeys : activeKey ? [activeKey] : []); },
+    "del",
+  );
+
+  /** 우측 삭제 — 현재 열려 있는 문서 1건 */
+  const handleDeleteActive = () => action.run(
+    async () => { await deleteRows(activeKey ? [activeKey] : []); },
+    "del",
+  );
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 전송 후 목록과 버퍼를 서버 상태로 맞춘다
+   *   2) 전송·전송취소 성공 직후 호출한다
+   *   3) 활성 문서가 없으면 목록만 다시 읽는다
+   */
+  const reloadActive = useCallback(async () => {
+    await loadList();
+    if (!activeKey || !docIdx || !buf) return;
+    try {
+      const detail = await api.detail(buf.tmplCd, docIdx);
+      const next = detailToBuf(detail, { tmplCd: buf.tmplCd, tmplNm: buf.tmplNm }, user);
+      putBuffer(activeKey, next, {
+        status: next.status,
+        sendState: sendStateOf(next.status),
+      });
+    } catch (error) {
+      mesError(error);
+    }
+  }, [activeKey, api, buf, docIdx, loadList, putBuffer, user]);
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 미저장·변경분이 있으면 저장 후 전송할지 묻고, 아니오면 안내만 남긴다
+   *   2) 우측 작성 후 저장과 모두 전송이 함께 쓴다 — 전송 전 작성값 저장 규칙을 한곳에 둔다
+   *   3) 저장까지 끝났거나 처음부터 깨끗하면 true
+   */
+  const ensureSavedBeforeSend = useCallback(async (dirty: boolean): Promise<boolean> => {
+    if (!dirty) return true;
+    if (!await mesConfirm("저장되지 않은 변경사항이 있습니다. 저장 후 전송하시겠습니까?")) {
+      mesToast("저장 후 전송해주세요.", "warn");
+      return false;
+    }
+    return await runSaveDetail();
+  }, [runSaveDetail]);
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 저장 상태를 확인하고 필수값을 검사한 뒤 결재선에 따라 전송(상신)한다
+   *   2) 우측 전송 버튼·셸 전송 명령이 호출한다
+   *   3) 저장 후 상태·필수값이 어긋나면 전송하지 않는다
+   */
+  const handleSend = () => action.run(async () => {
+    if (!activeKey || !buf) return mesToast(MES.selectRow, "warn");
+    // docIdx 없을 때(= 좌측 기본정보 미저장) 전송 불가
+    if (!buf.docIdx) return mesToast("왼쪽에서 기본정보를 먼저 저장하세요.", "warn");
+    // 변경분이 남았을 때(= 미저장) 작성 후 저장을 먼저 묻는다
+    if (!await ensureSavedBeforeSend(activeDirty)) return;
+    // 저장 뒤 세션 키가 docIdx 로 바뀌므로 버퍼를 다시 읽는다
+    const cur = getBuffer(activeKey) ?? buf;
+    const sendIdx = cur.docIdx;
+    if (!canSendDoc(sendIdx, cur.status)) {
+      return mesToast("전송대기 문서만 전송할 수 있습니다.", "warn");
+    }
+    // 필수값 기준은 공통 규칙 한곳 — 기준이 바뀌면 validateForTransfer 만 고친다
+    const invalid = validateForTransfer(cur.baseKey, cur.items);
+    if (invalid) return mesToast(invalid, "warn");
+    if (!await mesConfirm("전송하시겠습니까?\n전송 후에는 수정·삭제할 수 없습니다.")) return;
+    try {
+      await processDocumentApproval({ docIdx: sendIdx as number, actionCd: "REQUEST" });
+      mesToast("전송했습니다.", "success");
+      await reloadActive();
+    } catch (error) {
+      mesError(error);
+    }
+  }, "send");
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 체크한 행 중 전송 가능한 건만 모아 건수를 확인하고 일괄 전송한다
+   *   2) 좌측 모두 전송 버튼이 호출한다
+   *   3) 미체크·전송·결재완료·필수값 미충족 건은 대상에서 뺀다
+   */
+  const handleSendAll = () => action.run(async () => {
+    if (selKeys.length === 0) return mesToast("전송할 행을 선택하세요.", "warn");
+    // 전송대기 행만 후보다 — 전송·결재완료는 여기서 제외된다
+    const picked = selKeys
+      .map((key) => listRows.find((r) => r._key === key))
+      .filter((r): r is EditableRow<ListMeta> => !!r && r.sendState === "wait");
+    if (picked.length === 0) return mesToast("전송 가능한 건이 없습니다.", "warn");
+    // docIdx 없는 행은 좌측 기본정보 저장이 선행되어야 한다
+    if (picked.some((r) => !r.docIdx)) {
+      return mesToast("왼쪽에서 기본정보를 먼저 저장하세요.", "warn");
+    }
+    // 후보 중 변경분이 있으면 작성 후 저장부터 한다
+    const dirty = picked.some((r) => !!r._rowState);
+    if (!await ensureSavedBeforeSend(dirty)) return;
+
+    try {
+      // 저장 뒤 draft 키가 docIdx 키로 바뀌므로 버퍼에서 다시 찾는다
+      const targets: number[] = [];
+      let skipped = 0;
+      for (const row of picked) {
+        const key = row.docIdx ? String(row.docIdx) : row._key;
+        const b = key ? getBuffer(key) : null;
+        const idx = b?.docIdx ?? row.docIdx ?? null;
+        if (!idx || !canSendDoc(idx, b?.status ?? row.status)) {
+          skipped += 1;
+          continue;
+        }
+        // 버퍼가 없는 행(= 아직 열어 보지 않음)은 필수값 검사를 위해 상세를 읽는다
+        const cur = b ?? detailToBuf(
+          await api.detail(row.tmplCd, idx),
+          { tmplCd: row.tmplCd, tmplNm: row.tmplNm },
+          user,
+        );
+        // 필수값이 빈 건은 전송 가능 건이 아니다
+        if (validateForTransfer(cur.baseKey, cur.items)) {
+          skipped += 1;
+          continue;
+        }
+        targets.push(idx);
+      }
+      if (targets.length === 0) return mesToast("전송 가능한 건이 없습니다.", "warn");
+      if (!await mesConfirm(`전송 가능한 건은 총 ${targets.length}건입니다. 전송하시겠습니까?`)) return;
+
+      for (const idx of targets) {
+        await processDocumentApproval({ docIdx: idx, actionCd: "REQUEST" });
+      }
+      mesToast(
+        skipped > 0
+          ? `${targets.length}건을 전송했습니다. 전송 불가 ${skipped}건은 제외했습니다.`
+          : `${targets.length}건을 전송했습니다.`,
+        "success",
+      );
+      setSelKeys([]);
+      setSelReset((n) => n + 1);
+      await reloadActive();
+    } catch (error) {
+      mesError(error);
+    }
+  }, "sendAll");
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-24
+   * 코멘트:
+   *   1) 전송을 취소해 전송대기로 되돌린다
+   *   2) 전송취소 버튼이 호출한다
+   *   3) 검토·승인이 시작된 문서는 서버가 거부한다. 결재완료는 결재 쪽에서 취소한다
+   */
+  const handleCancelSend = () => action.run(async () => {
+    if (!docIdx) return mesToast(MES.selectRow, "warn");
+    if (!canCancelSendDoc(docIdx, status)) {
+      return mesToast("전송 상태에서만 전송취소할 수 있습니다.", "warn");
+    }
+    if (!await mesConfirm("전송을 취소하고 전송대기로 되돌리시겠습니까?")) return;
+    try {
+      await processDocumentApproval({ docIdx, actionCd: "CANCEL" });
+      mesToast("전송을 취소했습니다. 다시 수정할 수 있습니다.", "success");
+      await reloadActive();
+    } catch (error) {
+      mesError(error);
+    }
+  }, "cancel");
+
+  const handleSearch = useCallback(() => {
+    void action.run(async () => {
+      try {
+        await loadList();
+        setSelKeys([]);
+        setSelReset((n) => n + 1);
+      } catch (e) {
+        mesError(e);
+      }
+    }, "search");
+  }, [action, loadList]);
+
+  const listCols = useMemo(
+    () => buildDraftListColumns((row) => {
+      // 양식코드 버튼 — 그 행의 양식 선택 팝업을 연다
+      const key = (row as EditableRow<ListMeta>)._key;
+      if (key) setLookupKey(key);
+    }) as GridColumn<ListMeta>[],
+    [],
+  );
+
+  // 팝업이 열린 행 — 현재 양식코드를 강조하려고 같이 찾는다
+  const lookupRow = lookupKey ? listRows.find((r) => r._key === lookupKey) ?? null : null;
+
+  usePageCommands({
+    search: handleSearch,
+    add: () => { void handleAdd(); },
+    save: () => { void handleSaveDetail(); },
+    del: () => { void handleDeleteLeft(); },
+    print: () => { window.print(); },
+    transfer: () => { void handleSend(); },
+  });
+
+  return (
+    <div className={pageRootClass}>
+      <PageCard
+        search={(
+          <SearchArea
+            // 조회 — 검색조건으로 좌측 목록을 다시 읽는다. 이 영역은 검색 전용이다
+            onSearch={handleSearch}
+            actions={<SearchButton loading={action.isBusy("search")} />}
+          >
+            <SearchDateRange
+              // 일자 — YYYYMMDD 상태를 input[type=date] 로 변환한 구간 검색
+              label="일자"
+              from={toInputDate(search.fromDt)}
+              to={toInputDate(search.toDt)}
+              onFrom={(v) => setSearch((prev) => ({ ...prev, fromDt: fromInputDate(v) }))}
+              onTo={(v) => setSearch((prev) => ({ ...prev, toDt: fromInputDate(v) }))}
+            />
+            <SearchField label="양식코드">
+              <input
+                // 양식코드 부분검색 — 직접 입력한다. 팝업이 아니다(팝업은 하단 작성 행 전용)
+                className={searchInputClass}
+                value={search.tmplCd}
+                placeholder="양식코드"
+                onChange={(event) => setSearch((prev) => ({ ...prev, tmplCd: event.target.value }))}
+              />
+            </SearchField>
+            <SearchField label="양식명">
+              <input
+                // 양식명 부분검색 — 서버 LIKE
+                className={searchInputClass}
+                value={search.tmplNm}
+                placeholder="양식명"
+                onChange={(event) => setSearch((prev) => ({ ...prev, tmplNm: event.target.value }))}
+              />
+            </SearchField>
+            <SearchField label="작성자 ID">
+              <input
+                // 작성자 ID 부분검색 — tbl_document.writer_id
+                className={searchInputClass}
+                value={search.writerId}
+                placeholder="작성자 ID"
+                onChange={(event) => setSearch((prev) => ({ ...prev, writerId: event.target.value }))}
+              />
+            </SearchField>
+            <SearchField label="작성자명">
+              <input
+                // 작성자명 부분검색 — tbl_user.user_nm
+                className={searchInputClass}
+                value={search.writerNm}
+                placeholder="작성자명"
+                onChange={(event) => setSearch((prev) => ({ ...prev, writerNm: event.target.value }))}
+              />
+            </SearchField>
+            <SearchSelect
+              // 결재 여부 — DOC_STATUS 파생 3단계라 화면에서 거른다
+              label="결재 여부"
+              value={search.sendState}
+              onChange={(v) => setSearch((prev) => ({ ...prev, sendState: v }))}
+            >
+              <option value="">전체</option>
+              {(Object.keys(SEND_STATE_NM) as SendState[]).map((key) => (
+                <option key={key} value={key}>{SEND_STATE_NM[key]}</option>
+              ))}
+            </SearchSelect>
+          </SearchArea>
+        )}
+      >
+        <ResizableSplit
+          // 좌 작성 목록 50 · 우 상세 50 — 양식관리와 같은 프레임
+          orientation="horizontal"
+          storageKey={splitKey}
+          defaultPrimaryPct={50}
+          minPct={25}
+          maxPct={75}
+          className="mes-page-split min-h-0 h-full flex-1 gap-0"
+          primary={(
+            <div className={splitPanelClass}>
+              <div className={gridHeadClass}>
+                <div className="flex min-w-0 items-center gap-2">
+                  <b>{listTitle}</b>
+                  {selKeys.length > 0 ? (
+                    <span className="text-xs font-normal text-slate-500">{`${selKeys.length}건 선택`}</span>
+                  ) : null}
+                </div>
+                <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                  <MesButton
+                    // 행 추가 — 오늘 날짜·양식 미선택으로 열고 양식 선택 팝업을 띄운다
+                    size="sm"
+                    variant="add"
+                    icon="plus"
+                    disabled={action.isBusy()}
+                    loading={action.isBusy("add")}
+                    onClick={() => void handleAdd()}
+                  >
+                    행 추가
+                  </MesButton>
+                  <MesButton
+                    // 저장 — 일자·양식코드 등록. docIdx 생성 후 오른쪽 작성이 열린다
+                    size="sm"
+                    variant="save"
+                    icon="save"
+                    disabled={action.isBusy()}
+                    loading={action.isBusy("saveHeader")}
+                    onClick={() => void handleSaveHeader()}
+                  >
+                    저장
+                  </MesButton>
+                  <MesButton
+                    // 삭제 — 체크된 행, 없으면 현재 행. 우측 삭제와 같은 업무 규칙
+                    size="sm"
+                    variant="danger"
+                    icon="trash"
+                    disabled={action.isBusy()}
+                    loading={action.isBusy("del")}
+                    onClick={() => void handleDeleteLeft()}
+                  >
+                    삭제
+                  </MesButton>
+                  <MesButton
+                    // 모두 전송 — 체크된 행 중 전송 가능한 건만 대상으로 한다
+                    size="sm"
+                    variant="excel"
+                    icon="approve"
+                    disabled={selKeys.length === 0 || action.isBusy()}
+                    loading={action.isBusy("sendAll")}
+                    onClick={() => void handleSendAll()}
+                  >
+                    모두 전송
+                  </MesButton>
+                </div>
+              </div>
+              <MesEditableGrid
+                // 열 너비·정렬 저장 키
+                persistId={persistId}
+                // 권한·pref 범위
+                scrnCd={scrnCd}
+                // 서버 목록 + 신규 draft
+                rows={listRows as EditableRow<ListMeta>[]}
+                // 결재 여부·일자·양식코드(팝업 버튼)·양식명·작성자
+                columns={listCols}
+                // 신규·전송대기 행 일자 편집. 전송 이후 행은 규칙이 잠근다
+                editable={canWrite || canModify}
+                // 패널 제목 — 헤더 b 와 같은 문구
+                title={listTitle}
+                // 부모 flex 높이
+                height="100%"
+                loading={action.isBusy("search")}
+                // 맨 앞 체크박스 — 모두 전송·삭제 대상 선택
+                selectable
+                // 체크 변경 시 선택 키 보관
+                onSelectionChange={(rows) => setSelKeys(rows.map((row) => row._key).filter(Boolean) as string[])}
+                // 조회·삭제·전송 후 체크 해제
+                selectionResetKey={selReset}
+                // 선택 키
+                activeKey={activeKey}
+                // 행 클릭 시 우측 상세 전환
+                onActivate={(row) => { void handleSelect(row._key ?? null); }}
+                onCellChange={(key, field, cellValue) => {
+                  // 일자 — 전송대기 행에서 셀 편집. 양식코드는 팝업, 나머지는 잠금 규칙이 막는다
+                  if (field !== "baseDtDisp") return;
+                  const next = fromInputDate(String(cellValue ?? ""));
+                  const prevBuf = getBuffer(key);
+                  if (!prevBuf) return;
+                  const listPatch = { baseKey: next, baseDtDisp: toInputDate(next) };
+                  // 편집한 행이 활성 행일 때(= 셀 편집은 행을 먼저 활성화해야 가능) 행을 dirty 로 올린다.
+                  // putBuffer 는 _rowState 를 건드리지 않아 저장행 일자 수정이 좌측 저장에서 누락된다
+                  if (key === activeKey) {
+                    patchActive((cur) => ({ ...cur, baseKey: next }), listPatch);
+                    return;
+                  }
+                  // 활성 행이 아닌 셀은 편집될 수 없다 — 방어용 경로
+                  putBuffer(key, { ...prevBuf, baseKey: next }, listPatch);
+                }}
+                // 잠금·권한 판정
+                access={listGrid.access}
+                onLockedAttempt={listGrid.onLockedAttempt}
+                showRowNum
+              />
+            </div>
+          )}
+          secondary={(
+            <div className={splitPanelClass}>
+              <div className={gridHeadClass}>
+                <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+                  <b className="truncate">{buf?.tmplNm || paperTitle}</b>
+                  {buf ? (
+                    <span className="text-xs font-normal text-slate-500">
+                      {SEND_STATE_NM[sendStateOf(status)]}
+                      {buf.docNo ? ` · ${buf.docNo}` : ""}
+                      {!buf.docIdx ? " · 왼쪽 저장 후 작성 가능" : !canEdit ? " · 수정 불가" : ""}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                  <MesButton
+                    // 작성 후 저장 — 지면 점검값·하단칸만 저장한다. 전송하지 않는다
+                    size="sm"
+                    variant="save"
+                    icon="save"
+                    disabled={!buf || !canEdit || action.isBusy()}
+                    loading={action.isBusy("save")}
+                    onClick={() => void handleSaveDetail()}
+                  >
+                    작성 후 저장
+                  </MesButton>
+                  <MesButton
+                    // 전송 — 미저장 확인 → 필수값 검사 → 결재선 상신(REQUEST)
+                    size="sm"
+                    variant="excel"
+                    icon="approve"
+                    disabled={!buf || !canSend || action.isBusy()}
+                    loading={action.isBusy("send")}
+                    onClick={() => void handleSend()}
+                  >
+                    전송
+                  </MesButton>
+                  <MesButton
+                    // 삭제 — docIdx 없을 때(= 좌측 미저장) 비활성. draft 삭제는 좌측 삭제
+                    size="sm"
+                    variant="danger"
+                    icon="trash"
+                    disabled={!buf || !buf.docIdx || action.isBusy()}
+                    loading={action.isBusy("del")}
+                    onClick={() => void handleDeleteActive()}
+                  >
+                    삭제
+                  </MesButton>
+                  <MesButton
+                    // 전송취소 — 상신취소(CANCEL). 전송대기로 되돌린다
+                    size="sm"
+                    variant="secondary"
+                    icon="reset"
+                    disabled={!canCancelSendDoc(docIdx, status) || action.isBusy()}
+                    loading={action.isBusy("cancel")}
+                    onClick={() => void handleCancelSend()}
+                  >
+                    전송취소
+                  </MesButton>
+                </div>
+              </div>
+              <div className="min-h-0 flex-1 overflow-auto">
+                {buf && buf.tmplCd ? (
+                  <PaperComponent
+                    // 작성 모드 — 기준관리(template)가 아니다
+                    mode="write"
+                    // 패널 채움 — 인쇄는 브라우저 인쇄에 맡긴다
+                    variant="fill"
+                    // 저장 전이거나 전송 이후면 잠금
+                    locked={!canEdit}
+                    editable={canEdit}
+                    // 제목·부제·일자·결재란. 서명이 있으면 이미지, 없으면 이름
+                    header={{
+                      title: buf.tmplNm || paperTitle,
+                      subtitle: paperSubtitle,
+                      baseDt: toInputDate(buf.baseKey),
+                      writerNm: buf.writerNm,
+                      writerId: buf.writerId,
+                      writerSignYn: buf.writerSignYn,
+                      checkerNm: buf.checkerNm,
+                      checkerId: buf.checkerId,
+                      checkerSignYn: buf.checkerSignYn,
+                      approverNm: buf.approverNm,
+                      approverId: buf.approverId,
+                      approverSignYn: buf.approverSignYn,
+                      confirmId: buf.confirmId,
+                      confirmSignYn: buf.confirmSignYn,
+                    }}
+                    // 점검 행 — 예/아니오·숫자·문자
+                    items={buf.items}
+                    // 하단 4열 — 특이사항·개선조치 및 결과·조치·확인
+                    footer={{
+                      specialNote: buf.specialNote,
+                      improveNote: buf.improveNote,
+                      actionNm: buf.actionNm,
+                      confirmNm: buf.confirmNm,
+                    }}
+                    onHeaderChange={(patch) => patchActive((cur) => {
+                      const next = { ...cur };
+                      if (patch.baseDt != null) next.baseKey = fromInputDate(patch.baseDt);
+                      // 이름이 바뀌었을 때(= 다른 사람) 서명 스냅샷을 지운다. 저장 때 다시 붙는다
+                      if (patch.checkerNm != null) {
+                        if (patch.checkerNm !== cur.checkerNm) {
+                          next.checkerId = "";
+                          next.checkerSignYn = "N";
+                        }
+                        next.checkerNm = patch.checkerNm;
+                      }
+                      if (patch.approverNm != null) {
+                        if (patch.approverNm !== cur.approverNm) {
+                          next.approverId = "";
+                          next.approverSignYn = "N";
+                        }
+                        next.approverNm = patch.approverNm;
+                      }
+                      return next;
+                    }, patch.baseDt != null ? { baseDtDisp: patch.baseDt } : undefined)}
+                    onItemsChange={(items) => patchActive((cur) => ({ ...cur, items }))}
+                    // 기록 표 행 — 작성에서만 제어 렌더된다. 기준관리 화면은 이 prop 을 안 받는다
+                    logRows={buf.logRows}
+                    onLogRowsChange={(logRows) => patchActive((cur) => ({ ...cur, logRows }))}
+                    passRows={buf.passRows}
+                    onPassRowsChange={(passRows) => patchActive((cur) => ({ ...cur, passRows }))}
+                    onFooterChange={(patch) => patchActive((cur) => {
+                      const next = { ...cur, ...patch };
+                      if (patch.confirmNm != null && patch.confirmNm !== cur.confirmNm) {
+                        next.confirmId = "";
+                        next.confirmSignYn = "N";
+                      }
+                      return next;
+                    })}
+                  />
+                ) : (
+                  <p className="p-6 text-sm text-slate-500">
+                    {buf
+                      ? "양식코드 버튼을 눌러 작성할 양식을 선택하세요."
+                      : "왼쪽에서 문서를 고르거나 「행 추가」를 눌러 작성하세요."}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        />
+      </PageCard>
+
+      {lookupKey ? (
+        <HtmlFormLookupModal
+          // 열 설정 pref 화면코드
+          scrnCd={scrnCd}
+          // 사용여부 예인 자사 양식만 — 진입 시 읽어 둔 목록
+          forms={forms}
+          // 현재 행의 양식 강조
+          value={lookupRow?.tmplCd || undefined}
+          // 선택 확정 — 양식코드·양식명을 작성 행에 반영
+          onSelect={(tmplCd, tmplNm) => { void applyForm(lookupKey, tmplCd, tmplNm); }}
+          // 선택 없이 닫기
+          onClose={() => setLookupKey(null)}
+        />
+      ) : null}
+    </div>
+  );
+}

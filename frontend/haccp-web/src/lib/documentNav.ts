@@ -64,6 +64,36 @@ const TMPL_SCREEN: Record<string, string> = {
   "tmpl_prp-equip-card": "equipment-history",
 };
 
+/** 자사 양식 접두 → 작성 화면코드 — 코드가 가변(NNN)이라 표에 못 넣는다 */
+const TMPL_PREFIX_SCREEN: Array<{ prefix: string; scrnCd: string }> = [
+  // 위생공정 양식 작성 — html_hyg_prc_001 이상. 예시 000 은 작성 대상이 아니다
+  { prefix: "html_hyg_prc_", scrnCd: "hyg-process" },
+  // CCP 검증점검 양식 작성 — tml_ccp_chk_001 이상
+  { prefix: "tml_ccp_chk_", scrnCd: "ccp-verify" },
+  // CCP 모니터링일지 작성 — 포장·가열·금속검출
+  { prefix: "tml_ccp_pkg_", scrnCd: "ccp-pkg" },
+  { prefix: "tml_ccp_htg_", scrnCd: "ccp-htg" },
+  { prefix: "tml_ccp_mtl_", scrnCd: "ccp-mtl" },
+];
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-24
+ * 코멘트:
+ *   1) 접두로 작성 화면을 찾는다 — 자사 양식은 코드 뒤 3자리가 회사마다 다르다
+ *   2) routeForDocument 가 정확 매핑에 실패했을 때 호출한다
+ *   3) 예시(000)는 작성 화면이 없으므로 제외한다
+ */
+function screenByPrefix(
+  // 문서 양식코드
+  tmplCd: string
+): string | undefined {
+  const cd = (tmplCd || "").trim();
+  // 예시 000 일 때(= 작성 대상 아님) 문서함으로 보낸다
+  if (cd.endsWith("_000")) return undefined;
+  return TMPL_PREFIX_SCREEN.find((row) => cd.startsWith(row.prefix))?.scrnCd;
+}
+
 export interface DocumentNavInput {
   // 문서 대리키 — 쿼리 docIdx
   docIdx: number;
@@ -85,7 +115,7 @@ export function routeForDocument(
   // 열 문서 — idx·양식·종류
   row: DocumentNavInput
 ): string {
-  const scrn = TMPL_SCREEN[row.tmplCd];
+  const scrn = TMPL_SCREEN[row.tmplCd] ?? screenByPrefix(row.tmplCd);
   if (scrn) {
     return routeOf(scrn, { docIdx: String(row.docIdx) });
   }

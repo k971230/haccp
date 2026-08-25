@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CcpMtlDraftMapper.xml — CCP 금속검출 작성 SP.
+
+개발자: 박승우
+일자: 2026-08-24
+코멘트:
+  1) 데이터는 기존 tbl_ccp_metal_monitor(+_sens_row·_pass_row). 신규 테이블 없음
+  2) 저장·헤더·삭제는 기존 sp_tbl_ccp_metal_monitor_* — 124에서 p_tmpl_cd 를 맨 뒤 인자로 열었다
+  3) 감도행은 phase_cd(BEFORE·AFTER), 통과량행은 별도 표. 두 영역이 섞이지 않는다
+
+PIPELINE[HB140] CCP 금속검출 작성 XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.draft.ccpmonitoring.CcpMtlDraftMapper">
+
+    <!-- 작성 가능 양식 — 양식관리(ccp-mtl-template) 좌측과 같은 SP. 사용여부 Y·예시 제외 -->
+    <select id="selectForms" resultType="com.haccp.draft.dto.DraftFormRow">
+        SELECT v.tmpl_cd, v.ver_nm, v.ver_no, v.use_yn, v.ins_dt
+          FROM sp_tbl_tml_ccp_mtl_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v
+         WHERE upper(v.use_yn) = 'Y'
+           AND v.ver_no &gt; 0
+           AND v.tmpl_cd &lt;&gt; #{stdTmplCd}
+         ORDER BY v.tmpl_cd
+    </select>
+
+    <!-- 양식 항목 — 한계기준·주기·방법·감도열·개선조치. 지면 상단이 쓴다 -->
+    <select id="selectFormItems" resultType="map">
+        SELECT * FROM sp_tbl_tml_ccp_mtl_ver_item_r_000(#{coCd}, #{tmplCd}, #{verNo})
+    </select>
+
+    <!-- 좌측 작성 목록 — 자사 양식(tml_ccp_mtl_NNN)만 -->
+    <select id="selectList" resultType="com.haccp.draft.dto.DraftListRow">
+        SELECT * FROM sp_ccp_mtl_r_000(
+            #{coCd}, #{tmplCd}, #{tmplNm}, #{fromDt}, #{toDt}, #{writerId}, #{writerNm}
+        )
+    </select>
+
+    <!-- 헤더 — 124에서 3번째 p_tmpl_cd 인자를 열었다 -->
+    <select id="selectHeader" resultType="map">
+        SELECT * FROM sp_tbl_ccp_metal_monitor_r_001(#{coCd}, #{docIdx}, #{tmplCd})
+    </select>
+
+    <!-- 감도 표 행 — phase_cd 로 작업 전/작업 후가 갈린다 -->
+    <select id="selectSensRows" resultType="map">
+        SELECT * FROM sp_tbl_ccp_metal_monitor_r_002(#{coCd}, #{hdrIdx})
+    </select>
+
+    <!-- 통과량 표 행 — 품명·통과량·검출량·특이사항 -->
+    <select id="selectPassRows" resultType="map">
+        SELECT * FROM sp_tbl_ccp_metal_monitor_r_003(#{coCd}, #{hdrIdx})
+    </select>
+
+    <!--
+      저장 — 감도행·통과량행 교체. fe_size·sts_size 는 이 화면이 안 쓰므로 NULL.
+      맨 뒤 p_tmpl_cd 가 124에서 열린 자사 양식코드다.
+    -->
+    <select id="save" resultType="long">
+        SELECT sp_tbl_ccp_metal_monitor_c_000(
+            #{coCd}, #{docIdx}, #{baseDt}, #{ccpCd},
+            NULL, NULL, '', #{mngNm},
+            CAST(#{sensRowsJson} AS jsonb),
+            CAST(#{passRowsJson} AS jsonb),
+            #{userId}, #{tmplCd}
+        )
+    </select>
+
+    <!--
+      삭제 차단 — 전송대기(WRK·RJT)가 아닌 문서.
+      target 문구는 이 화면의 3단계 용어(전송/결재완료)로 내린다.
+    -->
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
+        SELECT d.doc_no AS ref_key,
+               CASE d.status WHEN 'REQ' THEN '전송' WHEN 'REV' THEN '전송'
+                             WHEN 'APV' THEN '결재완료' ELSE d.status END AS target
+          FROM tbl_document d
+          JOIN tbl_ccp_metal_monitor h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
+         WHERE d.co_cd = #{coCd} AND d.del_yn = 'N'
+           AND d.status NOT IN ('WRK', 'RJT') AND d.idx IN
+           <foreach collection="docIdxs" item="id" open="(" separator="," close=")">#{id}</foreach>
+         ORDER BY d.doc_no LIMIT 1
+    </select>
+
+    <!-- 삭제 — 감도행·통과량행·문서 허브. 맨 뒤 p_tmpl_cd 는 124에서 열렸다 -->
+    <update id="delete" statementType="CALLABLE">
+        CALL sp_tbl_ccp_metal_monitor_d_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{docIdx, jdbcType=BIGINT},
+            #{userId, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR}
+        )
+    </update>
+</mapper>
