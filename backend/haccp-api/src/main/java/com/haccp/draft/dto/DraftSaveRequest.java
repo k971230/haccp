@@ -16,7 +16,7 @@
  */
 package com.haccp.draft.dto;
 
-import com.haccp.docs.ccp.dto.DocCorrectiveDto;
+import com.haccp.flow.ca.dto.DocCorrectiveDto;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;

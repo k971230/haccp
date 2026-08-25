@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-24
  * 코멘트:
- *   1) 베이스는 apiOf("hyg-process") — SCREEN_PATH /draft/hyg/hyg-process 와 같은 칸
+ *   1) 베이스는 apiOf("hyg-process") — SCREEN_PATH /draft/html/hyg-process 와 같은 칸
  *   2) 양식관리 hyg-process-template 에서 사용여부 예로 둔 자사 양식(html_hyg_prc_NNN)만 온다
  *   3) 삭제는 POST validate-delete → delete, Body 는 객체 배열 (OPS_DELETE)
  *
@@ -36,7 +36,7 @@ import type {
 /** 화면코드 — tbl_screen.scrn_cd. API 베이스 조립 키 */
 const SCRN_CD = "hyg-process";
 
-/** 화면 API 베이스 — /api/v1/draft/hyg/hyg-process */
+/** 화면 API 베이스 — /api/v1/draft/html/hyg-process */
 const BASE = apiOf(SCRN_CD);
 
 /**

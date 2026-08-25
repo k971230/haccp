@@ -28,36 +28,10 @@ public final class ScreenAuthResolver {
     /** 문서 허브 삭제·HWP 저장 — HTML 작성 권한으로 HWP 를 지·저장하지 못하게 한다 */
     public static final Set<String> HWP_HUB_SCREENS = Set.of(
             "document-inbox",
-            "legal-document-upload",
             "attach",
             "sign-ready",
             "sign-ok",
-            "hwp-write",
-            "process-hwp",
-            "calib-self-hwp",
-            "calib-ext-hwp",
-            "waste-hwp",
-            "verify-ca-hwp",
-            "personal-hyg-hwp",
-            "area-hyg-hwp",
-            "water-hwp",
-            "verify-plan-hwp",
-            "verify-check-hwp",
-            "verify-report-hwp",
-            "prod-test-hwp",
-            "surface-test-hwp",
-            "receiving-insp-hwp",
-            "submaterial-recv-hwp",
-            "shipment-log-hwp",
-            "inventory-hwp",
-            "vehicle-hwp",
-            "edu-plan-hwp",
-            "edu-log-hwp",
-            "bad-product-hwp",
-            "claim-hwp",
-            "recall-hwp",
-            "eval-hwp",
-            "handover-hwp"
+            "hwp-write"
     );
 
     /** 문서 허브 조회·결재·첨부 — HTML 작성 화면도 전송 API 가 허브를 탄다 */
@@ -71,126 +45,32 @@ public final class ScreenAuthResolver {
         doc.add("ccp-pkg");
         doc.add("ccp-htg");
         doc.add("ccp-mtl");
-        doc.add("ccp-cold-monitor");
-        doc.add("ccp-metal-monitor");
-        doc.add("ccp-heat-monitor");
-        doc.add("ccp-sanitize-monitor");
-        doc.add("ccp-filter-monitor");
-        doc.add("ccp-verification-check");
-        doc.add("hygiene-process-check");
-        doc.add("daily-hygiene-check");
-        doc.add("pest-control-check");
-        doc.add("health-cert-record");
         DOC_HUB_SCREENS = Set.copyOf(doc);
     }
 
     // FE SCREEN_PATH — 값(경로) 길이 내림차순으로 최장 접두를 고른다
     private static final List<Map.Entry<String, String>> SCREEN_PREFIXES;
-    // /api/v1/bas/{masterType} → scrnCd
-    private static final Map<String, String> MASTER_SCRN = Map.ofEntries(
-            Map.entry("product", "product-management"),
-            Map.entry("material", "material-management"),
-            Map.entry("partner", "partner-management"),
-            Map.entry("storage", "storage-management"),
-            Map.entry("measuring-device", "measuring-device-management"),
-            Map.entry("vehicle", "vehicle-management"),
-            Map.entry("work-area", "work-area-management"),
-            Map.entry("equipment", "equipment-management"),
-            Map.entry("pest-device", "pest-device-management"),
-            Map.entry("ccp-limit", "ccp-cold-monitor")
-    );
-
     static {
         Map<String, String> pathToScrn = new LinkedHashMap<>();
         pathToScrn.put("/today-tasks", "today-tasks");
         putAll(pathToScrn, "/docs/sch", "schedule-cycle-management");
         putAll(pathToScrn, "/docs/hwp", "hwp-template-management");
+        // 중분류 html 은 양식 작성(draft)이 쓴다 — tbl_menu UNIQUE (co_cd, menu_cd)
         putAll(
                 pathToScrn,
-                "/docs/html",
+                "/docs/html-form",
                 "hyg-process-template",
                 "ccp-verify-template",
                 "ccp-pkg-template",
                 "ccp-htg-template",
                 "ccp-mtl-template"
         );
-        putAll(
-                pathToScrn,
-                "/docs/ccp",
-                "ccp-cold-monitor",
-                "ccp-metal-monitor",
-                "ccp-heat-monitor",
-                "ccp-sanitize-monitor",
-                "ccp-filter-monitor",
-                "ccp-verification-check",
-                "process-hwp"
-        );
-        putAll(
-                pathToScrn,
-                "/docs/prp",
-                "hygiene-process-check",
-                "daily-hygiene-check",
-                "pest-control-check",
-                "health-cert-record",
-                "facility-equipment-check",
-                "calibration-target-management",
-                "equipment-history",
-                "pest-device-history",
-                "equipment-management",
-                "pest-device-management",
-                "visual-insp-standard",
-                "calib-self-hwp",
-                "calib-ext-hwp",
-                "waste-hwp",
-                "verify-ca-hwp",
-                "personal-hyg-hwp",
-                "area-hyg-hwp",
-                "water-hwp",
-                "verify-plan-hwp",
-                "verify-check-hwp",
-                "verify-report-hwp",
-                "prod-test-hwp",
-                "surface-test-hwp"
-        );
-        putAll(
-                pathToScrn,
-                "/docs/logis",
-                "receiving-insp-hwp",
-                "submaterial-recv-hwp",
-                "shipment-log-hwp",
-                "inventory-hwp",
-                "vehicle-hwp"
-        );
-        putAll(
-                pathToScrn,
-                "/docs/admin",
-                "visitor-log",
-                "edu-plan-hwp",
-                "edu-log-hwp",
-                "bad-product-hwp",
-                "claim-hwp",
-                "recall-hwp",
-                "eval-hwp",
-                "handover-hwp"
-        );
-        putAll(pathToScrn, "/draft/hyg", "hyg-process");
-        putAll(pathToScrn, "/draft/ccp-chk", "ccp-verify");
+        putAll(pathToScrn, "/draft/html", "hyg-process", "ccp-verify");
         putAll(pathToScrn, "/draft/ccp-monitoring", "ccp-pkg", "ccp-htg", "ccp-mtl");
         putAll(pathToScrn, "/draft/hwp-doc", "hwp-write");
-        putAll(pathToScrn, "/flow/box", "document-inbox", "legal-document-upload");
+        putAll(pathToScrn, "/flow/box", "document-inbox");
         putAll(pathToScrn, "/flow/appr", "attach", "sign-ready", "sign-ok");
         putAll(pathToScrn, "/flow/ca", "corrective-action-management");
-        putAll(
-                pathToScrn,
-                "/bas/master",
-                "product-management",
-                "material-management",
-                "partner-management",
-                "storage-management",
-                "measuring-device-management",
-                "vehicle-management",
-                "work-area-management"
-        );
         putAll(
                 pathToScrn,
                 "/sys/code",
@@ -281,7 +161,7 @@ public final class ScreenAuthResolver {
         return path.startsWith("/api/v1/sys/users/me");
     }
 
-    /** /api/v1/bas 예외 — 기준정보 type · 사용양식 허브 */
+    /** /api/v1/bas 예외 — 사용양식 허브·문서주기. 기준정보 화면은 2026-08-25 정리에서 빠졌다 */
     private static Optional<ScreenAuthMatch> resolveBas(String path, ScreenAuthAction action) {
         if (!path.startsWith("/api/v1/bas/")) {
             return Optional.empty();
@@ -293,19 +173,8 @@ public final class ScreenAuthResolver {
                 || path.startsWith("/api/v1/bas/template-export-hist")) {
             return Optional.of(ScreenAuthMatch.screen("hwp-template-management", action));
         }
-        if (path.startsWith("/api/v1/bas/legal-types")) {
-            return Optional.of(ScreenAuthMatch.screen("legal-document-upload", action));
-        }
         if (path.startsWith("/api/v1/bas/schedule-rules")) {
             return Optional.of(ScreenAuthMatch.screen("schedule-cycle-management", action));
-        }
-        // /api/v1/bas/{type}/list|save|delete
-        String rest = path.substring("/api/v1/bas/".length());
-        int slash = rest.indexOf('/');
-        String type = slash < 0 ? rest : rest.substring(0, slash);
-        String scrn = MASTER_SCRN.get(type);
-        if (scrn != null) {
-            return Optional.of(ScreenAuthMatch.screen(scrn, action));
         }
         return Optional.empty();
     }

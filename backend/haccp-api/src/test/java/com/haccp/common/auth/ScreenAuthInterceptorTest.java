@@ -82,13 +82,13 @@ class ScreenAuthInterceptorTest {
     }
 
     @Test
-    void 기준정보_삭제_delete_N_이면_403이다() throws Exception {
+    void 사용양식_삭제_delete_N_이면_403이다() throws Exception {
         loginUser("USER");
         when(authMapper.selectScreenAuths(anyString(), anyString()))
-                .thenReturn(List.of(row("product-management", "Y", "N")));
+                .thenReturn(List.of(row("hwp-template-management", "Y", "N")));
         MockHttpServletResponse res = new MockHttpServletResponse();
         boolean ok = interceptor.preHandle(
-                request("POST", "/api/v1/bas/product/delete"),
+                request("POST", "/api/v1/bas/company-templates/delete"),
                 res,
                 new Object()
         );

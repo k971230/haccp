@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-24
  * 코멘트:
- *   1) 베이스는 apiOf("ccp-verify") — SCREEN_PATH /draft/ccp-chk/ccp-verify 와 같은 칸
+ *   1) 베이스는 apiOf("ccp-verify") — SCREEN_PATH /draft/html/ccp-verify 와 같은 칸
  *   2) 양식관리 ccp-verify-template 에서 사용여부 예로 둔 자사 양식(tml_ccp_chk_NNN)만 온다
  *   3) 계약·응답 모양은 HYG 와 같다(htmlFormDraftTypes). 서버 테이블·SP 만 CCP 것이다
  *
@@ -35,7 +35,7 @@ import type {
 /** 화면코드 — tbl_screen.scrn_cd. API 베이스 조립 키 */
 const SCRN_CD = "ccp-verify";
 
-/** 화면 API 베이스 — /api/v1/draft/ccp-chk/ccp-verify */
+/** 화면 API 베이스 — /api/v1/draft/html/ccp-verify */
 const BASE = apiOf(SCRN_CD);
 
 /**

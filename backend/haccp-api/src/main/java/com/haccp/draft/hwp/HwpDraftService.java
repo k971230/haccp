@@ -27,7 +27,7 @@ import com.haccp.draft.dto.DraftFormRow;
 import com.haccp.draft.dto.DraftListRow;
 import com.haccp.draft.dto.DraftSaveRequest;
 import com.haccp.draft.dto.DraftTaskRow;
-import com.haccp.docs.ccp.dto.DocCorrectiveDto;
+import com.haccp.flow.ca.dto.DocCorrectiveDto;
 import com.haccp.flow.ca.DocCorrectiveSupport;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

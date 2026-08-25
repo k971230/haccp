@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+HygProcessDraftMapper.xml — 위생공정 양식 작성 SP.
+
+개발자: 박승우
+일자: 2026-08-24
+코멘트:
+  1) 작성 SP 는 공정점검 테이블 SP(sp_tbl_hyg_process_*)를 양식코드와 함께 그대로 쓴다 (121에서 p_tmpl_cd 개방)
+  2) 양식 목록은 양식관리와 같은 sp_tbl_html_hyg_prc_ver_r_000 을 감싸 사용여부 Y·예시 제외로 좁힌다
+  3) 삭제 차단은 foreach IN 단일 쿼리. 전송(REQ·REV)·결재완료(APV)를 막는다
+
+PIPELINE[HB135] 위생공정 작성 XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.draft.html.HygProcessDraftMapper">
+
+    <!--
+      작성 가능 양식 — 양식관리 좌측과 같은 SP.
+      use_yn 은 tbl_company_template.use_yn 이라 「사용여부 = 예」와 같은 값이다.
+      표준 예시 html_hyg_prc_000 은 항상 미사용이지만 가상행이라 코드로 한 번 더 뺀다.
+    -->
+    <select id="selectForms" resultType="com.haccp.draft.dto.DraftFormRow">
+        SELECT v.tmpl_cd, v.ver_nm, v.ver_no, v.use_yn,
+               <!-- 양식 등록일자 — 팝업 첫 컬럼. SP 가 YYYY-MM-DD 문자열로 준다 -->
+               v.ins_dt
+          FROM sp_tbl_html_hyg_prc_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v
+         WHERE upper(v.use_yn) = 'Y'
+           AND v.ver_no &gt; 0
+           AND v.tmpl_cd &lt;&gt; #{stdTmplCd}
+         ORDER BY v.tmpl_cd
+    </select>
+
+    <!--
+      좌측 작성 목록 — 일자·양식코드·양식명·작성자·상태.
+      상단 검색 6개 중 결재여부는 DOC_STATUS 파생이라 화면이 거른다.
+      문서번호·통합작성자(5·6번 인자)는 이 화면 검색조건이 아니라 빈값을 넘긴다.
+    -->
+    <select id="selectList" resultType="com.haccp.draft.dto.DraftListRow">
+        SELECT * FROM sp_tbl_hyg_process_r_000(
+            #{coCd}, #{tmplCd}, #{fromDt}, #{toDt}, '', '',
+            #{tmplNm}, #{writerId}, #{writerNm}
+        )
+    </select>
+
+    <!-- 상세/신규 기본행 — JSON 문자열. 신규 항목은 tmplCd 자사 양식에서 온다 -->
+    <select id="selectDetail" resultType="string">
+        SELECT sp_tbl_hyg_process_r_001(#{coCd}, #{tmplCd}, #{docIdx})::text
+    </select>
+
+    <!-- 저장 — 문서·헤더·항목 전체 교체. 신규는 SP 가 사용여부 Y·채번 규칙을 확인한다 -->
+    <select id="save" resultType="long">
+        SELECT sp_tbl_hyg_process_c_000(
+            #{coCd}, #{tmplCd}, #{docIdx}, #{baseDt}, #{checkerNm},
+            CAST(#{payload} AS jsonb), #{userId}
+        )
+    </select>
+
+    <!-- 점검자·승인자·확인 서명 스냅샷 — 이름 매칭. 저장 직후 -->
+    <update id="snapshotSigns" statementType="CALLABLE">
+        CALL sp_tbl_hyg_process_sign_u_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{docIdx, jdbcType=BIGINT},
+            #{checkerNm, jdbcType=VARCHAR},
+            #{approverNm, jdbcType=VARCHAR},
+            #{confirmNm, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!--
+      삭제 차단 — 전송대기(WRK·RJT)가 아닌 문서.
+      target 문구는 이 화면의 3단계 용어(전송/결재완료)로 내려 사용자 안내가 화면과 같게 한다.
+    -->
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
+        SELECT d.doc_no AS ref_key,
+               CASE d.status WHEN 'REQ' THEN '전송' WHEN 'REV' THEN '전송'
+                             WHEN 'APV' THEN '결재완료' ELSE d.status END AS target
+          FROM tbl_document d
+          JOIN tbl_hyg_process h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
+         WHERE d.co_cd = #{coCd} AND d.del_yn = 'N'
+           AND d.status NOT IN ('WRK', 'RJT') AND d.idx IN
+           <foreach collection="docIdxs" item="id" open="(" separator="," close=")">#{id}</foreach>
+         ORDER BY d.doc_no LIMIT 1
+    </select>
+
+    <!-- 삭제 — 하위 항목·결재·첨부·문서 허브 -->
+    <update id="delete" statementType="CALLABLE">
+        CALL sp_tbl_hyg_process_d_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{docIdx, jdbcType=BIGINT},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+</mapper>

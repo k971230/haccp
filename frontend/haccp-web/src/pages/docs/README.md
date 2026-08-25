@@ -3,7 +3,7 @@
 문서 관리 소스. 골드 구조는 [`pages/sys/README.md`](../sys/README.md)와 같다.
 로컬 UI `http://localhost:4173` · API `http://localhost:7070`
 
-라우트: `routeOf(scrnCd)` → `tabRoute.SCREEN_PATH` 계층 경로 (예: `/docs/html/hyg-process-template`). `/screen/{scrnCd}` 없음.
+라우트: `routeOf(scrnCd)` → `tabRoute.SCREEN_PATH` 계층 경로 (예: `/docs/html-form/hyg-process-template`). `/screen/{scrnCd}` 없음.
 
 바꾸지 않음: `scrnCd` · `persistId`. `/sys/`·`/docs/` 화면 HTTP: `/api/v1` + `SCREEN_PATH` + 동작. `/haccp` 는 API에 넣지 않는다. 문서함·결재·HWP leaf 허브는 `/api/v1/docs/documents` · `/api/v1/docs/templates`. 회사양식 삭제는 `/api/v1/bas/company-templates`.
 
@@ -63,7 +63,7 @@ pages/docs/
 | 파일 | 대상 |
 |---|---|
 | `hwpTemplateApi.ts` | 사용양식 관리 — URL `/api/v1/docs/hwp/hwp-template-management` |
-| `htmlFormApi.ts` | HTML양식 원본 5화면 + 공정점검 작성 — URL `/api/v1/docs/html/{scrnCd}` · `/api/v1/docs/prp/hygiene-process-check` |
+| `htmlFormApi.ts` | HTML양식 원본 5화면 + 공정점검 작성 — URL `/api/v1/docs/html-form/{scrnCd}` · `/api/v1/docs/html-form/hyg-process-template` |
 | `docCycleApi.ts` | 문서주기 — URL `/api/v1/docs/sch/schedule-cycle-management` |
 
 파일 I/O는 공용 `api/documentApi.ts`. 개선조치는 `taskWorkflowApi`.
@@ -94,12 +94,12 @@ java/com/haccp/docs/
  ├ ccp/                      CCP 작성
  ├ prp/                      PRP 위생·설비·이력
  ├ sch/                      문서주기 — URL /api/v1/docs/sch/schedule-cycle-management
- ├ html/htmltemplate         HTML양식 원본 Controller·Service — URL /api/v1/docs/html/{scrnCd} 5화면
+ ├ html/htmltemplate         HTML양식 원본 Controller·Service — URL /api/v1/docs/html-form/{scrnCd} 5화면
  ├ html/ccpverifytemplate    CCP 검증점검 Mapper (Controller는 htmltemplate 공유)
  ├ html/ccppkgtemplate       CCP-1B 포장 Mapper
  ├ html/ccphtgtemplate       CCP-2B 가열 Mapper
  ├ html/ccpmtltemplate       CCP-3P 금속검출 Mapper
- ├ html/hygprocess           공정점검 작성 — URL /api/v1/docs/prp/hygiene-process-check
+ ├ html/hygprocess           공정점검 작성 — URL /api/v1/docs/html-form/hyg-process-template
  ├ document/                 Document* 문서함·결재·첨부 — URL /api/v1/docs/documents (공유 허브)
  └ template/                 Template* 파일 저장 — URL /api/v1/docs/templates (공유 허브)
 ```
@@ -118,7 +118,7 @@ HTTP DELETE 금지. `validate-delete` → `delete` Double Check. 회사코드는
 
 ## HTML양식 원본 5화면
 
-화면 README `html/` · `htmltemplate/` · `ccpverifytemplate/` · `ccppkgtemplate/` · `ccphtgtemplate/` · `ccpmtltemplate/`. 공통 프레임 `HtmlFormTemplatePage`. HTTP는 `/api/v1/docs/html/{scrnCd}`. 작성 `hygprocess` 는 `/api/v1/docs/prp/hygiene-process-check`.
+화면 README `html/` · `htmltemplate/` · `ccpverifytemplate/` · `ccppkgtemplate/` · `ccphtgtemplate/` · `ccpmtltemplate/`. 공통 프레임 `HtmlFormTemplatePage`. HTTP는 `/api/v1/docs/html-form/{scrnCd}`. 작성 `hygprocess` 는 `/api/v1/docs/html-form/hyg-process-template`.
 
 ## 3. 문서함 · 4. HWP 작성기 · 5. 법적서류 · 6. 개선조치
 

@@ -11,7 +11,7 @@
  * PIPELINE[HF180] CCP 금속검출 작성 화면
  */
 // 역할 — CCP 금속검출 지면 — 양식관리와 같은 HTML
-import { CcpMtlPaper } from "@/pages/docs/html/ccpmtltemplate/CcpMtlPaper";
+import { CcpMtlPaper } from "@/pages/docs/html-form/ccpmtltemplate/CcpMtlPaper";
 // 역할 — 양식 작성 공통 화면
 import { HtmlFormDraftPage } from "../HtmlFormDraftPage";
 // 역할 — 이 화면 작성 API

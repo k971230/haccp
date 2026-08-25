@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-19
  * 코멘트:
- *   1) 기준관리는 화면별 /docs/html/{scrnCd}, 작성은 /docs/prp/hygiene-process-check
+ *   1) 기준관리는 화면별 /docs/html-form/{scrnCd}, 작성은 /docs/html-form/hyg-process-template
  *   2) 목록·복사는 tmplCd로 공정점검(html_hyg_prc)/검증점검(tml_ccp_chk)/포장일지(tml_ccp_pkg)/가열일지(tml_ccp_htg)/금속검출일지(tml_ccp_mtl) 테이블을 가른다
  *   3) 삭제는 POST validate-delete → delete, Body는 객체 배열
  *
@@ -93,16 +93,13 @@ export interface HygProcessSaveRequest {
   corrective?: DocCorrectiveValue | null;
 }
 
-/** HTML 양식 원본 5화면 — SCREEN_PATH /docs/html/{scrnCd} */
+/** HTML 양식 원본 5화면 — SCREEN_PATH /docs/html-form/{scrnCd} */
 export type HtmlFormScrnCd =
   | "hyg-process-template"
   | "ccp-verify-template"
   | "ccp-pkg-template"
   | "ccp-htg-template"
   | "ccp-mtl-template";
-
-/** 작성 화면 베이스 — SCREEN_PATH hygiene-process-check */
-const PROC = apiOf("hygiene-process-check");
 
 function formOf(
   // HTML 양식 원본 화면코드 — 5개만
@@ -333,46 +330,4 @@ export async function deleteHtmlFormVersions(
   keys: { tmplCd: string; verNo: number }[]
 ): Promise<void> {
   await http.post(`${formOf(scrnCd)}/delete`, keys);
-}
-
-/** 작성 목록 */
-export async function listHygProcess(params: {
-  fromDt?: string;
-  toDt?: string;
-  docNo?: string;
-  writer?: string;
-}): Promise<HygProcessListRow[]> {
-  const { data } = await http.get<CommonResponse<HygProcessListRow[]>>(`${PROC}/list`, { params });
-  return data.data ?? [];
-}
-
-/** 상세 또는 적용 버전 신규 */
-export async function getHygProcessDetail(docIdx?: number | null): Promise<HygProcessDetail> {
-  const { data } = await http.get<CommonResponse<Record<string, unknown>>>(`${PROC}/detail`, {
-    params: docIdx ? { docIdx } : {},
-  });
-  const raw = data.data ?? {};
-  const header = (raw.header ?? null) as Record<string, unknown> | null;
-  const itemsRaw = Array.isArray(raw.items) ? raw.items : [];
-  return {
-    header,
-    items: itemsRaw.map((row, i) => asItem(row as Record<string, unknown>, i)),
-    corrective: (raw.corrective as DocCorrectiveValue | null) ?? null,
-  };
-}
-
-/** 저장 — 문서 idx 반환 */
-export async function saveHygProcess(body: HygProcessSaveRequest): Promise<number> {
-  const { data } = await http.put<CommonResponse<{ docIdx: number }>>(`${PROC}/save`, body);
-  return data.data.docIdx;
-}
-
-/** 삭제 검증 */
-export async function validateDeleteHygProcess(keys: { docIdx: number }[]): Promise<void> {
-  await http.post(`${PROC}/validate-delete`, keys);
-}
-
-/** 삭제 */
-export async function deleteHygProcess(keys: { docIdx: number }[]): Promise<void> {
-  await http.post(`${PROC}/delete`, keys);
 }

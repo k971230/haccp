@@ -30,7 +30,7 @@ import { SYS_YN_MAIN_CD, isCompanyForm, useCommonCodes } from "@/hooks/useCommon
 // 역할 — 사용여부 콤보 fallback
 import { ynOptions } from "@/lib/yn";
 // 역할 — 자사 양식코드 채번 — 접두는 USR_TMPL_PREFIX
-import { nextUsrTmplCd } from "../html/htmlFormTemplateShared";
+import { nextUsrTmplCd } from "../html-form/htmlFormTemplateShared";
 // 역할 — 표준 버튼·검색 입력 스타일
 import { MesButton } from "@/components/ui/MesButton";
 import { searchInputClass } from "@/components/ui/Input";

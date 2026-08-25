@@ -28,14 +28,14 @@ import {
   ccpPkgDraftApi,
 } from "@/api/draft/ccpMonitoringDraftApi";
 // 역할 — 화면별 지면
-import { HygPrcPaper } from "@/pages/docs/html/htmltemplate/HygPrcPaper";
-import { CcpChkPaper } from "@/pages/docs/html/ccpverifytemplate/CcpChkPaper";
-import { CcpPkgPaper } from "@/pages/docs/html/ccppkgtemplate/CcpPkgPaper";
-import { CcpHtgPaper } from "@/pages/docs/html/ccphtgtemplate/CcpHtgPaper";
-import { CcpMtlPaper } from "@/pages/docs/html/ccpmtltemplate/CcpMtlPaper";
+import { HygPrcPaper } from "@/pages/docs/html-form/htmltemplate/HygPrcPaper";
+import { CcpChkPaper } from "@/pages/docs/html-form/ccpverifytemplate/CcpChkPaper";
+import { CcpPkgPaper } from "@/pages/docs/html-form/ccppkgtemplate/CcpPkgPaper";
+import { CcpHtgPaper } from "@/pages/docs/html-form/ccphtgtemplate/CcpHtgPaper";
+import { CcpMtlPaper } from "@/pages/docs/html-form/ccpmtltemplate/CcpMtlPaper";
 // 역할 — 화면별 접두·지면 제목 (작성 화면 Rule 정본)
-import * as HygRule from "@/pages/draft/hyg/HygProcessDraftRule";
-import * as CcpChkRule from "@/pages/draft/ccp/CcpVerifyDraftRule";
+import * as HygRule from "@/pages/draft/html/HygProcessDraftRule";
+import * as CcpChkRule from "@/pages/draft/html/CcpVerifyDraftRule";
 import * as CcpPkgRule from "@/pages/draft/ccp-monitoring/CcpPkgDraftRule";
 import * as CcpHtgRule from "@/pages/draft/ccp-monitoring/CcpHtgDraftRule";
 import * as CcpMtlRule from "@/pages/draft/ccp-monitoring/CcpMtlDraftRule";

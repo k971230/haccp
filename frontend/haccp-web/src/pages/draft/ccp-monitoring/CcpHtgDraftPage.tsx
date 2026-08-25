@@ -11,7 +11,7 @@
  * PIPELINE[HF179] CCP 가열 작성 화면
  */
 // 역할 — CCP 가열 지면 — 양식관리와 같은 HTML
-import { CcpHtgPaper } from "@/pages/docs/html/ccphtgtemplate/CcpHtgPaper";
+import { CcpHtgPaper } from "@/pages/docs/html-form/ccphtgtemplate/CcpHtgPaper";
 // 역할 — 양식 작성 공통 화면
 import { HtmlFormDraftPage } from "../HtmlFormDraftPage";
 // 역할 — 이 화면 작성 API
