@@ -15,7 +15,7 @@
  * PIPELINE[HF173] 양식 작성 공통 화면
  */
 // 역할 — 상태·메모·초기 조회·화면별 지면 컴포넌트 타입
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 // 역할 — 로그인 사용자·화면 권한
 import { useAuthStore } from "@/stores/authStore";
 // 역할 — 비동기 중복 실행 차단·busy
@@ -229,10 +229,47 @@ export interface HtmlFormDraftPageProps {
   paperSubtitle: string;
   // 좌측 패널 제목
   listTitle?: string;
-  // 우측 지면 — 화면별 Paper 컴포넌트
-  PaperComponent: ComponentType<HtmlFormPaperProps>;
+  // 우측 지면 — 화면별 Paper 컴포넌트. renderDetail 을 넘기는 화면(HWP)은 두지 않는다
+  PaperComponent?: ComponentType<HtmlFormPaperProps>;
   // 화면별 작성 API 묶음 — 경로·테이블은 여기가 정한다
   api: HtmlFormDraftApi;
+  /**
+   * 우측 상세를 Paper 대신 직접 그린다 — HWP 는 지면이 아니라 rhwp 편집기다.
+   * 넘기지 않으면 PaperComponent 로 그린다 (HTML 작성 5화면).
+   */
+  renderDetail?: (ctx: HtmlFormDraftDetailCtx) => ReactNode;
+  /**
+   * 행 추가 직전에 여는 팝업 — HWP 만 넘긴다 (오늘 할일 문서주기).
+   * 고른 값이 있으면 그 양식·일자로 행을 채우고, 취소(null)면 양식 선택 팝업을 연다.
+   */
+  pickBeforeAdd?: () => Promise<HtmlFormDraftPick | null>;
+  /**
+   * 저장이 끝난 뒤 화면이 더 할 일 — HWP 본문 파일 업로드가 여기 붙는다.
+   * 던지면 저장 자체가 실패로 처리된다
+   */
+  afterSave?: (docIdx: number) => Promise<void>;
+}
+
+/** 행 추가 팝업이 고른 값 — 양식과 일자, 이미 만들어진 문서가 있으면 그 idx */
+export interface HtmlFormDraftPick {
+  tmplCd: string;
+  tmplNm: string;
+  // 기준일 YYYYMMDD — 비우면 오늘
+  baseDt?: string;
+  // 이미 있는 문서 — 새로 만들지 않고 그 문서를 연다
+  docIdx?: number | null;
+}
+
+/** renderDetail 이 받는 값 — 우측을 직접 그리는 화면이 쓰는 최소 집합 */
+export interface HtmlFormDraftDetailCtx {
+  // 현재 열린 문서의 편집 버퍼. 고른 행이 없으면 null
+  buf: Buf | null;
+  // 저장된 문서 idx. 신규면 null
+  docIdx: number | null;
+  // 우측을 고칠 수 있는 상태인지 — 저장 전·전송 이후는 false
+  canEdit: boolean;
+  // 문서 첨부 목록 — HWP 본문을 여는 데 쓴다
+  files: { fileIdx: number; fileKind: string; fileNm: string; fileSize?: number | null }[];
 }
 
 /**
@@ -252,6 +289,9 @@ export function HtmlFormDraftPage({
   listTitle = "작성 목록",
   PaperComponent,
   api,
+  renderDetail,
+  pickBeforeAdd,
+  afterSave,
 }: HtmlFormDraftPageProps) {
   const user = useAuthStore((s) => s.user);
   const canWrite = useAuthStore((s) => s.can(scrnCd, "write"));
@@ -274,6 +314,10 @@ export function HtmlFormDraftPage({
   const [selKeys, setSelKeys] = useState<string[]>([]);
   // 체크 초기화 트리거 — 조회·삭제·전송 후 올린다
   const [selReset, setSelReset] = useState(0);
+  // 좌측 목록 접힘 — 지면·편집기 폭을 넓히려고 접는다. 6개 작성 화면이 같게 동작한다
+  const [listFolded, setListFolded] = useState(false);
+  // 문서 첨부 목록 — HWP 만 쓴다. 우측을 직접 그리는 화면이 본문을 여는 데 필요하다
+  const [detailFiles, setDetailFiles] = useState<HtmlFormDraftDetailCtx["files"]>([]);
 
   const {
     listRows, activeKey, activeBuffer: buf, addDraft, selectKey, patchActive,
@@ -381,6 +425,8 @@ export function HtmlFormDraftPage({
       if (!row.tmplCd) return emptyBuf(user);
       try {
         const detail = await api.detail(row.tmplCd, row.docIdx ?? null);
+        // 첨부 목록 — 우측을 직접 그리는 화면(HWP)이 본문을 여는 데 쓴다
+        setDetailFiles(detail.files ?? []);
         return detailToBuf(detail, { tmplCd: row.tmplCd, tmplNm: row.tmplNm }, user);
       } catch (error) {
         mesError(error);
@@ -413,7 +459,10 @@ export function HtmlFormDraftPage({
       mesToast("사용 중인 양식이 없습니다. 양식관리에서 사용여부를 예로 설정하세요.", "warn");
       return;
     }
+    // 행 추가 전에 고르는 화면일 때(= HWP 오늘 할일) 먼저 묻는다. 취소하면 아래 양식 선택 팝업으로 간다
+    const picked = pickBeforeAdd ? await pickBeforeAdd() : null;
     const next = emptyBuf(user);
+    if (picked?.baseDt && /^\d{8}$/.test(picked.baseDt)) next.baseKey = picked.baseDt;
     const key = addDraft({
       docIdx: null,
       docNo: "",
@@ -426,6 +475,11 @@ export function HtmlFormDraftPage({
       sendState: "wait",
       ngCnt: 0,
     }, next);
+    // 할일에서 양식을 골랐으면 팝업을 다시 띄우지 않고 그 양식으로 채운다
+    if (picked?.tmplCd) {
+      await applyForm(key, picked.tmplCd, picked.tmplNm);
+      return;
+    }
     setLookupKey(key);
   }, "add");
 
@@ -442,6 +496,7 @@ export function HtmlFormDraftPage({
     if (!prev) return;
     try {
       const detail = await api.detail(tmplCd, null);
+      setDetailFiles(detail.files ?? []);
       const next = detailToBuf(detail, { tmplCd, tmplNm }, user);
       // 이미 찍어 둔 일자는 유지한다 — 팝업은 양식만 바꾼다
       next.baseKey = prev.baseKey;
@@ -490,6 +545,8 @@ export function HtmlFormDraftPage({
           logRows: b.logRows,
           passRows: b.passRows,
         });
+        // 저장 뒤 화면이 더 할 일 — HWP 는 여기서 본문 파일을 올린다. 실패하면 저장도 실패로 본다
+        if (afterSave) await afterSave(saved);
         savedIdxs.push(saved);
         return {
           docIdx: saved,
@@ -511,6 +568,7 @@ export function HtmlFormDraftPage({
           try {
             const b = getBuffer(String(idx));
             const detail = await api.detail(b?.tmplCd ?? "", idx);
+            setDetailFiles(detail.files ?? []);
             const next = detailToBuf(detail, { tmplCd: b?.tmplCd ?? "", tmplNm: b?.tmplNm ?? "" }, user);
             putBuffer(String(idx), next, {
               status: next.status,
@@ -536,7 +594,7 @@ export function HtmlFormDraftPage({
       return false;
     }
     return true;
-  }, [api, getBuffer, handleSelect, loadList, putBuffer, saveAll, user]);
+  }, [afterSave, api, getBuffer, handleSelect, loadList, putBuffer, saveAll, user]);
 
   /**
    * 개발자: 박승우
@@ -902,6 +960,170 @@ export function HtmlFormDraftPage({
     transfer: () => { void handleSend(); },
   });
 
+  // 우측 상세 한 덩어리 — 좌측을 접었을 때도 같은 것을 그린다.
+  // 두 곳에 복제하면 접기 여부에 따라 화면이 갈린다
+  const detailPane = (
+            <div className={splitPanelClass}>
+              <div className={gridHeadClass}>
+                <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+                  <MesButton
+                    // 좌측 목록 접기·펴기 — 지면·편집기 폭을 넓힐 때 쓴다. 6개 작성 화면이 같게 동작한다
+                    size="sm"
+                    variant="ghost"
+                    title={listFolded ? "작성 목록 펴기" : "작성 목록 접기"}
+                    onClick={() => setListFolded((prev) => !prev)}
+                  >
+                    {listFolded ? "목록 펴기" : "목록 접기"}
+                  </MesButton>
+                  <b className="truncate">{buf?.tmplNm || paperTitle}</b>
+                  {buf ? (
+                    <span className="text-xs font-normal text-slate-500">
+                      {SEND_STATE_NM[sendStateOf(status)]}
+                      {buf.docNo ? ` · ${buf.docNo}` : ""}
+                      {!buf.docIdx ? " · 왼쪽 저장 후 작성 가능" : !canEdit ? " · 수정 불가" : ""}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                  <MesButton
+                    // 작성 후 저장 — 지면 점검값·하단칸만 저장한다. 전송하지 않는다
+                    size="sm"
+                    variant="save"
+                    icon="save"
+                    disabled={!buf || !canEdit || action.isBusy()}
+                    loading={action.isBusy("save")}
+                    onClick={() => void handleSaveDetail()}
+                  >
+                    작성 후 저장
+                  </MesButton>
+                  <MesButton
+                    // 전송 — 미저장 확인 → 필수값 검사 → 결재선 상신(REQUEST)
+                    size="sm"
+                    variant="excel"
+                    icon="approve"
+                    disabled={!buf || !canSend || action.isBusy()}
+                    loading={action.isBusy("send")}
+                    onClick={() => void handleSend()}
+                  >
+                    전송
+                  </MesButton>
+                  <MesButton
+                    // 삭제 — docIdx 없을 때(= 좌측 미저장) 비활성. draft 삭제는 좌측 삭제
+                    size="sm"
+                    variant="danger"
+                    icon="trash"
+                    disabled={!buf || !buf.docIdx || action.isBusy()}
+                    loading={action.isBusy("del")}
+                    onClick={() => void handleDeleteActive()}
+                  >
+                    삭제
+                  </MesButton>
+                  <MesButton
+                    // 전송취소 — 상신취소(CANCEL). 전송대기로 되돌린다
+                    size="sm"
+                    variant="secondary"
+                    icon="reset"
+                    disabled={!canCancelSendDoc(docIdx, status) || action.isBusy()}
+                    loading={action.isBusy("cancel")}
+                    onClick={() => void handleCancelSend()}
+                  >
+                    전송취소
+                  </MesButton>
+                </div>
+              </div>
+              <div className="min-h-0 flex-1 overflow-auto">
+                {renderDetail ? (
+                  renderDetail({ buf, docIdx, canEdit, files: detailFiles })
+                ) : buf && buf.tmplCd && PaperComponent ? (
+                  <>
+                  <PaperComponent
+                    // 작성 모드 — 기준관리(template)가 아니다
+                    mode="write"
+                    // 패널 채움 — 인쇄는 브라우저 인쇄에 맡긴다
+                    variant="fill"
+                    // 저장 전이거나 전송 이후면 잠금
+                    locked={!canEdit}
+                    editable={canEdit}
+                    // 제목·부제·일자·결재란. 서명이 있으면 이미지, 없으면 이름
+                    header={{
+                      title: buf.tmplNm || paperTitle,
+                      subtitle: paperSubtitle,
+                      baseDt: toInputDate(buf.baseKey),
+                      writerNm: buf.writerNm,
+                      writerId: buf.writerId,
+                      writerSignYn: buf.writerSignYn,
+                      checkerNm: buf.checkerNm,
+                      checkerId: buf.checkerId,
+                      checkerSignYn: buf.checkerSignYn,
+                      approverNm: buf.approverNm,
+                      approverId: buf.approverId,
+                      approverSignYn: buf.approverSignYn,
+                      confirmId: buf.confirmId,
+                      confirmSignYn: buf.confirmSignYn,
+                    }}
+                    // 점검 행 — 예/아니오·숫자·문자
+                    items={buf.items}
+                    // 하단 4열 — 특이사항·개선조치 및 결과·조치·확인
+                    footer={{
+                      specialNote: buf.specialNote,
+                      improveNote: buf.improveNote,
+                      actionNm: buf.actionNm,
+                      confirmNm: buf.confirmNm,
+                    }}
+                    onHeaderChange={(patch) => patchActive((cur) => {
+                      const next = { ...cur };
+                      if (patch.baseDt != null) next.baseKey = fromInputDate(patch.baseDt);
+                      // 이름이 바뀌었을 때(= 다른 사람) 서명 스냅샷을 지운다. 저장 때 다시 붙는다
+                      if (patch.checkerNm != null) {
+                        if (patch.checkerNm !== cur.checkerNm) {
+                          next.checkerId = "";
+                          next.checkerSignYn = "N";
+                        }
+                        next.checkerNm = patch.checkerNm;
+                      }
+                      if (patch.approverNm != null) {
+                        if (patch.approverNm !== cur.approverNm) {
+                          next.approverId = "";
+                          next.approverSignYn = "N";
+                        }
+                        next.approverNm = patch.approverNm;
+                      }
+                      return next;
+                    }, patch.baseDt != null ? { baseDtDisp: patch.baseDt } : undefined)}
+                    onItemsChange={(items) => patchActive((cur) => ({ ...cur, items }))}
+                    // 기록 표 행 — 작성에서만 제어 렌더된다. 기준관리 화면은 이 prop 을 안 받는다
+                    logRows={buf.logRows}
+                    onLogRowsChange={(logRows) => patchActive((cur) => ({ ...cur, logRows }))}
+                    passRows={buf.passRows}
+                    onPassRowsChange={(passRows) => patchActive((cur) => ({ ...cur, passRows }))}
+                    onFooterChange={(patch) => patchActive((cur) => {
+                      const next = { ...cur, ...patch };
+                      if (patch.confirmNm != null && patch.confirmNm !== cur.confirmNm) {
+                        next.confirmId = "";
+                        next.confirmSignYn = "N";
+                      }
+                      return next;
+                    })}
+                  />
+                    <HtmlFormDeviationSignal
+                      // 부적합 행이나 이탈·개선 입력이 있을 때(= 근거 있음) 자동으로 켜고 잠근다
+                      forced={deviationForced}
+                      checked={buf.deviationYn}
+                      editable={canEdit}
+                      onChange={(next) => patchActive((cur) => ({ ...cur, deviationYn: next }))}
+                    />
+                  </>
+                ) : (
+                  <p className="p-6 text-sm text-slate-500">
+                    {buf
+                      ? "양식코드 버튼을 눌러 작성할 양식을 선택하세요."
+                      : "왼쪽에서 문서를 고르거나 「행 추가」를 눌러 작성하세요."}
+                  </p>
+                )}
+              </div>
+            </div>
+  );
+
   return (
     <div className={pageRootClass}>
       <PageCard
@@ -969,6 +1191,11 @@ export function HtmlFormDraftPage({
           </SearchArea>
         )}
       >
+        {listFolded ? (
+          <div className="mes-page-split flex min-h-0 h-full flex-1 flex-col gap-0">
+            <div className={splitPanelClass}>{detailPane}</div>
+          </div>
+        ) : (
         <ResizableSplit
           // 좌 작성 목록 50 · 우 상세 50 — 양식관리와 같은 프레임
           orientation="horizontal"
@@ -1082,157 +1309,9 @@ export function HtmlFormDraftPage({
               />
             </div>
           )}
-          secondary={(
-            <div className={splitPanelClass}>
-              <div className={gridHeadClass}>
-                <div className="flex min-w-0 items-center gap-2 overflow-hidden">
-                  <b className="truncate">{buf?.tmplNm || paperTitle}</b>
-                  {buf ? (
-                    <span className="text-xs font-normal text-slate-500">
-                      {SEND_STATE_NM[sendStateOf(status)]}
-                      {buf.docNo ? ` · ${buf.docNo}` : ""}
-                      {!buf.docIdx ? " · 왼쪽 저장 후 작성 가능" : !canEdit ? " · 수정 불가" : ""}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="ml-auto flex shrink-0 items-center gap-1.5">
-                  <MesButton
-                    // 작성 후 저장 — 지면 점검값·하단칸만 저장한다. 전송하지 않는다
-                    size="sm"
-                    variant="save"
-                    icon="save"
-                    disabled={!buf || !canEdit || action.isBusy()}
-                    loading={action.isBusy("save")}
-                    onClick={() => void handleSaveDetail()}
-                  >
-                    작성 후 저장
-                  </MesButton>
-                  <MesButton
-                    // 전송 — 미저장 확인 → 필수값 검사 → 결재선 상신(REQUEST)
-                    size="sm"
-                    variant="excel"
-                    icon="approve"
-                    disabled={!buf || !canSend || action.isBusy()}
-                    loading={action.isBusy("send")}
-                    onClick={() => void handleSend()}
-                  >
-                    전송
-                  </MesButton>
-                  <MesButton
-                    // 삭제 — docIdx 없을 때(= 좌측 미저장) 비활성. draft 삭제는 좌측 삭제
-                    size="sm"
-                    variant="danger"
-                    icon="trash"
-                    disabled={!buf || !buf.docIdx || action.isBusy()}
-                    loading={action.isBusy("del")}
-                    onClick={() => void handleDeleteActive()}
-                  >
-                    삭제
-                  </MesButton>
-                  <MesButton
-                    // 전송취소 — 상신취소(CANCEL). 전송대기로 되돌린다
-                    size="sm"
-                    variant="secondary"
-                    icon="reset"
-                    disabled={!canCancelSendDoc(docIdx, status) || action.isBusy()}
-                    loading={action.isBusy("cancel")}
-                    onClick={() => void handleCancelSend()}
-                  >
-                    전송취소
-                  </MesButton>
-                </div>
-              </div>
-              <div className="min-h-0 flex-1 overflow-auto">
-                {buf && buf.tmplCd ? (
-                  <>
-                  <PaperComponent
-                    // 작성 모드 — 기준관리(template)가 아니다
-                    mode="write"
-                    // 패널 채움 — 인쇄는 브라우저 인쇄에 맡긴다
-                    variant="fill"
-                    // 저장 전이거나 전송 이후면 잠금
-                    locked={!canEdit}
-                    editable={canEdit}
-                    // 제목·부제·일자·결재란. 서명이 있으면 이미지, 없으면 이름
-                    header={{
-                      title: buf.tmplNm || paperTitle,
-                      subtitle: paperSubtitle,
-                      baseDt: toInputDate(buf.baseKey),
-                      writerNm: buf.writerNm,
-                      writerId: buf.writerId,
-                      writerSignYn: buf.writerSignYn,
-                      checkerNm: buf.checkerNm,
-                      checkerId: buf.checkerId,
-                      checkerSignYn: buf.checkerSignYn,
-                      approverNm: buf.approverNm,
-                      approverId: buf.approverId,
-                      approverSignYn: buf.approverSignYn,
-                      confirmId: buf.confirmId,
-                      confirmSignYn: buf.confirmSignYn,
-                    }}
-                    // 점검 행 — 예/아니오·숫자·문자
-                    items={buf.items}
-                    // 하단 4열 — 특이사항·개선조치 및 결과·조치·확인
-                    footer={{
-                      specialNote: buf.specialNote,
-                      improveNote: buf.improveNote,
-                      actionNm: buf.actionNm,
-                      confirmNm: buf.confirmNm,
-                    }}
-                    onHeaderChange={(patch) => patchActive((cur) => {
-                      const next = { ...cur };
-                      if (patch.baseDt != null) next.baseKey = fromInputDate(patch.baseDt);
-                      // 이름이 바뀌었을 때(= 다른 사람) 서명 스냅샷을 지운다. 저장 때 다시 붙는다
-                      if (patch.checkerNm != null) {
-                        if (patch.checkerNm !== cur.checkerNm) {
-                          next.checkerId = "";
-                          next.checkerSignYn = "N";
-                        }
-                        next.checkerNm = patch.checkerNm;
-                      }
-                      if (patch.approverNm != null) {
-                        if (patch.approverNm !== cur.approverNm) {
-                          next.approverId = "";
-                          next.approverSignYn = "N";
-                        }
-                        next.approverNm = patch.approverNm;
-                      }
-                      return next;
-                    }, patch.baseDt != null ? { baseDtDisp: patch.baseDt } : undefined)}
-                    onItemsChange={(items) => patchActive((cur) => ({ ...cur, items }))}
-                    // 기록 표 행 — 작성에서만 제어 렌더된다. 기준관리 화면은 이 prop 을 안 받는다
-                    logRows={buf.logRows}
-                    onLogRowsChange={(logRows) => patchActive((cur) => ({ ...cur, logRows }))}
-                    passRows={buf.passRows}
-                    onPassRowsChange={(passRows) => patchActive((cur) => ({ ...cur, passRows }))}
-                    onFooterChange={(patch) => patchActive((cur) => {
-                      const next = { ...cur, ...patch };
-                      if (patch.confirmNm != null && patch.confirmNm !== cur.confirmNm) {
-                        next.confirmId = "";
-                        next.confirmSignYn = "N";
-                      }
-                      return next;
-                    })}
-                  />
-                    <HtmlFormDeviationSignal
-                      // 부적합 행이나 이탈·개선 입력이 있을 때(= 근거 있음) 자동으로 켜고 잠근다
-                      forced={deviationForced}
-                      checked={buf.deviationYn}
-                      editable={canEdit}
-                      onChange={(next) => patchActive((cur) => ({ ...cur, deviationYn: next }))}
-                    />
-                  </>
-                ) : (
-                  <p className="p-6 text-sm text-slate-500">
-                    {buf
-                      ? "양식코드 버튼을 눌러 작성할 양식을 선택하세요."
-                      : "왼쪽에서 문서를 고르거나 「행 추가」를 눌러 작성하세요."}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
+          secondary={detailPane}
         />
+        )}
       </PageCard>
 
       {lookupKey ? (

@@ -65,6 +65,11 @@ export interface HtmlFormDraftDetail {
   logRows?: HtmlFormLogRow[];
   /** 금속검출 통과량 표 행 — MTL 작성만 쓴다 */
   passRows?: HtmlFormPassRow[];
+  /**
+   * 문서 첨부 목록 — HWP 작성만 쓴다.
+   * rhwp 가 이 중 최신 HWP_SRC 를 열어 본문으로 삼는다.
+   */
+  files?: { fileIdx: number; fileKind: string; fileNm: string; fileSize?: number | null }[];
 }
 
 /** 상단 검색 6개 중 서버 조건 5개 — 결재 여부는 화면이 거른다 */

@@ -109,6 +109,7 @@ export const SCREEN_PATH: Record<string, string> = {
   ...paths("/draft/hyg", ["hyg-process"]),
   ...paths("/draft/ccp-chk", ["ccp-verify"]),
   ...paths("/draft/ccp-monitoring", ["ccp-pkg", "ccp-htg", "ccp-mtl"]),
+  ...paths("/draft/hwp-doc", ["hwp-write"]),
 
   // 문서 현황 — 문서함 / 결재함 / 개선조치 (결재선 sys/code 와 구분)
   ...paths("/flow/box", ["document-inbox", "legal-document-upload"]),

@@ -79,6 +79,7 @@ import { CcpVerifyDraftPage } from "@/pages/draft/ccp/CcpVerifyDraftPage";
 import { CcpPkgDraftPage } from "@/pages/draft/ccp-monitoring/CcpPkgDraftPage";
 import { CcpHtgDraftPage } from "@/pages/draft/ccp-monitoring/CcpHtgDraftPage";
 import { CcpMtlDraftPage } from "@/pages/draft/ccp-monitoring/CcpMtlDraftPage";
+import { HwpDraftPage } from "@/pages/draft/hwp-doc/HwpDraftPage";
 // 역할 — 권한그룹 좌 메뉴권한 트리 + 우 마스터 그리드
 import RoleManagementPage from "@/pages/sys/code/role/RoleManagementPage";
 // 역할 — 부서 좌 트리 + 우 그리드
@@ -161,6 +162,7 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   "ccp-pkg": CcpPkgDraftPage,
   "ccp-htg": CcpHtgDraftPage,
   "ccp-mtl": CcpMtlDraftPage,
+  "hwp-write": HwpDraftPage,
   "pest-control-check": () => <HygieneCheckPage screenCode="pest-control-check" title="방충방서관리점검표" kind="pest" />,
   "ccp-cold-monitor": ColdMonitorPage,
   "ccp-metal-monitor": MetalMonitorPage,
