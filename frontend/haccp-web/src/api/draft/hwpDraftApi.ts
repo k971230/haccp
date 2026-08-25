@@ -21,6 +21,7 @@ import type { CommonResponse } from "@/types/common";
 // 역할 — 작성 화면 공통 API 계약
 import type {
   HtmlFormDraftApi,
+  HtmlFormDraftFile,
   HtmlFormDraftDetail,
   HtmlFormDraftForm,
   HtmlFormDraftListParams,
@@ -49,14 +50,6 @@ export interface HwpDraftTask {
   status: string;
   // 이미 만들어진 문서 idx — 있으면 새로 만들지 않고 그 문서를 연다
   docIdx?: number | null;
-}
-
-/** 문서 첨부 1건 — rhwp 가 본문을 열 때 쓰는 파일 메타 */
-export interface HwpDraftFile {
-  fileIdx: number;
-  fileKind: string;
-  fileNm: string;
-  fileSize?: number | null;
 }
 
 /**
@@ -125,7 +118,7 @@ export const hwpDraftApi: HtmlFormDraftApi = {
       passRows: [],
       corrective: null,
       // 본문 파일 — rhwp 가 최신 HWP_SRC 를 열 때 쓴다
-      files: Array.isArray(raw.files) ? (raw.files as HwpDraftFile[]) : [],
+      files: Array.isArray(raw.files) ? (raw.files as HtmlFormDraftFile[]) : [],
     };
   },
 

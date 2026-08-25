@@ -17,6 +17,21 @@ import type { DocCorrectiveValue } from "@/components/form/DocDeviationFooter";
 // 역할 — 기록 표 행 계약 (CCP 모니터링일지 작성 공용)
 import type { HtmlFormLogRow, HtmlFormPassRow } from "@/components/form/htmlFormPaperShared";
 
+/**
+ * 문서 첨부 1건 — HWP 작성만 쓴다.
+ * 서버(DocumentService.publicFile)가 내려주는 이름 그대로다 — idx 를 fileIdx 로 바꿔 부르지 않는다.
+ */
+export interface HtmlFormDraftFile {
+  // tbl_document_file.idx — 다운로드 API 경로에 그대로 들어간다
+  idx: number;
+  // 파일 종류 — HWP_SRC 한글 원본 · PDF 완료본 · ATTACH 첨부 · PHOTO 사진
+  fileKind: string;
+  // 원본 파일명
+  fileNm: string;
+  // 파일 크기 byte
+  fileSize?: number | null;
+}
+
 /** 작성 가능 양식 1건 — 양식관리에서 사용여부 예로 둔 자사 양식 */
 export interface HtmlFormDraftForm {
   // 양식코드 — html_hyg_prc_NNN / tml_ccp_chk_NNN
@@ -69,7 +84,7 @@ export interface HtmlFormDraftDetail {
    * 문서 첨부 목록 — HWP 작성만 쓴다.
    * rhwp 가 이 중 최신 HWP_SRC 를 열어 본문으로 삼는다.
    */
-  files?: { fileIdx: number; fileKind: string; fileNm: string; fileSize?: number | null }[];
+  files?: HtmlFormDraftFile[];
 }
 
 /** 상단 검색 6개 중 서버 조건 5개 — 결재 여부는 화면이 거른다 */

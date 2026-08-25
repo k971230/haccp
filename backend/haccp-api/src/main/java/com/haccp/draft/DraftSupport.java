@@ -23,6 +23,8 @@ import com.haccp.draft.dto.DraftPassRow;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.function.Function;
 
 public final class DraftSupport {
@@ -148,6 +150,67 @@ public final class DraftSupport {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) MyBatis resultType=map 은 map-underscore-to-camel-case 가 안 붙는다. SP 키를 API 계약으로 한 번만 바꾼다
+     *   2) 포장·가열·금속 상세 조회가 호출한다. DTO 가 아닌 SELECT * Map 의 Two-Tier 경계다
+     *   3) null 이면 null. 키만 바꾸고 값은 그대로 둔다
+     */
+    public static Map<String, Object> camelMap(
+            // source: SP 결과 한 행. null 이면 신규 분기로 넘긴다
+            Map<String, Object> source
+    ) {
+        if (source == null) return null;
+        Map<String, Object> out = new LinkedHashMap<>();
+        source.forEach((key, value) -> out.put(camelKey(key), value));
+        return out;
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 양식 항목·감도행처럼 여러 행 Map 을 한 번에 camelCase 로 맞춘다
+     *   2) 상세 조회의 items·sens·pass 목록이 호출한다
+     *   3) null·빈 목록이면 빈 리스트
+     */
+    public static List<Map<String, Object>> camelMaps(
+            // rows: SP 결과 여러 행
+            List<Map<String, Object>> rows
+    ) {
+        if (rows == null || rows.isEmpty()) return List.of();
+        List<Map<String, Object>> out = new ArrayList<>(rows.size());
+        for (Map<String, Object> row : rows) {
+            out.add(camelMap(row));
+        }
+        return out;
+    }
+
+    /** doc_idx → docIdx. 대문자 키(DOC_NO)도 소문자화 후 변환한다 */
+    static String camelKey(
+            // key: SP 컬럼명
+            String key
+    ) {
+        if (key == null || key.isBlank()) return "";
+        if (!key.contains("_")) return key;
+        String lower = key.toLowerCase(Locale.ROOT);
+        StringBuilder out = new StringBuilder();
+        boolean upper = false;
+        for (char ch : lower.toCharArray()) {
+            if (ch == '_') {
+                upper = true;
+            } else if (upper) {
+                out.append(Character.toUpperCase(ch));
+                upper = false;
+            } else {
+                out.append(ch);
+            }
+        }
+        return out.toString();
     }
 
     /** 숫자로 읽히는 값인지 — 기록 셀을 num_val 로 넣을지 txt_val 로 넣을지 가른다 */

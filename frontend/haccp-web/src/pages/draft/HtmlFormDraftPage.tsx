@@ -66,7 +66,7 @@ import type { EditableRow } from "@/types/editable";
 // 역할 — 지면 항목 타입
 import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
 // 역할 — 작성 화면 공통 API 계약
-import type { HtmlFormDraftApi, HtmlFormDraftForm } from "@/api/draft/htmlFormDraftTypes";
+import type { HtmlFormDraftApi, HtmlFormDraftFile, HtmlFormDraftForm } from "@/api/draft/htmlFormDraftTypes";
 // 역할 — 양식 선택 팝업 (일자·양식코드·양식명)
 import { HtmlFormDeviationSignal } from "./HtmlFormDeviationSignal";
 import { HtmlFormLookupModal } from "./HtmlFormLookupModal";
@@ -269,7 +269,7 @@ export interface HtmlFormDraftDetailCtx {
   // 우측을 고칠 수 있는 상태인지 — 저장 전·전송 이후는 false
   canEdit: boolean;
   // 문서 첨부 목록 — HWP 본문을 여는 데 쓴다
-  files: { fileIdx: number; fileKind: string; fileNm: string; fileSize?: number | null }[];
+  files: HtmlFormDraftFile[];
 }
 
 /**
@@ -512,11 +512,11 @@ export function HtmlFormDraftPage({
 
   /**
    * 개발자: 박승우
-   * 일자: 2026-08-24
+   * 일자: 2026-08-25
    * 코멘트:
    *   1) dirty 전건을 검증·저장한다 — validate 만 좌/우 저장마다 다르다
    *   2) runSaveHeader·runSaveDetail 이 공통으로 호출한다
-   *   3) 저장 후 목록을 다시 읽고 버퍼를 서버 값으로 교체한다. 성공하면 true
+   *   3) 저장 후 목록을 다시 읽고 활성 행을 서버 키로 다시 연다. 임시 키를 getBuffer 하면 버퍼가 없다
    */
   const persistSave = useCallback(async (
     // dirty 행 검증 — 좌측 헤더·우측 작성 저장마다 규칙이 다르다
@@ -526,9 +526,11 @@ export function HtmlFormDraftPage({
     ) => { message: string; rowKey?: string } | null,
   ): Promise<boolean> => {
     const savedIdxs: number[] = [];
+    // 저장 루프 시점의 활성 행 docIdx — remap 뒤 __new_* 버퍼는 없다
+    let savedActiveIdx: number | null = null;
     const err = await saveAll({
       validate,
-      saveOne: async (_row, b) => {
+      saveOne: async (row, b) => {
         const saved = await api.save({
           tmplCd: b.tmplCd,
           docIdx: b.docIdx,
@@ -548,6 +550,7 @@ export function HtmlFormDraftPage({
         // 저장 뒤 화면이 더 할 일 — HWP 는 여기서 본문 파일을 올린다. 실패하면 저장도 실패로 본다
         if (afterSave) await afterSave(saved);
         savedIdxs.push(saved);
+        if (row._key === activeKeyRef.current) savedActiveIdx = saved;
         return {
           docIdx: saved,
           listMeta: {
@@ -560,9 +563,6 @@ export function HtmlFormDraftPage({
         };
       },
       afterAll: async () => {
-        // 저장 직전 활성 행의 버퍼 — 신규 저장이면 임시 키라 목록 재조회 뒤 사라진다
-        const activeBefore = activeKeyRef.current;
-        const activeBuf = activeBefore ? getBuffer(activeBefore) : null;
         await loadList();
         for (const idx of savedIdxs) {
           try {
@@ -579,13 +579,11 @@ export function HtmlFormDraftPage({
             mesError(e);
           }
         }
-        // 활성 행이 신규였을 때(= 임시 키) 서버 키로 다시 잡는다.
-        // 이걸 안 하면 우측에서 고친 값이 목록의 어느 행과도 이어지지 않아
-        // 다음 저장에서 "저장할 변경 내용이 없습니다." 로 튕긴다
-        const activeDocIdx = activeBuf?.docIdx ?? null;
-        const activeNow = activeBefore && listRowsRef.current.some((r) => r._key === activeBefore);
-        if (!activeNow && activeDocIdx && savedIdxs.includes(activeDocIdx)) {
-          await handleSelect(String(activeDocIdx));
+        // 활성 행이 신규였을 때(= 임시 키) 서버 키로 다시 연다.
+        // remap 뒤 getBuffer(__new_*) 는 null 이라 savedActiveIdx 로 집는다
+        const focusIdx = savedActiveIdx ?? (savedIdxs.length === 1 ? savedIdxs[0] : null);
+        if (focusIdx != null && savedIdxs.includes(focusIdx)) {
+          await handleSelect(String(focusIdx));
         }
       },
     });

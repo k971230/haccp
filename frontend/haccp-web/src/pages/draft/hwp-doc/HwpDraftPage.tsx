@@ -13,33 +13,22 @@
  *
  * PIPELINE[HF182] HWP 작성 화면
  */
-// 역할 — 편집기 수명·상태
-import { useCallback, useEffect, useRef, useState } from "react";
-// 역할 — rhwp iframe 편집기
-import { createEditor, type RhwpEditor } from "@rhwp/editor";
-// 역할 — 스튜디오 주소·도구상자 접기·더티 감지
-import {
-  foldRhwpToolboxes,
-  installRhwpDirtyListeners,
-  installRhwpEarlyFold,
-  resolveRhwpStudioUrl,
-} from "@/lib/rhwpStudio";
-// 역할 — 양식 원본·문서 첨부 입출력 (기존 HWP 화면과 같은 API)
-import {
-  downloadDocumentFile,
-  listDocumentTemplates,
-  loadHwpTemplateFile,
-  uploadDocumentFile,
-} from "@/api/documentApi";
-// 역할 — 오늘 할일 조회
+// 역할 — 팝업 약속·편집기 참조
+import { useCallback, useRef, useState } from "react";
+// 역할 — rhwp 편집기 타입
+import type { RhwpEditor } from "@rhwp/editor";
+// 역할 — 본문 업로드
+import { uploadDocumentFile } from "@/api/documentApi";
+// 역할 — 작성 API·오늘 할일 조회
 import { hwpDraftApi, listHwpDraftTasks, type HwpDraftTask } from "@/api/draft/hwpDraftApi";
 // 역할 — 양식 작성 공통 화면
 import { HtmlFormDraftPage, type HtmlFormDraftPick } from "../HtmlFormDraftPage";
 // 역할 — 오늘 할일 선택 팝업
 import { HwpTaskLookupModal } from "../HwpTaskLookupModal";
-// 역할 — 업무 오류
+// 역할 — 우측 rhwp 편집기 패널
+import { HwpEditorPane } from "./HwpEditorPane";
+// 역할 — 업무 오류·안내
 import { mesError } from "@/shell/errors";
-// 역할 — 안내 토스트
 import { mesToast } from "@/shell/dialog";
 // 역할 — 이 화면 상수
 import {
@@ -51,8 +40,22 @@ import {
   SPLIT_KEY,
 } from "./HwpDraftRule";
 
-/** 저장 파일명 — {YYYY-MM-DD}_{양식명}_{연번}. 서버가 연번을 다시 매기므로 001 로 보낸다 */
-function hwpFileName(baseKey: string, tmplNm: string, ext: string): string {
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
+ * 코멘트:
+ *   1) 저장 파일명을 {YYYY-MM-DD}_{양식명}_{연번} 으로 만든다
+ *   2) 본문을 올리기 직전에 부른다
+ *   3) 연번은 001 로 보낸다 — 같은 이름이 있으면 서버가 올려 준다
+ */
+function hwpFileName(
+  // baseKey: 일자 YYYYMMDD
+  baseKey: string,
+  // tmplNm: 양식명
+  tmplNm: string,
+  // ext: 확장자 (.hwpx)
+  ext: string,
+): string {
   const date = baseKey.length === 8
     ? `${baseKey.slice(0, 4)}-${baseKey.slice(4, 6)}-${baseKey.slice(6, 8)}`
     : baseKey;
@@ -61,120 +64,13 @@ function hwpFileName(baseKey: string, tmplNm: string, ext: string): string {
 }
 
 export function HwpDraftPage() {
-  const hostRef = useRef<HTMLDivElement | null>(null);
+  // 편집기 인스턴스 — 패널이 만들고 저장이 쓴다
   const editorRef = useRef<RhwpEditor | null>(null);
-  const [editorReady, setEditorReady] = useState(false);
-  const [message, setMessage] = useState("rhwp 편집기를 준비하고 있습니다.");
+  // 저장 때 쓸 파일명 재료 — 패널을 그릴 때마다 갱신한다
+  const nameRef = useRef<{ baseKey: string; tmplNm: string }>({ baseKey: "", tmplNm: "" });
   // 오늘 할일 팝업 — 행 추가가 열고, 고르거나 취소하면 약속을 이행한다
   const [tasks, setTasks] = useState<HwpDraftTask[] | null>(null);
   const pickResolveRef = useRef<((pick: HtmlFormDraftPick | null) => void) | null>(null);
-  // 마지막으로 연 문서·양식 — 같은 것을 두 번 열지 않는다
-  const openedRef = useRef<string>("");
-  // 저장 때 쓸 파일명 재료 — renderDetail 이 매번 채운다
-  const nameRef = useRef<{ baseKey: string; tmplNm: string }>({ baseKey: "", tmplNm: "" });
-
-  /**
-   * 개발자: 박승우
-   * 일자: 2026-08-25
-   * 코멘트:
-   *   1) rhwp 편집기를 한 번만 만들고 화면이 닫힐 때 정리한다
-   *   2) 화면 진입에서 실행한다
-   *   3) 기존 HWP 편집 화면과 같은 옵션을 쓴다 — 렌더러·도구상자 접기가 갈리면 두 화면이 달라 보인다
-   */
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return undefined;
-    let disposed = false;
-    let created: RhwpEditor | null = null;
-    let disposeDirty: (() => void) | undefined;
-    const disposeEarlyFold = installRhwpEarlyFold(host);
-
-    void (async () => {
-      try {
-        created = await createEditor(host, {
-          // 동일출처 스튜디오 — /rhwp 프록시
-          studioUrl: resolveRhwpStudioUrl(),
-          width: "100%",
-          height: "100%",
-          // HACCP 문서는 호환 우선 Canvas2D 렌더러
-          renderer: "canvas2d",
-        });
-        if (disposed) {
-          created.destroy();
-          return;
-        }
-        foldRhwpToolboxes(created.element);
-        disposeDirty = installRhwpDirtyListeners(created.element, () => undefined);
-        editorRef.current = created;
-        setEditorReady(true);
-        setMessage("왼쪽에서 문서를 고르거나 「행 추가」를 눌러 작성하세요.");
-      } catch (error) {
-        if (!disposed) {
-          setMessage(error instanceof Error ? error.message : "rhwp 편집기를 시작하지 못했습니다.");
-        }
-      }
-    })();
-
-    return () => {
-      disposed = true;
-      disposeEarlyFold();
-      disposeDirty?.();
-      editorRef.current?.destroy();
-      editorRef.current = null;
-    };
-  }, []);
-
-  /**
-   * 개발자: 박승우
-   * 일자: 2026-08-25
-   * 코멘트:
-   *   1) 저장된 본문이 있으면 그것을, 없으면 양식 원본을 편집기에 연다
-   *   2) 좌측에서 행을 고르거나 양식을 고르면 호출한다
-   *   3) 같은 문서를 다시 열지 않는다 — 열 때마다 사용자가 쓰던 내용이 날아가면 안 된다
-   */
-  const openInEditor = useCallback(async (
-    // docIdx: 저장된 문서 idx. 없으면 양식 원본을 연다
-    docIdx: number | null,
-    // tmplCd: 양식코드
-    tmplCd: string,
-    // files: 문서 첨부 목록
-    files: { fileIdx: number; fileKind: string; fileNm: string }[],
-  ) => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const token = `${docIdx ?? 0}:${tmplCd}`;
-    if (openedRef.current === token) return;
-    try {
-      // 저장된 본문 중 가장 나중 것 — 여러 번 저장하면 첨부가 쌓인다
-      const sources = files.filter((f) => f.fileKind === HWP_SRC_KIND);
-      const src = sources.length > 0 ? sources[sources.length - 1] : null;
-      if (src) {
-        const blob = await downloadDocumentFile(src.fileIdx);
-        await editor.loadFile(await blob.arrayBuffer(), src.fileNm, {
-          skipUnsavedGuard: true,
-          suppressDialogs: true,
-        });
-        openedRef.current = token;
-        setMessage(`${src.fileNm} 을(를) 열었습니다.`);
-        return;
-      }
-      // 본문이 아직 없을 때(= 첫 작성) 양식 원본을 연다
-      const tmpl = (await listDocumentTemplates()).find((t) => t.tmplCd === tmplCd);
-      if (!tmpl?.formUrl) {
-        setMessage("이 양식의 원본 파일이 없습니다. 사용양식 관리에서 양식을 올리세요.");
-        return;
-      }
-      const buffer = await loadHwpTemplateFile(tmpl.formUrl);
-      await editor.loadFile(buffer, tmpl.formFileNm || `${tmplCd}.hwp`, {
-        skipUnsavedGuard: true,
-        suppressDialogs: true,
-      });
-      openedRef.current = token;
-      setMessage(`${tmpl.tmplNm} 양식을 열었습니다.`);
-    } catch (error) {
-      mesError(error);
-    }
-  }, []);
 
   /**
    * 개발자: 박승우
@@ -196,8 +92,6 @@ export function HwpDraftPage() {
     await uploadDocumentFile(docIdx, HWP_SRC_KIND, new File([Uint8Array.from(bytes)], fileNm, {
       type: "application/vnd.hancom.hwpx",
     }));
-    // 방금 올린 본문을 다음 조회에서 다시 열도록 표식을 지운다
-    openedRef.current = "";
     try {
       await editor.notifySaved(fileNm);
     } catch {
@@ -211,7 +105,7 @@ export function HwpDraftPage() {
    * 코멘트:
    *   1) 행 추가 직전에 오늘 할일 팝업을 띄우고 고른 값을 돌려준다
    *   2) 공통 화면의 행 추가가 호출한다
-   *   3) 할일이 없으면 팝업 없이 바로 null — 사용자가 빈 팝업을 닫는 수고를 없앤다
+   *   3) 할일이 없으면 팝업 없이 바로 null — 빈 팝업을 닫는 수고를 없앤다
    */
   const pickBeforeAdd = useCallback(async (): Promise<HtmlFormDraftPick | null> => {
     let list: HwpDraftTask[] = [];
@@ -257,30 +151,17 @@ export function HwpDraftPage() {
         pickBeforeAdd={pickBeforeAdd}
         // 저장 뒤 본문 업로드 — 이 화면만 파일이 따로 있다
         afterSave={uploadBody}
-        // 우측 — 지면 대신 rhwp 편집기
+        // 우측 — 지면 대신 rhwp 편집기. 여는 일은 패널의 useEffect 가 한다
         renderDetail={({ buf, docIdx, canEdit, files }) => {
-          // 파일명 재료를 갱신해 둔다 — 저장 시점에 다시 계산하면 활성 행이 바뀌어 있을 수 있다
           nameRef.current = { baseKey: buf?.baseKey ?? "", tmplNm: buf?.tmplNm ?? "" };
-          if (buf?.tmplCd && editorReady) {
-            void openInEditor(docIdx, buf.tmplCd, files);
-          }
           return (
-            <div className="flex h-full min-h-0 flex-col">
-              <p
-                // 편집기 상태 한 줄 — 무엇이 열렸는지 항상 보이게 둔다
-                className="shrink-0 border-b border-slate-200 px-3 py-1.5 text-xs text-slate-500"
-              >
-                {buf?.tmplCd
-                  ? message
-                  : "왼쪽에서 문서를 고르거나 「행 추가」를 눌러 작성하세요."}
-                {buf?.tmplCd && !canEdit ? " (저장 전이거나 전송한 문서라 편집할 수 없습니다.)" : ""}
-              </p>
-              <div
-                // rhwp iframe 호스트 — 남은 높이 전부
-                ref={hostRef}
-                className="min-h-0 flex-1"
-              />
-            </div>
+            <HwpEditorPane
+              editorRef={editorRef}
+              tmplCd={buf?.tmplCd ?? ""}
+              docIdx={docIdx}
+              canEdit={canEdit}
+              files={files}
+            />
           );
         }}
       />

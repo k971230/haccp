@@ -33,6 +33,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 // 역할 — 필수 @RequestParam 누락
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 // 역할 — @ExceptionHandler 등록
 import org.springframework.web.bind.annotation.ExceptionHandler;
 // 역할 — 전역 예외 처리 어드바이스
@@ -155,6 +156,25 @@ public class GlobalExceptionHandler {
                 ? "양식 코드를 선택하세요."
                 : ("필수 요청 값이 없습니다. (" + name + ")");
         return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION", msg));
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 숫자여야 할 요청 값이 숫자가 아닐 때 400 업무 문구로 바꾼다
+     *   2) 화면이 docIdx=undefined 처럼 빈 값을 보낼 때 들어온다 — 서버 잘못이 아니라 요청 잘못이다
+     *   3) 스택을 남기지 않는다. 같은 요청이 반복되면 로그가 이 예외로 뒤덮여 진짜 오류를 못 찾는다
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            // 타입 변환 실패 예외 — 파라미터명과 받은 값을 문구에 쓴다
+            MethodArgumentTypeMismatchException e
+    ) {
+        String name = e.getName();
+        log.warn("잘못된 요청 값: {}={}", name, e.getValue());
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse("VALIDATION", "요청 값이 올바르지 않습니다. (" + name + ")"));
     }
 
     /**
