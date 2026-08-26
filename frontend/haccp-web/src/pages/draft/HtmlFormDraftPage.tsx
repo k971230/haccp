@@ -1021,7 +1021,7 @@ export function HtmlFormDraftPage({
                   <p className="p-6 text-sm text-slate-500">
                     {buf
                       ? "양식코드 버튼을 눌러 작성할 양식을 선택하세요."
-                      : "왼쪽에서 문서를 고르거나 「행 추가」를 눌러 작성하세요."}
+                      : "왼쪽에서 문서를 고르거나 「행추가」를 눌러 작성하세요."}
                   </p>
                 )}
               </div>
@@ -1127,7 +1127,7 @@ export function HtmlFormDraftPage({
                     loading={action.isBusy("add")}
                     onClick={() => void handleAdd()}
                   >
-                    행 추가
+                    행추가
                   </MesButton>
                   <MesButton
                     // 저장 — 일자·양식코드 등록. docIdx 생성 후 오른쪽 작성이 열린다
@@ -1191,6 +1191,26 @@ export function HtmlFormDraftPage({
                 // 행 클릭 시 우측 상세 전환
                 onActivate={(row) => { void handleSelect(row._key ?? null); }}
                 onCellChange={(key, field, cellValue) => {
+                  /*
+                   * 이탈여부 — HWP 화면만 목록 칸으로 켠다.
+                   * HTML 5화면은 지면 하단 시그널이 같은 일을 하고 이 칸 자체가 없다.
+                   * 목록 메타(listPatch)와 버퍼를 같이 올려야 저장 payload 에 실린다 —
+                   * 한쪽만 고치면 체크는 보이는데 저장이 안 된다.
+                   */
+                  if (field === "deviationYn") {
+                    const on = cellValue === true || String(cellValue ?? "").toUpperCase() === "Y";
+                    const yn = on ? "Y" : "N";
+                    const cur = getBuffer(key);
+                    if (!cur) return;
+                    if (key === activeKey) {
+                      patchActive((prev) => ({ ...prev, deviationYn: on }), {
+                        deviationYn: yn,
+                      } as Partial<ListMeta>);
+                      return;
+                    }
+                    putBuffer(key, { ...cur, deviationYn: on }, { deviationYn: yn } as Partial<ListMeta>);
+                    return;
+                  }
                   // 일자 — 전송대기 행에서 셀 편집. 양식코드는 팝업, 나머지는 잠금 규칙이 막는다
                   if (field !== "baseDtDisp") return;
                   const next = fromInputDate(String(cellValue ?? ""));

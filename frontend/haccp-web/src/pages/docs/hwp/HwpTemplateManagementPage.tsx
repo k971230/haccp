@@ -42,7 +42,7 @@ import { MES } from "@/shell/messages";
 import { usePageCommands } from "@/shell/pageCommands";
 // 역할 — 편집 그리드
 import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
-// 역할 — 그리드 헤더 신규·저장·삭제 — 공통코드 관리와 같은 묶음
+// 역할 — 그리드 헤더 행추가·저장·삭제 — 공통코드 관리와 같은 묶음
 import { GridCrudButtons } from "@/components/grid/GridCrudButtons";
 // 역할 — 그리드 잠금 — tmplCd 는 신규행만
 import { useGridAccess } from "@/hooks/useGridAccess";
@@ -85,9 +85,9 @@ import {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-14
+ * 일자: 2026-08-25
  * 코멘트:
- *   1) 사용양식 목록·rhwp 미리보기·파일 버전 관리를 한 화면에서 제공한다
+ *   1) 좌 목록·우 미리보기를 HTML양식 원본과 같은 50:50으로 제공한다
  *   2) 일지설정「사용양식 관리」(hwp-template-management)에서 연다
  *   3) 권한·원본 부재는 업무 토스트만 표시한다
  */
@@ -273,7 +273,7 @@ export default function HwpTemplateManagementPage() {
       const row = templates.rowsRef.current.find((item) => item._key === key);
       // 로컬 draft일 때(= 아직 서버 미등록) 파일 API를 호출하지 않는다
       if (!row || row._rowState === "C") {
-        setEditorMessage("신규 사용자추가 양식입니다. 저장한 뒤 업로드하세요.");
+        setEditorMessage("아직 저장하지 않은 사용자추가 양식입니다. 저장한 뒤 업로드하세요.");
         return;
       }
       const url = formUrlOf(row);
@@ -295,7 +295,7 @@ export default function HwpTemplateManagementPage() {
    * 코멘트:
    *   1) 빈 행을 추가한다 — 구분은 사용자추가(usr) 고정이며 사용자가 바꿀 수 없다
    *   2) 양식코드는 hwp_usr_NNN 을 자동 채번한다. 양식명은 저장 전에 입력한다
-   *   3) 목록 헤더 「신규」에서 호출한다
+   *   3) 목록 헤더 「행추가」에서 호출한다
    */
   const handleAdd = () => {
     if (!canWrite) {
@@ -310,7 +310,7 @@ export default function HwpTemplateManagementPage() {
       useYn: "Y",
     });
     setActiveKey(key);
-    setEditorMessage("신규 사용자추가 양식입니다. 양식명을 입력해 저장한 뒤 업로드하세요.");
+    setEditorMessage("아직 저장하지 않은 사용자추가 양식입니다. 양식명을 입력해 저장한 뒤 업로드하세요.");
   };
 
   /**
@@ -619,12 +619,12 @@ export default function HwpTemplateManagementPage() {
         />
 
         <ResizableSplit
-          // 좌 목록 · 우 미리보기 — 경계를 끌면 비율이 저장된다
+          // 좌 목록 50 · 우 미리보기 50 — HTML양식 원본과 같은 프레임
           orientation="horizontal"
           storageKey={SPLIT_KEY}
-          defaultPrimaryPct={35}
-          minPct={20}
-          maxPct={60}
+          defaultPrimaryPct={50}
+          minPct={25}
+          maxPct={75}
           className="mes-page-split min-h-0 h-full flex-1 gap-0"
           primary={(
             <div className={splitPanelClass}>
@@ -634,8 +634,7 @@ export default function HwpTemplateManagementPage() {
                 </div>
                 <div className="ml-auto flex shrink-0 items-center gap-1.5">
                   <GridCrudButtons
-                    // 신규·저장·삭제 — 공통코드 헤더와 같은 묶음
-                    addLabel="신규"
+                    // 행추가·저장·삭제 — 공통코드 헤더와 같은 묶음
                     run={asyncAct.run}
                     onAdd={canWrite ? handleAdd : undefined}
                     onSave={canEdit ? handleSave : undefined}

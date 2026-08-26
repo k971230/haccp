@@ -17,6 +17,7 @@ import {
   TASK_TYPE_NM,
   buildDocColumns,
   buildTaskColumns,
+  formatHeaderUpdatedAt,
   isCaTask,
   pageCount,
   pageOffset,
@@ -126,5 +127,11 @@ describe("sessionWho · sessionRoleLabel", () => {
     expect(sessionRoleLabel("admin")).toBe("관리자");
     expect(sessionRoleLabel("USER")).toBe("사용자");
     expect(sessionRoleLabel(null)).toBe("사용자");
+  });
+});
+
+describe("formatHeaderUpdatedAt", () => {
+  it("헤더 시각은 점 구분 YYYY.MM.DD HH:mm", () => {
+    expect(formatHeaderUpdatedAt(new Date(2026, 7, 25, 18, 5, 0))).toBe("2026.08.25 18:05");
   });
 });

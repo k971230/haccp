@@ -450,7 +450,7 @@ export function HygPrcPaper({
             icon="plus"
             onClick={addRow}
           >
-            행 추가
+            행추가
           </MesButton>
         ) : null}
       </HtmlFormRowAddSlot>

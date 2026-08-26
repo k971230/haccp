@@ -22,3 +22,5 @@ export * from "./gridAccess";
 export * from "./validateGridSave";
 // pageGuard 모듈 재보내기
 export * from "./pageGuard";
+// 편집 그리드 저장 절차 공통 — 권한·잠금·필수값·확인창·재조회
+export * from "./gridSave";

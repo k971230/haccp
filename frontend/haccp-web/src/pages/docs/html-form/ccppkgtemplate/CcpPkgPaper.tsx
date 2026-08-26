@@ -247,7 +247,7 @@ export function CcpPkgPaper({
               icon="plus"
               onClick={() => onLogRowsChange?.(appendLogRow(rows, LOG_PHASE.BEFORE))}
             >
-              작업 전 행 추가
+              작업 전 행추가
             </MesButton>
             <MesButton
               // 작업 종료 영역 끝에만 행을 붙인다
@@ -256,7 +256,7 @@ export function CcpPkgPaper({
               icon="plus"
               onClick={() => onLogRowsChange?.(appendLogRow(rows, LOG_PHASE.AFTER))}
             >
-              작업 종료 행 추가
+              작업 종료 행추가
             </MesButton>
           </>
         ) : null}

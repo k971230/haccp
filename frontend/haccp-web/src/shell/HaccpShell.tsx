@@ -7,7 +7,7 @@
  *   1) 로그인 후 모든 화면은 이 셸 안에서 열린다. 주소가 바뀌면 해당 화면 탭을 열고 활성화한다
  *   2) 탭을 여러 개 열어 둔 채 전환할 수 있다 — 비활성·홈 전환 시에도 마운트 유지(hidden)로
  *      입력값·그리드 상태가 남고 재진입 깜박임을 막는다
- *   3) 화면 조회 로그(UV/PV)는 활성 탭 화면코드를 useViewLog에 넘겨 자동 수집한다
+ *   3) UV/PV 수집과 그리드·트리 헤더 초록(bindMesSec)은 셸에서 일괄한다
  *
  * PIPELINE[HF49] 앱 셸
  * PIPELINE[HF51, HF66, HF64, HF30] 연관 모듈
@@ -58,6 +58,8 @@ import { DialogHost } from "./dialog";
 import { GlobalModal } from "@/components/common/modal/GlobalModal";
 // 역할 — 화면 조회 로그 수집
 import { useViewLog } from "./useViewLog";
+// 역할 — 그리드·트리 클릭 시 헤더 초록 활성 (전 화면 일괄)
+import { bindMesSec } from "./mesSec";
 
 // 사이드바 펼침 여부 보관 키 — 탭 단위로 유지되어 다른 탭 설정에 영향을 주지 않는다
 const SIDE_KEY = "haccp-side-open";
@@ -77,6 +79,8 @@ export function HaccpShell() {
   const tabs = useTabStore((s) => s.tabs);
   const activeCd = useTabStore((s) => s.activeCd);
   const openTab = useTabStore((s) => s.openTab);
+  // 그리드·트리 헤더 초록 — 화면마다 bind 를 달지 않고 셸에서 한 번만 듣는다
+  useEffect(() => bindMesSec(), []);
   // 사이드바 펼침 여부 — 저장값이 "0"일 때만 접힌 상태로 시작한다
   const [sideOpen, setSideOpen] = useState(() => sessionStorage.getItem(SIDE_KEY) !== "0");
 
@@ -261,6 +265,8 @@ export function HaccpShell() {
                   "flex h-full min-h-0 flex-col p-5",
                   active ? "mes-tab-active" : "hidden",
                 )}
+                // 패널 활성 범위 — 이 탭 안에서만 헤더 초록을 옮긴다
+                data-mes-page={t.scrnCd}
                 data-title={t.title}
               >
                 {/* 그리드 pref 저장 키 — MesEditableGrid가 PageScrnContext로 scrnCd를 읽는다 */}

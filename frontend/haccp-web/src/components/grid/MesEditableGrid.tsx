@@ -6,6 +6,7 @@
  *   - 덮개식 편집: .mes-cellwrap-editing + .mes-egrid-input absolute inset — 행 높이(h-mes-row) 고정
  *   - 열 너비: td style=colWidthStyle(widthOf) + .mes-grid table-layout:fixed — 데이터 글자수와 무관
  *   - 입력 검증: col.maxLength / sanitize / validate · 콤보 oneOfCodes (BE MesPatterns·RefValidation 대칭)
+ *   - 키보드: 비편집 ArrowUp/Down=행이동, Tab=셀이동(목적지 canEdit일 때만 편집). Left/Right는 쓰지 않음
  *
  * PIPELINE[F90] 편집 가능 그리드
  * PIPELINE[F75, F83, F52, F173] 연관 모듈
@@ -36,6 +37,8 @@ import { GridEmptyState } from "./GridEmptyState";
 import { GridRowNumCell, GridCellDisplay } from "./GridCellDisplay";
 // 역할 — 대량 행 가상 스크롤
 import { useGridVirtual, scrollGridToActiveRow } from "./useGridVirtual";
+// 역할 — 키보드 행/셀 좌표·툴바 입력 가드
+import { isTypingTarget, nextCell, nextRowIndex } from "./gridNav";
 // 역할 — 그리드 런타임 오류 격리
 import { GridErrorBoundary } from "./GridErrorBoundary";
 // 역할 — 셀 버튼 더보기 아이콘
@@ -214,6 +217,10 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
 
 // 설명 — 스크롤 컨테이너 ref — 가상스크롤·포커스 스크롤
   const scrollRef = useRef<HTMLDivElement>(null);
+  // wrap tabIndex=0 — 잠금 셀 클릭 후 방향키가 onGridKeyDown으로 들어오게 focus
+  const wrapRef = useRef<HTMLDivElement>(null);
+  // 마지막 활성 열 — 행만 클릭했거나 열이 숨겨져도 방향키 때 열 유지
+  const lastActiveField = useRef<string | null>(null);
   const codeWarned = useRef(new Set<string>());
   const virt = useGridVirtual(scrollRef, view.displayRows.length);
 
@@ -241,43 +248,112 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
   }, [activeKey, rows.length, view.activeCell?.isEditing, view.displayRows.length, virt.active]); // eslint-disable-line react-hooks/exhaustive-deps -- virt.virtualizer 안정
 
   const setEditCell = (cell: { rowKey: string; field: string } | null, isEditing = true) => {
+    if (cell?.field) lastActiveField.current = cell.field;
     view.setActiveCell(cell ? { ...cell, isEditing } : null);
   };
 
-  const moveActive = (dRow: number, dCol: number) => {
-    const ac = view.activeCell;
-    if (!ac) return;
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-25
+   * 코멘트:
+   *   1) 화살표는 행만(편집 진입 없음). Tab은 셀 이동이고 목적지 canEdit일 때만 편집
+   *   2) wrap onKeyDown·잠금 셀 포커스 후 방향키/Tab에서 호출
+   *   3) Tab이 그리드 밖이면 false — 호출측이 preventDefault를 하지 않아 네이티브 탭 아웃
+   */
+  // 설명 — activeCell 없으면 activeKey·lastActiveField로 복원. 성공 시 true
+  const moveActive = (dRow: 0 | 1 | -1, dCol: 0 | 1 | -1, opts: { enterEditIfPossible?: boolean } = {}): boolean => {
     const tableRows = view.table.getRowModel().rows;
-    const ri = tableRows.findIndex((r) => r.id === ac.rowKey);
-    if (ri < 0) return;
-    const ci = cols.findIndex((c) => c.field === ac.field);
-    if (ci < 0) return;
-    const nri = Math.max(0, Math.min(tableRows.length - 1, ri + dRow));
-    const nci = Math.max(0, Math.min(cols.length - 1, ci + dCol));
-    const nextRow = tableRows[nri].original;
-    const nextField = cols[nci].field;
-    props.onActivate?.(nextRow);
-    setEditCell({ rowKey: nextRow._key, field: nextField }, false);
+    const nRows = tableRows.length;
+    const nCols = cols.length;
+    if (nRows === 0 || nCols === 0) return false;
+
+    const ac = view.activeCell;
+    let curRowIdx = ac
+      ? tableRows.findIndex((r) => r.id === ac.rowKey)
+      : activeKey
+        ? tableRows.findIndex((r) => r.id === activeKey)
+        : -1;
+
+    let curColIdx = ac
+      ? cols.findIndex((c) => c.field === ac.field)
+      : lastActiveField.current
+        ? cols.findIndex((c) => c.field === lastActiveField.current)
+        : 0;
+    if (curColIdx < 0) curColIdx = 0;
+
+    let targetRi: number;
+    let targetCi: number;
+    if (dCol === 0) {
+      if (dRow === 0) return false;
+      targetRi = nextRowIndex(nRows, curRowIdx, dRow);
+      if (targetRi < 0) return false;
+      targetCi = curColIdx;
+    } else {
+      if (curRowIdx < 0) curRowIdx = 0;
+      const result = nextCell(curRowIdx, curColIdx, nRows, nCols, dCol);
+      if (!result) return false;
+      targetRi = result.ri;
+      targetCi = result.ci;
+    }
+
+    const targetRow = tableRows[targetRi].original;
+    const targetCol = cols[targetCi];
+    const isNew = targetRow._rowState === "C";
+    const overlayEdit = targetCol.type !== "checkbox" && targetCol.type !== "radio";
+    const shouldEnterEdit = !!opts.enterEditIfPossible && overlayEdit && canEdit(targetRow, targetCol, isNew);
+
+    props.onSetActive?.();
+    if (!props.suppressActivate) props.onActivate?.(targetRow);
+    setEditCell({ rowKey: targetRow._key, field: targetCol.field }, shouldEnterEdit);
+
+    if (targetRi !== curRowIdx) {
+      scrollGridToActiveRow({
+        scrollRef,
+        activeKey: targetRow._key,
+        rowIndex: targetRi,
+        virt,
+      });
+    }
+    if (!shouldEnterEdit) wrapRef.current?.focus();
+    return true;
   };
 
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-25
+   * 코멘트:
+   *   1) 편집 중·툴바/필터 타이핑은 가로채지 않음. 화살표=행, Tab=셀
+   *   2) wrap tabIndex=0 에서 keydown
+   *   3) Tab은 이동 성공일 때만 preventDefault — 그리드 끝은 네이티브 탈출
+   */
+  // 설명 — 비편집 키보드: Arrow 행이동, Tab 셀이동, Enter/F2 편집, Delete 비움
   const onGridKeyDown = (e: KeyboardEvent) => {
     if (view.activeCell?.isEditing) return;
-    if (!view.activeCell) return;
-    if (e.key === "ArrowUp") { e.preventDefault(); moveActive(-1, 0); }
-    else if (e.key === "ArrowDown") { e.preventDefault(); moveActive(1, 0); }
-    else if (e.key === "ArrowLeft") { e.preventDefault(); moveActive(0, -1); }
-    else if (e.key === "ArrowRight") { e.preventDefault(); moveActive(0, 1); }
-    else if (e.key === "Enter" || e.key === "F2") {
+    if (isTypingTarget(e)) return;
+
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
+      moveActive(e.key === "ArrowUp" ? -1 : 1, 0);
+      return;
+    }
+    if (e.key === "Tab") {
+      const moved = moveActive(0, e.shiftKey ? -1 : 1, { enterEditIfPossible: true });
+      if (moved) e.preventDefault();
+      return;
+    }
+    if (e.key === "Enter" || e.key === "F2") {
       const ac = view.activeCell;
+      if (!ac) return;
+      e.preventDefault();
       const row = rows.find((r) => r._key === ac.rowKey);
       const c = cols.find((x) => x.field === ac.field);
       if (row && c && canEdit(row, c, row._rowState === "C") && c.type !== "checkbox" && c.type !== "radio") {
         setEditCell({ rowKey: ac.rowKey, field: ac.field }, true);
       }
     } else if (e.key === "Delete" || e.key === "Backspace") {
-      e.preventDefault();
       const ac = view.activeCell;
+      if (!ac) return;
+      e.preventDefault();
       const row = rows.find((r) => r._key === ac.rowKey);
       const c = cols.find((x) => x.field === ac.field);
       if (row && c && canEdit(row, c, row._rowState === "C") && c.type !== "checkbox" && c.type !== "radio") {
@@ -507,9 +583,13 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
                       className={cn(tdSurface, kioskClick && "cursor-pointer", isFocused(row, c) && "mes-cell-focus", pin && "mes-col-pinned")}
                       style={cellStyle}
                       // 클릭 핸들러
-                      // 비동기면 run/useAsyncAction으로 중복 클릭 방지 권장
+                      // stopPropagation — tr의 setEditCell(null)이 활성 셀을 지우지 않게
                       onClick={(e) => {
+                        e.stopPropagation();
                         setEditCell({ rowKey: row._key, field: c.field }, false);
+                        props.onSetActive?.();
+                        if (!props.suppressActivate) props.onActivate?.(row);
+                        wrapRef.current?.focus();
                         if (kioskClick) fireCellBtn(row, c, isNew, e);
                       }}
                     >
@@ -672,6 +752,8 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
 
   return (
     <div
+      // wrap tabIndex=0 — 잠금 셀 클릭 후 방향키/Tab이 여기로 들어온다
+      ref={wrapRef}
       // grid 행: 툴바 / 본문(1fr) / 푸터 — 총 n건이 마지막 행을 가리지 않음
       className={cn(
         "mes-grid-wrap",

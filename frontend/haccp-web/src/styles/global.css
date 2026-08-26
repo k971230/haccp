@@ -203,7 +203,6 @@ PIPELINE[HF49] 연관 모듈
   /* ── 그리드 블록 헤더 ── */
   .mes-grid-block { @apply flex min-h-0 flex-1 flex-col; }
   .mes-grid-block-head { @apply flex min-h-9 flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/70 px-3 py-2.5; }
-  .mes-grid-block-head b { @apply text-mes-ui font-bold text-black; }
   .mes-grid-crud-btns { @apply flex flex-wrap items-center gap-1.5; }
 
   /* 그리드 타이틀 앞 accent — 기본 파란색 (활성 섹션은 아래 emerald) */
@@ -219,7 +218,7 @@ PIPELINE[HF49] 연관 모듈
   }
   .mes-grid-head b,
   .mes-grid-block-head b {
-    @apply flex items-center gap-2;
+    @apply flex items-center gap-2 text-mes-ui font-bold text-black;
   }
   .mes-grid-title-only {
     @apply flex min-h-9 shrink-0 items-center gap-2 border-b border-slate-200 bg-slate-50/70 px-3 py-2 text-mes-ui font-bold text-black;
@@ -233,19 +232,29 @@ PIPELINE[HF49] 연관 모듈
     @apply ring-1 ring-emerald-200;
   }
   /* 활성 그리드 헤더 — MesButton variant=excel (border-emerald-200 / bg-emerald-50 / text-emerald-700) */
+  /* .mes-sec-active = useActiveGrid.bind 자손. [data-mes-sec] = 셸 클릭 캡처(직계 자식만 — 중첩 분할) */
   .mes-sec-active .mes-grid-block-head,
   .mes-sec-active .mes-grid-head,
-  .mes-sec-active .mes-grid-title-only {
+  .mes-sec-active .mes-grid-title-only,
+  [data-mes-sec] > .mes-grid-block-head,
+  [data-mes-sec] > .mes-grid-head,
+  [data-mes-sec] > .mes-grid-title-only {
     @apply border-emerald-200 bg-emerald-50;
   }
   .mes-sec-active .mes-grid-block-head b,
   .mes-sec-active .mes-grid-head b,
-  .mes-sec-active .mes-grid-title-only {
+  .mes-sec-active .mes-grid-title-only,
+  [data-mes-sec] > .mes-grid-block-head b,
+  [data-mes-sec] > .mes-grid-head b,
+  [data-mes-sec] > .mes-grid-title-only {
     @apply text-emerald-700;
   }
   .mes-sec-active .mes-grid-block-head b::before,
   .mes-sec-active .mes-grid-head b::before,
-  .mes-sec-active .mes-grid-title-only::before {
+  .mes-sec-active .mes-grid-title-only::before,
+  [data-mes-sec] > .mes-grid-block-head b::before,
+  [data-mes-sec] > .mes-grid-head b::before,
+  [data-mes-sec] > .mes-grid-title-only::before {
     @apply bg-emerald-600;
   }
 
@@ -254,6 +263,11 @@ PIPELINE[HF49] 연관 모듈
   .mes-grid-wrap {
     @apply relative grid overflow-hidden border border-slate-200 bg-white;
     grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  /* wrap tabIndex=0 — 브라우저 기본 outline 숨김. 대체 표시는 .mes-cell-focus · .mes-row-active */
+  .mes-grid-wrap:focus,
+  .mes-grid-wrap:focus-visible {
+    outline: none;
   }
   .mes-grid-wrap.mes-grid-no-toolbar {
     grid-template-rows: minmax(0, 1fr) auto;

@@ -292,7 +292,7 @@ export function CcpMtlPaper({
               icon="plus"
               onClick={() => onLogRowsChange?.(appendLogRow(rows, LOG_PHASE.BEFORE))}
             >
-              작업 전 행 추가
+              작업 전 행추가
             </MesButton>
             <MesButton
               // 감도표 작업 후 영역 끝에만 붙인다
@@ -301,7 +301,7 @@ export function CcpMtlPaper({
               icon="plus"
               onClick={() => onLogRowsChange?.(appendLogRow(rows, LOG_PHASE.AFTER))}
             >
-              작업 후 행 추가
+              작업 후 행추가
             </MesButton>
           </>
         ) : null}
@@ -313,7 +313,7 @@ export function CcpMtlPaper({
             icon="plus"
             onClick={() => onPassRowsChange?.(appendPassRow(pass))}
           >
-            제품 통과 행 추가
+            제품 통과 행추가
           </MesButton>
         ) : null}
       </HtmlFormRowAddSlot>

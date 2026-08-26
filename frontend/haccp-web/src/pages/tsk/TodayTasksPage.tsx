@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) 로그인 후 최초 화면이다 — 중앙 문서 미리보기 없이 카드·목록으로 화면을 채운다
  *   2) 좌 오늘 과제 · 우 최근 문서 2열이며 빈 목록은 안내 문구만 둔다
- *   3) 헤더·KPI 모두 mes-notice 왼쪽 색 바. 제목은 이름(아이디)의 오늘 할 일 + 배지
+ *   3) 상단 헤더는 바 없이 제목만. KPI 만 mes-notice 왼쪽 색 바. 제목은 이름(아이디)의 오늘 할 일 + 배지
  *
  * PIPELINE[HF88] 오늘 할 일 화면
  * PIPELINE[HF87, HF51, HB95] 연관 모듈
@@ -46,6 +46,7 @@ import {
   TASK_PERSIST_ID,
   buildDocColumns,
   buildTaskColumns,
+  formatHeaderUpdatedAt,
   isCaTask,
   kpiCardClass,
   pageCount,
@@ -98,6 +99,8 @@ export default function TodayTasksPage() {
   const [filter, setFilter] = useState<FilterKind>("ALL");
   const [taskActiveKey, setTaskActiveKey] = useState<string | null>(null);
   const [docActiveKey, setDocActiveKey] = useState<string | null>(null);
+  // 헤더 마지막 업데이트 — load 성공 시각. 실패하면 이전 값을 유지한다
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
   const taskColumns = useMemo(() => buildTaskColumns(), []);
   const docColumns = useMemo(() => buildDocColumns(docStatusNm), [docStatusNm]);
@@ -128,6 +131,8 @@ export default function TodayTasksPage() {
       setDocs(docPage.rows);
       setDocTotal(docPage.total);
       setApprovalCnt(approvalList.length);
+      // 헤더 시각 — 조회가 끝난 로컬 시각
+      setUpdatedAt(new Date());
     } catch (error) {
       mesError(error);
     }
@@ -230,39 +235,43 @@ export default function TodayTasksPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-3">
-      {/* KPI와 같은 왼쪽 색 바 — mes-notice info 톤 */}
-      <div className="mes-notice mes-notice-tone-info w-full">
-        <div className="mes-notice-bar" aria-hidden />
-        <div className="mes-notice-content">
-          <div className="flex items-center justify-between gap-3 px-3 py-2.5">
-            <div className="min-w-0">
-              <h1 className="flex min-w-0 flex-wrap items-center gap-1.5 text-base font-semibold text-slate-800">
-                {/* 세션 이름(아이디)의 오늘 할 일 — 없을 때(= 세션 없음) 화면명만 */}
-                <span className="truncate">{who ? `${who}의 오늘 할 일` : "오늘 할 일"}</span>
-                {who ? (
-                  <span
-                    className={
-                      roleAdmin
-                        ? "shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium bg-blue-50 text-blue-700"
-                        : "shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-600"
-                    }
-                  >
-                    {roleNm}
-                  </span>
-                ) : null}
-              </h1>
-              <p className="mt-0.5 text-xs text-slate-500">작성·결재 현황을 확인하고 문서로 바로 이동합니다.</p>
-            </div>
-            <MesButton
-              // 대시보드 전체 재조회 — 조회 틴트 + 되돌리기 아이콘
-              variant="search"
-              icon="reset"
-              disabled={asyncAct.isBusy("search")}
-              onClick={() => void asyncAct.run(load, "search")}
-            >
-              새로고침
-            </MesButton>
-          </div>
+      {/* 상단은 KPI 바와 겹치지 않게 mes-notice 없이 페이지 타이틀만 */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="flex min-w-0 flex-wrap items-center gap-1.5 text-xl font-bold text-slate-900">
+            {/* 세션 이름(아이디)의 오늘 할 일 — 없을 때(= 세션 없음) 화면명만 */}
+            <span className="truncate">{who ? `${who}의 오늘 할 일` : "오늘 할 일"}</span>
+            {who ? (
+              <span
+                // 관리자(= danger 빨강) · 사용자(= search 파랑, 옆 새로고침과 같음)
+                className={
+                  roleAdmin
+                    ? "shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium bg-red-50 text-red-600"
+                    : "shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium bg-blue-100 text-blue-700"
+                }
+              >
+                {roleNm}
+              </span>
+            ) : null}
+          </h1>
+          <p className="mt-0.5 text-sm text-slate-500">작성 · 결재 현황을 확인하고 문서로 바로 이동합니다.</p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <MesButton
+            // 대시보드 전체 재조회 — 조회 틴트 + 되돌리기 아이콘
+            variant="search"
+            icon="reset"
+            disabled={asyncAct.isBusy("search")}
+            onClick={() => void asyncAct.run(load, "search")}
+          >
+            새로고침
+          </MesButton>
+          {updatedAt ? (
+            <p className="text-[11px] text-slate-400">
+              {/* load 성공 시각 — YYYY.MM.DD HH:mm. 실패하면 이전 값을 유지한다 */}
+              마지막 업데이트: {formatHeaderUpdatedAt(updatedAt)}
+            </p>
+          ) : null}
         </div>
       </div>
 

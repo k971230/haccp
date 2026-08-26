@@ -2,9 +2,9 @@
  * LogPageShell — 로그인 이력·감사 로그·화면 이용 통계 공통 레이아웃.
  *
  * 개발자: 박승우
- * 일자: 2026-08-12
+ * 일자: 2026-08-25
  * 코멘트:
- *   1) 기간 검색·좌측 트리·조회 전용 그리드라는 뼈대만 갖고, 컬럼·조회 API는 Rule이 주입한다
+ *   1) 기간 검색·좌측 트리(30%)·조회 전용 그리드라는 뼈대만 갖고, 컬럼·조회 API는 Rule이 주입한다
  *   2) 인스턴스별 상태를 갖는 컴포넌트다 — 각 Page가 key={rule.scrnCd}로 렌더해 탭 간 상태가 섞이지 않게 한다
  *   3) 모듈 레벨 캐시를 두지 않는다. 셸을 여러 개 동시에 마운트해도 서로 독립이다
  *
@@ -366,9 +366,9 @@ export function LogPageShell({
         <ResizableSplit
           // 좌 트리 · 우 그리드 (시스템 관리 화면과 동일 규칙)
           orientation="horizontal"
-          storageKey={`haccp-split-log-${rule.scrnCd}`}
-          // 트리:그리드 기본 2:8 — 경계선을 끌면 20~80% 범위에서 조절되고 storageKey에 저장된다
-          defaultPrimaryPct={20}
+          storageKey={`haccp-split-log-${rule.scrnCd}-30`}
+          // 좌 트리 30 · 우 그리드 70 — 가로 분할은 30 또는 50만
+          defaultPrimaryPct={30}
           panelClassName="rounded-xl border border-slate-200 bg-white shadow-sm p-2"
           primary={
             <>

@@ -82,9 +82,9 @@ import {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-14
+ * 일자: 2026-08-25
  * 코멘트:
- *   1) 좌측 사용양식 목록과 우측 주기 폼을 50:50으로 제공한다
+ *   1) 좌측 사용양식 목록과 우측 주기 폼을 HTML양식 원본과 같은 50:50으로 제공한다
  *   2) 일지설정「문서주기관리」(schedule-cycle-management)에서 연다
  *   3) 권한·검증 실패는 업무 토스트로만 안내한다
  */
@@ -564,7 +564,7 @@ export default function ScheduleCycleManagementPage() {
         )}
       >
         <ResizableSplit
-          // 좌 목록 50% · 우 주기 설정 50% — 드래그 범위 약 25~75
+          // 좌 목록 50 · 우 주기 설정 50 — HTML양식 원본과 같은 프레임
           orientation="horizontal"
           // 비율 저장 키 — 화면 고유
           storageKey={SPLIT_KEY}

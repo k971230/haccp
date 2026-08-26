@@ -127,7 +127,7 @@ export function HwpEditorPane({
         attachDirty(created.element);
         editorRef.current = created;
         setReady(true);
-        setMessage("왼쪽에서 문서를 고르거나 「행 추가」를 눌러 작성하세요.");
+        setMessage("왼쪽에서 문서를 고르거나 「행추가」를 눌러 작성하세요.");
       } catch (error) {
         if (!disposed) setMessage(toUserMessage(error));
       }
@@ -202,7 +202,7 @@ export function HwpEditorPane({
       >
         {tmplCd
           ? message
-          : "왼쪽에서 문서를 고르거나 「행 추가」를 눌러 작성하세요."}
+          : "왼쪽에서 문서를 고르거나 「행추가」를 눌러 작성하세요."}
         {/* ponytail: rhwp SDK 에 읽기전용 모드가 없어 문구로만 알린다.
             진짜 잠금이 필요해지면 서버 PDF(exportDocumentPdf) 임베드로 바꾼다 */}
         {tmplCd && readOnly

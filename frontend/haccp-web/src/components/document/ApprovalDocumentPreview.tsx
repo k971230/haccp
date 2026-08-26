@@ -14,7 +14,7 @@
  * PIPELINE[HF184] 결재 문서 미리보기
  * PIPELINE[HF82, HF103] 연관 모듈
  */
-// 역할 — 양식 유형(hwp/html) 정규화 — DB 정본은 소문자
+// 역할 — 양식 유형(HWP/HTML) 판별
 import { isHwpKind } from "@/lib/docKind";
 // 역할 — 첨부 계약 (문서 상세 files 와 같은 모양)
 import type { HtmlFormDraftFile } from "@/api/draft/htmlFormDraftTypes";

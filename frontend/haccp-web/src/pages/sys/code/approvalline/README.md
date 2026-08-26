@@ -11,7 +11,7 @@
 
 ## 화면 규칙
 
-- 좌 결재선: 행추가·저장·삭제. 분할 기본 32%. `DEFAULT` 기본 결재선은 삭제 불가
+- 좌 결재선: 행추가·저장·삭제. 분할 기본 30%. `DEFAULT` 기본 결재선은 삭제 불가
 - 우 단계: 1작성 · 2검토 · 3승인 고정. **저장만**. 행추가·삭제 없음
 - 열 순서: 순서 · 역할 · 부서 · 결재자 · 사용
 - 검토 사용여부 기본 **사용안함**. 작성과 승인은 항상 사용
@@ -30,4 +30,4 @@
 
 ## pref 키
 
-`scrnCd = approval-line-management` · `persistId = bas-approval-line-header` · `bas-approval-line-steps-v2` · split `haccp-split-approval-line-v2`
+`scrnCd = approval-line-management` · `persistId = bas-approval-line-header` · `bas-approval-line-steps-v2` · split `haccp-split-approval-line-30` — persistId 값 변경 금지.

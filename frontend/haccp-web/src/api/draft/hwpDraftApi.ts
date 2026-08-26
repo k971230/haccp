@@ -122,12 +122,19 @@ export const hwpDraftApi: HtmlFormDraftApi = {
     };
   },
 
-  /** 저장 — 일자·양식코드만 보낸다. 본문 파일은 저장 뒤 따로 올린다 */
+  /**
+   * 저장 — 일자·양식코드·이탈여부만 보낸다. 본문 파일은 저장 뒤 따로 올린다.
+   *
+   * 이탈여부는 지면이 없는 이 화면에서 목록 칸으로 켠다.
+   * 서버(HwpDraftService.applyDeviation)가 이 값을 보고 개선조치 행을 만들거나 지운다 —
+   * 안 보내면 체크만 되고 이탈·개선조치 화면에 아무것도 안 올라간다.
+   */
   save: async (body: HtmlFormDraftSaveRequest): Promise<number> => {
     const { data } = await http.put<CommonResponse<{ docIdx: number }>>(`${BASE}/save`, {
       tmplCd: body.tmplCd,
       docIdx: body.docIdx,
       baseDt: body.baseDt,
+      deviationYn: body.deviationYn ?? "N",
     });
     return data.data.docIdx;
   },

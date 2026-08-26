@@ -7,6 +7,7 @@
 | 파일 | 역할 |
 |------|------|
 | `HaccpShell.tsx` | 사이드·탭·본문·상단 명령. 탭 닫힌 뒤 `routeOf` 또는 `/` |
+| `mesSec.ts` | 그리드·트리 클릭 시 헤더(메뉴명) 초록. 화면별 bind 없음 |
 | `ShellTabBar.tsx` | 열린 탭. Portal 우클릭 메뉴 |
 | `tabRoute.ts` | `scrnCd` ↔ 계층 pathname. basename은 Vite |
 | `screenRegistry.tsx` | `scrnCd` → Page |

@@ -43,4 +43,4 @@ HTTP `/api/v1/docs/sch/schedule-cycle-management`. 결재선 룩업은 `/api/v1/
 
 ## pref 키
 
-`scrnCd = schedule-cycle-management` · `persistId = doc-cycle-forms` · split `haccp-split-doc-cycle` — 값 변경 금지.
+`scrnCd = schedule-cycle-management` · `persistId = doc-cycle-forms` · split `haccp-split-doc-cycle-50` — persistId 값 변경 금지.

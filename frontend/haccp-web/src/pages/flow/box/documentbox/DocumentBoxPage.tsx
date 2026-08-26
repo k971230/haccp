@@ -62,8 +62,8 @@ import { DocumentApprovalToolbar } from "@/components/document/DocumentApprovalT
 import { ApprovalDocumentPreview } from "@/components/document/ApprovalDocumentPreview";
 // 역할 — Blob URL 해제 대기 — 파일 API 타임아웃과 동일
 import { API_TIMEOUT_FILE_MS } from "@/config/envConfig";
-// 역할 — 양식 유형(hwp/html) 정규화·라벨 — DB 정본은 소문자
-import { docKindLabel, isHwpKind, toDocKind } from "@/lib/docKind";
+// 역할 — 양식 유형(HWP/HTML) 라벨·판별
+import { docKindLabel, isHwpKind } from "@/lib/docKind";
 import {
   APPR_HIST_PERSIST_ID,
   DOC_KIND_OPTIONS,
@@ -193,7 +193,7 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
         });
       }
       let next = list;
-      if (boxMode === "inbox" && kind) next = next.filter((row) => toDocKind(row.docKind) === kind);
+      if (boxMode === "inbox" && kind) next = next.filter((row) => row.docKind === kind);
       setRows(next);
       setSelReset((n) => n + 1);
     } catch (e) {

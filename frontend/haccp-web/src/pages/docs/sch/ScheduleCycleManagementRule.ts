@@ -23,8 +23,8 @@ export const SCRN_CD = "schedule-cycle-management" as const;
 /** 좌측 목록 열 설정 저장 키 — 폴더를 옮겨도 값을 바꾸지 않는다 */
 export const PERSIST_ID = "doc-cycle-forms" as const;
 
-/** 좌우 분할 비율 저장 키 */
-export const SPLIT_KEY = "haccp-split-doc-cycle" as const;
+/** 좌우 분할 비율 저장 키 — -50 은 기본 반반. 옛 키와 분리 */
+export const SPLIT_KEY = "haccp-split-doc-cycle-50" as const;
 
 /** 주기 콤보 기본값 — 공통코드 조회 실패 시에도 화면이 비지 않게 한다. E는 예정일 없음 */
 export const CYCLE_FALLBACK = [

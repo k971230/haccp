@@ -49,10 +49,10 @@ export function PageCard({
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-12
+ * 일자: 2026-08-25
  * 코멘트:
  *   1) 좌 트리 · 우 본문 — 드래그로 좌폭 조절
- *   2) Tree+Grid 화면에서 사용한다
+ *   2) Tree+Grid 화면에서 사용한다. 기본 좌 30
  *   3) storageKey로 비율을 저장한다
  */
 export function PageCardTree({
@@ -61,7 +61,7 @@ export function PageCardTree({
   // 우측 본문 — 그리드·PageCardSplit
   children,
   // localStorage 키 — 화면별 고유
-  storageKey = "haccp-split-page-tree",
+  storageKey = "haccp-split-page-tree-30",
 }: {
   tree: ReactNode;
   children: ReactNode;
@@ -74,8 +74,8 @@ export function PageCardTree({
       // 좌우 분할
       orientation="horizontal"
       storageKey={storageKey}
-      // 트리:본문 기본 2:8 — 경계선을 끌면 20~80% 범위에서 조절되고 storageKey에 저장된다
-      defaultPrimaryPct={20}
+      // 좌 트리 30 · 우 본문 70 — 가로 분할은 30 또는 50만
+      defaultPrimaryPct={30}
       panelClassName={card}
       primary={tree}
       secondary={children}

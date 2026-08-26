@@ -236,6 +236,26 @@ export function sessionRoleLabel(
  * 개발자: 박승우
  * 일자: 2026-08-25
  * 코멘트:
+ *   1) 헤더 마지막 업데이트 시각을 YYYY.MM.DD HH:mm 으로 붙인다
+ *   2) 오늘 할 일 헤더가 load 성공 시각을 표시할 때 호출한다
+ *   3) 공유 toDisplayDateTime(하이픈)과 시안 표기가 달라 화면 전용으로 둔다
+ */
+export function formatHeaderUpdatedAt(
+  // load 가 끝난 로컬 시각
+  at: Date,
+): string {
+  const y = at.getFullYear();
+  const m = String(at.getMonth() + 1).padStart(2, "0");
+  const d = String(at.getDate()).padStart(2, "0");
+  const hh = String(at.getHours()).padStart(2, "0");
+  const mm = String(at.getMinutes()).padStart(2, "0");
+  return `${y}.${m}.${d} ${hh}:${mm}`;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
+ * 코멘트:
  *   1) KPI 를 mes-notice 토스트와 같은 왼쪽 바·원형 아이콘으로 그린다
  *   2) Page 가 네 장 모두에 같은 클래스를 줄 때 호출한다
  *   3) 선택 중이면 하늘색 링만 더한다 — 구성(4장)은 바꾸지 않는다

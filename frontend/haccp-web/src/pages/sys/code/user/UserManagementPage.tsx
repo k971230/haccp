@@ -37,13 +37,13 @@ import { pageRootClass } from "@/components/layout/pageClasses";
 import { treePanelHeadClass } from "@/components/layout/TreePanelSearch";
 import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 확인·토스트·오류·공통 문구
-import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
+import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 // 역할 — 셸 상단·단축키 CRUD 명령 등록
 import { usePageCommands } from "@/shell/pageCommands";
 // 역할 — 저장 가드
-import { guardSaveWithKey } from "@/shell/gridRules";
+import { runGridSave, stripRowMeta } from "@/shell/gridRules";
 // 역할 — 선택행 우선 삭제 대상
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
 // 역할 — 편집 행 타입
@@ -252,42 +252,26 @@ export default function UserManagementPage() {
    *   3) 권한 부족·가드 실패는 토스트만 표시한다
    */
   const handleSave = async () => {
-    if (!canWrite && !canModify) return mesToast("수정 권한이 없습니다.", "warn");
-    const dirty = g.getSaveRows();
-    if (dirty.length === 0) return mesToast(MES.noChange, "warn");
-    const guard = guardSaveWithKey(grid.rules, grid.ctx, dirty, columns);
-    if (guard) {
-      mesToast(guard.message, "warn");
-      if (guard.rowKey) setActiveKey(guard.rowKey);
-      return;
-    }
-    for (const row of dirty) {
-      for (const req of REQUIRED_FIELDS) {
-        if (!String(row[req.field] ?? "").trim()) {
-          mesToast(MES.required(req.label), "warn");
-          setActiveKey(row._key);
-          return;
+    // 순서·문구는 gridSave 가 갖는다 — 이 화면은 필수값과 저장 대상만 준다
+    await runGridSave<UserRow>({
+      canWrite,
+      canModify,
+      dirty: g.getSaveRows(),
+      rules: grid.rules,
+      ctx: grid.ctx,
+      columns,
+      focusRow: setActiveKey,
+      requiredOf: (row) => {
+        for (const req of REQUIRED_FIELDS) {
+          if (!String(row[req.field] ?? "").trim()) return MES.required(req.label);
         }
-      }
-    }
-    if (!(await mesConfirm(MES.saveConfirm))) return;
-    try {
-      const payload = dirty.map((row) => {
-        const next: SysRow = { ...row };
-        delete (next as { _key?: string })._key;
-        delete (next as { _rowState?: string })._rowState;
-        delete (next as { _original?: unknown })._original;
-        delete (next as { _hasSign?: string })._hasSign;
-        // 비밀번호·사번·직위·잠금은 이 화면에서 다루지 않는다
-        for (const field of NON_EDITABLE_FIELDS) delete next[field];
-        return next;
-      });
-      await saveUsers(payload);
-      mesToast(MES.saveDone, "success");
-      await load();
-    } catch (error) {
-      mesError(error);
-    }
+        return null;
+      },
+      // 서명 표시열과 비밀번호·사번·직위·잠금은 이 화면이 다루지 않는다
+      save: (rows) =>
+        saveUsers(rows.map((row) => stripRowMeta<SysRow>(row as never, ["_hasSign", ...NON_EDITABLE_FIELDS]))),
+      reload: load,
+    });
   };
 
   /**

@@ -12,7 +12,7 @@
  */
 // 역할 — 화면코드 → URL
 import { routeOf } from "@/shell/tabRoute";
-// 역할 — 양식 유형(hwp/html) 정규화
+// 역할 — 양식 유형(HWP/HTML) 판별
 import { isHwpKind } from "@/lib/docKind";
 
 /** 자사 양식 접두 → 작성 화면코드 — 코드가 가변(NNN)이라 표에 못 넣는다 */
