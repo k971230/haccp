@@ -13,6 +13,22 @@
 
 SET search_path TO sasshaccp;
 
+-- ------------------------------------------------------------
+--  물러난 SP 정리 — 이미 있는 DB 에 다시 적용해도 안전하게 지운다
+--
+--  파일에서 정의를 빼는 것만으로는 운영 DB 에 남는다. 여기서 명시로 지운다.
+--    sp_tbl_master_delete_blocker_r_000
+--      기준정보 화면(제품·보관고·거래처 등)이 2026-08-25 28화면 정리에서 빠지면서
+--      참조하던 표 15본이 함께 없어졌다. 부르는 곳도 없다
+--    sp_tbl_company_code_copy_c_000
+--      03_code_seed.sql 이 -v co_cd 로 같은 일을 한다. 두 갈래를 두면 한쪽만 고쳐진다
+--    sp_tbl_menu_sort_encode_u_000
+--      없어진 메뉴(bas·ccp·prp·logis·admin)의 정렬값을 쓴다. 돌리면 순서가 어긋난다
+-- ------------------------------------------------------------
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_master_delete_blocker_r_000(character varying, character varying, bigint[]);
+DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_company_code_copy_c_000(character varying, character varying);
+DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_menu_sort_encode_u_000(character varying);
+
 -- Name: sp_audit_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
@@ -2508,44 +2524,35 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_r_003(p_co_cd char
 $$;
 
 
---
--- Name: sp_tbl_company_code_copy_c_000(character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_company_template_delete_blocker_r_000(character varying, character varying[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_company_code_copy_c_000(IN p_co_cd character varying, IN p_id character varying)
-    LANGUAGE plpgsql
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_company_template_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cds character varying[]) RETURNS TABLE(ref_key character varying, target character varying)
+    LANGUAGE sql STABLE
     AS $$
-BEGIN
-    IF COALESCE(p_co_cd, '') = '' THEN
-        RAISE EXCEPTION '회사코드는 필수입니다.' USING ERRCODE = '45000';
-    END IF;
-    -- 0000으로 호출할 때(= 원본 자기 복제) 무한 중복이 되므로 막는다
-    IF p_co_cd = '0000' THEN
-        RAISE EXCEPTION '0000은 표준코드 원본이라 복제 대상이 될 수 없습니다.' USING ERRCODE = '45000';
-    END IF;
-
-    -- 업체가 이미 가진 (main_cd, sub_cd)는 건드리지 않는다 — 업체가 고친 코드명·순서를 보존한다
-    INSERT INTO tbl_code(co_cd, main_cd, sub_cd, code_nm, sort_no, ref1, ref2,
-                         sys_yn, use_yn, ins_id, ins_dt)
-    SELECT p_co_cd, s.main_cd, s.sub_cd, s.code_nm, s.sort_no, s.ref1, s.ref2,
-           s.sys_yn, s.use_yn, p_id, now()
-      FROM tbl_code s
-     WHERE s.co_cd = '0000'
-       AND NOT EXISTS (
-               SELECT 1
-                 FROM tbl_code o
-                WHERE o.co_cd = p_co_cd
-                  AND o.main_cd = s.main_cd
-                  AND o.sub_cd = s.sub_cd
-           );
-END$$;
+    -- 시스템 제공 양식은 회사가 지울 수 없다 — sp_tbl_company_template_d_000 과 같은 판정
+    SELECT ct.tmpl_cd::varchar AS ref_key,
+           '시스템 제공 양식'::varchar AS target
+      FROM tbl_company_template ct
+     WHERE ct.co_cd = p_co_cd
+       AND ct.tmpl_cd = ANY(p_tmpl_cds)
+       AND lower(COALESCE(ct.sys_yn, 'sys')) NOT IN ('usr', 'n')
+     UNION ALL
+    -- 이미 이 양식으로 쓴 문서가 있으면 지우지 않는다 — 기록의 근거가 사라진다
+    SELECT d.tmpl_cd::varchar,
+           '작성된 문서'::varchar
+      FROM tbl_document d
+     WHERE d.co_cd = p_co_cd
+       AND d.tmpl_cd = ANY(p_tmpl_cds)
+     LIMIT 1;
+$$;
 
 
 --
--- Name: PROCEDURE sp_tbl_company_code_copy_c_000(IN p_co_cd character varying, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: FUNCTION sp_tbl_company_template_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cds character varying[]); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_company_code_copy_c_000(IN p_co_cd character varying, IN p_id character varying) IS '플랫폼 표준코드(co_cd=0000) 미보유분을 업체로 복제 — 재실행 안전. 공통코드 완전 고유 격리 전제';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_company_template_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cds character varying[]) IS '사용양식 삭제 차단 — 시스템 제공분·작성된 문서가 있으면 불가. 위반 첫 건만 반환';
 
 
 --
@@ -4749,115 +4756,6 @@ END$$;
 COMMENT ON PROCEDURE sasshaccp.sp_tbl_login_log_u_000(IN p_sid character varying) IS '로그아웃 시각 기록 — 해당 세션의 미종료 최신 행 1건만 갱신';
 
 
---
--- Name: sp_tbl_master_delete_blocker_r_000(character varying, character varying, bigint[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
---
-
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_master_delete_blocker_r_000(p_co_cd character varying, p_master_type character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
-    LANGUAGE plpgsql STABLE
-    AS $$
-BEGIN
-    CASE p_master_type
-        WHEN 'product' THEN RETURN QUERY SELECT p.product_cd, 'CCP 금속검출 기록' FROM tbl_product p JOIN tbl_ccp_metal_sens_row r ON r.co_cd=p.co_cd AND r.product_cd=p.product_cd WHERE p.co_cd=p_co_cd AND p.idx=ANY(p_idxs) UNION ALL SELECT p.product_cd, '재고 거래' FROM tbl_product p JOIN tbl_inv_txn r ON r.co_cd=p.co_cd AND r.product_cd=p.product_cd WHERE p.co_cd=p_co_cd AND p.idx=ANY(p_idxs);
-        WHEN 'material' THEN RETURN QUERY SELECT m.material_cd, '재고 거래' FROM tbl_material m JOIN tbl_inv_txn r ON r.co_cd=m.co_cd AND r.material_cd=m.material_cd WHERE m.co_cd=p_co_cd AND m.idx=ANY(p_idxs) UNION ALL SELECT m.material_cd, '입고검사 기록' FROM tbl_material m JOIN tbl_recv_inspect r ON r.co_cd=m.co_cd AND r.material_cd=m.material_cd WHERE m.co_cd=p_co_cd AND m.idx=ANY(p_idxs);
-        WHEN 'partner' THEN RETURN QUERY SELECT p.partner_cd, '원부재료 공급처' FROM tbl_partner p JOIN tbl_material m ON m.co_cd=p.co_cd AND m.partner_cd=p.partner_cd WHERE p.co_cd=p_co_cd AND p.idx=ANY(p_idxs) UNION ALL SELECT p.partner_cd, '입고검사 기록' FROM tbl_partner p JOIN tbl_recv_inspect r ON r.co_cd=p.co_cd AND r.partner_cd=p.partner_cd WHERE p.co_cd=p_co_cd AND p.idx=ANY(p_idxs);
-        WHEN 'storage' THEN RETURN QUERY SELECT s.storage_cd, 'CCP 냉장보관 기록' FROM tbl_storage s JOIN tbl_ccp_cold_monitor_temp t ON t.co_cd=s.co_cd AND t.storage_cd=s.storage_cd WHERE s.co_cd=p_co_cd AND s.idx=ANY(p_idxs) UNION ALL SELECT s.storage_cd, '재고 거래' FROM tbl_storage s JOIN tbl_inv_txn r ON r.co_cd=s.co_cd AND r.storage_cd=s.storage_cd WHERE s.co_cd=p_co_cd AND s.idx=ANY(p_idxs);
-        WHEN 'measuring-device' THEN RETURN QUERY SELECT d.device_cd, '검·교정 기록' FROM tbl_measuring_device d JOIN tbl_calib_target_row r ON r.co_cd=d.co_cd AND r.device_cd=d.device_cd WHERE d.co_cd=p_co_cd AND d.idx=ANY(p_idxs);
-        WHEN 'pest-device' THEN RETURN QUERY SELECT d.pest_cd, '방충방서 점검 기록' FROM tbl_pest_device d JOIN tbl_pest_check_row r ON r.co_cd=d.co_cd AND r.pest_cd=d.pest_cd WHERE d.co_cd=p_co_cd AND d.idx=ANY(p_idxs);
-        WHEN 'vehicle' THEN RETURN QUERY SELECT v.vehicle_cd, '입고검사 기록' FROM tbl_vehicle v JOIN tbl_recv_inspect r ON r.co_cd=v.co_cd AND r.vehicle_cd=v.vehicle_cd WHERE v.co_cd=p_co_cd AND v.idx=ANY(p_idxs);
-        WHEN 'work-area' THEN RETURN QUERY SELECT a.area_cd, '작업장 위생 기록' FROM tbl_work_area a JOIN tbl_area_hygiene r ON r.co_cd=a.co_cd AND r.area_cd=a.area_cd WHERE a.co_cd=p_co_cd AND a.idx=ANY(p_idxs);
-        WHEN 'ccp-limit' THEN RETURN QUERY SELECT l.ccp_cd, '보관고 한계기준' FROM tbl_ccp_limit l JOIN tbl_storage s ON s.co_cd=l.co_cd AND s.ccp_cd=l.ccp_cd WHERE l.co_cd=p_co_cd AND l.idx=ANY(p_idxs);
-        WHEN 'equipment' THEN RETURN;
-        ELSE RAISE EXCEPTION '지원하지 않는 기준정보입니다.' USING ERRCODE = '45000';
-    END CASE;
-END$$;
-
-
---
--- Name: FUNCTION sp_tbl_master_delete_blocker_r_000(p_co_cd character varying, p_master_type character varying, p_idxs bigint[]); Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON FUNCTION sasshaccp.sp_tbl_master_delete_blocker_r_000(p_co_cd character varying, p_master_type character varying, p_idxs bigint[]) IS '기준정보 삭제 참조 검사 — 대상 idx 배열 중 첫 참조 행을 API가 선택';
-
-
---
--- Name: sp_tbl_menu_sort_encode_u_000(character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
---
-
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_menu_sort_encode_u_000(IN p_co_cd character varying DEFAULT NULL::character varying)
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    UPDATE tbl_menu m
-       SET sort_no = v.sn, upd_id = 'system', upd_dt = now()
-      FROM (VALUES
-        ('today-tasks', 1001),
-        ('docs', 2000), ('flow', 3000), ('bas', 5000), ('sys', 6000),
-        ('ccp', 2100), ('prp', 2200), ('logis', 2300), ('admin', 2400),
-        ('sch', 2500), ('hwp', 2600), ('html', 2700), ('appr-hidden', 2800),
-        ('appr', 3100), ('box', 3200), ('ca', 3300),
-        ('master', 5100),
-        ('code', 6100), ('logs', 6200)
-      ) AS v(menu_cd, sn)
-     WHERE m.menu_cd = v.menu_cd
-       AND m.use_yn = 'Y'
-       AND (p_co_cd IS NULL OR m.co_cd = p_co_cd);
-
-    -- sys/code leaf: 공통코드 → 메뉴 → 권한그룹 → 부서 → 사용자 → 결재선
-    UPDATE tbl_menu m
-       SET sort_no = v.ord, upd_id = 'system', upd_dt = now()
-      FROM (VALUES
-        ('common-code-management', 1),
-        ('menu-management', 2),
-        ('role-management', 3),
-        ('department-management', 4),
-        ('user-management', 5),
-        ('approval-line-management', 6)
-      ) AS v(scrn_cd, ord)
-     WHERE m.scrn_cd = v.scrn_cd
-       AND m.h_menu_cd = 'code'
-       AND m.use_yn = 'Y'
-       AND (p_co_cd IS NULL OR m.co_cd = p_co_cd);
-
-    WITH mid AS (
-        SELECT * FROM (VALUES
-            ('ccp', 2, 1), ('prp', 2, 2),
-            ('logis', 2, 3), ('admin', 2, 4),
-            ('sch', 2, 5), ('hwp', 2, 6), ('html', 2, 7), ('appr-hidden', 2, 8),
-            ('appr', 3, 1), ('box', 3, 2), ('ca', 3, 3),
-            ('master', 5, 1),
-            ('code', 6, 1), ('logs', 6, 2)
-        ) AS t(mid_cd, dae_no, jung_no)
-    ),
-    ranked AS (
-        SELECT m.co_cd, m.menu_cd,
-               (mid.dae_no * 1000 + mid.jung_no * 100
-                 + ROW_NUMBER() OVER (
-                       PARTITION BY m.co_cd, m.h_menu_cd
-                       ORDER BY m.sort_no, m.menu_cd
-                   ))::int AS sn
-          FROM tbl_menu m
-          JOIN mid ON mid.mid_cd = m.h_menu_cd
-         WHERE m.use_yn = 'Y'
-           AND m.scrn_cd IS NOT NULL
-           AND (p_co_cd IS NULL OR m.co_cd = p_co_cd)
-    )
-    UPDATE tbl_menu m
-       SET sort_no = r.sn, upd_id = 'system', upd_dt = now()
-      FROM ranked r
-     WHERE m.co_cd = r.co_cd AND m.menu_cd = r.menu_cd;
-END;
-$$;
-
-
---
--- Name: PROCEDURE sp_tbl_menu_sort_encode_u_000(IN p_co_cd character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_menu_sort_encode_u_000(IN p_co_cd character varying) IS '메뉴 sort_no 인코딩 — 대(1~9)*1000+중(0~9)*100+소(0~99). leaf는 sort_no 상대순. p_co_cd NULL=전업체';
-
-
---
 -- Name: sp_tbl_notification_r_000(character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
@@ -6072,24 +5970,38 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_today_task_doc_r_000(p_co_cd character vary
 -- Name: sp_tbl_today_task_r_000(character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_today_task_r_000(p_co_cd character varying, p_user_id character varying, p_base_dt character varying) RETURNS TABLE(task_idx bigint, task_type character varying, title character varying, status character varying, due_dt character varying, due_time character varying, link_scrn_cd character varying, doc_idx bigint, ref_idx bigint, content character varying)
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_today_task_r_000(character varying, character varying, character varying);
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_today_task_r_000(p_co_cd character varying, p_user_id character varying, p_base_dt character varying) RETURNS TABLE(task_idx bigint, task_type character varying, title character varying, status character varying, due_dt character varying, due_time character varying, link_scrn_cd character varying, doc_idx bigint, ref_idx bigint, content character varying, tmpl_cd character varying, base_dt character varying)
     LANGUAGE sql STABLE
     AS $$
+    -- 작성과제: 오늘(미작성·진행·기한경과·승인완료) + 전날·기한이 지난 미완료
+    -- content 는 양식코드 폴백, tmpl_cd·base_dt 는 예정 행추가에 그대로 싣는다
     SELECT t.idx, 'TASK', COALESCE(ct.tmpl_nm_ovr, tp.tmpl_nm, t.tmpl_cd), t.status, t.due_dt, t.due_time,
-           tp.scrn_cd, t.doc_idx, t.idx, NULL::varchar
+           tp.scrn_cd, t.doc_idx, t.idx, t.tmpl_cd, t.tmpl_cd, t.base_dt
       FROM tbl_schedule_task t
       JOIN tbl_template tp ON tp.tmpl_cd = t.tmpl_cd
       LEFT JOIN tbl_company_template ct ON ct.co_cd = t.co_cd AND ct.tmpl_cd = t.tmpl_cd
-     WHERE t.co_cd = p_co_cd AND t.base_dt = p_base_dt AND t.status IN ('TODO','ING','LATE')
+     WHERE t.co_cd = p_co_cd
        AND (t.user_id IS NULL OR t.user_id = p_user_id)
+       AND (
+            (t.base_dt = p_base_dt AND t.status IN ('TODO','ING','LATE','APV'))
+         OR (t.status IN ('TODO','ING','LATE')
+             AND NULLIF(btrim(t.due_dt), '') IS NOT NULL
+             AND t.due_dt < p_base_dt)
+       )
     UNION ALL
+    -- 개선조치: DONE 이 아닌 건. content=조치내용
     SELECT ca.idx, 'CA', '미완료 개선조치: ' || ca.ca_no, ca.status, ca.due_dt, NULL,
-           'corrective-action-management', ca.src_doc_idx, ca.idx, ca.deviation_desc
+           'corrective-action-management', ca.src_doc_idx, ca.idx, ca.action_desc::varchar,
+           ca.src_tmpl_cd, ca.occur_dt
       FROM tbl_corrective_action ca
      WHERE ca.co_cd = p_co_cd AND ca.status <> 'DONE'
        AND (ca.action_user_id IS NULL OR ca.action_user_id = p_user_id)
     ORDER BY 5 NULLS LAST, 6 NULLS LAST, 1;
 $$;
+
+COMMENT ON FUNCTION sasshaccp.sp_tbl_today_task_r_000(character varying, character varying, character varying) IS '오늘 할 일 — 오늘+기한경과 작성과제 + 미완료 개선조치. tmpl_cd·base_dt 는 예정 행추가용';
 
 
 --
