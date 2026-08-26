@@ -120,7 +120,10 @@ ${table(be)}
 if (process.argv.includes("--check")) {
   const now = fs.existsSync(OUT) ? fs.readFileSync(OUT, "utf-8") : "";
   // 날짜 줄만 다른 것은 어긋남으로 보지 않는다
-  const strip = (t) => t.replace(/일자: \d{4}-\d{2}-\d{2}/, "일자: -");
+  // 날짜 줄과 줄바꿈(CRLF/LF)은 어긋남으로 보지 않는다 —
+  // git 이 Windows 체크아웃에서 LF 를 CRLF 로 바꾼다. 내용이 같으면 통과다
+  const strip = (t) =>
+    t.replace(/일자: \d{4}-\d{2}-\d{2}/, "일자: -").replace(/\r\n/g, "\n");
   if (strip(now) !== strip(doc)) {
     console.error("PIPELINE 색인이 소스와 어긋났다 — node scripts/gen_pipeline_index.mjs 로 다시 뽑아라");
     process.exit(1);
