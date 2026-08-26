@@ -1,18 +1,15 @@
 /**
- * types — MES 셸 인프라 모듈.
+ * gridRules/types — 편집 그리드 공통 규칙의 타입 정본.
  *
- * 주요 역할:
- *     1. MesShell(F49) / Page(F115~F156) 지원 유틸
- *     2. 탭·다이얼로그·메시지·검증·단축키 등 횡단 관심사
- *
- * 설계 기준:
- *     - 도메인 CRUD 없음.
- *     - *Page.tsx가 shell을 import(단방향).
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) 저장 절차·권한 판정·필수값 검사가 주고받는 모양을 여기 한 곳에 둔다
+ *   2) gridRules 하위 파일과 화면이 함께 가져다 쓴다
+ *   3) 업무 CRUD 는 없다 — 타입과 순수 함수만이다
  *
  * PIPELINE[F79] 셸 인프라
  * PIPELINE[F49, F52] 연관 모듈
- *
- * 구현내용: 전수 주석(레벨3).
  */
 // EditableRow 타입: 그리드 편집 행 _key/_rowState/_original
 import type { EditableRow } from "@/types/editable";

@@ -80,5 +80,5 @@ Controller (@RestController)
 ## 인수인계·PIPELINE
 
 - 주석: [`05-handoff-comments.mdc`](05-handoff-comments.mdc)
-- 골드: `auth/AuthService.java` · `docs/document/DocumentService.java` · `mapper/docs/documents/*.xml`
+- 골드: `auth/AuthService.java` · `docs/documents/DocumentService.java` · `mapper/docs/documents/*.xml`
 - 태그 접두 **`HB`** (프론트는 `HF`). 색인 [`docs/5_PIPELINE_색인.md`](../../docs/5_PIPELINE_색인.md)

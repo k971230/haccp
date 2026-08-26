@@ -41,7 +41,7 @@ alwaysApply: true
 ## 에러 메시지
 
 - **사용자**: 업무 문구만
-  - BE: `backend/haccp-api/.../common/exception/SqlUserMessage.java`
+  - BE: `backend/haccp-api/src/main/java/com/haccp/common/exception/SqlUserMessage.java`
   - FE: `frontend/haccp-web/src/shell/errors.ts` (`stripDbTechnicalMessage`)
 - **서버 로그**: 기술 상세 전체 (`GlobalExceptionHandler`)
 
