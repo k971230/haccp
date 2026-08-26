@@ -15,6 +15,7 @@
 import { expect, test } from "@playwright/test";
 import {
   adminCreds,
+  btn,
   dbOne,
   login,
   openScreen,
@@ -172,8 +173,10 @@ test.describe("문서 흐름 — 작성 → 전송 → 승인 → 보관", () =>
 
     // --- 7. 문서함 — 승인 완료만 보이고 조회 전용이다 ---------------------
     await openScreen(page, "/flow/box/document-inbox");
-    await expect(page.getByText("문서 목록")).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByRole("button", { name: "신규" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "삭제" })).toHaveCount(0);
+    // 셸이 닫은 탭을 DOM 에 남겨 둔다 — 보이는 것만 골라야 한다
+    await expect(page.getByText("문서 목록").filter({ visible: true }).first())
+      .toBeVisible({ timeout: 30_000 });
+    await expect(btn(page, "신규")).toHaveCount(0);
+    await expect(btn(page, "삭제")).toHaveCount(0);
   });
 });

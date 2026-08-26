@@ -14,6 +14,8 @@ import { expect, test } from "@playwright/test";
 import {
   addRow,
   adminCreds,
+  btn,
+  confirmDeleteBtn,
   dbOne,
   dbRows,
   fillCell,
@@ -25,11 +27,11 @@ import {
 
 /** 화면 · 표준 양식코드 · 복사본 지면 항목이 들어가는 표 */
 const SCREENS = [
-  { path: "hyg-process-template", std: "html_hyg_prc_000", itemTbl: "tbl_html_hyg_prc_ver_item" },
-  { path: "ccp-verify-template", std: "tml_ccp_chk_000", itemTbl: "tbl_tml_ccp_chk_ver_item" },
-  { path: "ccp-pkg-template", std: "tml_ccp_pkg_000", itemTbl: "tbl_tml_ccp_pkg_ver_item" },
-  { path: "ccp-htg-template", std: "tml_ccp_htg_000", itemTbl: "tbl_tml_ccp_htg_ver_item" },
-  { path: "ccp-mtl-template", std: "tml_ccp_mtl_000", itemTbl: "tbl_tml_ccp_mtl_ver_item" },
+  { path: "hyg-process-template", std: "html_hyg_prc_000", itemTbl: "tbl_html_hyg_prc_ver_item", verTbl: "tbl_html_hyg_prc_ver" },
+  { path: "ccp-verify-template", std: "tml_ccp_chk_000", itemTbl: "tbl_tml_ccp_chk_ver_item", verTbl: "tbl_tml_ccp_chk_ver" },
+  { path: "ccp-pkg-template", std: "tml_ccp_pkg_000", itemTbl: "tbl_tml_ccp_pkg_ver_item", verTbl: "tbl_tml_ccp_pkg_ver" },
+  { path: "ccp-htg-template", std: "tml_ccp_htg_000", itemTbl: "tbl_tml_ccp_htg_ver_item", verTbl: "tbl_tml_ccp_htg_ver" },
+  { path: "ccp-mtl-template", std: "tml_ccp_mtl_000", itemTbl: "tbl_tml_ccp_mtl_ver_item", verTbl: "tbl_tml_ccp_mtl_ver" },
 ];
 
 const NAME = "E2E 복사양식";
@@ -153,4 +155,76 @@ test.describe("HTML 양식 원본 5화면", () => {
       "표준이 DB 행으로 새로 생겼다 — 복사본이 표준을 덮어쓴 것이다",
     ).toBe("0");
   });
+
+  /*
+   * 삭제도 화면마다 SP 가 다르다. 「표준은 못 지운다」만 보면 삭제가 통째로 죽어도 통과한다 —
+   * 2026-08-26 에 HWP 양식에서 실제로 그랬다. 복사본이 실제로 지워지는지 전 화면에서 본다.
+   */
+  for (const target of SCREENS) {
+  test(`${target.path} — 복사한 자사 양식은 실제로 지워진다`, async ({ page }) => {
+    purge();
+
+    const { user, pass } = adminCreds();
+    await login(page, user, pass);
+    await openScreen(page, `/docs/html-form/${target.path}`);
+    await expect(page.getByRole("button", { name: "조회" })).toBeVisible({ timeout: 30_000 });
+
+    // 지울 대상을 만든다 — 표준은 못 지우니 복사본으로 본다
+    const grid = grids(page).first();
+    const at = await addRow(page, grid);
+    await fillCell(grid, at, "양식명", NAME);
+    expect(await saveAndConfirm(page, `/${target.path}/copy`)).toBe(200);
+
+    const made = dbOne(
+      `SELECT tmpl_cd FROM tbl_template WHERE tmpl_nm='${NAME}' ORDER BY idx DESC LIMIT 1`,
+    );
+    expect(made, "복사본이 안 만들어졌다").not.toBe("");
+
+    await openScreen(page, `/docs/html-form/${target.path}`);
+    await expect(page.getByRole("button", { name: "조회" })).toBeVisible({ timeout: 30_000 });
+    const row = grids(page).first().locator("tbody tr").filter({ hasText: made }).first();
+    await expect(row, "복사본이 목록에 없다").toBeVisible({ timeout: 20_000 });
+    // 이 화면들은 체크박스가 아니라 「지금 고른 행」을 지운다 (HtmlFormTemplatePage.handleDelete)
+    await row.click();
+
+    const [res] = await Promise.all([
+      page.waitForResponse((r) => /\/(validate-)?delete/.test(r.url()), { timeout: 30_000 }),
+      (async () => {
+        await btn(page, "삭제").click();
+        const ok = confirmDeleteBtn(page);
+        await expect(ok, "삭제 확인창이 안 뜬다").toBeVisible({ timeout: 20_000 });
+        await ok.click();
+      })(),
+    ]);
+    expect(res.status(), "삭제 API 가 실패했다").toBeLessThan(400);
+
+    /*
+     * 화면이 아니라 DB 로 확인한다. 이 삭제는 **소프트 삭제**다 —
+     * 회사 사용양식과 예정 규칙은 지우되 지면 버전은 use_yn='N' 으로 남긴다.
+     * 이미 그 양식으로 쓴 문서가 지면을 잃으면 기록의 근거가 사라지기 때문이다.
+     */
+    await expect
+      .poll(
+        () => dbOne(`SELECT count(*) FROM tbl_company_template WHERE co_cd='0000' AND tmpl_cd='${made}'`),
+        { timeout: 20_000 },
+      )
+      .toBe("0");
+    expect(
+      dbOne(`SELECT count(*) FROM tbl_schedule_rule WHERE co_cd='0000' AND tmpl_cd='${made}'`),
+      "삭제했는데 예정 규칙이 남았다 — 없는 양식의 과제가 계속 생긴다",
+    ).toBe("0");
+    expect(
+      dbOne(`SELECT use_yn FROM ${target.verTbl} WHERE tmpl_cd='${made}' ORDER BY ver_no DESC LIMIT 1`),
+      "지면 버전이 사용중으로 남았다 — 목록에 계속 뜬다",
+    ).toBe("N");
+
+    // 화면 목록에서도 사라져야 한다
+    await openScreen(page, `/docs/html-form/${target.path}`);
+    await expect(page.getByRole("button", { name: "조회" })).toBeVisible({ timeout: 30_000 });
+    await expect(
+      grids(page).first().locator("tbody tr").filter({ hasText: made }),
+      "지운 양식이 목록에 계속 보인다",
+    ).toHaveCount(0);
+  });
+  }
 });

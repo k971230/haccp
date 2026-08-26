@@ -269,7 +269,7 @@ test.describe.serial("통합 시나리오", () => {
     const { user, pass } = adminCreds();
     await login(page, user, pass);
     await openScreen(page, "/today-tasks");
-    await expect(page.getByText(/오늘 작성·과제/).first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/오늘 작성 과제/).first()).toBeVisible({ timeout: 30_000 });
 
     if (saved) dbOne(`UPDATE tbl_schedule_rule SET cycle_cd='${saved}' WHERE tmpl_cd='${TMPL}'`);
   });

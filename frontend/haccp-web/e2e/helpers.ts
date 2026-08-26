@@ -39,11 +39,22 @@ export function readonlyCreds(): { user: string; pass: string } | null {
  *   1) 로그인 화면에서 아이디·비밀번호를 넣고 셸이 뜰 때까지 기다린다
  *   2) 모든 스펙의 beforeEach 가 호출한다
  *   3) URL 로 판정하지 않는다 — basename 때문에 잠시 /login 에 남을 수 있다
+ *   4) 로그아웃 직후에도 안전하다 — 로그아웃 버튼이 스스로 /login 으로 보내므로
+ *      그 이동이 도는 중에 goto 를 부르면 "interrupted by another navigation" 으로 깨진다.
+ *      이미 로그인 화면이면 다시 이동하지 않는다
  */
 export async function login(page: Page, user: string, pass: string): Promise<void> {
-  await page.goto("login", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("#login-user-id")).toBeVisible({ timeout: 30_000 });
-  await page.locator("#login-user-id").fill(user);
+  const idBox = page.locator("#login-user-id");
+  // 로그아웃이 보낸 이동이 아직 도는 중일 수 있다 — 잠깐 기다려 보고 없을 때만 직접 간다
+  const already = await idBox
+    .waitFor({ state: "visible", timeout: 3_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!already) {
+    await page.goto("login", { waitUntil: "domcontentloaded" });
+  }
+  await expect(idBox).toBeVisible({ timeout: 30_000 });
+  await idBox.fill(user);
   await page.locator("#login-password").fill(pass);
   await page.getByRole("button", { name: "로그인" }).click();
   await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible({ timeout: 30_000 });
@@ -338,4 +349,94 @@ export function visibleRows(page: Page): Locator {
  */
 export function rowOfDoc(page: Page, docIdx: string | number): Locator {
   return page.locator(`tr[data-key="${docIdx}"]`).filter({ visible: true }).first();
+}
+
+/**
+ * 삭제 확인창의 긍정 버튼을 누른다.
+ *
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) 확인창은 mes-notice 다이얼로그이고 긍정 버튼 글자가 **「삭제」**다 — 「확인」이 아니다
+ *   2) 툴바 「삭제」와 글자가 같아 다이얼로그 안으로 범위를 좁혀야 한다
+ *   3) 이 구분을 안 하면 아무것도 안 누르고 시험이 통과한다 (2026-08-26 실제로 그랬다)
+ */
+export function confirmDeleteBtn(page: Page): Locator {
+  return page
+    .locator('[role=dialog], .mes-notice')
+    .filter({ visible: true })
+    .locator("button")
+    .filter({ hasText: /^삭제$/ })
+    .first();
+}
+
+/**
+ * 신규 업체 시드(06_company_seed.sql)를 돌린다.
+ *
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) 그 파일은 psql 전용 메타명령(\if·\set·\gset)을 머리말에만 쓴다. 본문은 순수 SQL 이다
+ *   2) psql 이 없는 개발 PC 에서도 시드를 **실제로 돌려 보려고** 여기서 변수만 바꿔 넣는다
+ *   3) 값 치환 규칙은 psql 과 같다 — :'x' 는 작은따옴표 문자열이다. 본문 SQL 은 손대지 않는다
+ *
+ * 시드 자체를 베끼지 않는다. 파일을 읽어 돌리므로 정본은 계속 06_company_seed.sql 하나다.
+ */
+export function seedCompany(vars: {
+  coCd: string;
+  coNm?: string;
+  adminId?: string;
+  srcCo?: string;
+}): void {
+  if (!hasDbTools()) {
+    test.skip(true, "tools/ 가 없어 업체 개설 시드를 건너뛴다 (로컬 전용)");
+  }
+  const file = path.join(repoRoot(), "db_sasshaccp", "06_company_seed.sql");
+  const raw = fs.readFileSync(file, "utf-8");
+
+  const v: Record<string, string> = {
+    co_cd: vars.coCd,
+    co_nm: vars.coNm ?? "E2E 신규업체",
+    admin_id: vars.adminId ?? `admin${vars.coCd}`,
+    // '1234' 의 BCrypt 해시 — 시드 기본값과 같다
+    admin_pw: "$2a$10$omCFk.XMhqOp5dAmMQ7Me.Rp9c0f87cCPZS3IRg1avF5PVWRzjw4O",
+    src_co: vars.srcCo ?? "0000",
+  };
+
+  const body = raw
+    .split(/\r?\n/)
+    // psql 메타명령 줄을 걷어낸다 — 전부 머리말의 기본값·가드다
+    .filter((l) => !/^\s*\\/.test(l))
+    // gset 으로 끝나던 가드 질의도 뺀다. 같은 검사는 아래에서 직접 한다
+    .filter((l) => !l.includes("\\gset"))
+    .join("\n")
+    .replace(/:'([a-z_]+)'/g, (_m, name: string) => {
+      const val = v[name];
+      if (val == null) throw new Error(`시드 변수 ${name} 에 값이 없다`);
+      return `'${val.replace(/'/g, "''")}'`;
+    });
+
+  if (v.co_cd === v.src_co) throw new Error("원본 회사코드와 같다 — 다른 co_cd 로 돌린다");
+  runJava("Q", body);
+}
+
+/** 업체 하나를 통째로 지운다 — 시드가 만든 표를 역순으로 비운다 */
+export function purgeCompany(coCd: string): void {
+  if (!hasDbTools()) return;
+  if (coCd === "0000") throw new Error("표준 업체(0000)는 지울 수 없다");
+  for (const t of [
+    "tbl_doc_no_rule",
+    "tbl_company_template",
+    "tbl_approval_line_step",
+    "tbl_approval_line",
+    "tbl_role_screen",
+    "tbl_menu",
+    "tbl_user",
+    "tbl_dept",
+    "tbl_role",
+    "tbl_code",
+    "tbl_company",
+  ]) {
+    runJava("Q", `DELETE FROM ${t} WHERE co_cd = '${coCd}'`);
+  }
 }

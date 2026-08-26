@@ -15,6 +15,7 @@ import {
   addRow,
   adminCreds,
   btn,
+  confirmDeleteBtn,
   dbOne,
   fillCell,
   grids,
@@ -31,10 +32,13 @@ const HWP = "C:/Users/user/Downloads/(개정) 소규모업체를 위한 과자_�
 
 const NAME = "E2E 시험양식";
 
+/** 삭제 왕복 전용 이름 — 위 NAME 과 나눠야 앞 시험이 만든 행을 안 건드린다 */
+const DEL_NAME = "E2E 삭제검증양식";
+
 /** 시험이 만든 사용자 양식만 지운다 — 이름으로 찾는다. 시스템 제공본은 건드리지 않는다 */
 function purge(): void {
   const codes = dbOne(`SELECT string_agg(quote_literal(tmpl_cd), ',') FROM tbl_template
-                        WHERE tmpl_nm='${NAME}'`);
+                        WHERE tmpl_nm IN ('${NAME}', '${DEL_NAME}')`);
   if (!codes) return;
   dbOne(`DELETE FROM tbl_company_template_file WHERE tmpl_cd IN (${codes})`);
   dbOne(`DELETE FROM tbl_company_template WHERE tmpl_cd IN (${codes})`);
@@ -102,15 +106,98 @@ test.describe.serial("HWP 사용양식관리", () => {
     const row = grid.locator("tbody tr").filter({ hasText: "hwp_sys_001" }).first();
     await row.click();
     await row.locator('input[type="checkbox"]').first().check({ force: true });
+    // 화면이 먼저 막는다 — 삭제 API 를 아예 부르지 않는다
+    let called = false;
+    page.on("request", (r) => {
+      if (/hwp-template-management\/(validate-)?delete/.test(r.url())) called = true;
+    });
     await btn(page, "삭제").click();
-    await page.waitForTimeout(2_000);
-    const ok = btn(page, "확인");
-    if (await ok.count()) await ok.click();
-    await page.waitForTimeout(3_000);
+    await expect(
+      page.getByText("시스템에서 제공하는 양식은 삭제할 수 없습니다.").filter({ visible: true }).first(),
+      "시스템 양식 삭제를 막는 안내가 없다",
+    ).toBeVisible({ timeout: 20_000 });
+    expect(called, "화면이 안 막고 서버까지 갔다").toBe(false);
 
     expect(
       dbOne("SELECT count(*) FROM tbl_template WHERE tmpl_cd='hwp_sys_001'"),
       "시스템 제공 양식이 지워졌다",
     ).toBe("1");
+  });
+
+  test("자사 양식은 실제로 지워진다 — 화면·DB 둘 다", async ({ page }) => {
+    const { user, pass } = adminCreds();
+    await login(page, user, pass);
+    await openScreen(page, PATH);
+    await expect(page.getByRole("button", { name: "조회" })).toBeVisible({ timeout: 30_000 });
+
+    // 지울 자사 양식을 하나 만든다 — 시스템 제공분은 못 지우니 만들어서 지운다
+    // 양식코드는 화면이 hwp_usr_NNN 으로 자동 채번한다
+    const grid = grids(page).first();
+    const at = await addRow(page, grid);
+    await fillCell(grid, at, "양식명", DEL_NAME);
+    expect(await saveAndConfirm(page, "/hwp-template-management/save")).toBe(200);
+
+    const cd = dbOne(
+      `SELECT tmpl_cd FROM tbl_template WHERE tmpl_nm='${DEL_NAME}' ORDER BY idx DESC LIMIT 1`,
+    );
+    expect(cd, "자사 양식이 저장되지 않았다").not.toBe("");
+    expect(
+      dbOne(`SELECT count(*) FROM tbl_company_template WHERE co_cd='0000' AND tmpl_cd='${cd}'`),
+    ).toBe("1");
+
+    // 만든 양식을 골라 지운다 — 삭제 응답이 5xx 면 여기서 걸린다
+    await openScreen(page, PATH);
+    await expect(page.getByRole("button", { name: "조회" })).toBeVisible({ timeout: 30_000 });
+    const row = grids(page).first().locator("tbody tr").filter({ hasText: cd }).first();
+    await expect(row).toBeVisible({ timeout: 20_000 });
+    await row.click();
+    await row.locator('input[type="checkbox"]').first().check({ force: true });
+
+    const [res] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/hwp-template-management/delete"),
+        { timeout: 30_000 },
+      ),
+      (async () => {
+        await btn(page, "삭제").click();
+        // 확인창의 긍정 버튼도 글자가 「삭제」다 — 다이얼로그 안으로 좁힌다
+        const ok = confirmDeleteBtn(page);
+        await expect(ok, "삭제 확인창이 안 뜬다").toBeVisible({ timeout: 20_000 });
+        await ok.click();
+      })(),
+    ]);
+    expect(res.status(), "삭제 API 가 실패했다").toBe(200);
+
+    // DB 에서 사라져야 한다 — 화면만 보고 통과시키지 않는다
+    await expect
+      .poll(
+        () => dbOne(`SELECT count(*) FROM tbl_company_template WHERE co_cd='0000' AND tmpl_cd='${cd}'`),
+        { timeout: 20_000 },
+      )
+      .toBe("0");
+    expect(
+      dbOne(`SELECT count(*) FROM tbl_template WHERE tmpl_cd='${cd}'`),
+      "자사 카탈로그 행이 남았다",
+    ).toBe("0");
+  });
+
+  test("화면을 우회해 API 를 직접 쳐도 시스템 양식은 막는다", async ({ request }) => {
+    const apiBase = process.env.E2E_API_BASE_URL || "http://localhost:7070";
+    const { user, pass } = adminCreds();
+    const login0 = await request.post(`${apiBase}/api/v1/auth/login`, {
+      data: { userId: user, password: pass },
+    });
+    const token = ((await login0.json())?.data?.token ?? "") as string;
+    expect(token, "로그인 실패").not.toBe("");
+
+    // 화면 차단을 지나쳐도 서버가 다시 막아야 한다 (Double Check)
+    const res = await request.post(
+      `${apiBase}/api/v1/docs/hwp/hwp-template-management/validate-delete`,
+      { headers: { Authorization: `Bearer ${token}` }, data: [{ tmplCd: "hwp_sys_001" }] },
+    );
+    expect(res.status(), "서버가 시스템 양식 삭제를 막지 않는다").toBe(400);
+    expect(await res.text()).toContain("시스템 제공 양식");
+
+    expect(dbOne("SELECT count(*) FROM tbl_template WHERE tmpl_cd='hwp_sys_001'")).toBe("1");
   });
 });
