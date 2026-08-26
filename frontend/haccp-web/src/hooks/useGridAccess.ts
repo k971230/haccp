@@ -32,8 +32,13 @@ export function useGridAccess(
   // 화면코드·읽기전용·추가 권한 플래그
   ctx: Omit<GridAccessContext, "scrnCd"> & { scrnCd?: string },
 ) {
+  /*
+   * ctx 를 통째로 의존성에 넣으면 안 된다 — 화면이 매 렌더마다 객체 리터럴을 새로 만들어
+   * 넘기므로 메모가 매번 깨진다. 값이 바뀔 때만 다시 만들도록 칸을 하나씩 적는다.
+   */
   const fullCtx: GridAccessContext = useMemo(
     () => ({ scrnCd: ctx.scrnCd ?? "", ...ctx }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 위 까닭. ctx 자체를 넣으면 메모가 죽는다
     [ctx.scrnCd, ctx.gridRole, ctx.readOnly, ctx.parentRow, ctx.codeMaps, ctx.extra],
   );
 
