@@ -2,11 +2,11 @@
  * docStatus — 문서·과제·개선조치 상태 배지 색 정본.
  *
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-08-26
  * 코멘트:
  *   1) 그리드 badge·상세 배지가 같은 색을 쓰게 한곳에 모은다
  *   2) 라벨은 tbl_code(DOC_STATUS·CA_STATUS) 또는 TASK_STATUS_NM 이 정한다. 여기서는 색만 둔다
- *   3) 오늘 할 일·결재첨부·HWP 오늘할일 팝업이 가져다 쓴다
+ *   3) 오늘 할 일·결재첨부·문서함·HWP 오늘할일 팝업이 가져다 쓴다
  *
  * PIPELINE[HF88] 오늘 할 일 화면
  */
@@ -20,17 +20,17 @@ export type StatusBadgeTone = "blue" | "amber" | "green" | "gray" | "red" | "pur
  */
 export const DOC_STATUS_BADGE: Record<string, StatusBadgeTone> = {
   // 작성중 — 아직 손댈 수 있다
-  WRK: "gray",
+  WRK: "red",
   // 구 임시저장 — 작성중과 같이 본다
-  TMP: "gray",
+  TMP: "red",
   // 승인요청 — 결재가 돌고 있다
   REQ: "blue",
   // 검토완료 — 다음이 승인이다
   REV: "amber",
   // 승인완료 — 확정된 기록
   APV: "green",
-  // 반려 — 고쳐서 다시 보내야 한다
-  RJT: "red",
+  // 반려 — 작성중(빨강)과 겹치지 않게 둔다
+  RJT: "purple",
 };
 
 /**
@@ -65,11 +65,11 @@ export const CA_STATUS_BADGE: Record<string, StatusBadgeTone> = {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-08-26
  * 코멘트:
  *   1) 문서 상태 코드의 배지 색을 고른다 — 모르는 코드는 회색
  *   2) 결재첨부 우측 상세 배지가 호출한다. 그리드는 DOC_STATUS_BADGE 를 그대로 넘긴다
- *   3) 색 의미: 회색 작성중 · 파랑 진행 · 노랑 중간단계 · 초록 완료 · 빨강 반려
+ *   3) 색 의미: 빨강 작성중 · 파랑 진행 · 노랑 중간단계 · 초록 완료 · 보라 반려
  */
 export function docStatusBadgeClass(
   // 문서 상태 WRK/REQ/REV/APV/RJT
@@ -83,6 +83,7 @@ export function docStatusBadgeClass(
     amber: "bg-amber-50 text-amber-700 border-amber-200",
     green: "bg-emerald-50 text-emerald-700 border-emerald-200",
     red: "bg-red-50 text-red-700 border-red-200",
+    purple: "bg-violet-50 text-violet-700 border-violet-200",
   };
   return byTone[tone] ?? byTone.gray;
 }

@@ -26,6 +26,8 @@ import { HaccpLogo } from "@/components/ui/HaccpLogo";
 import { useAuthStore } from "@/stores/authStore";
 // 역할 — 열린 탭 목록·활성 탭
 import { useTabStore } from "@/stores/tabStore";
+// 역할 — 권한 밖 화면 안내
+import { mesToast } from "@/shell/dialog";
 // 역할 — 로그아웃 시 세션 일괄 정리
 import { clearAuthSession } from "@/shell/authSession";
 // 역할 — Vite base(/haccp/) 반영 로그인 절대 경로
@@ -79,6 +81,8 @@ export function HaccpShell() {
   const tabs = useTabStore((s) => s.tabs);
   const activeCd = useTabStore((s) => s.activeCd);
   const openTab = useTabStore((s) => s.openTab);
+  // 계정이 바뀌면 권한 밖 탭을 닫는다 — 아래 useEffect 가 쓴다
+  const keepOnly = useTabStore((s) => s.keepOnly);
   // 그리드·트리 헤더 초록 — 화면마다 bind 를 달지 않고 셸에서 한 번만 듣는다
   useEffect(() => bindMesSec(), []);
   // 사이드바 펼침 여부 — 저장값이 "0"일 때만 접힌 상태로 시작한다
@@ -95,6 +99,18 @@ export function HaccpShell() {
   // 화면 조회 로그 — 활성 탭이 바뀌는 시점을 그대로 넘긴다
   useViewLog(activeCd);
 
+  /*
+   * 계정이 바뀌면 이전 계정이 열어 둔 탭을 닫는다.
+   *
+   * 로그아웃은 탭을 비우지만, 다른 브라우저 탭에서 갈아타거나 세션이 복원되면 남는다.
+   * 그 화면은 열려 있는데 API 는 전부 403 이라 사용자는 「고장났다」고 느낀다.
+   * 메뉴는 이미 권한이 반영된 목록이라 그것만 남기면 된다.
+   */
+  useEffect(() => {
+    if (!menuQ.data) return;
+    keepOnly(new Set(menuQ.data.map((r) => r.scrnCd).filter(Boolean) as string[]));
+  }, [menuQ.data, keepOnly]);
+
   // 주소가 화면 경로면 그 화면 탭을 열고 활성화한다 (뒤로가기·새로고침·직접 입력 모두 같은 경로)
   useEffect(() => {
     const scrn = parseRoute(loc.pathname);
@@ -103,7 +119,17 @@ export function HaccpShell() {
       // 메뉴가 아직 도착하지 않았을 때(= 탭 제목을 알 수 없음) 기다린다
       if (!menuQ.data) return;
       const row = menuQ.data.find((r) => r.scrnCd === scrn);
-      openTab(scrn, row ? cleanTitle(row.menuNm) : scrn);
+      /*
+       * 메뉴에 없으면 볼 권한이 없는 화면이다 — 열지 않는다.
+       * 예전에는 그냥 열어서 화면은 뜨는데 조회·저장이 전부 403 이었다.
+       * 주소를 직접 치거나, 다른 계정으로 갈아탄 뒤 뒤로가기를 눌러도 여기로 온다.
+       */
+      if (!row) {
+        mesToast("이 화면을 볼 권한이 없습니다.", "warn");
+        nav(routeOf("today-tasks"), { replace: true });
+        return;
+      }
+      openTab(scrn, cleanTitle(row.menuNm));
       return;
     }
     // 마지막 탭 닫기 URL은 "/". HomeView 가 today-tasks 로 replace. /screen 등 미등록은 오늘 할 일

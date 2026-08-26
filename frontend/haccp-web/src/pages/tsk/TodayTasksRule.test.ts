@@ -63,9 +63,10 @@ describe("taskStatusLabel — TASK/CA 맵 선택", () => {
 });
 
 describe("배지 키", () => {
-  it("문서 WRK 는 회색 — 작성중 칸", () => {
-    expect(DOC_STATUS_BADGE.WRK).toBe("gray");
+  it("문서 WRK 는 빨강 — 작성중 칸", () => {
+    expect(DOC_STATUS_BADGE.WRK).toBe("red");
     expect(DOC_STATUS_BADGE.REQ).toBe("blue");
+    expect(DOC_STATUS_BADGE.RJT).toBe("purple");
   });
 
   it("오늘 할 일 한글 라벨로도 색을 고른다", () => {

@@ -307,6 +307,45 @@ public class GlobalExceptionHandler {
             "22P02", "숫자·날짜 형식이 올바르지 않습니다."
     );
 
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-26
+     * 코멘트:
+     *   1) DB 오류 문구를 한 줄로 만든다 — PostgreSQL 은 Where 절을 여러 줄로 붙인다
+     *   2) 예상된 흐름(업무 규칙·입력 오류) 로그에서 호출한다
+     *   3) 200자에서 자른다. 그 뒤는 PL/pgSQL 위치라 사람이 안 읽는다
+     */
+    private String oneLine(String message) {
+        if (message == null) return "";
+        // 줄바꿈만 공백으로 — PostgreSQL 은 Where 절을 여러 줄로 붙인다
+        String one = message.replace("\r", " ").replace("\n", " ").trim();
+        while (one.contains("  ")) {
+            one = one.replace("  ", " ");
+        }
+        return one.length() > 200 ? one.substring(0, 200) + "..." : one;
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-26
+     * 코멘트:
+     *   1) 우리 코드에서 어디가 불렀는지 한 줄로 찾는다 (com.haccp 첫 프레임)
+     *   2) 스택 대신 이것만 남겨 로그를 읽을 수 있게 한다
+     *   3) 못 찾으면 빈 문자열 — 로그가 깨지지 않게
+     */
+    private String callerOf(Throwable t) {
+        for (Throwable e = t; e != null; e = e.getCause()) {
+            for (StackTraceElement f : e.getStackTrace()) {
+                String cls = f.getClassName();
+                if (cls.startsWith("com.haccp") && !cls.contains("GlobalExceptionHandler")) {
+                    int dot = cls.lastIndexOf('.');
+                    return cls.substring(dot + 1) + "." + f.getMethodName() + ":" + f.getLineNumber();
+                }
+            }
+        }
+        return "";
+    }
+
     private ResponseEntity<ErrorResponse> classify(
             // 예외 원인 체인 시작점 — 내부 SQLException 탐색
             // 호출부의 null·빈값 허용 여부와 변환 규칙은 메서드 본문의 기존 계약을 따른다
@@ -319,13 +358,13 @@ public class GlobalExceptionHandler {
 
         // 조건식이 참일 때(= 45000: SP RAISE(업무 규칙 위반) — 업무 문구만 노출) 기존 분기 처리를 실행
         if ("45000".equals(state)) {
-            // 원문·스택은 warn 로그
-            log.warn(
-                    "DB business signal (sqlState={}): {}",
-                    state,
-                    sql.getMessage(),
-                    t
-            );
+            /*
+             * 업무 규칙 위반은 「예상된 흐름」이다 — 필수값 누락·중복키·상태 역행.
+             * 스택트레이스를 찍으면 로그가 100줄씩 불어나 진짜 장애를 못 찾는다.
+             * 어디서 났는지는 SP 이름과 호출 지점 한 줄이면 충분하다.
+             */
+            log.warn("DB business signal (sqlState={}): {} [{}]",
+                    state, oneLine(sql.getMessage()), callerOf(t));
             // 400 + SqlUserMessage 정제 메시지
             return ResponseEntity.badRequest()
                     .body(
@@ -340,7 +379,9 @@ public class GlobalExceptionHandler {
          */
         String badInput = BAD_INPUT_STATES.get(state);
         if (badInput != null) {
-            log.warn("DB input rejected (sqlState={}): {}", state, sql != null ? sql.getMessage() : "", t);
+            // 입력이 틀린 것도 예상된 흐름이다 — 스택 대신 호출 지점만 남긴다
+            log.warn("DB input rejected (sqlState={}): {} [{}]",
+                    state, oneLine(sql != null ? sql.getMessage() : ""), callerOf(t));
             return ResponseEntity.badRequest().body(new ErrorResponse("BAD_INPUT", badInput));
         }
         // 조건식이 참일 때(= 23505(중복키)·40P01(교착) — 동시 처리 충돌, 재시도 유도) 기존 분기 처리를 실행

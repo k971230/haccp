@@ -259,14 +259,8 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
             </select>
           </label>
         ) : undefined}
-        // 세 화면 모두 조회 전용 — 무엇을 모아 둔 목록인지만 알린다
-        actions={(
-          <span className="text-xs text-slate-400">
-            {boxMode === "approval" ? "내 결재 대기"
-              : boxMode === "history" ? "내가 처리한 결재"
-                : "결재 완료 문서"}
-          </span>
-        )}
+        // 조회 전용 — 행추가·저장·삭제를 내지 않는다
+        showCrudActions={false}
       />
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(340px,42%)_1fr]">

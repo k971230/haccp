@@ -38,6 +38,17 @@ esac
 USER="${SMOKE_USER:?SMOKE_USER not set}"
 PASS="${SMOKE_PASS:?SMOKE_PASS not set}"
 
+# Jenkins Credentials 를 Windows 에이전트에서 읽으면 값 끝에 CR 이 붙는다.
+# 로그인 화면은 trim 하지만 여기서는 그대로 POST 해서 BCrypt 가 어긋난다 —
+# 브라우저로는 되는데 스모크만 LOGIN_FAIL 이 나면 대개 이것이다.
+trim() {
+  local v="${1//$'\r'/}"
+  v="${v#"${v%%[![:space:]]*}"}"
+  printf '%s' "${v%"${v##*[![:space:]]}"}"
+}
+USER="$(trim "$USER")"
+PASS="$(trim "$PASS")"
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=smoke_env.sh
 source "$ROOT/scripts/smoke_env.sh"
