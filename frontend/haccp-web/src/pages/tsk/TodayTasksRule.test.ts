@@ -102,13 +102,19 @@ describe("개선조치 미완료 · 기한경과 정렬", () => {
     ]);
   });
 
-  it("예정은 행추가 쿼리, 그 외는 조회다", () => {
-    expect(todayTaskHref({
+  it("문서가 없으면 예정이든 지연이든 행추가 쿼리다", () => {
+    // 지연도 아직 안 쓴 과제다 — 목록만 열면 양식·일자를 손으로 다시 골라야 한다
+    const late = todayTaskHref({
       taskType: "TASK",
       status: "LATE",
-      content: "tml_ccp_chk_001",
-      linkScrnCd: "ccp-verification-check",
-    })).toBe("/draft/html/ccp-verify");
+      tmplCd: "tml_ccp_chk_001",
+      baseDt: "20260826",
+      title: "맞춤",
+    });
+    const lateQ = new URLSearchParams(late.slice(late.indexOf("?") + 1));
+    expect(late.startsWith("/draft/html/ccp-verify?")).toBe(true);
+    expect(lateQ.get("add")).toBe("1");
+    expect(lateQ.get("baseDt")).toBe("20260826");
     const todo = todayTaskHref({
       taskType: "TASK",
       status: "TODO",
@@ -129,10 +135,13 @@ describe("개선조치 미완료 · 기한경과 정렬", () => {
       docIdx: 99,
     })).toBe("/draft/html/ccp-verify?docIdx=99");
     expect(todayTaskHref({ taskType: "CA" })).toBe("/flow/ca/corrective-action-management");
+    // HWP 도 문서가 없으면 행추가다 — 양식코드는 content 로 와도 읽는다
     expect(todayTaskHref({
       taskType: "TASK",
       content: "hwp_sys_002",
-    })).toBe("/draft/hwp-doc/hwp-write");
+    })).toBe("/draft/hwp-doc/hwp-write?add=1&tmplCd=hwp_sys_002");
+    // 양식코드가 없으면 갈 곳을 못 찾는다 — 빈 문자열이면 화면이 이동을 생략한다
+    expect(todayTaskHref({ taskType: "TASK" })).toBe("");
   });
 });
 
