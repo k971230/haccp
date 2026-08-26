@@ -2,11 +2,12 @@
 #  HACCP DB 마이그레이션 one-shot 이미지
 #
 #  개발자: 박승우
-#  일자: 2026-08-10
+#  일자: 2026-08-26
 #  코멘트:
 #    1) compose profile "migrate" 가 이 이미지로 apply-all.sh 를 1회 실행한다
 #    2) alpine 이 아니라 debian postgres:16 — bash 가 필요해서다
 #    3) 접속정보는 실행 시 PG* 환경변수로만 받는다 (이미지에 시크릿 없음)
+#    4) CO_CD 를 주면 06_company_seed 까지 돌아 그 업체가 열린다 (기본 0000 은 건너뛴다)
 #
 #  빌드: docker build -f db_sasshaccp/Dockerfile.migrate -t haccp-migrate:local db_sasshaccp
 # ============================================================
@@ -15,5 +16,6 @@ FROM postgres:16
 WORKDIR /sql
 COPY . /sql/
 
-# apply-all.sh 는 PGHOST·PGUSER·PGPASSWORD·PGDATABASE·CO_CD 를 환경에서 읽는다
+# apply-all.sh 는 PGHOST·PGUSER·PGPASSWORD·PGDATABASE 와
+# CO_CD·CO_NM·ADMIN_ID(업체 개설) 를 환경에서 읽는다
 ENTRYPOINT ["/bin/bash", "/sql/apply-all.sh"]

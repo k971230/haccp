@@ -5,7 +5,7 @@ alwaysApply: true
 
 # HACCP 운영 규약
 
-정본: [`docs/3_운영규칙_FE.md`](../../docs/3_운영규칙_FE.md) · BE [`docs/4_운영규칙_BE.md`](../../docs/4_운영규칙_BE.md)  
+정본: [`docs/7_보안과_파일.md`](../../docs/7_보안과_파일.md) · BE [`docs/7_보안과_파일.md`](../../docs/7_보안과_파일.md)  
 인수인계 주석: `05-handoff-comments.mdc`
 
 ## [OPS_DELETE] 삭제 표준

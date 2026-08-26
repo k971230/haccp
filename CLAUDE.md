@@ -37,10 +37,24 @@ Claude Code 진입점이다. **규칙 본문은 여기 두지 않는다** — �
 
 ```sh
 # 프론트
-cd frontend/haccp-web ; npx tsc --noEmit ; npx eslint src ; npx vitest run ; npm run build
+cd frontend/haccp-web
+npx tsc --noEmit ; npx eslint src e2e ; npx vitest run ; npm run build
+npx playwright test          # E2E 68건 — 화면·API·SP·DB 를 한 줄로 꿴다
+
 # 백엔드
 cd backend/haccp-api ; ./mvnw -q -o test
-# DB — 빈 DB 에 5본을 순서대로
-psql -f db_sasshaccp/00_ddl.sql ; psql -f db_sasshaccp/01_sp.sql ; psql -f db_sasshaccp/02_seed.sql
-psql -v co_cd=0000 -f db_sasshaccp/03_code_seed.sql ; psql -v co_cd=0000 -f db_sasshaccp/05_form_seed.sql
+
+# DB — 빈 DB 에 6본을 순서대로 (재실행 안전)
+PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 ```
+
+## 코드를 만지기 전에
+
+| 하려는 일 | 볼 곳 |
+|---|---|
+| 이 프로젝트가 뭔지·업무 흐름 | [`docs/1_시작하기.md`](docs/1_시작하기.md) |
+| 코드가 어떤 순서로 도는지 | [`backend/haccp-api/PIPELINE.md`](backend/haccp-api/PIPELINE.md) · [`frontend/haccp-web/PIPELINE.md`](frontend/haccp-web/PIPELINE.md) |
+| 화면 하나 만들기 | [`docs/2_화면_추가하기.md`](docs/2_화면_추가하기.md) |
+| 지금 있는 화면 | [`docs/3_화면_지도.md`](docs/3_화면_지도.md) |
+| 이름·경로 규칙 | [`docs/4_명명과_경로.md`](docs/4_명명과_경로.md) |
+| 왜 이렇게 돼 있나 | [`docs/8_결정_이력.md`](docs/8_결정_이력.md) |

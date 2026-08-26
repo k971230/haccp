@@ -17,7 +17,7 @@ alwaysApply: false
 | JWT | 단일 TTL (`app.jwt.expire-minutes`) |
 
 DB 규약: [`07-haccp-db.mdc`](07-haccp-db.mdc) · 운영: [`06-operations.mdc`](06-operations.mdc)  
-경로 정본: [`docs/24_URL_DB_폴더_패키지_정본.md`](../../docs/24_URL_DB_폴더_패키지_정본.md)
+경로 정본: [`docs/4_명명과_경로.md`](../../docs/4_명명과_경로.md)
 
 ## 패키지
 
@@ -81,4 +81,4 @@ Controller (@RestController)
 
 - 주석: [`05-handoff-comments.mdc`](05-handoff-comments.mdc)
 - 골드: `auth/AuthService.java` · `docs/document/DocumentService.java` · `mapper/docs/documents/*.xml`
-- 태그 접두 **`HB`** (프론트는 `HF`). 색인 [`docs/23_PIPELINE.md`](../../docs/23_PIPELINE.md)
+- 태그 접두 **`HB`** (프론트는 `HF`). 색인 [`docs/5_PIPELINE_색인.md`](../../docs/5_PIPELINE_색인.md)

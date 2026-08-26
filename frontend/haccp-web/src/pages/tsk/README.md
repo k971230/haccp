@@ -10,4 +10,4 @@
 
 라우트: `/today-tasks`. 홈 `/` → HomeView가 여기로 보낸다. 탭 첫 칸 고정 아님.
 
-개선조치 화면은 [`pages/docs/corrective/`](../docs/corrective/README.md) (`taskWorkflowApi` 공유 가능).
+개선조치 화면은 [`pages/docs/corrective/`](../flow/ca/corrective/README.md) (`taskWorkflowApi` 공유 가능).

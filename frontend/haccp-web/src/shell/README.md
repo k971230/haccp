@@ -1,6 +1,6 @@
 # shell — 앱 셸 진입
 
-정본 이야기: [`docs/11_메인_셸.md`](../../../../docs/11_메인_셸.md). 태그 HF49 대역 [`docs/23_PIPELINE.md`](../../../../docs/23_PIPELINE.md).
+정본 이야기: [`frontend/haccp-web/PIPELINE.md`](../../PIPELINE.md). 태그 HF49 대역 [`docs/5_PIPELINE_색인.md`](../../../../docs/5_PIPELINE_색인.md).
 
 화면마다 `<Route>`가 없다. `AppRoutes`는 `/login`과 `/*`(HaccpShell)만.
 

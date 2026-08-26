@@ -2,11 +2,11 @@
  * UserManagementPage — 사용자 관리 MesEditableGrid 화면.
  *
  * 개발자: 박승우
- * 일자: 2026-08-12
+ * 일자: 2026-08-26
  * 코멘트:
  *   1) 인라인 편집 그리드로 변경행만 저장한다 — 권한그룹·부서는 룩업, 서명은 서명 모달
  *   2) 사용자ID·사용자명·사용여부는 전건 조회 후 FE 필터한다(사용 기본 Y)
- *   3) 컬럼·잠금 규칙은 UserManagementRule이 갖고 이 파일은 렌더·상태·API만 담당한다
+ *   3) 부서는 선택이므로 룩업에 (없음) 행을 넣고, 필수 검사는 REQUIRED_FIELDS(ID·명·권한그룹)만 본다
  *
  * PIPELINE[HF99] 사용자 관리 그리드 화면
  * PIPELINE[HF92, HF96, HF97, HF98] 연관 모듈
@@ -182,8 +182,10 @@ export default function UserManagementPage() {
       scrnCd: SCRN_CD,
       options: deptOptions,
       value: String(row.deptCd ?? ""),
+      // 부서는 선택이므로 (없음) 행으로 빈 코드를 고를 수 있다
+      allowEmpty: true,
       onSelect: (code, label) => {
-        // 코드·명 동시 갱신 — 표시열은 Nm, 저장은 Cd
+        // 코드·명 동시 갱신 — 표시열은 Nm, 저장은 Cd. (없음)이면 둘 다 빈 문자열
         g.updateCell(rowKey, "deptCd", code);
         g.updateCell(rowKey, "deptNm", label);
       },

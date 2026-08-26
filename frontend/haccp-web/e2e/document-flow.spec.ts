@@ -69,7 +69,7 @@ test.describe("문서 흐름 — 작성 → 전송 → 승인 → 보관", () =>
       page.getByRole("button", { name: "저장", exact: true }).first().click(),
     ]);
 
-    // --- 2. 지면 값 입력·저장 → 재조회해도 남아 있어야 한다 (★ 회귀) ------
+    // --- 2. 지면 값 입력·저장 → 재조회해도 남아 있어야 한다 (회귀 고정) ------
     /*
      * 저장이 끝나면 좌측 행을 다시 눌러야 우측이 그 문서로 열린다.
      * 시험을 돌릴수록 목록에 문서가 쌓이므로 문서번호(가장 큰 일련)로 내 문서를 특정한다.
@@ -88,7 +88,7 @@ test.describe("문서 흐름 — 작성 → 전송 → 승인 → 보관", () =>
       page.getByRole("button", { name: "작성 후 저장" }).click(),
     ]);
     /*
-     * 새로고침해도 저장값이 살아 있어야 한다 (★ 회귀).
+     * 새로고침해도 저장값이 살아 있어야 한다 (회귀 고정).
      * 목록에 이전 시험 문서가 쌓이므로 방금 만든 문서번호로 행을 특정한다.
      */
     // 저장 응답이 와도 좌측 목록 재조회가 남아 있다 — 끝나기를 기다린 뒤 새로고침한다
@@ -149,7 +149,7 @@ test.describe("문서 흐름 — 작성 → 전송 → 승인 → 보관", () =>
       visibleRows(page).filter({ hasText: "tml_ccp_htg_" }).first(),
     ).toContainText("승인요청", { timeout: 30_000 });
 
-    // --- 5. 결재 대기 — 미리보기에 값이 보여야 한다 (★ 회귀) --------------
+    // --- 5. 결재 대기 — 미리보기에 값이 보여야 한다 (회귀 고정) --------------
     await openScreen(page, "/flow/appr/sign-ready");
     // 목록 열 구성·열린 탭 수에 안 매이게 문서 idx 로 행을 집는다
     const docIdx = dbOne("SELECT idx FROM tbl_document ORDER BY idx DESC LIMIT 1");

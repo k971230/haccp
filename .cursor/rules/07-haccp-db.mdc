@@ -17,8 +17,8 @@ alwaysApply: false
 
 ## 명명 규약
 
-- 코드성 값 kebab-case 정본: [`docs/22_코드_케밥_양식매핑.md`](../../docs/22_코드_케밥_양식매핑.md) (`tmpl_cd` 등). 이 파일은 SP·테이블 규약만 다룬다.
-- 경로(URL=DB `menu_cd`) 정본: [`docs/24_URL_DB_폴더_패키지_정본.md`](../../docs/24_URL_DB_폴더_패키지_정본.md)
+- 코드성 값 kebab-case 정본: [`docs/4_명명과_경로.md`](../../docs/4_명명과_경로.md) (`tmpl_cd` 등). 이 파일은 SP·테이블 규약만 다룬다.
+- 경로(URL=DB `menu_cd`) 정본: [`docs/4_명명과_경로.md`](../../docs/4_명명과_경로.md)
 - PK: 전 테이블 `idx bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY`
 - 업무키: 복합 PK 대신 `CONSTRAINT ux_{테이블}_{키} UNIQUE (co_cd, ...)`
 - 인덱스: 일반 `ix_{테이블}_{용도}`, 유니크 `ux_{테이블}_{키}`
