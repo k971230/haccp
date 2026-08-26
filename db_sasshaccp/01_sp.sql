@@ -16,7 +16,7 @@ SET search_path TO sasshaccp;
 -- Name: sp_audit_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_menu_key character varying, p_user_id character varying, p_action_cd character varying) RETURNS TABLE(idx bigint, user_id character varying, user_nm character varying, menu_nm character varying, tbl_nm character varying, tgt_idx bigint, action_cd character varying, before_json jsonb, after_json jsonb, reason character varying, ip_addr character varying, ins_dt timestamp without time zone)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_menu_key character varying, p_user_id character varying, p_action_cd character varying) RETURNS TABLE(idx bigint, user_id character varying, user_nm character varying, menu_nm character varying, tbl_nm character varying, tgt_idx bigint, action_cd character varying, before_json jsonb, after_json jsonb, reason character varying, ip_addr character varying, ins_dt timestamp without time zone)
     LANGUAGE sql
     AS $$
     SELECT a.idx,
@@ -68,7 +68,7 @@ COMMENT ON FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varying, p_fr
 -- Name: sp_ccp_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx, m.idx,
@@ -111,7 +111,7 @@ COMMENT ON FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl
 -- Name: sp_ccp_mtl_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer)
     LANGUAGE sql STABLE
     AS $_$
     SELECT d.idx, h.idx,
@@ -154,7 +154,7 @@ COMMENT ON FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl
 -- Name: sp_ccp_verify_c_000(character varying, character varying, bigint, character varying, character varying, jsonb, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_ccp_verify_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_checker_nm character varying, p_payload jsonb, p_id character varying) RETURNS bigint
+CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_verify_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_checker_nm character varying, p_payload jsonb, p_id character varying) RETURNS bigint
     LANGUAGE plpgsql
     AS $_$
 DECLARE
@@ -203,7 +203,7 @@ BEGIN
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status, appr_line_cd,
             writer_id, write_dt, ver_no, retention_until, del_yn, ins_id, ins_dt
         ) VALUES (
-            p_co_cd, v_tmpl, 'html', v_no, p_base_dt,
+            p_co_cd, v_tmpl, 'HTML', v_no, p_base_dt,
             v_name || ' (' || substr(p_base_dt, 1, 4) || '-' || substr(p_base_dt, 5, 2) || '-' || substr(p_base_dt, 7, 2) || ')',
             'WRK', v_appr, p_id, now(), 1,
             to_char((to_date(p_base_dt, 'YYYYMMDD') + (COALESCE(v_retain, 24) || ' months')::interval)::date, 'YYYYMMDD'),
@@ -275,7 +275,7 @@ COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_c_000(p_co_cd character varying, p_t
 -- Name: sp_ccp_verify_d_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_ccp_verify_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_ccp_verify_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
     LANGUAGE plpgsql
     AS $_$
 DECLARE v_status varchar; v_hdr bigint;
@@ -312,7 +312,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_ccp_verify_d_000(IN p_co_cd character varying,
 -- Name: sp_ccp_verify_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer)
     LANGUAGE sql STABLE
     AS $_$
     SELECT d.idx, h.idx,
@@ -366,7 +366,7 @@ COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varying, p_t
 -- Name: sp_ccp_verify_r_001(character varying, character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_ccp_verify_r_001(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint) RETURNS jsonb
+CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_verify_r_001(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint) RETURNS jsonb
     LANGUAGE plpgsql STABLE
     AS $$
 DECLARE
@@ -495,7 +495,7 @@ COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_r_001(p_co_cd character varying, p_t
 -- Name: sp_ccp_verify_sign_u_000(character varying, bigint, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_ccp_verify_sign_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_checker_nm character varying, IN p_approver_nm character varying, IN p_confirm_nm character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_ccp_verify_sign_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_checker_nm character varying, IN p_approver_nm character varying, IN p_confirm_nm character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -551,7 +551,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_ccp_verify_sign_u_000(IN p_co_cd character var
 -- Name: sp_common_code_management_c_000(character varying, bigint, character varying, character varying, character varying, integer, character varying, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_common_code_management_c_000(IN p_co_cd character varying, IN p_idx bigint, IN p_main_cd character varying, IN p_sub_cd character varying, IN p_code_nm character varying, IN p_sort_no integer, IN p_ref1 character varying, IN p_ref2 character varying, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_common_code_management_c_000(IN p_co_cd character varying, IN p_idx bigint, IN p_main_cd character varying, IN p_sub_cd character varying, IN p_code_nm character varying, IN p_sort_no integer, IN p_ref1 character varying, IN p_ref2 character varying, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -619,7 +619,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_common_code_management_c_000(IN p_co_cd charac
 -- Name: sp_common_code_management_d_000(character varying, bigint); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_common_code_management_d_000(IN p_co_cd character varying, IN p_idx bigint)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_common_code_management_d_000(IN p_co_cd character varying, IN p_idx bigint)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -649,7 +649,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_common_code_management_d_000(IN p_co_cd charac
 -- Name: sp_common_code_management_delete_blocker_r_000(character varying, bigint[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_common_code_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_common_code_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE sql
     AS $$
     SELECT c.sub_cd::varchar AS ref_key,
@@ -673,7 +673,7 @@ COMMENT ON FUNCTION sasshaccp.sp_common_code_management_delete_blocker_r_000(p_c
 -- Name: sp_common_code_management_r_000(character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_common_code_management_r_000(p_co_cd character varying, p_main_cd character varying, p_code_nm character varying) RETURNS TABLE(idx bigint, co_cd character varying, main_cd character varying, sub_cd character varying, code_nm character varying, sort_no integer, sys_yn character varying, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_common_code_management_r_000(p_co_cd character varying, p_main_cd character varying, p_code_nm character varying) RETURNS TABLE(idx bigint, co_cd character varying, main_cd character varying, sub_cd character varying, code_nm character varying, sort_no integer, sys_yn character varying, use_yn character varying)
     LANGUAGE sql
     AS $$
     SELECT c.idx, c.co_cd, c.main_cd, c.sub_cd, c.code_nm, c.sort_no, c.sys_yn, c.use_yn
@@ -699,7 +699,7 @@ COMMENT ON FUNCTION sasshaccp.sp_common_code_management_r_000(p_co_cd character 
 -- Name: sp_common_code_management_r_001(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_common_code_management_r_001(p_co_cd character varying, p_main_cd character varying, p_sys_yn character varying, p_use_yn character varying) RETURNS TABLE(idx bigint, co_cd character varying, main_cd character varying, sub_cd character varying, code_nm character varying, sort_no integer, ref1 character varying, ref2 character varying, sys_yn character varying, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_common_code_management_r_001(p_co_cd character varying, p_main_cd character varying, p_sys_yn character varying, p_use_yn character varying) RETURNS TABLE(idx bigint, co_cd character varying, main_cd character varying, sub_cd character varying, code_nm character varying, sort_no integer, ref1 character varying, ref2 character varying, sys_yn character varying, use_yn character varying)
     LANGUAGE sql
     AS $$
     SELECT c.idx, c.co_cd, c.main_cd, c.sub_cd, c.code_nm, c.sort_no, c.ref1, c.ref2, c.sys_yn, c.use_yn
@@ -732,7 +732,7 @@ COMMENT ON FUNCTION sasshaccp.sp_common_code_management_r_001(p_co_cd character 
 -- Name: sp_department_management_c_000(character varying, bigint, character varying, character varying, character varying, integer, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_department_management_c_000(IN p_co_cd character varying, IN p_idx bigint, IN p_dept_cd character varying, IN p_dept_nm character varying, IN p_h_dept_cd character varying, IN p_sort_no integer, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_department_management_c_000(IN p_co_cd character varying, IN p_idx bigint, IN p_dept_cd character varying, IN p_dept_nm character varying, IN p_h_dept_cd character varying, IN p_sort_no integer, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -785,7 +785,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_department_management_c_000(IN p_co_cd charact
 -- Name: sp_department_management_d_000(character varying, bigint); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_department_management_d_000(IN p_co_cd character varying, IN p_idx bigint)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_department_management_d_000(IN p_co_cd character varying, IN p_idx bigint)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -845,7 +845,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_department_management_d_000(IN p_co_cd charact
 -- Name: sp_department_management_delete_blocker_r_000(character varying, bigint[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_department_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_department_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE sql
     AS $$
     WITH tgt AS (
@@ -897,7 +897,7 @@ COMMENT ON FUNCTION sasshaccp.sp_department_management_delete_blocker_r_000(p_co
 -- Name: sp_department_management_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_department_management_r_000(p_co_cd character varying, p_dept_cd character varying, p_dept_nm character varying, p_use_yn character varying) RETURNS TABLE(idx bigint, co_cd character varying, dept_cd character varying, dept_nm character varying, h_dept_cd character varying, h_dept_nm character varying, sort_no integer, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_department_management_r_000(p_co_cd character varying, p_dept_cd character varying, p_dept_nm character varying, p_use_yn character varying) RETURNS TABLE(idx bigint, co_cd character varying, dept_cd character varying, dept_nm character varying, h_dept_cd character varying, h_dept_nm character varying, sort_no integer, use_yn character varying)
     LANGUAGE sql
     AS $$
     SELECT d.idx, d.co_cd, d.dept_cd, d.dept_nm, d.h_dept_cd,
@@ -928,7 +928,7 @@ COMMENT ON FUNCTION sasshaccp.sp_department_management_r_000(p_co_cd character v
 -- Name: sp_draft_hwp_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, deviation_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, deviation_yn character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx,
@@ -960,7 +960,7 @@ CREATE FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_c
      WHERE d.co_cd = p_co_cd
        AND d.del_yn = 'N'
        -- HWP 문서형만. HTML 전용 화면 문서는 이 화면 대상이 아니다
-       AND d.doc_kind = 'hwp'
+       AND d.doc_kind = 'HWP'
        AND (COALESCE(NULLIF(btrim(p_tmpl_cd), ''), '') = '' OR d.tmpl_cd ILIKE '%' || btrim(p_tmpl_cd) || '%')
        AND (COALESCE(NULLIF(btrim(p_tmpl_nm), ''), '') = ''
             OR COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm, '') ILIKE '%' || btrim(p_tmpl_nm) || '%')
@@ -985,7 +985,7 @@ COMMENT ON FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varying, p_tm
 -- Name: sp_draft_hwp_task_r_000(character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_draft_hwp_task_r_000(p_co_cd character varying, p_user_id character varying, p_base_dt character varying) RETURNS TABLE(task_idx bigint, tmpl_cd character varying, tmpl_nm character varying, base_dt character varying, due_dt character varying, due_time character varying, status character varying, doc_idx bigint)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_draft_hwp_task_r_000(p_co_cd character varying, p_user_id character varying, p_base_dt character varying) RETURNS TABLE(task_idx bigint, tmpl_cd character varying, tmpl_nm character varying, base_dt character varying, due_dt character varying, due_time character varying, status character varying, doc_idx bigint)
     LANGUAGE sql STABLE
     AS $$
     SELECT t.idx,
@@ -1004,7 +1004,7 @@ CREATE FUNCTION sasshaccp.sp_draft_hwp_task_r_000(p_co_cd character varying, p_u
        -- 아직 끝나지 않은 할일만 — 오늘 할일 화면과 같은 상태 집합
        AND t.status IN ('TODO', 'ING', 'LATE')
        -- HWP 문서형 주기만. HTML 전용 화면 주기는 이 팝업 대상이 아니다
-       AND tp.doc_kind = 'hwp'
+       AND tp.doc_kind = 'HWP'
        -- 담당자 미지정이거나(= 누구나 처리) 내 할일일 때만
        AND (t.user_id IS NULL OR t.user_id = p_user_id)
      ORDER BY t.due_time NULLS LAST, t.idx;
@@ -1022,7 +1022,7 @@ COMMENT ON FUNCTION sasshaccp.sp_draft_hwp_task_r_000(p_co_cd character varying,
 -- Name: sp_hwp_template_management_c_000(character varying, character varying, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_hwp_template_management_c_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_tmpl_nm character varying, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_hwp_template_management_c_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_tmpl_nm character varying, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -1050,7 +1050,7 @@ BEGIN
     IF NOT FOUND THEN
         -- 카탈로그에 없는 새 코드 — 이 회사 소유 자사 양식으로 카탈로그를 만든다
         INSERT INTO tbl_template(co_cd, tmpl_cd, tmpl_nm, doc_kind, use_yn, impl_yn, ins_id, ins_dt)
-        VALUES (p_co_cd, p_tmpl_cd, p_tmpl_nm, 'hwp', 'Y', 'Y', p_id, now());
+        VALUES (p_co_cd, p_tmpl_cd, p_tmpl_nm, 'HWP', 'Y', 'Y', p_id, now());
     ELSIF v_owner <> '0000' AND v_owner <> p_co_cd THEN
         -- 다른 회사가 쓰는 코드 — 전역 유일 제약이라 재사용할 수 없다
         RAISE EXCEPTION '이미 사용 중인 양식코드입니다: %', p_tmpl_cd USING ERRCODE = '45000';
@@ -1073,7 +1073,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_hwp_template_management_c_000(IN p_co_cd chara
 -- Name: sp_hwp_template_management_current_u_000(character varying, character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_hwp_template_management_current_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_file_idx bigint, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_hwp_template_management_current_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_file_idx bigint, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -1122,7 +1122,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_hwp_template_management_current_u_000(IN p_co_
 -- Name: sp_hwp_template_management_file_c_000(character varying, character varying, character varying, character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_hwp_template_management_file_c_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_file_nm character varying, IN p_form_path character varying, IN p_file_size bigint, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_hwp_template_management_file_c_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_file_nm character varying, IN p_form_path character varying, IN p_file_size bigint, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -1168,7 +1168,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_hwp_template_management_file_c_000(IN p_co_cd 
 -- Name: sp_hwp_template_management_file_r_000(character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_hwp_template_management_file_r_000(p_co_cd character varying, p_tmpl_cd character varying) RETURNS TABLE(idx bigint, file_seq integer, file_nm character varying, file_size bigint, src_ty character varying, current_yn character varying, default_yn character varying, ins_id character varying, ins_dt timestamp without time zone)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_hwp_template_management_file_r_000(p_co_cd character varying, p_tmpl_cd character varying) RETURNS TABLE(idx bigint, file_seq integer, file_nm character varying, file_size bigint, src_ty character varying, current_yn character varying, default_yn character varying, ins_id character varying, ins_dt timestamp without time zone)
     LANGUAGE sql STABLE
     AS $$
     SELECT f.idx, f.file_seq, f.file_nm, f.file_size, f.src_ty,
@@ -1195,7 +1195,7 @@ COMMENT ON FUNCTION sasshaccp.sp_hwp_template_management_file_r_000(p_co_cd char
 -- Name: sp_hwp_template_management_r_000(character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_hwp_template_management_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying) RETURNS TABLE(tmpl_cd character varying, tmpl_nm character varying, sys_yn character varying, doc_kind character varying, category_cd character varying, mng_no character varying, form_path character varying, form_file_nm character varying, use_yn character varying, default_file_idx bigint, current_file_idx bigint, file_hist_cnt integer)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_hwp_template_management_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying) RETURNS TABLE(tmpl_cd character varying, tmpl_nm character varying, sys_yn character varying, doc_kind character varying, category_cd character varying, mng_no character varying, form_path character varying, form_file_nm character varying, use_yn character varying, default_file_idx bigint, current_file_idx bigint, file_hist_cnt integer)
     LANGUAGE sql STABLE
     AS $_$
     SELECT ct.tmpl_cd,
@@ -1218,10 +1218,9 @@ CREATE FUNCTION sasshaccp.sp_hwp_template_management_r_000(p_co_cd character var
       FROM tbl_company_template ct
       JOIN tbl_template t ON t.tmpl_cd = ct.tmpl_cd
      WHERE ct.co_cd = p_co_cd
-       AND (
-            ct.tmpl_cd ~ '^hwp_sys_0(0[1-9]|1[0-9]|2[0-7])$'
-         OR ct.tmpl_cd LIKE 'hwp_usr_%'
-       )
+       -- HWP 양식만 — 양식코드 범위를 박지 않는다.
+       -- 예전에는 hwp_sys_001~027 정규식이었고, 028 부터는 등록해도 목록에 안 떴다
+       AND t.doc_kind = 'HWP'
        AND ct.tmpl_cd LIKE CONCAT('%', COALESCE(p_tmpl_cd, ''), '%')
        AND COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm) LIKE CONCAT('%', COALESCE(p_tmpl_nm, ''), '%')
      ORDER BY t.sort_no, ct.tmpl_cd;
@@ -1239,7 +1238,7 @@ COMMENT ON FUNCTION sasshaccp.sp_hwp_template_management_r_000(p_co_cd character
 -- Name: sp_login_history_r_000(character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_login_history_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_user_id character varying, p_result_cd character varying) RETURNS TABLE(idx bigint, user_id character varying, user_nm character varying, sid character varying, login_dt timestamp without time zone, logout_dt timestamp without time zone, result_cd character varying, fail_reason character varying, ip_addr character varying, device_gbn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_login_history_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_user_id character varying, p_result_cd character varying) RETURNS TABLE(idx bigint, user_id character varying, user_nm character varying, sid character varying, login_dt timestamp without time zone, logout_dt timestamp without time zone, result_cd character varying, fail_reason character varying, ip_addr character varying, device_gbn character varying)
     LANGUAGE sql
     AS $$
     SELECT l.idx, l.user_id, u.user_nm, l.sid, l.login_dt, l.logout_dt,
@@ -1267,7 +1266,7 @@ COMMENT ON FUNCTION sasshaccp.sp_login_history_r_000(p_co_cd character varying, 
 -- Name: sp_menu_management_c_000(character varying, bigint, character varying, character varying, character varying, character varying, integer, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_menu_management_c_000(IN p_co_cd character varying, IN p_idx bigint, IN p_menu_cd character varying, IN p_menu_nm character varying, IN p_h_menu_cd character varying, IN p_scrn_cd character varying, IN p_sort_no integer, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_menu_management_c_000(IN p_co_cd character varying, IN p_idx bigint, IN p_menu_cd character varying, IN p_menu_nm character varying, IN p_h_menu_cd character varying, IN p_scrn_cd character varying, IN p_sort_no integer, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -1337,7 +1336,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_menu_management_c_000(IN p_co_cd character var
 -- Name: sp_menu_management_d_000(character varying, bigint); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_menu_management_d_000(IN p_co_cd character varying, IN p_idx bigint)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_menu_management_d_000(IN p_co_cd character varying, IN p_idx bigint)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -1371,7 +1370,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_menu_management_d_000(IN p_co_cd character var
 -- Name: sp_menu_management_delete_blocker_r_000(character varying, bigint[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_menu_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_menu_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE sql
     AS $$
     SELECT m.menu_cd::varchar AS ref_key,
@@ -1396,7 +1395,7 @@ COMMENT ON FUNCTION sasshaccp.sp_menu_management_delete_blocker_r_000(p_co_cd ch
 -- Name: sp_menu_management_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_menu_management_r_000(p_co_cd character varying, p_menu_cd character varying, p_menu_nm character varying, p_use_yn character varying) RETURNS TABLE(idx bigint, menu_cd character varying, menu_nm character varying, h_menu_cd character varying, scrn_cd character varying, sort_no integer, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_menu_management_r_000(p_co_cd character varying, p_menu_cd character varying, p_menu_nm character varying, p_use_yn character varying) RETURNS TABLE(idx bigint, menu_cd character varying, menu_nm character varying, h_menu_cd character varying, scrn_cd character varying, sort_no integer, use_yn character varying)
     LANGUAGE sql
     AS $$
     SELECT m.idx, m.menu_cd, m.menu_nm, m.h_menu_cd, m.scrn_cd, m.sort_no, m.use_yn
@@ -1421,7 +1420,7 @@ COMMENT ON FUNCTION sasshaccp.sp_menu_management_r_000(p_co_cd character varying
 -- Name: sp_menu_nav_r_000(character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_menu_nav_r_000(p_co_cd character varying, p_usrgrp_cd character varying) RETURNS TABLE(idx bigint, menu_cd character varying, menu_nm character varying, h_menu_cd character varying, scrn_cd character varying, module_cd character varying, sort_no integer, read_yn character varying, write_yn character varying, modify_yn character varying, delete_yn character varying, print_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_menu_nav_r_000(p_co_cd character varying, p_usrgrp_cd character varying) RETURNS TABLE(idx bigint, menu_cd character varying, menu_nm character varying, h_menu_cd character varying, scrn_cd character varying, module_cd character varying, sort_no integer, read_yn character varying, write_yn character varying, modify_yn character varying, delete_yn character varying, print_yn character varying)
     LANGUAGE sql
     AS $$
     SELECT m.idx, m.menu_cd, m.menu_nm, m.h_menu_cd, m.scrn_cd, s.module_cd, m.sort_no,
@@ -1455,7 +1454,7 @@ COMMENT ON FUNCTION sasshaccp.sp_menu_nav_r_000(p_co_cd character varying, p_usr
 -- Name: sp_role_management_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_role_management_c_000(IN p_co_cd character varying, IN p_idx bigint, IN p_usrgrp_cd character varying, IN p_usrgrp_nm character varying, IN p_desc_rmk character varying, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_role_management_c_000(IN p_co_cd character varying, IN p_idx bigint, IN p_usrgrp_cd character varying, IN p_usrgrp_nm character varying, IN p_desc_rmk character varying, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -1501,7 +1500,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_role_management_c_000(IN p_co_cd character var
 -- Name: sp_role_management_d_000(character varying, bigint); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_role_management_d_000(IN p_co_cd character varying, IN p_idx bigint)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_role_management_d_000(IN p_co_cd character varying, IN p_idx bigint)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -1537,7 +1536,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_role_management_d_000(IN p_co_cd character var
 -- Name: sp_role_management_delete_blocker_r_000(character varying, bigint[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_role_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_role_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE sql
     AS $$
     SELECT r.usrgrp_cd::varchar AS ref_key,
@@ -1562,7 +1561,7 @@ COMMENT ON FUNCTION sasshaccp.sp_role_management_delete_blocker_r_000(p_co_cd ch
 -- Name: sp_role_management_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_role_management_r_000(p_co_cd character varying, p_usrgrp_cd character varying, p_usrgrp_nm character varying, p_use_yn character varying) RETURNS TABLE(idx bigint, usrgrp_cd character varying, usrgrp_nm character varying, desc_rmk character varying, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_role_management_r_000(p_co_cd character varying, p_usrgrp_cd character varying, p_usrgrp_nm character varying, p_use_yn character varying) RETURNS TABLE(idx bigint, usrgrp_cd character varying, usrgrp_nm character varying, desc_rmk character varying, use_yn character varying)
     LANGUAGE sql
     AS $$
     SELECT r.idx, r.usrgrp_cd, r.usrgrp_nm, r.desc_rmk, r.use_yn
@@ -1586,7 +1585,7 @@ COMMENT ON FUNCTION sasshaccp.sp_role_management_r_000(p_co_cd character varying
 -- Name: sp_role_management_screen_c_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_role_management_screen_c_000(IN p_co_cd character varying, IN p_usrgrp_cd character varying, IN p_scrn_cd character varying, IN p_read_yn character varying, IN p_write_yn character varying, IN p_modify_yn character varying, IN p_delete_yn character varying, IN p_print_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_role_management_screen_c_000(IN p_co_cd character varying, IN p_usrgrp_cd character varying, IN p_scrn_cd character varying, IN p_read_yn character varying, IN p_write_yn character varying, IN p_modify_yn character varying, IN p_delete_yn character varying, IN p_print_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -1620,7 +1619,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_role_management_screen_c_000(IN p_co_cd charac
 -- Name: sp_role_management_screen_r_000(character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_role_management_screen_r_000(p_co_cd character varying, p_usrgrp_cd character varying) RETURNS TABLE(idx bigint, scrn_cd character varying, scrn_nm character varying, module_cd character varying, read_yn character varying, write_yn character varying, modify_yn character varying, delete_yn character varying, print_yn character varying, sort_no integer)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_role_management_screen_r_000(p_co_cd character varying, p_usrgrp_cd character varying) RETURNS TABLE(idx bigint, scrn_cd character varying, scrn_nm character varying, module_cd character varying, read_yn character varying, write_yn character varying, modify_yn character varying, delete_yn character varying, print_yn character varying, sort_no integer)
     LANGUAGE sql
     AS $$
     SELECT rs.idx, s.scrn_cd, s.scrn_nm, s.module_cd,
@@ -1650,7 +1649,7 @@ COMMENT ON FUNCTION sasshaccp.sp_role_management_screen_r_000(p_co_cd character 
 -- Name: sp_schedule_cycle_management_c_000(character varying, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_schedule_cycle_management_c_000(IN p_co_cd character varying, IN p_payload jsonb, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_schedule_cycle_management_c_000(IN p_co_cd character varying, IN p_payload jsonb, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -1758,7 +1757,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_schedule_cycle_management_c_000(IN p_co_cd cha
 -- Name: sp_schedule_cycle_management_d_000(character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_schedule_cycle_management_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_schedule_cycle_management_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -1794,7 +1793,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_schedule_cycle_management_d_000(IN p_co_cd cha
 -- Name: sp_schedule_cycle_management_form_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_schedule_cycle_management_form_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_use_yn character varying) RETURNS TABLE(tmpl_cd character varying, tmpl_nm character varying, sys_yn character varying, doc_kind character varying, cycle_cd character varying, rule_yn character varying, use_yn character varying, appr_line_cd character varying, appr_line_nm character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_schedule_cycle_management_form_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_use_yn character varying) RETURNS TABLE(tmpl_cd character varying, tmpl_nm character varying, sys_yn character varying, doc_kind character varying, cycle_cd character varying, rule_yn character varying, use_yn character varying, appr_line_cd character varying, appr_line_nm character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT ct.tmpl_cd,
@@ -1811,16 +1810,9 @@ CREATE FUNCTION sasshaccp.sp_schedule_cycle_management_form_r_000(p_co_cd charac
       LEFT JOIN tbl_schedule_rule r ON r.co_cd = ct.co_cd AND r.tmpl_cd = ct.tmpl_cd
       LEFT JOIN tbl_approval_line al ON al.co_cd = ct.co_cd AND al.appr_line_cd = ct.appr_line_cd
      WHERE ct.co_cd = p_co_cd
-       AND (
-            ct.tmpl_cd ~ '^html_sys_0(0[2-57-9]|10|12)$'
-         OR (ct.tmpl_cd ~ '^html_hyg_prc_[0-9]{3}$' AND ct.tmpl_cd <> 'html_hyg_prc_000')
-         OR (ct.tmpl_cd ~ '^tml_ccp_chk_[0-9]{3}$' AND ct.tmpl_cd <> 'tml_ccp_chk_000')
-         OR (ct.tmpl_cd ~ '^tml_ccp_pkg_[0-9]{3}$' AND ct.tmpl_cd <> 'tml_ccp_pkg_000')
-         OR (ct.tmpl_cd ~ '^tml_ccp_htg_[0-9]{3}$' AND ct.tmpl_cd <> 'tml_ccp_htg_000')
-         OR (ct.tmpl_cd ~ '^tml_ccp_mtl_[0-9]{3}$' AND ct.tmpl_cd <> 'tml_ccp_mtl_000')
-         OR ct.tmpl_cd ~ '^hwp_sys_0(0[1-9]|1[0-9]|2[0-7])$'
-         OR ct.tmpl_cd LIKE 'hwp_usr_%'
-       )
+       -- 표준(_000)만 뺀다 — 표준은 복사 원본이라 주기를 걸 대상이 아니다.
+       -- 예전에는 양식코드 정규식 목록이었고, 새 양식이 늘 때마다 이 SP 를 고쳐야 했다
+       AND ct.tmpl_cd NOT LIKE '%\_000'
        AND (
             COALESCE(NULLIF(btrim(p_use_yn), ''), '') = ''
             OR upper(COALESCE(ct.use_yn, 'N')) = upper(btrim(p_use_yn))
@@ -1842,7 +1834,7 @@ COMMENT ON FUNCTION sasshaccp.sp_schedule_cycle_management_form_r_000(p_co_cd ch
 -- Name: sp_schedule_cycle_management_r_000(character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_schedule_cycle_management_r_000(p_co_cd character varying, p_tmpl_cd character varying) RETURNS TABLE(tmpl_cd character varying, tmpl_nm character varying, base_dt character varying, cycle_cd character varying, nonwork_rule character varying, due_time character varying, dept_cd character varying, dept_nm character varying, user_id character varying, user_nm character varying, use_yn character varying, appr_line_cd character varying, appr_line_nm character varying, details jsonb)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_schedule_cycle_management_r_000(p_co_cd character varying, p_tmpl_cd character varying) RETURNS TABLE(tmpl_cd character varying, tmpl_nm character varying, base_dt character varying, cycle_cd character varying, nonwork_rule character varying, due_time character varying, dept_cd character varying, dept_nm character varying, user_id character varying, user_nm character varying, use_yn character varying, appr_line_cd character varying, appr_line_nm character varying, details jsonb)
     LANGUAGE sql STABLE
     AS $$
     SELECT r.tmpl_cd,
@@ -1879,7 +1871,7 @@ COMMENT ON FUNCTION sasshaccp.sp_schedule_cycle_management_r_000(p_co_cd charact
 -- Name: sp_screen_usage_statistics_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_screen_usage_statistics_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_scrn_cd character varying) RETURNS TABLE(stat_dt character varying, scrn_cd character varying, menu_cd character varying, menu_nm character varying, scrn_nm character varying, module_cd character varying, pv_cnt integer, uv_cnt integer, sess_cnt integer, ip_cnt integer, avg_stay_sec numeric, max_stay_sec integer)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_screen_usage_statistics_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_scrn_cd character varying) RETURNS TABLE(stat_dt character varying, scrn_cd character varying, menu_cd character varying, menu_nm character varying, scrn_nm character varying, module_cd character varying, pv_cnt integer, uv_cnt integer, sess_cnt integer, ip_cnt integer, avg_stay_sec numeric, max_stay_sec integer)
     LANGUAGE sql
     AS $$
     SELECT t.stat_dt,
@@ -1921,7 +1913,7 @@ COMMENT ON FUNCTION sasshaccp.sp_screen_usage_statistics_r_000(p_co_cd character
 -- Name: sp_tbl_approval_line_c_000(character varying, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_approval_line_c_000(IN p_co_cd character varying, IN p_payload jsonb, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_approval_line_c_000(IN p_co_cd character varying, IN p_payload jsonb, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -1986,7 +1978,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_approval_line_c_000(IN p_co_cd character v
 -- Name: sp_tbl_approval_line_d_000(character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_approval_line_d_000(IN p_co_cd character varying, IN p_appr_line_cd character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_approval_line_d_000(IN p_co_cd character varying, IN p_appr_line_cd character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -2015,7 +2007,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_approval_line_d_000(IN p_co_cd character v
 -- Name: sp_tbl_approval_line_delete_blocker_r_000(character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_approval_line_delete_blocker_r_000(p_co_cd character varying, p_appr_line_cd character varying) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_approval_line_delete_blocker_r_000(p_co_cd character varying, p_appr_line_cd character varying) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT p_appr_line_cd, '사용양식 또는 문서'::varchar
@@ -2040,7 +2032,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_approval_line_delete_blocker_r_000(p_co_cd 
 -- Name: sp_tbl_approval_line_r_000(character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_approval_line_r_000(p_co_cd character varying) RETURNS TABLE(payload jsonb)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_approval_line_r_000(p_co_cd character varying) RETURNS TABLE(payload jsonb)
     LANGUAGE sql STABLE
     AS $$
     SELECT jsonb_build_object(
@@ -2084,7 +2076,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_approval_line_r_000(p_co_cd character varyi
 -- Name: sp_tbl_audit_export_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_audit_export_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_status character varying) RETURNS TABLE(doc_idx bigint, doc_no character varying, tmpl_nm character varying, base_dt character varying, status character varying, writer_id character varying, approve_dt timestamp without time zone, file_cnt integer, relation_cnt integer, open_ca_cnt integer, doc_kind character varying, tmpl_cd character varying, category_cd character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_audit_export_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_status character varying) RETURNS TABLE(doc_idx bigint, doc_no character varying, tmpl_nm character varying, base_dt character varying, status character varying, writer_id character varying, approve_dt timestamp without time zone, file_cnt integer, relation_cnt integer, open_ca_cnt integer, doc_kind character varying, tmpl_cd character varying, category_cd character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx, d.doc_no, COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm, d.tmpl_cd), d.base_dt, d.status,
@@ -2111,7 +2103,7 @@ $$;
 -- Name: sp_tbl_audit_log_c_000(character varying, character varying, character varying, bigint, character varying, text, text, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_audit_log_c_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_tbl_nm character varying, IN p_tgt_idx bigint, IN p_action_cd character varying, IN p_before_json text, IN p_after_json text, IN p_reason character varying, IN p_ip_addr character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_audit_log_c_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_tbl_nm character varying, IN p_tgt_idx bigint, IN p_action_cd character varying, IN p_before_json text, IN p_after_json text, IN p_reason character varying, IN p_ip_addr character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -2134,7 +2126,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_audit_log_c_000(IN p_co_cd character varyi
 -- Name: sp_tbl_ccp_generic_monitor_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying, character varying, character varying, jsonb, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying) RETURNS bigint
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying) RETURNS bigint
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -2158,7 +2150,7 @@ BEGIN
       INTO v_title, v_appr, v_retain
       FROM tbl_template t
       LEFT JOIN tbl_company_template ct ON ct.co_cd = p_co_cd AND ct.tmpl_cd = t.tmpl_cd AND ct.use_yn = 'Y'
-     WHERE t.tmpl_cd = p_tmpl_cd AND t.doc_kind = 'html' AND t.use_yn = 'Y';
+     WHERE t.tmpl_cd = p_tmpl_cd AND t.doc_kind = 'HTML' AND t.use_yn = 'Y';
     IF v_title IS NULL THEN
         RAISE EXCEPTION '사용할 공통 CCP 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000';
     END IF;
@@ -2174,7 +2166,7 @@ BEGIN
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status, appr_line_cd,
             writer_id, write_dt, ver_no, retention_until, form_src, del_yn, ins_id
         ) VALUES (
-            p_co_cd, p_tmpl_cd, 'html', v_doc_no, p_base_dt, v_title, 'WRK', v_appr,
+            p_co_cd, p_tmpl_cd, 'HTML', v_doc_no, p_base_dt, v_title, 'WRK', v_appr,
             p_id, now(), 1,
             to_char((to_date(p_base_dt, 'YYYYMMDD') + (COALESCE(v_retain, 24) || ' months')::interval)::date, 'YYYYMMDD'),
             'BASE', 'N', p_id
@@ -2254,7 +2246,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_c_000(p_co_cd character
 -- Name: sp_tbl_ccp_generic_monitor_d_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_ccp_generic_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_ccp_generic_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -2317,7 +2309,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_ccp_generic_monitor_d_000(IN p_co_cd chara
 -- Name: sp_tbl_ccp_generic_monitor_r_000(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(doc_idx bigint, doc_no character varying, status character varying, base_dt character varying, tmpl_cd character varying, ccp_cd character varying, diary_no character varying, limit_item_kind character varying, mng_user_id character varying, mng_nm character varying, rows_json jsonb)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(doc_idx bigint, doc_no character varying, status character varying, base_dt character varying, tmpl_cd character varying, ccp_cd character varying, diary_no character varying, limit_item_kind character varying, mng_user_id character varying, mng_nm character varying, rows_json jsonb)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -2380,7 +2372,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_r_000(p_co_cd character
 -- Name: sp_tbl_ccp_metal_monitor_c_000(character varying, bigint, character varying, character varying, numeric, numeric, character varying, character varying, jsonb, jsonb, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_ccp_cd character varying, p_fe_size numeric, p_sts_size numeric, p_mng_user_id character varying, p_mng_nm character varying, p_sens_rows_json jsonb, p_pass_rows_json jsonb, p_id character varying, p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying) RETURNS bigint
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_ccp_cd character varying, p_fe_size numeric, p_sts_size numeric, p_mng_user_id character varying, p_mng_nm character varying, p_sens_rows_json jsonb, p_pass_rows_json jsonb, p_id character varying, p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying) RETURNS bigint
     LANGUAGE plpgsql
     AS $$
 DECLARE v_doc_idx bigint; v_hdr_idx bigint; v_status varchar(4); v_name varchar; v_appr varchar; v_retain int; r jsonb; v_judge varchar(1);
@@ -2398,7 +2390,7 @@ BEGIN
         ON CONFLICT (co_cd, tmpl_cd) DO NOTHING;
 
         INSERT INTO tbl_document(co_cd,tmpl_cd,doc_kind,doc_no,base_dt,title,status,appr_line_cd,writer_id,write_dt,ver_no,retention_until,del_yn,ins_id)
-        VALUES(p_co_cd,p_tmpl_cd,'html',sp_tbl_doc_no_gen_c_000(p_co_cd,p_tmpl_cd,p_base_dt),p_base_dt,v_name || ' (' || p_base_dt || ')','WRK',v_appr,p_id,now(),1,to_char((to_date(p_base_dt,'YYYYMMDD')+(COALESCE(v_retain,24)||' months')::interval)::date,'YYYYMMDD'),'N',p_id) RETURNING idx INTO v_doc_idx;
+        VALUES(p_co_cd,p_tmpl_cd,'HTML',sp_tbl_doc_no_gen_c_000(p_co_cd,p_tmpl_cd,p_base_dt),p_base_dt,v_name || ' (' || p_base_dt || ')','WRK',v_appr,p_id,now(),1,to_char((to_date(p_base_dt,'YYYYMMDD')+(COALESCE(v_retain,24)||' months')::interval)::date,'YYYYMMDD'),'N',p_id) RETURNING idx INTO v_doc_idx;
         INSERT INTO tbl_ccp_metal_monitor(co_cd,doc_idx,base_dt,ccp_cd,fe_size,sts_size,mng_user_id,mng_nm,ins_id) VALUES(p_co_cd,v_doc_idx,p_base_dt,p_ccp_cd,p_fe_size,p_sts_size,NULLIF(p_mng_user_id,''),NULLIF(p_mng_nm,''),p_id) RETURNING idx INTO v_hdr_idx;
     ELSE
         SELECT d.idx,d.status,h.idx INTO v_doc_idx,v_status,v_hdr_idx FROM tbl_document d JOIN tbl_ccp_metal_monitor h ON h.doc_idx=d.idx AND h.co_cd=d.co_cd WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd=p_tmpl_cd AND d.del_yn='N';
@@ -2435,7 +2427,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character v
 -- Name: sp_tbl_ccp_metal_monitor_d_000(character varying, bigint, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_ccp_metal_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying, IN p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_ccp_metal_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying, IN p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_hdr_idx bigint; v_status varchar(4);
@@ -2472,7 +2464,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_ccp_metal_monitor_d_000(IN p_co_cd charact
 -- Name: sp_tbl_ccp_metal_monitor_r_001(character varying, bigint, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_r_001(p_co_cd character varying, p_doc_idx bigint, p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, doc_no character varying, base_dt character varying, ccp_cd character varying, fe_size numeric, sts_size numeric, mng_user_id character varying, mng_nm character varying, status character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_r_001(p_co_cd character varying, p_doc_idx bigint, p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, doc_no character varying, base_dt character varying, ccp_cd character varying, fe_size numeric, sts_size numeric, mng_user_id character varying, mng_nm character varying, status character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx, h.idx, d.doc_no, h.base_dt, h.ccp_cd, h.fe_size, h.sts_size,
@@ -2493,7 +2485,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_r_001(p_co_cd character v
 -- Name: sp_tbl_ccp_metal_monitor_r_002(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_r_002(p_co_cd character varying, p_hdr_idx bigint) RETURNS TABLE(idx bigint, row_seq integer, phase_cd character varying, product_cd character varying, product_nm character varying, check_time character varying, fe_only_cd character varying, sts_only_cd character varying, prod_only_cd character varying, fe_prod_cd character varying, sts_prod_cd character varying, judge_cd character varying, checker_id character varying, checker_nm character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_r_002(p_co_cd character varying, p_hdr_idx bigint) RETURNS TABLE(idx bigint, row_seq integer, phase_cd character varying, product_cd character varying, product_nm character varying, check_time character varying, fe_only_cd character varying, sts_only_cd character varying, prod_only_cd character varying, fe_prod_cd character varying, sts_prod_cd character varying, judge_cd character varying, checker_id character varying, checker_nm character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT idx, row_seq, phase_cd, product_cd, product_nm, check_time, fe_only_cd, sts_only_cd,
@@ -2507,7 +2499,7 @@ $$;
 -- Name: sp_tbl_ccp_metal_monitor_r_003(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_r_003(p_co_cd character varying, p_hdr_idx bigint) RETURNS TABLE(idx bigint, row_seq integer, product_cd character varying, product_nm character varying, pass_qty numeric, detect_qty numeric, unit_nm character varying, remark character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_r_003(p_co_cd character varying, p_hdr_idx bigint) RETURNS TABLE(idx bigint, row_seq integer, product_cd character varying, product_nm character varying, pass_qty numeric, detect_qty numeric, unit_nm character varying, remark character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT idx, row_seq, product_cd, product_nm, pass_qty, detect_qty, unit_nm, remark
@@ -2520,7 +2512,7 @@ $$;
 -- Name: sp_tbl_company_code_copy_c_000(character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_company_code_copy_c_000(IN p_co_cd character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_company_code_copy_c_000(IN p_co_cd character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -2560,7 +2552,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_company_code_copy_c_000(IN p_co_cd charact
 -- Name: sp_tbl_company_template_d_000(character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_company_template_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_company_template_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -2609,7 +2601,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_company_template_d_000(IN p_co_cd characte
 -- Name: sp_tbl_corrective_action_c_000(character varying, bigint, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_corrective_action_c_000(IN p_co_cd character varying, IN p_idx bigint, IN p_payload jsonb, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_corrective_action_c_000(IN p_co_cd character varying, IN p_idx bigint, IN p_payload jsonb, IN p_id character varying)
     LANGUAGE plpgsql
     AS $_$
 DECLARE v_idx bigint := COALESCE(p_idx, 0); v_no varchar(50);
@@ -2633,7 +2625,7 @@ END$_$;
 -- Name: sp_tbl_corrective_action_d_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_corrective_action_d_000(IN p_co_cd character varying, IN p_idx bigint, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_corrective_action_d_000(IN p_co_cd character varying, IN p_idx bigint, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -2646,7 +2638,7 @@ END$$;
 -- Name: sp_tbl_corrective_action_r_000(character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_corrective_action_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_tmpl_cd character varying, p_writer character varying) RETURNS TABLE(idx bigint, ca_no character varying, occur_dt character varying, occur_place character varying, deviation_desc text, action_desc text, action_user_id character varying, action_user_nm character varying, action_dt character varying, confirm_user_nm character varying, due_dt character varying, status character varying, src_doc_idx bigint, src_doc_no character varying, src_tmpl_cd character varying, tmpl_nm character varying, base_dt character varying, doc_status character varying, writer_id character varying, writer_nm character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_corrective_action_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_tmpl_cd character varying, p_writer character varying) RETURNS TABLE(idx bigint, ca_no character varying, occur_dt character varying, occur_place character varying, deviation_desc text, action_desc text, action_user_id character varying, action_user_nm character varying, action_dt character varying, confirm_user_nm character varying, due_dt character varying, status character varying, src_doc_idx bigint, src_doc_no character varying, src_tmpl_cd character varying, tmpl_nm character varying, base_dt character varying, doc_status character varying, writer_id character varying, writer_nm character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT ca.idx,
@@ -2700,7 +2692,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_corrective_action_r_000(p_co_cd character v
 -- Name: sp_tbl_doc_corrective_r_000(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_doc_corrective_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(idx bigint, deviation_desc text, action_desc text, action_user_nm character varying, confirm_user_nm character varying, status character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_doc_corrective_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(idx bigint, deviation_desc text, action_desc text, action_user_nm character varying, confirm_user_nm character varying, status character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT ca.idx, ca.deviation_desc, ca.action_desc,
@@ -2724,7 +2716,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_doc_corrective_r_000(p_co_cd character vary
 -- Name: sp_tbl_doc_corrective_u_000(character varying, bigint, character varying, character varying, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_doc_corrective_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_tmpl_cd character varying, IN p_base_dt character varying, IN p_payload jsonb, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_doc_corrective_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_tmpl_cd character varying, IN p_base_dt character varying, IN p_payload jsonb, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -2804,7 +2796,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_doc_corrective_u_000(IN p_co_cd character 
 -- Name: sp_tbl_doc_no_gen_c_000(character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_doc_no_gen_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_base_dt character varying) RETURNS character varying
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_doc_no_gen_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_base_dt character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -2868,7 +2860,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_doc_no_gen_c_000(p_co_cd character varying,
 -- Name: sp_tbl_document_appr_hist_r_000(character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_document_appr_hist_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer, my_result_cd character varying, my_act_dt timestamp without time zone)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_appr_hist_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer, my_result_cd character varying, my_act_dt timestamp without time zone)
     LANGUAGE sql STABLE
     AS $$
     SELECT DISTINCT ON (d.idx)
@@ -2914,7 +2906,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_appr_hist_r_000(p_co_cd character 
 -- Name: sp_tbl_document_appr_inbox_r_000(character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_document_appr_inbox_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_appr_inbox_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx, d.co_cd, d.tmpl_cd,
@@ -2958,7 +2950,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_appr_inbox_r_000(p_co_cd character
 -- Name: sp_tbl_document_approval_c_000(character varying, bigint, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_document_approval_c_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_action_cd character varying, IN p_opinion character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_approval_c_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_action_cd character varying, IN p_opinion character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -2968,7 +2960,8 @@ DECLARE
     v_step record;
     v_pending record;
     v_user_nm varchar(50);
-    v_sign_path varchar(300);
+    -- 서명은 파일 경로가 아니라 바이너리다 — tbl_user.sign_img 를 결재 시점에 스냅샷한다
+    v_sign_img bytea;
 BEGIN
     SELECT d.status, d.writer_id, d.appr_line_cd
       INTO v_status, v_writer, v_line
@@ -2982,7 +2975,7 @@ BEGIN
         RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
 
-    SELECT user_nm, sign_path INTO v_user_nm, v_sign_path
+    SELECT user_nm, sign_img INTO v_user_nm, v_sign_img
       FROM tbl_user
      WHERE co_cd = p_co_cd
        AND user_id = p_id
@@ -3119,7 +3112,7 @@ BEGIN
                result_cd = 'R',
                opinion = p_opinion,
                act_dt = now(),
-               sign_path = v_sign_path,
+               sign_img = v_sign_img,
                upd_id = p_id,
                upd_dt = now()
          WHERE idx = v_pending.idx
@@ -3151,7 +3144,7 @@ BEGIN
            result_cd = 'A',
            opinion = NULLIF(p_opinion, ''),
            act_dt = now(),
-           sign_path = v_sign_path,
+           sign_img = v_sign_img,
            upd_id = p_id,
            upd_dt = now()
      WHERE idx = v_pending.idx
@@ -3225,7 +3218,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_approval_c_000(IN p_co_cd charact
 -- Name: sp_tbl_document_approval_r_000(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_document_approval_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(idx bigint, doc_idx bigint, step_no integer, role_cd character varying, approver_id character varying, approver_nm character varying, result_cd character varying, opinion character varying, act_dt timestamp without time zone, sign_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_approval_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(idx bigint, doc_idx bigint, step_no integer, role_cd character varying, approver_id character varying, approver_nm character varying, result_cd character varying, opinion character varying, act_dt timestamp without time zone, sign_yn character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT a.idx, a.doc_idx, a.step_no, a.role_cd, a.approver_id,
@@ -3252,7 +3245,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_approval_r_000(p_co_cd character v
 -- Name: sp_tbl_document_approval_u_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_document_approval_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_approval_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -3314,7 +3307,7 @@ BEGIN
            approver_nm = NULL,
            opinion = NULL,
            act_dt = NULL,
-           sign_path = NULL,
+           sign_img = NULL,
            upd_id = p_id,
            upd_dt = now()
      WHERE a.idx = v_step.idx
@@ -3375,7 +3368,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_approval_u_000(IN p_co_cd charact
 -- Name: sp_tbl_document_d_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_document_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -3393,8 +3386,8 @@ BEGIN
     IF NOT FOUND THEN
         RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
-    -- DB형(html)일 때(= 업무 헤더·상세가 연결됨) 전용 양식 삭제 SP로만 처리한다
-    IF v_kind <> 'hwp' THEN
+    -- DB형(HTML)일 때(= 업무 헤더·상세가 연결됨) 전용 양식 삭제 SP로만 처리한다
+    IF v_kind <> 'HWP' THEN
         RAISE EXCEPTION 'DB형 문서는 해당 양식 화면에서 삭제하세요.' USING ERRCODE = '45000';
     END IF;
     -- 임시·반려가 아닐 때(= 결재 흐름 또는 보존 대상) 삭제 차단
@@ -3431,7 +3424,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_d_000(IN p_co_cd character varyin
 -- Name: sp_tbl_document_file_c_000(character varying, bigint, character varying, character varying, character varying, bigint, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_document_file_c_000(p_co_cd character varying, p_doc_idx bigint, p_file_kind character varying, p_file_nm character varying, p_file_path character varying, p_file_size bigint, p_mime_type character varying, p_id character varying) RETURNS bigint
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_file_c_000(p_co_cd character varying, p_doc_idx bigint, p_file_kind character varying, p_file_nm character varying, p_file_path character varying, p_file_size bigint, p_mime_type character varying, p_id character varying) RETURNS bigint
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -3492,7 +3485,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_file_c_000(p_co_cd character varyi
 -- Name: sp_tbl_document_file_d_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_document_file_d_000(IN p_co_cd character varying, IN p_file_idx bigint, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_file_d_000(IN p_co_cd character varying, IN p_file_idx bigint, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -3530,7 +3523,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_file_d_000(IN p_co_cd character v
 -- Name: sp_tbl_document_file_d_001(character varying, bigint, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_document_file_d_001(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_file_kind character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_file_d_001(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_file_kind character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -3567,7 +3560,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_file_d_001(IN p_co_cd character v
 -- Name: sp_tbl_document_file_r_000(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_document_file_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(idx bigint, doc_idx bigint, file_kind character varying, file_nm character varying, file_path character varying, file_size bigint, mime_type character varying, sort_no integer, ins_id character varying, ins_dt timestamp without time zone)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_file_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(idx bigint, doc_idx bigint, file_kind character varying, file_nm character varying, file_path character varying, file_size bigint, mime_type character varying, sort_no integer, ins_id character varying, ins_dt timestamp without time zone)
     LANGUAGE sql STABLE
     AS $$
     SELECT f.idx, f.doc_idx, f.file_kind, f.file_nm, f.file_path, f.file_size,
@@ -3590,7 +3583,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_file_r_000(p_co_cd character varyi
 -- Name: sp_tbl_document_file_r_001(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_document_file_r_001(p_co_cd character varying, p_file_idx bigint) RETURNS TABLE(idx bigint, doc_idx bigint, file_kind character varying, file_nm character varying, file_path character varying, file_size bigint, mime_type character varying, sort_no integer, ins_id character varying, ins_dt timestamp without time zone)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_file_r_001(p_co_cd character varying, p_file_idx bigint) RETURNS TABLE(idx bigint, doc_idx bigint, file_kind character varying, file_nm character varying, file_path character varying, file_size bigint, mime_type character varying, sort_no integer, ins_id character varying, ins_dt timestamp without time zone)
     LANGUAGE sql STABLE
     AS $$
     SELECT f.idx, f.doc_idx, f.file_kind, f.file_nm, f.file_path, f.file_size,
@@ -3614,7 +3607,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_file_r_001(p_co_cd character varyi
 -- Name: sp_tbl_document_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_document_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_tmpl_cd character varying, p_status character varying, p_keyword character varying, p_writer_id character varying) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_tmpl_cd character varying, p_status character varying, p_keyword character varying, p_writer_id character varying) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx, d.co_cd, d.tmpl_cd,
@@ -3659,7 +3652,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_r_000(p_co_cd character varying, p
 -- Name: sp_tbl_document_r_001(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_document_r_001(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, base_dt_to character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, reviewer_id character varying, reviewer_nm character varying, review_dt timestamp without time zone, approver_id character varying, approver_nm character varying, approve_dt timestamp without time zone, reject_reason character varying, ver_no integer, retention_until character varying, remark character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_r_001(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, base_dt_to character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, reviewer_id character varying, reviewer_nm character varying, review_dt timestamp without time zone, approver_id character varying, approver_nm character varying, approve_dt timestamp without time zone, reject_reason character varying, ver_no integer, retention_until character varying, remark character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx AS doc_idx,
@@ -3710,7 +3703,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_r_001(p_co_cd character varying, p
 -- Name: sp_tbl_document_relation_c_000(character varying, bigint, character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_document_relation_c_000(IN p_co_cd character varying, IN p_src_doc_idx bigint, IN p_rel_type character varying, IN p_tgt_doc_idx bigint, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_relation_c_000(IN p_co_cd character varying, IN p_src_doc_idx bigint, IN p_rel_type character varying, IN p_tgt_doc_idx bigint, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_src varchar; v_tgt varchar;
@@ -3732,7 +3725,7 @@ END$$;
 -- Name: sp_tbl_document_relation_r_000(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_document_relation_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(idx bigint, src_doc_idx bigint, rel_type character varying, tgt_doc_idx bigint, tgt_doc_no character varying, tgt_title character varying, tgt_tmpl_cd character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_relation_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(idx bigint, src_doc_idx bigint, rel_type character varying, tgt_doc_idx bigint, tgt_doc_no character varying, tgt_title character varying, tgt_tmpl_cd character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT r.idx, r.src_doc_idx, r.rel_type, r.tgt_doc_idx, d.doc_no, d.title, d.tmpl_cd
@@ -3746,7 +3739,7 @@ $$;
 -- Name: sp_tbl_document_template_r_000(character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_document_template_r_000(p_co_cd character varying) RETURNS TABLE(tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, category_cd character varying, mng_no character varying, form_path character varying, form_file_nm character varying, sys_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_template_r_000(p_co_cd character varying) RETURNS TABLE(tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, category_cd character varying, mng_no character varying, form_path character varying, form_file_nm character varying, sys_yn character varying)
     LANGUAGE sql
     AS $$
     SELECT t.tmpl_cd,
@@ -3786,7 +3779,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_template_r_000(p_co_cd character v
 -- Name: sp_tbl_document_template_r_001(character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_document_template_r_001(p_co_cd character varying, p_tmpl_cd character varying) RETURNS TABLE(tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, category_cd character varying, mng_no character varying, form_path character varying, form_file_nm character varying, sys_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_template_r_001(p_co_cd character varying, p_tmpl_cd character varying) RETURNS TABLE(tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, category_cd character varying, mng_no character varying, form_path character varying, form_file_nm character varying, sys_yn character varying)
     LANGUAGE sql
     AS $$
     SELECT t.tmpl_cd,
@@ -3822,7 +3815,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_template_r_001(p_co_cd character v
 -- Name: sp_tbl_document_u_001(character varying, bigint, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_document_u_001(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_remark character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_u_001(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_remark character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -3868,7 +3861,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_u_001(IN p_co_cd character varyin
 -- Name: sp_tbl_document_version_r_000(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_document_version_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(idx bigint, doc_idx bigint, ver_no integer, file_path character varying, change_reason character varying, ins_id character varying, ins_dt timestamp without time zone)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_version_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(idx bigint, doc_idx bigint, ver_no integer, file_path character varying, change_reason character varying, ins_id character varying, ins_dt timestamp without time zone)
     LANGUAGE sql STABLE
     AS $$
     SELECT v.idx, v.doc_idx, v.ver_no, v.file_path, v.change_reason, v.ins_id, v.ins_dt
@@ -3890,7 +3883,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_version_r_000(p_co_cd character va
 -- Name: sp_tbl_grid_pref_c_000(character varying, character varying, character varying, character varying, text); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_grid_pref_c_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_scrn_cd character varying, IN p_grid_id character varying, IN p_pref_json text)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_grid_pref_c_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_scrn_cd character varying, IN p_grid_id character varying, IN p_pref_json text)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -3920,7 +3913,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_grid_pref_c_000(IN p_co_cd character varyi
 -- Name: sp_tbl_grid_pref_r_000(character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_grid_pref_r_000(p_co_cd character varying, p_user_id character varying, p_scrn_cd character varying) RETURNS TABLE(idx bigint, scrn_cd character varying, grid_id character varying, pref_json text)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_grid_pref_r_000(p_co_cd character varying, p_user_id character varying, p_scrn_cd character varying) RETURNS TABLE(idx bigint, scrn_cd character varying, grid_id character varying, pref_json text)
     LANGUAGE sql
     AS $$
     SELECT g.idx, g.scrn_cd, g.grid_id, g.pref_json
@@ -3943,7 +3936,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_grid_pref_r_000(p_co_cd character varying, 
 -- Name: sp_tbl_html_hyg_prc_ver_apply_u_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_html_hyg_prc_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_hyg_prc_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -3961,7 +3954,7 @@ END$$;
 -- Name: sp_tbl_html_hyg_prc_ver_copy_c_000(character varying, character varying, integer, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_html_hyg_prc_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_hyg_prc_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $_$
 DECLARE v_nm varchar; v_n int; v_cd varchar; v_src tbl_template%ROWTYPE; v_try int := 0;
@@ -3993,7 +3986,7 @@ BEGIN
         co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
         default_cycle_cd, default_retention_month, impl_yn, sort_no, use_yn, ins_id, ins_dt
     ) VALUES (
-        p_co_cd, v_cd, v_nm, v_src.mng_no, 'html', v_src.category_cd, 'hygiene-process-check',
+        p_co_cd, v_cd, v_nm, v_src.mng_no, 'HTML', v_src.category_cd, 'hygiene-process-check',
         'D', COALESCE(v_src.default_retention_month, 24), 'Y',
         COALESCE(v_src.sort_no, 101) + v_n, 'Y', p_id, now()
     );
@@ -4020,7 +4013,7 @@ END$_$;
 -- Name: sp_tbl_html_hyg_prc_ver_d_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_html_hyg_prc_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_hyg_prc_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -4045,7 +4038,7 @@ END$$;
 -- Name: sp_tbl_html_hyg_prc_ver_delete_blocker_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_html_hyg_prc_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_hyg_prc_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 DECLARE v_nm varchar; v_use varchar; v_key varchar;
@@ -4072,7 +4065,7 @@ END$$;
 -- Name: sp_tbl_html_hyg_prc_ver_item_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_html_hyg_prc_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_hyg_prc_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 BEGIN
@@ -4097,7 +4090,7 @@ END$$;
 -- Name: sp_tbl_html_hyg_prc_ver_item_u_000(character varying, character varying, integer, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_html_hyg_prc_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_hyg_prc_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE e jsonb; v_cnt int := 0;
@@ -4137,7 +4130,7 @@ END$$;
 -- Name: sp_tbl_html_hyg_prc_ver_nm_u_000(character varying, character varying, integer, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_html_hyg_prc_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_hyg_prc_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_nm varchar; v_use varchar;
@@ -4162,7 +4155,7 @@ END$$;
 -- Name: sp_tbl_html_hyg_prc_ver_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_html_hyg_prc_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_hyg_prc_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT x.idx, x.tmpl_cd, x.ver_no, x.ver_cd, x.ver_nm, x.sys_yn, x.apply_yn, x.locked_yn, x.ins_nm, x.ins_dt, x.use_yn
@@ -4193,7 +4186,7 @@ $_$;
 -- Name: sp_tbl_hwp_document_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_hwp_document_c_000(p_co_cd character varying, p_doc_idx bigint, p_tmpl_cd character varying, p_base_dt character varying, p_base_dt_to character varying, p_title character varying, p_id character varying) RETURNS bigint
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_hwp_document_c_000(p_co_cd character varying, p_doc_idx bigint, p_tmpl_cd character varying, p_base_dt character varying, p_base_dt_to character varying, p_title character varying, p_id character varying) RETURNS bigint
     LANGUAGE plpgsql
     AS $_$
 DECLARE
@@ -4223,8 +4216,8 @@ BEGIN
        AND t.impl_yn = 'Y'
        AND t.use_yn = 'Y';
 
-    -- 양식이 없거나 hwp 형이 아니거나 회사 미사용일 때(= 이 화면 대상 아님) 업무 오류
-    IF NOT FOUND OR v_doc_kind <> 'hwp' OR v_use_yn <> 'Y' THEN
+    -- 양식이 없거나 HWP 형이 아니거나 회사 미사용일 때(= 이 화면 대상 아님) 업무 오류
+    IF NOT FOUND OR v_doc_kind <> 'HWP' OR v_use_yn <> 'Y' THEN
         RAISE EXCEPTION '사용 가능한 문서형 양식이 아닙니다.' USING ERRCODE = '45000';
     END IF;
 
@@ -4236,7 +4229,7 @@ BEGIN
             ins_id, ins_dt
         )
         VALUES (
-            p_co_cd, p_tmpl_cd, 'hwp', v_doc_no, p_base_dt, NULLIF(p_base_dt_to, ''),
+            p_co_cd, p_tmpl_cd, 'HWP', v_doc_no, p_base_dt, NULLIF(p_base_dt_to, ''),
             COALESCE(NULLIF(trim(p_title), ''), v_tmpl_nm || ' (' || to_char(to_date(p_base_dt, 'YYYYMMDD'), 'YYYY-MM-DD') || ')'),
             'WRK', v_appr_line_cd, p_id, 1,
             to_char(to_date(p_base_dt, 'YYYYMMDD') + make_interval(months => v_retention_month), 'YYYYMMDD'),
@@ -4248,7 +4241,7 @@ BEGIN
           FROM tbl_document
          WHERE idx = p_doc_idx
            AND co_cd = p_co_cd
-           AND doc_kind = 'hwp'
+           AND doc_kind = 'HWP'
            AND writer_id = p_id
            AND status IN ('WRK', 'RJT')
            AND del_yn = 'N'
@@ -4283,7 +4276,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_hwp_document_c_000(p_co_cd character varyin
 -- Name: sp_tbl_hyg_process_c_000(character varying, character varying, bigint, character varying, character varying, jsonb, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_hyg_process_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_checker_nm character varying, p_payload jsonb, p_id character varying) RETURNS bigint
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_hyg_process_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_checker_nm character varying, p_payload jsonb, p_id character varying) RETURNS bigint
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -4331,7 +4324,7 @@ BEGIN
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status, appr_line_cd,
             writer_id, write_dt, ver_no, retention_until, del_yn, ins_id, ins_dt
         ) VALUES (
-            p_co_cd, v_tmpl, 'html', v_no, p_base_dt,
+            p_co_cd, v_tmpl, 'HTML', v_no, p_base_dt,
             v_name || ' (' || substr(p_base_dt, 1, 4) || '-' || substr(p_base_dt, 5, 2) || '-' || substr(p_base_dt, 7, 2) || ')',
             'WRK', v_appr, p_id, now(), 1,
             to_char((to_date(p_base_dt, 'YYYYMMDD') + (COALESCE(v_retain, 24) || ' months')::interval)::date, 'YYYYMMDD'),
@@ -4400,7 +4393,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_hyg_process_c_000(p_co_cd character varying
 -- Name: sp_tbl_hyg_process_d_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_hyg_process_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_hyg_process_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_status varchar; v_hdr bigint;
@@ -4436,7 +4429,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_hyg_process_d_000(IN p_co_cd character var
 -- Name: sp_tbl_hyg_process_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_from_dt character varying, p_to_dt character varying, p_doc_no character varying, p_writer character varying, p_tmpl_nm character varying DEFAULT NULL::character varying, p_writer_id character varying DEFAULT NULL::character varying, p_writer_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_from_dt character varying, p_to_dt character varying, p_doc_no character varying, p_writer character varying, p_tmpl_nm character varying DEFAULT NULL::character varying, p_writer_id character varying DEFAULT NULL::character varying, p_writer_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer)
     LANGUAGE sql STABLE
     AS $_$
     SELECT d.idx, h.idx,
@@ -4501,7 +4494,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character varying
 -- Name: sp_tbl_hyg_process_r_001(character varying, character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_hyg_process_r_001(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint) RETURNS jsonb
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_hyg_process_r_001(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint) RETURNS jsonb
     LANGUAGE plpgsql STABLE
     AS $$
 DECLARE
@@ -4663,7 +4656,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_hyg_process_r_001(p_co_cd character varying
 -- Name: sp_tbl_hyg_process_sign_u_000(character varying, bigint, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_hyg_process_sign_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_checker_nm character varying, IN p_approver_nm character varying, IN p_confirm_nm character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_hyg_process_sign_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_checker_nm character varying, IN p_approver_nm character varying, IN p_confirm_nm character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -4715,7 +4708,7 @@ END$$;
 -- Name: sp_tbl_login_log_c_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, timestamp without time zone); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_login_log_c_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_sid character varying, IN p_result_cd character varying, IN p_fail_reason character varying, IN p_ip_addr character varying, IN p_user_agent character varying, IN p_device_gbn character varying, IN p_token_exp_dt timestamp without time zone)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_login_log_c_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_sid character varying, IN p_result_cd character varying, IN p_fail_reason character varying, IN p_ip_addr character varying, IN p_user_agent character varying, IN p_device_gbn character varying, IN p_token_exp_dt timestamp without time zone)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -4737,7 +4730,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_login_log_c_000(IN p_co_cd character varyi
 -- Name: sp_tbl_login_log_u_000(character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_login_log_u_000(IN p_sid character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_login_log_u_000(IN p_sid character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -4760,7 +4753,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_login_log_u_000(IN p_sid character varying
 -- Name: sp_tbl_master_delete_blocker_r_000(character varying, character varying, bigint[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_master_delete_blocker_r_000(p_co_cd character varying, p_master_type character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_master_delete_blocker_r_000(p_co_cd character varying, p_master_type character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 BEGIN
@@ -4791,7 +4784,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_master_delete_blocker_r_000(p_co_cd charact
 -- Name: sp_tbl_menu_sort_encode_u_000(character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_menu_sort_encode_u_000(IN p_co_cd character varying DEFAULT NULL::character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_menu_sort_encode_u_000(IN p_co_cd character varying DEFAULT NULL::character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -4868,7 +4861,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_menu_sort_encode_u_000(IN p_co_cd characte
 -- Name: sp_tbl_notification_r_000(character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_notification_r_000(p_co_cd character varying, p_user_id character varying) RETURNS TABLE(idx bigint, noti_type_cd character varying, title character varying, content character varying, link_scrn_cd character varying, link_doc_idx bigint, read_yn character varying, ins_dt timestamp without time zone)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_notification_r_000(p_co_cd character varying, p_user_id character varying) RETURNS TABLE(idx bigint, noti_type_cd character varying, title character varying, content character varying, link_scrn_cd character varying, link_doc_idx bigint, read_yn character varying, ins_dt timestamp without time zone)
     LANGUAGE sql STABLE
     AS $$
     SELECT idx, noti_type_cd, title, content, link_scrn_cd, link_doc_idx, read_yn, ins_dt
@@ -4882,7 +4875,7 @@ $$;
 -- Name: sp_tbl_notification_task_c_000(character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_notification_task_c_000(IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_notification_task_c_000(IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -4921,7 +4914,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_notification_task_c_000(IN p_id character 
 -- Name: sp_tbl_notification_u_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_notification_u_000(IN p_co_cd character varying, IN p_idx bigint, IN p_user_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_notification_u_000(IN p_co_cd character varying, IN p_idx bigint, IN p_user_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -4935,7 +4928,7 @@ END$$;
 -- Name: sp_tbl_schedule_task_generate_c_000(character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_schedule_task_generate_c_000(IN p_co_cd character varying, IN p_base_dt character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_schedule_task_generate_c_000(IN p_co_cd character varying, IN p_base_dt character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $_$
 BEGIN
@@ -4988,7 +4981,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_schedule_task_generate_c_000(IN p_co_cd ch
 -- Name: sp_tbl_schedule_task_regen_c_000(character varying, character varying, jsonb, character varying, character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_schedule_task_regen_c_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_dates jsonb, IN p_due_time character varying, IN p_dept_cd character varying, IN p_user_id character varying, IN p_alarm_min integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_schedule_task_regen_c_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_dates jsonb, IN p_due_time character varying, IN p_dept_cd character varying, IN p_user_id character varying, IN p_alarm_min integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $_$
 DECLARE
@@ -5051,7 +5044,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_schedule_task_regen_c_000(IN p_co_cd chara
 -- Name: sp_tbl_tml_ccp_chk_ver_apply_u_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_chk_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_chk_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -5069,7 +5062,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_chk_ver_copy_c_000(character varying, character varying, integer, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_chk_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_chk_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $_$
 DECLARE v_nm varchar; v_n int; v_cd varchar; v_src tbl_template%ROWTYPE; v_try int := 0; v_cycle varchar;
@@ -5098,7 +5091,7 @@ BEGIN
         co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
         default_cycle_cd, default_retention_month, impl_yn, sort_no, use_yn, ins_id, ins_dt
     ) VALUES (
-        p_co_cd, v_cd, v_nm, v_src.mng_no, 'html', v_src.category_cd, 'ccp-verification-check',
+        p_co_cd, v_cd, v_nm, v_src.mng_no, 'HTML', v_src.category_cd, 'ccp-verification-check',
         v_cycle, COALESCE(v_src.default_retention_month, 24), 'Y',
         COALESCE(v_src.sort_no, 106) + v_n, 'Y', p_id, now()
     );
@@ -5125,7 +5118,7 @@ END$_$;
 -- Name: sp_tbl_tml_ccp_chk_ver_d_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_chk_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_chk_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -5150,7 +5143,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_chk_ver_delete_blocker_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_chk_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_chk_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 DECLARE v_nm varchar; v_use varchar; v_key varchar;
@@ -5177,7 +5170,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_chk_ver_item_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_chk_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_chk_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 BEGIN
@@ -5201,7 +5194,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_chk_ver_item_u_000(character varying, character varying, integer, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_chk_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_chk_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE e jsonb; v_cnt int := 0;
@@ -5241,7 +5234,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_chk_ver_nm_u_000(character varying, character varying, integer, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_chk_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_chk_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_nm varchar; v_use varchar;
@@ -5266,7 +5259,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_chk_ver_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_chk_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_chk_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT x.idx, x.tmpl_cd, x.ver_no, x.ver_cd, x.ver_nm, x.sys_yn, x.apply_yn, x.locked_yn, x.ins_nm, x.ins_dt, x.use_yn
@@ -5297,7 +5290,7 @@ $_$;
 -- Name: sp_tbl_tml_ccp_htg_ver_apply_u_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_htg_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_htg_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -5315,7 +5308,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_htg_ver_copy_c_000(character varying, character varying, integer, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_htg_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_htg_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $_$
 DECLARE v_nm varchar; v_n int; v_cd varchar; v_try int := 0;
@@ -5342,7 +5335,7 @@ BEGIN
         co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
         default_cycle_cd, default_retention_month, impl_yn, sort_no, use_yn, ins_id, ins_dt
     ) VALUES (
-        p_co_cd, v_cd, v_nm, 'CCP-2B', 'html', 'CCP', 'ccp-htg-monitor',
+        p_co_cd, v_cd, v_nm, 'CCP-2B', 'HTML', 'CCP', 'ccp-htg-monitor',
         'D', 24, 'Y', 114 + v_n, 'Y', p_id, now()
     );
     INSERT INTO tbl_company_template (
@@ -5368,7 +5361,7 @@ END$_$;
 -- Name: sp_tbl_tml_ccp_htg_ver_d_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_htg_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_htg_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -5393,7 +5386,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_htg_ver_delete_blocker_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_htg_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_htg_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 DECLARE v_nm varchar; v_use varchar; v_key varchar;
@@ -5420,7 +5413,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_htg_ver_item_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_htg_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_htg_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 BEGIN
@@ -5444,7 +5437,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_htg_ver_item_u_000(character varying, character varying, integer, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_htg_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_htg_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE e jsonb; v_cnt int := 0;
@@ -5484,7 +5477,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_htg_ver_nm_u_000(character varying, character varying, integer, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_htg_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_htg_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_nm varchar; v_use varchar;
@@ -5509,7 +5502,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_htg_ver_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_htg_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_htg_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT x.idx, x.tmpl_cd, x.ver_no, x.ver_cd, x.ver_nm, x.sys_yn, x.apply_yn, x.locked_yn, x.ins_nm, x.ins_dt, x.use_yn
@@ -5540,7 +5533,7 @@ $_$;
 -- Name: sp_tbl_tml_ccp_mtl_ver_apply_u_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_mtl_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_mtl_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -5558,7 +5551,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_mtl_ver_copy_c_000(character varying, character varying, integer, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_mtl_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_mtl_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $_$
 DECLARE v_nm varchar; v_n int; v_cd varchar; v_try int := 0;
@@ -5585,7 +5578,7 @@ BEGIN
         co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
         default_cycle_cd, default_retention_month, impl_yn, sort_no, use_yn, ins_id, ins_dt
     ) VALUES (
-        p_co_cd, v_cd, v_nm, 'CCP-3P', 'html', 'CCP', 'ccp-mtl-monitor',
+        p_co_cd, v_cd, v_nm, 'CCP-3P', 'HTML', 'CCP', 'ccp-mtl-monitor',
         'D', 24, 'Y', 115 + v_n, 'Y', p_id, now()
     );
     INSERT INTO tbl_company_template (
@@ -5611,7 +5604,7 @@ END$_$;
 -- Name: sp_tbl_tml_ccp_mtl_ver_d_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_mtl_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_mtl_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -5636,7 +5629,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_mtl_ver_delete_blocker_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_mtl_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_mtl_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 DECLARE v_nm varchar; v_use varchar; v_key varchar;
@@ -5663,7 +5656,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_mtl_ver_item_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_mtl_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_mtl_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 BEGIN
@@ -5687,7 +5680,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_mtl_ver_item_u_000(character varying, character varying, integer, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_mtl_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_mtl_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE e jsonb; v_cnt int := 0;
@@ -5727,7 +5720,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_mtl_ver_nm_u_000(character varying, character varying, integer, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_mtl_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_mtl_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_nm varchar; v_use varchar;
@@ -5752,7 +5745,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_mtl_ver_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_mtl_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_mtl_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT x.idx, x.tmpl_cd, x.ver_no, x.ver_cd, x.ver_nm, x.sys_yn, x.apply_yn, x.locked_yn, x.ins_nm, x.ins_dt, x.use_yn
@@ -5783,7 +5776,7 @@ $_$;
 -- Name: sp_tbl_tml_ccp_pkg_ver_apply_u_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_pkg_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_pkg_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -5801,7 +5794,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_pkg_ver_copy_c_000(character varying, character varying, integer, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_pkg_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_pkg_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $_$
 DECLARE v_nm varchar; v_n int; v_cd varchar; v_try int := 0;
@@ -5828,7 +5821,7 @@ BEGIN
         co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
         default_cycle_cd, default_retention_month, impl_yn, sort_no, use_yn, ins_id, ins_dt
     ) VALUES (
-        p_co_cd, v_cd, v_nm, 'CCP-1B', 'html', 'CCP', 'ccp-pkg-monitor',
+        p_co_cd, v_cd, v_nm, 'CCP-1B', 'HTML', 'CCP', 'ccp-pkg-monitor',
         'D', 24, 'Y', 113 + v_n, 'Y', p_id, now()
     );
     INSERT INTO tbl_company_template (
@@ -5854,7 +5847,7 @@ END$_$;
 -- Name: sp_tbl_tml_ccp_pkg_ver_d_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_pkg_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_pkg_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -5879,7 +5872,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_pkg_ver_delete_blocker_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_pkg_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_pkg_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 DECLARE v_nm varchar; v_use varchar; v_key varchar;
@@ -5906,7 +5899,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_pkg_ver_item_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_pkg_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_pkg_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 BEGIN
@@ -5930,7 +5923,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_pkg_ver_item_u_000(character varying, character varying, integer, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_pkg_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_pkg_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE e jsonb; v_cnt int := 0;
@@ -5970,7 +5963,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_pkg_ver_nm_u_000(character varying, character varying, integer, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_tml_ccp_pkg_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_pkg_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_nm varchar; v_use varchar;
@@ -5995,7 +5988,7 @@ END$$;
 -- Name: sp_tbl_tml_ccp_pkg_ver_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_tml_ccp_pkg_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_pkg_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT x.idx, x.tmpl_cd, x.ver_no, x.ver_cd, x.ver_nm, x.sys_yn, x.apply_yn, x.locked_yn, x.ins_nm, x.ins_dt, x.use_yn
@@ -6026,7 +6019,7 @@ $_$;
 -- Name: sp_tbl_today_task_doc_r_000(character varying, character varying, character varying, integer, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_today_task_doc_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_offset integer, p_limit integer) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer, total_cnt integer)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_today_task_doc_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_offset integer, p_limit integer) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer, total_cnt integer)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx,
@@ -6079,7 +6072,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_today_task_doc_r_000(p_co_cd character vary
 -- Name: sp_tbl_today_task_r_000(character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_today_task_r_000(p_co_cd character varying, p_user_id character varying, p_base_dt character varying) RETURNS TABLE(task_idx bigint, task_type character varying, title character varying, status character varying, due_dt character varying, due_time character varying, link_scrn_cd character varying, doc_idx bigint, ref_idx bigint, content character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_today_task_r_000(p_co_cd character varying, p_user_id character varying, p_base_dt character varying) RETURNS TABLE(task_idx bigint, task_type character varying, title character varying, status character varying, due_dt character varying, due_time character varying, link_scrn_cd character varying, doc_idx bigint, ref_idx bigint, content character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT t.idx, 'TASK', COALESCE(ct.tmpl_nm_ovr, tp.tmpl_nm, t.tmpl_cd), t.status, t.due_dt, t.due_time,
@@ -6103,7 +6096,7 @@ $$;
 -- Name: sp_tbl_user_login_r_000(character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_tbl_user_login_r_000(p_user_id character varying) RETURNS TABLE(user_idx bigint, user_id character varying, user_nm character varying, user_pw character varying, co_cd character varying, co_nm character varying, usrgrp_cd character varying, usrgrp_nm character varying, dept_cd character varying, dept_nm character varying, email character varying, sign_yn character varying, gridsave_yn character varying, login_fail_cnt integer, lock_yn character varying, user_use_yn character varying, co_use_yn character varying, svc_fn_dt character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_user_login_r_000(p_user_id character varying) RETURNS TABLE(user_idx bigint, user_id character varying, user_nm character varying, user_pw character varying, co_cd character varying, co_nm character varying, usrgrp_cd character varying, usrgrp_nm character varying, dept_cd character varying, dept_nm character varying, email character varying, sign_yn character varying, gridsave_yn character varying, login_fail_cnt integer, lock_yn character varying, user_use_yn character varying, co_use_yn character varying, svc_fn_dt character varying)
     LANGUAGE sql
     AS $$
     SELECT u.idx, u.user_id, u.user_nm, u.user_pw,
@@ -6138,7 +6131,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_user_login_r_000(p_user_id character varyin
 -- Name: sp_tbl_user_login_u_000(character varying, character varying, integer); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_user_login_u_000(IN p_user_id character varying, IN p_result_cd character varying, IN p_max_fail integer)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_user_login_u_000(IN p_user_id character varying, IN p_result_cd character varying, IN p_max_fail integer)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -6169,7 +6162,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_user_login_u_000(IN p_user_id character va
 -- Name: sp_tbl_view_log_c_000(character varying, character varying, character varying, character varying, timestamp without time zone, timestamp without time zone, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_view_log_c_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_sid character varying, IN p_scrn_cd character varying, IN p_enter_dt timestamp without time zone, IN p_leave_dt timestamp without time zone, IN p_ref_scrn_cd character varying, IN p_ip_addr character varying, IN p_user_agent character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_view_log_c_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_sid character varying, IN p_scrn_cd character varying, IN p_enter_dt timestamp without time zone, IN p_leave_dt timestamp without time zone, IN p_ref_scrn_cd character varying, IN p_ip_addr character varying, IN p_user_agent character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -6193,7 +6186,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_view_log_c_000(IN p_co_cd character varyin
 -- Name: sp_tbl_view_stat_daily_c_000(character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_tbl_view_stat_daily_c_000(IN p_co_cd character varying, IN p_stat_dt character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_view_stat_daily_c_000(IN p_co_cd character varying, IN p_stat_dt character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -6237,7 +6230,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_view_stat_daily_c_000(IN p_co_cd character
 -- Name: sp_user_management_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_user_management_c_000(IN p_co_cd character varying, IN p_idx bigint, IN p_user_id character varying, IN p_emp_cd character varying, IN p_user_nm character varying, IN p_user_pw character varying, IN p_usrgrp_cd character varying, IN p_dept_cd character varying, IN p_email character varying, IN p_mobile character varying, IN p_lock_yn character varying, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_user_management_c_000(IN p_co_cd character varying, IN p_idx bigint, IN p_user_id character varying, IN p_emp_cd character varying, IN p_user_nm character varying, IN p_user_pw character varying, IN p_usrgrp_cd character varying, IN p_dept_cd character varying, IN p_email character varying, IN p_mobile character varying, IN p_lock_yn character varying, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -6301,7 +6294,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_user_management_c_000(IN p_co_cd character var
 -- Name: sp_user_management_d_000(character varying, bigint); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_user_management_d_000(IN p_co_cd character varying, IN p_idx bigint)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_user_management_d_000(IN p_co_cd character varying, IN p_idx bigint)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -6330,7 +6323,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_user_management_d_000(IN p_co_cd character var
 -- Name: sp_user_management_delete_blocker_r_000(character varying, bigint[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_user_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_user_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE sql
     AS $$
     -- 차단 사유 없음 — 시그니처를 맞추기 위해 빈 결과를 반환한다
@@ -6353,7 +6346,7 @@ COMMENT ON FUNCTION sasshaccp.sp_user_management_delete_blocker_r_000(p_co_cd ch
 -- Name: sp_user_management_r_000(character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_user_management_r_000(p_co_cd character varying, p_user_id character varying, p_user_nm character varying, p_dept_cd character varying, p_use_yn character varying) RETURNS TABLE(idx bigint, user_id character varying, co_cd character varying, emp_cd character varying, user_nm character varying, usrgrp_cd character varying, usrgrp_nm character varying, dept_cd character varying, dept_nm character varying, email character varying, mobile character varying, sign_yn character varying, gridsave_yn character varying, last_login_dt timestamp without time zone, login_fail_cnt integer, lock_yn character varying, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_user_management_r_000(p_co_cd character varying, p_user_id character varying, p_user_nm character varying, p_dept_cd character varying, p_use_yn character varying) RETURNS TABLE(idx bigint, user_id character varying, co_cd character varying, emp_cd character varying, user_nm character varying, usrgrp_cd character varying, usrgrp_nm character varying, dept_cd character varying, dept_nm character varying, email character varying, mobile character varying, sign_yn character varying, gridsave_yn character varying, last_login_dt timestamp without time zone, login_fail_cnt integer, lock_yn character varying, use_yn character varying)
     LANGUAGE sql
     AS $$
     SELECT u.idx, u.user_id, u.co_cd, u.emp_cd, u.user_nm,
@@ -6388,7 +6381,7 @@ COMMENT ON FUNCTION sasshaccp.sp_user_management_r_000(p_co_cd character varying
 -- Name: sp_user_management_sign_info_r_000(character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_user_management_sign_info_r_000(p_co_cd character varying, p_user_id character varying) RETURNS TABLE(sign_yn character varying, sign_nm character varying, sign_mime character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_user_management_sign_info_r_000(p_co_cd character varying, p_user_id character varying) RETURNS TABLE(sign_yn character varying, sign_nm character varying, sign_mime character varying)
     LANGUAGE sql
     AS $$
     SELECT
@@ -6415,7 +6408,7 @@ COMMENT ON FUNCTION sasshaccp.sp_user_management_sign_info_r_000(p_co_cd charact
 -- Name: sp_user_management_sign_r_000(character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE FUNCTION sasshaccp.sp_user_management_sign_r_000(p_co_cd character varying, p_user_id character varying) RETURNS TABLE(sign_img bytea, sign_mime character varying, sign_nm character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_user_management_sign_r_000(p_co_cd character varying, p_user_id character varying) RETURNS TABLE(sign_img bytea, sign_mime character varying, sign_nm character varying)
     LANGUAGE sql
     AS $$
     SELECT u.sign_img,
@@ -6439,7 +6432,7 @@ COMMENT ON FUNCTION sasshaccp.sp_user_management_sign_r_000(p_co_cd character va
 -- Name: sp_user_management_sign_u_000(character varying, character varying, bytea, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE PROCEDURE sasshaccp.sp_user_management_sign_u_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_sign_img bytea, IN p_sign_mime character varying, IN p_sign_nm character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_user_management_sign_u_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_sign_img bytea, IN p_sign_mime character varying, IN p_sign_nm character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -6473,3 +6466,77 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+
+--
+-- Name: sp_tbl_document_delete_blocker_r_000(character varying, bigint[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_delete_blocker_r_000(
+    p_co_cd character varying,
+    p_doc_idxs bigint[]
+) RETURNS TABLE(ref_key character varying, target character varying)
+    LANGUAGE sql STABLE
+    AS $$
+    SELECT d.doc_no,
+           CASE d.status
+               WHEN 'REQ' THEN '전송'
+               WHEN 'REV' THEN '전송'
+               WHEN 'APV' THEN '결재완료'
+               ELSE d.status
+           END
+      FROM tbl_document d
+     WHERE d.co_cd = p_co_cd
+       AND d.del_yn = 'N'
+       AND d.status IN ('REQ', 'REV', 'APV')
+       AND d.idx = ANY(p_doc_idxs)
+     ORDER BY d.doc_no
+     LIMIT 1;
+$$;
+
+COMMENT ON FUNCTION sasshaccp.sp_tbl_document_delete_blocker_r_000(character varying, bigint[])
+    IS '문서 삭제 차단 — 전송·결재완료 문서 첫 건. 작성 6화면·문서 허브 공용';
+
+--
+-- Name: sp_tbl_schedule_rule_active_r_000(); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_schedule_rule_active_r_000()
+RETURNS TABLE(
+    co_cd character varying,
+    tmpl_cd character varying,
+    cycle_cd character varying,
+    nonwork_rule character varying,
+    base_dt character varying,
+    due_time character varying,
+    dept_cd character varying,
+    user_id character varying,
+    details text
+)
+    LANGUAGE sql STABLE
+    AS $$
+    SELECT r.co_cd,
+           r.tmpl_cd,
+           r.cycle_cd,
+           r.nonwork_rule,
+           r.base_dt,
+           r.due_time,
+           r.dept_cd,
+           r.user_id,
+           COALESCE((
+               SELECT jsonb_agg(
+                          jsonb_build_object('detailTy', x.detail_ty, 'val1', x.val1, 'val2', x.val2)
+                          ORDER BY x.seq)
+                 FROM tbl_schedule_rule_detail x
+                WHERE x.co_cd = r.co_cd AND x.tmpl_cd = r.tmpl_cd
+           ), '[]'::jsonb)::text
+      FROM tbl_schedule_rule r
+      JOIN tbl_company_template ct
+        ON ct.co_cd = r.co_cd
+       AND ct.tmpl_cd = r.tmpl_cd
+       AND upper(COALESCE(ct.use_yn, 'N')) = 'Y'
+     WHERE upper(COALESCE(r.use_yn, 'N')) = 'Y'
+     ORDER BY r.co_cd, r.tmpl_cd;
+$$;
+
+COMMENT ON FUNCTION sasshaccp.sp_tbl_schedule_rule_active_r_000()
+    IS '예정일 배치 재생성 대상 — 전 업체의 사용 중 주기 + 반복 상세. 테넌트 인자 없음';
