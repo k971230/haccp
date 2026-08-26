@@ -33,8 +33,12 @@ import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { cn } from "@/lib/cn";
 // 역할 — 로그인 입력 공통 스타일
 import { loginInputClass } from "@/components/ui/Input";
-// 역할 — 좌측 브랜드 배경 (MES login_bg와 동일 에셋)
-import loginBg from "@/static/img/login_bg.png";
+/*
+ * 역할 — 좌측 브랜드 배경.
+ * 2026-08-26 에 PNG(1565KB) 를 JPEG(84KB) 로 바꿨다 — 1376x768 사진이라 PNG 로 둘 이유가 없고,
+ * 전 화소가 불투명이라 알파를 잃지 않는다. 첫 화면이 1.5MB 덜 내려간다.
+ */
+import loginBg from "@/static/img/login_bg.jpg";
 // 역할 — 우측 패널 상단 HACCP 공식 인증 마크
 import haccpLogo from "@/static/img/haccp_logo.png";
 
@@ -118,7 +122,7 @@ export function LoginPage() {
       {/* 브랜드 이미지 — 넓은 화면 좌측, 좁은 화면 하단 */}
       <section className="relative order-2 min-h-[200px] flex-1 overflow-hidden lg:order-1 lg:min-h-screen">
         <img
-          // 로그인 브랜드 배경 — MES login_bg.png와 동일 리소스
+          // 로그인 브랜드 배경 — MES login_bg 와 같은 그림 (JPEG 로 재인코딩)
           src={loginBg}
           // 접근성용 대체 텍스트 — HACCP 브랜드 배경
           alt="HACCP"
