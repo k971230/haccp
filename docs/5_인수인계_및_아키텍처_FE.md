@@ -56,7 +56,7 @@ MES와 **별개** DB(`sasshaccp`)·앱. 센서/스마트 HACCP이 아니라 종�
 - PIPELINE: FE `HF*` · BE `HB*` (MES `F`와 섞지 않음). 색인 [`23_PIPELINE.md`](23_PIPELINE.md). 루트 README에 전수 표 없음
 
 **골드 FE:** `shell/HaccpShell.tsx` · `pages/docs/ccp/ColdMonitorPage.tsx` · `pages/auth/LoginPage.tsx` · DocForm 계열  
-**골드 BE:** `auth/AuthService` + `AuthController` + `AuthMapper.xml` · `docs/document/DocumentService` + `mapper/docs/document/`
+**골드 BE:** `auth/AuthService` + `AuthController` + `AuthMapper.xml` · `docs/document/DocumentService` + `mapper/docs/documents/`
 
 ### 3-3. 네이밍 Two-Tier
 

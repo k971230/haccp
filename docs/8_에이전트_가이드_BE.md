@@ -38,7 +38,7 @@ DB 적용: `db_sasshaccp/apply-all.sh` (운영 절차 준수).
 3. 삭제: validate-delete → delete  
 4. `docs/23_PIPELINE.md` `HB` 태그 (재채번 금지)
 
-골드: `com.haccp.docs.document.DocumentService` · `AuthService`.
+골드: `com.haccp.docs.documents.DocumentService` · `AuthService`.
 
 ## 하지 말 것
 

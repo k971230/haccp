@@ -313,7 +313,7 @@ FE 는 `DocumentApprovalToolbar` 를 그대로 얹고, 작성 화면은 `writerA
    - FE 셸 `shell/HaccpShell.tsx` · CRUD `pages/docs/ccp/ColdMonitorPage.tsx` · 로그인 `pages/auth/LoginPage.tsx`
    - 문서 작성 `pages/docs/html/hygprocess/HygProcessPage.tsx`
    - 좌우 50:50 기준관리 `pages/docs/html/HtmlFormTemplatePage.tsx`
-   - BE `docs/document/DocumentService.java` + `mapper/docs/document/DocumentMapper.xml` · `auth/AuthService.java`
+   - BE `docs/document/DocumentService.java` + `mapper/docs/documents/DocumentMapper.xml` · `auth/AuthService.java`
 3. 유사 화면 N 개가 같은 프레임을 쓰면 **공통 Page 컴포넌트 + 화면별 Rule/Paper** 로 나눈다 (`HtmlFormTemplatePage` 패턴). 화면마다 복제하지 않는다.
 4. 공유 페이지(MasterDataPage · 점검항목 · HWP 작성기)는 복제 금지. 그 메뉴를 손볼 때 폴더만 옮긴다.
 

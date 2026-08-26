@@ -49,8 +49,11 @@ dist/
 dist-ssr/
 *.local
 .vite/
-frontend/haccp-web/playwright-report/
-frontend/haccp-web/test-results/
+# 경로를 고정하지 않는다 — 어느 폴더에서 돌려도 산출물이 안 올라가게
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
 
 # ── IDE / OS ───────────────────────────────────────────
 .idea/

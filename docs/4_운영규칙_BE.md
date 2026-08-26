@@ -10,7 +10,7 @@ FE 01과 **동일 계약**. 여기는 BE 적용 포인트만.
 
 - `POST .../validate-delete` → `POST .../delete` · Body 객체 배열  
 - Service **양쪽** `assertDeletable`  
-- 골드: `com.haccp.docs.document.DocumentService` + `DeleteValidation` + `mapper/docs/document/DocumentMapper.selectDocumentDeleteBlocker`  
+- 골드: `com.haccp.docs.documents.DocumentService` + `DeleteValidation` + `mapper/docs/documents/DocumentMapper.selectDocumentDeleteBlocker`  
 - `@Transactional` + SP 루프 · SP 자율 COMMIT 금지  
 
 ## 타임아웃

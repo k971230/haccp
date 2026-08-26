@@ -9,7 +9,7 @@ alwaysApply: true
 
 정본 장문: `docs/5_인수인계_및_아키텍처_FE.md` · BE `docs/6_인수인계_및_아키텍처_BE.md` (이 파일은 에이전트 요약)  
 골드 (실존 경로): FE `shell/HaccpShell.tsx` · `pages/docs/ccp/ColdMonitorPage.tsx` · `pages/auth/LoginPage.tsx`  
-BE `docs/document/DocumentService.java` + `mapper/docs/document/DocumentMapper.xml` · `auth/AuthService.java`  
+BE `docs/document/DocumentService.java` + `mapper/docs/documents/DocumentMapper.xml` · `auth/AuthService.java`  
 태그 색인: `docs/23_PIPELINE.md`
 
 ## 공통 (항상)

@@ -19,7 +19,7 @@ alwaysApply: true
 - FE: `validateDeleteApi` → `mesConfirm` → `deleteApi` → 재조회; `useAsyncAction.run(fn, "del")`
 - 참조 차단 메시지: *"선택한 항목 중 {label} '{key}'이(가) {target}에서 참조 중이므로 삭제할 수 없습니다."*
 
-골드: `com.haccp.docs.document.DocumentService` + `DeleteValidation` + `mapper/docs/document/DocumentMapper.xml` (`selectDocumentDeleteBlocker`)
+골드: `com.haccp.docs.documents.DocumentService` + `DeleteValidation` + `mapper/docs/documents/DocumentMapper.xml` (`selectDocumentDeleteBlocker`)
 
 ## [OPS_TIMEOUT_TIER] API 타임아웃 3계층
 

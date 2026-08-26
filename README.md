@@ -11,7 +11,7 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 
 이 파일 E2E 절 → [`docs/23_PIPELINE.md`](docs/23_PIPELINE.md) (태그→파일) → [`docs/15_HACCP_FE_BE_통합_상세스펙.md`](docs/15_HACCP_FE_BE_통합_상세스펙.md) (유형별 이야기) → 해당 도메인 README (`pages/docs/`, `pages/sys/` …) → 화면 README가 있으면 그 파일 → 소스 주석.
 
-화면마다 `<Route>`가 없다. 식별자는 `scrnCd`. URL은 `tabRoute.routeOf(scrnCd)` 계층 경로다. Vite·Router **basename은 `/haccp/`** 이고, 라우터 pathname에는 `/haccp`를 다시 넣지 않는다 (`/docs/ccp/ccp-cold-monitor`).  
+화면마다 `<Route>`가 없다. 식별자는 `scrnCd`. URL은 `tabRoute.routeOf(scrnCd)` 계층 경로다. Vite·Router **basename은 `/haccp/`** 이고, 라우터 pathname에는 `/haccp`를 다시 넣지 않는다 (`/draft/ccp-monitoring/ccp-htg`).  
 경로(URL=DB=폴더=패키지) 정본: [`docs/24_URL_DB_폴더_패키지_정본.md`](docs/24_URL_DB_폴더_패키지_정본.md).
 
 ## E2E 요청 흐름
@@ -54,7 +54,8 @@ PIPELINE 전수 표는 이 파일이 아니라 [`docs/23_PIPELINE.md`](docs/23_P
 | `db_sasshaccp/` | PostgreSQL 스키마·SP 정본 |
 | `nginx/` | edge TLS·리버스 프록시 conf 템플릿 |
 | `scripts/` | 볼륨 초기화·빌드·배포·스모크·감시 |
-| `.cursor/rules/` | 에이전트·운영 규약 |
+| `.cursor/rules/` | 에이전트·운영 규약 (정본. `CLAUDE.md`·`AGENTS.md` 는 여기를 가리킨다) |
+| `frontend/haccp-web/e2e/` | Playwright E2E — 화면·API·SP·DB 를 한 줄로 꿴다 |
 
 ## 사전 요구
 
@@ -68,8 +69,9 @@ PIPELINE 전수 표는 이 파일이 아니라 [`docs/23_PIPELINE.md`](docs/23_P
 포트: **API 7070** · **Vite 4173** (MES 5173/8080과 분리). 상세는 [`환경구축.md`](환경구축.md).
 
 ```bash
-# DB: 당분간 스키마 정본은 DBeaver(운영 DB). 저장소 SQL 자동 migrate는 CI에서 제외.
-# 필요 시 수동: bash scripts/db_migrate_dryrun.sh (문법) · compose --profile migrate (적용)
+# DB — 정본은 db_sasshaccp/ 6본이다. 빈 DB 에 순서대로 깔면 끝난다
+#   PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
+#   새 업체:  CO_CD=0001 CO_NM='업체명' ADMIN_ID=admin0001 bash db_sasshaccp/apply-all.sh
 
 # API — listen 7070 (운영 컨테이너와 동일). CORS Origin = Vite 4173
 cd backend/haccp-api
@@ -84,6 +86,27 @@ npm run dev
 ```
 
 운영 edge 호스트 publish는 `127.0.0.1:17070:7070` (로컬 Vite 포트와 무관).
+
+## 검증
+
+바꾼 뒤에는 이 순서로 본다. **`mvn test` 통과가 기동 성공을 뜻하지 않는다** —
+MyBatis 매퍼 XML 은 컴파일에 안 잡혀서, 패키지를 옮기면 반드시 기동해서 확인한다.
+
+```bash
+# 프론트
+cd frontend/haccp-web
+npx tsc --noEmit ; npx eslint src e2e ; npx vitest run ; npm run build
+
+# 화면까지 실제로 도는지 — Playwright E2E 68건 (DB 대조 포함)
+npx playwright test
+
+# 백엔드
+cd backend/haccp-api ; ./mvnw -q -o test
+```
+
+E2E 는 화면 문구가 아니라 **DB 를 직접 읽어** 판정한다. 결과와 발견한 결함은
+[`E2E.md`](E2E.md) · [`E2E_ERRORS.md`](E2E_ERRORS.md), 스펙 구조는
+[`frontend/haccp-web/e2e/README.md`](frontend/haccp-web/e2e/README.md).
 
 ## 시크릿 (필수)
 

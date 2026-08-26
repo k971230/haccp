@@ -15,7 +15,7 @@ Controller → Service(CUD `@Transactional`) → Mapper+XML → SP
 
 ## 주석 밀도
 
-FE와 **동일**. 골드: `AuthService` · `AuthController` · `AuthMapper.xml` · `docs/document/DocumentService` · `mapper/docs/document/`.  
+FE와 **동일**. 골드: `AuthService` · `AuthController` · `AuthMapper.xml` · `docs/document/DocumentService` · `mapper/docs/documents/`.  
 PIPELINE 접두사 **`HB`**. 색인 [`23_PIPELINE.md`](23_PIPELINE.md).
 
 ## Two-Tier
