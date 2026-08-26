@@ -22,8 +22,6 @@ JWT 다음 단계다. **로그인했는지**는 `JwtFilter` 가, **그 화면을
 ## 예외 (경로가 화면과 1:1 이 아닌 것)
 
 - `/api/v1/docs/documents/**` — 문서 허브. 삭제·HWP 저장은 `HWP_HUB_SCREENS`, 나머지는 `DOC_HUB_SCREENS`
-- `/api/v1/bas/company-templates` 등 — 사용양식 허브 → `hwp-template-management`
-- `/api/v1/bas/schedule-rules` — → `schedule-cycle-management`
 - `/auth/**` · 셸 공용 · `/sys/users/me` — 화이트리스트
 
 ## 변경 (2026-08-25)

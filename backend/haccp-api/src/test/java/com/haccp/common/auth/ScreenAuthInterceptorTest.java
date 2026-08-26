@@ -88,7 +88,7 @@ class ScreenAuthInterceptorTest {
                 .thenReturn(List.of(row("hwp-template-management", "Y", "N")));
         MockHttpServletResponse res = new MockHttpServletResponse();
         boolean ok = interceptor.preHandle(
-                request("POST", "/api/v1/bas/company-templates/delete"),
+                request("POST", "/api/v1/docs/hwp/hwp-template-management/delete"),
                 res,
                 new Object()
         );

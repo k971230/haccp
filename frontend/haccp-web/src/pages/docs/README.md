@@ -5,7 +5,7 @@
 
 라우트: `routeOf(scrnCd)` → `tabRoute.SCREEN_PATH` 계층 경로 (예: `/docs/html-form/hyg-process-template`). `/screen/{scrnCd}` 없음.
 
-바꾸지 않음: `scrnCd` · `persistId`. `/sys/`·`/docs/` 화면 HTTP: `/api/v1` + `SCREEN_PATH` + 동작. `/haccp` 는 API에 넣지 않는다. 문서함·결재·HWP leaf 허브는 `/api/v1/docs/documents` · `/api/v1/docs/templates`. 회사양식 삭제는 `/api/v1/bas/company-templates`.
+바꾸지 않음: `scrnCd` · `persistId`. `/sys/`·`/docs/` 화면 HTTP: `/api/v1` + `SCREEN_PATH` + 동작. `/haccp` 는 API에 넣지 않는다. 문서함·결재·HWP leaf 허브는 `/api/v1/docs/documents` · `/api/v1/docs/templates`.
 
 ## 일지설정 세트 (왼쪽 목록 + 오른쪽 업무화면)
 

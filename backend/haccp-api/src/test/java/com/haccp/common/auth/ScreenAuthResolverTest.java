@@ -42,11 +42,11 @@ class ScreenAuthResolverTest {
     }
 
     @Test
-    void 사용양식_허브_삭제는_hwp_template_management_DELETE다() {
-        // 기준정보 화면은 2026-08-25 정리에서 빠졌다. /bas 예외로 남은 것은 사용양식 허브·문서주기뿐이다
+    void 사용양식_삭제는_hwp_template_management_DELETE다() {
+        // 삭제도 형제 화면처럼 화면 자기 경로다. /bas 예외 맵은 2026-08-26 에 없앴다
         ScreenAuthMatch m = ScreenAuthResolver.resolve(
                 "POST",
-                "/api/v1/bas/company-templates/delete"
+                "/api/v1/docs/hwp/hwp-template-management/delete"
         ).orElseThrow();
         assertEquals("hwp-template-management", m.scrnCd());
         assertEquals(ScreenAuthAction.DELETE, m.action());

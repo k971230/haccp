@@ -133,13 +133,13 @@ export async function applyHwpTemplateFile(body: {
  * 코멘트:
  *   1) 회사 사용양식 삭제 키만 먼저 검사한다
  *   2) 사용양식관리 삭제 확인창 직전에 호출한다
- *   3) URL은 법적서류와 공유하는 company-templates 경로를 유지한다
+ *   3) URL은 형제 화면과 같이 이 화면 자기 경로다
  */
 export async function validateDeleteCompanyTemplates(
   // 삭제 키 객체 배열 — 단건도 [{ tmplCd }]
   keys: { tmplCd: string }[],
 ): Promise<void> {
-  await http.post("/api/v1/bas/company-templates/validate-delete", keys);
+  await http.post(`${BASE}/validate-delete`, keys);
 }
 
 /**
@@ -153,5 +153,5 @@ export async function validateDeleteCompanyTemplates(
 export async function deleteCompanyTemplates(
   keys: { tmplCd: string }[],
 ): Promise<void> {
-  await http.post("/api/v1/bas/company-templates/delete", keys);
+  await http.post(`${BASE}/delete`, keys);
 }

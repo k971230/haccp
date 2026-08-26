@@ -20,4 +20,4 @@ com/haccp/docs/
 
 XML `resources/mapper/docs/{같은 폴더명}/`. 폴더 이동만으로 HTTP 경로를 바꾸지 않는다.
 
-삭제는 사용양식·법적서류가 `/api/v1/bas/company-templates/*` 를 Workflow에 공유한다.
+사용양식 삭제는 화면 자기 경로 `/api/v1/docs/hwp/hwp-template-management/{validate-delete,delete}` 다.

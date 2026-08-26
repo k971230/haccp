@@ -36,6 +36,8 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 // 역할 — @ExceptionHandler 등록
 import org.springframework.web.bind.annotation.ExceptionHandler;
+// 역할 — 없는 경로(정적 자원 미존재) 예외
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 // 역할 — 전역 예외 처리 어드바이스
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 // 역할 — 응답 쓰던 중 브라우저가 연결을 끊은 경우
@@ -113,6 +115,25 @@ public class GlobalExceptionHandler {
                 );
         // 400 + VALIDATION 코드
         return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION", msg));
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-26
+     * 코멘트:
+     *   1) 없는 경로를 500 UNKNOWN + 스택트레이스로 내리던 것을 404 로 바꾼다
+     *   2) FE 가 죽은 URL 을 부르면 Spring 이 정적 자원으로 보고 이 예외를 던진다
+     *   3) 스택트레이스를 남기지 않는다 — 서버 결함이 아니라 잘못된 주소다
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResource(
+            // 발생 예외 — 요청 경로만 로그에 남긴다
+            NoResourceFoundException e
+    ) {
+        log.warn("no route {}", oneLine(e.getResourcePath()));
+        // 404 Not Found
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("NOT_FOUND", "요청하신 경로를 찾을 수 없습니다."));
     }
 
     /**

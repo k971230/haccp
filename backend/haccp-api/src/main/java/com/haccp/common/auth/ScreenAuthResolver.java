@@ -5,7 +5,7 @@
  * 일자: 2026-08-25
  * 코멘트:
  *   1) FE SCREEN_PATH 와 같은 칸을 /api/v1 앞에 붙인 접두로 화면을 찾는다. 정책 테이블은 없다
- *   2) 문서 허브·기준정보 /bas/{type}·서명 /sys/users 는 화면 URL 이 아니라서 여기 예외 맵으로 둔다
+ *   2) 문서 허브·서명 /sys/users 는 화면 URL 이 아니라서 여기 예외 맵으로 둔다
  *   3) 맵에 없고 화이트리스트도 아니면 empty — 인터셉터는 통과시키고 로그만 남긴다
  *
  * PIPELINE[HB145] 화면 권한 인터셉터
@@ -123,10 +123,6 @@ public final class ScreenAuthResolver {
         if (path.startsWith("/api/v1/docs/templates")) {
             return Optional.of(ScreenAuthMatch.screen("hwp-template-management", action));
         }
-        Optional<ScreenAuthMatch> bas = resolveBas(path, action);
-        if (bas.isPresent()) {
-            return bas;
-        }
         if (path.startsWith("/api/v1/tsk/today-tasks") || path.startsWith("/api/v1/tsk/notifications")) {
             return Optional.of(ScreenAuthMatch.screen("today-tasks", action));
         }
@@ -159,24 +155,6 @@ public final class ScreenAuthResolver {
         if (path.startsWith("/api/v1/pref/")) return true;
         if (path.startsWith("/api/v1/log/")) return true;
         return path.startsWith("/api/v1/sys/users/me");
-    }
-
-    /** /api/v1/bas 예외 — 사용양식 허브·문서주기. 기준정보 화면은 2026-08-25 정리에서 빠졌다 */
-    private static Optional<ScreenAuthMatch> resolveBas(String path, ScreenAuthAction action) {
-        if (!path.startsWith("/api/v1/bas/")) {
-            return Optional.empty();
-        }
-        if (path.startsWith("/api/v1/bas/company-templates")
-                || path.startsWith("/api/v1/bas/company-check-items")
-                || path.startsWith("/api/v1/bas/company-forms")
-                || path.startsWith("/api/v1/bas/company-form-items")
-                || path.startsWith("/api/v1/bas/template-export-hist")) {
-            return Optional.of(ScreenAuthMatch.screen("hwp-template-management", action));
-        }
-        if (path.startsWith("/api/v1/bas/schedule-rules")) {
-            return Optional.of(ScreenAuthMatch.screen("schedule-cycle-management", action));
-        }
-        return Optional.empty();
     }
 
     /**
