@@ -34,11 +34,8 @@ PIPELINE[HB93] 워크플로 작업 매퍼
     <!-- 본인 알림 읽음 처리 -->
     <update id="readNotification" statementType="CALLABLE">CALL sp_tbl_notification_u_000(#{coCd}, #{idx}, #{userId})</update>
     <!-- 이탈·개선조치 목록 -->
-    <select id="selectCorrectiveActions" resultType="map">SELECT * FROM sp_tbl_corrective_action_r_000(#{coCd}, #{fromDt}, #{toDt}, #{tmplCd}, #{writer})</select>
     <!-- 개선조치 신규·수정 -->
-    <update id="saveCorrectiveAction" statementType="CALLABLE">CALL sp_tbl_corrective_action_c_000(#{coCd}, #{idx}, CAST(#{payloadJson} AS jsonb), #{userId})</update>
     <!-- 미완료 개선조치 삭제 -->
-    <update id="deleteCorrectiveAction" statementType="CALLABLE">CALL sp_tbl_corrective_action_d_000(#{coCd}, #{idx}, #{userId})</update>
     <!-- 출발 문서의 관련 문서 목록 -->
     <select id="selectRelations" resultType="map">SELECT * FROM sp_tbl_document_relation_r_000(#{coCd}, #{docIdx})</select>
     <!-- 허용 조합 관계만 저장 -->
