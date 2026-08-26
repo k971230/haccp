@@ -10,7 +10,10 @@
  *
  * PIPELINE[HF130] E2E
  */
-import { expect, type Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 /** 관리자 계정 — 대부분의 스펙이 쓴다 */
 export function adminCreds(): { user: string; pass: string } {
@@ -70,4 +73,269 @@ export async function tokenOf(page: Page): Promise<string> {
     return "";
   });
   return (token || "").replace(/^"|"$/g, "");
+}
+
+/**
+ * 문서를 전부 비운다 — 흐름 시험을 깨끗한 자리에서 시작하려고 쓴다.
+ *
+ * 목록에 문서번호 열이 없어 「몇 번째 행이 내 문서인가」를 화면으로는 가릴 수 없다.
+ * 그래서 시험 전에 비우고 한 건만 만든다. 로컬 전용이며 tools/ 가 있어야 돈다.
+ * 없으면 조용히 건너뛴다 — CI 에서 tools/ 는 git 에 없다.
+ */
+export function resetDocuments(): void {
+  const root = repoRoot();
+  const sql = path.join(root, "tools", "reset_test_documents.sql");
+  /*
+   * 도구가 없으면(= CI) 비우지 못한다. 그 상태로 이어 가면 「내 문서가 첫 행」 전제가 깨져
+   * 엉뚱한 문서를 보고 통과하거나 실패한다 — 조용히 넘기지 말고 건너뛴다.
+   */
+  if (!fs.existsSync(sql) || !hasDbTools()) {
+    test.skip(true, "tools/ 가 없어 문서를 비울 수 없다 (로컬 전용)");
+  }
+  runJava("ApplyOneSql", sql);
+}
+
+/** ESM 이라 __dirname 이 없다 — 실행 기준은 항상 frontend/haccp-web 다 */
+function repoRoot(): string {
+  return path.resolve(process.cwd(), "../..");
+}
+
+/** tools/ 는 git 에 없다(로컬 전용) — CI 에서는 DB 대조를 건너뛴다 */
+export function hasDbTools(): boolean {
+  return fs.existsSync(path.join(repoRoot(), "tools", "out", "Q.class"));
+}
+
+function runJava(main: string, arg: string): string {
+  const root = repoRoot();
+  const out = path.join(root, "tools", "out");
+  const jar = path.join(
+    process.env.USERPROFILE || process.env.HOME || "",
+    ".m2/repository/org/postgresql/postgresql/42.3.6/postgresql-42.3.6.jar",
+  );
+  return execFileSync("java", ["-Dfile.encoding=UTF-8", "-cp", `${out};${jar}`, main, arg], {
+    cwd: root,
+    encoding: "utf-8",
+  });
+}
+
+/**
+ * DB 를 직접 읽는다 — 화면이 「저장했습니다」라고 해도 실제로 들어갔는지는 여기서만 확인된다.
+ *
+ * 화면·API 응답만 믿으면 서버가 삼킨 오류를 못 본다(E2E-001 이 그랬다).
+ * 첫 줄이 열 이름, 이후가 값이며 열 구분자는 " | " 다.
+ *
+ * 도구가 없으면(= CI. tools/ 는 git 미포함) 그 시험을 **건너뛴다**.
+ * 빈 값을 돌려주면 검사가 조용히 통과해 버려 더 나쁘다.
+ */
+export function dbRows(sql: string): string[][] {
+  if (!hasDbTools()) {
+    test.skip(true, "tools/ 가 없어 DB 대조를 건너뛴다 (로컬 전용)");
+  }
+  return runJava("Q", sql)
+    .split(/\r?\n/)
+    .filter((l) => l.trim() && !/^-+$/.test(l.trim()) && !/^\(\d+ rows?\)$/.test(l.trim()))
+    .map((l) => l.split(" | ").map((c) => c.trim()));
+}
+
+/** 한 칸짜리 조회 — count(*) 처럼 값 하나만 볼 때 */
+export function dbOne(sql: string): string {
+  const rows = dbRows(sql);
+  return rows.length > 1 ? rows[1][0] : "";
+}
+
+/**
+ * 편집 그리드 셀에 값을 넣는다.
+ *
+ * MesEditableGrid 는 셀을 한 번 누르면 그 자리에 input/select 를 덮어 씌운다.
+ * td 순서를 숫자로 박으면 열이 하나 늘 때마다 스펙이 전부 깨지므로 헤더 글자로 자리를 찾는다.
+ */
+export async function fillCell(
+  // grid: 대상 그리드 — 한 화면에 그리드가 여럿이라 범위를 좁혀 받는다
+  grid: Locator,
+  // rowIndex: 행 위치. 행추가로 만든 새 행은 보통 0
+  rowIndex: number,
+  // header: 열 제목 그대로
+  header: string,
+  // value: 넣을 값. select 는 표시 글자가 아니라 값으로 고른다
+  value: string,
+): Promise<void> {
+  const heads = (await grid.locator("thead th").allInnerTexts()).map((t) => t.trim());
+  const col = heads.indexOf(header);
+  expect(col, `${header} 열을 찾지 못했다 — 실제 헤더: ${heads.join("/")}`).toBeGreaterThanOrEqual(0);
+
+  const cell = grid.locator("tbody tr").nth(rowIndex).locator("td").nth(col);
+  await cell.click();
+  const select = cell.locator("select");
+  if (await select.count()) {
+    await select.selectOption(value);
+    return;
+  }
+  const input = cell.locator("input:not([type=checkbox])");
+  await input.waitFor({ state: "visible", timeout: 5_000 });
+  await input.fill(value);
+  // blur 해야 그리드 버퍼에 값이 확정된다
+  await input.press("Tab");
+}
+
+/**
+ * 저장을 누르고 확인창까지 넘긴다.
+ *
+ * 이 프로젝트의 저장·삭제·전송은 모두 mesConfirm 을 거친다.
+ * 확인을 안 누르면 요청 자체가 안 나가고 화면은 아무 말도 안 한다 — 스펙이 조용히 통과해 버린다.
+ * @returns 서버 응답. 상태코드까지 봐야 「저장했습니다」 뒤에 숨은 실패를 잡는다
+ */
+export async function saveAndConfirm(
+  page: Page,
+  // urlPart: 기다릴 저장 API 의 일부
+  urlPart: string,
+  // button: 저장 버튼. 화면에 저장이 여럿이면 좁혀서 넘긴다
+  button?: Locator,
+): Promise<number> {
+  const done = page.waitForResponse(
+    (r) => r.url().includes(urlPart) && r.request().method() !== "GET",
+    { timeout: 30_000 },
+  );
+  await (button ?? btn(page, "저장")).click();
+  /*
+   * 대부분의 저장은 mesConfirm 을 거치지만 전부는 아니다(HTML 양식 복사는 바로 나간다).
+   * 확인창이 뜨면 넘기고, 안 뜨면 그냥 기다린다 — 없는 버튼을 기다리다 시험이 통째로 멈추지 않게.
+   */
+  const ok = btn(page, "확인");
+  await ok
+    .waitFor({ state: "visible", timeout: 3_000 })
+    .then(() => ok.click())
+    .catch(() => undefined);
+  return (await done).status();
+}
+
+/**
+ * 행추가를 누르고 새 행의 위치를 돌려준다.
+ *
+ * 새 행이 맨 위에 붙는지 맨 아래에 붙는지는 화면마다 다르다.
+ * 「추가 전 건수」를 세어 두고 늘어난 자리를 찾는 편이 화면 구현에 안 매인다.
+ */
+export async function addRow(page: Page, grid: Locator): Promise<number> {
+  await btn(page, /행\s*추가/).click();
+  /*
+   * 건수로 판정하지 않는다 — 그리드가 페이지당 10행이라 목록이 꽉 차 있으면 행을 더해도 보이는 수가 그대로다.
+   * 빈 칸 세기도 못 쓴다 — 사용여부처럼 기본값이 들어간 칸이 있다.
+   * useEditableRows 가 신규행 키에 __new_ 를 붙인다(tr[data-key]). 그걸로 잡는다.
+   */
+  /*
+   * 편집 그리드는 useEditableRows 가 __new_ 키를 붙인다.
+   * HTML 양식 원본 화면만 예외다 — 행추가가 「표준 복사」라 키가 pending 하나로 고정돼 있다.
+   */
+  const fresh = grid
+    .locator('tbody tr[data-key^="__new_"], tbody tr[data-key="pending"]')
+    .last();
+  await fresh.waitFor({ state: "visible", timeout: 10_000 });
+  const key = await fresh.getAttribute("data-key");
+  const keys = await grid.locator("tbody tr").evaluateAll((trs) =>
+    trs.map((tr) => tr.getAttribute("data-key") ?? ""),
+  );
+  return keys.indexOf(key ?? "");
+}
+
+/**
+ * 지금 보이는 탭의 버튼.
+ *
+ * 셸은 닫지 않은 탭을 DOM 에 남겨 둔다. 이름만으로 잡으면 뒤에 숨은 탭의 버튼을 누른다 —
+ * 클릭은 성공하고 화면은 아무 반응이 없어 원인을 찾기 어렵다.
+ */
+export function btn(page: Page, name: string | RegExp): Locator {
+  return page.getByRole("button", { name, exact: typeof name === "string" }).filter({ visible: true }).first();
+}
+
+/** 지금 보이는 탭의 그리드 — nth 는 보이는 것들 사이의 순번이다 */
+export function grids(page: Page): Locator {
+  return page.locator("table").filter({ visible: true });
+}
+
+/**
+ * 작성 6화면 공통 — 문서 한 건을 만들고 지면을 열어 준다.
+ *
+ * 여섯 화면이 같은 프레임(HtmlFormDraftPage / HwpDraftPage)을 쓴다.
+ * 좌측에서 행추가 → 양식 선택 → 저장까지 해야 docIdx 가 생기고 우측 지면이 편집 가능해진다.
+ * @returns 좌측 목록에서 그 문서의 행
+ */
+export async function createDraft(
+  page: Page,
+  // path: 화면 경로
+  path: string,
+  // tmplPrefix: 고를 양식코드의 앞부분
+  tmplPrefix: string,
+): Promise<Locator> {
+  await openScreen(page, path);
+  await expect(page.getByRole("button", { name: "조회" })).toBeVisible({ timeout: 30_000 });
+
+  const list = grids(page).first();
+  const before = await list.locator("tbody tr").count();
+  await btn(page, /행\s*추가/).click();
+
+  // 양식코드 칸의 셀 버튼이 양식 선택 팝업을 연다 — 손으로 칠 수 없는 칸이다
+  const pick = page.getByTitle("양식 선택").filter({ visible: true }).first();
+  await pick.scrollIntoViewIfNeeded();
+  await pick.click({ force: true });
+  const popupRow = page.getByRole("row").filter({ hasText: tmplPrefix }).last();
+  await expect(popupRow).toBeVisible({ timeout: 20_000 });
+  await popupRow.dblclick();
+
+  // 좌측 저장 — 여기서 docIdx 가 생긴다. 그 전까지 우측 지면은 읽기 전용이다
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes("/save") && r.request().method() !== "GET", {
+      timeout: 30_000,
+    }),
+    btn(page, "저장").click(),
+  ]);
+
+  const row = list.locator("tbody tr").nth(before);
+  await row.click();
+  return row;
+}
+
+/**
+ * 지면 필수값을 채운다 — 전송이 막히지 않을 만큼만.
+ *
+ * 기록 표는 줄마다 라디오 그룹이 따로다. 한 그룹만 찍으면 다음 줄에서 다시 막힌다.
+ */
+export async function fillPaperRequired(page: Page): Promise<void> {
+  const groups = [
+    ...new Set(
+      await page
+        .locator('input[type="radio"]:not([disabled])')
+        .evaluateAll((els) => els.map((e) => (e as HTMLInputElement).name)),
+    ),
+  ];
+  for (const name of groups) {
+    await page.locator(`input[type="radio"][name="${name}"]`).first().check({ force: true });
+  }
+  const times = page.locator('input[type="time"]:not([disabled])');
+  for (let i = 0; i < (await times.count()); i += 1) {
+    if (!(await times.nth(i).inputValue())) await times.nth(i).fill("09:30");
+  }
+  const nums = page.locator('input[type="number"]:not([disabled])');
+  for (let i = 0; i < (await nums.count()); i += 1) {
+    if (!(await nums.nth(i).inputValue())) await nums.nth(i).fill("1");
+  }
+}
+
+/**
+ * 지금 보이는 탭의 그리드 행.
+ *
+ * 셸은 닫지 않은 탭을 DOM 에 남긴다. page.getByRole("row") 로 잡으면 뒤에 숨은 탭의 행이 먼저 걸려
+ * 「보이지 않는 요소를 누르려다 시험이 통째로 멈추는」 일이 생긴다.
+ */
+export function visibleRows(page: Page): Locator {
+  return page.getByRole("row").filter({ visible: true });
+}
+
+/**
+ * 문서 idx 로 그 행을 집는다.
+ *
+ * 목록에 보이는 열은 좌우 폭에 따라 달라져 「양식코드가 보이는가」로 행을 못 찾는다.
+ * 탭을 여럿 열어 두면 「첫 그리드」도 못 믿는다.
+ * 그리드는 행 tr 에 업무키를 data-key 로 달아 두므로 그게 가장 확실한 손잡이다.
+ */
+export function rowOfDoc(page: Page, docIdx: string | number): Locator {
+  return page.locator(`tr[data-key="${docIdx}"]`).filter({ visible: true }).first();
 }
