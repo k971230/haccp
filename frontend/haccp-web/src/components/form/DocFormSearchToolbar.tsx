@@ -159,6 +159,7 @@ export function DocFormSearchToolbar({
       <MesButton
         // 목록 재조회
         variant="search"
+        icon="search"
         disabled={searchBusy || actionBusy}
         onClick={onSearch}
       >

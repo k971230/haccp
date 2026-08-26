@@ -49,10 +49,6 @@ export interface DocumentApprovalToolbarProps {
   statusLabel?: string;
   // 상태·문서번호 배지 노출 — 기본 true. 문서작성은 우측 요약에만 둘 때 false
   showStatus?: boolean;
-  // 미리보기 핸들러 — 있으면 버튼 노출
-  onPreview?: () => void;
-  // 작성 화면 열기 — 문서함에서 DB/HWP 편집 화면으로 이동
-  onEdit?: () => void;
   /**
    * true면 작성자 화면용 — 상신·상신취소만 노출.
    * 검토·승인·반려는 결재 대기(sign-ready)에서 처리한다.
@@ -89,8 +85,6 @@ export function DocumentApprovalToolbar({
   onApproved,
   statusLabel,
   showStatus = true,
-  onPreview,
-  onEdit,
   writerActionsOnly = false,
   approverUndo = false,
   pendingRoleCd,
@@ -171,26 +165,6 @@ export function DocumentApprovalToolbar({
             onClick={onSave}
           >
             저장
-          </MesButton>
-        )}
-        {onPreview && (
-          <MesButton
-            // 미리보기 — 호출측이 PDF/인쇄 창을 연다
-            variant="secondary"
-            disabled={!docIdx}
-            onClick={onPreview}
-          >
-            미리보기
-          </MesButton>
-        )}
-        {onEdit && (
-          <MesButton
-            // 양식 작성·편집 화면 — ?docIdx= deep-link
-            variant="secondary"
-            disabled={!docIdx}
-            onClick={onEdit}
-          >
-            작성화면
           </MesButton>
         )}
         {docIdx && canApprove && showRequest && (

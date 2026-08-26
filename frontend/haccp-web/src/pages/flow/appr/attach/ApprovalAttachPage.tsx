@@ -2,11 +2,11 @@
  * ApprovalAttachPage — 결재 첨부 (내가 상신한 문서의 첨부·비고·진행상태).
  *
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-08-26
  * 코멘트:
  *   1) 좌측은 로그인 사용자가 작성한 문서만 — 서버가 writerId 를 조건으로 걸러 준다
  *   2) 우측은 결재 진행상태 + 첨부 관리 + 비고. 문서 본문 미리보기는 두지 않는다(결재 화면 몫)
- *   3) 첨부는 문서당 5개까지. 프론트에서 막고 서버 SP 가 같은 기준으로 다시 막는다
+ *   3) 버튼은 MesButton 틴트·아이콘. 「초기화」는 검색줄에서 저장하지 않은 화면 변경만 되돌린다
  *
  * 첨부 추가·삭제는 전송대기(WRK·RJT)에서만 된다 — 상신 뒤에 기록물이 바뀌면 결재자가 본 것과 달라진다.
  * 비고는 메모라서 결재완료(APV) 직전까지 고칠 수 있다.
@@ -29,9 +29,8 @@ import { useCommonCodes } from "@/hooks/useCommonCodes";
 import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
 // 역할 — 그리드 패널 헤더
 import { gridHeadClass } from "@/components/layout/pageClasses";
-// 역할 — 표준 버튼·입력
+// 역할 — 표준 버튼
 import { MesButton } from "@/components/ui/MesButton";
-import { Input } from "@/components/ui/Input";
 // 역할 — 공통 조회 헤더
 import {
   DocFormSearchToolbar,
@@ -88,6 +87,9 @@ import {
   type AttachListRow,
 } from "./ApprovalAttachRule";
 
+/** 비고 글자 상한 — textarea maxLength 와 같다 */
+const REMARK_MAX = 500;
+
 /**
  * 개발자: 박승우
  * 일자: 2026-08-25
@@ -104,6 +106,7 @@ export default function ApprovalAttachPage() {
   const asyncAct = useAsyncAction();
   const navigate = useNavigate();
   const openDocIdx = useDocIdxQuery();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { codeMap: statusCodeMap, label: statusLabel } = useCommonCodes("DOC_STATUS");
   const { label: roleLabel } = useCommonCodes("APPR_ROLE");
   const { label: resultLabel } = useCommonCodes("APPR_RESULT");
@@ -173,6 +176,7 @@ export default function ApprovalAttachPage() {
       setDetail(next);
       setRemark(next.header.remark ?? "");
       setUploadFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (e) {
       mesError(e);
     }
@@ -334,6 +338,7 @@ export default function ApprovalAttachPage() {
   const handleReset = () => {
     setUploadFile(null);
     setRemark(detail?.header.remark ?? "");
+    if (fileInputRef.current) fileInputRef.current.value = "";
     mesToast("저장하지 않은 변경을 되돌렸습니다.", "success");
   };
 
@@ -350,7 +355,16 @@ export default function ApprovalAttachPage() {
         onSearch={() => void asyncAct.run(loadList, "search")}
         searchBusy={listLoading || asyncAct.isBusy("search")}
         actionBusy={asyncAct.isBusy()}
-        actions={<span className="text-xs text-slate-400">내가 작성한 문서</span>}
+        actions={(
+          <MesButton
+            // 저장하지 않은 비고·고른 파일만 되돌린다
+            variant="search"
+            icon="reset"
+            onClick={handleReset}
+          >
+            초기화
+          </MesButton>
+        )}
       />
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(340px,42%)_1fr]">
@@ -402,7 +416,8 @@ export default function ApprovalAttachPage() {
                     </span>
                     <MesButton
                       // 작성화면 — 지면을 고치러 간다. 이 화면에는 지면이 없다
-                      variant="secondary"
+                      variant="add"
+                      icon="edit"
                       onClick={() => navigate(routeForDocument({
                         docIdx: detail.header.docIdx,
                         tmplCd: detail.header.tmplCd,
@@ -415,6 +430,7 @@ export default function ApprovalAttachPage() {
                       <MesButton
                         // 전송 — 결재 프로세스 시작. 지면 필수값을 먼저 본다
                         variant="excel"
+                        icon="approve"
                         disabled={asyncAct.isBusy("send")}
                         onClick={() => void handleSend()}
                       >
@@ -424,7 +440,8 @@ export default function ApprovalAttachPage() {
                     {canCancelSend(detail.header.status) && (canWrite || canModify) && (
                       <MesButton
                         // 전송취소 — 전송대기로 되돌린다
-                        variant="secondary"
+                        variant="search"
+                        icon="reset"
                         disabled={asyncAct.isBusy("cancelSend")}
                         onClick={() => void handleCancelSend()}
                       >
@@ -460,27 +477,35 @@ export default function ApprovalAttachPage() {
               </section>
 
               <section>
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-700">
-                    첨부 파일{" "}
-                    <span className="text-xs font-normal text-slate-400">
-                      {userFileCnt}개 / 최대 {ATTACH_MAX}개
-                    </span>
-                  </h3>
-                  <MesButton variant="secondary" size="sm" onClick={handleReset}>
-                    초기화
-                  </MesButton>
-                </div>
+                <h3 className="mb-2 text-sm font-semibold text-slate-700">
+                  첨부 파일{" "}
+                  <span className="text-xs font-normal text-slate-400">
+                    {userFileCnt}개 / 최대 {ATTACH_MAX}개
+                  </span>
+                </h3>
                 {attachEditable ? (
                   <div className="mb-2 flex flex-wrap items-center gap-2 rounded bg-slate-50 p-2">
-                    <Input
-                      type="file"
+                    <input
                       // 고른 파일은 화면 상태 — 「초기화」가 되돌린다
+                      ref={fileInputRef}
+                      type="file"
+                      className="sr-only"
                       onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
-                      className="max-w-64"
                     />
                     <MesButton
-                      variant="secondary"
+                      // 숨긴 file input 을 연다
+                      variant="add"
+                      icon="upload"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      파일선택
+                    </MesButton>
+                    <span className="max-w-48 truncate text-xs text-slate-500">
+                      {uploadFile?.name ?? "선택된 파일 없음"}
+                    </span>
+                    <MesButton
+                      variant="add"
+                      icon="upload"
                       disabled={!uploadFile || userFileCnt >= ATTACH_MAX || asyncAct.isBusy("upload")}
                       onClick={() => void handleUpload()}
                     >
@@ -512,8 +537,9 @@ export default function ApprovalAttachPage() {
                         </span>
                         <span className="flex items-center gap-1">
                           <MesButton
-                            variant="ghost"
+                            variant="download"
                             size="sm"
+                            icon="download"
                             onClick={() => void handleDownload(file.idx, file.fileNm)}
                           >
                             다운로드
@@ -522,6 +548,7 @@ export default function ApprovalAttachPage() {
                             <MesButton
                               variant="danger"
                               size="sm"
+                              icon="trash"
                               disabled={asyncAct.isBusy("delFile")}
                               onClick={() => void handleDeleteFile(file.idx, file.fileNm)}
                             >
@@ -543,17 +570,21 @@ export default function ApprovalAttachPage() {
                   onChange={(e) => setRemark(e.target.value)}
                   disabled={!remarkEditable}
                   rows={3}
-                  maxLength={500}
+                  maxLength={REMARK_MAX}
                   className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm disabled:bg-slate-50 disabled:text-slate-400"
                   placeholder={remarkEditable ? "결재자에게 남길 메모" : "결재가 완료되어 고칠 수 없습니다."}
                 />
-                <div className="mt-2 flex justify-end">
+                <div className="mt-2 flex items-center justify-end gap-2">
+                  <span className="text-xs text-slate-400">
+                    {remark.length} / {REMARK_MAX}자
+                  </span>
                   <MesButton
                     variant="save"
+                    icon="save"
                     disabled={!remarkEditable || asyncAct.isBusy("remark")}
                     onClick={() => void handleSaveRemark()}
                   >
-                    비고 저장
+                    저장
                   </MesButton>
                 </div>
               </section>
