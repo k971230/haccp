@@ -94,42 +94,6 @@ public class TaskService {
         mapper.readNotification(LoginUserContext.coCd(), DeleteValidation.requirePositive(idx, "알림번호가 올바르지 않습니다."), LoginUserContext.userId());
     }
 
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-06
-     * 코멘트:
-     *   1) 기간·상태 조건으로 개선조치 목록을 조회한다
-     *   2) SP Map snake_case를 camelCase로 바꿔 그리드 field가 비지 않게 한다
-     *   3) 공백 조건은 SP에서 전체로 본다
-     */
-    public List<Map<String, Object>> correctiveActions(String fromDt, String toDt, String tmplCd, String writer) {
-        return camelRows(mapper.selectCorrectiveActions(
-                LoginUserContext.coCd(), text(fromDt), text(toDt), text(tmplCd), text(writer)));
-    }
-
-    /** 개선조치를 신규·수정 저장한다. */
-    @Transactional
-    public void saveCorrectiveAction(Long idx, Map<String, Object> payload) {
-        if (payload == null) throw new BizException("저장할 개선조치 자료가 없습니다.");
-        try {
-            mapper.saveCorrectiveAction(LoginUserContext.coCd(), idx, objectMapper.writeValueAsString(payload), LoginUserContext.userId());
-        } catch (JsonProcessingException e) {
-            throw new BizException("개선조치 저장 자료 형식이 올바르지 않습니다.");
-        }
-    }
-
-    /** 삭제 전 키·완료 상태를 검사한다. SP도 완료 상태를 다시 검사한다. */
-    public void validateCorrectiveActionDelete(List<Map<String, Long>> keys) {
-        normalizeKeys(keys);
-    }
-
-    /** 미완료 개선조치를 삭제한다. */
-    @Transactional
-    public void deleteCorrectiveActions(List<Map<String, Long>> keys) {
-        normalizeKeys(keys);
-        for (Map<String, Long> key : keys) mapper.deleteCorrectiveAction(LoginUserContext.coCd(), key.get("idx"), LoginUserContext.userId());
-    }
-
     /** 문서 상세 패널의 관계 목록을 반환한다. */
     public List<Map<String, Object>> relations(Long docIdx) {
         return mapper.selectRelations(LoginUserContext.coCd(), DeleteValidation.requirePositive(docIdx, "문서번호가 올바르지 않습니다."));

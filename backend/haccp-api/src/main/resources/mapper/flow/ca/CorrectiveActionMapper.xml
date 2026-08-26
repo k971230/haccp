@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CorrectiveActionMapper.xml — 개선조치관리 sp_tbl_corrective_action_* 호출.
+
+개발자: 박승우
+일자: 2026-08-26
+코멘트:
+  1) 조회는 TABLE FUNCTION, 저장·삭제는 PostgreSQL PROCEDURE 를 호출한다
+  2) Map 결과는 snake_case 로 돌아오며 Service camelRows 가 API 계약으로 바꾼다
+  3) tsk/TaskMapper.xml 에서 옮겼다 — URL 이 /flow/ca 인데 패키지가 tsk 였다
+
+PIPELINE[HB94] 개선조치관리 MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.flow.ca.CorrectiveActionMapper">
+
+    <!-- 기간·양식·작성자 조건 목록. 공백 조건은 SP 가 전체로 본다 -->
+    <select id="selectCorrectiveActions" resultType="map">
+        SELECT * FROM sp_tbl_corrective_action_r_000(#{coCd}, #{fromDt}, #{toDt}, #{tmplCd}, #{writer})
+    </select>
+
+    <!-- 신규·수정 저장. idx 가 null 이면 SP 가 신규로 본다 -->
+    <update id="saveCorrectiveAction" statementType="CALLABLE">
+        CALL sp_tbl_corrective_action_c_000(#{coCd}, #{idx}, CAST(#{payloadJson} AS jsonb), #{userId})
+    </update>
+
+    <!-- 삭제. 완료된 건은 SP 가 막는다 -->
+    <update id="deleteCorrectiveAction" statementType="CALLABLE">
+        CALL sp_tbl_corrective_action_d_000(#{coCd}, #{idx}, #{userId})
+    </update>
+
+</mapper>

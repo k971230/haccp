@@ -72,42 +72,13 @@ public class TaskController {
         return CommonResponse.ok(service.todayTaskDocs(fromDt, toDt, offset, limit));
     }
 
+    /** 안 읽은 알림 목록 — 셸 종 아이콘이 호출한다 */
     @GetMapping("/api/v1/tsk/notifications/list")
     public CommonResponse<List<Map<String, Object>>> notifications() { return CommonResponse.ok(service.notifications()); }
 
+    /** 알림 1건을 읽음 처리한다 */
     @PutMapping("/api/v1/tsk/notifications/{idx}/read")
     public CommonResponse<Void> readNotification(@PathVariable Long idx) { service.readNotification(idx); return CommonResponse.ok(null); }
-
-    @GetMapping("/api/v1/flow/ca/corrective-action-management/list")
-    public CommonResponse<List<Map<String, Object>>> correctiveActions(
-            // fromDt·toDt: 문서 기준일 구간 YYYYMMDD
-            @RequestParam(required = false) String fromDt,
-            @RequestParam(required = false) String toDt,
-            // tmplCd: 양식코드. 빈 값이면 전체
-            @RequestParam(required = false) String tmplCd,
-            // writer: 작성자 ID·이름 부분검색
-            @RequestParam(required = false) String writer) {
-        return CommonResponse.ok(service.correctiveActions(fromDt, toDt, tmplCd, writer));
-    }
-
-    @PutMapping("/api/v1/flow/ca/corrective-action-management/save")
-    public CommonResponse<Void> saveCorrectiveAction(@RequestBody Map<String, Object> row) {
-        Long idx = row.get("idx") instanceof Number n ? n.longValue() : null;
-        service.saveCorrectiveAction(idx, row);
-        return CommonResponse.ok(null);
-    }
-
-    @PostMapping("/api/v1/flow/ca/corrective-action-management/validate-delete")
-    public CommonResponse<Void> validateCorrectiveActionDelete(@RequestBody List<Map<String, Long>> keys) {
-        service.validateCorrectiveActionDelete(keys);
-        return CommonResponse.ok(null);
-    }
-
-    @PostMapping("/api/v1/flow/ca/corrective-action-management/delete")
-    public CommonResponse<Void> deleteCorrectiveActions(@RequestBody List<Map<String, Long>> keys) {
-        service.deleteCorrectiveActions(keys);
-        return CommonResponse.ok(null);
-    }
 
     @GetMapping("/api/v1/docs/documents/{docIdx}/relations")
     public CommonResponse<List<Map<String, Object>>> relations(@PathVariable Long docIdx) { return CommonResponse.ok(service.relations(docIdx)); }

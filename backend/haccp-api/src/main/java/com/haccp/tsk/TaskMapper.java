@@ -48,9 +48,6 @@ public interface TaskMapper {
     );
     List<Map<String, Object>> selectNotifications(@Param("coCd") String coCd, @Param("userId") String userId);
     void readNotification(@Param("coCd") String coCd, @Param("idx") Long idx, @Param("userId") String userId);
-    List<Map<String, Object>> selectCorrectiveActions(@Param("coCd") String coCd, @Param("fromDt") String fromDt, @Param("toDt") String toDt, @Param("tmplCd") String tmplCd, @Param("writer") String writer);
-    void saveCorrectiveAction(@Param("coCd") String coCd, @Param("idx") Long idx, @Param("payloadJson") String payloadJson, @Param("userId") String userId);
-    void deleteCorrectiveAction(@Param("coCd") String coCd, @Param("idx") Long idx, @Param("userId") String userId);
     List<Map<String, Object>> selectRelations(@Param("coCd") String coCd, @Param("docIdx") Long docIdx);
     void saveRelation(@Param("coCd") String coCd, @Param("srcDocIdx") Long srcDocIdx, @Param("relType") String relType, @Param("tgtDocIdx") Long tgtDocIdx, @Param("userId") String userId);
     List<Map<String, Object>> selectAuditExport(@Param("coCd") String coCd, @Param("fromDt") String fromDt, @Param("toDt") String toDt, @Param("status") String status);
