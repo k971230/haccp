@@ -12,7 +12,16 @@
 # ── 로컬 전용 도구·MCP 산출 ───────────────────────────
 /.tools/
 # 로컬 전용 도구 — 01-project-core.mdc (git 미포함)
-/tools/
+# tools/ 는 로컬 전용이 원칙이다 — 아래 넷만 올린다.
+# 디렉터리를 통째로 무시하면 안쪽 예외가 안 먹으므로 파일 단위로 무시한다.
+/tools/*
+/tools/out/
+# 시험용 DB 도구 — 비밀은 없고 backend/.env 에서 접속정보를 읽는다.
+# 이게 있어야 CI 도 「저장했다」가 아니라 DB 로 판정할 수 있다 (접속정보를 주면).
+!/tools/q.mjs
+!/tools/seed_test_db.mjs
+!/tools/seed_test_forms.sql
+!/tools/reset_test_documents.sql
 /.playwright-mcp/
 
 # ── 루트 docs ─────────────────────────────────────────

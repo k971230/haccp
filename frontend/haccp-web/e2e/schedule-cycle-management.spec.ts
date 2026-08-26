@@ -11,7 +11,7 @@
  * PIPELINE[HF130] E2E
  */
 import { expect, test } from "@playwright/test";
-import { adminCreds, login, openScreen, readonlyCreds } from "./helpers";
+import { adminCreds, dbOne, login, openScreen, readonlyCreds, visibleRows } from "./helpers";
 
 const PATH = "/docs/sch/schedule-cycle-management";
 
@@ -63,7 +63,19 @@ test.describe("문서주기관리", () => {
   });
 
   test("삭제는 validate-delete → delete 2단계다", async ({ page }) => {
-    await page.getByRole("row").nth(1).click();
+    /*
+     * 첫 행을 아무거나 집으면 안 된다 — 주기가 안 걸린 양식이면 지울 게 없어
+     * 화면이 API 를 아예 안 부른다. 운영에서는 우연히 첫 행에 주기가 있어 지나갔다.
+     * 주기가 실제로 걸린 양식을 DB 에서 집는다.
+     */
+    const tmplCd = dbOne(
+      "SELECT tmpl_cd FROM tbl_schedule_rule WHERE co_cd='0000' ORDER BY tmpl_cd LIMIT 1",
+    );
+    expect(tmplCd, "주기가 걸린 양식이 하나도 없다").not.toBe("");
+
+    const row = visibleRows(page).filter({ hasText: tmplCd }).first();
+    await expect(row, `양식 ${tmplCd} 행이 목록에 없다`).toBeVisible({ timeout: 20_000 });
+    await row.click();
     await expect(page.getByText("주기").first()).toBeVisible({ timeout: 20_000 });
 
     const [validate] = await Promise.all([

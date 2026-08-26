@@ -8,6 +8,13 @@
 #    1) edge 는 인증서 없으면 기동 불가 — 로컬 검증·certbot 전 서버용
 #    2) certbot 과 같은 live/{도메인}/fullchain.pem·privkey.pem 배치로 conf 재사용
 #    3) 브라우저 경고는 정상. 운영 도메인 생기면 certbot 으로 교체
+#
+#  경고로 끝나지 않는 것 하나
+#    브라우저는 **인증서 오류가 있는 연결에서 ServiceWorker 등록을 거부한다.**
+#    「고급 → 계속 진행」으로 화면을 열어도 이 규칙은 안 풀린다.
+#    HWP 편집기(rhwp)가 /rhwp/sw.js 를 등록하려다 SecurityError 를 낸다 —
+#    프록시 잘못이 아니다(/rhwp/ 도 /rhwp/sw.js 도 200 을 준다).
+#    자체서명으로는 코드로 못 고친다. 도메인 + Let's Encrypt 가 정공법이다.
 #  호출처: 런북 §10 · 로컬 compose 선행
 #  성공: CERT_ROOT 아래 pem 생성. 실패: openssl/경로 오류
 #

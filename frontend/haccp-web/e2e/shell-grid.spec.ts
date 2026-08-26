@@ -11,7 +11,7 @@
  * PIPELINE[HF130] E2E
  */
 import { expect, test } from "@playwright/test";
-import { adminCreds, grids, login, openScreen } from "./helpers";
+import { adminCreds, dbOne, grids, hasDbTools, login, openScreen } from "./helpers";
 
 /** 활성 행의 data-key 를 읽는다 — 없으면 빈 문자열 */
 async function activeKey(grid: import("@playwright/test").Locator): Promise<string> {
@@ -21,6 +21,18 @@ async function activeKey(grid: import("@playwright/test").Locator): Promise<stri
 }
 
 test.describe("셸 공통 그리드 동작", () => {
+  /*
+   * 화면 이용 통계는 집계 표(tbl_view_stat_daily)를 읽는다. 갓 시드한 DB 는
+   * 일일 배치가 돈 적이 없어 0행이라 방향키를 시험할 행이 없다 —
+   * 운영에는 쌓여 있어 안 드러났다. 배치가 부르는 것과 같은 SP 로 직접 깐다.
+   */
+  test.beforeAll(() => {
+    if (!hasDbTools()) return;
+    dbOne(
+      "CALL sp_tbl_view_stat_daily_c_000('0000', to_char(now(),'YYYYMMDD'), 'system')",
+    );
+  });
+
   test("로그 3화면에서 위·아래 키로 행이 옮겨간다", async ({ page }) => {
     const { user, pass } = adminCreds();
     await login(page, user, pass);

@@ -103,6 +103,8 @@ export function resetDocuments(): void {
   if (!fs.existsSync(sql) || !hasDbTools()) {
     test.skip(true, "tools/ 가 없어 문서를 비울 수 없다 (로컬 전용)");
   }
+  // 문서를 전량 지운다 — 운영 DB 면 여기서 멈춘다
+  assertTestDb("문서 전량 삭제");
   runDb(`@${sql}`);
 }
 
@@ -112,8 +114,64 @@ function repoRoot(): string {
 }
 
 /** tools/ 는 git 에 없다(로컬 전용) — CI 에서는 DB 대조를 건너뛴다 */
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) DB 를 직접 볼 수 있는 상태인지 본다 — 도구와 접속정보가 **둘 다** 있어야 한다
+ *   2) DB 대조가 필요한 시험이 먼저 부른다. 없으면 그 시험을 건너뛴다
+ *   3) tools/q.mjs 는 git 에 있어도 backend/.env 는 없다 —
+ *      CI 에서 도구만 보고 「있다」고 판정하면 건너뛰던 시험이 실패로 바뀐다
+ */
 export function hasDbTools(): boolean {
-  return fs.existsSync(path.join(repoRoot(), "tools", "q.mjs"));
+  const root = repoRoot();
+  return (
+    fs.existsSync(path.join(root, "tools", "q.mjs"))
+    && fs.existsSync(path.join(root, "backend", "haccp-api", ".env"))
+  );
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) 지금 붙은 DB 이름을 backend/.env 에서 읽는다 — q.mjs 와 같은 출처다
+ *   2) 자료를 지우는 헬퍼가 부른다
+ *   3) 파일이 없거나 값이 없으면 빈 문자열 — 그 경우 아래에서 막는다
+ */
+function currentDbName(): string {
+  try {
+    const env = fs.readFileSync(
+      path.join(repoRoot(), "backend", "haccp-api", ".env"),
+      "utf-8",
+    );
+    const m = env.match(/^DB_NAME=(.*)$/m);
+    return m ? m[1].trim() : "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) 자료를 지우기 전에 「여기가 시험용 DB 인가」를 본다
+ *   2) resetDocuments·purgeCompany 처럼 되돌릴 수 없는 것이 부른다
+ *   3) 시험용 DB 는 이름이 _test 로 끝난다. 아니면 시험을 멈춘다
+ *
+ * 운영 DB 와 시험 DB 가 같으면 E2E 한 번에 운영 문서가 통째로 사라진다.
+ * 정말 필요하면 E2E_ALLOW_PROD_WRITES=1 로 열 수 있다 — 손으로 켜야 한다.
+ */
+function assertTestDb(what: string): void {
+  if (process.env.E2E_ALLOW_PROD_WRITES === "1") return;
+  const db = currentDbName();
+  if (db.endsWith("_test")) return;
+  throw new Error(
+    `${what} 은(는) 시험용 DB 에서만 한다. 지금 DB 는 "${db || "알 수 없음"}" 이다.\n`
+      + "backend/haccp-api/.env 의 DB_NAME 을 *_test 로 두거나,\n"
+      + "정말 운영을 만져야 하면 E2E_ALLOW_PROD_WRITES=1 로 켠다.",
+  );
 }
 
 /**
@@ -399,6 +457,7 @@ export function seedCompany(vars: {
   if (!hasDbTools()) {
     test.skip(true, "tools/ 가 없어 업체 개설 시드를 건너뛴다 (로컬 전용)");
   }
+  assertTestDb("업체 개설 시드");
   const file = path.join(repoRoot(), "db_sasshaccp", "06_company_seed.sql");
   const raw = fs.readFileSync(file, "utf-8");
 
@@ -432,6 +491,7 @@ export function seedCompany(vars: {
 export function purgeCompany(coCd: string): void {
   if (!hasDbTools()) return;
   if (coCd === "0000") throw new Error("표준 업체(0000)는 지울 수 없다");
+  assertTestDb("업체 통째 삭제");
   for (const t of [
     "tbl_doc_no_rule",
     "tbl_company_template",
