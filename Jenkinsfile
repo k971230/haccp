@@ -2,13 +2,25 @@
 //  HACCP main 배포 파이프라인
 //
 //  개발자: 박승우
-//  일자: 2026-08-10
+//  일자: 2026-08-26
 //  코멘트:
-//    1) main push → 빌드·이미지 push·배포·스모크까지 한 줄로 돌린다
-//    2) DB migrate/dry-run 은 파이프라인에서 제외 — 당분간 스키마 정본은 DBeaver(운영 DB).
-//       저장소 SQL 자동 적용은 DBeaver 변경을 덮을 수 있어 수동으로만 한다
-//    3) 시크릿은 credentials() 만 사용한다 — 이 파일에 실값을 적지 않는다
-//    4) disableConcurrentBuilds 로 compose up 충돌을 막는다
+//    1) 빌드·이미지 push·배포·스모크까지 한 줄로 돌린다. 누를 것은 Build Now 하나다
+//    2) 시크릿은 credentials() 만 사용한다 — 이 파일에 실값을 적지 않는다
+//    3) disableConcurrentBuilds 로 compose up 충돌을 막는다
+//
+//  ** DB 는 이 파이프라인이 건드리지 않는다 **
+//    스키마 정본은 db_sasshaccp/ 6본이다(00_ddl → 01_sp → 02_seed →
+//    03_code_seed → 05_form_seed → 06_company_seed). 전부 재실행 안전하다.
+//    운영 반영은 배포 담당이 따로 돌린다:
+//      PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
+//    자동 적용을 넣지 않는 이유 — 스키마 변경은 되돌리기 어렵고,
+//    배포와 같은 트랜잭션으로 묶을 수 없어 실패 시 반쪽 상태가 남는다.
+//
+//  필요한 Credentials (Jenkins > Credentials 에 미리 등록)
+//    haccp-deploy-host    Secret text        user@host 또는 host
+//    haccp-deploy-ssh-key SSH Username+Key   배포 서버 접속
+//    haccp-registry-cred  Username+Password  ghcr.io push
+//    haccp-smoke-user     Username+Password  배포 후 스모크 로그인
 // ============================================================
 pipeline {
   agent any

@@ -104,6 +104,10 @@ npx playwright test
 cd backend/haccp-api ; ./mvnw -q -o test
 ```
 
+층별로 무엇이 어떤 순서로 도는지는 파이프라인 문서에 파일명까지 적혀 있다 —
+[`backend/haccp-api/PIPELINE.md`](backend/haccp-api/PIPELINE.md) ·
+[`frontend/haccp-web/PIPELINE.md`](frontend/haccp-web/PIPELINE.md).
+
 E2E 는 화면 문구가 아니라 **DB 를 직접 읽어** 판정한다. 결과와 발견한 결함은
 [`E2E.md`](E2E.md) · [`E2E_ERRORS.md`](E2E_ERRORS.md), 스펙 구조는
 [`frontend/haccp-web/e2e/README.md`](frontend/haccp-web/e2e/README.md).
@@ -124,6 +128,9 @@ bash scripts/pre-commit-check-secrets.sh
 ```
 
 ## Docker / Jenkins
+
+**배포 전 체크리스트: [`DEPLOY.md`](DEPLOY.md)** — Build Now 하나만 누르면 되는 상태인지,
+DB 는 어떻게 반영하는지가 여기 있다.
 
 - 이미지·compose·Nginx: [`docs/20_배포_런북.md`](docs/20_배포_런북.md) §8~§10 · [`운영.md`](운영.md)
 - Job: `haccp-deploy` (`Jenkinsfile`) · `haccp-audit` (`Jenkinsfile.audit`)
