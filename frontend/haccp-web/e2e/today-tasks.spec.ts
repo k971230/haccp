@@ -98,26 +98,36 @@ test.describe("오늘 할 일", () => {
     expect(page.url(), "한 번 클릭으로 화면이 이동했다 — 오조작이 난다").toBe(before);
   });
 
-  test("예정 과제를 더블클릭하면 작성 화면에 행이 하나 붙는다", async ({ page }) => {
+  test("아직 안 쓴 과제를 더블클릭하면 작성 화면에 행이 하나 붙는다", async ({ page }) => {
+    /*
+     * 「예정」 글자로 고르지 않는다 — 같은 과제가 마감 시각을 넘기면 「지연」이 된다.
+     * 가르는 기준은 상태가 아니라 문서 유무다. 문서가 없는 작성과제를 DB 에서 집는다.
+     */
+    // 그리드에는 양식코드가 안 보인다 — 업무명으로 행을 집고 이동한 주소로 양식코드를 확인한다
+    const picked = dbOne(
+      "SELECT title||'|'||tmpl_cd FROM sp_tbl_today_task_r_000('0000','admin',to_char(now(),'YYYYMMDD'))"
+      + " WHERE task_type <> 'CA' AND doc_idx IS NULL AND tmpl_cd IS NOT NULL LIMIT 1",
+    );
+    expect(picked, "아직 안 쓴 작성과제가 하나도 없다 — 주기 설정을 봐야 한다").not.toBe("");
+    const [title, tmplCd] = picked.split("|");
+
     const { user, pass } = adminCreds();
     await login(page, user, pass);
     await openTodayTasks(page);
 
     const grid = grids(page).first();
-    // 예정(TODO) 행만 add=1 로 간다
-    const todo = visibleRows(page).filter({ hasText: "예정" }).first();
-    await expect(todo, "예정 상태 과제가 하나도 없다 — SP 나 주기 설정을 봐야 한다").toBeVisible({
-      timeout: 20_000,
-    });
-    await todo.dblclick();
+    const row = visibleRows(page).filter({ hasText: title }).first();
+    await expect(row, `업무 ${title} 행이 목록에 없다`).toBeVisible({ timeout: 20_000 });
+    await row.dblclick();
 
     // 작성 화면으로 갔고 add 쿼리는 한 번 쓰고 지워진다
     await expect
       .poll(() => page.url(), { timeout: 30_000 })
       .toMatch(/\/draft\/(html|ccp-monitoring|hwp-doc)\//);
-    await expect
-      .poll(() => page.url(), { timeout: 20_000 })
-      .not.toContain("add=1");
+    // 그 과제의 양식으로 갔는지까지 본다
+    await expect.poll(() => page.url(), { timeout: 20_000 }).toContain(tmplCd);
+    // add 쿼리는 한 번 쓰고 지운다 — 새로고침으로 행이 또 생기지 않게
+    await expect.poll(() => page.url(), { timeout: 20_000 }).not.toContain("add=1");
     void grid;
   });
 

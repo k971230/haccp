@@ -467,8 +467,8 @@ export function filterTodayTasks(
  * 일자: 2026-08-26
  * 코멘트:
  *   1) 오늘 할 일 더블클릭 경로를 만든다
- *   2) 예정(TODO)은 작성 화면 행추가(add=1)에 그 행의 양식코드·일자를 실어 보낸다
- *   3) 예정이 아니면 문서가 있으면 조회(?docIdx=), CA 는 개선조치 화면. 없으면 목록만
+ *   2) 문서가 있으면 조회(?docIdx=), 없으면 작성 화면 행추가(add=1)에 양식코드·일자를 실어 보낸다
+ *   3) 가르는 기준은 상태가 아니라 문서 유무다 — 지연도 아직 안 쓴 과제라 행을 깔아 준다. CA 는 개선조치 화면
  */
 export function todayTaskHref(
   // SP 행 — taskType·status·tmplCd/content·baseDt·docIdx·title
@@ -479,13 +479,17 @@ export function todayTaskHref(
   const docKind = String(row.docKind ?? "") || null;
   const tmplNm = String(row.title ?? "").trim();
   const baseDt = String(row.baseDt ?? "").trim();
-  const status = String(row.status ?? "").toUpperCase();
-  if (status === "TODO") {
-    return routeForTmplAdd(tmplCd, { baseDt, tmplNm, docKind });
-  }
   const docIdx = Number(row.docIdx ?? 0);
+  // 이미 쓴 문서가 있으면 그 문서를 연다
   if (docIdx > 0) return routeForDocument({ docIdx, tmplCd, docKind });
-  return routeForTmplWrite(tmplCd, null, docKind);
+  /*
+   * 문서가 없으면 아직 안 쓴 과제다 — 예정이든 지연이든 작성 화면에 행을 깔아 준다.
+   * 가르는 기준은 상태가 아니라 「문서가 이미 있는가」다. 지연을 목록만 열어 주면
+   * 양식·일자를 손으로 다시 골라야 해서, 이 기능이 없애려던 수고가 그대로 남는다.
+   */
+  const add = routeForTmplAdd(tmplCd, { baseDt, tmplNm, docKind });
+  // 양식코드로 작성 화면을 못 찾으면(= 접두·HWP 둘 다 아님) 목록만 연다
+  return add || routeForTmplWrite(tmplCd, null, docKind);
 }
 
 /**
