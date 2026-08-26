@@ -299,6 +299,14 @@ public class GlobalExceptionHandler {
      *   2) SQLException과 이를 감싼 MyBatis·Spring 예외 처리에서 공통 호출한다.
      *   3) 분류 결과에 맞는 HTTP 응답을 반환하고 알 수 없는 DB 오류는 상세 로그를 기록한다.
      */
+    /** 입력이 틀려 DB 가 거절한 SQLSTATE → 사용자에게 보일 문구 */
+    private static final java.util.Map<String, String> BAD_INPUT_STATES = java.util.Map.of(
+            "22001", "입력한 값이 너무 깁니다. 길이를 줄여 다시 저장하세요.",
+            "23502", "필수 항목이 비어 있습니다. 값을 입력하고 다시 저장하세요.",
+            "23503", "다른 자료가 참조 중입니다. 참조를 먼저 정리하세요.",
+            "22P02", "숫자·날짜 형식이 올바르지 않습니다."
+    );
+
     private ResponseEntity<ErrorResponse> classify(
             // 예외 원인 체인 시작점 — 내부 SQLException 탐색
             // 호출부의 null·빈값 허용 여부와 변환 규칙은 메서드 본문의 기존 계약을 따른다
@@ -323,6 +331,17 @@ public class GlobalExceptionHandler {
                     .body(
                             new ErrorResponse("DB_SIGNAL", SqlUserMessage.toUserMessage(sql.getMessage()))
                     );
+        }
+        /*
+         * 입력이 잘못돼 DB 가 거절한 경우 — 서버가 고장 난 게 아니라 요청이 틀린 것이다.
+         * 500 으로 내리면 사용자는 「데이터 처리 중 오류」만 보고 무엇을 고쳐야 할지 모른다.
+         *   22001 값이 칸 길이를 넘음 · 23502 NOT NULL 위반
+         *   23503 참조 중인 자료 · 22P02 숫자·날짜 형식 오류
+         */
+        String badInput = BAD_INPUT_STATES.get(state);
+        if (badInput != null) {
+            log.warn("DB input rejected (sqlState={}): {}", state, sql != null ? sql.getMessage() : "", t);
+            return ResponseEntity.badRequest().body(new ErrorResponse("BAD_INPUT", badInput));
         }
         // 조건식이 참일 때(= 23505(중복키)·40P01(교착) — 동시 처리 충돌, 재시도 유도) 기존 분기 처리를 실행
         if ("23505".equals(state) || "40P01".equals(state)) {

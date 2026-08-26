@@ -113,26 +113,20 @@ PIPELINE[HB94, HB98] 연관 모듈
       화면 조회와 달리 테넌트 파라미터가 없어 별도 쿼리로 둔다(사용양식이 미사용이면 제외).
     -->
     <select id="selectActiveCycles" resultType="map">
-        SELECT r.co_cd        AS "coCd",
-               r.tmpl_cd      AS "tmplCd",
-               r.cycle_cd     AS "cycleCd",
-               r.nonwork_rule AS "nonworkRule",
-               r.base_dt      AS "baseDt",
-               r.due_time     AS "dueTime",
-               r.dept_cd      AS "deptCd",
-               r.user_id      AS "userId",
-               COALESCE((
-                 SELECT jsonb_agg(jsonb_build_object('detailTy', x.detail_ty, 'val1', x.val1, 'val2', x.val2)
-                                  ORDER BY x.seq)
-                   FROM tbl_schedule_rule_detail x
-                  WHERE x.co_cd = r.co_cd AND x.tmpl_cd = r.tmpl_cd
-               ), '[]'::jsonb)::text AS "details"
-          FROM tbl_schedule_rule r
-          JOIN tbl_company_template ct
-            ON ct.co_cd = r.co_cd AND ct.tmpl_cd = r.tmpl_cd
-           AND upper(COALESCE(ct.use_yn, 'N')) = 'Y'
-         WHERE upper(COALESCE(r.use_yn, 'N')) = 'Y'
-         ORDER BY r.co_cd, r.tmpl_cd
+        <!--
+          Map 결과는 map-underscore-to-camel-case 가 안 걸려 별칭을 camelCase 로 직접 붙인다.
+          업무 SQL 은 SP 가 갖는다 — 예전에는 이 자리에 조인·jsonb_agg 가 그대로 적혀 있었다.
+        -->
+        SELECT co_cd        AS "coCd",
+               tmpl_cd      AS "tmplCd",
+               cycle_cd     AS "cycleCd",
+               nonwork_rule AS "nonworkRule",
+               base_dt      AS "baseDt",
+               due_time     AS "dueTime",
+               dept_cd      AS "deptCd",
+               user_id      AS "userId",
+               details      AS "details"
+          FROM sp_tbl_schedule_rule_active_r_000()
     </select>
 
     <!--

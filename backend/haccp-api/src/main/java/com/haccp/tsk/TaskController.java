@@ -18,8 +18,8 @@ import com.haccp.common.context.RequestMeta;
 // 역할 — 공통 응답
 import com.haccp.common.response.CommonResponse;
 // 역할 — 문서 PDF 미리보기
-import com.haccp.docs.document.DocumentService;
-import com.haccp.docs.document.dto.DocumentDeleteItem;
+import com.haccp.docs.documents.DocumentService;
+import com.haccp.docs.documents.dto.DocumentDeleteItem;
 // 역할 — HTTP 요청
 import jakarta.servlet.http.HttpServletRequest;
 // 역할 — 파일·컬렉션
