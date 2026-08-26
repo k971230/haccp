@@ -58,6 +58,10 @@ interface MesEditableGridProps<T extends Record<string, any>> extends GridAccess
   title?: string;
   showRowNum?: boolean;
   onActivate?: (row: EditableRow<T>) => void;
+  /** 행 더블클릭 — 오늘 할 일처럼 화면 이동은 클릭과 같이 쓸 수 있다 */
+  onRowDoubleClick?: (row: EditableRow<T>) => void;
+  /** 행 tr 추가 클래스 — 기한경과 빨강(mes-row-overdue) 등 */
+  rowClassName?: (row: EditableRow<T>) => string | undefined;
   onCellChange?: (key: string, field: keyof T, value: unknown) => void;
   onSetActive?: () => void;
   suppressActivate?: boolean;
@@ -516,16 +520,21 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
           const rowCls = [
             rowActive ? "mes-row-active" : "",
             row._rowState === "U" ? "mes-row-dirty" : "",
+            props.rowClassName?.(row) ?? "",
+            (props.onActivate || props.onRowDoubleClick) ? "cursor-pointer" : "",
           ].join(" ");
           return (
             <tr key={row._key} data-key={row._key} className={rowCls}
-              // 클릭 핸들러
-              // 비동기면 run/useAsyncAction으로 중복 클릭 방지 권장
+              // 클릭 — 행 선택(onActivate). 화면 이동은 onRowDoubleClick
               onClick={() => {
                 setEditCell(null);
                 props.onSetActive?.();
                 if (!props.suppressActivate) props.onActivate?.(row);
-              }}>
+              }}
+              // 더블클릭 — 오늘 할 일·최근 문서처럼 해당 화면으로 이동
+              onDoubleClick={() => props.onRowDoubleClick?.(row)}
+              title={props.onRowDoubleClick ? "해당 화면으로 이동합니다" : undefined}
+            >
               {showRowNum && <GridRowNumCell index={i} active={rowActive} />}
               {selectable && (
                 <td
@@ -592,6 +601,11 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
                         wrapRef.current?.focus();
                         if (kioskClick) fireCellBtn(row, c, isNew, e);
                       }}
+                      onDoubleClick={(e) => {
+                        // 셀에서 막아 tr 과 두 번 타지 않게 한다. 모든 칸에서 더블클릭 이동
+                        e.stopPropagation();
+                        props.onRowDoubleClick?.(row);
+                      }}
                     >
                       <div className={cn(`mes-cell mes-cellwrap mes-align-${align}`)}>
                         <GridCellDisplay row={row} col={c} text={cellText(row, c)} />{cellBtn}
@@ -628,6 +642,10 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
                           return;
                         }
                         setEditCell({ rowKey: row._key, field: c.field }, true);
+                      }}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        props.onRowDoubleClick?.(row);
                       }}
                     >
                       <div className={cn(`mes-cell mes-cellwrap mes-align-${align}`, "mes-cell-editable")}>

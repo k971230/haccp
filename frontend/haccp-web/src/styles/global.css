@@ -347,6 +347,28 @@ PIPELINE[HF49] 연관 모듈
     @apply bg-blue-100;
   }
 
+  /* 오늘 할 일 기한경과 — 잠금 셀 회색·행번호 배경보다 나중에 둔다 */
+  .mes-grid tbody tr.mes-row-overdue td,
+  .mes-grid tbody tr.mes-row-overdue td.mes-cell-locked,
+  .mes-grid tbody tr.mes-row-overdue td.mes-rownum,
+  .mes-grid tbody tr.mes-row-overdue td.mes-rownum-active {
+    @apply bg-red-100 text-red-800;
+  }
+  .mes-grid tbody tr.mes-row-overdue td:first-child {
+    @apply shadow-[inset_3px_0_0_0_#dc2626];
+  }
+  .mes-grid tbody tr.mes-row-overdue:hover td,
+  .mes-grid tbody tr.mes-row-overdue:hover td.mes-cell-locked,
+  .mes-grid tbody tr.mes-row-overdue:hover td.mes-rownum {
+    @apply bg-red-200 text-red-800;
+  }
+  .mes-grid tbody tr.mes-row-overdue.mes-row-active td,
+  .mes-grid tbody tr.mes-row-overdue.mes-row-active td.mes-cell-locked,
+  .mes-grid tbody tr.mes-row-overdue.mes-row-active td.mes-rownum,
+  .mes-grid tbody tr.mes-row-overdue.mes-row-active td.mes-rownum-active {
+    @apply bg-red-200 text-red-800;
+  }
+
   /* 활성 섹션 그리드 래퍼 — CSV excel 틴트와 동일 emerald */
   .mes-sec-active .mes-grid-wrap { @apply ring-1 ring-emerald-200; }
 

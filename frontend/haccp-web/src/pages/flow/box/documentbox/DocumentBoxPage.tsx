@@ -343,8 +343,8 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
                         void loadList();
                         if (selected) void loadDetail(selected);
                       }}
-                      // 상태 라벨 — 공통코드
-                      statusLabel={statusLabel(detail.header.status, detail.header.status ?? "")}
+                      // 헤더 배지와 같은 상태 문구를 툴바에 다시 두지 않는다
+                      showStatus={false}
                     />
                   </div>
                 )}

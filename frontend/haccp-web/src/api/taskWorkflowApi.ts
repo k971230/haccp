@@ -20,7 +20,21 @@ import { camelizeRows } from "@/lib/camelKeys";
 // 역할 — 최근 문서 행 타입 — 문서함과 동일
 import type { DocumentListRow } from "./documentApi";
 
-export type WorkflowRow = Record<string, unknown> & { idx?: number; taskIdx?: number; title?: string; status?: string; linkScrnCd?: string; docIdx?: number };
+export type WorkflowRow = Record<string, unknown> & {
+  idx?: number;
+  taskIdx?: number;
+  title?: string;
+  status?: string;
+  linkScrnCd?: string;
+  docIdx?: number;
+  taskType?: string;
+  content?: string;
+  dueDt?: string;
+  dueTime?: string;
+  tmplCd?: string;
+  baseDt?: string;
+  docKind?: string;
+};
 async function getRows(url: string, params?: Record<string, string>) {
   const { data } = await http.get<CommonResponse<Record<string, unknown>[]>>(url, { params });
   // ca_no·doc_idx 등 → camelCase — 그리드 field 공백 방지

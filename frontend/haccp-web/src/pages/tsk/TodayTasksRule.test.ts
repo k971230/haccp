@@ -12,19 +12,29 @@ import { describe, expect, it } from "vitest";
 import { DOC_STATUS_BADGE } from "@/lib/docStatus";
 import {
   DOC_PAGE_SIZE,
+  KPI_DEFS,
   RECENT_DOC_DAYS,
   TASK_GRID_STATUS_BADGE,
   TASK_TYPE_NM,
   buildDocColumns,
   buildTaskColumns,
+  compareTodayTask,
+  filterTodayTasks,
   formatHeaderUpdatedAt,
   isCaTask,
+  isDoneWriteTask,
+  isIncompleteTodayTask,
+  isOpenCaTask,
+  isOpenWriteTask,
+  isOverdueDueDt,
+  isOverdueTodayTask,
   pageCount,
   pageOffset,
   recentDocRange,
   sessionRoleLabel,
   sessionWho,
   taskStatusLabel,
+  todayTaskHref,
 } from "./TodayTasksRule";
 
 const CA_NM: Record<string, string> = {
@@ -42,9 +52,93 @@ describe("isCaTask", () => {
   });
 });
 
+describe("isOpenWriteTask · isDoneWriteTask", () => {
+  it("미완료 작성과제만 오늘 작성 과제다", () => {
+    expect(isOpenWriteTask("TASK", "TODO")).toBe(true);
+    expect(isOpenWriteTask("TASK", "ING")).toBe(true);
+    expect(isOpenWriteTask("TASK", "LATE")).toBe(true);
+    expect(isOpenWriteTask("TASK", "APV")).toBe(false);
+    expect(isOpenWriteTask("CA", "OPEN")).toBe(false);
+  });
+
+  it("승인완료 작성과제만 오늘 완료한 과제다", () => {
+    expect(isDoneWriteTask("TASK", "APV")).toBe(true);
+    expect(isDoneWriteTask("TASK", "TODO")).toBe(false);
+    expect(isDoneWriteTask("CA", "DONE")).toBe(false);
+  });
+});
+
+describe("개선조치 미완료 · 기한경과 정렬", () => {
+  it("조치내용이 있으면 미완료가 아니다", () => {
+    expect(isOpenCaTask("CA", "OPEN", "")).toBe(true);
+    expect(isOpenCaTask("CA", "OPEN", "  ")).toBe(true);
+    expect(isOpenCaTask("CA", "OPEN", "세척 재실시")).toBe(false);
+    expect(isOpenCaTask("CA", "DONE", "")).toBe(false);
+    expect(isIncompleteTodayTask({ taskType: "CA", status: "OPEN", content: "세척 재실시" })).toBe(false);
+    expect(isIncompleteTodayTask({ taskType: "TASK", status: "TODO" })).toBe(true);
+    expect(isIncompleteTodayTask({ taskType: "TASK", status: "APV" })).toBe(false);
+  });
+
+  it("전날 마감이 기한경과이고 맨 앞이다", () => {
+    expect(isOverdueDueDt("20260825", "20260826")).toBe(true);
+    expect(isOverdueDueDt("20260826", "20260826")).toBe(false);
+    expect(isOverdueDueDt("", "20260826")).toBe(false);
+    expect(isOverdueTodayTask({ taskType: "TASK", status: "LATE", dueDt: "20260826" }, "20260826")).toBe(true);
+    const overdue = { dueDt: "20260825", dueTime: "1800", taskIdx: 2, status: "LATE", taskType: "TASK" };
+    const today = { dueDt: "20260826", dueTime: "0900", taskIdx: 1, status: "TODO", taskType: "TASK" };
+    expect(compareTodayTask(overdue, today, "20260826")).toBeLessThan(0);
+  });
+
+  it("미완료만 보기면 APV·조치내용 있는 CA 를 뺀다", () => {
+    const rows = [
+      { taskType: "TASK", status: "TODO", title: "작성" },
+      { taskType: "TASK", status: "APV", title: "완료" },
+      { taskType: "CA", status: "OPEN", content: "", title: "미조치" },
+      { taskType: "CA", status: "OPEN", content: "조치함", title: "내용있음" },
+    ];
+    expect(filterTodayTasks(rows, "ALL", true).map((r) => r.title)).toEqual(["작성", "미조치"]);
+    expect(filterTodayTasks(rows, "ALL", false).map((r) => r.title)).toEqual([
+      "작성", "완료", "미조치", "내용있음",
+    ]);
+  });
+
+  it("예정은 행추가 쿼리, 그 외는 조회다", () => {
+    expect(todayTaskHref({
+      taskType: "TASK",
+      status: "LATE",
+      content: "tml_ccp_chk_001",
+      linkScrnCd: "ccp-verification-check",
+    })).toBe("/draft/html/ccp-verify");
+    const todo = todayTaskHref({
+      taskType: "TASK",
+      status: "TODO",
+      tmplCd: "tml_ccp_chk_001",
+      baseDt: "20260826",
+      title: "맞춤",
+    });
+    const todoQ = new URLSearchParams(todo.slice(todo.indexOf("?") + 1));
+    expect(todo.startsWith("/draft/html/ccp-verify?")).toBe(true);
+    expect(todoQ.get("add")).toBe("1");
+    expect(todoQ.get("tmplCd")).toBe("tml_ccp_chk_001");
+    expect(todoQ.get("baseDt")).toBe("20260826");
+    expect(todoQ.get("tmplNm")).toBe("맞춤");
+    expect(todayTaskHref({
+      taskType: "TASK",
+      status: "APV",
+      tmplCd: "tml_ccp_chk_001",
+      docIdx: 99,
+    })).toBe("/draft/html/ccp-verify?docIdx=99");
+    expect(todayTaskHref({ taskType: "CA" })).toBe("/flow/ca/corrective-action-management");
+    expect(todayTaskHref({
+      taskType: "TASK",
+      content: "hwp_sys_002",
+    })).toBe("/draft/hwp-doc/hwp-write");
+  });
+});
+
 describe("taskStatusLabel — TASK/CA 맵 선택", () => {
-  it("과제 TODO 는 예정", () => {
-    expect(taskStatusLabel("TASK", "TODO", CA_NM)).toBe("예정");
+  it("과제 APV 는 승인완료", () => {
+    expect(taskStatusLabel("TASK", "APV", CA_NM)).toBe("승인완료");
   });
 
   it("과제 ING 는 진행 — CA ING(조치중) 와 섞지 않는다", () => {
@@ -71,9 +165,22 @@ describe("배지 키", () => {
 
   it("오늘 할 일 한글 라벨로도 색을 고른다", () => {
     expect(TASK_GRID_STATUS_BADGE["예정"]).toBe("gray");
+    expect(TASK_GRID_STATUS_BADGE["승인완료"]).toBe("green");
     expect(TASK_GRID_STATUS_BADGE["미조치"]).toBe("dash");
     expect(TASK_TYPE_NM.TASK).toBe("작성과제");
     expect(TASK_TYPE_NM.CA).toBe("개선조치");
+  });
+});
+
+describe("KPI_DEFS", () => {
+  it("다섯 장 라벨이다", () => {
+    expect(KPI_DEFS.map((kpi) => kpi.label)).toEqual([
+      "오늘 작성 과제",
+      "과제 완료",
+      "미결재",
+      "이탈·개선조치",
+      "최근 문서",
+    ]);
   });
 });
 
@@ -82,6 +189,11 @@ describe("컬럼 팩터리", () => {
     const statusCol = buildTaskColumns().find((col) => col.field === "statusNm");
     expect(statusCol?.header).toBe("상태");
     expect(statusCol?.badge).toBe(TASK_GRID_STATUS_BADGE);
+  });
+
+  it("업무 칸은 더블클릭 이동이라 버튼이 없다", () => {
+    const titleCol = buildTaskColumns().find((col) => col.field === "title");
+    expect(titleCol?.cellButton).toBeUndefined();
   });
 
   it("최근 문서 상태는 DOC_STATUS 맵+배지", () => {

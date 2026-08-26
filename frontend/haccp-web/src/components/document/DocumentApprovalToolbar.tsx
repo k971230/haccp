@@ -68,11 +68,11 @@ export interface DocumentApprovalToolbarProps {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-08-26
  * 코멘트:
  *   1) 상태별로 가능한 결재 행위만 버튼으로 보여 준다
  *   2) 일지·문서함 상세 상단에서 호출한다
- *   3) 반려 시 사유 없으면 토스트로 막고 API를 호출하지 않는다
+ *   3) 반려·결재취소 시 사유 없으면 토스트로 막고 API를 호출하지 않는다
  */
 export function DocumentApprovalToolbar({
   docIdx,
@@ -99,6 +99,9 @@ export function DocumentApprovalToolbar({
     if (actionCd === "REJECT" && !opinion.trim()) {
       return mesToast("반려 사유를 입력하세요.", "warn");
     }
+    if (actionCd === "UNDO" && !opinion.trim()) {
+      return mesToast("취소 사유를 입력하세요.", "warn");
+    }
     const msg =
       actionCd === "UNDO" ? "결재를 취소하시겠습니까?\n(다음 결재자가 이미 처리했으면 취소할 수 없습니다.)"
         : actionCd === "REQUEST" ? "결재를 요청(상신)하시겠습니까?"
@@ -111,7 +114,7 @@ export function DocumentApprovalToolbar({
       await processDocumentApproval({
         docIdx,
         actionCd,
-        // 반려는 사유 필수, 취소는 남기면 감사 이력에 함께 기록된다
+        // 반려·결재취소는 사유 필수. 취소 사유는 감사 이력에 남긴다
         opinion: actionCd === "REJECT" || actionCd === "UNDO" ? opinion.trim() || undefined : undefined,
       });
       mesToast(
@@ -184,14 +187,21 @@ export function DocumentApprovalToolbar({
         )}
         {docIdx && canApprove && showUndo && (
           <>
+            <span className="shrink-0 text-xs text-slate-600">취소 사유</span>
             <Input
-              // 취소 사유 — 남기면 감사 이력에 함께 기록된다. 필수는 아니다
+              // 취소 사유 — 감사 이력에 남긴다. 비우면 취소를 막는다
               value={opinion}
               onChange={(e) => setOpinion(e.target.value)}
-              placeholder="취소 사유 (선택)"
-              className="w-40"
+              placeholder="결재를 취소하는 이유를 입력하세요"
+              className="min-w-[14rem] w-56"
             />
-            <MesButton variant="secondary" disabled={approvalBusy} onClick={() => void run("UNDO")}>
+            <MesButton
+              // 본인 결재 되돌리기 — 다음 결재자가 처리했으면 SP 가 막는다
+              variant="search"
+              icon="reset"
+              disabled={approvalBusy}
+              onClick={() => void run("UNDO")}
+            >
               취소
             </MesButton>
           </>

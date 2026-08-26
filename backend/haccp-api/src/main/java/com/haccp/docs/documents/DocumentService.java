@@ -517,7 +517,7 @@ public class DocumentService {
                 },
                 before,
                 after,
-                // 반려 사유·결재취소 사유를 감사 이력 메모로 남긴다
+                // 반려·결재취소 사유를 감사 이력 메모로 남긴다. 취소 SP 는 단계 opinion 을 비운다
                 action.equals("REJECT") || action.equals("UNDO") ? text(req.getOpinion()) : null,
                 requestMeta
         );

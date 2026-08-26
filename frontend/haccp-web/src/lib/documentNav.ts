@@ -77,3 +77,69 @@ export function routeForDocument(
   }
   return routeOf("document-inbox", { docIdx: String(row.docIdx) });
 }
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) 양식코드로 작성 화면코드를 고른다
+ *   2) 오늘 할 일 예정 행추가·목록만 열기가 호출한다
+ *   3) 접두·HWP 둘 다 아니면 빈 문자열
+ */
+export function screenForTmplWrite(
+  // 양식코드
+  tmplCd: string,
+  // DB | HWP
+  docKind?: string | null,
+): string {
+  const scrn = screenByPrefix(tmplCd);
+  if (scrn) return scrn;
+  if (isHwpKind(docKind) || tmplCd.startsWith("hwp_")) return "hwp-write";
+  return "";
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) 오늘 할 일 작성과제처럼 문서가 아직 없어도 작성 화면으로 보낸다
+ *   2) docIdx 가 있으면 routeForDocument 와 같다. 없으면 접두 화면만 연다
+ *   3) 접두·HWP 둘 다 아니면 빈 문자열 — 호출부가 이동을 생략한다
+ */
+export function routeForTmplWrite(
+  // 양식코드 — html_hyg_prc_001 · tml_ccp_chk_001 등
+  tmplCd: string,
+  // 이미 만든 문서 대리키 — 없으면 목록만
+  docIdx?: number | null,
+  // DB | HWP
+  docKind?: string | null,
+): string {
+  const idx = Number(docIdx ?? 0);
+  if (idx > 0) return routeForDocument({ docIdx: idx, tmplCd, docKind });
+  const scrn = screenForTmplWrite(tmplCd, docKind);
+  return scrn ? routeOf(scrn) : "";
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) 오늘 할 일 예정 행을 작성 화면 행추가로 보낸다
+ *   2) 더블클릭이 호출한다. 쿼리 add=1 을 작성 화면이 한 번 소비한다
+ *   3) 양식코드·일자는 과제 행 값이다. 화면을 못 찾으면 빈 문자열
+ */
+export function routeForTmplAdd(
+  // 과제 양식코드
+  tmplCd: string,
+  // 과제 기준일·양식명·문서형
+  opts: { baseDt?: string; tmplNm?: string; docKind?: string | null },
+): string {
+  const scrn = screenForTmplWrite(tmplCd, opts.docKind);
+  if (!scrn || !tmplCd) return "";
+  return routeOf(scrn, {
+    add: 1,
+    tmplCd,
+    baseDt: opts.baseDt,
+    tmplNm: opts.tmplNm,
+  });
+}

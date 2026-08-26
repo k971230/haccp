@@ -41,13 +41,15 @@ export const TASK_STATUS_NM: Record<string, string> = {
   TODO: "예정",
   ING: "진행",
   LATE: "지연",
+  APV: "승인완료",
 };
 
-/** 일정 과제 상태 배지 색 — TODO/ING/LATE */
+/** 일정 과제 상태 배지 색 — TODO/ING/LATE/APV */
 export const TASK_STATUS_BADGE: Record<string, StatusBadgeTone> = {
   TODO: "gray",
   ING: "blue",
   LATE: "red",
+  APV: "green",
 };
 
 /**

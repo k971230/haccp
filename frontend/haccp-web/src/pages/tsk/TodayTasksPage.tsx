@@ -16,7 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 // 역할 — 화면 이동
 import { useNavigate } from "react-router-dom";
 // 역할 — KPI 카드 문서형 아이콘 (이모지 대신 Lucide)
-import { ClipboardList, FileClock, FileText, FileWarning, Files, type LucideIcon } from "lucide-react";
+import { ClipboardList, FileCheck2, FileClock, FileText, FileWarning, Files, type LucideIcon } from "lucide-react";
 // 역할 — 오늘 과제 API
 import { listTodayRecentDocs, listTodayTasks, type WorkflowRow } from "@/api/taskWorkflowApi";
 // 역할 — 결재대기
@@ -33,6 +33,7 @@ import { usePageCommands } from "@/shell/pageCommands";
 import { mesError } from "@/shell/errors";
 import { routeOf } from "@/shell/tabRoute";
 import { routeForDocument } from "@/lib/documentNav";
+import { todayYmd } from "@/lib/docDateTime";
 import { useCommonCodes } from "@/hooks/useCommonCodes";
 import { useAuthStore } from "@/stores/authStore";
 import type { EditableRow } from "@/types/editable";
@@ -46,8 +47,13 @@ import {
   TASK_PERSIST_ID,
   buildDocColumns,
   buildTaskColumns,
+  compareTodayTask,
+  filterTodayTasks,
   formatHeaderUpdatedAt,
-  isCaTask,
+  isDoneWriteTask,
+  isOpenCaTask,
+  isOpenWriteTask,
+  isOverdueTodayTask,
   kpiCardClass,
   pageCount,
   pageOffset,
@@ -55,6 +61,7 @@ import {
   sessionRoleLabel,
   sessionWho,
   taskStatusLabel,
+  todayTaskHref,
   type DocRow,
   type FilterKind,
   type KpiKind,
@@ -64,6 +71,7 @@ import {
 /** KPI 아이콘 이름 → Lucide. Rule 은 JSX 를 두지 않는다 */
 const KPI_ICONS: Record<typeof KPI_DEFS[number]["icon"], LucideIcon> = {
   FileText,
+  FileCheck2,
   FileClock,
   FileWarning,
   Files,
@@ -97,6 +105,8 @@ export default function TodayTasksPage() {
   const [docPageNo, setDocPageNo] = useState(1);
   const [approvalCnt, setApprovalCnt] = useState(0);
   const [filter, setFilter] = useState<FilterKind>("ALL");
+  // 기본 체크 — 조치내용 없거나 완료 안 된 것만. 해제하면 오늘 할 일 전체
+  const [incompleteOnly, setIncompleteOnly] = useState(true);
   const [taskActiveKey, setTaskActiveKey] = useState<string | null>(null);
   const [docActiveKey, setDocActiveKey] = useState<string | null>(null);
   // 헤더 마지막 업데이트 — load 성공 시각. 실패하면 이전 값을 유지한다
@@ -172,26 +182,37 @@ export default function TodayTasksPage() {
     search: () => { void asyncAct.run(load, "search"); },
   });
 
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-26
+   * 코멘트:
+   *   1) 오늘 할 일 행을 작성·개선조치 화면으로 보낸다
+   *   2) 행 더블클릭이 호출한다. 한 번 클릭은 선택만
+   *   3) 예정은 작성 화면 행추가, 그 외는 기존 문서·개선조치 조회. 경로가 비면 이동하지 않는다
+   */
   const openTask = (row: WorkflowRow) => {
-    const screen = String(row.linkScrnCd ?? "");
-    if (screen) navigate(routeOf(screen));
+    const href = todayTaskHref(row);
+    if (href) navigate(href);
   };
 
   const taskCnt = useMemo(
-    () => tasks.filter((row) => !isCaTask(row.taskType)).length,
+    () => tasks.filter((row) => isOpenWriteTask(row.taskType, row.status)).length,
+    [tasks],
+  );
+  const doneCnt = useMemo(
+    () => tasks.filter((row) => isDoneWriteTask(row.taskType, row.status)).length,
     [tasks],
   );
   const caCnt = useMemo(
-    () => tasks.filter((row) => isCaTask(row.taskType)).length,
+    () => tasks.filter((row) => isOpenCaTask(row.taskType, row.status, row.content)).length,
     [tasks],
   );
 
   const filteredTasks = useMemo(() => {
-    if (filter === "CA") return tasks.filter((row) => isCaTask(row.taskType));
-    if (filter === "TASK") return tasks.filter((row) => !isCaTask(row.taskType));
-    if (filter === "APPR") return [];
-    return tasks;
-  }, [filter, tasks]);
+    return filterTodayTasks(tasks, filter, incompleteOnly)
+      .slice()
+      .sort((a, b) => compareTodayTask(a, b, todayYmd()));
+  }, [filter, incompleteOnly, tasks]);
 
   const taskRows = useMemo<TaskRow[]>(
     () => filteredTasks.map((row, index) => ({
@@ -211,6 +232,7 @@ export default function TodayTasksPage() {
 
   const kpiCount = (kind: KpiKind): number => {
     if (kind === "TASK") return taskCnt;
+    if (kind === "DONE") return doneCnt;
     if (kind === "APPR") return approvalCnt;
     if (kind === "CA") return caCnt;
     return docTotal;
@@ -219,6 +241,10 @@ export default function TodayTasksPage() {
   const onKpiClick = (kind: KpiKind) => {
     if (kind === "TASK") {
       setFilter(filter === "TASK" ? "ALL" : "TASK");
+      return;
+    }
+    if (kind === "DONE") {
+      setFilter(filter === "DONE" ? "ALL" : "DONE");
       return;
     }
     if (kind === "APPR") {
@@ -254,7 +280,7 @@ export default function TodayTasksPage() {
               </span>
             ) : null}
           </h1>
-          <p className="mt-0.5 text-sm text-slate-500">작성 · 결재 현황을 확인하고 문서로 바로 이동합니다.</p>
+          <p className="mt-0.5 text-sm text-slate-500">작성 · 결재 현황을 확인하고, 행을 더블클릭하면 해당 화면으로 이동합니다.</p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
           <MesButton
@@ -275,10 +301,10 @@ export default function TodayTasksPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
         {KPI_DEFS.map((kpi) => {
           const Icon = KPI_ICONS[kpi.icon];
-          const active = kpi.kind !== "DOCS" && filter === kpi.filter;
+          const active = kpi.kind !== "DOCS" && kpi.kind !== "APPR" && filter === kpi.filter;
           return (
             <button
               key={kpi.kind}
@@ -295,7 +321,7 @@ export default function TodayTasksPage() {
                     <Icon strokeWidth={2.4} />
                   </div>
                   <div className="mes-notice-copy">
-                    {/* 카드 제목 — 오늘 작성·과제 / 미결재 / 이탈·개선조치 / 최근 7일 문서 */}
+                    {/* 카드 제목 — 오늘 작성 과제 / 과제 완료 / 미결재 / 이탈·개선조치 / 최근 문서 */}
                     <div className="mes-notice-title">{kpi.label}</div>
                     {/* KPI 건수 — 토스트 본문 자리에 큰 숫자 */}
                     <div className="mes-notice-msg text-2xl font-semibold text-slate-800">{kpiCount(kpi.kind)}</div>
@@ -312,6 +338,16 @@ export default function TodayTasksPage() {
           <div className={gridHeadClass}>
             {/* 보이는 그리드명 — title prop과 동일 */}
             <b>오늘 할 일</b>
+            <label className="flex cursor-pointer items-center gap-1.5">
+              <input
+                // 미완료만 — 작성과제 APV·조치내용 있는 CA 를 숨긴다. 기본 체크
+                type="checkbox"
+                className="h-3.5 w-3.5 cursor-pointer accent-[#1a3676]"
+                checked={incompleteOnly}
+                onChange={(e) => setIncompleteOnly(e.target.checked)}
+              />
+              <span className="whitespace-nowrap text-[11px] text-slate-600">미완료 과제만 보기</span>
+            </label>
           </div>
           {taskRows.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
@@ -340,14 +376,21 @@ export default function TodayTasksPage() {
               height="100%"
               // 조회 busy
               loading={asyncAct.isBusy("search")}
-              // 활성 행
+              // 활성 행 — 클릭은 선택만
               activeKey={taskActiveKey}
-              // 행 클릭 시 업무 화면 이동
+              // 행 클릭 — 선택만. 이동은 더블클릭
               onActivate={(row) => {
+                sec.setSec("h");
+                setTaskActiveKey(row._key ?? null);
+              }}
+              // 더블클릭 — 예정은 행추가, 그 외는 조회
+              onRowDoubleClick={(row) => {
                 sec.setSec("h");
                 setTaskActiveKey(row._key ?? null);
                 openTask(row);
               }}
+              // 기한경과(전날·기간 지남) — 빨간 행
+              rowClassName={(row) => (isOverdueTodayTask(row, todayYmd()) ? "mes-row-overdue" : undefined)}
               // 활성 섹션을 과제로
               onSetActive={() => sec.setSec("h")}
               showRowNum
@@ -389,10 +432,15 @@ export default function TodayTasksPage() {
                   height="100%"
                   // 조회 busy
                   loading={asyncAct.isBusy("search")}
-                  // 활성 문서
+                  // 활성 문서 — 클릭은 선택만, 화면 이동은 더블클릭
                   activeKey={docActiveKey}
-                  // 행 클릭 시 작성 화면 deep-link
+                  // 행 클릭 시 선택만. 이동은 onRowDoubleClick
                   onActivate={(row) => {
+                    sec.setSec("d");
+                    setDocActiveKey(row._key ?? null);
+                  }}
+                  // 모든 셀 더블클릭 — 작성 화면 deep-link
+                  onRowDoubleClick={(row) => {
                     sec.setSec("d");
                     setDocActiveKey(row._key ?? null);
                     navigate(routeForDocument({

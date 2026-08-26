@@ -16,6 +16,8 @@
  */
 // 역할 — 상태·메모·초기 조회·화면별 지면 컴포넌트 타입
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
+// 역할 — URL 쿼리 add=1 소비
+import { useSearchParams } from "react-router-dom";
 // 역할 — 로그인 사용자·화면 권한
 import { useAuthStore } from "@/stores/authStore";
 // 역할 — 비동기 중복 실행 차단·busy
@@ -196,6 +198,10 @@ export function HtmlFormDraftPage({
   const canModify = useAuthStore((s) => s.can(scrnCd, "modify"));
   const canDelete = useAuthStore((s) => s.can(scrnCd, "delete"));
   const action = useAsyncAction();
+  // 오늘 할 일 예정 행추가 쿼리 — add=1 을 한 번만 쓴다
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [bootDone, setBootDone] = useState(false);
+  const addQueryDone = useRef(false);
 
   // 작성 가능 양식 — 사용여부 예인 자사 양식만. 양식 선택 팝업 목록
   const [forms, setForms] = useState<HtmlFormDraftForm[]>([]);
@@ -305,6 +311,9 @@ export function HtmlFormDraftPage({
         await loadList();
       } catch (e) {
         mesError(e);
+      } finally {
+        // 양식 목록을 읽은 뒤 오늘 할 일 add=1 쿼리를 받을 수 있다
+        setBootDone(true);
       }
     }, "search");
     // 최초 1회
@@ -347,20 +356,23 @@ export function HtmlFormDraftPage({
 
   /**
    * 개발자: 박승우
-   * 일자: 2026-08-24
+   * 일자: 2026-08-26
    * 코멘트:
-   *   1) 오늘 날짜·양식 미선택·로그인 작성자로 좌측 draft 행을 붙인다
-   *   2) 행 추가 버튼이 호출한다
-   *   3) 양식은 행의 양식코드 버튼(팝업)에서 고른다 — 추가 직후 팝업을 연다
+   *   1) 좌측 draft 행을 붙인다. 오늘 할 일 예정이면 그 행의 양식코드·일자를 그대로 넣는다
+   *   2) 행추가 버튼·오늘 할 일 add=1 쿼리가 호출한다
+   *   3) 양식이 있으면 팝업 없이 채운다. 없으면 양식 선택 팝업을 연다
    */
-  const handleAdd = () => action.run(async () => {
+  const handleAdd = (
+    // 오늘 할 일 예정 행의 양식·일자. 없으면(= 행추가 버튼) 팝업 경로
+    forced?: HtmlFormDraftPick | null,
+  ) => action.run(async () => {
     if (!canWrite) return mesToast("등록 권한이 없습니다.", "warn");
     if (forms.length === 0) {
       mesToast("사용 중인 양식이 없습니다. 양식관리에서 사용여부를 예로 설정하세요.", "warn");
       return;
     }
-    // 행 추가 전에 고르는 화면일 때(= HWP 오늘 할일) 먼저 묻는다. 취소하면 아래 양식 선택 팝업으로 간다
-    const picked = pickBeforeAdd ? await pickBeforeAdd() : null;
+    // 버튼일 때(= 강제 값이 없음) HWP 는 오늘 할일 팝업. 오늘 할 일 더블클릭은 forced 로 온다
+    const picked = forced !== undefined ? forced : (pickBeforeAdd ? await pickBeforeAdd() : null);
     const next = emptyDraftBuf(user);
     if (picked?.baseDt && /^\d{8}$/.test(picked.baseDt)) next.baseKey = picked.baseDt;
     const key = addDraft({
@@ -382,6 +394,34 @@ export function HtmlFormDraftPage({
     }
     setLookupKey(key);
   }, "add");
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-26
+   * 코멘트:
+   *   1) 오늘 할 일 예정 더블클릭이 붙인 add=1 쿼리를 한 번 소비한다
+   *   2) 양식 목록 boot 가 끝난 뒤 행추가를 돌리고 add 만 지운다
+   *   3) 새로고침 때 행이 또 생기지 않게 addQueryDone 으로 막는다
+   */
+  useEffect(() => {
+    if (!bootDone || addQueryDone.current) return;
+    if (searchParams.get("add") !== "1") return;
+    const tmplCd = (searchParams.get("tmplCd") ?? "").trim();
+    addQueryDone.current = true;
+    const next = new URLSearchParams(searchParams);
+    next.delete("add");
+    setSearchParams(next, { replace: true });
+    if (!tmplCd) return;
+    const tmplNm = (searchParams.get("tmplNm") ?? "").trim();
+    const baseDt = (searchParams.get("baseDt") ?? "").trim();
+    void handleAdd({
+      tmplCd,
+      tmplNm,
+      baseDt: /^\d{8}$/.test(baseDt) ? baseDt : undefined,
+    });
+    // handleAdd 는 매 렌더 새 함수 — 쿼리는 ref 로 한 번만 쓴다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bootDone, searchParams, setSearchParams]);
 
   /**
    * 개발자: 박승우
