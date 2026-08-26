@@ -57,7 +57,11 @@ server {
     # --------------------------------------------------------
     # 파일 업로드·다운로드·PDF — 기본 70s 로는 끊긴다 (130s)
     # --------------------------------------------------------
-    location ~ ^/api/v1/(doc/documents/[^/]+/(files|export-pdf)|doc/documents/files/[^/]+/download|doc/templates/[^/]+/form|doc/audit-export/preview-pdf|sys/users/[^/]+/sign|hyg/health-cert/[^/]+/file|bas/equipment/[^/]+/photo|bas/company-templates/create-custom)$ {
+    #
+    # 2026-08-26 — 경로를 지금 URL 로 맞췄다. 옛 경로(doc/·bas/·hyg/)를 그대로 두면
+    # 그 요청이 이 블록에 안 걸려 기본 70s 로 처리된다 — 큰 HWP 업로드가 끊긴다.
+    # 여기 목록은 backend 컨트롤러의 multipart·download·pdf 매핑과 같아야 한다.
+    location ~ ^/api/v1/(docs/documents/[^/]+/(files|export-pdf)|docs/documents/files/[^/]+/download|docs/templates/[^/]+/form|docs/audit-export/preview-pdf|sys/users/(me|[^/]+)/sign)$ {
         # 컨테이너 내부 api listen 7070 — 호스트 publish 없음
         set $haccp_api_file http://api:7070;
         proxy_pass $haccp_api_file$request_uri;

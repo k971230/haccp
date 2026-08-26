@@ -105,7 +105,7 @@ MyBatis 매퍼 XML 은 컴파일에 안 잡혀서, 패키지를 옮기면 반드
 cd frontend/haccp-web
 npx tsc --noEmit ; npx eslint src e2e ; npx vitest run ; npm run build
 
-# 화면까지 실제로 도는지 — Playwright E2E 68건 (DB 대조 포함)
+# 화면까지 실제로 도는지 — Playwright E2E 105건 (DB 대조 포함)
 npx playwright test
 
 # 백엔드

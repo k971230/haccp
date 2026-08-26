@@ -130,9 +130,9 @@ DB  tbl_screen · tbl_role_screen · tbl_menu
 
 - 업무 규칙 위반은 `RAISE EXCEPTION '문구' USING ERRCODE = '45000'` → 400 + 그 문구
 - 삭제는 `validate-delete` → `delete` **2단계**. HTTP DELETE 를 쓰지 않는다
-- 정본은 `db_sasshaccp/01_sp.sql` (154본). 라이브와 목록이 같아야 한다
+- 정본은 `db_sasshaccp/01_sp.sql` (152본). 라이브와 목록이 같아야 한다
 
-점검(2026-08-26): SP 154 · 파일=DB 일치 · 인자 개수 불일치 0 ·
+점검(2026-08-26): SP 152 · 파일=DB 일치 · 인자 개수 불일치 0 · 컬럼 실재 0건 · 회사 격리 위반 0 ·
 매퍼의 직접 SQL 0 · 아무도 안 부르는 SP 0.
 
 ---
@@ -147,7 +147,7 @@ cd backend/haccp-api
 **단위 테스트로는 매퍼 XML 이 안 잡힌다.** 화면까지 도는지는 프론트 E2E 가 본다.
 
 ```sh
-cd frontend/haccp-web ; npx playwright test    # 68건, DB 대조 포함
+cd frontend/haccp-web ; npx playwright test    # 105건, DB 대조 포함
 ```
 
 ---

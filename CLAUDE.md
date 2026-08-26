@@ -39,7 +39,7 @@ Claude Code 진입점이다. **규칙 본문은 여기 두지 않는다** — �
 # 프론트
 cd frontend/haccp-web
 npx tsc --noEmit ; npx eslint src e2e ; npx vitest run ; npm run build
-npx playwright test          # E2E 68건 — 화면·API·SP·DB 를 한 줄로 꿴다
+npx playwright test          # E2E 105건 — 화면·API·SP·DB 를 한 줄로 꿴다
 
 # 백엔드
 cd backend/haccp-api ; ./mvnw -q -o test
