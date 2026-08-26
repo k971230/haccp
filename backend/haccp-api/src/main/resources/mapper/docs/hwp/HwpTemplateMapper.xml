@@ -7,7 +7,7 @@ HwpTemplateMapper.xml — 사용양식관리 sp_hwp_template_management_* 호출
 코멘트:
   1) 조회는 TABLE FUNCTION, 저장·적용은 PostgreSQL PROCEDURE를 호출한다
   2) Map 결과는 snake_case 키로 돌아오며 Service toCamelMaps가 API 계약으로 바꾼다
-  3) 삭제는 법적서류와 공유하는 sp_tbl_company_template_d_000 을 WorkflowMapper가 그대로 부른다
+  3) 삭제는 차단 검사(blocker)를 먼저 부르고 sp_tbl_company_template_d_000 으로 지운다
 
 PIPELINE[HB123] 사용양식 MyBatis XML
 PIPELINE[HB92, HB88] 연관 모듈
@@ -60,6 +60,30 @@ PIPELINE[HB92, HB88] 연관 모듈
             #{coCd, jdbcType=VARCHAR},
             #{tmplCd, jdbcType=VARCHAR},
             #{fileIdx, jdbcType=BIGINT},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+
+    <!--
+      삭제 차단 검사 — 시스템 제공 양식과, 이미 작성된 문서가 있는 양식은 지울 수 없다.
+      위반 첫 건만 돌아온다. 없으면 null 이라 삭제를 진행한다.
+    -->
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
+        SELECT * FROM sp_tbl_company_template_delete_blocker_r_000(
+            #{coCd, jdbcType=VARCHAR},
+            <foreach collection="tmplCds" item="cd" open="ARRAY[" separator="," close="]::varchar[]">
+                #{cd, jdbcType=VARCHAR}
+            </foreach>
+        )
+    </select>
+
+    <!--
+      사용양식 삭제 — 자사양식만. 파일 이력은 논리삭제하고 자사 카탈로그 행은 함께 정리한다.
+    -->
+    <update id="deleteHwpTemplate" statementType="CALLABLE">
+        CALL sp_tbl_company_template_d_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{tmplCd, jdbcType=VARCHAR},
             #{userId, jdbcType=VARCHAR}
         )
     </update>

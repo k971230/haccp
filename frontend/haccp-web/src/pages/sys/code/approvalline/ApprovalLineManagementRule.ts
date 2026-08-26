@@ -2,11 +2,11 @@
  * ApprovalLineManagementRule — 결재선 좌 헤더·우 단계 규칙.
  *
  * 개발자: 박승우
- * 일자: 2026-08-19
+ * 일자: 2026-08-25
  * 코멘트:
  *   1) Page는 렌더·상태·API만 담당하고 컬럼·초기 3단계·필터는 이 파일이 갖는다
  *   2) 결재자는 셀 버튼 룩업이다. 직위코드 컬럼은 없다
- *   3) 헤더 persistId는 승계하고, 단계·분할 키만 열 순서·좌측 축소에 맞춰 v2다
+ *   3) 헤더 persistId는 승계하고, 분할 키는 좌 마스터 30% 기본이다
  *
  * PIPELINE[HF87] 결재선 그리드 규칙
  */
@@ -31,8 +31,8 @@ export const STEP_PERSIST_ID = "bas-approval-line-steps-v2" as const;
 /** 회사 온보딩 기본 결재선 — 삭제 금지 */
 export const DEFAULT_APPR_LINE_CD = "DEFAULT" as const;
 
-/** 좌우 분할 비율 키 — 좌측 32% 기본 */
-export const SPLIT_KEY = "haccp-split-approval-line-v2" as const;
+/** 좌우 분할 비율 키 — -30 은 좌 트리/마스터 기본. 옛 20·32% 키와 분리 */
+export const SPLIT_KEY = "haccp-split-approval-line-30" as const;
 
 /** 고정 역할 — 1작성 2검토 3승인 */
 export const ROLES: ApprovalStep["roleCd"][] = ["WRITE", "REVIEW", "APPROVE"];

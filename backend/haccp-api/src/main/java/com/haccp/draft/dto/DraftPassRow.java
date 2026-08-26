@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) CCP 포장·가열·금속검출 작성 3화면이 같은 DTO 를 쓴다. 화면마다 복제하지 않는다
  *   2) MTL 두 번째 표 전용 — 품명·통과량·검출량·특이사항
- *   3) 기본 4행은 지면이 깔고, 「제품 통과 행 추가」로 만든 행만 삭제 버튼이 붙는다
+ *   3) 기본 4행은 신규 상세에서 서버가 깔고(DraftSupport.seedPassRows), 「제품 통과 행 추가」로 만든 행만 삭제 버튼이 붙는다
  *
  * FE 대응 타입은 components/form/htmlFormPaperShared.tsx 의 HtmlFormPassRow 다.
  *

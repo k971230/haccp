@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 역할 — 오늘 과제·알림·개선조치·문서관계·감사자료 SP 호출 -->
+<!--
+TaskMapper.xml — 오늘 과제·알림·개선조치·문서관계·감사자료 SP 호출.
+
+개발자: 박승우
+일자: 2026-08-25
+코멘트:
+  1) 화면마다 다른 업무 SP를 명시 id 로 연결한다
+  2) 최근 문서는 sp_tbl_today_task_doc_r_000 OFFSET/LIMIT 이다. 문서함 r_000 은 쓰지 않는다
+  3) 회사·사용자는 Service JWT 만 넘긴다
+
+PIPELINE[HB93] 워크플로 작업 매퍼
+-->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.haccp.tsk.TaskMapper">
     <!-- 활성 회사 — 정기 배치가 각 테넌트 과제를 멱등 생성 -->
@@ -8,16 +19,23 @@
     <update id="generateTasks" statementType="CALLABLE">CALL sp_tbl_schedule_task_generate_c_000(#{coCd}, #{baseDt}, #{userId})</update>
     <!-- 오늘 과제와 미완료 개선조치 — 사용자 배정 조건 포함 -->
     <select id="selectTodayTasks" resultType="map">SELECT * FROM sp_tbl_today_task_r_000(#{coCd}, #{userId}, #{baseDt})</select>
+    <!-- 오늘 할 일 최근 문서 — 기간만. OFFSET/LIMIT + total_cnt -->
+    <select id="selectTodayTaskDocs" resultType="map">
+        SELECT * FROM sp_tbl_today_task_doc_r_000(
+            #{coCd,    jdbcType=VARCHAR},
+            #{fromDt,  jdbcType=VARCHAR},
+            #{toDt,    jdbcType=VARCHAR},
+            #{offset,  jdbcType=INTEGER},
+            #{limit,   jdbcType=INTEGER}
+        )
+    </select>
     <!-- 로그인 사용자 알림함 -->
     <select id="selectNotifications" resultType="map">SELECT * FROM sp_tbl_notification_r_000(#{coCd}, #{userId})</select>
     <!-- 본인 알림 읽음 처리 -->
     <update id="readNotification" statementType="CALLABLE">CALL sp_tbl_notification_u_000(#{coCd}, #{idx}, #{userId})</update>
     <!-- 이탈·개선조치 목록 -->
-    <select id="selectCorrectiveActions" resultType="map">SELECT * FROM sp_tbl_corrective_action_r_000(#{coCd}, #{status}, #{fromDt}, #{toDt})</select>
     <!-- 개선조치 신규·수정 -->
-    <update id="saveCorrectiveAction" statementType="CALLABLE">CALL sp_tbl_corrective_action_c_000(#{coCd}, #{idx}, CAST(#{payloadJson} AS jsonb), #{userId})</update>
     <!-- 미완료 개선조치 삭제 -->
-    <update id="deleteCorrectiveAction" statementType="CALLABLE">CALL sp_tbl_corrective_action_d_000(#{coCd}, #{idx}, #{userId})</update>
     <!-- 출발 문서의 관련 문서 목록 -->
     <select id="selectRelations" resultType="map">SELECT * FROM sp_tbl_document_relation_r_000(#{coCd}, #{docIdx})</select>
     <!-- 허용 조합 관계만 저장 -->

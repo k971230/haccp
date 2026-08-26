@@ -71,9 +71,9 @@ import {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-19
+ * 일자: 2026-08-25
  * 코멘트:
- *   1) 결재선 헤더·단계를 조회·추가·저장한다
+ *   1) 좌 결재선 30 · 우 단계 70 — 가로 분할은 30 또는 50만
  *   2) approval-line-management 에서 마운트한다
  *   3) 권한·검증 실패는 업무 토스트로만 안내한다
  */
@@ -384,7 +384,7 @@ export default function ApprovalLineManagementPage() {
   });
 
   const stepTitle = activeHeader
-    ? `단계 (${activeHeader.apprLineNm || activeHeader.apprLineCd || "신규"})`
+    ? `단계 (${activeHeader.apprLineNm || activeHeader.apprLineCd || "행추가"})`
     : "단계";
 
   return (
@@ -433,12 +433,12 @@ export default function ApprovalLineManagementPage() {
         )}
       >
         <ResizableSplit
-          // 좌 결재선 32% · 우 단계 — 드래그 범위 약 20~75
+          // 좌 결재선 30 · 우 단계 70 — 가로 분할은 30 또는 50만
           orientation="horizontal"
           storageKey={SPLIT_KEY}
-          defaultPrimaryPct={32}
+          defaultPrimaryPct={30}
           minPct={20}
-          maxPct={75}
+          maxPct={80}
           className="mes-page-split min-h-0 h-full flex-1 gap-0"
           primary={(
             <div {...sec.bind("h", splitPanelClass)}>

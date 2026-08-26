@@ -47,7 +47,40 @@ function n(value: unknown): number {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-24
+ * 일자: 2026-08-25
+ * 코멘트:
+ *   1) SP cells EAV 배열 또는 이미 맵인 값을 지면 맵으로 맞춘다
+ *   2) asLogRow 와 단위 테스트가 호출한다
+ *   3) 배열이면 itemCd → numVal 또는 txtVal. 맵이면 키를 그대로 둔다
+ */
+export function cellsToMap(
+  // raw: 서버 cells — 배열(EAV) 또는 { temp: "4" } 맵
+  raw: unknown,
+): Record<string, string> {
+  const cells: Record<string, string> = {};
+  if (Array.isArray(raw)) {
+    for (const cell of raw) {
+      if (!cell || typeof cell !== "object") continue;
+      const rec = cell as Record<string, unknown>;
+      const itemCd = s(rec.itemCd);
+      if (!itemCd) continue;
+      const num = s(rec.numVal);
+      const txt = s(rec.txtVal);
+      cells[itemCd] = num !== "" ? num : txt;
+    }
+    return cells;
+  }
+  if (raw && typeof raw === "object") {
+    for (const [key, val] of Object.entries(raw as Record<string, unknown>)) {
+      cells[key] = s(val);
+    }
+  }
+  return cells;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
  * 코멘트:
  *   1) 서버 기록행을 지면 행 계약으로 맞춘다
  *   2) 상세 응답 변환에서 호출한다
@@ -55,11 +88,7 @@ function n(value: unknown): number {
  */
 function asLogRow(raw: Record<string, unknown>): HtmlFormLogRow {
   const phase = s(raw.phaseCd).toUpperCase();
-  const cellsRaw = (raw.cells ?? {}) as Record<string, unknown>;
-  const cells: Record<string, string> = {};
-  for (const [key, val] of Object.entries(cellsRaw)) {
-    cells[key] = s(val);
-  }
+  const cells = cellsToMap(raw.cells);
   return {
     rowSeq: n(raw.rowSeq),
     // 저장된 값이 BEFORE·AFTER 가 아니면(= 옛 DURING·빈값) 작업 전으로 붙인다

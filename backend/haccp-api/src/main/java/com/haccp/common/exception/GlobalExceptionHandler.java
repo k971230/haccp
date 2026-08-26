@@ -33,8 +33,11 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 // 역할 — 필수 @RequestParam 누락
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 // 역할 — @ExceptionHandler 등록
 import org.springframework.web.bind.annotation.ExceptionHandler;
+// 역할 — 없는 경로(정적 자원 미존재) 예외
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 // 역할 — 전역 예외 처리 어드바이스
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 // 역할 — 응답 쓰던 중 브라우저가 연결을 끊은 경우
@@ -116,6 +119,25 @@ public class GlobalExceptionHandler {
 
     /**
      * 개발자: 박승우
+     * 일자: 2026-08-26
+     * 코멘트:
+     *   1) 없는 경로를 500 UNKNOWN + 스택트레이스로 내리던 것을 404 로 바꾼다
+     *   2) FE 가 죽은 URL 을 부르면 Spring 이 정적 자원으로 보고 이 예외를 던진다
+     *   3) 스택트레이스를 남기지 않는다 — 서버 결함이 아니라 잘못된 주소다
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResource(
+            // 발생 예외 — 요청 경로만 로그에 남긴다
+            NoResourceFoundException e
+    ) {
+        log.warn("no route {}", oneLine(e.getResourcePath()));
+        // 404 Not Found
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("NOT_FOUND", "요청하신 경로를 찾을 수 없습니다."));
+    }
+
+    /**
+     * 개발자: 박승우
      * 일자: 2026-07-10
      * 코멘트:
      *   1) 지원하지 않는 HTTP 메서드 요청을 405 응답으로 변환한다.
@@ -155,6 +177,25 @@ public class GlobalExceptionHandler {
                 ? "양식 코드를 선택하세요."
                 : ("필수 요청 값이 없습니다. (" + name + ")");
         return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION", msg));
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 숫자여야 할 요청 값이 숫자가 아닐 때 400 업무 문구로 바꾼다
+     *   2) 화면이 docIdx=undefined 처럼 빈 값을 보낼 때 들어온다 — 서버 잘못이 아니라 요청 잘못이다
+     *   3) 스택을 남기지 않는다. 같은 요청이 반복되면 로그가 이 예외로 뒤덮여 진짜 오류를 못 찾는다
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            // 타입 변환 실패 예외 — 파라미터명과 받은 값을 문구에 쓴다
+            MethodArgumentTypeMismatchException e
+    ) {
+        String name = e.getName();
+        log.warn("잘못된 요청 값: {}={}", name, e.getValue());
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse("VALIDATION", "요청 값이 올바르지 않습니다. (" + name + ")"));
     }
 
     /**
@@ -279,6 +320,53 @@ public class GlobalExceptionHandler {
      *   2) SQLException과 이를 감싼 MyBatis·Spring 예외 처리에서 공통 호출한다.
      *   3) 분류 결과에 맞는 HTTP 응답을 반환하고 알 수 없는 DB 오류는 상세 로그를 기록한다.
      */
+    /** 입력이 틀려 DB 가 거절한 SQLSTATE → 사용자에게 보일 문구 */
+    private static final java.util.Map<String, String> BAD_INPUT_STATES = java.util.Map.of(
+            "22001", "입력한 값이 너무 깁니다. 길이를 줄여 다시 저장하세요.",
+            "23502", "필수 항목이 비어 있습니다. 값을 입력하고 다시 저장하세요.",
+            "23503", "다른 자료가 참조 중입니다. 참조를 먼저 정리하세요.",
+            "22P02", "숫자·날짜 형식이 올바르지 않습니다."
+    );
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-26
+     * 코멘트:
+     *   1) DB 오류 문구를 한 줄로 만든다 — PostgreSQL 은 Where 절을 여러 줄로 붙인다
+     *   2) 예상된 흐름(업무 규칙·입력 오류) 로그에서 호출한다
+     *   3) 200자에서 자른다. 그 뒤는 PL/pgSQL 위치라 사람이 안 읽는다
+     */
+    private String oneLine(String message) {
+        if (message == null) return "";
+        // 줄바꿈만 공백으로 — PostgreSQL 은 Where 절을 여러 줄로 붙인다
+        String one = message.replace("\r", " ").replace("\n", " ").trim();
+        while (one.contains("  ")) {
+            one = one.replace("  ", " ");
+        }
+        return one.length() > 200 ? one.substring(0, 200) + "..." : one;
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-26
+     * 코멘트:
+     *   1) 우리 코드에서 어디가 불렀는지 한 줄로 찾는다 (com.haccp 첫 프레임)
+     *   2) 스택 대신 이것만 남겨 로그를 읽을 수 있게 한다
+     *   3) 못 찾으면 빈 문자열 — 로그가 깨지지 않게
+     */
+    private String callerOf(Throwable t) {
+        for (Throwable e = t; e != null; e = e.getCause()) {
+            for (StackTraceElement f : e.getStackTrace()) {
+                String cls = f.getClassName();
+                if (cls.startsWith("com.haccp") && !cls.contains("GlobalExceptionHandler")) {
+                    int dot = cls.lastIndexOf('.');
+                    return cls.substring(dot + 1) + "." + f.getMethodName() + ":" + f.getLineNumber();
+                }
+            }
+        }
+        return "";
+    }
+
     private ResponseEntity<ErrorResponse> classify(
             // 예외 원인 체인 시작점 — 내부 SQLException 탐색
             // 호출부의 null·빈값 허용 여부와 변환 규칙은 메서드 본문의 기존 계약을 따른다
@@ -291,18 +379,31 @@ public class GlobalExceptionHandler {
 
         // 조건식이 참일 때(= 45000: SP RAISE(업무 규칙 위반) — 업무 문구만 노출) 기존 분기 처리를 실행
         if ("45000".equals(state)) {
-            // 원문·스택은 warn 로그
-            log.warn(
-                    "DB business signal (sqlState={}): {}",
-                    state,
-                    sql.getMessage(),
-                    t
-            );
+            /*
+             * 업무 규칙 위반은 「예상된 흐름」이다 — 필수값 누락·중복키·상태 역행.
+             * 스택트레이스를 찍으면 로그가 100줄씩 불어나 진짜 장애를 못 찾는다.
+             * 어디서 났는지는 SP 이름과 호출 지점 한 줄이면 충분하다.
+             */
+            log.warn("DB business signal (sqlState={}): {} [{}]",
+                    state, oneLine(sql.getMessage()), callerOf(t));
             // 400 + SqlUserMessage 정제 메시지
             return ResponseEntity.badRequest()
                     .body(
                             new ErrorResponse("DB_SIGNAL", SqlUserMessage.toUserMessage(sql.getMessage()))
                     );
+        }
+        /*
+         * 입력이 잘못돼 DB 가 거절한 경우 — 서버가 고장 난 게 아니라 요청이 틀린 것이다.
+         * 500 으로 내리면 사용자는 「데이터 처리 중 오류」만 보고 무엇을 고쳐야 할지 모른다.
+         *   22001 값이 칸 길이를 넘음 · 23502 NOT NULL 위반
+         *   23503 참조 중인 자료 · 22P02 숫자·날짜 형식 오류
+         */
+        String badInput = BAD_INPUT_STATES.get(state);
+        if (badInput != null) {
+            // 입력이 틀린 것도 예상된 흐름이다 — 스택 대신 호출 지점만 남긴다
+            log.warn("DB input rejected (sqlState={}): {} [{}]",
+                    state, oneLine(sql != null ? sql.getMessage() : ""), callerOf(t));
+            return ResponseEntity.badRequest().body(new ErrorResponse("BAD_INPUT", badInput));
         }
         // 조건식이 참일 때(= 23505(중복키)·40P01(교착) — 동시 처리 충돌, 재시도 유도) 기존 분기 처리를 실행
         if ("23505".equals(state) || "40P01".equals(state)) {

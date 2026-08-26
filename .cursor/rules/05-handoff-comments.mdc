@@ -7,10 +7,10 @@ alwaysApply: true
 
 **최우선 원칙:** 백엔드와 프론트엔드는 **같은 설명 밀도**다. FE JSX prop에 여러 줄을 다는 만큼, BE 파라미터·문장·Mapper XML 절에도 동일하게 단다. 한쪽만 상세하면 미완료.
 
-정본 장문: `docs/5_인수인계_및_아키텍처_FE.md` · BE `docs/6_인수인계_및_아키텍처_BE.md` (이 파일은 에이전트 요약)  
-골드 (실존 경로): FE `shell/HaccpShell.tsx` · `pages/docs/ccp/ColdMonitorPage.tsx` · `pages/auth/LoginPage.tsx`  
-BE `docs/document/DocumentService.java` + `mapper/docs/document/DocumentMapper.xml` · `auth/AuthService.java`  
-태그 색인: `docs/23_PIPELINE.md`
+본보기 (실제로 있는 파일):
+FE `shell/HaccpShell.tsx` · `pages/auth/LoginPage.tsx` · `pages/docs/hwp/HwpTemplateManagementPage.tsx`
+BE `docs/documents/DocumentService.java` + `mapper/docs/documents/DocumentMapper.xml` · `auth/AuthService.java`
+파이프라인: BE `backend/haccp-api/PIPELINE.md` · FE `frontend/haccp-web/PIPELINE.md` · 태그 색인 `docs/5_PIPELINE_색인.md`
 
 ## 공통 (항상)
 
@@ -19,8 +19,10 @@ BE `docs/document/DocumentService.java` + `mapper/docs/document/DocumentMapper.x
   - `개발자: 박승우` / `일자: YYYY-MM-DD`(작업일) / `코멘트:` 3줄 (무엇·언제·성공실패)
 - 분기: `조건일 때(= 의미)` — 예: `_rowState !== "C"일 때(= DB 저장행)`
 - 한국어, UTF-8, **이모지 금지**, 로직 변경 금지
+- 파일 머리 주석은 **모든 소스에 단다** — 테스트 파일도 포함한다.
+  예외는 타입 선언(`*.d.ts` · `vite-env.d.ts`) 뿐이다. 거기엔 코드가 없다
 - JSX는 `//`만 (`/**` 삽입 금지). 주석 본문에 `*/` 문자열 금지
-- PIPELINE 태그 **유지** — FE `HF*` · BE `HB*`. 색인은 `docs/23_PIPELINE.md`. 표에 없으면 빈 번호를 쓰고 코드에 단다. `LOGIN`/`MAIN`/`BIZ` 태그는 쓰지 않는다. MES 잔존 `PIPELINE[Fn]`은 새 파일에 복제하지 않는다.
+- PIPELINE 태그 **유지** — FE `HF*` · BE `HB*`. 색인은 `docs/5_PIPELINE_색인.md`. 표에 없으면 빈 번호를 쓰고 코드에 단다. `LOGIN`/`MAIN`/`BIZ` 태그는 쓰지 않는다. MES 잔존 `PIPELINE[Fn]`은 새 파일에 복제하지 않는다.
 
 ## FE — JSX prop (정본 밀도)
 

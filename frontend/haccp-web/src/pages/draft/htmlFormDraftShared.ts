@@ -21,8 +21,15 @@ import type { ScreenGridRules } from "@/shell/gridRules/types";
 import { MES } from "@/shell/messages";
 // 역할 — 입력유형별 라디오·숫자·문자 판정
 import { htmlFormInputLayout, type HtmlFormItem } from "@/api/docs/htmlFormApi";
-// 역할 — 지면 메타 항목(제목·부제·캡션) 제외
-import { paperBodyItems } from "@/components/form/htmlFormPaperShared";
+// 역할 — 지면 메타 항목(제목·부제·캡션) 제외 · 지면 props · 기록 표 행 타입
+import {
+  paperBodyItems,
+  type HtmlFormLogRow,
+  type HtmlFormPaperProps,
+  type HtmlFormPassRow,
+} from "@/components/form/htmlFormPaperShared";
+// 역할 — 일자 YYYYMMDD ↔ input[type=date] · 오늘
+import { toInputDate, todayYmd } from "@/lib/docDateTime";
 
 /** 결재 여부 3단계 — 화면 표시 단위 */
 export type SendState = "wait" | "sent" | "done";
@@ -140,6 +147,8 @@ export type HtmlFormDraftRowView = {
   writerNm?: string;
   // 3단계 상태 키 — codeMap 이 문구로 바꾼다
   sendState?: SendState;
+  /** 이탈여부 Y/N — 이탈 칸을 쓰는 화면(HWP)만 채운다 */
+  deviationYn?: string;
 };
 
 /**
@@ -170,6 +179,8 @@ export const htmlFormDraftGridRules: ScreenGridRules = {
 export function buildDraftListColumns(
   // 양식코드 셀 버튼 클릭 — 그 행의 양식 선택 팝업을 연다
   onPickForm: (row: HtmlFormDraftRowView) => void,
+  // 이탈여부 칸 노출 — 지면이 없어 시그널을 목록에 두는 화면(HWP)만 켠다
+  showDeviation = false,
 ): GridColumn<HtmlFormDraftRowView>[] {
   return [
     {
@@ -218,6 +229,18 @@ export function buildDraftListColumns(
       width: 90,
       editable: false,
     },
+    // 이탈여부 — HTML 5화면은 지면 하단 시그널이 같은 일을 한다. 두 곳에 두지 않는다
+    ...(showDeviation ? [{
+      /**
+       * 이탈여부 — 켜면 저장 때 개선조치 행을 만들고 이탈·개선조치 화면에 올린다.
+       * 전송 이후 행은 htmlFormDraftGridRules 가 행 전체를 잠근다.
+       */
+      field: "deviationYn" as const,
+      header: "이탈여부",
+      width: 84,
+      type: "checkbox" as const,
+      editable: true,
+    }] : []),
   ];
 }
 
@@ -235,8 +258,13 @@ export function validateForTransfer(
   baseKey: string,
   // 지면 항목 전체 — 제목·부제 메타 포함
   items: HtmlFormItem[],
+  // 기록 표 행 — CCP 모니터링일지 작성만 채워 온다. 있으면 이쪽이 사용자 입력이다
+  logRows?: HtmlFormLogRow[],
 ): string | null {
   if (!/^\d{8}$/.test(baseKey)) return MES.required("일자");
+  // 기록 표가 있는 화면일 때(= CCP 모니터링) items 는 한계기준·주기·방법 안내문이라 입력값이 아니다.
+  // 사용자가 채우는 곳은 기록 표뿐이므로 그 행만 본다
+  if (logRows && logRows.length > 0) return validateLogRows(logRows);
   const body = paperBodyItems(items);
   if (body.length === 0) return "점검 행이 없습니다.";
   for (const item of body) {
@@ -252,4 +280,216 @@ export function validateForTransfer(
     }
   }
   return null;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
+ * 코멘트:
+ *   1) 기록 표(CCP 포장·가열·금속검출)의 전송 필수값을 본다
+ *   2) validateForTransfer 가 기록 표가 있는 화면에서만 호출한다
+ *   3) 시각·판정만 필수다. 품명은 구간 첫 줄이 라벨이라 비어 있는 게 정상이고,
+ *      금속검출 칸은 해당 없음 열이 있어 값 유무로 막지 않는다
+ */
+function validateLogRows(
+  // rows: 기록 표 전체 행
+  rows: HtmlFormLogRow[],
+): string | null {
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i];
+    const where = `${i + 1}번째 기록 행`;
+    if (!String(row.checkTime ?? "").trim()) return `${where}의 시각을 입력하세요.`;
+    if (!String(row.judgeCd ?? "").trim()) return `${where}의 판정을 선택하세요.`;
+  }
+  return null;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
+ * 코멘트:
+ *   1) 문자열 정규화 — SP 가 null 을 주는 칸이 있다
+ *   2) detailToBuf 가 헤더 칸마다 호출한다
+ *   3) null·undefined 는 빈 문자열
+ */
+function asText(value: unknown): string {
+  return value == null ? "" : String(value);
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
+ * 코멘트:
+ *   1) Y/N 정규화 — 서명 스냅샷 여부
+ *   2) detailToBuf 가 서명 칸마다 호출한다
+ *   3) 대소문자·공백을 흡수하고 Y 가 아니면 N
+ */
+function asYn(value: unknown): string {
+  return String(value ?? "").trim().toUpperCase() === "Y" ? "Y" : "N";
+}
+
+/**
+ * 지면 편집 버퍼 — 문서 1건.
+ * 작성 화면(HtmlFormDraftPage)과 결재 미리보기(HtmlDocumentPreview)가 같은 모양을 쓴다.
+ */
+export type HtmlFormDraftBuf = {
+  docIdx: number | null;
+  docNo: string;
+  tmplCd: string;
+  tmplNm: string;
+  status: string | null;
+  baseKey: string;
+  writerNm: string;
+  writerId: string;
+  writerSignYn: string;
+  checkerNm: string;
+  checkerId: string;
+  checkerSignYn: string;
+  approverNm: string;
+  approverId: string;
+  approverSignYn: string;
+  verNo: number;
+  items: HtmlFormItem[];
+  specialNote: string;
+  improveNote: string;
+  actionNm: string;
+  confirmNm: string;
+  confirmId: string;
+  confirmSignYn: string;
+  // 이탈·개선조치 문서 표시 — 사용자가 직접 켠 값. 근거가 있으면 화면이 자동으로 켠다
+  deviationYn: boolean;
+  // 기록 표 행 — CCP 모니터링일지 작성만 쓴다. 다른 화면은 빈 배열이다
+  logRows: HtmlFormLogRow[];
+  // 금속검출 통과량 표 행 — MTL 만
+  passRows: HtmlFormPassRow[];
+};
+
+/** 상세 API 응답 최소 모양 — 화면별 api 가 이 형태로 맞춰 준다 */
+export interface HtmlFormDraftDetailLike {
+  header: Record<string, unknown> | null;
+  items: HtmlFormItem[];
+  logRows?: HtmlFormLogRow[];
+  passRows?: HtmlFormPassRow[];
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
+ * 코멘트:
+ *   1) 양식 미선택 신규 행의 빈 버퍼를 만든다 — 일자만 오늘로 찍는다
+ *   2) 행 추가가 호출한다
+ *   3) 팝업에서 양식을 고르면 그 양식 상세로 교체된다
+ */
+export function emptyDraftBuf(
+  // 로그인 사용자 — 작성자·점검자 기본값
+  user?: { userNm?: string; userId?: string } | null,
+): HtmlFormDraftBuf {
+  return {
+    docIdx: null, docNo: "", tmplCd: "", tmplNm: "", status: null,
+    baseKey: todayYmd(),
+    writerNm: user?.userNm ?? "", writerId: user?.userId ?? "", writerSignYn: "N",
+    checkerNm: user?.userNm ?? "", checkerId: "", checkerSignYn: "N",
+    approverNm: "", approverId: "", approverSignYn: "N",
+    verNo: 0, items: [],
+    specialNote: "", improveNote: "", actionNm: "", confirmNm: "",
+    confirmId: "", confirmSignYn: "N",
+    deviationYn: false,
+    logRows: [], passRows: [],
+  };
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
+ * 코멘트:
+ *   1) 상세 API 응답을 지면 편집 버퍼로 옮긴다
+ *   2) 작성 화면의 행 선택·양식 선택·저장 후 재적재, 결재 미리보기의 최초 적재가 호출한다
+ *   3) 작성자·점검자 이름이 비면 로그인 사용자로 채운다 — 미리보기는 user 를 넘기지 않는다
+ */
+export function detailToDraftBuf(
+  // 상세 API 응답 — header·items
+  detail: HtmlFormDraftDetailLike,
+  // 신규일 때 채울 양식코드·양식명
+  form: { tmplCd: string; tmplNm: string },
+  // 로그인 사용자 — 이름 기본값. 미리보기는 넘기지 않는다(문서에 남은 이름만 쓴다)
+  user?: { userNm?: string; userId?: string } | null,
+): HtmlFormDraftBuf {
+  const header = detail.header ?? {};
+  return {
+    docIdx: Number(header.docIdx) || null,
+    docNo: asText(header.docNo),
+    tmplCd: asText(header.tmplCd) || form.tmplCd,
+    tmplNm: asText(header.tmplNm) || form.tmplNm,
+    status: asText(header.status) || null,
+    baseKey: asText(header.baseDt) || todayYmd(),
+    writerNm: asText(header.writerNm) || user?.userNm || "",
+    writerId: asText(header.writerId) || user?.userId || "",
+    writerSignYn: asYn(header.writerSignYn),
+    checkerNm: asText(header.checkerNm) || user?.userNm || "",
+    checkerId: asText(header.checkerId),
+    checkerSignYn: asYn(header.checkerSignYn),
+    approverNm: asText(header.approverNm),
+    approverId: asText(header.approverId),
+    approverSignYn: asYn(header.approverSignYn),
+    verNo: Number(header.verNo) || 0,
+    items: detail.items ?? [],
+    specialNote: asText(header.specialNote),
+    improveNote: asText(header.improveNote),
+    actionNm: asText(header.actionNm),
+    confirmNm: asText(header.confirmNm),
+    confirmId: asText(header.confirmId),
+    confirmSignYn: asYn(header.confirmSignYn),
+    // 이탈 표시는 저장 컬럼이 없다 — 다시 읽을 때는 아래 근거로 화면이 판단한다
+    deviationYn: false,
+    // 기록행 — CCP 모니터링일지만 채워 온다. 나머지 화면은 빈 배열
+    logRows: detail.logRows ?? [],
+    passRows: detail.passRows ?? [],
+  };
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
+ * 코멘트:
+ *   1) 버퍼에서 지면 표시 props(header·items·footer·기록행)만 뽑는다
+ *   2) 작성 화면과 결재 미리보기가 같은 값을 그리도록 한 곳에서 만든다
+ *   3) onChange 계열은 넣지 않는다 — 편집 동작은 호출측이 붙인다
+ */
+export function draftPaperViewProps(
+  // 열린 문서 버퍼
+  buf: HtmlFormDraftBuf,
+  // 양식명이 없을 때 쓸 지면 제목·부제
+  meta: { paperTitle: string; paperSubtitle: string },
+): Pick<HtmlFormPaperProps, "header" | "items" | "footer" | "logRows" | "passRows"> {
+  return {
+    // 제목·부제·일자·결재란. 서명이 있으면 이미지, 없으면 이름
+    header: {
+      title: buf.tmplNm || meta.paperTitle,
+      subtitle: meta.paperSubtitle,
+      baseDt: toInputDate(buf.baseKey),
+      writerNm: buf.writerNm,
+      writerId: buf.writerId,
+      writerSignYn: buf.writerSignYn,
+      checkerNm: buf.checkerNm,
+      checkerId: buf.checkerId,
+      checkerSignYn: buf.checkerSignYn,
+      approverNm: buf.approverNm,
+      approverId: buf.approverId,
+      approverSignYn: buf.approverSignYn,
+      confirmId: buf.confirmId,
+      confirmSignYn: buf.confirmSignYn,
+    },
+    // 점검 행 — 예/아니오·숫자·문자
+    items: buf.items,
+    // 하단 4열 — 특이사항·개선조치 및 결과·조치·확인
+    footer: {
+      specialNote: buf.specialNote,
+      improveNote: buf.improveNote,
+      actionNm: buf.actionNm,
+      confirmNm: buf.confirmNm,
+    },
+    // 기록 표 행 — CCP 모니터링일지만 값이 있다
+    logRows: buf.logRows,
+    passRows: buf.passRows,
+  };
 }

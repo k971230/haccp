@@ -6,7 +6,7 @@ globs: docker-compose*.yml,nginx/**/*,Jenkinsfile*,scripts/{deploy,build,init,pr
 
 # 배포 (HACCP)
 
-정본: [`docs/20_배포_런북.md`](../../docs/20_배포_런북.md) · 브랜치 규약: [`03-branching.mdc`](03-branching.mdc)
+정본: [`DEPLOY.md`](../../DEPLOY.md) · 브랜치 규약: [`03-branching.mdc`](03-branching.mdc)
 
 ## 포트
 
@@ -20,7 +20,8 @@ globs: docker-compose*.yml,nginx/**/*,Jenkinsfile*,scripts/{deploy,build,init,pr
 ## Compose
 
 - 정본: [`docker-compose.prod.yml`](../../docker-compose.prod.yml)
-- 서버 override: `docker-compose.override.yml` (example을 복사, **커밋 금지**)
+- 서버 override: 저장소에는 [`docker-compose.override.example.yml`](../../docker-compose.override.example.yml) 만 있다.
+  서버에서 `docker-compose.override.yml` 로 복사해 값을 채운다 — **커밋 금지**
 - `.env.docker`는 서버 전용 — git 금지
 
 ## 시크릿·이미지

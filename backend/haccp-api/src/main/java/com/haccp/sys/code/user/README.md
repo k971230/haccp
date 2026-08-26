@@ -1,6 +1,6 @@
 # com.haccp.sys.code.user — 사용자 관리 + 서명
 
-화면코드 `user-management` · XML `resources/mapper/sys/code/user/UserMapper.xml` · SP `db_sasshaccp/76_migrate_sp_user_mgmt_v2.sql`
+화면코드 `user-management` · XML `resources/mapper/sys/code/user/UserMapper.xml` · SP `db_sasshaccp/01_sp.sql`
 
 ## 엔드포인트
 

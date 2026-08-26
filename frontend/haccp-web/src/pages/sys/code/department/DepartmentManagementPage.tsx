@@ -38,11 +38,11 @@ import { searchInputClass } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
 import { filterTreeByQuery } from "@/lib/treeFilter";
 import { DEFAULT_USE_YN, ynMap, ynOptions } from "@/lib/yn";
-import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
+import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 import { usePageCommands } from "@/shell/pageCommands";
-import { guardSaveWithKey } from "@/shell/gridRules";
+import { runGridSave, stripRowMeta } from "@/shell/gridRules";
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
 import type { EditableRow } from "@/types/editable";
 // 역할 — 전역 공통 모달 열기(상위부서 룩업)
@@ -232,38 +232,23 @@ export default function DepartmentManagementPage() {
   };
 
   const handleSave = async () => {
-    if (!canWrite && !canModify) return mesToast("수정 권한이 없습니다.", "warn");
-    const dirty = g.getSaveRows();
-    if (dirty.length === 0) return mesToast(MES.noChange, "warn");
-    const guard = guardSaveWithKey(grid.rules, grid.ctx, dirty, columns);
-    if (guard) {
-      mesToast(guard.message, "warn");
-      if (guard.rowKey) setActiveKey(guard.rowKey);
-      return;
-    }
-    for (const row of dirty) {
-      if (!String(row.deptCd ?? "").trim() || !String(row.deptNm ?? "").trim()) {
-        mesToast(MES.required(REQUIRED_LABEL), "warn");
-        setActiveKey(row._key);
-        return;
-      }
-    }
-    if (!(await mesConfirm(MES.saveConfirm))) return;
-    try {
-      await saveDepartments(
-        dirty.map((row) => {
-          const next: SysRow = { ...row };
-          delete (next as { _key?: string })._key;
-          delete (next as { _rowState?: string })._rowState;
-          delete (next as { _original?: unknown })._original;
-          return next;
-        }),
-      );
-      mesToast(MES.saveDone, "success");
-      await loadDepts();
-    } catch (e) {
-      mesError(e);
-    }
+    // 순서·문구는 gridSave 가 갖는다 — 이 화면은 필수값과 저장 대상만 준다
+    await runGridSave<DeptRow>({
+      canWrite,
+      canModify,
+      dirty: g.getSaveRows(),
+      rules: grid.rules,
+      ctx: grid.ctx,
+      columns,
+      focusRow: setActiveKey,
+      // 부서코드·부서명이 업무키다
+      requiredOf: (row) =>
+        !String(row.deptCd ?? "").trim() || !String(row.deptNm ?? "").trim()
+          ? MES.required(REQUIRED_LABEL)
+          : null,
+      save: (rows) => saveDepartments(rows.map((row) => stripRowMeta<SysRow>(row as never))),
+      reload: loadDepts,
+    });
   };
 
   const handleDelete = async () => {
@@ -386,9 +371,9 @@ export default function DepartmentManagementPage() {
         <ResizableSplit
           // 좌 트리 · 우 그리드 (메뉴·권한그룹과 동일 규칙)
           orientation="horizontal"
-          storageKey="haccp-split-dept-mgmt"
-          // 트리:그리드 기본 2:8 — 경계선을 끌면 20~80% 범위에서 조절되고 storageKey에 저장된다
-          defaultPrimaryPct={20}
+          storageKey="haccp-split-dept-mgmt-30"
+          // 좌 트리 30 · 우 그리드 70 — 가로 분할은 30 또는 50만
+          defaultPrimaryPct={30}
           panelClassName="rounded-xl border border-slate-200 bg-white shadow-sm p-2"
           primary={
             <>

@@ -1,18 +1,15 @@
 /**
- * useSection — MES 셸 인프라 모듈.
+ * useSection — 마스터·디테일 그리드 한 쌍을 잡는 훅 별칭.
  *
- * 주요 역할:
- *     1. MesShell(F49) / Page(F115~F156) 지원 유틸
- *     2. 탭·다이얼로그·메시지·검증·단축키 등 횡단 관심사
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) useActiveGrid 를 h(마스터)·d(디테일) 별칭으로 다시 내보낸다
+ *   2) 두 그리드를 쓰는 화면이 호출한다 — 한 그리드면 useActiveGrid 를 바로 쓴다
+ *   3) 계약은 mes-web useSection 과 같다. 여기서 로직을 더하지 않는다
  *
- * 설계 기준:
- *     - 도메인 CRUD 없음.
- *     - *Page.tsx가 shell을 import(단방향).
- *
- * PIPELINE[HF76] 셸 인프라 — mes-web useSection와 동일 계약
+ * PIPELINE[HF76] 셸 인프라
  * PIPELINE[HF49, HF52] 연관 모듈
- *
- * 구현내용: 전수 주석(레벨3). useActiveGrid의 h/d 별칭 재export.
  */
 // useActiveGrid: useSection(h/d 마스터·디테일 별칭)
 export { useSection } from "@/shell/useActiveGrid";

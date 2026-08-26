@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 import com.haccp.draft.DraftSupport;
-import com.haccp.docs.ccp.dto.DocCorrectiveDto;
+import com.haccp.flow.ca.dto.DocCorrectiveDto;
 import com.haccp.draft.dto.DraftDeleteItem;
 import com.haccp.draft.dto.DraftFormRow;
 import com.haccp.draft.dto.DraftListRow;
@@ -47,6 +47,9 @@ public class CcpMtlDraftService {
     private static final String USR_TMPL_PREFIX = "tml_ccp_mtl_";
 
     /** 감도 5칸 — 지면 감도열 item_cd(MTL_HDR)와 DB 컬럼(camelCase) 대응 */
+    /** 신규 문서 통과량 기본 줄 수 — 지면 CcpMtlPaper.PASS_CNT 와 같은 값 */
+    private static final int PASS_ROW_CNT = 4;
+
     private static final String[][] SENS_CELLS = {
         { "hdr-fe", "feOnlyCd" },
         { "hdr-sus", "stsOnlyCd" },
@@ -89,11 +92,11 @@ public class CcpMtlDraftService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-24
+     * 일자: 2026-08-25
      * 코멘트:
      *   1) 헤더·양식항목·감도행·통과량행·개선조치를 한 JSON 으로 조립한다
      *   2) 좌측 행 클릭·양식 선택이 호출한다
-     *   3) 감도행은 phaseCd 를 그대로 내려 화면이 작업 전/후 영역에 다시 붙인다
+     *   3) MyBatis Map 은 camelMap 한 뒤 읽는다. 감도행은 phaseCd 를 그대로 내려 화면이 작업 전/후에 붙인다
      */
     public JsonNode detail(
             // tmplCd: 신규일 때 항목을 깔 양식코드. 필수
@@ -109,7 +112,7 @@ public class CcpMtlDraftService {
         ArrayNode passRows = objectMapper.createArrayNode();
 
         Map<String, Object> head = (docIdx != null && docIdx > 0)
-                ? mapper.selectHeader(coCd, docIdx, tmpl)
+                ? DraftSupport.camelMap(mapper.selectHeader(coCd, docIdx, tmpl))
                 : null;
         // 저장된 문서일 때(= docIdx 있음) 헤더·감도행·통과량행을 서버 값으로 채운다
         if (head != null) {
@@ -120,10 +123,10 @@ public class CcpMtlDraftService {
             header.put("baseDt", DraftSupport.asText(head.get("baseDt")));
             header.put("tmplCd", tmpl);
             header.put("checkerNm", DraftSupport.asText(head.get("mngNm")));
-            for (Map<String, Object> row : mapper.selectSensRows(coCd, hdrIdx)) {
+            for (Map<String, Object> row : DraftSupport.camelMaps(mapper.selectSensRows(coCd, hdrIdx))) {
                 logRows.add(toLogRowNode(row));
             }
-            for (Map<String, Object> row : mapper.selectPassRows(coCd, hdrIdx)) {
+            for (Map<String, Object> row : DraftSupport.camelMaps(mapper.selectPassRows(coCd, hdrIdx))) {
                 ObjectNode one = objectMapper.createObjectNode();
                 one.put("rowSeq", DraftSupport.asInt(row.get("rowSeq")));
                 one.put("productNm", DraftSupport.asText(row.get("productNm")));
@@ -139,9 +142,12 @@ public class CcpMtlDraftService {
             header.put("baseDt", "");
             header.put("tmplCd", tmpl);
             header.put("checkerNm", "");
+            // 신규 — 감도 구간별 1줄, 통과량 기본 4줄. 행이 0건이면 좌측 저장 SP 가 막는다
+            logRows.addAll((ArrayNode) objectMapper.valueToTree(DraftSupport.seedLogRows("BEFORE", "AFTER")));
+            passRows.addAll((ArrayNode) objectMapper.valueToTree(DraftSupport.seedPassRows(PASS_ROW_CNT)));
         }
-        // 양식 항목 — 한계기준·주기·방법·감도열·개선조치
-        root.set("items", objectMapper.valueToTree(mapper.selectFormItems(coCd, tmpl, 1)));
+        // 양식 항목 — 한계기준·주기·방법·감도열·개선조치. Map 도 camelCase 로 맞춘다
+        root.set("items", objectMapper.valueToTree(DraftSupport.camelMaps(mapper.selectFormItems(coCd, tmpl, 1))));
         // 지면 하단 4칸 — 저장할 컬럼이 없어 개선조치 테이블에서 읽는다
         DocCorrectiveDto ca = (docIdx != null && docIdx > 0) ? correctiveSupport.load(coCd, docIdx) : null;
         header.put("specialNote", ca == null ? "" : DraftSupport.nvl(ca.getDeviationDesc()));

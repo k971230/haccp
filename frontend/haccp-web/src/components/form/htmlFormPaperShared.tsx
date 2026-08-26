@@ -100,10 +100,16 @@ export function htmlFormPaperEdit(
   editable: boolean,
   // 기준관리 수정 버튼 이후
   editing?: boolean,
-): { templateEdit: boolean; writeEdit: boolean } {
+): { templateEdit: boolean; writeEdit: boolean; writeView: boolean } {
   return {
     templateEdit: mode === "template" && !!editing && editable && !locked,
     writeEdit: mode === "write" && editable,
+    /**
+     * 저장된 실제 데이터를 그리는가 — 고칠 수 있는가와 다른 축이다.
+     * 전송한 문서·결재 미리보기는 editable=false 지만 값은 그대로 보여야 한다.
+     * 이 둘을 한 조건으로 묶으면 잠긴 문서가 빈 예시 지면으로 보인다.
+     */
+    writeView: mode === "write",
   };
 }
 
@@ -1087,4 +1093,119 @@ export function inputBinder(
     present
       ? { value: get(), onChange: (e: { target: { value: string } }) => set(e.target.value) }
       : {};
+}
+
+/** 지면 입력칸 종류 — 정렬·허용 문자·입력기가 이 값 하나로 갈린다 */
+export const CELL_KIND = {
+  // 품명·특이사항 등 자유 문자 — 왼쪽 정렬
+  TEXT: "text",
+  // 온도·수량 등 수치 — 오른쪽 정렬. 숫자·소수점·부호만 통과한다
+  NUM: "num",
+  // 측정시각·통과시간 — 시:분 콤보
+  TIME: "time",
+  // 가열시간 등 소요시간 — 시:분 콤보 (초는 받지 않는다)
+  DURATION: "duration",
+} as const;
+export type CellKind = (typeof CELL_KIND)[keyof typeof CELL_KIND];
+
+/** 종류별 정렬 — 표 전체가 가운데로 몰리지 않게 한다 */
+const CELL_ALIGN: Record<CellKind, string> = {
+  text: "text-left",
+  num: "text-right",
+  time: "text-center",
+  duration: "text-center",
+};
+
+/** 숫자칸 허용 문자 — 부호 1개, 숫자, 소수점 1개 */
+const NUM_ALLOWED = /^-?\d*\.?\d*$/;
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
+ * 코멘트:
+ *   1) 이 값을 칸에 넣어도 되는지 본다
+ *   2) HtmlFormCellInput 의 onChange 가 호출한다
+ *   3) 숫자칸만 거른다 — 한글 IME 로 들어온 글자를 여기서 막는다. 나머지 종류는 그대로 통과
+ */
+export function cellValueAccepted(
+  // kind: 칸 종류
+  kind: CellKind,
+  // next: 입력기가 올린 값
+  next: string,
+): boolean {
+  if (kind !== CELL_KIND.NUM) return true;
+  return NUM_ALLOWED.test(next);
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-25
+ * 코멘트:
+ *   1) 지면 입력칸 하나를 종류에 맞는 입력기·정렬·검증으로 그린다
+ *   2) 작성 지면(포장·가열·금속검출)의 모든 입력칸이 이것만 쓴다 — 칸마다 규칙이 갈리지 않게 한다
+ *   3) 미리보기 행(row 없음)은 값을 붙이지 않아 기존 template 화면 모양이 그대로다
+ *
+ * type="number" 를 쓰지 않는 이유 — 한글 IME 로 입력하면 화면에는 글자가 남고 value 는 빈 문자열이 되어
+ * 사용자가 쓴 값이 조용히 사라진다. text 로 받고 허용 문자만 통과시키면 그 경로가 막힌다.
+ */
+export function HtmlFormCellInput({
+  // kind: 칸 종류 — 정렬·입력기·검증을 정한다
+  kind,
+  // value: 현재 값. 미리보기 행이면 undefined
+  value,
+  // onChange: 통과한 값만 올라온다
+  onChange,
+  // editable: 작성 모드에서 참
+  editable,
+  // title: 마우스 오버 설명 — 칸 이름
+  title,
+}: {
+  kind: CellKind;
+  value?: string;
+  onChange?: (next: string) => void;
+  editable: boolean;
+  title?: string;
+}) {
+  // 미리보기 행일 때(= value 를 주지 않음) 비제어로 두어 기존 화면 모양을 유지한다
+  const controlled = value !== undefined && !!onChange;
+  const align = CELL_ALIGN[kind];
+  const common = {
+    className: `html-form-sign-input ${align}`,
+    disabled: !editable,
+    readOnly: !editable,
+    title,
+  };
+  if (kind === CELL_KIND.TIME || kind === CELL_KIND.DURATION) {
+    return (
+      <input
+        // 시간 콤보 — 브라우저 기본 입력기라 형식이 어긋난 값이 들어올 수 없다
+        {...common}
+        type="time"
+        // 분 단위까지만 받는다 — 초를 열면 칸이 넓어지고 현장에서 쓰지도 않는다
+        step={60}
+        {...(controlled
+          ? { value: value ?? "", onChange: (e) => onChange?.(e.target.value) }
+          : {})}
+      />
+    );
+  }
+  return (
+    <input
+      {...common}
+      type="text"
+      // 숫자칸은 모바일에서도 숫자 자판이 먼저 뜨게 한다
+      inputMode={kind === CELL_KIND.NUM ? "decimal" : undefined}
+      {...(controlled
+        ? {
+            value: value ?? "",
+            onChange: (e) => {
+              const next = e.target.value;
+              // 숫자칸에 숫자·부호·소수점 외의 글자가 들어올 때(= 한글 IME 등) 이전 값을 지킨다
+              if (!cellValueAccepted(kind, next)) return;
+              onChange?.(next);
+            },
+          }
+        : {})}
+    />
+  );
 }

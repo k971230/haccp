@@ -18,8 +18,13 @@ import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteBlocker;
 import com.haccp.common.validation.DeleteValidation;
 import com.haccp.draft.dto.DraftDeleteItem;
+import com.haccp.draft.dto.DraftLogRow;
+import com.haccp.draft.dto.DraftPassRow;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.function.Function;
 
 public final class DraftSupport {
@@ -147,6 +152,67 @@ public final class DraftSupport {
         }
     }
 
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) MyBatis resultType=map 은 map-underscore-to-camel-case 가 안 붙는다. SP 키를 API 계약으로 한 번만 바꾼다
+     *   2) 포장·가열·금속 상세 조회가 호출한다. DTO 가 아닌 SELECT * Map 의 Two-Tier 경계다
+     *   3) null 이면 null. 키만 바꾸고 값은 그대로 둔다
+     */
+    public static Map<String, Object> camelMap(
+            // source: SP 결과 한 행. null 이면 신규 분기로 넘긴다
+            Map<String, Object> source
+    ) {
+        if (source == null) return null;
+        Map<String, Object> out = new LinkedHashMap<>();
+        source.forEach((key, value) -> out.put(camelKey(key), value));
+        return out;
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 양식 항목·감도행처럼 여러 행 Map 을 한 번에 camelCase 로 맞춘다
+     *   2) 상세 조회의 items·sens·pass 목록이 호출한다
+     *   3) null·빈 목록이면 빈 리스트
+     */
+    public static List<Map<String, Object>> camelMaps(
+            // rows: SP 결과 여러 행
+            List<Map<String, Object>> rows
+    ) {
+        if (rows == null || rows.isEmpty()) return List.of();
+        List<Map<String, Object>> out = new ArrayList<>(rows.size());
+        for (Map<String, Object> row : rows) {
+            out.add(camelMap(row));
+        }
+        return out;
+    }
+
+    /** doc_idx → docIdx. 대문자 키(DOC_NO)도 소문자화 후 변환한다 */
+    static String camelKey(
+            // key: SP 컬럼명
+            String key
+    ) {
+        if (key == null || key.isBlank()) return "";
+        if (!key.contains("_")) return key;
+        String lower = key.toLowerCase(Locale.ROOT);
+        StringBuilder out = new StringBuilder();
+        boolean upper = false;
+        for (char ch : lower.toCharArray()) {
+            if (ch == '_') {
+                upper = true;
+            } else if (upper) {
+                out.append(Character.toUpperCase(ch));
+                upper = false;
+            } else {
+                out.append(ch);
+            }
+        }
+        return out.toString();
+    }
+
     /** 숫자로 읽히는 값인지 — 기록 셀을 num_val 로 넣을지 txt_val 로 넣을지 가른다 */
     public static boolean isNumeric(
             // value: 지면 입력값
@@ -159,5 +225,61 @@ public final class DraftSupport {
         } catch (NumberFormatException e) {
             return false;
         }
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 신규 문서의 기록 표 기본행을 만든다 — 구간(작업 전·작업 후)마다 라벨 행 1줄
+     *   2) 상세 조회의 신규 분기에서 호출한다
+     *   3) 값은 비워 둔다. 저장 SP 가 행 0건을 막으므로 이 기본행이 있어야 좌측 저장이 된다
+     */
+    public static List<DraftLogRow> seedLogRows(
+            // phaseCds: 구간 코드 순서 — BEFORE, AFTER
+            String... phaseCds
+    ) {
+        List<DraftLogRow> rows = new ArrayList<>();
+        int seq = 0;
+        for (String phaseCd : phaseCds) {
+            DraftLogRow row = new DraftLogRow();
+            // rowSeq 는 1부터 — SP 가 0 이하를 거부한다
+            row.setRowSeq(++seq);
+            row.setPhaseCd(phaseCd);
+            row.setProductNm("");
+            row.setCheckTime("");
+            row.setJudgeCd("");
+            row.setJudgeModYn("N");
+            row.setCheckerNm("");
+            row.setSignYn("N");
+            row.setCells(new LinkedHashMap<>());
+            rows.add(row);
+        }
+        return rows;
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 신규 문서의 통과량 표 기본행을 만든다 — 지면 미리보기와 같은 줄 수
+     *   2) 금속검출 상세 조회의 신규 분기에서 호출한다
+     *   3) 값은 비워 둔다. 사용자가 「제품 통과 행 추가」로 더 붙인다
+     */
+    public static List<DraftPassRow> seedPassRows(
+            // count: 기본 줄 수 — 지면 PASS_CNT 와 같은 값
+            int count
+    ) {
+        List<DraftPassRow> rows = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            DraftPassRow row = new DraftPassRow();
+            row.setRowSeq(i);
+            row.setProductNm("");
+            row.setPassQty("");
+            row.setDetectQty("");
+            row.setRemark("");
+            rows.add(row);
+        }
+        return rows;
     }
 }

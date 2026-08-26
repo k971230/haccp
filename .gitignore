@@ -11,6 +11,8 @@
 
 # ── 로컬 전용 도구·MCP 산출 ───────────────────────────
 /.tools/
+# 로컬 전용 도구 — 01-project-core.mdc (git 미포함)
+/tools/
 /.playwright-mcp/
 
 # ── 루트 docs ─────────────────────────────────────────
@@ -47,12 +49,18 @@ dist/
 dist-ssr/
 *.local
 .vite/
-frontend/haccp-web/playwright-report/
-frontend/haccp-web/test-results/
+# 경로를 고정하지 않는다 — 어느 폴더에서 돌려도 산출물이 안 올라가게
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
 
 # ── IDE / OS ───────────────────────────────────────────
 .idea/
-.vscode/
+.vscode/*
+# 팀 공용 설정은 올린다 — 도구가 달라도 같은 규칙이 걸리게 (10-ide-workflow)
+!.vscode/settings.json
+!.vscode/extensions.json
 *.iml
 .DS_Store
 Thumbs.db

@@ -1,9 +1,12 @@
 /**
- * ErrorResponse.java — API 오류 응답 DTO.
+ * ErrorResponse — API 오류 응답 DTO.
  *
- * 주요 역할:
- *     1. success=false 고정
- *     2. code·message로 업무 오류 전달
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) success 를 false 로 고정한다 — 화면이 성공·실패를 한 칸으로 가른다
+ *   2) code 는 화면 분기용, message 는 사용자에게 그대로 보여 준다
+ *   3) GlobalExceptionHandler 만 만든다 — 서비스가 직접 만들지 않는다
  *
  * PIPELINE[HB10] common 모듈
  */

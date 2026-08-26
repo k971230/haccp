@@ -2,7 +2,7 @@
 
 화면 1개 = 패키지 1개. 파이프라인 표는 FE `pages/sys/README.md`.
 
-XML `resources/mapper/sys/code/approvalline/ApprovalLineMapper.xml` · SP `db_sasshaccp/18_sp_workflow.sql` · `97_migrate_approval_line_sys.sql`
+XML `resources/mapper/sys/code/approvalline/ApprovalLineMapper.xml` · SP `db_sasshaccp/01_sp.sql`
 
 URL은 `/api/v1/sys/code/approval-line-management/*` 이다.
 

@@ -23,6 +23,8 @@ import {
   removeLogRow,
   type HtmlFormLogRow,
 } from "@/components/form/htmlFormPaperShared";
+// 역할 — 서버 cells EAV → 지면 맵
+import { cellsToMap } from "@/api/draft/ccpMonitoringDraftApi";
 
 /** 기록 행 1건 — 영역과 순번만 지정 */
 function row(rowSeq: number, phaseCd: "BEFORE" | "AFTER"): HtmlFormLogRow {
@@ -93,6 +95,15 @@ describe("patchLogRow · removeLogRow", () => {
 
   it("행 삭제는 그 순번만 뺀다", () => {
     expect(removeLogRow(rows, 1).map((r) => r.rowSeq)).toEqual([2]);
+  });
+});
+
+describe("cellsToMap — SP EAV 배열을 지면 맵으로", () => {
+  it("itemCd → numVal, 숫자가 없으면 txtVal", () => {
+    expect(cellsToMap([
+      { itemCd: "temp", numVal: 4, txtVal: "" },
+      { itemCd: "min", numVal: "", txtVal: "10" },
+    ])).toEqual({ temp: "4", min: "10" });
   });
 });
 

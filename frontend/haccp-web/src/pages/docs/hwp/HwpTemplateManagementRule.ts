@@ -27,14 +27,14 @@ export const SCRN_CD = "hwp-template-management" as const;
 /** 그리드 열 설정 저장 키 — 폴더를 옮겨도 값을 바꾸지 않는다 */
 export const PERSIST_ID = "hwp-template-management-list" as const;
 
-/** 좌 목록 · 우 미리보기 분할 비율 저장 키 */
-export const SPLIT_KEY = "haccp-split-hwp-template" as const;
+/** 좌우 분할 비율 저장 키 — -50 은 기본 반반. 옛 35% 키와 분리 */
+export const SPLIT_KEY = "haccp-split-hwp-template-50" as const;
 
 /** 불러오기 팝업 그리드 열 설정 저장 키 — -3 은 양식구분 열 변경 후 옛 pref 를 버린다 */
 export const FILE_HIST_PERSIST_ID = "hwp-template-file-hist-3" as const;
 
 /** 파일 이력 양식구분 공통코드 대분류 — sys 시스템, usr 사용자 */
-export const SRC_TY_MAIN_CD = "src-ty" as const;
+export const SRC_TY_MAIN_CD = "SRC_TY" as const;
 
 /** 좌측 그리드 행 — 서버 목록 + 신규 draft */
 export type TmplListRow = HwpTemplateRow;

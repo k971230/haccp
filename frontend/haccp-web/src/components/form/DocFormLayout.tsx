@@ -48,7 +48,7 @@ export function DocFormLayout({
 
 /** 조회 조건과 문서 명령을 담는 상단 영역 props */
 export interface DocFormToolbarProps {
-  // 날짜 조건·조회·신규·저장·삭제·결재 버튼 JSX
+  // 날짜 조건·조회·행추가·저장·삭제·결재 버튼 JSX
   children: ReactNode;
 }
 

@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) 목록·저장·파일이력·불러오기/초기화만 담당한다 — 파일 볼륨 I/O는 TemplateService 몫이다
  *   2) 신규 저장은 SP가 sys_yn=usr 로 강제하고, 화면이 보낸 sysYn 은 읽지 않는다
- *   3) 삭제는 법적서류 화면도 같은 URL을 쓰므로 WorkflowService에 남긴다 (그 메뉴 분할 때 이전)
+ *   3) 삭제는 차단 검사(시스템 제공분·작성된 문서)를 통과한 자사양식만 지운다
  *
  * PIPELINE[HB123] 사용양식 업무 서비스
  * PIPELINE[HB92, HB88] 연관 모듈
@@ -16,6 +16,10 @@ package com.haccp.docs.hwp;
 // 역할 — JWT 컨텍스트·업무 예외
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
+// 역할 — 삭제 대상 검증·참조 차단 공통
+import com.haccp.common.validation.DeleteValidation;
+// 역할 — 감사 로그 기록 — 형제 화면과 같은 밀도로 남긴다
+import com.haccp.sys.logs.auditlog.AuditWriter;
 // 역할 — 목록·맵
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -30,7 +34,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class HwpTemplateService {
 
+    /** 삭제 차단 문구에 쓰는 업무명 */
+    private static final String LABEL = "사용양식";
+
+    /** 감사 로그 대상 표 — AUDIT_TARGET 공통코드 sub_cd 와 같아야 화면에 표시명이 붙는다 */
+    private static final String AUDIT_TBL = "tbl_company_template";
+
     private final HwpTemplateMapper mapper;
+    private final AuditWriter auditWriter;
 
     /**
      * 개발자: 박승우
@@ -121,6 +132,66 @@ public class HwpTemplateService {
     private String defaultYn(Object value) {
         String yn = text(value).toUpperCase();
         return yn.isBlank() ? "Y" : yn;
+    }
+
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-26
+     * 코멘트:
+     *   1) 삭제 가능 여부만 검사하고 자료는 건드리지 않는다
+     *   2) 화면이 삭제 확인창을 열기 전에 호출한다
+     *   3) 시스템 제공 양식·작성된 문서가 있으면 400, 통과하면 void
+     */
+    public void validateDelete(
+            // 삭제 키 객체 배열 — 단건도 [{ tmplCd }]
+            List<Map<String, Object>> keys
+    ) {
+        assertDeletable(keys);
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-26
+     * 코멘트:
+     *   1) validate-delete 와 같은 검사를 다시 한 뒤 지운다 (Double Check)
+     *   2) 화면 삭제 확인창에서 호출한다
+     *   3) HTTP DELETE 를 쓰지 않는다 — 키는 객체 배열로만 받는다
+     */
+    @Transactional(timeout = 60)
+    public void delete(
+            // 삭제 키 객체 배열 — 단건도 [{ tmplCd }]
+            List<Map<String, Object>> keys
+    ) {
+        List<String> tmplCds = assertDeletable(keys);
+        String coCd = LoginUserContext.coCd();
+        String userId = LoginUserContext.userId();
+        for (String tmplCd : tmplCds) {
+            mapper.deleteHwpTemplate(coCd, tmplCd, userId);
+            // 양식코드는 업무키라 대리키가 없다 — 무엇을 지웠는지는 tgtIdx 대신 사유에 남지 않으므로 null 로 둔다
+            auditWriter.record(AUDIT_TBL, null, "D", Map.of("tmplCd", tmplCd));
+        }
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-26
+     * 코멘트:
+     *   1) 삭제 키를 양식코드 목록으로 정규화하고 참조 차단을 검사한다
+     *   2) validate-delete·delete 가 같은 검사를 쓰도록 공유한다
+     *   3) 빈 목록·빈 양식코드는 여기서 막는다
+     */
+    private List<String> assertDeletable(List<Map<String, Object>> keys) {
+        DeleteValidation.requireItems(keys, "삭제할 양식을 선택하세요.");
+        List<String> tmplCds = new ArrayList<>();
+        for (Map<String, Object> key : keys) {
+            String tmplCd = DeleteValidation.requireText(
+                    key == null ? null : text(key.get("tmplCd")), "삭제할 양식을 선택하세요.");
+            if (!tmplCds.contains(tmplCd)) tmplCds.add(tmplCd);
+        }
+        DeleteValidation.throwIfBlocked(
+                mapper.selectDeleteBlocker(LoginUserContext.coCd(), tmplCds), LABEL);
+        return tmplCds;
     }
 
     private String text(Object value) {

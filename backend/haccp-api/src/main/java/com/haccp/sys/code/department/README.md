@@ -1,6 +1,6 @@
 # com.haccp.sys.code.department — 부서 관리
 
-화면코드 `department-management` · XML `resources/mapper/sys/code/department/DepartmentMapper.xml` · SP `db_sasshaccp/75_migrate_sp_dept_mgmt_v2.sql`
+화면코드 `department-management` · XML `resources/mapper/sys/code/department/DepartmentMapper.xml` · SP `db_sasshaccp/01_sp.sql`
 
 ## 엔드포인트
 

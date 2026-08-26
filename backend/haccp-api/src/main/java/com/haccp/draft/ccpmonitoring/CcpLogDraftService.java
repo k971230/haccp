@@ -17,11 +17,12 @@ package com.haccp.draft.ccpmonitoring;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 import com.haccp.draft.DraftSupport;
-import com.haccp.docs.ccp.dto.DocCorrectiveDto;
+import com.haccp.flow.ca.dto.DocCorrectiveDto;
 import com.haccp.draft.dto.DraftDeleteItem;
 import com.haccp.draft.dto.DraftFormRow;
 import com.haccp.draft.dto.DraftListRow;
@@ -121,11 +122,11 @@ public class CcpLogDraftService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-24
+     * 일자: 2026-08-25
      * 코멘트:
      *   1) 헤더·양식항목·기록행·개선조치를 한 JSON 으로 조립한다
      *   2) 좌측 행 클릭·양식 선택이 호출한다
-     *   3) docIdx 가 없으면 신규 — 양식 항목만 싣고 기록행은 빈 배열이다
+     *   3) MyBatis Map 은 camelMap 한 뒤 읽는다. cells EAV 배열은 지면 맵으로 접는다
      */
     public JsonNode detail(
             // family: 포장·가열 구분
@@ -141,7 +142,7 @@ public class CcpLogDraftService {
         ObjectNode header = objectMapper.createObjectNode();
 
         Map<String, Object> saved = (docIdx != null && docIdx > 0)
-                ? mapper.selectDetail(coCd, docIdx)
+                ? DraftSupport.camelMap(mapper.selectDetail(coCd, docIdx))
                 : null;
         // 저장된 문서일 때(= docIdx 있음) 헤더·기록행을 서버 값으로 채운다
         if (saved != null) {
@@ -151,7 +152,8 @@ public class CcpLogDraftService {
             header.put("baseDt", DraftSupport.asText(saved.get("baseDt")));
             header.put("tmplCd", DraftSupport.asText(saved.get("tmplCd")));
             header.put("checkerNm", DraftSupport.asText(saved.get("mngNm")));
-            root.set("logRows", readJson(DraftSupport.asText(saved.get("rowsJson"))));
+            // SP cells 는 EAV 배열 — 지면은 itemCd → 값 맵. 저장 toGenericRows 의 역변환
+            root.set("logRows", foldCellsToMap(readJson(saved.get("rowsJson"))));
         } else {
             header.putNull("docIdx");
             header.put("docNo", "");
@@ -159,11 +161,12 @@ public class CcpLogDraftService {
             header.put("baseDt", "");
             header.put("tmplCd", tmpl);
             header.put("checkerNm", "");
-            root.set("logRows", objectMapper.createArrayNode());
+            // 신규 — 구간별 라벨 행 1줄씩 깔아 준다. 행이 0건이면 좌측 저장 SP 가 막는다
+            root.set("logRows", objectMapper.valueToTree(DraftSupport.seedLogRows("BEFORE", "AFTER")));
         }
-        // 양식 항목 — 한계기준·주기·방법·개선조치. 지면 상단이 쓴다
-        root.set("items", objectMapper.valueToTree(
-                mapper.selectFormItems(coCd, family.key(), tmpl, saved == null ? 1 : verNoOf(saved))));
+        // 양식 항목 — 한계기준·주기·방법·개선조치. Map 도 camelCase 로 맞춘다
+        root.set("items", objectMapper.valueToTree(DraftSupport.camelMaps(
+                mapper.selectFormItems(coCd, family.key(), tmpl, saved == null ? 1 : verNoOf(saved)))));
         // 지면 하단 4칸 — 저장할 컬럼이 없어 개선조치 테이블에서 읽는다
         DocCorrectiveDto ca = (docIdx != null && docIdx > 0) ? correctiveSupport.load(coCd, docIdx) : null;
         header.put("specialNote", ca == null ? "" : DraftSupport.nvl(ca.getDeviationDesc()));
@@ -332,14 +335,73 @@ public class CcpLogDraftService {
     }
 
 
-    /** rows_json 문자열을 JSON 배열로 — SP 가 jsonb 를 문자열로 준다 */
-    private JsonNode readJson(String raw) {
-        if (raw == null || raw.isBlank()) return objectMapper.createArrayNode();
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) rows_json 을 JSON 배열로 읽는다. SP 가 문자열·PGobject 둘 다 줄 수 있다
+     *   2) 상세 조회가 호출한다
+     *   3) 비거나 파싱 실패면 빈 배열 — 지면이 시드 없이 미리보기로 떨어지지 않게 호출부가 본다
+     */
+    private JsonNode readJson(
+            // raw: camelMap 뒤 rowsJson 값
+            Object raw
+    ) {
+        if (raw == null) return objectMapper.createArrayNode();
+        if (raw instanceof JsonNode node) return node;
         try {
-            return objectMapper.readTree(raw);
+            if (raw instanceof String s) {
+                if (s.isBlank()) return objectMapper.createArrayNode();
+                return objectMapper.readTree(s);
+            }
+            // PGobject.toString 이 jsonb 본문이다. valueToTree 하면 타입 래퍼가 나와 행이 비다
+            String text = String.valueOf(raw);
+            if (text.startsWith("[") || text.startsWith("{")) {
+                return objectMapper.readTree(text);
+            }
+            return objectMapper.valueToTree(raw);
         } catch (JsonProcessingException e) {
             return objectMapper.createArrayNode();
         }
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 행의 cells EAV 배열을 지면 맵으로 접는다 — toGenericRows 의 역변환
+     *   2) 상세 조회가 호출한다
+     *   3) 이미 맵이면 그대로 둔다. numVal 이 있으면 그걸, 없으면 txtVal
+     */
+    private JsonNode foldCellsToMap(
+            // rows: SP rows_json 배열
+            JsonNode rows
+    ) {
+        if (rows == null || !rows.isArray()) return objectMapper.createArrayNode();
+        ArrayNode out = objectMapper.createArrayNode();
+        for (JsonNode row : rows) {
+            if (!row.isObject()) {
+                out.add(row);
+                continue;
+            }
+            ObjectNode one = ((ObjectNode) row).deepCopy();
+            JsonNode cells = one.get("cells");
+            // 배열일 때(= SP EAV) 맵으로 접는다. 맵이면 이미 지면 계약
+            if (cells != null && cells.isArray()) {
+                ObjectNode map = objectMapper.createObjectNode();
+                for (JsonNode cell : cells) {
+                    String itemCd = cell.path("itemCd").asText("");
+                    if (itemCd.isEmpty()) continue;
+                    JsonNode num = cell.get("numVal");
+                    String numText = (num == null || num.isNull()) ? "" : num.asText("");
+                    String txt = cell.path("txtVal").asText("");
+                    map.put(itemCd, !numText.isBlank() ? numText : txt);
+                }
+                one.set("cells", map);
+            }
+            out.add(one);
+        }
+        return out;
     }
 
     /** 저장 문서의 적용 버전 — 자사 양식은 1 고정이라 값이 없으면 1 */

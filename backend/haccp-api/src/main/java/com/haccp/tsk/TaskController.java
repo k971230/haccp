@@ -18,8 +18,8 @@ import com.haccp.common.context.RequestMeta;
 // 역할 — 공통 응답
 import com.haccp.common.response.CommonResponse;
 // 역할 — 문서 PDF 미리보기
-import com.haccp.docs.document.DocumentService;
-import com.haccp.docs.document.dto.DocumentDeleteItem;
+import com.haccp.docs.documents.DocumentService;
+import com.haccp.docs.documents.dto.DocumentDeleteItem;
 // 역할 — HTTP 요청
 import jakarta.servlet.http.HttpServletRequest;
 // 역할 — 파일·컬렉션
@@ -50,35 +50,35 @@ public class TaskController {
     @GetMapping("/api/v1/tsk/today-tasks/list")
     public CommonResponse<List<Map<String, Object>>> todayTasks() { return CommonResponse.ok(service.todayTasks()); }
 
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 오늘 할 일 최근 문서를 기간 + OFFSET/LIMIT 으로 조회한다
+     *   2) 랜딩 최근 문서 패널이 호출한다. 문서함 /docs/documents/list 는 그대로 둔다
+     *   3) 성공 시 { rows, total }. total 은 기간 전체 건수
+     */
+    @GetMapping("/api/v1/tsk/today-tasks/recent-docs")
+    public CommonResponse<Map<String, Object>> todayTaskDocs(
+            // 기준일 시작 YYYYMMDD
+            @RequestParam(required = false) String fromDt,
+            // 기준일 종료 YYYYMMDD
+            @RequestParam(required = false) String toDt,
+            // 건너뛸 행 수 — 첫 페이지는 0
+            @RequestParam(required = false) Integer offset,
+            // 가져올 행 수 — 화면 기본 20
+            @RequestParam(required = false) Integer limit
+    ) {
+        return CommonResponse.ok(service.todayTaskDocs(fromDt, toDt, offset, limit));
+    }
+
+    /** 안 읽은 알림 목록 — 셸 종 아이콘이 호출한다 */
     @GetMapping("/api/v1/tsk/notifications/list")
     public CommonResponse<List<Map<String, Object>>> notifications() { return CommonResponse.ok(service.notifications()); }
 
+    /** 알림 1건을 읽음 처리한다 */
     @PutMapping("/api/v1/tsk/notifications/{idx}/read")
     public CommonResponse<Void> readNotification(@PathVariable Long idx) { service.readNotification(idx); return CommonResponse.ok(null); }
-
-    @GetMapping("/api/v1/flow/ca/corrective-action-management/list")
-    public CommonResponse<List<Map<String, Object>>> correctiveActions(@RequestParam(required = false) String status, @RequestParam(required = false) String fromDt, @RequestParam(required = false) String toDt) {
-        return CommonResponse.ok(service.correctiveActions(status, fromDt, toDt));
-    }
-
-    @PutMapping("/api/v1/flow/ca/corrective-action-management/save")
-    public CommonResponse<Void> saveCorrectiveAction(@RequestBody Map<String, Object> row) {
-        Long idx = row.get("idx") instanceof Number n ? n.longValue() : null;
-        service.saveCorrectiveAction(idx, row);
-        return CommonResponse.ok(null);
-    }
-
-    @PostMapping("/api/v1/flow/ca/corrective-action-management/validate-delete")
-    public CommonResponse<Void> validateCorrectiveActionDelete(@RequestBody List<Map<String, Long>> keys) {
-        service.validateCorrectiveActionDelete(keys);
-        return CommonResponse.ok(null);
-    }
-
-    @PostMapping("/api/v1/flow/ca/corrective-action-management/delete")
-    public CommonResponse<Void> deleteCorrectiveActions(@RequestBody List<Map<String, Long>> keys) {
-        service.deleteCorrectiveActions(keys);
-        return CommonResponse.ok(null);
-    }
 
     @GetMapping("/api/v1/docs/documents/{docIdx}/relations")
     public CommonResponse<List<Map<String, Object>>> relations(@PathVariable Long docIdx) { return CommonResponse.ok(service.relations(docIdx)); }

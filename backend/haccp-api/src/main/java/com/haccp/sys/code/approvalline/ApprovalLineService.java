@@ -21,6 +21,8 @@ import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteValidation;
 import com.haccp.sys.code.approvalline.dto.ApprovalLineDeleteItem;
+// 역할 — 변경 감사 이력 적재
+import com.haccp.sys.logs.auditlog.AuditWriter;
 // 역할 — 목록
 import java.util.ArrayList;
 import java.util.List;
@@ -34,8 +36,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ApprovalLineService {
 
+    /** 감사 이력 대상 테이블명 — 형제 5화면과 같은 규칙(tbl_ 접두 포함) */
+    private static final String AUDIT_TBL = "tbl_approval_line";
+
     private final ApprovalLineMapper mapper;
     private final ObjectMapper objectMapper;
+    // 저장·삭제 변경 감사 적재 — 결재선은 누가 결재하는지를 정한다. 조용히 바뀌면 안 된다
+    private final AuditWriter auditWriter;
 
     /**
      * 개발자: 박승우
@@ -70,6 +77,11 @@ public class ApprovalLineService {
         requireText(row, "apprLineCd", "결재선 코드를 입력하세요.");
         requireText(row, "apprLineNm", "결재선명을 입력하세요.");
         mapper.saveApprovalLine(LoginUserContext.coCd(), writeJson(row), LoginUserContext.userId());
+        /*
+         * 결재선은 UPSERT 한 건이라 등록·수정을 여기서 못 가른다.
+         * 형제 화면은 idx 유무로 갈랐지만 이 화면은 idx 를 안 받는다 — U 로 통일한다.
+         */
+        auditWriter.record(AUDIT_TBL, null, "U", row);
     }
 
     /**
@@ -104,6 +116,7 @@ public class ApprovalLineService {
         assertDeletable(coCd, keys);
         for (ApprovalLineDeleteItem key : keys) {
             mapper.deleteApprovalLine(coCd, key.getApprLineCd().trim(), LoginUserContext.userId());
+            auditWriter.record(AUDIT_TBL, null, "D", null);
         }
     }
 

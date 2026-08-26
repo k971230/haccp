@@ -23,8 +23,8 @@ export const SCRN_CD = "schedule-cycle-management" as const;
 /** 좌측 목록 열 설정 저장 키 — 폴더를 옮겨도 값을 바꾸지 않는다 */
 export const PERSIST_ID = "doc-cycle-forms" as const;
 
-/** 좌우 분할 비율 저장 키 */
-export const SPLIT_KEY = "haccp-split-doc-cycle" as const;
+/** 좌우 분할 비율 저장 키 — -50 은 기본 반반. 옛 키와 분리 */
+export const SPLIT_KEY = "haccp-split-doc-cycle-50" as const;
 
 /** 주기 콤보 기본값 — 공통코드 조회 실패 시에도 화면이 비지 않게 한다. E는 예정일 없음 */
 export const CYCLE_FALLBACK = [
@@ -39,9 +39,9 @@ export const CYCLE_FALLBACK = [
 
 /** 비영업일 처리 기본값 — keep 그대로 / prev 이전 영업일 / next 다음 영업일 */
 export const NONWORK_FALLBACK = [
-  { value: "keep", label: "그대로" },
-  { value: "prev", label: "이전 영업일" },
-  { value: "next", label: "다음 영업일" },
+  { value: "KEEP", label: "그대로" },
+  { value: "PREV", label: "이전 영업일" },
+  { value: "NEXT", label: "다음 영업일" },
 ] as const;
 
 /** 요일 토글 — ISO 요일(1 월 ~ 7 일) */
@@ -124,7 +124,7 @@ export function emptyForm(): CycleForm {
   return {
     baseDt: todayInput(),
     cycleCd: "D",
-    nonworkRule: "keep",
+    nonworkRule: "KEEP",
     dueTime: "18:00",
     deptCd: "",
     deptNm: "",

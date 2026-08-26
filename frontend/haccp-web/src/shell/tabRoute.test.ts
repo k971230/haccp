@@ -30,9 +30,9 @@ describe("tabRoute — 계층 경로", () => {
     expect(routeOf("today-tasks")).toBe("/today-tasks");
     expect(routeOf("schedule-cycle-management")).toBe("/docs/sch/schedule-cycle-management");
     expect(routeOf("hwp-template-management")).toBe("/docs/hwp/hwp-template-management");
-    expect(routeOf("hyg-process-template")).toBe("/docs/html/hyg-process-template");
-    expect(routeOf("hygiene-process-check")).toBe("/docs/prp/hygiene-process-check");
-    expect(routeOf("calibration-target-management")).toBe("/docs/prp/calibration-target-management");
+    expect(routeOf("hyg-process-template")).toBe("/docs/html-form/hyg-process-template");
+    expect(routeOf("hyg-process")).toBe("/draft/html/hyg-process");
+    expect(routeOf("ccp-verify")).toBe("/draft/html/ccp-verify");
     expect(routeOf("common-code-management")).toBe("/sys/code/common-code-management");
     expect(routeOf("menu-management")).toBe("/sys/code/menu-management");
     expect(routeOf("role-management")).toBe("/sys/code/role-management");
@@ -74,19 +74,19 @@ describe("tabRoute — 계층 경로", () => {
       "/api/v1/sys/code/common-code-management/save"
     );
     expect(apiOf("hyg-process-template", "versions")).toBe(
-      "/api/v1/docs/html/hyg-process-template/versions"
+      "/api/v1/docs/html-form/hyg-process-template/versions"
     );
-    expect(apiOf("ccp-verify-template")).toBe("/api/v1/docs/html/ccp-verify-template");
-    expect(apiOf("ccp-pkg-template")).toBe("/api/v1/docs/html/ccp-pkg-template");
-    expect(apiOf("ccp-htg-template")).toBe("/api/v1/docs/html/ccp-htg-template");
-    expect(apiOf("ccp-mtl-template")).toBe("/api/v1/docs/html/ccp-mtl-template");
+    expect(apiOf("ccp-verify-template")).toBe("/api/v1/docs/html-form/ccp-verify-template");
+    expect(apiOf("ccp-pkg-template")).toBe("/api/v1/docs/html-form/ccp-pkg-template");
+    expect(apiOf("ccp-htg-template")).toBe("/api/v1/docs/html-form/ccp-htg-template");
+    expect(apiOf("ccp-mtl-template")).toBe("/api/v1/docs/html-form/ccp-mtl-template");
     expect(apiOf("hwp-template-management", "list")).toBe(
       "/api/v1/docs/hwp/hwp-template-management/list"
     );
     expect(apiOf("schedule-cycle-management", "save")).toBe(
       "/api/v1/docs/sch/schedule-cycle-management/save"
     );
-    expect(apiOf("ccp-cold-monitor", "list")).toBe("/api/v1/docs/ccp/ccp-cold-monitor/list");
+    expect(apiOf("hyg-process", "list")).toBe("/api/v1/draft/html/hyg-process/list");
     expect(apiOf("approval-line-management", "list")).toBe(
       "/api/v1/sys/code/approval-line-management/list"
     );

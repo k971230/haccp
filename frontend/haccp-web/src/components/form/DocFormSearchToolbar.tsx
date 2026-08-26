@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-06
  * 코멘트:
- *   1) 시작일·종료일·문서번호·작성자 + 조회/신규/저장/삭제를 DocForm·문서함·결재함·감사에서 동일하게 쓴다
+ *   1) 시작일·종료일·문서번호·작성자 + 조회/행추가/저장/삭제를 DocForm·문서함·결재함·감사에서 동일하게 쓴다
  *   2) 날짜는 YYYYMMDD 상태로 두고 input[type=date]만 YYYY-MM-DD로 변환한다
  *   3) extraFilters·actions로 화면별 상태/타입/인쇄만 얹고 기본 골격은 유지한다
  *
@@ -38,13 +38,13 @@ export interface DocFormSearchToolbarProps {
   onChange: (patch: Partial<DocFormSearchValues>) => void;
   // 조회
   onSearch: () => void;
-  // 신규 draft — actions 미지정 시만 사용
+  // 행추가 draft — actions 미지정 시만 사용
   onAdd?: () => void;
   // dirty 저장 — actions 미지정 시만 사용
   onSave?: () => void;
   // 삭제 — actions 미지정 시만 사용
   onDelete?: () => void;
-  // 신규 가능
+  // 행추가 가능
   canAdd?: boolean;
   // 저장 가능 (보통 true — 검증은 핸들러)
   canSave?: boolean;
@@ -52,11 +52,11 @@ export interface DocFormSearchToolbarProps {
   canDelete?: boolean;
   // 조회 busy
   searchBusy?: boolean;
-  // 저장·삭제·신규 busy
+  // 저장·삭제·행추가 busy
   actionBusy?: boolean;
   // 작성자 뒤·조회 앞 추가 필터 (상태·타입 등)
   extraFilters?: ReactNode;
-  // 우측 액션 전체 교체 — 지정 시 신규/저장/삭제 대신 렌더
+  // 우측 액션 전체 교체 — 지정 시 행추가/저장/삭제 대신 렌더
   actions?: ReactNode;
   // 기본 CRUD 버튼 노출 — false면 조회만 (actions 없을 때)
   showCrudActions?: boolean;
@@ -87,13 +87,13 @@ export function DocFormSearchToolbar({
   onChange,
   // 조회
   onSearch,
-  // 신규
+  // 행추가
   onAdd,
   // 저장
   onSave,
   // 삭제
   onDelete,
-  // 신규 권한
+  // 행추가 권한
   canAdd = true,
   // 저장 가능
   canSave = true,
@@ -159,6 +159,7 @@ export function DocFormSearchToolbar({
       <MesButton
         // 목록 재조회
         variant="search"
+        icon="search"
         disabled={searchBusy || actionBusy}
         onClick={onSearch}
       >
@@ -169,12 +170,12 @@ export function DocFormSearchToolbar({
           {actions != null ? actions : (
             <>
               <MesButton
-                // 좌측 draft 추가
+                // 좌측 draft 행추가
                 variant="add"
                 disabled={!canAdd || actionBusy}
                 onClick={() => onAdd?.()}
               >
-                신규
+                행추가
               </MesButton>
               <MesButton
                 // dirty 전건 저장

@@ -20,7 +20,7 @@ const TREE_INDENT_PX = 12;
 
 /** 분할 패널 제목 행(좌 트리·우 그리드 공통) — 고정 h-9, wrap 금지로 화면 전환 시 흔들림 방지 */
 export const treePanelHeadClass =
-  "mes-grid-head flex h-9 shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-slate-200 bg-slate-50/70 px-3 [&_b]:truncate [&_b]:text-mes-ui [&_b]:font-bold [&_b]:text-black";
+  "mes-grid-head flex h-9 shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-slate-200 bg-slate-50/70 px-3 [&_b]:truncate";
 
 /** 트리 노드 선택 — 사이드 메뉴 리프 활성(mes-sidebar-leaf-active)과 동일 */
 export const treeNodeSelectedClass = "bg-blue-100 font-bold text-blue-700";

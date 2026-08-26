@@ -38,11 +38,11 @@ import { searchInputClass } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
 import { filterTreeByQuery } from "@/lib/treeFilter";
 import { DEFAULT_USE_YN, ynMap, ynOptions } from "@/lib/yn";
-import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
+import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 import { usePageCommands } from "@/shell/pageCommands";
-import { guardSaveWithKey } from "@/shell/gridRules";
+import { runGridSave, stripRowMeta } from "@/shell/gridRules";
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
 import type { EditableRow } from "@/types/editable";
 // 역할 — 메뉴 관리 도메인 API
@@ -191,42 +191,25 @@ export default function MenuManagementPage() {
   };
 
   const handleSave = async () => {
-    if (!canWrite && !canModify) return mesToast("수정 권한이 없습니다.", "warn");
-    const dirty = g.getSaveRows();
-    if (dirty.length === 0) return mesToast(MES.noChange, "warn");
-    const guard = guardSaveWithKey(grid.rules, grid.ctx, dirty, columns);
-    if (guard) {
-      mesToast(guard.message, "warn");
-      if (guard.rowKey) setActiveKey(guard.rowKey);
-      return;
-    }
-    for (const row of dirty) {
-      if (!String(row.menuCd ?? "").trim() || !String(row.menuNm ?? "").trim()) {
-        mesToast(MES.required(REQUIRED_LABEL), "warn");
-        setActiveKey(row._key);
-        return;
-      }
-    }
-    if (!(await mesConfirm(MES.saveConfirm))) return;
-    try {
-      await saveMenus(
-        dirty.map((row) => {
-          const next: SysRow = { ...row };
-          delete (next as { _key?: string })._key;
-          delete (next as { _rowState?: string })._rowState;
-          delete (next as { _original?: unknown })._original;
-          // 대·중·소 — 트리에서 산출한 표시열이라 저장 payload에서 제외
-          delete (next as { grpANm?: string }).grpANm;
-          delete (next as { grpBNm?: string }).grpBNm;
-          delete (next as { grpCNm?: string }).grpCNm;
-          return next;
-        }),
-      );
-      mesToast(MES.saveDone, "success");
-      await loadMenus();
-    } catch (e) {
-      mesError(e);
-    }
+    // 순서·문구는 gridSave 가 갖는다 — 이 화면은 필수값과 저장 대상만 준다
+    await runGridSave<MenuRow>({
+      canWrite,
+      canModify,
+      dirty: g.getSaveRows(),
+      rules: grid.rules,
+      ctx: grid.ctx,
+      columns,
+      focusRow: setActiveKey,
+      // 메뉴코드·메뉴명이 업무키다
+      requiredOf: (row) =>
+        !String(row.menuCd ?? "").trim() || !String(row.menuNm ?? "").trim()
+          ? MES.required(REQUIRED_LABEL)
+          : null,
+      // 대·중·소분류는 트리에서 산출한 표시열이라 서버로 안 보낸다
+      save: (rows) =>
+        saveMenus(rows.map((row) => stripRowMeta<SysRow>(row as never, ["grpANm", "grpBNm", "grpCNm"]))),
+      reload: loadMenus,
+    });
   };
 
   const handleDelete = async () => {
@@ -339,9 +322,9 @@ export default function MenuManagementPage() {
         <ResizableSplit
           // 좌 트리 · 우 그리드 (부서·권한그룹과 동일 규칙)
           orientation="horizontal"
-          storageKey="haccp-split-menu-mgmt"
-          // 트리:그리드 기본 2:8 — 경계선을 끌면 20~80% 범위에서 조절되고 storageKey에 저장된다
-          defaultPrimaryPct={20}
+          storageKey="haccp-split-menu-mgmt-30"
+          // 좌 트리 30 · 우 그리드 70 — 가로 분할은 30 또는 50만
+          defaultPrimaryPct={30}
           panelClassName="rounded-xl border border-slate-200 bg-white shadow-sm p-2"
           primary={
             <>

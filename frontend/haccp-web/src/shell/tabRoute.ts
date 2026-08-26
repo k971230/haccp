@@ -5,7 +5,7 @@
  * 일자: 2026-08-20
  * 코멘트:
  *   1) 화면 식별자는 계속 tbl_screen.scrn_cd(kebab). 주소창만 대/중/소 계층으로 보여 준다
- *   2) basename /haccp/ 는 Vite·BrowserRouter 가 담당한다. 여기 경로는 /docs/html/... 처럼 접두 없이 둔다
+ *   2) basename /haccp/ 는 Vite·BrowserRouter 가 담당한다. 여기 경로는 /docs/html-form/... 처럼 접두 없이 둔다
  *   3) /screen/{scrnCd} 는 쓰지 않는다. 맵에 없는 주소는 셸이 오늘 할 일로 보낸다
  *      Jenkins는 DB migrate를 안 돌린다. 메뉴 클릭은 scrnCd → routeOf 이라 120 menu_cd 개명 전에도 화면은 연다
  *
@@ -38,12 +38,11 @@ export const SCREEN_PATH: Record<string, string> = {
   // 랜딩 — 중분류 없음
   "today-tasks": "/today-tasks",
 
-  // 문서 주기 — 문서 기준관리 대분류 아래 중분류 sch
+  // 문서 기준 — 주기 · HWP 양식 원본 · HTML 양식 원본
   ...paths("/docs/sch", ["schedule-cycle-management"]),
-
-  // 문서 기준 — HWP·HTML 양식. 중분류 hwp / html
   ...paths("/docs/hwp", ["hwp-template-management"]),
-  ...paths("/docs/html", [
+  // 중분류 html 은 양식 작성(draft)이 쓴다 — tbl_menu UNIQUE (co_cd, menu_cd)
+  ...paths("/docs/html-form", [
     "hyg-process-template",
     "ccp-verify-template",
     "ccp-pkg-template",
@@ -51,80 +50,15 @@ export const SCREEN_PATH: Record<string, string> = {
     "ccp-mtl-template",
   ]),
 
-  // 문서 작성 — CCP / PRP / 물류 / 운영·법정
-  ...paths("/docs/ccp", [
-    "ccp-cold-monitor",
-    "ccp-metal-monitor",
-    "ccp-heat-monitor",
-    "ccp-sanitize-monitor",
-    "ccp-filter-monitor",
-    "ccp-verification-check",
-    "process-hwp",
-  ]),
-  ...paths("/docs/prp", [
-    "hygiene-process-check",
-    "daily-hygiene-check",
-    "pest-control-check",
-    "health-cert-record",
-    "facility-equipment-check",
-    "calibration-target-management",
-    "equipment-history",
-    "pest-device-history",
-    "equipment-management",
-    "pest-device-management",
-    "visual-insp-standard",
-    "calib-self-hwp",
-    "calib-ext-hwp",
-    "waste-hwp",
-    "verify-ca-hwp",
-    "personal-hyg-hwp",
-    "area-hyg-hwp",
-    "water-hwp",
-    "verify-plan-hwp",
-    "verify-check-hwp",
-    "verify-report-hwp",
-    "prod-test-hwp",
-    "surface-test-hwp",
-  ]),
-  ...paths("/docs/logis", [
-    "receiving-insp-hwp",
-    "submaterial-recv-hwp",
-    "shipment-log-hwp",
-    "inventory-hwp",
-    "vehicle-hwp",
-  ]),
-  ...paths("/docs/admin", [
-    "visitor-log",
-    "edu-plan-hwp",
-    "edu-log-hwp",
-    "bad-product-hwp",
-    "claim-hwp",
-    "recall-hwp",
-    "eval-hwp",
-    "handover-hwp",
-  ]),
-
-  // 양식 작성 — 사용 중인 양식을 골라 일자별로 쓴다. HYG·CCP 형제 화면
-  // 중분류 슬러그는 tbl_menu UNIQUE (co_cd, menu_cd) 때문에 docs 의 html·ccp 와 겹칠 수 없다
-  ...paths("/draft/hyg", ["hyg-process"]),
-  ...paths("/draft/ccp-chk", ["ccp-verify"]),
+  // 양식 작성 — 사용 중인 양식을 골라 일자별로 쓴다
+  ...paths("/draft/html", ["hyg-process", "ccp-verify"]),
   ...paths("/draft/ccp-monitoring", ["ccp-pkg", "ccp-htg", "ccp-mtl"]),
+  ...paths("/draft/hwp-doc", ["hwp-write"]),
 
-  // 문서 현황 — 문서함 / 결재함 / 개선조치 (결재선 sys/code 와 구분)
-  ...paths("/flow/box", ["document-inbox", "legal-document-upload"]),
-  ...paths("/flow/appr", ["approval-inbox", "approval-history"]),
+  // 문서 현황·결재 — 결재 3화면 · 문서함 · 이탈개선조치
+  ...paths("/flow/appr", ["attach", "sign-ready", "sign-ok"]),
+  ...paths("/flow/box", ["document-inbox"]),
   ...paths("/flow/ca", ["corrective-action-management"]),
-
-  // 기초정보
-  ...paths("/bas/master", [
-    "product-management",
-    "material-management",
-    "partner-management",
-    "storage-management",
-    "measuring-device-management",
-    "vehicle-management",
-    "work-area-management",
-  ]),
 
   // 시스템 — 코드·권한 묶음 / 로그 묶음
   ...paths("/sys/code", [

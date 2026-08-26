@@ -5,12 +5,13 @@ HYG·CCP 는 **형제 화면**이며 UI·업무 흐름이 같다.
 
 ```
 양식 작성 (draft)
- ├─ HYG 양식 (hyg)            기준 /docs/html/hyg-process-template → 작성 /draft/hyg/hyg-process
- ├─ CCP 양식 (ccp-chk)        기준 /docs/html/ccp-verify-template  → 작성 /draft/ccp-chk/ccp-verify
- └─ CCP 모니터링 (ccp-monitoring)
-     ├─ 기준 /docs/html/ccp-pkg-template → 작성 /draft/ccp-monitoring/ccp-pkg
-     ├─ 기준 /docs/html/ccp-htg-template → 작성 /draft/ccp-monitoring/ccp-htg
-     └─ 기준 /docs/html/ccp-mtl-template → 작성 /draft/ccp-monitoring/ccp-mtl
+ ├─ HTML 양식 (html)          기준 /docs/html-form/hyg-process-template → 작성 /draft/html/hyg-process
+ │                            기준 /docs/html-form/ccp-verify-template  → 작성 /draft/html/ccp-verify
+ ├─ CCP 모니터링 (ccp-monitoring)
+ │   ├─ 기준 /docs/html-form/ccp-pkg-template → 작성 /draft/ccp-monitoring/ccp-pkg
+ │   ├─ 기준 /docs/html-form/ccp-htg-template → 작성 /draft/ccp-monitoring/ccp-htg
+ │   └─ 기준 /docs/html-form/ccp-mtl-template → 작성 /draft/ccp-monitoring/ccp-mtl
+ └─ HWP 양식 (hwp-doc)        작성 /draft/hwp-doc/hwp-write
 ```
 
 ## 구성 — 공통 1개 + 화면별 얇은 래퍼
@@ -24,8 +25,7 @@ HYG·CCP 는 **형제 화면**이며 UI·업무 흐름이 같다.
 | `HtmlFormLookupModal.tsx` | 양식 선택 팝업 (일자·양식코드·양식명) |
 | `htmlFormDraftShared.test.ts` | 상태 판정·필수값 단위 테스트 |
 | `htmlFormLogRows.test.ts` | 기록 표 행 영역 분리·행 추가/삭제 단위 테스트 |
-| `hyg/` | HYG 래퍼 — `HygProcessDraftPage` + `HygProcessDraftRule`(상수만) |
-| `ccp/` | CCP 검증 래퍼 — `CcpVerifyDraftPage` + `CcpVerifyDraftRule`(상수만) |
+| `html/` | HTML 양식 2화면 래퍼 — `HygProcessDraftPage`·`CcpVerifyDraftPage` + Rule(상수만) |
 | `ccp-monitoring/` | CCP 모니터링 3화면 래퍼 — `CcpPkg`·`CcpHtg`·`CcpMtl` `DraftPage`+`DraftRule` |
 
 ## 기록 표 행 (CCP 모니터링일지)
@@ -77,8 +77,8 @@ HYG·CCP 는 **형제 화면**이며 UI·업무 흐름이 같다.
 ## 경로 규칙
 
 중분류 `menu_cd` 는 `tbl_menu UNIQUE (co_cd, menu_cd)` 때문에 전 트리에서 유일해야 한다.
-`docs` 아래 `html`·`ccp` 가 이미 있어 이 대분류는 `hyg`·`ccp-chk` 를 쓴다.
-BE 자바 패키지는 하이픈을 못 쓰므로 `ccp-chk` → `com.haccp.draft.ccp` 다.
+2026-08-25 정리에서 docs 쪽 `html` 을 `html-form` 으로 개명하고 이 대분류가 `html` 을 가져갔다
+(`db_sasshaccp/02_seed.sql`). BE 패키지는 `com.haccp.draft.html` 이다.
 
 ## 공통 업무 규칙
 

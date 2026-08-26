@@ -68,6 +68,13 @@ interface TabState {
   closeAll: () => void;
   /** 전체 초기화 — 로그아웃 시 다른 사용자에게 탭이 남지 않게 한다 */
   reset: () => void;
+  /**
+   * 허용된 화면코드만 남기고 나머지 탭을 닫는다.
+   *
+   * 권한이 다른 계정으로 갈아타면 이전 계정이 열어 둔 탭이 남는다 —
+   * 그 화면은 열려 있지만 API 는 전부 403 이라 사용자는 「고장났다」고 느낀다.
+   */
+  keepOnly: (allowed: Set<string>) => void;
 }
 
 /** 열린 탭 전역 스토어 — 컴포넌트 밖에서도 getState로 최신값을 읽는다 */
@@ -120,6 +127,13 @@ export const useTabStore = create<TabState>()(
         }),
       closeAll: () => set({ tabs: [], activeCd: null }),
       reset: () => set({ tabs: [], activeCd: null }),
+
+      keepOnly: (allowed) =>
+        set((s) => {
+          const next = s.tabs.filter((t) => allowed.has(t.scrnCd));
+          if (next.length === s.tabs.length) return s;
+          return afterRemove(s.tabs, next, s.activeCd);
+        }),
     }),
     {
       // sessionStorage 저장 키 — mes-web과 접두사를 구분해 세션이 섞이지 않게 한다

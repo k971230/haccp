@@ -163,3 +163,40 @@ describe("htmlFormDraftGridRules — 좌측 셀 편집 잠금", () => {
     expect(locked?.({ sendState: "done" })).toBe(true);
   });
 });
+
+describe("validateForTransfer — 기록 표가 있는 화면(CCP 모니터링)", () => {
+  const log = (over: Record<string, unknown> = {}) => ({
+    rowSeq: 1,
+    phaseCd: "BEFORE" as const,
+    productNm: "",
+    checkTime: "09:30",
+    judgeCd: "P",
+    checkerNm: "",
+    signYn: "N",
+    cells: {},
+    ...over,
+  });
+
+  it("기록 표가 있으면 한계기준·주기·방법 안내문을 필수값으로 보지 않는다", () => {
+    // items 는 안내문 블록이다 — 값이 비어 있어도 전송을 막으면 안 된다
+    const noticeItems = [
+      { itemCd: "limit", itemNm: "가열온도 : 180±5℃", inputType: "TEXT", yn: "", valNm: "" },
+    ] as never;
+    expect(validateForTransfer("20260825", noticeItems, [log()])).toBeNull();
+  });
+
+  it("기록 행의 시각이 비면 몇 번째 행인지 알려준다", () => {
+    const msg = validateForTransfer("20260825", [], [log(), log({ rowSeq: 2, checkTime: "" })]);
+    expect(msg).toContain("2번째");
+    expect(msg).toContain("시각");
+  });
+
+  it("기록 행의 판정이 비면 전송을 막는다", () => {
+    const msg = validateForTransfer("20260825", [], [log({ judgeCd: "" })]);
+    expect(msg).toContain("판정");
+  });
+
+  it("품명이 비어도 막지 않는다 — 구간 첫 줄은 라벨이라 비는 게 정상이다", () => {
+    expect(validateForTransfer("20260825", [], [log({ productNm: "" })])).toBeNull();
+  });
+});

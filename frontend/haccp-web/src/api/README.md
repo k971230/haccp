@@ -8,9 +8,9 @@ Axios HTTP 클라이언트·도메인 API 함수.
 
 | 파일 | 대상 |
 |------|------|
-| `docs/hwpTemplateApi.ts` | 사용양식관리 `/api/v1/docs/hwp/hwp-template-management/*`. 삭제는 `/api/v1/bas/company-templates/*` (법적서류와 URL 공유) |
+| `docs/hwpTemplateApi.ts` | 사용양식관리 `/api/v1/docs/hwp/hwp-template-management/*` — 삭제 포함 전부 화면 자기 경로 |
 | `docs/docCycleApi.ts` | 문서주기관리 `/api/v1/docs/sch/schedule-cycle-management`. 저장 1회로 규칙 업서트 + 예정일 재생성까지 끝난다 |
-| `docs/htmlFormApi.ts` | HTML양식 원본 5화면 `/api/v1/docs/html/{scrnCd}` · 공정점검 작성 `/api/v1/docs/prp/hygiene-process-check` |
+| `docs/htmlFormApi.ts` | HTML양식 원본 5화면 `/api/v1/docs/html-form/{scrnCd}` · 공정점검 작성 `/api/v1/docs/html-form/hyg-process-template` |
 
 ## 기타
 

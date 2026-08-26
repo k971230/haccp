@@ -92,15 +92,16 @@ public class CycleScheduleGenerator {
         return dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY;
     }
 
-    /** 비영업일 처리 규칙에 따라 날짜를 옮긴다. keep이거나 영업일이면 그대로 둔다. */
+    /** 비영업일 처리 규칙에 따라 날짜를 옮긴다. KEEP이거나 영업일이면 그대로 둔다. */
     private LocalDate shift(LocalDate date, String nonworkRule) {
-        String rule = nonworkRule == null ? "keep" : nonworkRule.trim().toLowerCase(java.util.Locale.ROOT);
+        // 공통코드 NONWORK_RULE 은 UPPER_SNAKE. 옛 소문자 데이터가 와도 같이 본다
+        String rule = nonworkRule == null ? "KEEP" : nonworkRule.trim().toUpperCase(java.util.Locale.ROOT);
         if (!isNonWorkingDay(date)) return date;
         LocalDate moved = date;
         // 토·일 연속 최대 2일이라 3회 이내에 끝난다 — 무한 루프 방지용 상한
         for (int i = 0; i < 7 && isNonWorkingDay(moved); i++) {
-            if ("prev".equals(rule)) moved = moved.minusDays(1);
-            else if ("next".equals(rule)) moved = moved.plusDays(1);
+            if ("PREV".equals(rule)) moved = moved.minusDays(1);
+            else if ("NEXT".equals(rule)) moved = moved.plusDays(1);
             else return date;
         }
         return moved;

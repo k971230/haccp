@@ -2,11 +2,11 @@
  * DocumentBoxRule — 문서함·결재함·결재이력 그리드 규칙·컬럼.
  *
  * 개발자: 박승우
- * 일자: 2026-08-19
+ * 일자: 2026-08-26
  * 코멘트:
  *   1) Page는 렌더·상태·API만 담당하고 화면코드·persistId·컬럼은 이 파일이 갖는다
  *   2) inbox/approval/history 세 화면이 같은 Page를 mode로 나눈다. persistId는 화면마다 다르다
- *   3) 키 값은 폴더를 옮겨도 바꾸지 않는다
+ *   3) 상태 열은 DOC_STATUS_BADGE 색을 쓴다. 키 값은 폴더를 옮겨도 바꾸지 않는다
  *
  * PIPELINE[HF83] 문서함 그리드 규칙
  */
@@ -16,14 +16,15 @@ import type { GridColumn } from "@/types/grid";
 import type { DocumentDetail, DocumentListRow } from "@/api/documentApi";
 // 역할 — 양식 유형 정본 상수
 import { DOC_KIND_HTML, DOC_KIND_HWP } from "@/lib/docKind";
+// 역할 — 문서상태 배지 색 — 오늘 할 일·결재첨부와 같다
+import { DOC_STATUS_BADGE } from "@/lib/docStatus";
 
 /** 문서함 / 결재함 / 결재이력 */
 export type DocumentBoxMode = "inbox" | "approval" | "history";
 
-/** 목록 행 — 상태·타입·작성자 표시열 */
+/** 목록 행 — 타입·작성자 표시열. 상태는 row.status + codeMap */
 export type ListRow = DocumentListRow & {
   _key: string;
-  statusNm?: string;
   docKindNm?: string;
   writerDisp?: string;
 };
@@ -50,12 +51,12 @@ export const APPR_HIST_PERSIST_ID = "doc-box-approval-history" as const;
  * 일자: 2026-08-19
  * 코멘트:
  *   1) mode별 tbl_screen.scrn_cd
- *   2) 권한·pref 키에 쓴다
- *   3) 폴더를 옮겨도 값을 바꾸지 않는다
+ *   2) 권한 조회에 쓴다
+ *   3) 결재 2화면은 2026-08-25 에 approval-inbox·approval-history 에서 개명했다 (마이그레이션 127)
  */
 export function scrnCdOf(mode: DocumentBoxMode): string {
-  if (mode === "approval") return "approval-inbox";
-  if (mode === "history") return "approval-history";
+  if (mode === "approval") return "sign-ready";
+  if (mode === "history") return "sign-ok";
   return "document-inbox";
 }
 
@@ -63,9 +64,10 @@ export function scrnCdOf(mode: DocumentBoxMode): string {
  * 개발자: 박승우
  * 일자: 2026-08-19
  * 코멘트:
- *   1) 목록 그리드 persistId — 문서함/결재함/이력을 분리한다
+ *   1) 목록 그리드 persistId — 문서함/결재대기/결재완료를 분리한다
  *   2) 열 너비 저장이 화면마다 달라야 해서 키를 나눈다
- *   3) 값 변경 금지
+ *   3) 값 변경 금지 — 화면코드를 sign-ready·sign-ok 로 개명해도 이 키는 그대로 둔다.
+ *      바꾸면 사용자가 저장해 둔 열 너비가 전부 초기화된다
  */
 export function listPersistIdOf(mode: DocumentBoxMode): string {
   if (mode === "approval") return "doc-approval-inbox";
@@ -81,13 +83,16 @@ export function fileSize(size?: number | null): string {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-19
+ * 일자: 2026-08-26
  * 코멘트:
- *   1) 목록 열 — 타입·기준일·양식·문서번호·제목·작성자·상태
- *   2) 조회 전용
+ *   1) 목록 열 — 타입·기준일·양식·문서번호·제목·작성자·상태 배지
+ *   2) 조회 전용. 상태 색은 DOC_STATUS_BADGE
  *   3) Page가 useMemo로 호출한다
  */
-export function buildListColumns(): GridColumn<ListRow>[] {
+export function buildListColumns(
+  // 상태코드 → 라벨 — DOC_STATUS 공통코드 맵. 화면이 넘긴다
+  statusNm: Record<string, string>,
+): GridColumn<ListRow>[] {
   return [
     { field: "docKindNm", header: "타입", width: 80 },
     { field: "baseDt", header: "기준일", width: 100 },
@@ -95,7 +100,16 @@ export function buildListColumns(): GridColumn<ListRow>[] {
     { field: "docNo", header: "문서번호", width: 130 },
     { field: "title", header: "제목", width: 160 },
     { field: "writerDisp", header: "작성자", width: 100 },
-    { field: "statusNm", header: "상태", width: 90 },
+    {
+      // 결재상태 — 색 배지. 업무 상태가 정하고 사용자가 바꾸지 않는다
+      field: "status",
+      header: "상태",
+      width: 90,
+      type: "code",
+      editable: false,
+      codeMap: statusNm,
+      badge: DOC_STATUS_BADGE,
+    },
   ];
 }
 

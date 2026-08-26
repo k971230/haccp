@@ -1,9 +1,12 @@
 /**
- * editable.ts — types 공통 editable.
+ * editable — 편집 그리드 행 타입.
  *
- * 주요 역할:
- *     1. 타입·순수 함수·스타일 헬퍼
- *     2. React/UI 의존 없음
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) 저장 전 행을 식별하는 _key 와 변경상태 _rowState 를 붙인다
+ *   2) useEditableRows 와 그리드 저장 절차가 함께 쓴다
+ *   3) _original 은 load 시점 스냅샷이다 — 잠긴 칸이 바뀌었는지 여기서 본다
  *
  * PIPELINE[F33] 공통 모듈
  */

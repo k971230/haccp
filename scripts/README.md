@@ -1,6 +1,6 @@
 # scripts/
 
-HACCP 운영·검증 스크립트. 정본 절차는 [`docs/20_배포_런북.md`](../docs/20_배포_런북.md).
+HACCP 운영·검증 스크립트. 정본 절차는 [`DEPLOY.md`](../DEPLOY.md).
 
 **여기 파일을 임의로 지우면** Deploy·Prod smoke·nightly audit·로컬 compose 선행이 깨진다.  
 일회성 Path 전환용 `ops_path_gateway_cutover.sh` 는 제거됨 (재실행 대상 아님).
@@ -22,6 +22,7 @@ HACCP 운영·검증 스크립트. 정본 절차는 [`docs/20_배포_런북.md`]
 | `prod_smoke.sh` | 배포 후 HTTP 스모크 (`SMOKE_USER`/`SMOKE_PASS`는 env만) |
 | `smoke_env.sh` | 스모크 공통 env (`prod_smoke`가 source) |
 | `db_migrate_dryrun.sh` | (수동) SQL 문법 dry-run — Jenkins CI에서 제거됨 |
+| `archive_hwp_logbooks.sh` | HaccpLogBooks 를 `_legacy/날짜` 로 이동 (즉시 삭제 금지). `SRC`·`DEST` env |
 
 ## 감사·훅
 

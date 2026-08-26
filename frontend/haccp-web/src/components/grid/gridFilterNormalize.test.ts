@@ -1,3 +1,13 @@
+/**
+ * gridFilterNormalize.test — 그리드 필터 문자열 정규화 단위 테스트.
+ *
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) 공백·대소문자·특수문자가 섞인 검색어가 같은 값으로 모이는지 본다
+ *   2) 필터 규칙을 고칠 때 함께 돌린다
+ *   3) DB·기동 없이 순수 함수만 검사한다
+ */
 // 역할 — Vitest describe·expect·it
 import { describe, expect, it } from "vitest";
 // 역할 — 필터 문자열 정규화 함수

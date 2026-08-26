@@ -14,7 +14,7 @@ package com.haccp.flow.ca;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.haccp.docs.ccp.dto.DocCorrectiveDto;
+import com.haccp.flow.ca.dto.DocCorrectiveDto;
 import com.haccp.common.exception.BizException;
 import java.util.LinkedHashMap;
 import java.util.Map;

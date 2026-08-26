@@ -9,7 +9,7 @@
 | `ScreenUsageStatisticsPage.tsx` | `LogPageShell`에 Rule만 꽂는 얇은 진입점. `key={scrnCd}` |
 | `ScreenUsageStatisticsRule.ts` | `scrnCd` · `persistId` · 컬럼 · `fetchRows`(리프 서버 필터, 폴더 FE 필터) |
 
-공용 셸은 [`LogPageShell`](../../../components/layout/LogPageShell.tsx)다. 조회 전용이라 행추가·저장·삭제를 붙이지 않는다.
+공용 셸은 [`LogPageShell`](../../../../components/layout/LogPageShell.tsx)다. 조회 전용이라 행추가·저장·삭제를 붙이지 않는다.
 
 `scrnCd = screen-usage-statistics` · `persistId = log-screen-usage-statistics` — 값 변경 금지.
 

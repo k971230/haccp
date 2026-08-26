@@ -9,7 +9,7 @@
 | `LoginHistoryPage.tsx` | `LogPageShell`에 Rule만 꽂는 얇은 진입점. `key={scrnCd}` |
 | `LoginHistoryRule.ts` | `scrnCd` · `persistId` · 컬럼 · `fetchRows` |
 
-공용 셸은 [`LogPageShell`](../../../components/layout/LogPageShell.tsx)다. 조회 전용이라 행추가·저장·삭제를 붙이지 않는다.
+공용 셸은 [`LogPageShell`](../../../../components/layout/LogPageShell.tsx)다. 조회 전용이라 행추가·저장·삭제를 붙이지 않는다.
 
 `scrnCd = login-history` · `persistId = log-login-history` — 값 변경 금지.
 

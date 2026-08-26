@@ -26,7 +26,7 @@ import type { CodeRow } from "@/types/common";
 const CODE_STALE_MS = DASHBOARD_POLLING_MS * 30;
 
 /** 사용양식 구분 대분류 — 공통코드 관리(sys-yn). src-ty(불러오기 팝업)와 다르다 */
-export const SYS_YN_MAIN_CD = "sys-yn" as const;
+export const SYS_YN_MAIN_CD = "SYS_YN" as const;
 
 /** 구분 열 badge — 문서주기·사용양식·HTML양식 목록. 레거시 Y/N 별칭 포함 */
 export const SYS_YN_BADGE = {
@@ -37,13 +37,13 @@ export const SYS_YN_BADGE = {
 } as const;
 
 /** 예/아니오 라디오 문구 — 공통코드 관리(judge-yn). y=예, n=아니오 */
-export const JUDGE_YN_MAIN_CD = "judge-yn" as const;
+export const JUDGE_YN_MAIN_CD = "JUDGE_YN" as const;
 
 /** 적합/부적합 라디오 문구 — 공통코드 관리(JUDGE_PF). P=적합, F=부적합 */
 export const JUDGE_PF_MAIN_CD = "JUDGE_PF" as const;
 
 /** HTML 양식 입력유형 — 공통코드 관리(html-input-ty). radio·radio-num·radio-text·num·text */
-export const HTML_INPUT_TY_MAIN_CD = "html-input-ty" as const;
+export const HTML_INPUT_TY_MAIN_CD = "HTML_INPUT_TY" as const;
 
 /**
  * 개발자: 박승우

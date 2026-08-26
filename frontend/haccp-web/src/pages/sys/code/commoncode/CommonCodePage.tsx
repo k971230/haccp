@@ -28,11 +28,11 @@ import {
 import { gridHeadClass, pageRootClass } from "@/components/layout/pageClasses";
 import { searchInputClass } from "@/components/ui/Input";
 import { DEFAULT_USE_YN, ynMap, ynOptions } from "@/lib/yn";
-import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
+import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 import { usePageCommands } from "@/shell/pageCommands";
-import { guardSaveWithKey } from "@/shell/gridRules";
+import { runGridSave } from "@/shell/gridRules";
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
 import type { EditableRow } from "@/types/editable";
 // 역할 — 공통코드 도메인 API
@@ -197,31 +197,25 @@ export default function CommonCodePage() {
   };
 
   const handleSaveUsr = async () => {
-    if (!canWrite && !canModify) return mesToast("수정 권한이 없습니다.", "warn");
-    const dirty = usrG.getSaveRows();
-    if (dirty.length === 0) return mesToast(MES.noChange, "warn");
-    const guard = guardSaveWithKey(usrGrid.rules, usrGrid.ctx, dirty, usrCols);
-    if (guard) {
-      mesToast(guard.message, "warn");
-      if (guard.rowKey) setUsrKey(guard.rowKey);
-      return;
-    }
-    for (const row of dirty) {
-      if (!String(row.subCd ?? "").trim() || !String(row.codeNm ?? "").trim()) {
-        mesToast(MES.required(USR_REQUIRED_LABEL), "warn");
-        setUsrKey(row._key);
-        return;
-      }
-      row.mainCd = mainCd;
-    }
-    if (!(await mesConfirm(MES.saveConfirm))) return;
-    try {
-      await saveCommonCodes(dirty.map(stripMeta));
-      mesToast(MES.saveDone, "success");
-      await loadDetails(mainCd);
-    } catch (e) {
-      mesError(e);
-    }
+    // 순서·문구는 gridSave 가 갖는다 — 이 화면은 필수값과 저장 대상만 준다
+    await runGridSave<CodeRow>({
+      canWrite,
+      canModify,
+      dirty: usrG.getSaveRows(),
+      rules: usrGrid.rules,
+      ctx: usrGrid.ctx,
+      columns: usrCols,
+      focusRow: setUsrKey,
+      // 세부코드·코드명이 업무키다
+      requiredOf: (row) =>
+        !String(row.subCd ?? "").trim() || !String(row.codeNm ?? "").trim()
+          ? MES.required(USR_REQUIRED_LABEL)
+          : null,
+      // 대분류는 좌측에서 고른 값이 정본이다 — 행마다 다시 박아 넣는다
+      save: (rows) =>
+        saveCommonCodes(rows.map((row) => stripMeta({ ...row, mainCd } as CodeRow))),
+      reload: () => loadDetails(mainCd),
+    });
   };
 
   const handleDeleteUsr = async () => {
@@ -315,12 +309,12 @@ export default function CommonCodePage() {
         }
       >
         <ResizableSplit
-          // 좌 대분류 · 우 시스템/사용자
+          // 좌 대분류 30 · 우 세부 70 — 가로 분할은 30 또는 50만
           orientation="horizontal"
-          storageKey="haccp-split-common-code"
-          defaultPrimaryPct={40}
-          minPct={25}
-          maxPct={70}
+          storageKey="haccp-split-common-code-30"
+          defaultPrimaryPct={30}
+          minPct={20}
+          maxPct={80}
           primary={
             <div className="flex min-h-0 h-full flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm p-2">
               <div className={gridHeadClass}>

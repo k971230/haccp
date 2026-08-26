@@ -2,11 +2,11 @@
  * UserManagementRule — 사용자 관리 화면의 그리드 규칙·컬럼·초기값.
  *
  * 개발자: 박승우
- * 일자: 2026-08-12
+ * 일자: 2026-08-26
  * 코멘트:
  *   1) Page는 렌더·상태·API만 담당하고 컬럼·잠금·검증 규칙은 전부 이 파일에 둔다
  *   2) 권한그룹·부서·서명 셀은 직접 입력이 아니라 전역 모달 버튼으로 고른다
- *   3) persistId는 기존 값(sys-user-management-v2)을 승계한다
+ *   3) 부서는 DB·SP가 NULL 허용이라 필수가 아니다 — 권한그룹만 필수 룩업이다
  *
  * PIPELINE[HF98] 사용자 관리 그리드 규칙
  */
@@ -45,7 +45,6 @@ export const REQUIRED_FIELDS: Array<{ field: string; label: string }> = [
   { field: "userId", label: "사용자 ID" },
   { field: "userNm", label: "사용자명" },
   { field: "usrgrpCd", label: "권한그룹" },
-  { field: "deptCd", label: "부서" },
 ];
 
 /** 코드 콤보 1건 — 사용여부 등 */
@@ -108,12 +107,11 @@ export function buildUserColumns(
       editable: false,
     },
     {
-      // 부서명 — 표시 + 룩업 버튼 (필수)
+      // 부서명 — 표시 + 룩업 버튼 (선택. tbl_user.dept_cd NULL 허용)
       field: "deptNm",
       header: "부서",
       width: 140,
       editable: false,
-      required: true,
       cellButton: editable ? { title: "부서", onClick: handlers.onDeptLookup } : undefined,
     },
     { field: "email", header: "이메일", width: 160, editable, inputMode: "email" },

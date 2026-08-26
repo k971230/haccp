@@ -5,7 +5,7 @@ alwaysApply: true
 
 # HACCP 운영 규약
 
-정본: [`docs/3_운영규칙_FE.md`](../../docs/3_운영규칙_FE.md) · BE [`docs/4_운영규칙_BE.md`](../../docs/4_운영규칙_BE.md)  
+정본: [`docs/7_보안과_파일.md`](../../docs/7_보안과_파일.md) · BE [`docs/7_보안과_파일.md`](../../docs/7_보안과_파일.md)  
 인수인계 주석: `05-handoff-comments.mdc`
 
 ## [OPS_DELETE] 삭제 표준
@@ -19,7 +19,7 @@ alwaysApply: true
 - FE: `validateDeleteApi` → `mesConfirm` → `deleteApi` → 재조회; `useAsyncAction.run(fn, "del")`
 - 참조 차단 메시지: *"선택한 항목 중 {label} '{key}'이(가) {target}에서 참조 중이므로 삭제할 수 없습니다."*
 
-골드: `com.haccp.docs.document.DocumentService` + `DeleteValidation` + `mapper/docs/document/DocumentMapper.xml` (`selectDocumentDeleteBlocker`)
+골드: `com.haccp.docs.documents.DocumentService` + `DeleteValidation` + `mapper/docs/documents/DocumentMapper.xml` (`selectDocumentDeleteBlocker`)
 
 ## [OPS_TIMEOUT_TIER] API 타임아웃 3계층
 
@@ -49,6 +49,8 @@ alwaysApply: true
 | `VITE_SEARCH_DEBOUNCE_MS` | 300 | 검색 디바운스 |
 | `VITE_API_RETRY_COUNT` | 2 | GET 재시도 |
 | `VITE_DASHBOARD_POLLING_MS` | 10000 | 대시보드 폴링 |
+| `VITE_TODAY_TASKS_RECENT_DAYS` | 7 | 오늘 할 일 최근 문서 일수 |
+| `VITE_TODAY_TASKS_PAGE_SIZE` | 20 | 오늘 할 일 최근 문서 페이지 |
 
 `.env` 변경 후 Vite **재시작**. `.env.example`만 커밋.
 

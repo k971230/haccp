@@ -2,11 +2,18 @@
 //  HACCP Playwright E2E (선택 Job — main 배포와 분리)
 //
 //  개발자: 박승우
-//  일자: 2026-08-11
+//  일자: 2026-08-26
 //  코멘트:
-//    1) G-21 최소 루프(로그인→냉장→상신). haccp-deploy 에는 넣지 않는다
-//    2) Credentials: haccp-write-user (Username/Password · 냉장 write) — 목록 Job 은 haccp-smoke-user 유지
+//    1) 스펙 전체를 돌린다(2026-08-26 기준 68건). haccp-deploy 에는 넣지 않는다
+//    2) Credentials: haccp-write-user (Username/Password) — 조회 전용 Job 은 haccp-smoke-user
 //    3) Jenkins 에 Job 을 새로 만들고 이 파일을 스크립트 경로로 지정한다
+//
+//  ** DB 대조는 여기서 안 돈다 **
+//    스펙은 저장 결과를 DB 로 직접 확인한다(E2E-001 처럼 서버가 삼킨 실패를 잡으려고).
+//    그 도구는 tools/ 에 있고 git 에 없다(로컬 전용, 01-project-core).
+//    도구가 없으면 해당 시험은 **skip** 된다 — 조용히 통과하지 않는다.
+//    CI 에서도 DB 까지 보려면 이 에이전트에 psql 과 DB Credentials 를 주고
+//    frontend/haccp-web/e2e/README.md 의 「CI 에서 DB 대조하기」를 따른다.
 // ============================================================
 pipeline {
   agent any

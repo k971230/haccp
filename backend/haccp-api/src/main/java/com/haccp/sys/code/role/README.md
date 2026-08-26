@@ -1,6 +1,6 @@
 # com.haccp.sys.code.role — 권한그룹 관리
 
-화면코드 `role-management` · XML `resources/mapper/sys/code/role/RoleMgmtMapper.xml` · SP `db_sasshaccp/74_migrate_sp_role_mgmt_v2.sql`
+화면코드 `role-management` · XML `resources/mapper/sys/code/role/RoleMgmtMapper.xml` · SP `db_sasshaccp/01_sp.sql`
 
 ## 엔드포인트
 

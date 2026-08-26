@@ -24,7 +24,7 @@ declare module "@tanstack/react-table" {
     mesTextSort: SortingFn<unknown>;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   interface TableMeta<TData extends RowData> {
     mode?: "view" | "edit";
     updateCell?: (rowKey: string, field: string, value: unknown) => void;

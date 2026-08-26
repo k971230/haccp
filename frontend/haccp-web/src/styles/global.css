@@ -203,7 +203,6 @@ PIPELINE[HF49] 연관 모듈
   /* ── 그리드 블록 헤더 ── */
   .mes-grid-block { @apply flex min-h-0 flex-1 flex-col; }
   .mes-grid-block-head { @apply flex min-h-9 flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/70 px-3 py-2.5; }
-  .mes-grid-block-head b { @apply text-mes-ui font-bold text-black; }
   .mes-grid-crud-btns { @apply flex flex-wrap items-center gap-1.5; }
 
   /* 그리드 타이틀 앞 accent — 기본 파란색 (활성 섹션은 아래 emerald) */
@@ -219,7 +218,7 @@ PIPELINE[HF49] 연관 모듈
   }
   .mes-grid-head b,
   .mes-grid-block-head b {
-    @apply flex items-center gap-2;
+    @apply flex items-center gap-2 text-mes-ui font-bold text-black;
   }
   .mes-grid-title-only {
     @apply flex min-h-9 shrink-0 items-center gap-2 border-b border-slate-200 bg-slate-50/70 px-3 py-2 text-mes-ui font-bold text-black;
@@ -233,19 +232,29 @@ PIPELINE[HF49] 연관 모듈
     @apply ring-1 ring-emerald-200;
   }
   /* 활성 그리드 헤더 — MesButton variant=excel (border-emerald-200 / bg-emerald-50 / text-emerald-700) */
+  /* .mes-sec-active = useActiveGrid.bind 자손. [data-mes-sec] = 셸 클릭 캡처(직계 자식만 — 중첩 분할) */
   .mes-sec-active .mes-grid-block-head,
   .mes-sec-active .mes-grid-head,
-  .mes-sec-active .mes-grid-title-only {
+  .mes-sec-active .mes-grid-title-only,
+  [data-mes-sec] > .mes-grid-block-head,
+  [data-mes-sec] > .mes-grid-head,
+  [data-mes-sec] > .mes-grid-title-only {
     @apply border-emerald-200 bg-emerald-50;
   }
   .mes-sec-active .mes-grid-block-head b,
   .mes-sec-active .mes-grid-head b,
-  .mes-sec-active .mes-grid-title-only {
+  .mes-sec-active .mes-grid-title-only,
+  [data-mes-sec] > .mes-grid-block-head b,
+  [data-mes-sec] > .mes-grid-head b,
+  [data-mes-sec] > .mes-grid-title-only {
     @apply text-emerald-700;
   }
   .mes-sec-active .mes-grid-block-head b::before,
   .mes-sec-active .mes-grid-head b::before,
-  .mes-sec-active .mes-grid-title-only::before {
+  .mes-sec-active .mes-grid-title-only::before,
+  [data-mes-sec] > .mes-grid-block-head b::before,
+  [data-mes-sec] > .mes-grid-head b::before,
+  [data-mes-sec] > .mes-grid-title-only::before {
     @apply bg-emerald-600;
   }
 
@@ -254,6 +263,11 @@ PIPELINE[HF49] 연관 모듈
   .mes-grid-wrap {
     @apply relative grid overflow-hidden border border-slate-200 bg-white;
     grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  /* wrap tabIndex=0 — 브라우저 기본 outline 숨김. 대체 표시는 .mes-cell-focus · .mes-row-active */
+  .mes-grid-wrap:focus,
+  .mes-grid-wrap:focus-visible {
+    outline: none;
   }
   .mes-grid-wrap.mes-grid-no-toolbar {
     grid-template-rows: minmax(0, 1fr) auto;
@@ -331,6 +345,28 @@ PIPELINE[HF49] 연관 모듈
   .mes-grid tbody tr.mes-row-active td.mes-cell-editable,
   .mes-grid tbody tr.mes-row-active:hover td.mes-cell-editable {
     @apply bg-blue-100;
+  }
+
+  /* 오늘 할 일 기한경과 — 잠금 셀 회색·행번호 배경보다 나중에 둔다 */
+  .mes-grid tbody tr.mes-row-overdue td,
+  .mes-grid tbody tr.mes-row-overdue td.mes-cell-locked,
+  .mes-grid tbody tr.mes-row-overdue td.mes-rownum,
+  .mes-grid tbody tr.mes-row-overdue td.mes-rownum-active {
+    @apply bg-red-100 text-red-800;
+  }
+  .mes-grid tbody tr.mes-row-overdue td:first-child {
+    @apply shadow-[inset_3px_0_0_0_#dc2626];
+  }
+  .mes-grid tbody tr.mes-row-overdue:hover td,
+  .mes-grid tbody tr.mes-row-overdue:hover td.mes-cell-locked,
+  .mes-grid tbody tr.mes-row-overdue:hover td.mes-rownum {
+    @apply bg-red-200 text-red-800;
+  }
+  .mes-grid tbody tr.mes-row-overdue.mes-row-active td,
+  .mes-grid tbody tr.mes-row-overdue.mes-row-active td.mes-cell-locked,
+  .mes-grid tbody tr.mes-row-overdue.mes-row-active td.mes-rownum,
+  .mes-grid tbody tr.mes-row-overdue.mes-row-active td.mes-rownum-active {
+    @apply bg-red-200 text-red-800;
   }
 
   /* 활성 섹션 그리드 래퍼 — CSV excel 틴트와 동일 emerald */
@@ -1206,6 +1242,18 @@ PIPELINE[HF49] 연관 모듈
     font-size: 11px;
     box-sizing: border-box;
   }
+  /* time 입력은 text-align 이 안 먹는다 — 내부 필드 묶음을 가운데로 민다 */
+  .html-form-sign-input[type="time"] {
+    text-align: center;
+  }
+  .html-form-sign-input[type="time"]::-webkit-datetime-edit {
+    display: flex;
+    justify-content: center;
+  }
+  /* 시계 아이콘이 칸 폭을 먹고 값을 왼쪽으로 밀어낸다 */
+  .html-form-sign-input[type="time"]::-webkit-calendar-picker-indicator {
+    display: none;
+  }
   .html-form-pre {
     white-space: pre-wrap;
     word-break: break-word;
@@ -1387,6 +1435,12 @@ PIPELINE[HF49] 연관 모듈
   .html-form-row-add .ccp-mtl-cap-input {
     flex: 1;
     min-width: 0;
+  }
+  /* 행 추가 버튼 묶음 — 버튼끼리 붙지 않게 띄운다 */
+  .html-form-row-add .html-form-no-print {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
   .ccp-pkg-num-wrap {
     display: flex;

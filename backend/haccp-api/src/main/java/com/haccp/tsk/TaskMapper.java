@@ -25,11 +25,29 @@ public interface TaskMapper {
     List<String> selectCompanyCodes();
     void generateTasks(@Param("coCd") String coCd, @Param("baseDt") String baseDt, @Param("userId") String userId);
     List<Map<String, Object>> selectTodayTasks(@Param("coCd") String coCd, @Param("userId") String userId, @Param("baseDt") String baseDt);
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-25
+     * 코멘트:
+     *   1) 오늘 할 일 최근 문서를 기간 + OFFSET/LIMIT 으로 조회한다
+     *   2) 랜딩 최근 문서 패널이 호출한다. 문서함 목록 SP 는 건드리지 않는다
+     *   3) 각 행 total_cnt 는 기간 전체 건수다. 0건이면 빈 목록
+     */
+    List<Map<String, Object>> selectTodayTaskDocs(
+            // JWT 회사코드
+            @Param("coCd") String coCd,
+            // 기준일 시작 YYYYMMDD
+            @Param("fromDt") String fromDt,
+            // 기준일 종료 YYYYMMDD
+            @Param("toDt") String toDt,
+            // 건너뛸 행 수 — 0이면 첫 페이지
+            @Param("offset") int offset,
+            // 가져올 행 수 — 화면이 20을 넘긴다
+            @Param("limit") int limit
+    );
     List<Map<String, Object>> selectNotifications(@Param("coCd") String coCd, @Param("userId") String userId);
     void readNotification(@Param("coCd") String coCd, @Param("idx") Long idx, @Param("userId") String userId);
-    List<Map<String, Object>> selectCorrectiveActions(@Param("coCd") String coCd, @Param("status") String status, @Param("fromDt") String fromDt, @Param("toDt") String toDt);
-    void saveCorrectiveAction(@Param("coCd") String coCd, @Param("idx") Long idx, @Param("payloadJson") String payloadJson, @Param("userId") String userId);
-    void deleteCorrectiveAction(@Param("coCd") String coCd, @Param("idx") Long idx, @Param("userId") String userId);
     List<Map<String, Object>> selectRelations(@Param("coCd") String coCd, @Param("docIdx") Long docIdx);
     void saveRelation(@Param("coCd") String coCd, @Param("srcDocIdx") Long srcDocIdx, @Param("relType") String relType, @Param("tgtDocIdx") Long tgtDocIdx, @Param("userId") String userId);
     List<Map<String, Object>> selectAuditExport(@Param("coCd") String coCd, @Param("fromDt") String fromDt, @Param("toDt") String toDt, @Param("status") String status);

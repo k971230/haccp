@@ -233,11 +233,11 @@ export function useDocFormSession<TBuf, TList extends DocListMeta>() {
 
   /**
    * 개발자: 박승우
-   * 일자: 2026-08-06
+   * 일자: 2026-08-25
    * 코멘트:
    *   1) dirty 전건 검증 후 단건 저장을 순차 실행한다
    *   2) 저장 버튼에서 호출한다
-   *   3) 검증 실패·저장 예외 시 중단한다
+   *   3) 신규 저장이면 서버 docIdx 로 activeKey 를 맞춘다 — 예전 버퍼의 docIdx(null)를 보면 키가 __new_* 에 고착된다
    */
   const saveAll = useCallback(async (args: {
     validate: (dirty: EditableRow<TList>[], getBuf: (key: string) => TBuf | null) => DocFormSessionValidateResult | null;
@@ -252,6 +252,8 @@ export function useDocFormSession<TBuf, TList extends DocListMeta>() {
     const err = args.validate(dirty, (key) => buffersRef.current.get(key) ?? null);
     if (err) return err;
 
+    // 활성 행이 저장되면 서버 키. remap 뒤 closure 의 예전 docIdx(신규면 null)를 쓰지 않는다
+    let activeSavedDocIdx: number | null = null;
     for (const row of dirty) {
       const key = row._key;
       if (!key) continue;
@@ -270,7 +272,10 @@ export function useDocFormSession<TBuf, TList extends DocListMeta>() {
           _rowState: undefined,
         } as EditableRow<TList>;
       }));
-      if (activeKey === key) setActiveBuffer(nextBuf);
+      if (activeKey === key) {
+        setActiveBuffer(nextBuf);
+        if (saved.docIdx != null && saved.docIdx > 0) activeSavedDocIdx = saved.docIdx;
+      }
     }
 
     // draft 키를 docIdx 키로 재매핑
@@ -285,19 +290,17 @@ export function useDocFormSession<TBuf, TList extends DocListMeta>() {
     }
     buffersRef.current = remapped;
 
-    if (args.afterAll) await args.afterAll();
-
-    // activeKey를 docIdx로 맞춤
-    if (activeKey && activeBuffer) {
-      const docIdx = (activeBuffer as { docIdx?: number | null }).docIdx;
-      if (docIdx != null && docIdx > 0) {
-        setActiveKey(String(docIdx));
-        setActiveBuffer(buffersRef.current.get(String(docIdx)) ?? activeBuffer);
-      }
+    // afterAll 보다 먼저 맞춘다. loadList 가 목록 키를 N 으로 바꿔도 patchActive 가 같은 키를 친다
+    if (activeSavedDocIdx != null && activeSavedDocIdx > 0) {
+      const nextKey = String(activeSavedDocIdx);
+      setActiveKey(nextKey);
+      setActiveBuffer(buffersRef.current.get(nextKey) ?? null);
     }
+
+    if (args.afterAll) await args.afterAll();
     bump();
     return null;
-  }, [activeBuffer, activeKey, bump, flushActive, syncList]);
+  }, [activeKey, bump, flushActive, syncList]);
 
   /** 저장 후 서버 목록으로 교체할 때 dirty 버퍼 중 저장된 것만 정리 옵션 */
   const clearRowStates = useCallback(() => {

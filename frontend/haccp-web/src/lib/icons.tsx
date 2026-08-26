@@ -43,7 +43,7 @@ import {
 
 /** 버튼 preset 아이콘 — MesButton icon prop에 이 키 문자열을 넘긴다 */
 export const MES_ICONS = {
-  plus: Plus,            // 신규·행 추가
+  plus: Plus,            // 행추가
   edit: Pencil,          // 수정
   save: Save,            // 저장
   trash: Trash2,         // 삭제

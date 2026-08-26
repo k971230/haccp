@@ -11,7 +11,7 @@
  * PIPELINE[HF178] CCP 포장 작성 화면
  */
 // 역할 — CCP 포장 지면 — 양식관리와 같은 HTML
-import { CcpPkgPaper } from "@/pages/docs/html/ccppkgtemplate/CcpPkgPaper";
+import { CcpPkgPaper } from "@/pages/docs/html-form/ccppkgtemplate/CcpPkgPaper";
 // 역할 — 양식 작성 공통 화면
 import { HtmlFormDraftPage } from "../HtmlFormDraftPage";
 // 역할 — 이 화면 작성 API

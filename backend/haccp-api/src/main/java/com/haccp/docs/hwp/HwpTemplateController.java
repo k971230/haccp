@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) 사용양식관리 화면의 목록·저장·파일이력·불러오기/초기화 계약을 제공한다
  *   2) coCd·userId는 요청 본문으로 받지 않고 JWT LoginUserContext만 쓴다
- *   3) URL은 /api/v1/docs/hwp/hwp-template-management/* 이다 — 삭제는 법적서류와 공유하는 company-templates 경로를 Workflow에 둔다
+ *   3) URL은 /api/v1/docs/hwp/hwp-template-management/* 이다 — 삭제도 형제 화면처럼 자기 경로에 둔다
  *
  * PIPELINE[HB123] 사용양식 REST Controller
  * PIPELINE[HB92, HB88] 연관 모듈
@@ -92,6 +92,40 @@ public class HwpTemplateController {
     @PostMapping("/apply-file")
     public CommonResponse<Void> applyHwpTemplateFile(@RequestBody Map<String, Object> row) {
         service.applyHwpTemplateFile(row);
+        return CommonResponse.ok(null);
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-26
+     * 코멘트:
+     *   1) 삭제 가능 여부만 검사하고 자료는 변경하지 않는다
+     *   2) 화면이 삭제 확인창을 열기 전에 호출한다
+     *   3) 시스템 제공 양식·작성된 문서가 있으면 400, 통과하면 void
+     */
+    @PostMapping("/validate-delete")
+    public CommonResponse<Void> validateDelete(
+            // 삭제 키 객체 배열 — 단건도 [{ tmplCd }]
+            @RequestBody List<Map<String, Object>> keys
+    ) {
+        service.validateDelete(keys);
+        return CommonResponse.ok(null);
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-26
+     * 코멘트:
+     *   1) validate-delete 와 같은 검사를 다시 한 뒤 삭제한다
+     *   2) 화면 삭제 확인창에서 호출한다
+     *   3) HTTP DELETE 를 쓰지 않는다 — 성공 시 void
+     */
+    @PostMapping("/delete")
+    public CommonResponse<Void> delete(
+            // 삭제 키 객체 배열 — 단건도 [{ tmplCd }]
+            @RequestBody List<Map<String, Object>> keys
+    ) {
+        service.delete(keys);
         return CommonResponse.ok(null);
     }
 }

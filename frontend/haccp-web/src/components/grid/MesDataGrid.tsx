@@ -1,5 +1,6 @@
 /**
  * MesDataGrid — 읽기전용 그리드 (useMesTable + 가상스크롤 + pref).
+ * 키보드: ArrowUp/Down=행이동. Tab은 네이티브(그리드 밖).
  *
  * 개발자: 박승우
  * 일자: 2026-08-18
@@ -8,12 +9,13 @@
  *   2) pref는 persistId + scrnCd(prop 또는 PageScrnContext)로 저장한다
  *   3) 코드 룩업·로그 그리드도 scrnCd prop으로 열 너비·숨김을 DB에 남긴다
  *   4) singleSelect는 라디오 리드 열 — activeKey와 동기이며 selectable(다중 체크박스)과 같이 쓰지 않는다
+ *   5) 부모가 activeKey를 안 넘기면(로그 조회) 그리드가 localActiveKey로 행 강조·방향키를 맡는다
  *
  * PIPELINE[F89] 읽기전용 데이터 그리드
  * PIPELINE[F90, F75, F173] 연관 모듈
  */
-// 역할 — React 훅·ref
-import { useCallback, useContext, useEffect, useRef } from "react";
+// 역할 — React 훅·ref·키보드 이벤트
+import { useCallback, useContext, useEffect, useRef, useState, type KeyboardEvent } from "react";
 // 역할 — 화면코드 — pref 저장 키
 import { PageScrnContext } from "@/shell/pageCommands";
 // 역할 — 그리드 컬럼·MesDataGrid Props 타입
@@ -36,6 +38,8 @@ import { GridEmptyState } from "./GridEmptyState";
 import { GridRowNumCell, GridCellDisplay } from "./GridCellDisplay";
 // 역할 — 대량 행 가상 스크롤·활성 행 스크롤(F173)
 import { useGridVirtual, scrollGridToActiveRow } from "./useGridVirtual";
+// 역할 — 키보드 행 좌표·툴바 입력 가드
+import { isTypingTarget, nextRowIndex } from "./gridNav";
 // 역할 — 그리드 런타임 오류 격리
 import { GridErrorBoundary } from "./GridErrorBoundary";
 // 역할 — 셀 버튼 더보기 아이콘
@@ -80,12 +84,31 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
   // pref 저장용 화면코드 — prop 우선, 없으면 셸 PageScrnContext
   const ctxScrnCd = useContext(PageScrnContext);
   const scrnCd = props.scrnCd || ctxScrnCd;
+  // 부모가 activeKey를 넘기면(null 포함) 제어. 로그 조회처럼 안 넘기면 그리드가 활성 행을 갖는다
+  const controlled = activeKey !== undefined;
+  const [localActiveKey, setLocalActiveKey] = useState<string | null>(null);
+  const highlightKey = controlled ? activeKey : localActiveKey;
 
 // 설명 — rowKey 필드 또는 함수로 행 id 추출
   const getRowId = useCallback(
     (r: T) => (typeof rowKey === "function" ? rowKey(r) : String(r[rowKey])),
     [rowKey],
   );
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-25
+   * 코멘트:
+   *   1) 비제어면 localActiveKey로 행 강조. 제어면 부모 onRowClick만 호출한다
+   *   2) 행 클릭·방향키·라디오에서 호출
+   *   3) 로그 조회처럼 onRowClick이 없어도 하이라이트는 따라간다
+   */
+  // 설명 — 활성 행 선택 — 비제어면 내부 키, 있으면 onRowClick
+  const selectRow = (row: T) => {
+    if (!controlled) setLocalActiveKey(getRowId(row));
+    props.onSetActive?.();
+    props.onRowClick?.(row);
+  };
 
 // 설명 — 필터·정렬·CSV용 셀 텍스트(날짜·숫자·코드 포맷)
   const cellText = useCallback((r: T, c: GridColumn<T>): string => {
@@ -129,10 +152,30 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
 
   // 설명 — 활성 행 변경 시 스크롤 (F173) — 가상화 시 scrollToIndex
   useEffect(() => {
-    if (!activeKey) return;
-    const idx = view.table.getRowModel().rows.findIndex((r) => r.id === activeKey);
-    scrollGridToActiveRow({ scrollRef, activeKey, rowIndex: idx, virt });
-  }, [activeKey, rows.length, view.displayRows.length, virt.active]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!highlightKey) return;
+    const idx = view.table.getRowModel().rows.findIndex((r) => r.id === highlightKey);
+    scrollGridToActiveRow({ scrollRef, activeKey: highlightKey, rowIndex: idx, virt });
+  }, [highlightKey, rows.length, view.displayRows.length, virt.active]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-25
+   * 코멘트:
+   *   1) 조회 그리드는 화살표만 행이동. Tab은 네이티브(그리드 밖)
+   *   2) wrap tabIndex=0 keydown — 툴바/필터 타이핑은 가로채지 않음
+   *   3) 행 id는 tanstack row.id. 부모가 activeKey를 안 넘기면 localActiveKey로 강조한다
+   */
+  // 설명 — ArrowUp/Down 행이동. Tab은 손대지 않음
+  const onGridKeyDown = (e: KeyboardEvent) => {
+    if (isTypingTarget(e)) return;
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    const tableRows = view.table.getRowModel().rows;
+    const curIdx = highlightKey ? tableRows.findIndex((r) => r.id === highlightKey) : -1;
+    const nextIdx = nextRowIndex(tableRows.length, curIdx, e.key === "ArrowUp" ? -1 : 1);
+    if (nextIdx < 0) return;
+    selectRow(tableRows[nextIdx].original);
+  };
 
 // 설명 — height 100%/auto 시 flex fill 레이아웃
   const fill = height === "100%" || height === "auto";
@@ -174,12 +217,12 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
           if (!row) return null;
           const r = row.original;
           const k = row.id;
-          const active = k === activeKey;
+          const active = k === highlightKey;
           return (
             <tr key={k} data-key={k} className={active ? "mes-row-active" : ""}
               // 클릭 핸들러
-              // 비동기면 run/useAsyncAction으로 중복 클릭 방지 권장
-              onClick={() => { props.onSetActive?.(); props.onRowClick?.(r); }}
+              // 비제어면 localActiveKey, 제어면 onRowClick이 부모 activeKey를 맞춘다
+              onClick={() => selectRow(r)}
               // onDoubleClick — 호출부/컴포넌트에 전달되는 의미 있는 값
               // 변경 시 화면·훅 동작에 영향 — 기본값·nullable 여부 확인
               onDoubleClick={() => props.onRowDoubleClick?.(r)}>
@@ -200,7 +243,7 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
                       // 활성 행일 때 켜짐 — activeKey와 동기
                       checked={active}
                       // 라디오 클릭 — 행 클릭과 동일하게 onRowClick
-                      onChange={() => { props.onSetActive?.(); props.onRowClick?.(r); }}
+                      onChange={() => selectRow(r)}
                       title="이 행 선택"
                     />
                   </div>
@@ -262,7 +305,7 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
                         <button type="button" className={cn("mes-cell-btn", c.required && "mes-cell-btn-required")} title={btn.title}
                           // 클릭 핸들러
                           // 비동기면 run/useAsyncAction으로 중복 클릭 방지 권장
-                          onClick={(e) => { e.stopPropagation(); props.onRowClick?.(r); btn.onClick(r); }}>
+                          onClick={(e) => { e.stopPropagation(); selectRow(r); btn.onClick(r); }}>
                           <MoreHorizontal className="h-3 w-3" aria-hidden />
                         </button>
                       )}
@@ -282,7 +325,7 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
 
   return (
     <div
-      // grid 행: 툴바 / 본문(1fr) / 푸터 — 총 n건이 마지막 행을 가리지 않음
+      // wrap tabIndex=0 — 행 클릭 후 위/아래 방향키가 여기로 들어온다
       className={cn(
         "mes-grid-wrap",
         !showToolbar && "mes-grid-no-toolbar",
@@ -292,6 +335,8 @@ function MesDataGridInner<T extends Record<string, any>>(props: MesDataGridProps
           : "overflow-hidden rounded-xl border border-slate-200 shadow-sm",
       )}
       style={fill ? undefined : { height }}
+      tabIndex={0}
+      onKeyDown={onGridKeyDown}
     >
       {showToolbar && (
         <GridToolbar view={view} columns={columns}

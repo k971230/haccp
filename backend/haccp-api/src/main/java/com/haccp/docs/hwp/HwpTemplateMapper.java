@@ -13,6 +13,8 @@
  */
 package com.haccp.docs.hwp;
 
+// 역할 — 삭제 차단 첫 행
+import com.haccp.common.validation.DeleteBlocker;
 // 역할 — 목록 타입
 import java.util.List;
 import java.util.Map;
@@ -91,6 +93,38 @@ public interface HwpTemplateMapper {
             @Param("tmplCd") String tmplCd,
             // 적용할 이력 idx — null이면 초기화
             @Param("fileIdx") Long fileIdx,
+            // JWT 작업자
+            @Param("userId") String userId
+    );
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-26
+     * 코멘트:
+     *   1) 삭제하면 안 되는 첫 양식 1건을 돌려준다 — 시스템 제공분·작성된 문서
+     *   2) validate-delete·delete 양쪽이 같은 검사를 다시 부른다
+     *   3) 지울 수 있으면 null
+     */
+    DeleteBlocker selectDeleteBlocker(
+            // JWT 회사코드
+            @Param("coCd") String coCd,
+            // 삭제 대상 양식코드 배열
+            @Param("tmplCds") List<String> tmplCds
+    );
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-08-26
+     * 코멘트:
+     *   1) 사용양식 1건을 지운다 — 파일 이력은 논리삭제, 자사 카탈로그 행은 함께 정리
+     *   2) 차단 검사를 통과한 뒤에만 부른다
+     *   3) SP 가 시스템 제공분을 한 번 더 막는다
+     */
+    void deleteHwpTemplate(
+            // JWT 회사코드
+            @Param("coCd") String coCd,
+            // 삭제 대상 양식코드
+            @Param("tmplCd") String tmplCd,
             // JWT 작업자
             @Param("userId") String userId
     );

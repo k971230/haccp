@@ -132,8 +132,9 @@ function toColumnDefs<T extends GridRowBase>(
   for (const col of columns) {
     if (col.hidden || col.field === "coCd") continue;
     const numeric = col.type === "number" || col.type === "amount";
-    const defaultSum = numeric && col.field !== "seq" ? "sum" : undefined;
-    const agg = col.aggregationFn ?? defaultSum;
+    // 집계는 컬럼이 aggregationFn 을 명시했을 때만 붙인다.
+    // 숫자열을 자동으로 더하면 정렬코드·순번 같은 식별자까지 합이 찍힌다
+    const agg = col.aggregationFn;
     defs.push({
       id: col.field,
       accessorKey: col.field,
@@ -652,9 +653,8 @@ export function useMesTable<T extends GridRowBase>(opts: UseMesTableOptions<T>):
   const aggregates = useMemo(() => {
     const acc: Record<string, number | null> = {};
     for (const c of visibleCols) {
-      const defaultSum =
-        (c.type === "number" || c.type === "amount") && c.field !== "seq" ? "sum" : undefined;
-      const fn: MesAggregationFn | undefined = c.aggregationFn ?? defaultSum;
+      // 자동 합계 없음 — 컬럼이 명시한 것만 (useMesTable 컬럼 정의와 같은 규칙)
+      const fn: MesAggregationFn | undefined = c.aggregationFn;
       if (!fn) continue;
       const vals = filteredRows
         .map((r) => Number((r as Record<string, unknown>)[c.field]))

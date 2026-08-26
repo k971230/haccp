@@ -17,7 +17,7 @@ alwaysApply: false
 | 메뉴 | 대분류·화면 2단 (`h_menu_cd`) |
 
 UI 마감: [`02-frontend-ui.mdc`](02-frontend-ui.mdc) · 운영: [`06-operations.mdc`](06-operations.mdc)  
-경로 정본: [`docs/24_URL_DB_폴더_패키지_정본.md`](../../docs/24_URL_DB_폴더_패키지_정본.md)
+경로 정본: [`docs/4_명명과_경로.md`](../../docs/4_명명과_경로.md)
 
 ## 이름 접두사
 
@@ -76,5 +76,5 @@ UI 마감: [`02-frontend-ui.mdc`](02-frontend-ui.mdc) · 운영: [`06-operations
 ## 인수인계·PIPELINE
 
 - 주석: [`05-handoff-comments.mdc`](05-handoff-comments.mdc)
-- 골드: `shell/HaccpShell.tsx` · `pages/docs/ccp/ColdMonitorPage.tsx` · `pages/auth/LoginPage.tsx`
-- 태그 접두 **`HF`**. 색인 [`docs/23_PIPELINE.md`](../../docs/23_PIPELINE.md)
+- 골드: `shell/HaccpShell.tsx` · `pages/docs/hwp/HwpTemplateManagementPage.tsx` · `pages/auth/LoginPage.tsx`
+- 태그 접두 **`HF`**. 색인 [`docs/5_PIPELINE_색인.md`](../../docs/5_PIPELINE_색인.md)

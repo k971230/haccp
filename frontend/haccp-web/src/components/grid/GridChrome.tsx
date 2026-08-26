@@ -555,8 +555,8 @@ export function GridFooter<T extends Record<string, any>>(props: {
     .filter((c) => agg[c.field] !== undefined && agg[c.field] !== null && c.field !== "seq")
     .map((c) => {
       const v = agg[c.field] as number;
-      const fn = c.aggregationFn
-        ?? ((c.type === "number" || c.type === "amount") && c.field !== "seq" ? "sum" : "");
+      // 컬럼이 명시한 집계만 — 총건수는 아래 왼쪽에 항상 나온다
+      const fn = c.aggregationFn;
       if (!fn) return null;
       const label = fn === "avg" ? "평균" : fn === "min" ? "최소" : fn === "max" ? "최대" : fn === "count" ? "건" : "합";
       const text = fn === "avg"
