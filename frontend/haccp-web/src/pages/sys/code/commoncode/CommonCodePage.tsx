@@ -32,7 +32,8 @@ import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 import { usePageCommands } from "@/shell/pageCommands";
-import { runGridSave } from "@/shell/gridRules";
+import {
+  stripRowMeta, runGridSave } from "@/shell/gridRules";
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
 import type { EditableRow } from "@/types/editable";
 // 역할 — 공통코드 도메인 API
@@ -59,12 +60,6 @@ import {
   newUsrRow,
   type CodeRow,
 } from "./CommonCodeRule";
-
-/** 저장 payload 정리 — 편집 메타(_key·_rowState·_original) 제거 */
-function stripMeta(row: CodeRow): CodeManageRow {
-  const { _key: _k, _rowState: _rs, _original: _o, ...rest } = row;
-  return rest as CodeManageRow;
-}
 
 /**
  * 개발자: 박승우
@@ -213,7 +208,7 @@ export default function CommonCodePage() {
           : null,
       // 대분류는 좌측에서 고른 값이 정본이다 — 행마다 다시 박아 넣는다
       save: (rows) =>
-        saveCommonCodes(rows.map((row) => stripMeta({ ...row, mainCd } as CodeRow))),
+        saveCommonCodes(rows.map((row) => stripRowMeta<CodeManageRow>({ ...row, mainCd } as never))),
       reload: () => loadDetails(mainCd),
     });
   };

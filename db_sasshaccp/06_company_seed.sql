@@ -185,4 +185,22 @@ SELECT :'co_cd'                                                           AS 회
        (SELECT count(*) FROM tbl_approval_line_step WHERE co_cd = :'co_cd') AS 결재단계,
        (SELECT count(*) FROM tbl_code         WHERE co_cd = :'co_cd')     AS 공통코드,
        (SELECT count(*) FROM tbl_company_template WHERE co_cd = :'co_cd') AS 사용양식,
-       (SELECT count(*) FROM tbl_doc_no_rule  WHERE co_cd = :'co_cd')     AS 문서번호규칙;
+       (SELECT count(*) FROM tbl_doc_no_rule  WHERE co_cd = :'co_cd')     AS 문서번호규칙,
+         -- 0 이 정상이다. HTML 작성을 쓰려면 아래 「다음 단계」를 해야 한다
+         (SELECT count(*) FROM tbl_tml_ccp_htg_ver WHERE co_cd = :'co_cd')  AS HTML지면버전;
+
+-- ============================================================
+--  다음 단계 — 이걸 안 하면 HTML 작성 화면이 빈 목록으로 뜬다
+--
+--  위 HTML지면버전 이 0 이면 아직 쓸 HTML 양식이 없다는 뜻이다.
+--  개설한 업체의 관리자로 로그인해 양식 원본 5화면에서 「행추가」를 누른다.
+--  행추가는 신규 등록이 아니라 **표준 복사**다 — 표준 지면을 그 업체 것으로 떠 온다.
+--
+--    문서 > HTML·양식 원본 > 일반위생·공정점검 양식관리      행추가 후 저장
+--                          > CCP 검증점검표 양식관리         행추가 후 저장
+--                          > CCP 포장공정 일지관리           행추가 후 저장
+--                          > CCP 가열공정 일지관리           행추가 후 저장
+--                          > CCP 금속검출공정 일지관리        행추가 후 저장
+--
+--  다섯 화면 모두 해야 작성 화면 5개가 다 열린다. HWP 작성은 이 단계가 필요 없다.
+-- ============================================================
