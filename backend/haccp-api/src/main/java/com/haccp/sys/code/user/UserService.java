@@ -239,8 +239,10 @@ public class UserService {
         }
         String name = text(file.getOriginalFilename());
         if (name.isEmpty()) name = "sign.png";
-        String mime = text(file.getContentType());
-        if (mime.isEmpty()) mime = guessImageMime(name);
+        // MIME은 **확장자에서만** 정한다 — 올린 쪽이 준 Content-Type을 그대로 저장하면
+        // 그 값이 조회 응답의 Content-Type이 되어 inline으로 되돌아간다.
+        // text/html 로 올리면 우리 도메인에서 실행되는 문서가 된다 (2026-08-27)
+        String mime = guessImageMime(name);
 
         userMapper.updateSign(LoginUserContext.coCd(), target,
                 content, mime, name, LoginUserContext.userId());
@@ -300,9 +302,12 @@ public class UserService {
         }
         String contentType = text(file.getContentType()).toLowerCase();
         String name = text(file.getOriginalFilename()).toLowerCase();
-        boolean okType = contentType.equals("image/png") || contentType.equals("image/jpeg");
+        boolean okType = contentType.isEmpty()
+                || contentType.equals("image/png") || contentType.equals("image/jpeg");
+        // 확장자는 **반드시** 맞아야 한다 — 저장 MIME을 여기서 정하기 때문이다.
+        // 예전에는 둘 중 하나만 맞아도 통과시켜, 아무 Content-Type이나 실려 들어왔다
         boolean okExt = name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg");
-        if (!okType && !okExt) {
+        if (!okExt || !okType) {
             throw new BizException("PNG 또는 JPG 파일만 업로드할 수 있습니다.");
         }
     }

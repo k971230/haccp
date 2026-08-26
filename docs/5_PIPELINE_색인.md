@@ -292,7 +292,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachRule.ts` | 결재 첨부 화면 |
 | `HF200` | `frontend/haccp-web/src/shell/gridRules/gridSave.ts` | 편집 그리드 저장 공통 |
 
-## 백엔드 (HB) — 태그 79개 · 파일 272곳
+## 백엔드 (HB) — 태그 79개 · 파일 273곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
@@ -324,7 +324,8 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/common/context/LoginUser.java` | common 모듈 |
 | `HB12` | `backend/haccp-api/src/main/java/com/haccp/common/config/JwtFilter.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/common/context/LoginUserContext.java` | common 모듈 |
-| `HB13` | `backend/haccp-api/src/main/java/com/haccp/common/context/RequestMeta.java` | common 모듈 |
+| `HB13` | `backend/haccp-api/src/main/java/com/haccp/common/config/SecurityHeadersFilter.java` | 공통 설정 |
+|  | `backend/haccp-api/src/main/java/com/haccp/common/context/RequestMeta.java` | common 모듈 |
 | `HB19` | `backend/haccp-api/src/main/java/com/haccp/auth/AuthController.java` | REST Controller |
 |  | `backend/haccp-api/src/main/java/com/haccp/auth/AuthService.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/common/config/JwtProvider.java` | 연관 모듈 |

@@ -73,7 +73,7 @@ com.haccp
 ## 확인
 
 ```sh
-./mvnw -q -o test     # 단위 23건
+./mvnw -q -o test     # 단위 104건
 ```
 
 **단위 테스트 통과가 기동 성공을 뜻하지 않는다.** MyBatis 매퍼 XML 은 컴파일에 안 잡힌다 —
