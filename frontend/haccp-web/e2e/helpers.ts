@@ -103,7 +103,7 @@ export function resetDocuments(): void {
   if (!fs.existsSync(sql) || !hasDbTools()) {
     test.skip(true, "tools/ 가 없어 문서를 비울 수 없다 (로컬 전용)");
   }
-  runJava("ApplyOneSql", sql);
+  runDb(`@${sql}`);
 }
 
 /** ESM 이라 __dirname 이 없다 — 실행 기준은 항상 frontend/haccp-web 다 */
@@ -113,19 +113,27 @@ function repoRoot(): string {
 
 /** tools/ 는 git 에 없다(로컬 전용) — CI 에서는 DB 대조를 건너뛴다 */
 export function hasDbTools(): boolean {
-  return fs.existsSync(path.join(repoRoot(), "tools", "out", "Q.class"));
+  return fs.existsSync(path.join(repoRoot(), "tools", "q.mjs"));
 }
 
-function runJava(main: string, arg: string): string {
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-26
+ * 코멘트:
+ *   1) SQL 한 덩어리를 돌리고 Q.java 와 같은 형식의 표를 돌려준다
+ *   2) dbRows·dbOne·seedCompany 가 호출한다. 동기라 스펙 어디서나 그냥 쓴다
+ *   3) 예전에는 질의마다 JVM 을 띄웠다 — 원격 DB 상대로 1.9초씩 붙고 가끔 물려
+ *      Node 이벤트 루프째 막혔다. Windows 에서는 timeout 이 JVM 을 못 죽여
+ *      Playwright 의 시험 타임아웃도 안 먹었다. 그래서 JVM 을 걷어냈다 (0.32초)
+ */
+function runDb(sql: string): string {
   const root = repoRoot();
-  const out = path.join(root, "tools", "out");
-  const jar = path.join(
-    process.env.USERPROFILE || process.env.HOME || "",
-    ".m2/repository/org/postgresql/postgresql/42.3.6/postgresql-42.3.6.jar",
-  );
-  return execFileSync("java", ["-Dfile.encoding=UTF-8", "-cp", `${out};${jar}`, main, arg], {
+  return execFileSync("node", [path.join(root, "tools", "q.mjs"), sql], {
     cwd: root,
     encoding: "utf-8",
+    // 물리면 멈추지 말고 실패해야 원인이 보인다. q.mjs 안에도 접속·질의 타임아웃이 있다
+    timeout: 60_000,
+    maxBuffer: 32 * 1024 * 1024,
   });
 }
 
@@ -142,7 +150,7 @@ export function dbRows(sql: string): string[][] {
   if (!hasDbTools()) {
     test.skip(true, "tools/ 가 없어 DB 대조를 건너뛴다 (로컬 전용)");
   }
-  return runJava("Q", sql)
+  return runDb(sql)
     .split(/\r?\n/)
     .filter((l) => l.trim() && !/^-+$/.test(l.trim()) && !/^\(\d+ rows?\)$/.test(l.trim()))
     .map((l) => l.split(" | ").map((c) => c.trim()));
@@ -417,7 +425,7 @@ export function seedCompany(vars: {
     });
 
   if (v.co_cd === v.src_co) throw new Error("원본 회사코드와 같다 — 다른 co_cd 로 돌린다");
-  runJava("Q", body);
+  runDb(body);
 }
 
 /** 업체 하나를 통째로 지운다 — 시드가 만든 표를 역순으로 비운다 */
@@ -437,6 +445,6 @@ export function purgeCompany(coCd: string): void {
     "tbl_code",
     "tbl_company",
   ]) {
-    runJava("Q", `DELETE FROM ${t} WHERE co_cd = '${coCd}'`);
+    runDb(`DELETE FROM ${t} WHERE co_cd = '${coCd}'`);
   }
 }
