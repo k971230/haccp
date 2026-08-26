@@ -102,10 +102,13 @@ elif q == "success":
     print("true" if o.get("success") else "false")
 elif q == "menu_len":
     print(len(d) if isinstance(d, list) else 0)
-elif q == "has_approval_history":
-    # menu_cd 는 kebab 개편 후 menu-approval-history — 화면코드(scrn_cd)로 본다
+elif q == "leaf_len":
+    # leaf 화면 수 — scrnCd 가 있는 항목만 센다. 이 값이 0 이면 STEP 03 회귀다
+    print(sum(1 for x in d if isinstance(x, dict) and x.get("scrnCd")) if isinstance(d, list) else 0)
+elif q == "has_landing":
+    # 랜딩 화면은 누구에게나 보인다 — 화면코드가 실려 오는지 이걸로 본다
     ok = isinstance(d, list) and any(
-        isinstance(x, dict) and x.get("scrnCd") == "approval-history" for x in d
+        isinstance(x, dict) and x.get("scrnCd") == "today-tasks" for x in d
     )
     print("yes" if ok else "")
 else:
@@ -137,24 +140,30 @@ fetch "$TMP/menu.json" "$BASE_URL/api/v1/menu/list" -H "Authorization: Bearer $T
 MLEN="$(jget "$TMP/menu.json" menu_len)"
 [ "${MLEN:-0}" -ge 5 ] || { echo "메뉴 ${MLEN:-0}건 — 5건 미만"; exit 1; }
 
-echo "==> 6) approval-history leaf (STEP 03 회귀, scrnCd)"
-[ -n "$(jget "$TMP/menu.json" has_approval_history)" ] || {
-  echo "approval-history 화면(scrnCd) 메뉴 부재 — STEP 03 회귀"; exit 1;
+# 화면 이름 하나를 박아 두면 개명 때마다 스모크가 깨진다 —
+# 2026-08-26 에 approval-history(→ sign-ok) 로 실제로 그랬다.
+# leaf 가 실려 오는지와, 절대 안 바뀌는 랜딩 화면만 본다.
+echo "==> 6) 메뉴 leaf 에 화면코드가 실려 온다 (STEP 03 회귀)"
+LEAF="$(jget "$TMP/menu.json" leaf_len)"
+[ "${LEAF:-0}" -ge 5 ] || { echo "leaf 화면 ${LEAF:-0}건 — scrnCd 가 안 실린다"; exit 1; }
+[ -n "$(jget "$TMP/menu.json" has_landing)" ] || {
+  echo "랜딩 화면(today-tasks)이 메뉴에 없다"; exit 1;
 }
 
-echo "==> 7) 냉장 CCP 목록"
+echo "==> 7) 작성 화면 목록 (화면 API -> SP -> DB)"
 FROM_DT="$(smoke_ymd 7)"
 TO_DT="$(smoke_ymd 0)"
-# SCREEN_PATH · CcpColdController 와 동일. 구 /api/v1/ccp/cold-monitor 는 없다
-fetch "$TMP/cold.json" \
-  "$BASE_URL/api/v1/docs/ccp/ccp-cold-monitor/list?fromDt=${FROM_DT}&toDt=${TO_DT}" \
+# SCREEN_PATH · CcpHtgDraftController 와 같다. smoke(VIEWER)가 읽을 수 있는 화면이어야 한다
+fetch "$TMP/draft.json" \
+  "$BASE_URL/api/v1/draft/ccp-monitoring/ccp-htg/list?fromDt=${FROM_DT}&toDt=${TO_DT}" \
   -H "Authorization: Bearer $TOKEN"
-[ "$(jget "$TMP/cold.json" success)" = "true" ] || { echo "cold-monitor 실패"; cat "$TMP/cold.json" >&2; exit 1; }
+[ "$(jget "$TMP/draft.json" success)" = "true" ] || { echo "ccp-htg 목록 실패"; cat "$TMP/draft.json" >&2; exit 1; }
 
-echo "==> 8) 회사 사용양식 목록"
-fetch "$TMP/tmpl.json" "$BASE_URL/api/v1/bas/company-templates/list" \
+echo "==> 8) 문서 목록 (여러 화면이 함께 쓰는 문서 허브)"
+# 구 /api/v1/bas/company-templates 는 없다. 사용양식관리는 VIEWER read 권한이 없어 403 이다
+fetch "$TMP/docs.json" "$BASE_URL/api/v1/docs/documents/list" \
   -H "Authorization: Bearer $TOKEN"
-[ "$(jget "$TMP/tmpl.json" success)" = "true" ] || { echo "company-templates 실패"; cat "$TMP/tmpl.json" >&2; exit 1; }
+[ "$(jget "$TMP/docs.json" success)" = "true" ] || { echo "문서 목록 실패"; cat "$TMP/docs.json" >&2; exit 1; }
 
 echo "==> 9) UV/PV collect (HTTP 200만)"
 ENTER_DT="$(date +%Y-%m-%dT%H:%M:%S 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%S)"
