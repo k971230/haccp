@@ -265,8 +265,10 @@ export function validateForTransfer(
   items: HtmlFormItem[],
   // 기록 표 행 — CCP 모니터링일지 작성만 채워 온다. 있으면 이쪽이 사용자 입력이다
   logRows?: HtmlFormLogRow[],
+  // 항목형 지면인지 — HWP 문서형은 false. 자세한 것은 firstInvalidTarget
+  itemPaper = true,
 ): string | null {
-  return firstInvalidTarget(baseKey, items, logRows)?.message ?? null;
+  return firstInvalidTarget(baseKey, items, logRows, itemPaper)?.message ?? null;
 }
 
 /** 전송을 막은 첫 자리 — 문구와 그 자리를 함께 준다 */
@@ -297,8 +299,19 @@ export function firstInvalidTarget(
   items: HtmlFormItem[],
   // 기록 표 행 — CCP 모니터링일지 작성만 채워 온다
   logRows?: HtmlFormLogRow[],
+  /*
+   * 항목형 지면인지 — 기본 true.
+   *
+   * HWP 문서형(`hwp-write`)은 본문이 rhwp 파일이라 점검 항목이 **원래 없다**.
+   * 그런데 항목형과 같은 규칙을 태우면 「점검 행이 없습니다」로 전송이 막힌다.
+   * 그래서 운영에서 HWP 문서가 한 건도 전송된 적이 없었다 — 전부 작성중으로 남았다.
+   * 문서형은 일자만 본다.
+   */
+  itemPaper = true,
 ): TransferBlock | null {
   if (!/^\d{8}$/.test(baseKey)) return { message: MES.required("일자") };
+  // 문서형일 때(= HWP) 볼 항목이 없다. 일자만 맞으면 전송한다
+  if (!itemPaper) return null;
   // 기록 표가 있는 화면일 때(= CCP 모니터링) items 는 한계기준·주기·방법 안내문이라 입력값이 아니다.
   // 사용자가 채우는 곳은 기록 표뿐이므로 그 행만 본다
   if (logRows && logRows.length > 0) return firstInvalidLogRow(logRows);

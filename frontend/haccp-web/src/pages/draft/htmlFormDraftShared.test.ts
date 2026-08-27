@@ -142,6 +142,24 @@ describe("validateForTransfer — 전송 직전 필수값", () => {
     expect(block?.message).toContain("테스트 항목");
   });
 
+  /*
+   * HWP 문서형은 본문이 rhwp 파일이라 점검 항목이 원래 없다.
+   * 항목형 규칙을 태우면 「점검 행이 없습니다」로 전송이 영영 막힌다 —
+   * 운영에서 HWP 문서가 한 건도 전송된 적이 없었다.
+   */
+  it("문서형 지면(HWP)은 항목이 없어도 막지 않는다", () => {
+    expect(validateForTransfer("20260827", [], undefined, false)).toBeNull();
+    expect(firstInvalidTarget("20260827", [], undefined, false)).toBeNull();
+  });
+
+  it("문서형이어도 일자는 본다", () => {
+    expect(validateForTransfer("", [], undefined, false)).toContain("일자");
+  });
+
+  it("항목형은 그대로 항목이 없으면 막는다", () => {
+    expect(validateForTransfer("20260827", [])).toBe("점검 행이 없습니다.");
+  });
+
   it("막을 것이 없으면 자리도 없다", () => {
     expect(firstInvalidTarget("20260824", ok)).toBeNull();
   });
