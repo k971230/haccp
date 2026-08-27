@@ -83,8 +83,20 @@ test.describe("권한그룹관리", () => {
 
 test.describe("메뉴관리", () => {
   test("메뉴명을 고치면 DB 에 남는다", async ({ page }) => {
+    const NEW_NM = "E2E 수정메뉴";
+    /*
+     * 앞 회차가 중간에 끊기면 이름이 고친 채로 남는다. 그러면 이번 회차가
+     * **같은 값을 넣게 되어 아무것도 바뀌지 않고**, 저장 요청 자체가 안 나가
+     * 「응답이 안 온다」로 30초 뒤에 터진다. 원인이 하나도 안 보이는 실패다.
+     * 시작할 때 원래 이름으로 되돌려 놓는다.
+     */
+    dbOne(
+      `UPDATE tbl_menu SET menu_nm='오늘 할 일'
+        WHERE menu_cd='today-tasks' AND co_cd='0000' AND menu_nm='${NEW_NM}'`,
+    );
     const before = dbOne("SELECT menu_nm FROM tbl_menu WHERE menu_cd='today-tasks' AND co_cd='0000'");
     expect(before, "today-tasks 메뉴가 없다").not.toBe("");
+    expect(before, "고칠 이름이 이미 시험용 이름이다 — 바뀌는 게 없어 저장이 안 나간다").not.toBe(NEW_NM);
 
     const { user, pass } = adminCreds();
     await login(page, user, pass);
@@ -97,10 +109,10 @@ test.describe("메뉴관리", () => {
       .evaluateAll((trs) => trs.findIndex((tr) => (tr.textContent || "").includes("today-tasks")));
     expect(rowIdx, "today-tasks 행을 목록에서 못 찾았다").toBeGreaterThanOrEqual(0);
 
-    await fillCell(grid, rowIdx, "메뉴명", "E2E 수정메뉴");
+    await fillCell(grid, rowIdx, "메뉴명", NEW_NM);
     expect(await saveAndConfirm(page, "/menu-management/save")).toBe(200);
     expect(dbOne("SELECT menu_nm FROM tbl_menu WHERE menu_cd='today-tasks' AND co_cd='0000'")).toBe(
-      "E2E 수정메뉴",
+      NEW_NM,
     );
 
     // 원래 이름으로 되돌린다 — 다음 시험·사람이 쓰는 화면이다

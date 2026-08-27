@@ -47,18 +47,18 @@ function purge(): void {
   /*
    * 양식 표에서만 찾으면 안 된다 — 앞 회차가 반쯤 지워져 버전 표에만 남아 있을 수 있고,
    * 그러면 다음 회차가 같은 코드를 다시 채번하려다 409 로 막힌다. 버전 표 이름으로도 찾는다.
+   *
+   * 그리고 지울 코드를 **부분질의로** 넘긴다. 목록을 문자열로 만들어 IN (…) 에 박으면
+   * 운영처럼 자사 양식이 쌓인 DB 에서는 명령줄 길이를 넘겨 SQL 이 잘린다 —
+   * `syntax error at or near ".."` 로 터진다. 실제로 배포 서버에서 10건이 그렇게 났다.
    */
-  const codes = dbOne(
-    `SELECT string_agg(DISTINCT quote_literal(tmpl_cd), ',') FROM (
-       SELECT tmpl_cd FROM tbl_template WHERE tmpl_nm='${NAME}'
+  const codeSql = `SELECT tmpl_cd FROM tbl_template WHERE tmpl_nm='${NAME}'
        UNION SELECT tmpl_cd FROM tbl_tml_ccp_htg_ver WHERE ver_nm='${NAME}'
        UNION SELECT tmpl_cd FROM tbl_tml_ccp_pkg_ver WHERE ver_nm='${NAME}'
        UNION SELECT tmpl_cd FROM tbl_tml_ccp_mtl_ver WHERE ver_nm='${NAME}'
        UNION SELECT tmpl_cd FROM tbl_tml_ccp_chk_ver WHERE ver_nm='${NAME}'
-       UNION SELECT tmpl_cd FROM tbl_html_hyg_prc_ver WHERE ver_nm='${NAME}'
-     ) t`,
-  );
-  if (!codes) return;
+       UNION SELECT tmpl_cd FROM tbl_html_hyg_prc_ver WHERE ver_nm='${NAME}'`;
+
   const tables = dbRows(
     `SELECT table_name FROM information_schema.columns
       WHERE table_schema='sasshaccp' AND column_name='tmpl_cd'
@@ -75,7 +75,7 @@ function purge(): void {
     .slice(1)
     .map((r) => r[0]);
   for (const t of [...tables, ...verTables, "tbl_company_template", "tbl_template"]) {
-    dbOne(`DELETE FROM ${t} WHERE tmpl_cd IN (${codes})`);
+    dbOne(`DELETE FROM ${t} WHERE tmpl_cd IN (${codeSql})`);
   }
 }
 
