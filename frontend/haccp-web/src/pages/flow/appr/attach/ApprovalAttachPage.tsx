@@ -458,13 +458,18 @@ export default function ApprovalAttachPage() {
                   <p className="text-xs text-slate-400">아직 상신하지 않은 문서입니다.</p>
                 ) : (
                   <ul className="space-y-1">
-                    {detail.approvals.map((step) => (
+                    {detail.approvals.map((step, at) => (
                       <li
                         key={step.idx}
                         className="flex items-center justify-between gap-2 rounded border border-slate-100 px-2 py-1.5 text-xs"
                       >
                         <span>
-                          {step.stepNo}차 {roleLabel(step.roleCd, step.roleCd)} · {step.approverNm || step.approverId || "미지정"}
+                          {/*
+                            * 차수는 결재선 단계번호(stepNo)가 아니라 이 문서가 실제로 거치는 순서다.
+                            * 검토 단계를 꺼 둔 결재선은 1·3 만 만들어져서 stepNo 를 그대로 쓰면
+                            * 「1차 … 3차 …」로 건너뛰어 2차가 빠진 것처럼 읽힌다.
+                            */}
+                          {at + 1}차 {roleLabel(step.roleCd, step.roleCd)} · {step.approverNm || step.approverId || "미지정"}
                         </span>
                         <span className="text-slate-500">
                           {resultLabel(step.resultCd, step.resultCd)}

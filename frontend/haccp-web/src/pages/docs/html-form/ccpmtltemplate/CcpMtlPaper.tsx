@@ -324,6 +324,8 @@ export function CcpMtlPaper({
             // 보라 틴트 — 행추가(amber)와 구분
             variant="pass"
             icon="check"
+            // 판정만 채운다는 것을 이름만으로는 알 수 없다 — 온도를 안 채워 전송이 막힌다는 보고가 있었다
+            title="판정만 적합으로 채운다. 온도·수치는 실측값이라 직접 넣어야 한다"
             onClick={() => onLogRowsChange?.(allLogRowsPass(rows))}
           >
             모두 적합
@@ -425,7 +427,10 @@ function SensRow({
   onRemove?: () => void;
 }) {
   return (
-    <tr>
+    <tr
+      // 전송이 막힌 기록 행으로 화면을 옮길 때 작성 화면이 이 값으로 행을 찾는다
+      data-log-seq={row?.rowSeq}
+    >
       <td>
         {label ? label : (
           <HtmlFormCellInput

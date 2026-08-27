@@ -79,6 +79,8 @@ import {
   htmlFormDraftGridRules,
   sendStateOf,
   validateForTransfer,
+  firstInvalidTarget,
+  type TransferBlock,
   type HtmlFormDraftBuf,
   type SendState,
 } from "./htmlFormDraftShared";
@@ -781,6 +783,37 @@ export function HtmlFormDraftPage({
    *   2) 우측 전송 버튼·셸 전송 명령이 호출한다
    *   3) 저장 후 상태·필수값이 어긋나면 전송하지 않는다
    */
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-27
+   * 코멘트:
+   *   1) 전송을 막은 칸으로 지면을 스크롤하고 첫 입력칸에 포커스를 준다
+   *   2) 전송 필수값 검사가 걸렸을 때만 호출한다
+   *   3) 그 행을 못 찾으면 아무 일도 하지 않는다 — 토스트는 이미 떠 있다
+   *
+   * 항목형 지면은 data-item-cd, 기록 표는 data-log-seq 로 행을 찾는다.
+   * 기록 표는 작업 전·후를 나눠 그려서 배열 위치로는 못 찾는다.
+   */
+  const focusBlockedCell = (block: TransferBlock) => {
+    const sel = block.itemCd
+      ? `[data-item-cd="${CSS.escape(block.itemCd)}"]`
+      : block.logRowSeq != null ? `[data-log-seq="${block.logRowSeq}"]` : "";
+    if (!sel) return;
+    const row = document.querySelector<HTMLElement>(sel);
+    if (!row) return;
+    row.scrollIntoView({ block: "center", behavior: "smooth" });
+    /*
+     * 값 칸을 먼저 찾고, 없을 때만(= 라디오 전용 항목) 라디오에 포커스를 준다.
+     * 한 selector 에 콤마로 묶으면 querySelector 가 문서 순서로 골라서
+     * 값이 빈 항목인데도 앞에 있는 라디오가 잡힌다 — 커서가 엉뚱한 칸에 선다.
+     */
+    const value = row.querySelector<HTMLElement>(
+      "input:not([type=radio]):not([type=checkbox]):not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly])",
+    );
+    const target = value ?? row.querySelector<HTMLElement>("input[type=radio]:not([disabled])");
+    target?.focus();
+  };
+
   const handleSend = () => action.run(async () => {
     if (!activeKey || !buf) return mesToast(MES.selectRow, "warn");
     // docIdx 없을 때(= 좌측 기본정보 미저장) 전송 불가
@@ -793,9 +826,15 @@ export function HtmlFormDraftPage({
     if (!canSendDoc(sendIdx, cur.status)) {
       return mesToast("전송대기 문서만 전송할 수 있습니다.", "warn");
     }
-    // 필수값 기준은 공통 규칙 한곳 — 기준이 바뀌면 validateForTransfer 만 고친다
-    const invalid = validateForTransfer(cur.baseKey, cur.items, cur.logRows);
-    if (invalid) return mesToast(invalid, "warn");
+    // 필수값 기준은 공통 규칙 한곳 — 기준이 바뀌면 firstInvalidTarget 만 고친다
+    const block = firstInvalidTarget(cur.baseKey, cur.items, cur.logRows);
+    if (block) {
+      mesToast(block.message, "warn");
+      // 문구만 띄우면 항목이 수십 개인 지면에서 어느 칸인지 사람이 찾아야 한다.
+      // 현장에서 「빈칸 술래잡기」가 됐다는 보고가 있어 그 칸으로 옮겨 준다
+      focusBlockedCell(block);
+      return undefined;
+    }
     if (!await mesConfirm("전송하시겠습니까?\n전송 후에는 수정·삭제할 수 없습니다.")) return;
     try {
       await processDocumentApproval({ docIdx: sendIdx as number, actionCd: "REQUEST" });
@@ -940,12 +979,20 @@ export function HtmlFormDraftPage({
                     // 좌측 목록 접기·펴기 — 지면·편집기 폭을 넓힐 때 쓴다. 6개 작성 화면이 같게 동작한다
                     size="sm"
                     variant="ghost"
+                    // 부모가 overflow-hidden 이라 줄지 않으면 넉 자가 두 줄로 접혀 세로로 깨져 보였다
+                    className="shrink-0 whitespace-nowrap"
                     title={listFolded ? "작성 목록 펴기" : "작성 목록 접기"}
                     onClick={() => setListFolded((prev) => !prev)}
                   >
                     {listFolded ? "목록 펴기" : "목록 접기"}
                   </MesButton>
-                  <b className="truncate">{buf?.tmplNm || paperTitle}</b>
+                  <b
+                    // 폭이 모자라면 말줄임한다 — 잘린 이름을 마우스로 확인할 수 있게 전체를 title 에 둔다
+                    className="truncate"
+                    title={buf?.tmplNm || paperTitle}
+                  >
+                    {buf?.tmplNm || paperTitle}
+                  </b>
                   {buf ? (
                     <span className="text-xs font-normal text-slate-500">
                       {SEND_STATE_NM[sendStateOf(status)]}

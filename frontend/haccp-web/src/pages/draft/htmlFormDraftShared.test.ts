@@ -23,6 +23,7 @@ import {
   htmlFormDraftGridRules,
   sendStateOf,
   validateForTransfer,
+  firstInvalidTarget,
 } from "./htmlFormDraftShared";
 
 /** 점검 행 1건 — 필요한 칸만 채운다 */
@@ -126,6 +127,25 @@ describe("validateForTransfer — 전송 직전 필수값", () => {
     expect(validateForTransfer("20260824", rows)).toContain("테스트 항목");
   });
 
+  /*
+   * 문구만으로는 어느 칸인지 못 찾는다 — 항목이 수십 개인 지면에서
+   * 사람이 빈칸을 눈으로 뒤지게 된다는 현장 보고가 있었다.
+   * 그래서 막은 자리를 같이 돌려준다. 화면은 그 값으로 행을 찾아 스크롤한다.
+   */
+  it("막은 자리의 항목코드를 같이 준다 — 화면이 그 칸으로 옮긴다", () => {
+    const rows = [
+      item({ itemCd: "hp-01", inputType: "radio", yn: "Y" }),
+      item({ itemCd: "hp-09", sortNo: 2, inputType: "radio-num", yn: "Y", valNm: "" }),
+    ];
+    const block = firstInvalidTarget("20260824", rows);
+    expect(block?.itemCd, "막은 항목을 안 알려주면 화면이 그 칸을 못 찾는다").toBe("hp-09");
+    expect(block?.message).toContain("테스트 항목");
+  });
+
+  it("막을 것이 없으면 자리도 없다", () => {
+    expect(firstInvalidTarget("20260824", ok)).toBeNull();
+  });
+
   it("제목·부제 메타 항목은 필수값 대상이 아니다", () => {
     const rows = [
       item({ itemCd: "hdr-title", itemNm: "일반위생관리 및 공정점검표", inputType: "text", valNm: "" }),
@@ -175,6 +195,20 @@ describe("validateForTransfer — 기록 표가 있는 화면(CCP 모니터링)"
     signYn: "N",
     cells: {},
     ...over,
+  });
+
+  /*
+   * 기록 표는 작업 전·후를 나눠 그려서 배열 위치로는 화면에서 행을 못 찾는다.
+   * 그래서 rowSeq 를 준다 — 지면 tr 의 data-log-seq 와 짝이다.
+   */
+  it("막은 기록 행의 rowSeq 를 준다 — 배열 위치가 아니다", () => {
+    const rows = [
+      log({ rowSeq: 7, phaseCd: "AFTER" as const }),
+      log({ rowSeq: 3, phaseCd: "BEFORE" as const, checkTime: "" }),
+    ];
+    const block = firstInvalidTarget("20260825", [], rows);
+    expect(block?.logRowSeq, "배열 위치(1)가 아니라 rowSeq(3) 여야 한다").toBe(3);
+    expect(block?.message).toContain("시각");
   });
 
   it("기록 표가 있으면 한계기준·주기·방법 안내문을 필수값으로 보지 않는다", () => {

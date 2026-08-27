@@ -10,8 +10,8 @@
  *
  * PIPELINE[HF49] 앱 셸
  */
-// 역할 — 우클릭 메뉴 좌표·열림
-import { useCallback, useState } from "react";
+// 역할 — 우클릭 메뉴 좌표·열림 · 활성 탭 스크롤
+import { useCallback, useEffect, useRef, useState } from "react";
 // 역할 — className 병합
 import { cn } from "@/lib/cn";
 // 역할 — 열린 탭·단건 닫기. 배치 닫기는 TabContextMenu → store
@@ -40,6 +40,21 @@ export function ShellTabBar({
   const activeCd = useTabStore((s) => s.activeCd);
   const closeTab = useTabStore((s) => s.closeTab);
 
+  /*
+   * 탭이 스무 개를 넘으면 탭바가 가로로 넘친다(overflow-x-auto).
+   * 스크롤은 되는데 화면을 옮겨도 탭바가 제자리라, 지금 보고 있는 화면의 탭이
+   * 화면 밖에 남아 사용자가 직접 밀어서 찾아야 했다 — 「탭이 화면 밖으로 나간다」는 보고가 그것이다.
+   * 활성 탭이 바뀔 때 그 칩을 보이는 자리로 끌어온다.
+   */
+  const barRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // 활성 탭이 없을 때(= 탭을 전부 닫은 직후) 옮길 자리가 없다
+    if (!activeCd) return;
+    const chip = barRef.current?.querySelector<HTMLElement>(`[data-tab-cd="${CSS.escape(activeCd)}"]`);
+    // 칩이 아직 안 그려졌을 때(= 탭 추가 직후) 다음 렌더에서 다시 온다
+    chip?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [activeCd, tabs.length]);
+
   const [ctx, setCtx] = useState<TabCtxMenu | null>(null);
   const onReposition = useCallback((x: number, y: number) => {
     setCtx((prev) => (prev ? { ...prev, x, y } : prev));
@@ -62,12 +77,18 @@ export function ShellTabBar({
 
   return (
     <>
-      <div className="flex min-h-8 shrink-0 select-none items-stretch gap-1 overflow-x-auto border-b border-slate-200 bg-white/90 px-2 pt-1.5 shadow-sm">
+      <div
+        // 활성 탭을 보이는 자리로 끌어올 때 기준이 되는 스크롤 상자
+        ref={barRef}
+        className="flex min-h-8 shrink-0 select-none items-stretch gap-1 overflow-x-auto border-b border-slate-200 bg-white/90 px-2 pt-1.5 shadow-sm"
+      >
         {tabs.map((t) => {
           const active = t.scrnCd === activeCd;
           return (
             <div
               key={t.scrnCd}
+              // 활성 탭을 찾아 스크롤할 때 쓰는 손잡이
+              data-tab-cd={t.scrnCd}
               role="tab"
               aria-selected={active}
               className={cn(
