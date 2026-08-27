@@ -41,8 +41,15 @@ function loadDotEnv() {
 }
 
 /*
- * --db 이름 을 앞에 주면 그 DB 를 본다. 없으면 .env 의 DB_NAME.
- * 시험용 DB(sasshaccp_test)와 운영을 견줄 때 쓴다.
+ * 어느 DB 를 볼지 — 앞에서부터 이긴다.
+ *   1) --db 이름
+ *   2) 환경변수 E2E_DB_NAME
+ *   3) .env 의 DB_NAME
+ *
+ * 2번이 있어야 E2E 를 배포 서버로 돌릴 때 화면과 검증이 같은 DB 를 본다.
+ * 로컬 .env 는 시험 DB(sasshaccp_test)를 가리키는데 배포 서버는 운영(sasshaccp)을 쓴다 —
+ * 그대로 두면 브라우저는 운영을 만지고 검증은 시험 DB 를 읽어, 멀쩡한 기능이
+ * 「자료가 없다」로 무더기 실패한다. 실제로 그렇게 20건 넘게 헛나갔다.
  */
 const argv = process.argv.slice(2);
 let dbOverride = null;
@@ -60,7 +67,7 @@ const env = loadDotEnv();
 const client = new pg.Client({
   host: env.DB_HOST,
   port: Number(env.DB_PORT || 5432),
-  database: dbOverride || env.DB_NAME || "sasshaccp",
+  database: dbOverride || process.env.E2E_DB_NAME || env.DB_NAME || "sasshaccp",
   user: env.DB_USERNAME,
   password: env.DB_PASSWORD,
   options: "-c search_path=sasshaccp",
