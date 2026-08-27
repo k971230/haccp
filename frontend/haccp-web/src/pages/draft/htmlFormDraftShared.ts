@@ -266,22 +266,54 @@ export function validateForTransfer(
   // 기록 표 행 — CCP 모니터링일지 작성만 채워 온다. 있으면 이쪽이 사용자 입력이다
   logRows?: HtmlFormLogRow[],
 ): string | null {
-  if (!/^\d{8}$/.test(baseKey)) return MES.required("일자");
+  return firstInvalidTarget(baseKey, items, logRows)?.message ?? null;
+}
+
+/** 전송을 막은 첫 자리 — 문구와 그 자리를 함께 준다 */
+export interface TransferBlock {
+  // 사용자에게 보일 문구
+  message: string;
+  // 항목형 지면에서 막힌 항목 코드 — 기록 표 화면이면 없다
+  itemCd?: string;
+  // 기록 표에서 막힌 행의 rowSeq — 항목형이면 없다. 지면이 phase 로 갈라 그려서 배열 위치로는 못 찾는다
+  logRowSeq?: number;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-27
+ * 코멘트:
+ *   1) 전송을 막은 첫 자리를 문구와 함께 돌려준다 — validateForTransfer 는 문구만 꺼내 쓴다
+ *   2) 작성 화면이 그 칸으로 스크롤·포커스할 때 호출한다
+ *   3) 막을 것이 없으면 null
+ *
+ * 문구만 띄우면 항목이 수십 개인 지면에서 어느 칸인지 사람이 찾아야 한다.
+ * 실제로 「빈칸 술래잡기」가 됐다는 현장 보고가 있어 자리까지 같이 준다.
+ */
+export function firstInvalidTarget(
+  // 일자 YYYYMMDD
+  baseKey: string,
+  // 지면 항목 전체 — 제목·부제 메타 포함
+  items: HtmlFormItem[],
+  // 기록 표 행 — CCP 모니터링일지 작성만 채워 온다
+  logRows?: HtmlFormLogRow[],
+): TransferBlock | null {
+  if (!/^\d{8}$/.test(baseKey)) return { message: MES.required("일자") };
   // 기록 표가 있는 화면일 때(= CCP 모니터링) items 는 한계기준·주기·방법 안내문이라 입력값이 아니다.
   // 사용자가 채우는 곳은 기록 표뿐이므로 그 행만 본다
-  if (logRows && logRows.length > 0) return validateLogRows(logRows);
+  if (logRows && logRows.length > 0) return firstInvalidLogRow(logRows);
   const body = paperBodyItems(items);
-  if (body.length === 0) return "점검 행이 없습니다.";
+  if (body.length === 0) return { message: "점검 행이 없습니다." };
   for (const item of body) {
     const layout = htmlFormInputLayout(item.inputType);
     const label = (item.itemNm || item.itemCd || "점검항목").trim();
     // 라디오 칸이 있을 때(= 예/아니오 판정 항목) 판정이 비면 전송 불가
     if (layout.radio && !String(item.yn ?? "").trim()) {
-      return MES.required(label);
+      return { message: MES.required(label), itemCd: item.itemCd };
     }
     // 값 칸이 있을 때(= 숫자·문자 입력 항목) 값이 비면 전송 불가
     if (layout.valueCell && !String(item.valNm ?? "").trim()) {
-      return MES.required(label);
+      return { message: MES.required(label), itemCd: item.itemCd };
     }
   }
   return null;
@@ -296,15 +328,19 @@ export function validateForTransfer(
  *   3) 시각·판정만 필수다. 품명은 구간 첫 줄이 라벨이라 비어 있는 게 정상이고,
  *      금속검출 칸은 해당 없음 열이 있어 값 유무로 막지 않는다
  */
-function validateLogRows(
+function firstInvalidLogRow(
   // rows: 기록 표 전체 행
   rows: HtmlFormLogRow[],
-): string | null {
+): TransferBlock | null {
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i];
     const where = `${i + 1}번째 기록 행`;
-    if (!String(row.checkTime ?? "").trim()) return `${where}의 시각을 입력하세요.`;
-    if (!String(row.judgeCd ?? "").trim()) return `${where}의 판정을 선택하세요.`;
+    if (!String(row.checkTime ?? "").trim()) {
+      return { message: `${where}의 시각을 입력하세요.`, logRowSeq: row.rowSeq };
+    }
+    if (!String(row.judgeCd ?? "").trim()) {
+      return { message: `${where}의 판정을 선택하세요.`, logRowSeq: row.rowSeq };
+    }
   }
   return null;
 }
