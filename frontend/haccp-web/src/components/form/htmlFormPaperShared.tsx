@@ -510,6 +510,16 @@ export function HtmlFormFootTable({
             <textarea
               // 첫 열 — 작성만 입력. 기준관리는 미리보기
               className="html-form-foot-input html-form-pre"
+              /*
+               * 이 넷은 표가 가로로 잘리면 머리글이 화면 밖으로 나간다.
+               * 무슨 칸인지 몰라 운송온도를 확인 칸에 넣은 일이 있었다 —
+               * 마우스를 올리면 칸 이름이 보이게 한다.
+               *
+               * 첫 칸은 특히 조심해야 한다. 여기에 글자가 있으면 개선조치가 자동으로 생긴다
+               * (`sp_tbl_doc_corrective_u_000`). 「없음」이라고 써도 한 건으로 잡힌다 —
+               * 실제로 그렇게 생긴 개선조치가 둘 있었다. 그 규칙을 칸에 적어 둔다.
+               */
+              title={`${noteLabel} — 여기에 글자를 쓰면 개선조치가 자동으로 생깁니다. 이탈이 없으면 비워 둡니다`}
               value={footer.specialNote}
               disabled={!writeEdit}
               onChange={(e) => onFooterChange?.({ specialNote: e.target.value })}
@@ -519,6 +529,7 @@ export function HtmlFormFootTable({
             <textarea
               // 개선조치 및 결과
               className="html-form-foot-input html-form-pre"
+              title="개선조치 및 결과 — 이탈에 어떻게 조치했는지"
               value={footer.improveNote}
               disabled={!writeEdit}
               onChange={(e) => onFooterChange?.({ improveNote: e.target.value })}
@@ -528,6 +539,7 @@ export function HtmlFormFootTable({
             <input
               // 조치자·조치
               className="html-form-foot-input"
+              title={`${actionLabel} — 조치한 사람`}
               value={footer.actionNm}
               disabled={!writeEdit}
               onChange={(e) => onFooterChange?.({ actionNm: e.target.value })}
@@ -539,6 +551,8 @@ export function HtmlFormFootTable({
               name={footer.confirmNm}
               userId={header.confirmId}
               signYn={header.confirmSignYn}
+              // 측정값 칸으로 오해해 온도를 넣은 일이 있다 — 사람 이름 칸임을 밝힌다
+              title="확인 — 확인한 사람 이름. 측정값을 넣는 칸이 아닙니다"
               editable={writeEdit}
               onChange={(value) => onFooterChange?.({ confirmNm: value })}
             />
@@ -1106,12 +1120,15 @@ export function SignSlot({
   editable,
   // 이름 변경 — 저장 전엔 텍스트만
   onChange,
+  // 마우스 오버 설명 — 표가 잘려 머리글이 안 보일 때 이 칸이 뭔지 알려 준다
+  title,
 }: {
   name: string;
   userId?: string;
   signYn?: string;
   editable: boolean;
   onChange?: (value: string) => void;
+  title?: string;
 }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -1154,6 +1171,8 @@ export function SignSlot({
         <input
           // 이름 — 서명이 있어도 바꿀 수 있다. 저장하면 다시 매칭
           className="html-form-sign-input"
+          // 표가 잘려 머리글이 안 보일 때 이 칸이 무엇인지 알려 준다
+          title={title}
           value={name}
           onChange={(e) => onChange?.(e.target.value)}
         />

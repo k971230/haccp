@@ -826,8 +826,12 @@ export function HtmlFormDraftPage({
     if (!canSendDoc(sendIdx, cur.status)) {
       return mesToast("전송대기 문서만 전송할 수 있습니다.", "warn");
     }
-    // 필수값 기준은 공통 규칙 한곳 — 기준이 바뀌면 firstInvalidTarget 만 고친다
-    const block = firstInvalidTarget(cur.baseKey, cur.items, cur.logRows);
+    /*
+     * 필수값 기준은 공통 규칙 한곳 — 기준이 바뀌면 firstInvalidTarget 만 고친다.
+     * renderDetail 을 넘긴 화면(= HWP 문서형)은 본문이 rhwp 파일이라 점검 항목이 없다.
+     * 항목형 규칙을 그대로 태우면 「점검 행이 없습니다」로 영영 전송이 막힌다.
+     */
+    const block = firstInvalidTarget(cur.baseKey, cur.items, cur.logRows, !renderDetail);
     if (block) {
       mesToast(block.message, "warn");
       // 문구만 띄우면 항목이 수십 개인 지면에서 어느 칸인지 사람이 찾아야 한다.
@@ -887,7 +891,7 @@ export function HtmlFormDraftPage({
           user,
         );
         // 필수값이 빈 건은 전송 가능 건이 아니다
-        if (validateForTransfer(cur.baseKey, cur.items, cur.logRows)) {
+        if (validateForTransfer(cur.baseKey, cur.items, cur.logRows, !renderDetail)) {
           skipped += 1;
           continue;
         }
@@ -997,7 +1001,17 @@ export function HtmlFormDraftPage({
                     <span className="text-xs font-normal text-slate-500">
                       {SEND_STATE_NM[sendStateOf(status)]}
                       {buf.docNo ? ` · ${buf.docNo}` : ""}
-                      {!buf.docIdx ? " · 왼쪽 저장 후 작성 가능" : !canEdit ? " · 수정 불가" : ""}
+                      {!canEdit && buf.docIdx ? " · 수정 불가" : ""}
+                    </span>
+                  ) : null}
+                  {buf && !buf.docIdx ? (
+                    /*
+                     * 저장 전에는 지면 칸이 전부 잠긴다 — docIdx 가 있어야 지면을 만들 수 있다.
+                     * 회색 작은 글씨로 붙여 뒀더니 실무 검증에서 세 사람이 연달아
+                     * 「칸이 안 써진다」로 막혔다. 눈에 띄게 띄우고 무엇을 눌러야 하는지 적는다.
+                     */
+                    <span className="rounded bg-amber-50 px-2 py-0.5 text-xs font-normal text-amber-800">
+                      왼쪽 목록에서 <b>저장</b>을 먼저 눌러야 이 지면에 값을 쓸 수 있습니다
                     </span>
                   ) : null}
                 </div>
