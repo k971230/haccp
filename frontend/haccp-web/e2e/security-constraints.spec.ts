@@ -72,6 +72,12 @@ test.describe("테넌트", () => {
   test("본문에 남의 회사코드를 실어도 서버가 JWT 로 덮어쓴다", async ({ request }) => {
     const { user, pass } = adminCreds();
     const token = await tokenOf(request, user, pass);
+    /*
+     * 앞 회차가 중간에 끊기면 이 부서가 남는다. 남아 있으면 저장이 중복으로 400 이 되고,
+     * 정작 보려던 「회사코드를 덮어쓰는가」는 확인도 못 한 채 실패한다.
+     * 시작할 때도 지운다 — 시험은 앞 회차 상태에 매이면 안 된다.
+     */
+    dbOne("DELETE FROM tbl_dept WHERE dept_cd='E2ETNT'");
     const res = await request.put(`${API}/api/v1/sys/code/department-management/save`, {
       headers: { Authorization: `Bearer ${token}` },
       data: [{ deptCd: "E2ETNT", deptNm: "테넌트 시험", useYn: "Y", coCd: "9999", insId: "someone" }],
