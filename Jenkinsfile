@@ -72,7 +72,11 @@ pipeline {
             unset MAVEN_HOME M2_HOME || true
             sed -i "s/\\r$//" mvnw
             chmod +x mvnw
-            ./mvnw -q -B -DskipITs test
+            # clean 을 반드시 붙인다 — Jenkins 워크스페이스는 빌드마다 지워지지 않는다.
+            # 시험 클래스를 옮기거나 이름을 바꾸면 target/test-classes 에 **옛 .class 가 남고**,
+            # surefire 가 그것까지 찾아 돌린다. 리포트 건수가 소스보다 많아지고,
+            # 이미 없는 시험이 통과했다고 나온다. 실제로 로컬 104건이 Jenkins 에서 117건으로 찍혔다.
+            ./mvnw -q -B -DskipITs clean test
             ./mvnw -q -B -DskipTests package
           '''
         }
