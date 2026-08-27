@@ -407,9 +407,36 @@ BEGIN
                 'checkerNm', h.checker_nm,
                 'checkerId', h.checker_id,
                 'checkerSignYn', CASE WHEN h.checker_sign_img IS NOT NULL THEN 'Y' ELSE 'N' END,
-                'approverNm', h.approver_nm,
-                'approverId', h.approver_id,
-                'approverSignYn', CASE WHEN h.approver_sign_img IS NOT NULL THEN 'Y' ELSE 'N' END,
+                /*
+                 * 지면 도장칸의 승인자 — 결재가 끝났으면 그 결과가 정본이다.
+                 *
+                 * 예전에는 h.approver_nm(작성자가 지면에 친 글자)만 봤다. 그래서
+                 * 결재를 승인해도 종이에는 작성 당시 글자가 그대로 남았고,
+                 * 사람 이름이 아닌 값('3')이 들어간 문서도 그대로 보였다.
+                 * 승인 SP 는 이미 tbl_document_approval 에 결재자 이름과
+                 * tbl_user.sign_img 스냅샷을 남겨 두고 있다 — 그것을 먼저 본다.
+                 * 승인 전(대기)에는 결재행이 없거나 result_cd 가 'A' 가 아니라
+                 * COALESCE 가 지면 값으로 떨어진다 — 예전과 같은 화면이다.
+                 */
+                'approverNm', COALESCE(
+                    (SELECT a.approver_nm FROM tbl_document_approval a
+                      WHERE a.co_cd = d.co_cd AND a.doc_idx = d.idx
+                        AND a.role_cd = 'APPROVE' AND a.result_cd = 'A'
+                      ORDER BY a.step_no DESC LIMIT 1),
+                    h.approver_nm),
+                'approverId', COALESCE(
+                    (SELECT a.approver_id FROM tbl_document_approval a
+                      WHERE a.co_cd = d.co_cd AND a.doc_idx = d.idx
+                        AND a.role_cd = 'APPROVE' AND a.result_cd = 'A'
+                      ORDER BY a.step_no DESC LIMIT 1),
+                    h.approver_id),
+                -- 서명도 결재 시점 스냅샷이 먼저다. 없을 때만 지면에 붙은 이미지를 본다
+                'approverSignYn', CASE WHEN COALESCE(
+                    (SELECT a.sign_img FROM tbl_document_approval a
+                      WHERE a.co_cd = d.co_cd AND a.doc_idx = d.idx
+                        AND a.role_cd = 'APPROVE' AND a.result_cd = 'A'
+                      ORDER BY a.step_no DESC LIMIT 1),
+                    h.approver_sign_img) IS NOT NULL THEN 'Y' ELSE 'N' END,
                 'verNo', h.ver_no,
                 'specialNote', h.special_note,
                 'improveNote', h.improve_note,
@@ -536,6 +563,13 @@ BEGIN
          WHERE u.co_cd = p_co_cd AND u.use_yn = 'Y' AND u.user_nm = btrim(p_approver_nm)
          ORDER BY CASE WHEN u.sign_img IS NOT NULL THEN 0 ELSE 1 END, u.user_id
          LIMIT 1;
+        -- 그런 이름의 사용자가 없을 때(= 사람이 아닌 값) 저장을 막는다.
+        -- 예전에는 이름 글자만 남기고 통과시켰다. 그래서 승인자 칸에 '3' 이 들어간
+        -- 법정 서류가 만들어졌다. 빈 칸은 그대로 통과시킨다 — 승인 전에는 비어 있는 게 정상이다
+        IF v_apv_id IS NULL THEN
+            RAISE EXCEPTION '승인자 "%" 를 사용자에서 찾을 수 없습니다. 등록된 사용자 이름으로 입력하세요.',
+                btrim(p_approver_nm) USING ERRCODE = '45000';
+        END IF;
     END IF;
     IF btrim(COALESCE(p_confirm_nm, '')) <> '' THEN
         SELECT u.user_id, u.sign_img INTO v_cfm_id, v_cfm_img
@@ -4528,9 +4562,36 @@ BEGIN
                 'checkerNm', h.checker_nm,
                 'checkerId', h.checker_id,
                 'checkerSignYn', CASE WHEN h.checker_sign_img IS NOT NULL THEN 'Y' ELSE 'N' END,
-                'approverNm', h.approver_nm,
-                'approverId', h.approver_id,
-                'approverSignYn', CASE WHEN h.approver_sign_img IS NOT NULL THEN 'Y' ELSE 'N' END,
+                /*
+                 * 지면 도장칸의 승인자 — 결재가 끝났으면 그 결과가 정본이다.
+                 *
+                 * 예전에는 h.approver_nm(작성자가 지면에 친 글자)만 봤다. 그래서
+                 * 결재를 승인해도 종이에는 작성 당시 글자가 그대로 남았고,
+                 * 사람 이름이 아닌 값('3')이 들어간 문서도 그대로 보였다.
+                 * 승인 SP 는 이미 tbl_document_approval 에 결재자 이름과
+                 * tbl_user.sign_img 스냅샷을 남겨 두고 있다 — 그것을 먼저 본다.
+                 * 승인 전(대기)에는 결재행이 없거나 result_cd 가 'A' 가 아니라
+                 * COALESCE 가 지면 값으로 떨어진다 — 예전과 같은 화면이다.
+                 */
+                'approverNm', COALESCE(
+                    (SELECT a.approver_nm FROM tbl_document_approval a
+                      WHERE a.co_cd = d.co_cd AND a.doc_idx = d.idx
+                        AND a.role_cd = 'APPROVE' AND a.result_cd = 'A'
+                      ORDER BY a.step_no DESC LIMIT 1),
+                    h.approver_nm),
+                'approverId', COALESCE(
+                    (SELECT a.approver_id FROM tbl_document_approval a
+                      WHERE a.co_cd = d.co_cd AND a.doc_idx = d.idx
+                        AND a.role_cd = 'APPROVE' AND a.result_cd = 'A'
+                      ORDER BY a.step_no DESC LIMIT 1),
+                    h.approver_id),
+                -- 서명도 결재 시점 스냅샷이 먼저다. 없을 때만 지면에 붙은 이미지를 본다
+                'approverSignYn', CASE WHEN COALESCE(
+                    (SELECT a.sign_img FROM tbl_document_approval a
+                      WHERE a.co_cd = d.co_cd AND a.doc_idx = d.idx
+                        AND a.role_cd = 'APPROVE' AND a.result_cd = 'A'
+                      ORDER BY a.step_no DESC LIMIT 1),
+                    h.approver_sign_img) IS NOT NULL THEN 'Y' ELSE 'N' END,
                 'verNo', h.ver_no,
                 'specialNote', h.special_note,
                 'improveNote', h.improve_note,
@@ -4690,6 +4751,13 @@ BEGIN
            AND u.user_nm = btrim(p_approver_nm)
          ORDER BY CASE WHEN u.sign_img IS NOT NULL THEN 0 ELSE 1 END, u.user_id
          LIMIT 1;
+        -- 그런 이름의 사용자가 없을 때(= 사람이 아닌 값) 저장을 막는다.
+        -- 예전에는 이름 글자만 남기고 통과시켰다. 그래서 승인자 칸에 '3' 이 들어간
+        -- 법정 서류가 만들어졌다. 빈 칸은 그대로 통과시킨다 — 승인 전에는 비어 있는 게 정상이다
+        IF v_apv_id IS NULL THEN
+            RAISE EXCEPTION '승인자 "%" 를 사용자에서 찾을 수 없습니다. 등록된 사용자 이름으로 입력하세요.',
+                btrim(p_approver_nm) USING ERRCODE = '45000';
+        END IF;
     END IF;
     IF btrim(COALESCE(p_confirm_nm, '')) <> '' THEN
         SELECT u.user_id, u.sign_img INTO v_cfm_id, v_cfm_img

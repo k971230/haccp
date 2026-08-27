@@ -593,10 +593,13 @@ export function buildDocColumns(
       badge: DOC_STATUS_BADGE,
     },
     {
-      // 기준일 YYYYMMDD
+      // 기준일 — 저장은 YYYYMMDD 지만 화면에는 YYYY-MM-DD 로 보인다.
+      // type:"date" 를 주면 그리드가 표시를 맡는다 — 화면마다 따로 포맷하지 않는다
       field: "baseDt",
       header: "기준일",
       width: 100,
+      type: "date",
+      editable: false,
     },
   ];
 }

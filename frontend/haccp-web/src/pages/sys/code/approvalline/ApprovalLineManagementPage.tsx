@@ -100,6 +100,8 @@ export default function ApprovalLineManagementPage() {
     userNm: string;
     deptCd?: string;
     deptNm?: string;
+    // 권한그룹 — 승인 단계가 개설 관리자로 남아 있는지 알리는 데만 쓴다
+    usrgrpCd?: string;
   }>>([]);
 
   const hg = useEditableRows<HeaderRow>("apprLineCd");
@@ -185,6 +187,8 @@ export default function ApprovalLineManagementPage() {
           userNm: String(row.userNm ?? row.userId ?? ""),
           deptCd: row.deptCd ? String(row.deptCd) : "",
           deptNm: row.deptNm ? String(row.deptNm) : "",
+          // 권한그룹 — 승인 단계가 관리자로 남아 있는지 알리는 데만 쓴다(아래 adminIds)
+          usrgrpCd: row.usrgrpCd ? String(row.usrgrpCd) : "",
         })));
       } catch (error) {
         mesError(error);
@@ -198,6 +202,27 @@ export default function ApprovalLineManagementPage() {
   );
 
   const dirty = hg.getSaveRows().length > 0 || sg.getSaveRows().length > 0;
+
+  /*
+   * 업체를 열면 기본 결재선(DEFAULT)의 승인자가 개설 관리자로 박힌 채 시작한다
+   * (`db_sasshaccp/06_company_seed.sql`). 아무도 안 바꾸면 팀원이 쓴 일지가
+   * 전부 관리자에게만 가고 팀장 결재대기는 0건으로 남는다 — 실제로 그렇게 굴러갔다.
+   * 막지는 않는다. 담당자를 아직 안 정한 업체도 문서는 만들 수 있어야 한다. 다만 보이게 한다.
+   */
+  const adminIds = useMemo(
+    () => new Set(userRows.filter((row) => row.usrgrpCd === "ADMIN").map((row) => row.userId)),
+    [userRows],
+  );
+  // 승인 단계 결재자가 아직 관리자일 때(= 개설 직후 그대로) 안내 문구, 아니면 빈 값
+  const approverWarn = useMemo(() => {
+    const approve = sg.rows.find(
+      (row) => String(row.roleCd ?? "") === "APPROVE" && String(row.useYn ?? "Y") !== "N",
+    );
+    if (!approve) return "";
+    const id = String(approve.approverId ?? "");
+    if (!id || !adminIds.has(id)) return "";
+    return "승인자가 개설 관리자입니다. 실제 승인 담당자로 바꾸세요 — 그대로 두면 팀원이 올린 일지가 담당자에게 가지 않습니다.";
+  }, [adminIds, sg.rows]);
   const dirtyRef = useRef(false);
   dirtyRef.current = dirty;
   useRegisterPageDirty(useCallback(() => dirtyRef.current, []));
@@ -485,6 +510,10 @@ export default function ApprovalLineManagementPage() {
             <div {...sec.bind("d", splitPanelClass)}>
               <div className={gridHeadClass}>
                 <b>{stepTitle}</b>
+                {approverWarn ? (
+                  // 승인자가 관리자로 남아 있을 때만 보인다 — 저장을 막지는 않는다
+                  <span className="text-[11px] font-normal text-amber-700">{approverWarn}</span>
+                ) : null}
                 <GridCrudButtons
                   // 우측은 고정 3단계 — 저장만. 결재자·사용여부 수정 후 바로 저장
                   run={asyncAct.run}

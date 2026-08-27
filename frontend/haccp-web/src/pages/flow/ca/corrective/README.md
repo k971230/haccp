@@ -7,7 +7,7 @@
 | 파일 | 책임 |
 |---|---|
 | `CorrectiveActionManagementPage.tsx` | 렌더·상태·API. **그리드 1개** |
-| `CorrectiveActionManagementRule.ts` | `SCRN_CD` · `PERSIST_ID` · `STATUS_OPTIONS` · `STATUS_BADGE` · `buildColumns` |
+| `CorrectiveActionManagementRule.ts` | `SCRN_CD` · `PERSIST_ID` · `STATUS_BADGE`(색만) · `buildColumns(statusOptions, statusNm)` |
 
 ## 화면 규칙
 
@@ -20,6 +20,23 @@
 - 문서에서 온 칸(일자·양식·문서번호·작성자)은 **잠근다**. 원문서는 작성 화면에서 고친다
 - 채우는 칸: 이탈내용·발생장소·조치내용·조치자·조치일·기한·상태
 - 저장은 고친 행만 건별로 보낸다. 완료 상태는 서버 SP가 삭제를 차단한다
+
+### 상태 라벨은 여기서 정하지 않는다
+
+`CA_STATUS` 공통코드가 정본이고 화면이 `useCommonCodes("CA_STATUS")` 로 읽어 `buildColumns` 에 넘긴다.
+Rule 에는 **배지 색만** 둔다.
+
+예전에는 Rule 에 `OPEN=진행`·`DONE`·`CANCEL` 을 박아 뒀다. 두 가지가 어긋났다.
+
+- 오늘 할 일은 같은 공통코드를 읽어 `OPEN` 을 **「미조치」**로 불렀다 — 같은 건이 화면마다 다른 이름으로 보였다
+- `CANCEL` 은 6자인데 `tbl_corrective_action.status` 는 `varchar(4)` 다.
+  **콤보에 있는데 저장이 안 되는 값**이었다 (`22001`)
+
+### 조치일·기한은 `YYYYMMDD` 로 저장된다
+
+컬럼이 `varchar(8)` 이다. 그리드 `type: "date"` 셀은 `MesEditableGrid` 가
+표시할 때 `YYYY-MM-DD` 로 바꾸고 저장할 때 `YYYYMMDD` 로 되돌린다.
+화면에서 따로 변환하지 않는다 — 그 변환이 없어서 달력이 준 10자가 그대로 나가 저장이 막혔었다.
 
 ## API · SP · 테이블
 

@@ -99,6 +99,38 @@ test.describe("개선조치관리", () => {
       .toContain(memo.slice(0, 8));
   });
 
+  test("조치일을 달력으로 고르면 DB 에 8자리로 들어간다", async ({ page }) => {
+    /*
+     * `tbl_corrective_action.action_dt` 는 varchar(8) YYYYMMDD 다.
+     * 화면의 `<input type="date">` 는 `2026-08-27` 10자를 준다 —
+     * 그대로 보내면 DB 가 22001(문자열 잘림)로 막아 조치일을 아예 못 적었다.
+     * 되돌리는 자리는 MesEditableGrid 한 곳이다. 여기가 그 계약을 붙잡는다.
+     */
+    const idx = seedCorrectiveAction();
+
+    const { user, pass } = adminCreds();
+    await login(page, user, pass);
+    await openCa(page);
+
+    const grid = grids(page).first();
+    const row = grid.locator("tbody tr").filter({ hasText: CA_NO }).first();
+    await expect(row, "깔아 둔 개선조치가 목록에 없다").toBeVisible({ timeout: 20_000 });
+    await row.click();
+
+    const at = Number(await row.getAttribute("data-row-index")) || 0;
+    // 달력이 주는 표기 그대로 넣는다 — 화면이 저장형으로 되돌려야 한다
+    await fillCell(grid, at, "조치일", "2026-08-27");
+    expect(await saveAndConfirm(page, "/corrective-action-management/save")).toBe(200);
+
+    // 8자리인지까지 본다. 10자가 들어가면 길이가 다르다
+    await expect
+      .poll(
+        () => dbOne(`SELECT action_dt FROM tbl_corrective_action WHERE co_cd='0000' AND idx=${idx}`),
+        { timeout: 20_000 },
+      )
+      .toBe("20260827");
+  });
+
   test("빈 키로 삭제를 부르면 막는다", async ({ request }) => {
     const { user, pass } = adminCreds();
     const res0 = await request.post(`${API}/api/v1/auth/login`, {

@@ -50,6 +50,8 @@ import { MES } from "@/shell/messages";
 import type { EditableRow } from "@/types/editable";
 // 역할 — 일자 YYYYMMDD ↔ input[type=date]
 import { fromInputDate, toInputDate } from "@/lib/docDateTime";
+// 역할 — 상태 콤보·표시명 정본 — CA_STATUS 공통코드
+import { useCommonCodes } from "@/hooks/useCommonCodes";
 import {
   PERSIST_ID,
   SCRN_CD,
@@ -83,7 +85,18 @@ export default function CorrectiveActionManagementPage() {
   const [selReset, setSelReset] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const columns = useMemo(() => buildColumns(), []);
+  // 상태 라벨은 화면이 만들지 않는다 — CA_STATUS 공통코드가 정본이다.
+  // 오늘 할 일도 같은 코드를 읽는다. 한쪽만 하드코딩하면 같은 건이 두 이름으로 보인다
+  const { codes: caStatusCodes, codeMap: caStatusNm } = useCommonCodes("CA_STATUS");
+  // 대분류 자리표시 행(`*`)은 useCommonCodes 가 이미 뺀다 — 여기서 또 거르지 않는다
+  const statusOptions = useMemo(
+    () => caStatusCodes.map((row) => ({ value: row.subCd, label: row.codeNm })),
+    [caStatusCodes],
+  );
+  const columns = useMemo(
+    () => buildColumns(statusOptions, caStatusNm),
+    [statusOptions, caStatusNm],
+  );
 
   /**
    * 개발자: 박승우

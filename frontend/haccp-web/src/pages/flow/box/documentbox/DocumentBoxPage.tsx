@@ -282,6 +282,16 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
             columns={listColumns}
             // 목록만 조회 — 편집 금지
             editable={false}
+            /*
+             * 빈 목록일 때 왜 비었는지 말해 준다.
+             * 문서함은 승인완료(APV)만 담고 결재이력은 내가 처리한 것만 담는데,
+             * 안내가 없어서 「작성한 문서가 사라졌다」로 읽혔다 — 실제로 그렇게 보고가 올라왔다
+             */
+            emptyHint={
+              boxMode === "approval" ? "나에게 배정된 결재 대기 문서가 없습니다. 결재선의 승인자를 확인하세요."
+                : boxMode === "history" ? "내가 처리한 결재 이력이 없습니다."
+                  : "승인이 끝난(결재완료) 문서만 보입니다. 작성중·승인요청 문서는 작성 화면이나 결재첨부에 있습니다."
+            }
             // 패널 제목
             title={
               boxMode === "approval" ? "결재 대기 목록"

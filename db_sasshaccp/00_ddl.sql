@@ -801,7 +801,7 @@ CREATE TABLE sasshaccp.tbl_ccp_metal_sens_row (
     phase_cd character varying(10) NOT NULL,
     product_cd character varying(30),
     product_nm character varying(200),
-    check_time character varying(4),
+    check_time character varying(10),
     fe_only_cd character varying(1),
     sts_only_cd character varying(1),
     prod_only_cd character varying(1),
@@ -7145,3 +7145,17 @@ CREATE UNIQUE INDEX ux_tbl_tml_ccp_pkg_ver_cd ON sasshaccp.tbl_tml_ccp_pkg_ver U
 --
 
 
+--
+-- 자리 넓힘 — 이미 도는 DB 를 위한 보정. 다시 돌려도 결과가 같다
+--
+-- 금속검출 감도점검 행의 시각 칸이 varchar(4) 였다. 화면이 보내는 값은 `09:10` 로 5자라
+-- 저장·전송이 전부 22001(문자열 잘림)로 막혔다 — 금속검출 일지를 한 장도 못 썼다.
+-- 나머지 CCP 표(tbl_ccp_generic_monitor_row.check_time)는 처음부터 varchar(10) 이고
+-- 실제로 `09:00` 5자가 들어 있다. 금속만 좁았다. 그 표에 맞춘다.
+--
+-- 넓히는 방향이라 자료가 깎이지 않는다. 위 CREATE TABLE 은 새 DB 용이고,
+-- 이 문장은 이미 만들어진 표를 위한 것이다.
+ALTER TABLE sasshaccp.tbl_ccp_metal_sens_row
+    ALTER COLUMN check_time TYPE character varying(10);
+
+COMMENT ON COLUMN sasshaccp.tbl_ccp_metal_sens_row.check_time IS '점검 시각 HH:MM — 다른 CCP 표와 같은 자리 폭(10)';

@@ -119,7 +119,7 @@ HWP 문서 작성 → 문서번호 `hwp_sys_001-20260826-001` 채번까지 확�
 # 빈 DB 에 6본을 순서대로 → 표 53 / SP 152 / 메뉴 43 / 코드 86 / 사용양식 45
 bash apply-all.sh
 
-# 화면까지 도는지 — 프론트 E2E 64건
+# 화면까지 도는지 — 프론트 E2E 151건
 cd ../frontend/haccp-web ; npx playwright test
 ```
 
@@ -132,6 +132,15 @@ cd ../frontend/haccp-web ; npx playwright test
 
 ## 변경
 
+- 2026-08-27 — **결재와 지면 도장칸을 이었다.** 상세 SP 두 본(`sp_tbl_hyg_process_r_001`·
+  `sp_ccp_verify_r_001`)이 승인자·서명을 `tbl_document_approval`(결재 결과)에서 먼저 읽는다.
+  예전에는 지면에 적힌 글자만 봐서, 결재를 승인해도 종이에는 작성 당시 값이 그대로 남았다.
+  서명 스냅샷은 승인 SP 가 이미 남기고 있었다 — 아무도 안 읽었을 뿐이다.
+  지면 서명 SP 두 본(`sp_tbl_hyg_process_sign_u_000`·`sp_ccp_verify_sign_u_000`)은
+  승인자 이름이 `tbl_user` 에 없으면 `45000` 으로 막는다. 사람 이름이 아닌 값이 저장된 적이 있다.
+  `tbl_ccp_metal_sens_row.check_time` 을 `varchar(4)` → `varchar(10)` 으로 넓혔다 —
+  화면이 보내는 `09:10` 이 5자라 금속검출 일지가 저장·전송 단계에서 전부 `22001` 로 막혔다.
+  나머지 CCP 표는 처음부터 `varchar(10)` 이다. `00_ddl.sql` 꼬리에 `ALTER` 를 뒀다(재실행 안전).
 - 2026-08-26 — `06_company_seed.sql` 신설(신규 업체 개설 정본). 소스가 안 쓰는 표 18개와
   삭제된 화면에 딸린 양식 27종을 걷어냈다(표 71→53, 양식 73→46).
   SP 안에 박혀 있던 양식코드 정규식 2곳을 `doc_kind` 기준으로 바꿨다 —

@@ -43,6 +43,8 @@ import { isTypingTarget, nextCell, nextRowIndex } from "./gridNav";
 import { GridErrorBoundary } from "./GridErrorBoundary";
 // 역할 — 셀 버튼 더보기 아이콘
 import { MoreHorizontal } from "lucide-react";
+// 역할 — 날짜 저장형(YYYYMMDD) ↔ input type=date 표시형(YYYY-MM-DD) 변환
+import { toInputDate, fromInputDate } from "@/lib/docDateTime";
 // 역할 — className 병합
 import { cn } from "@/lib/cn";
 // 역할 — 셀 표면(locked/required/editable) 클래스
@@ -128,6 +130,9 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
     if (c.type === "checkbox" || c.type === "radio") return isYnChecked(v) ? "Y" : "N";
     if (c.type === "code") return c.codeMap?.[String(v)] ?? String(v ?? "");
     if (c.type === "number" || c.type === "amount") return numFmt(v);
+    // date 일 때(= DB 저장형 YYYYMMDD) 사람이 읽는 YYYY-MM-DD 로 보여 준다.
+    // MesDataGrid 는 이미 fmtDate 로 그렇게 그린다 — 조회 그리드와 편집 그리드가 달라 보이면 안 된다
+    if (c.type === "date") return toInputDate(v as string) || (v == null ? "" : String(v));
     return v === null || v === undefined ? "" : String(v);
   }, []);
 
@@ -746,7 +751,13 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
                         maxLength={c.maxLength}
                         // 제어 컴포넌트 현재 값
                         // 부모 state와 양방향 동기화
-                        value={val === null || val === undefined ? "" : String(val)}
+                        // date 일 때(= 저장형 YYYYMMDD) input type=date 가 읽는 YYYY-MM-DD 로 바꿔 넣는다.
+                        // 안 바꾸면 달력이 값을 못 읽어 빈 mm/dd/yyyy 로 보인다
+                        value={
+                          val === null || val === undefined ? ""
+                            : c.type === "date" ? toInputDate(String(val))
+                            : String(val)
+                        }
                         onBlur={() => setEditCell({ rowKey: row._key, field: c.field }, false)}
                         onKeyDown={(e) => {
                           if (e.key === "Escape") { e.preventDefault(); cancelEdit(row._key, c.field); return; }
@@ -780,8 +791,13 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
                           let next = c.sanitize ? c.sanitize(e.target.value) : e.target.value;
                           // maxLength가 있을 때(= 장문 입력 방지) 초과분 절단
                           if (c.maxLength != null && next.length > c.maxLength) next = next.slice(0, c.maxLength);
+                          // date 일 때(= 달력이 YYYY-MM-DD 10자를 준다) 저장형 YYYYMMDD 8자로 되돌린다.
+                          // 이 저장소의 날짜 컬럼은 전부 varchar(8) YYYYMMDD 다 —
+                          // 10자를 그대로 보내면 DB 가 22001(문자열 잘림)로 막는다
                           changeCell(row, c,
-                            c.type === "number" ? (next === "" ? null : Number(next)) : next, isNew);
+                            c.type === "number" ? (next === "" ? null : Number(next))
+                              : c.type === "date" ? fromInputDate(next)
+                              : next, isNew);
                         }}
                       />{cellBtn}
                     </div>

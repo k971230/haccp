@@ -92,3 +92,21 @@ if (isTypingTarget(e)) return;            // input·select·textarea 안이면 �
 ## 관련
 - 시험: `e2e/grid-features.spec.ts` (35건) · `e2e/shell-grid.spec.ts` · `src/components/grid/*.test.ts`
 - 정본: [`docs/2_화면_추가하기.md`](../../../../../docs/2_화면_추가하기.md) · [`docs/4_명명과_경로.md`](../../../../../docs/4_명명과_경로.md)
+
+## 날짜 셀 (`type: "date"`)
+
+이 저장소의 날짜 컬럼은 전부 `varchar(8)` **`YYYYMMDD`** 다
+(`base_dt`·`occur_dt`·`action_dt`·`due_dt`·`retention_until`).
+화면의 `<input type="date">` 는 `YYYY-MM-DD` **10자**를 준다.
+
+그래서 `MesEditableGrid` 가 양쪽을 맞춘다 — 화면마다 변환하지 않는다.
+
+| 언제 | 무엇 |
+|---|---|
+| 표시 | `toInputDate` — `20260827` → `2026-08-27`. `MesDataGrid` 의 `fmtDate` 와 같은 모습 |
+| 편집기에 넣을 때 | `toInputDate` — 안 바꾸면 달력이 값을 못 읽어 빈 `mm/dd/yyyy` 로 보인다 |
+| 편집기에서 나올 때 | `fromInputDate` — `YYYYMMDD` 로 되돌린다 |
+
+**되돌리지 않으면 10자가 그대로 나가 DB 가 `22001`(문자열 잘림)로 막는다.**
+개선조치 조치일이 실제로 그렇게 저장이 안 됐다. 새 화면이 `type: "date"` 를 써도
+같은 일이 안 나게 그리드 한 곳에서 처리한다.
