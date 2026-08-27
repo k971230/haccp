@@ -12,8 +12,8 @@
  */
 // 역할 — 서명 Blob URL 수명 · 행추가 슬롯 children
 import { useEffect, useState, type ReactNode } from "react";
-// 역할 — 항목 패치
-import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
+// 역할 — 항목 패치 · 입력유형별 라디오/값칸 판단
+import { htmlFormInputLayout, type HtmlFormItem } from "@/api/docs/htmlFormApi";
 // 역할 — 서명 이미지 Blob (signYn=Y 이고 id 있을 때)
 import { fetchUserSignBlob } from "@/api/sys/userApi";
 // 역할 — 적합/부적합 공통코드
@@ -905,6 +905,15 @@ export function appendLogRow(
   rows: HtmlFormLogRow[],
   // 붙일 영역
   phase: LogPhase,
+  /*
+   * 새 행의 판정. 기본은 적합이다 — 현장 기록은 대부분이 적합이라
+   * 빈 값으로 두면 행마다 라디오를 한 번씩 더 눌러야 한다.
+   *
+   * **금속검출은 빈 값("")을 넘긴다.** 거기는 서버가 감도 5칸으로 자동 판정하므로
+   * (sp_tbl_ccp_metal_monitor_c_000) 화면이 미리 적합으로 칠해 봐야 저장하면 뒤집힌다.
+   * 미리 칠하면 「보이는 값」과 「저장되는 값」이 달라진다.
+   */
+  judgeCd: string = JUDGE.PASS,
 ): HtmlFormLogRow[] {
   const nextSeq = rows.reduce((max, r) => Math.max(max, r.rowSeq), 0) + 1;
   return [...rows, {
@@ -912,7 +921,7 @@ export function appendLogRow(
     phaseCd: phase,
     productNm: "",
     checkTime: "",
-    judgeCd: "",
+    judgeCd,
     judgeModYn: "N",
     checkerNm: "",
     signYn: "N",
@@ -928,6 +937,91 @@ export function appendLogRow(
  *   2) 지면 입력 onChange 가 호출한다
  *   3) rowSeq 로 찾는다 — 영역이 달라도 rowSeq 는 유일하다
  */
+/** 판정 코드 — P=적합 F=부적합. 문자열을 여기저기 박지 않는다 */
+export const JUDGE = { PASS: "P", FAIL: "F" } as const;
+
+/** 항목 판정 — Y=적합(예) N=부적합(아니오) */
+export const ITEM_YN = { PASS: "Y", FAIL: "N" } as const;
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-27
+ * 코멘트:
+ *   1) 기록 행 전부를 적합으로 바꾼다
+ *   2) 지면의 「모두 적합」 버튼이 호출한다
+ *   3) 이미 적합인 행도 그대로 적합이다 — 되돌리기는 행마다 부적합을 누르면 된다
+ */
+export function allLogRowsPass(
+  // 기록 행 전체
+  rows: HtmlFormLogRow[],
+): HtmlFormLogRow[] {
+  return rows.map((r) => (
+    r.judgeCd === JUDGE.PASS && r.judgeModYn === "Y"
+      ? r
+      // judgeModYn=Y — 사람이 정한 판정이라는 뜻이다. 금속검출은 이게 있어야
+      // 서버 자동 판정(감도 5칸)을 누르고 이 값이 남는다. 감사에도 그렇게 남는다
+      : { ...r, judgeCd: JUDGE.PASS, judgeModYn: "Y" }
+  ));
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-27
+ * 코멘트:
+ *   1) 판정 칸이 있는 점검 항목 전부를 적합(예)으로 바꾼다
+ *   2) 공정점검·검증점검 지면의 「모두 적합」 버튼이 호출한다
+ *   3) 라디오가 없는 항목(숫자·문자 전용)과 표 머리글 행은 건드리지 않는다
+ */
+export function allItemsPass(
+  // 양식 항목 전체
+  items: HtmlFormItem[],
+): HtmlFormItem[] {
+  return items.map((it) => (
+    !isPaperHdrItem(it.itemCd)
+      && htmlFormInputLayout(it.inputType).radio
+      && it.yn !== ITEM_YN.PASS
+      ? { ...it, yn: ITEM_YN.PASS }
+      : it
+  ));
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-27
+ * 코멘트:
+ *   1) **비어 있는 판정만** 적합으로 채운다
+ *   2) 지면을 열 때 호출한다 — 「모두 적합」 버튼(allLogRowsPass)과 다르다
+ *   3) 이미 정해진 판정은 절대 안 건드린다. 저장해 둔 부적합을 적합으로 덮으면
+ *      사람이 남긴 판정을 지우는 셈이다
+ */
+export function fillBlankLogJudges(
+  // 기록 행 전체
+  rows: HtmlFormLogRow[],
+): HtmlFormLogRow[] {
+  return rows.map((r) => (r.judgeCd ? r : { ...r, judgeCd: JUDGE.PASS }));
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-27
+ * 코멘트:
+ *   1) 판정 칸이 있는 항목 중 **비어 있는 것만** 적합(예)으로 채운다
+ *   2) 지면을 열 때 호출한다
+ *   3) 이미 예/아니오가 정해진 항목과 판정 칸이 없는 항목은 안 건드린다
+ */
+export function fillBlankItemJudges(
+  // 양식 항목 전체
+  items: HtmlFormItem[],
+): HtmlFormItem[] {
+  return items.map((it) => (
+    !isPaperHdrItem(it.itemCd)
+      && htmlFormInputLayout(it.inputType).radio
+      && !it.yn
+      ? { ...it, yn: ITEM_YN.PASS }
+      : it
+  ));
+}
+
 export function patchLogRow(
   // 기록 행 전체
   rows: HtmlFormLogRow[],

@@ -358,14 +358,33 @@ export async function createDraft(
   await popupRow.dblclick();
 
   // 좌측 저장 — 여기서 docIdx 가 생긴다. 그 전까지 우측 지면은 읽기 전용이다
-  await Promise.all([
+  const [saveRes] = await Promise.all([
     page.waitForResponse((r) => r.url().includes("/save") && r.request().method() !== "GET", {
       timeout: 30_000,
     }),
     btn(page, "저장").click(),
   ]);
 
-  const row = list.locator("tbody tr").nth(before);
+  /*
+   * 방금 만든 문서의 idx 를 응답에서 받아 **그 행을** 연다.
+   * 자리(nth)로만 잡으면 안 된다 — 목록에 같은 양식의 옛 문서가 쌓인 화면에서는
+   * 엉뚱한 행, 그것도 이미 결재까지 끝나 읽기 전용인 문서를 열게 된다.
+   * 그러면 지면이 잠겨 시험이 엉뚱한 곳에서 터진다.
+   */
+  let docIdx = "";
+  try {
+    const body = (await saveRes.json()) as { data?: unknown };
+    const d = body?.data;
+    if (typeof d === "number" || typeof d === "string") docIdx = String(d);
+    else if (Array.isArray(d) && d.length) docIdx = String(d[d.length - 1]);
+  } catch {
+    // 응답이 JSON 이 아니면 자리로 되돌아간다
+  }
+
+  const byKey = docIdx ? list.locator(`tbody tr[data-key="${docIdx}"]`) : null;
+  const row = byKey && (await byKey.count()) > 0
+    ? byKey.first()
+    : list.locator("tbody tr").nth(before);
   await row.click();
   return row;
 }

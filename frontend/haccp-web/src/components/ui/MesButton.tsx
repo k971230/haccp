@@ -25,7 +25,7 @@ import { resolveMesIcon, type MesIconName } from "@/lib/icons";
 
 /** 버튼 의미 — 색과 강조 수준을 결정한다 */
 export type MesButtonVariant =
-  | "search" | "save" | "add" | "edit" | "danger" | "dangerConfirm" | "secondary" | "excel" | "download" | "ghost" | "primary";
+  | "search" | "save" | "add" | "edit" | "danger" | "dangerConfirm" | "secondary" | "excel" | "download" | "pass" | "ghost" | "primary";
 
 /** 버튼 크기 — sm은 그리드 툴바, md는 일반 */
 export type MesButtonSize = "sm" | "md";

@@ -23,6 +23,7 @@ import {
 import {
   HtmlFormBanner,
   HtmlFormFootTable,
+  allItemsPass,
   HtmlFormRowAddSlot,
   htmlFormPaperEdit,
   isPaperHdrItem,
@@ -451,6 +452,18 @@ export function HygPrcPaper({
             onClick={addRow}
           >
             행추가
+          </MesButton>
+        ) : null}
+        {writeEdit && onItemsChange ? (
+          <MesButton
+            // 판정 전부를 적합(예)으로 — 부적합만 다시 눌러 고치면 된다
+            size="sm"
+            // 보라 틴트 — 행추가(amber)와 구분. 묶음 오른쪽 끝
+            variant="pass"
+            icon="check"
+            onClick={() => onItemsChange(allItemsPass(items))}
+          >
+            모두 적합
           </MesButton>
         ) : null}
       </HtmlFormRowAddSlot>

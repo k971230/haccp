@@ -23,6 +23,8 @@ import { MES } from "@/shell/messages";
 import { htmlFormInputLayout, type HtmlFormItem } from "@/api/docs/htmlFormApi";
 // 역할 — 지면 메타 항목(제목·부제·캡션) 제외 · 지면 props · 기록 표 행 타입
 import {
+  fillBlankItemJudges,
+  fillBlankLogJudges,
   paperBodyItems,
   type HtmlFormLogRow,
   type HtmlFormPaperProps,
@@ -30,6 +32,9 @@ import {
 } from "@/components/form/htmlFormPaperShared";
 // 역할 — 일자 YYYYMMDD ↔ input[type=date] · 오늘
 import { toInputDate, todayYmd } from "@/lib/docDateTime";
+
+/** 금속검출 양식코드 접두 — 서버가 판정을 자동 계산하는 유일한 계열 */
+const MTL_TMPL_PREFIX = "tml_ccp_mtl";
 
 /** 결재 여부 3단계 — 화면 표시 단위 */
 export type SendState = "wait" | "sent" | "done";
@@ -415,8 +420,37 @@ export function detailToDraftBuf(
   user?: { userNm?: string; userId?: string } | null,
 ): HtmlFormDraftBuf {
   const header = detail.header ?? {};
+  const docIdx = Number(header.docIdx) || null;
+  /*
+   * 아직 저장 안 한 문서(= 신규)는 판정을 **적합으로 깔고 시작한다.**
+   * 현장 기록은 대부분이 적합이라, 빈 값으로 두면 행마다 라디오를 한 번씩
+   * 더 눌러야 한다. 부적합만 눌러 고치면 된다.
+   *
+   * 저장된 문서는 건드리지 않는다 — 사람이 비워 둔 「미판정」을 덮으면
+   * 안 본 것을 봤다고 기록하는 셈이다.
+   */
+  /*
+   * 금속검출만 뺀다. 거기는 서버가 감도 5칸으로 판정을 계산한다
+   * (sp_tbl_ccp_metal_monitor_c_000 — 5칸이 기준과 같아야 적합).
+   * 화면이 미리 적합으로 칠하면 저장하는 순간 부적합으로 뒤집혀
+   * 「보이는 값」과 「저장되는 값」이 달라진다.
+   * 감도 확인을 안 한 행을 적합으로 남기는 건 HACCP 에서 하면 안 되는 일이다.
+   */
+  const autoJudged = (asText(header.tmplCd) || form.tmplCd).startsWith(MTL_TMPL_PREFIX);
+  /*
+   * **비어 있는 판정만** 적합으로 채운다. 이미 정해진 판정은 안 건드린다 —
+   * 저장해 둔 부적합을 적합으로 덮으면 사람이 남긴 판정을 지우는 셈이다.
+   *
+   * docIdx 로 「신규」를 가르지 않는다. 작성 화면은 좌측을 먼저 저장해야
+   * 우측 지면이 열려서, 지면을 처음 여는 시점에는 이미 docIdx 가 있다.
+   * 빈 판정은 어차피 전송이 막히는 미완성 상태다(validateForTransfer).
+   */
+  const items = autoJudged ? (detail.items ?? []) : fillBlankItemJudges(detail.items ?? []);
+  const logRows = autoJudged
+    ? (detail.logRows ?? [])
+    : fillBlankLogJudges(detail.logRows ?? []);
   return {
-    docIdx: Number(header.docIdx) || null,
+    docIdx,
     docNo: asText(header.docNo),
     tmplCd: asText(header.tmplCd) || form.tmplCd,
     tmplNm: asText(header.tmplNm) || form.tmplNm,
@@ -432,7 +466,7 @@ export function detailToDraftBuf(
     approverId: asText(header.approverId),
     approverSignYn: asYn(header.approverSignYn),
     verNo: Number(header.verNo) || 0,
-    items: detail.items ?? [],
+    items,
     specialNote: asText(header.specialNote),
     improveNote: asText(header.improveNote),
     actionNm: asText(header.actionNm),
@@ -442,7 +476,7 @@ export function detailToDraftBuf(
     // 이탈 표시는 저장 컬럼이 없다 — 다시 읽을 때는 아래 근거로 화면이 판단한다
     deviationYn: false,
     // 기록행 — CCP 모니터링일지만 채워 온다. 나머지 화면은 빈 배열
-    logRows: detail.logRows ?? [],
+    logRows,
     passRows: detail.passRows ?? [],
   };
 }
