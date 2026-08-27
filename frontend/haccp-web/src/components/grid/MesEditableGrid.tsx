@@ -12,7 +12,7 @@
  * PIPELINE[F75, F83, F52, F173] 연관 모듈
  */
 // 역할 — React 훅·이벤트·ref 타입
-import { useCallback, useContext, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 // 역할 — 화면코드 — pref 저장 키
 import { PageScrnContext } from "@/shell/pageCommands";
 // 역할 — 그리드 컬럼·접근제어 Props 타입
@@ -223,6 +223,8 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
   const scrollRef = useRef<HTMLDivElement>(null);
   // wrap tabIndex=0 — 잠금 셀 클릭 후 방향키가 onGridKeyDown으로 들어오게 focus
   const wrapRef = useRef<HTMLDivElement>(null);
+  // Escape 로 편집을 닫은 뒤 그리드로 포커스를 되돌려야 하는가
+  const refocusWrap = useRef(false);
   // 마지막 활성 열 — 행만 클릭했거나 열이 숨겨져도 방향키 때 열 유지
   const lastActiveField = useRef<string | null>(null);
   const codeWarned = useRef(new Set<string>());
@@ -255,6 +257,34 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
     if (cell?.field) lastActiveField.current = cell.field;
     view.setActiveCell(cell ? { ...cell, isEditing } : null);
   };
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-27
+   * 코멘트:
+   *   1) Escape — 편집만 닫고 **셀 선택과 키보드 포커스는 지킨다**
+   *   2) 편집 입력칸의 Escape 에서 호출한다
+   *   3) 그냥 setEditCell(null) 만 하면 포커스가 body 로 빠져
+   *      방향키·F2·Delete 가 전부 죽는다. 다시 마우스로 눌러야 살아났다.
+   *      focus() 는 **편집칸이 사라진 뒤에** 불러야 한다 — 먼저 부르면
+   *      unmount 되면서 포커스가 다시 body 로 빠진다
+   */
+  const cancelEdit = (rowKey: string, field: string) => {
+    refocusWrap.current = true;
+    setEditCell({ rowKey, field }, false);
+  };
+
+  /*
+   * 편집칸이 사라진 **바로 그 렌더 뒤에** 포커스를 되돌린다.
+   * requestAnimationFrame 으로 미루면 한 프레임이 비고, 그 사이에 들어온
+   * Delete·F2 가 통째로 새 나간다 (Escape 누르자마자 Delete 를 치면 그렇다).
+   * useLayoutEffect 는 DOM 이 바뀐 직후·다음 이벤트 처리 전에 돌아 그 틈이 없다.
+   */
+  useLayoutEffect(() => {
+    if (!refocusWrap.current) return;
+    refocusWrap.current = false;
+    wrapRef.current?.focus();
+  });
 
   /**
    * 개발자: 박승우
@@ -671,9 +701,9 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
                           // 제어 컴포넌트 현재 값
                           // 부모 state와 양방향 동기화
                           value={String(val ?? "")}
-                          onBlur={() => setEditCell(null)}
+                          onBlur={() => setEditCell({ rowKey: row._key, field: c.field }, false)}
                           onKeyDown={(e) => {
-                            if (e.key === "Escape") { e.preventDefault(); setEditCell(null); }
+                            if (e.key === "Escape") { e.preventDefault(); cancelEdit(row._key, c.field); return; }
                             if (e.key === "Tab") {
                               e.preventDefault();
                               tabNext(row, c, isNew, e.shiftKey);
@@ -717,9 +747,9 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
                         // 제어 컴포넌트 현재 값
                         // 부모 state와 양방향 동기화
                         value={val === null || val === undefined ? "" : String(val)}
-                        onBlur={() => setEditCell(null)}
+                        onBlur={() => setEditCell({ rowKey: row._key, field: c.field }, false)}
                         onKeyDown={(e) => {
-                          if (e.key === "Escape") { e.preventDefault(); setEditCell(null); return; }
+                          if (e.key === "Escape") { e.preventDefault(); cancelEdit(row._key, c.field); return; }
                           if (e.key === "Tab") {
                             e.preventDefault();
                             tabNext(row, c, isNew, e.shiftKey);

@@ -39,7 +39,7 @@ Claude Code 진입점이다. **규칙 본문은 여기 두지 않는다** — �
 # 프론트
 cd frontend/haccp-web
 npx tsc --noEmit ; npx eslint src e2e ; npx vitest run ; npm run build
-npx playwright test          # E2E 105건 — 화면·API·SP·DB 를 한 줄로 꿴다
+npx playwright test          # E2E — 화면·API·SP·DB 를 한 줄로 꿴다
 
 # 백엔드
 cd backend/haccp-api ; ./mvnw -q -o test
@@ -47,6 +47,12 @@ cd backend/haccp-api ; ./mvnw -q -o test
 # DB — 빈 DB 에 6본을 순서대로 (재실행 안전)
 PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 ```
+
+**E2E 는 `npm run build` 한 결과를 본다.** `e2e/.env` 의 `E2E_BASE_URL` 이
+`http://localhost:4173/haccp/` — `vite preview` 가 서빙하는 `dist/` 다.
+**프론트 소스를 고쳤으면 반드시 다시 빌드하고 E2E 를 돌린다.**
+빌드를 건너뛰면 고치기 전 화면을 시험하게 되고, 통과해도 뜻이 없다.
+(`E2E_WEB_SERVER=1` 을 주면 대신 dev 서버를 띄운다.)
 
 ## 코드를 만지기 전에
 
