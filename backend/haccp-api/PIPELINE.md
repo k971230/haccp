@@ -156,7 +156,8 @@ cd frontend/haccp-web ; npx playwright test    # 151건, DB 대조 포함
 
 - 규칙: `.cursor/rules/08-haccp-backend.mdc` · `01-project-core.mdc`
 - 태그 색인: `docs/23_PIPELINE.md` (`PIPELINE[HB*]` → 파일)
-- 전수표: `docs/14_메뉴_화면_API_DB_전수.md`
+- 화면 전수표: [`docs/3_화면_지도.md`](../../docs/3_화면_지도.md) — 생성기가 만든다
+- SP → 표 전수표: [`docs/9_SP_색인.md`](../../docs/9_SP_색인.md) — 생성기가 만든다
 - DB 정본: `db_sasshaccp/README.md`
 - E2E 결과: `E2E.md` · `E2E_ERRORS.md`
 
