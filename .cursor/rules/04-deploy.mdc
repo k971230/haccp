@@ -1,5 +1,5 @@
 ---
-description: HACCP 배포·compose·edge 포트 규약 (정본 docs/20_배포_런북.md)
+description: HACCP 배포·compose·edge 포트 규약 (정본 DEPLOY.md)
 alwaysApply: false
 globs: docker-compose*.yml,nginx/**/*,Jenkinsfile*,scripts/{deploy,build,init,prod,install}*.sh
 ---

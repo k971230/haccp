@@ -45,74 +45,59 @@ alwaysApply: false
 
 ## 파일 순서 (apply-all.sh)
 
-| 파일 | 내용 |
-|------|------|
-| `db_sasshaccp/00_ddl.sql` | 스키마 + DB 기본 search_path |
-| `db_sasshaccp/00_ddl.sql` | 인증·플랫폼 10테이블 |
-| `db_sasshaccp/00_ddl.sql` | 로그·통계 4테이블 (로그인·화면조회 UV/PV·감사) |
-| `db_sasshaccp/00_ddl.sql` | 문서 허브 18테이블 (양식·문서·결재·첨부·버전·일정·개선조치·알림) |
-| `db_sasshaccp/00_ddl.sql` | 기준정보 9테이블 |
-| `db_sasshaccp/00_ddl.sql` | 업무 - 중요관리점·검증 |
-| `db_sasshaccp/00_ddl.sql` | 업무 - 위생관리 |
-| `db_sasshaccp/00_ddl.sql` | 업무 - 시설·재고·공정 |
-| `db_sasshaccp/00_ddl.sql` | 인덱스 |
-| `db_sasshaccp/02_seed.sql` | 시드 - 표준양식 42종·화면·공통코드 |
-| `db_sasshaccp/02_seed.sql` | 시드 - 표준 점검항목 |
-| `11~16_sp_*.sql` | 저장프로시저 - 인증·로그·플랫폼·CCP·문서·기준정보 |
-| `db_sasshaccp/02_seed.sql` | 화면코드 frm* → 역할 기반 kebab 마이그레이션 |
-| `db_sasshaccp/01_sp.sql` | 결재선·업체양식·작성주기 |
-| `db_sasshaccp/01_sp.sql` | 위생 DB형 5종 |
-| `db_sasshaccp/01_sp.sql` | 시설·재고·공정 DB형 6종 |
-| `db_sasshaccp/01_sp.sql` | 권한그룹·메뉴 관리 |
-| `db_sasshaccp/01_sp.sql` | 오늘 할 일·알림·개선조치 |
-| `28`~`34` migrate | Wave 잔여·목록검색·문서흐름·HWP_SRC·결재 WRK 정본·tmpl_logis-inventory-check |
-| `35`~`42` migrate | 메뉴 IA · HA-* · HWP tmpl · 작성명세 DDL/SP · MFRM admin · DEMO 시드 · 갭보완 |
-| `db_sasshaccp/01_sp.sql` | 사용양식 구분·파일이력 — `tbl_template.co_cd`, `tbl_company_template_file`, `default/current_file_idx`, `sp_hwp_template_management_*` |
-| `db_sasshaccp/01_sp.sql` | 문서주기 — `tbl_schedule_rule UNIQUE(co_cd, tmpl_cd)`·`nonwork_rule`, `tbl_schedule_rule_detail`, `tbl_schedule_task.alarm_*`, `sp_schedule_cycle_management_*` |
-| `db_sasshaccp/01_sp.sql` | 문서주기 좌측 사용여부 검색 |
-| `db_sasshaccp/01_sp.sql` | 비정기(E) 허용 · 좌측에서 html_sys_011·hwp_sys_028~038 숨김 |
-| `db_sasshaccp/01_sp.sql` | 결재선 단계 `use_yn` · 검토 기본 N · 메뉴를 `menu-sys-auth`로 이동 · 상신 시 N 단계 생략 |
-| `db_sasshaccp/01_sp.sql` | HTML양식 원본 — `html_sys_001` 공정점검표, CCP 냉장은 `html_sys_012`, `tbl_html_form_ver`·`tbl_hyg_process` |
-| `db_sasshaccp/01_sp.sql` | HTML 버전 `use_yn` 소프트 삭제 · 적용 중 삭제 차단 · 목록 `idx` |
-| `db_sasshaccp/01_sp.sql` | HTML 버전 `ver_cd` 필수 · 활성 행 부분UNIQUE · 복사 SP · 목록 코드/이름 검색 |
-| `db_sasshaccp/01_sp.sql` | HTML 버전 목록 작성자·작성일시(`YYYY-MM-DD`) |
-| `db_sasshaccp/01_sp.sql` | HTML 사용자 버전명 UPDATE (`sp_tbl_html_form_ver_nm_u_000`). 표준 0.1 거부 |
-| `db_sasshaccp/01_sp.sql` | HTML 입력유형 `html-input-ty` 5종 · 예/아니오 `judge-yn` · `html_sys_001` kebab 치환 |
-| `db_sasshaccp/01_sp.sql` | 공정점검 점검자·승인자·확인 서명 스냅샷(이미지 없으면 이름) |
-| `db_sasshaccp/01_sp.sql` | 공정점검 상세 작성자명·writerId·writerSignYn (`r_001`) |
-| `db_sasshaccp/01_sp.sql` | 공정점검 자사 양식 `html_hyg_001+` 채번 · 문서주기 좌측 노출 · 예시 `html_hyg_000` |
-| `db_sasshaccp/01_sp.sql` | CCP 검증점검 자사 양식 `tml_ccp_chk_001+` · 예시 `tml_ccp_chk_000`(12 radio+6 text) |
-| `db_sasshaccp/01_sp.sql` | 공정점검 `tbl_html_hyg_prc_ver` · CCP `tbl_tml_ccp_chk_ver` 분할 · 코드 `html_hyg_prc_NNN` |
-| `db_sasshaccp/01_sp.sql` | CCP-1B 포장 모니터링일지 `tml_ccp_pkg_001+` · 예시 `tml_ccp_pkg_000` · `tbl_tml_ccp_pkg_ver` |
-| `db_sasshaccp/01_sp.sql` | CCP-2B 가열 모니터링일지 `tml_ccp_htg_001+` · 예시 `tml_ccp_htg_000` · `tbl_tml_ccp_htg_ver` |
-| `db_sasshaccp/01_sp.sql` | CCP-3P 금속검출 모니터링일지 `tml_ccp_mtl_001+` · 예시 `tml_ccp_mtl_000` · `tbl_tml_ccp_mtl_ver` |
-| `db_sasshaccp/01_sp.sql` | 문서주기 결재선 — 목록·단건에 `appr_line_cd`/`appr_line_nm` · 저장 시 `tbl_company_template.appr_line_cd` |
-| `db_sasshaccp/01_sp.sql` | HTML 지면 제목·부제·감도캡션 `hdr-title`/`hdr-subtitle`/`hdr-sens-cap` |
-| `db_sasshaccp/01_sp.sql` | 금속검출 한계기준 1행 · 주기 4줄 · `limit-run` 시드 숨김 |
-| `db_sasshaccp/01_sp.sql` | HTML 양식 원본 사용여부 — 목록 `use_yn`(회사 양식) · 표준 `*_000`은 N · 이름 SP가 `ct.use_yn` 저장 |
-| `db_sasshaccp/02_seed.sql` | 중분류 menu_cd 개명(`menu-master-sch`·`menu-sys-code`·`menu-sys-logs`) + sort encode SP |
-| `db_sasshaccp/02_seed.sql` | 중분류 `menu-master-form`→`menu-master-hwp` (`/docs/hwp/` 접미) + sort encode SP |
-| `db_sasshaccp/02_seed.sql` | 대/중/소 `menu_cd`를 URL 슬러그와 1:1 (`docs`/`hwp`/`hwp-template-management`). 118·119 미적용 DB도 구 이름을 받아 덮음 |
+**6본이 전부다.** 옛 마이그레이션 133본은 2026-08-25 에 이 6본으로 접었다 —
+`11~16_sp_*.sql`·`28~42 migrate` 같은 파일은 **더 이상 없다.**
 
-번호는 의존 순서다. 새 파일은 **뒤 번호로 추가**하고 기존 번호를 재사용하지 않는다.
+| # | 파일 | 무엇 | 회사코드 |
+|---|---|---|---|
+| 1 | `00_ddl.sql` | 표 53 · 인덱스 · 제약 · 주석 · `search_path` · 자리 넓힘 `ALTER` | — |
+| 2 | `01_sp.sql` | SP 152 (`CREATE OR REPLACE`) | — |
+| 3 | `02_seed.sql` | 표준양식 · 화면 · 메뉴 · 공통코드 · 표준 점검항목 | — |
+| 4 | `03_code_seed.sql` | 업체 공통코드 | `-v co_cd` |
+| 5 | `05_form_seed.sql` | 업체 표준양식 · 점검항목 | `-v co_cd` |
+| 6 | `06_company_seed.sql` | 업체 개설 — 회사 · 권한 · 메뉴 · 부서 · 관리자 · 결재선 · 사용양식 · 채번규칙 | `-v co_cd`(≠0000 일 때만) |
 
-**결재 SP 정본:** `sp_tbl_document_approval_c_000`은 `db_sasshaccp/01_sp.sql` + `db_sasshaccp/01_sp.sql`(apply 후 안전망) + `97`(단계 `use_yn='Y'`만 스냅샷).  
-`28`에 TMP 기준 결재 정의를 다시 넣지 말 것. **`78`·`85` 재실행 금지.** 목록 검색 6인자는 `14`/`19`/`20` 본문에 유지한다.
+`04_migrate_code_upper.sql` 은 **구 DB 전용**이라 `apply-all.sh` 가 안 돌린다.
+
+**순서가 곧 의존이다.** 표 → SP → 플랫폼 시드 → 업체 시드.
+새 파일은 뒤 번호로 붙이고 기존 번호를 재사용하지 않는다.
+
+```sh
+# 플랫폼 초기화 (0000 만)
+PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
+# 새 업체 — 위를 끝낸 DB 에 하나 더 얹는다
+CO_CD=0001 CO_NM='업체명' ADMIN_ID=admin0001 bash db_sasshaccp/apply-all.sh
+```
+
+## 어느 SP 가 어느 표를 건드리나
+
+[`docs/9_SP_색인.md`](../../docs/9_SP_색인.md) — **생성기가 만든다.**
+매퍼 XML 의 호출과 `01_sp.sql` 의 정의를 맞춰서 「도메인 → SP → 표」를 한 줄로 잇는다.
+정의 없는 호출·아무도 안 부르는 SP 도 같이 뽑는다 — 그게 깨진 자리다.
+
+```sh
+node scripts/gen_sp_index.mjs --check
+```
+
+**결재 SP 정본은 `01_sp.sql` 한 곳이다.** `sp_tbl_document_approval_c_000` —
+상신(REQUEST) 때 `use_yn='Y'` 단계만 스냅샷하고, 꺼 둔 검토 단계는 넣지 않는다.
+`WRITE` 단계의 결재자는 결재선 값을 무시하고 **실제 상신자**로 덮는다.
+그래서 결재선에서 실제로 쓰이는 값은 `APPROVE` 단계의 `approver_id` 하나뿐이다.
 
 ## 양식 42종
 
-- `tbl_template.doc_kind` = `html`(HTML 입력 양식) / `hwp`(rhwp 문서작성 양식) — **소문자 정본** (`51`에서 `DB`/`HWP` 치환, `83`에서 SP·앱 비교까지 정합)
-- 양식 파일 경로 = `HaccpTemplates/{tmpl_cd}/{파일}` · 자사 `CustomTemplates/{co_cd}/{tmpl_cd}/{파일}` · 작성 문서 `HaccpLogBooks/{co_cd}/{일자}/{tmpl_cd}/{파일}` (`83`). `html` 양식은 `form_path` NULL
+- `tbl_template.doc_kind` = `html`(HTML 입력 양식) / `hwp`(rhwp 문서작성 양식) — **소문자 정본** — SP·앱 비교까지 소문자로 맞춰져 있다
+- 양식 파일 경로 = `HaccpTemplates/{tmpl_cd}/{파일}` · 자사 `CustomTemplates/{co_cd}/{tmpl_cd}/{파일}` · 작성 문서 `HaccpLogBooks/{co_cd}/{일자}/{tmpl_cd}/{파일}`. `html` 양식은 `form_path` NULL
 - `impl_yn = 'Y'` 30종은 해썹일지 PDF 실물 서식, `impl_yn = 'N'` 12종은 카탈로그 등재만 (미구현)
 - 표준 양식·점검항목은 **플랫폼 소유**(`co_cd` 없음). 업체별 조정은 `tbl_company_template`,
   `tbl_company_check_item` 오버라이드 행으로만 처리하고 표준 시드를 직접 수정하지 않는다
 - 신규 테넌트는 `sp_tbl_company_init_c_000` 한 번으로 회사·권한·메뉴·사용양식·결재선·채번규칙·관리자 계정이 생성된다
-- 카탈로그 `tbl_template.co_cd` = `0000`(플랫폼 공용) / 그 외(자사 등록분). 목록 SP는 `t.co_cd IN ('0000', p_co_cd)` 로 좁힌다 (`84`)
+- 카탈로그 `tbl_template.co_cd` = `0000`(플랫폼 공용) / 그 외(자사 등록분). 목록 SP는 `t.co_cd IN ('0000', p_co_cd)` 로 좁힌다
 - 사용양식 구분은 `tbl_company_template.sys_yn` = `sys`(시스템 제공) / `usr`(자사) — **UPDATE 대상이 아니다**. 삭제는 `usr`만 허용하고 SP가 다시 막는다
-- 양식 파일은 덮어쓰지 않는다: `tbl_company_template_file` 이력 + `current_file_idx`(적용) / `default_file_idx`(초기화 복원) (`84`)
+- 양식 파일은 덮어쓰지 않는다: `tbl_company_template_file` 이력 + `current_file_idx`(적용) / `default_file_idx`(초기화 복원)
 - 문서주기는 **양식당 1건**(`ux_tbl_schedule_rule_tmpl UNIQUE(co_cd, tmpl_cd)`). 반복 상세는 `tbl_schedule_rule_detail.detail_ty`
-  = `week-day` / `month-day` / `month-end` / `quarter-month` / `half-month` / `year-month` (kebab), 비영업일 `nonwork_rule` = `keep|prev|next` (`85`)
-- `cycle_cd`는 **대문자 1자 도메인 유지** — `D|W|M|Q|H|Y|E`(비정기). 소문자로 바꾸지 않는다(22·51 SP·배치가 함께 걸린다). `E`는 예정일을 만들지 않는다 (`96`)
+  = `week-day` / `month-day` / `month-end` / `quarter-month` / `half-month` / `year-month` (kebab), 비영업일 `nonwork_rule` = `keep|prev|next`
+- `cycle_cd`는 **대문자 1자 도메인 유지** — `D|W|M|Q|H|Y|E`(비정기). 소문자로 바꾸지 않는다 — SP·배치가 함께 걸린다. `E`는 예정일을 만들지 않는다
 - 예정일 날짜 계산은 SQL이 아니라 Java `CycleScheduleGenerator`가 한다. SP(`sp_tbl_schedule_task_regen_c_000`)는 전달받은 날짜 배열만 반영한다
 
 ## 적용
@@ -130,7 +115,8 @@ java -cp "$DRV" tools/ApplyOneSql.java db_sasshaccp/01_sp.sql
 
 | 파일 | 무엇 |
 |---|---|
-| `tools/Q.java` | 조회 — `java -cp "$DRV" tools/Q.java "SELECT ..."` |
+| `tools/q.mjs` | 조회·적용 — `node tools/q.mjs [--db 이름] "SELECT ..."` 또는 `"@파일.sql"`. **DB 우선순위 `--db` > `E2E_DB_NAME` > `.env`** |
+| `tools/Q.java` | 조회 (JDBC 판) — `java -cp "$DRV" tools/Q.java "SELECT ..."` |
 | `tools/ApplyOneSql.java` | SQL 파일 하나 적용 (한 트랜잭션) |
 | `tools/Bc.java` | BCrypt 해시 — 초기 비밀번호를 만들 때 |
 

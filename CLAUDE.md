@@ -24,6 +24,9 @@ Claude Code 진입점이다. **규칙 본문은 여기 두지 않는다** — �
   DB `tbl_screen`·`tbl_role_screen`·`tbl_menu` 가 같이 움직인다. `10-ide-workflow` 표 참조
 - **`scrnCd`·`persistId` 는 고정.** 폴더·URL 이 바뀌어도 안 바꾼다
 - **공통코드 `sub_cd` 는 저장값과 같은 표기.** 코드만 올리고 데이터를 안 올리면 콤보가 빈다
+- **저장형과 표시형이 다르다.** 날짜는 DB `varchar(8)` `20260827` · 화면 `2026-08-27`.
+  컬럼 폭을 화면이 보낼 값보다 좁게 잡으면 `22001` 로 저장이 막힌다 —
+  실제로 네 번 났다 ([`docs/4_명명과_경로.md`](docs/4_명명과_경로.md) 10절)
 - **MyBatis 는 컴파일로 안 잡힌다.** 패키지를 옮기면 매퍼 XML `resultType` 도 같이 옮기고
   **반드시 기동해서** 확인한다 (`mvn compile` 통과가 기동 성공을 뜻하지 않는다)
 - **이모지 금지** · **한국어** · git commit/push 는 사용자가 말할 때만
@@ -61,6 +64,8 @@ PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 | 이 프로젝트가 뭔지·업무 흐름 | [`docs/1_시작하기.md`](docs/1_시작하기.md) |
 | 코드가 어떤 순서로 도는지 | [`backend/haccp-api/PIPELINE.md`](backend/haccp-api/PIPELINE.md) · [`frontend/haccp-web/PIPELINE.md`](frontend/haccp-web/PIPELINE.md) |
 | 화면 하나 만들기 | [`docs/2_화면_추가하기.md`](docs/2_화면_추가하기.md) |
-| 지금 있는 화면 | [`docs/3_화면_지도.md`](docs/3_화면_지도.md) |
+| 지금 있는 화면 | [`docs/3_화면_지도.md`](docs/3_화면_지도.md) — 생성기 |
+| 이 표를 고치면 어느 SP 가 걸리나 | [`docs/9_SP_색인.md`](docs/9_SP_색인.md) — 생성기 |
+| `PIPELINE[HF130]` 이 무슨 파일인가 | [`docs/5_PIPELINE_색인.md`](docs/5_PIPELINE_색인.md) — 생성기 |
 | 이름·경로 규칙 | [`docs/4_명명과_경로.md`](docs/4_명명과_경로.md) |
 | 왜 이렇게 돼 있나 | [`docs/8_결정_이력.md`](docs/8_결정_이력.md) |

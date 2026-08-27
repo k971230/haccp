@@ -126,7 +126,8 @@ cd ../frontend/haccp-web ; npx playwright test
 ## 관련
 
 - 규칙: `.cursor/rules/07-haccp-db.mdc`
-- 전수표: `docs/14_메뉴_화면_API_DB_전수.md`
+- 화면 전수표: [`../docs/3_화면_지도.md`](../docs/3_화면_지도.md) — 생성기가 만든다
+- SP → 표 전수표: [`../docs/9_SP_색인.md`](../docs/9_SP_색인.md) — 생성기가 만든다
 - E2E 결과: [`../E2E.md`](../E2E.md) · [`../E2E_ERRORS.md`](../E2E_ERRORS.md)
 - 배포: `Dockerfile.migrate` (컨테이너에서 `apply-all.sh` 실행)
 
