@@ -16,6 +16,7 @@
  *
  * PIPELINE[HF130] E2E
  */
+import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { adminCreds, dbOne, dbRows, hasDbTools, login, openScreen } from "./helpers";
 
@@ -190,14 +191,18 @@ function hasPref(scrnCd: string, gridId: string, userId = "admin"): boolean {
   );
 }
 
-/** 이 시험이 남긴 열 설정을 지운다 — 다음 회차가 깨끗한 상태로 시작한다 */
-function clearPref(scrnCd: string, gridId: string): void {
+/**
+ * 열 설정을 싹 지운다.
+ * 남겨 두면 앞 시험이 숨긴 열이 다음 시험까지 따라와,
+ * 「로그아웃 일시 열이 없다」 같은 엉뚱한 실패가 난다.
+ */
+function wipePrefs(): void {
   if (!hasDbTools()) return;
-  dbOne(
-    `DELETE FROM tbl_grid_pref
-      WHERE co_cd='0000' AND scrn_cd='${scrnCd}' AND grid_id='${gridId}'`,
-  );
+  dbOne("DELETE FROM tbl_grid_pref");
 }
+
+test.beforeEach(wipePrefs);
+test.afterAll(wipePrefs);
 
 /** 조회 화면을 열고 그 화면의 그리드를 준다 */
 async function openData(page: Page): Promise<Locator> {
@@ -375,14 +380,90 @@ test.describe("커스텀 그리드 — 조회", () => {
     await expect(th).not.toHaveClass(/mes-col-pinned/);
   });
 
-  test("CSV 버튼이 파일을 내려준다", async ({ page }) => {
+  test("CSV 는 지금 보이는 열만, 거른 행만 담는다", async ({ page }) => {
+    /*
+     * 파일이 떨어지는 것만 보면 뜻이 없다. 숨긴 열이 CSV 에 따라 나가면
+     * 화면에서 감춘 값이 파일로 새어 나가고, 거르기 전 전부가 나가면
+     * 「보고 있는 것을 내려받았다」가 거짓이 된다.
+     */
     const wrap = await openData(page);
+    const total = await totalCount(wrap);
+
+    // 1) 행을 실제로 줄인다 — 로그아웃 일시는 대부분 비어 있어 「2026」이면 확 준다.
+    //    사용자 ID 같은 값으로 거르면 전 행이 그대로 남아 시험이 뜻을 잃는다
+    await wrap.getByTitle("컬럼별 필터").click();
+    const outAt = await colIndexOf(wrap, "로그아웃 일시");
+    await filterBox(wrap, outAt).fill("2026");
+    await expect.poll(() => shownCount(wrap), { timeout: 15_000 }).toBeLessThan(total);
+    const shown = await shownCount(wrap);
+    expect(shown, "걸렀더니 남는 행이 없다").toBeGreaterThan(0);
+
+    // 2) 열 하나를 끈다 — 거르기에 쓴 열은 남겨 둔다
+    await wrap.getByTitle("열 표시/숨김").click();
+    const menu = colMenu(page);
+    const last = menu.locator("label").last();
+    const hidden = (await last.innerText()).trim();
+    await last.locator("input[type=checkbox]").uncheck();
+    await page.keyboard.press("Escape");
+    await expect
+      .poll(async () => (await headers(wrap)).join("|"), { timeout: 10_000 })
+      .not.toContain(hidden);
 
     const wait = page.waitForEvent("download", { timeout: 30_000 });
     await wrap.getByTitle("CSV보내기").click();
     const file = await wait;
-
     expect(file.suggestedFilename(), "CSV 확장자가 아니다").toMatch(/\.csv$/i);
+
+    const path = await file.path();
+    const raw = readFileSync(path, "utf8");
+    const lines = raw.replace(/^\uFEFF/, "").split(/\r?\n/).filter((l) => l.trim() !== "");
+
+    // 엑셀이 한글을 깨지 않게 BOM 을 붙인다
+    expect(raw.charCodeAt(0), "BOM 이 없어 엑셀에서 한글이 깨진다").toBe(0xfeff);
+    expect(lines[0], `숨긴 열 「${hidden}」이 CSV 에 따라 나갔다`).not.toContain(hidden);
+    expect(lines.length - 1, `화면은 ${shown}건인데 CSV 는 ${lines.length - 1}건이다`).toBe(shown);
+  });
+
+  test("저장된 열 순서대로 그린다", async ({ page }) => {
+    /*
+     * 헤더 끌어놓기는 HTML5 DnD 라 시험 도구로 안정적으로 못 흉내 낸다.
+     * 정작 중요한 건 손짓이 아니라 **결과** — 저장된 순서가 그대로 실리는가다.
+     * 그래서 pref 를 직접 깔고 화면이 그대로 그리는지 본다.
+     */
+    test.skip(!hasDbTools(), "DB 도구가 없으면 pref 를 깔 수 없다");
+
+    // 먼저 기본 순서를 본다
+    const wrap = await openData(page);
+    const before = await headers(wrap);
+    expect(before.length, "열이 모자란다").toBeGreaterThan(3);
+
+    // 뒤 두 열을 맞바꾼 순서를 깐다 — 필드명은 화면이 저장하는 것과 같아야 한다
+    // pref 행이 있어야 순서를 심을 수 있다 — 열 하나를 꺼서 한 번 저장시킨다.
+    // 숨김은 아래 UPDATE 에서 같이 푼다 (다시 켜면 저장이 늦어 순서 심기와 엉킨다)
+    await wrap.getByTitle("열 표시/숨김").click();
+    const menu = colMenu(page);
+    await menu.locator("label input[type=checkbox]").last().uncheck();
+    await expect.poll(() => hasPref(DATA_SCRN_CD, DATA_GRID_ID), { timeout: 20_000 }).toBe(true);
+    await page.keyboard.press("Escape");
+
+    dbOne(
+      `UPDATE tbl_grid_pref
+          SET pref_json = jsonb_set(
+                jsonb_set(pref_json::jsonb, '{hidden}', '{}'::jsonb),
+                '{order}',
+                (SELECT jsonb_agg(x ORDER BY n DESC)
+                   FROM jsonb_array_elements(pref_json::jsonb->'order') WITH ORDINALITY AS t(x, n)))::text
+        WHERE co_cd='0000' AND user_id='admin'
+          AND scrn_cd='${DATA_SCRN_CD}' AND grid_id='${DATA_GRID_ID}'`,
+    );
+
+    await page.reload();
+    const back = wraps(page).last();
+    await waitRows(back);
+
+    const after = await headers(back);
+    expect([...after].sort(), "순서를 바꿨더니 열이 사라지거나 늘었다").toEqual([...before].sort());
+    expect(after.join("|"), "저장된 열 순서를 안 따른다").not.toBe(before.join("|"));
   });
 
   test("가상 스크롤 — 총 건수보다 훨씬 적은 행만 그린다", async ({ page }) => {
@@ -418,16 +499,6 @@ test.describe("커스텀 그리드 — 조회", () => {
 
 test.describe("커스텀 그리드 — 아이디별 열 저장", () => {
   test.skip(() => !hasDbTools(), "DB 도구가 없으면 저장 여부를 확인할 수 없다");
-
-  const wipe = (): void => {
-    clearPref(DATA_SCRN_CD, DATA_GRID_ID);
-    clearPref(MULTI_SCRN_CD, MULTI_GRID_ID);
-    clearPref(EDIT_SCRN_CD, EDIT_GRID_ID);
-    dbOne("DELETE FROM tbl_grid_pref WHERE user_id='e2e_other'");
-  };
-
-  test.beforeEach(wipe);
-  test.afterAll(wipe);
 
   test("열을 숨기면 그 사용자 행으로 DB 에 남는다", async ({ page }) => {
     expect(hasPref(DATA_SCRN_CD, DATA_GRID_ID), "시작 전 pref 가 남아 있다").toBe(false);

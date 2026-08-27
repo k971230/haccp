@@ -54,6 +54,12 @@ if (view.activeCell?.isEditing) return;   // 편집 중이면 안 가로챈다
 if (isTypingTarget(e)) return;            // input·select·textarea 안이면 안 가로챈다
 ```
 
+## CSV
+
+`cols`(지금 보이는 열)와 `view.displayRows`(거른 뒤 행)만 담는다 —
+**숨긴 열은 안 나가고, 거르기 전 전부도 안 나간다.**
+엑셀에서 한글이 안 깨지게 맨 앞에 BOM(`﻿`)을 붙인다.
+
 ## 열 설정은 아이디별이다
 
 `tbl_grid_pref` — 키는 `co_cd + user_id + scrn_cd + grid_id`.
@@ -84,5 +90,5 @@ if (isTypingTarget(e)) return;            // input·select·textarea 안이면 �
    전부 **열 이름으로** 찾는다.
 
 ## 관련
-- 시험: `e2e/grid-features.spec.ts` (24건) · `e2e/shell-grid.spec.ts` · `src/components/grid/*.test.ts`
+- 시험: `e2e/grid-features.spec.ts` (35건) · `e2e/shell-grid.spec.ts` · `src/components/grid/*.test.ts`
 - 정본: [`docs/2_화면_추가하기.md`](../../../../../docs/2_화면_추가하기.md) · [`docs/4_명명과_경로.md`](../../../../../docs/4_명명과_경로.md)
