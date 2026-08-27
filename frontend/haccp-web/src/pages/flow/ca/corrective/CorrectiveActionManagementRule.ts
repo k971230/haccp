@@ -42,19 +42,15 @@ export type Row = WorkflowRow & {
   writerNm?: string;
 };
 
-/** 상태 콤보 — 진행·완료·취소 */
-export const STATUS_OPTIONS = [
-  { value: "OPEN", label: "진행" },
-  { value: "DONE", label: "완료" },
-  { value: "CANCEL", label: "취소" },
-] as const;
-
-/** 상태 배지 — 진행 노랑·완료 초록·취소 회색 */
-export const STATUS_BADGE = { OPEN: "amber", DONE: "green", CANCEL: "gray" } as const;
-
-/** 상태 코드 → 라벨 */
-export const STATUS_NM: Record<string, string> =
-  Object.fromEntries(STATUS_OPTIONS.map((opt) => [opt.value, opt.label]));
+/**
+ * 상태 배지 — 미조치 노랑·조치중 파랑·완료 초록.
+ *
+ * 라벨은 여기서 정하지 않는다. `CA_STATUS` 공통코드가 정본이고 화면이 그것을 넘긴다 —
+ * 예전에는 여기에 `OPEN=진행`·`CANCEL` 을 박아 뒀는데,
+ * 오늘 할 일은 공통코드를 읽어 같은 코드를 「미조치」로 불러 두 화면이 갈렸다.
+ * `CANCEL` 은 6자라 `tbl_corrective_action.status varchar(4)` 에 들어가지도 못했다.
+ */
+export const STATUS_BADGE = { OPEN: "amber", ING: "blue", DONE: "green" } as const;
 
 /**
  * 개발자: 박승우
@@ -64,7 +60,12 @@ export const STATUS_NM: Record<string, string> =
  *   2) Page 가 useMemo 로 호출한다
  *   3) 문서에서 온 칸은 잠그고 조치 칸만 연다 — 원문서를 여기서 고치지 않는다
  */
-export function buildColumns(): GridColumn<Row>[] {
+export function buildColumns(
+  // 상태 콤보 항목 — `CA_STATUS` 공통코드. Page 가 useCommonCodes 로 읽어 넘긴다
+  statusOptions: { value: string; label: string }[],
+  // 상태 코드 → 표시명 — 같은 공통코드에서 나온 맵
+  statusNm: Record<string, string>,
+): GridColumn<Row>[] {
   return [
     { field: "baseDt", header: "일자", width: 100, type: "date", editable: false },
     { field: "tmplNm", header: "양식", width: 200, editable: false },
@@ -83,8 +84,9 @@ export function buildColumns(): GridColumn<Row>[] {
       width: 90,
       type: "code",
       editable: true,
-      codeOptions: [...STATUS_OPTIONS],
-      codeMap: STATUS_NM,
+      // 콤보·표시명 모두 공통코드에서 온다 — 화면이 라벨을 만들지 않는다
+      codeOptions: statusOptions,
+      codeMap: statusNm,
       badge: STATUS_BADGE,
     },
   ];

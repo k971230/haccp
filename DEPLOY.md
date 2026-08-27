@@ -51,7 +51,7 @@ CO_CD=0001 CO_NM='업체명' ADMIN_ID=admin0001 bash db_sasshaccp/apply-all.sh
 | 단계 | 하는 일 | 실패하면 |
 |---|---|---|
 | Checkout | `git log -1` | — |
-| BE test & compile | `./mvnw test` → `package` | 단위 23건 중 하나라도 깨지면 중단 |
+| BE test & compile | `./mvnw test` → `package` | 단위 104건 중 하나라도 깨지면 중단 |
 | FE test & build | `tsc --noEmit` → `lint` → `vitest` → `build` | 타입·린트 오류면 중단 |
 | Build images | `scripts/build_images.sh $TAG` | — |
 | Push images | `ghcr.io` 로 3개(api·web·nginx) | 레지스트리 인증 실패 |

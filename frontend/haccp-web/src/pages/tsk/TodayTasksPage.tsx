@@ -33,7 +33,7 @@ import { usePageCommands } from "@/shell/pageCommands";
 import { mesError } from "@/shell/errors";
 import { routeOf } from "@/shell/tabRoute";
 import { routeForDocument } from "@/lib/documentNav";
-import { todayYmd } from "@/lib/docDateTime";
+import { todayYmd, toDisplayDate, toInputTime } from "@/lib/docDateTime";
 import { useCommonCodes } from "@/hooks/useCommonCodes";
 import { useAuthStore } from "@/stores/authStore";
 import type { EditableRow } from "@/types/editable";
@@ -220,7 +220,9 @@ export default function TodayTasksPage() {
       _key: String(row.taskIdx ?? row.idx ?? `${row.taskType ?? "t"}-${index}`),
       typeNm: String(row.taskType ?? ""),
       statusNm: taskStatusLabel(row.taskType, row.status, caStatusNm),
-      dueText: `${String(row.dueDt ?? "")} ${String(row.dueTime ?? "")}`.trim(),
+      // 마감 — 저장형(YYYYMMDD·HHMM)을 그대로 붙이면 `20260827 1800` 생숫자가 나온다.
+      // 현장에서 8월 18일 18시인지 한눈에 안 읽혀서 사람이 읽는 꼴로 바꾼다
+      dueText: `${toDisplayDate(row.dueDt) === "-" ? "" : toDisplayDate(row.dueDt)} ${toInputTime(row.dueTime)}`.trim(),
     })),
     [caStatusNm, filteredTasks],
   );
