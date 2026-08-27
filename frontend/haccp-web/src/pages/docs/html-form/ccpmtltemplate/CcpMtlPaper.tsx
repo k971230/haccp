@@ -19,6 +19,7 @@ import {
   HtmlFormFootTable,
   HtmlFormRowAddSlot,
   LOG_PHASE,
+  allLogRowsPass,
   appendLogRow,
   appendPassRow,
   logRowsOf,
@@ -290,7 +291,7 @@ export function CcpMtlPaper({
               size="sm"
               variant="add"
               icon="plus"
-              onClick={() => onLogRowsChange?.(appendLogRow(rows, LOG_PHASE.BEFORE))}
+              onClick={() => onLogRowsChange?.(appendLogRow(rows, LOG_PHASE.BEFORE, ""))}
             >
               작업 전 행추가
             </MesButton>
@@ -299,7 +300,7 @@ export function CcpMtlPaper({
               size="sm"
               variant="add"
               icon="plus"
-              onClick={() => onLogRowsChange?.(appendLogRow(rows, LOG_PHASE.AFTER))}
+              onClick={() => onLogRowsChange?.(appendLogRow(rows, LOG_PHASE.AFTER, ""))}
             >
               작업 후 행추가
             </MesButton>
@@ -314,6 +315,18 @@ export function CcpMtlPaper({
             onClick={() => onPassRowsChange?.(appendPassRow(pass))}
           >
             제품 통과 행추가
+          </MesButton>
+        ) : null}
+        {writeRows ? (
+          <MesButton
+            // 판정 전부를 적합으로 — 행추가 묶음 오른쪽 끝
+            size="sm"
+            // 보라 틴트 — 행추가(amber)와 구분
+            variant="pass"
+            icon="check"
+            onClick={() => onLogRowsChange?.(allLogRowsPass(rows))}
+          >
+            모두 적합
           </MesButton>
         ) : null}
       </HtmlFormRowAddSlot>

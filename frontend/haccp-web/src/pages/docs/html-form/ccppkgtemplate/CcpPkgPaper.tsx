@@ -21,6 +21,7 @@ import {
   HtmlFormRowAddSlot,
   LOG_PHASE,
   SignSlot,
+  allLogRowsPass,
   appendLogRow,
   logRowsOf,
   patchLogRow,
@@ -257,6 +258,16 @@ export function CcpPkgPaper({
               onClick={() => onLogRowsChange?.(appendLogRow(rows, LOG_PHASE.AFTER))}
             >
               작업 종료 행추가
+            </MesButton>
+            <MesButton
+              // 판정 전부를 적합으로 — 부적합만 다시 눌러 고치면 된다
+              size="sm"
+              // 보라 틴트 — 행추가(amber)와 구분. 묶음 오른쪽 끝
+              variant="pass"
+              icon="check"
+              onClick={() => onLogRowsChange?.(allLogRowsPass(rows))}
+            >
+              모두 적합
             </MesButton>
           </>
         ) : null}

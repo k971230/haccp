@@ -71,6 +71,14 @@ const downloadTint = tinted(
   "hover:bg-indigo-100",
   "[&_svg]:text-indigo-700",
 );
+/** 모두 적합 — 행추가(amber)·다운로드(indigo)와 구분하는 violet */
+const passTint = tinted(
+  "border-violet-200",
+  "bg-violet-50",
+  "text-violet-700",
+  "hover:bg-violet-100",
+  "[&_svg]:text-violet-700",
+);
 
 /** 공통 버튼 스타일 — MesButton 전용. 화면에서 직접 호출하지 않는다 */
 export const buttonVariants = cva(
@@ -88,6 +96,7 @@ export const buttonVariants = cva(
         dangerConfirm: "border border-danger bg-danger font-bold tracking-normal text-white shadow-none hover:bg-red-800",
         excel: excelTint,
         download: downloadTint,
+        pass: passTint,
         ghost: "border border-transparent bg-transparent font-bold tracking-normal text-black hover:bg-black/[0.04] [&_svg]:text-black",
       },
       size: {

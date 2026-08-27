@@ -103,26 +103,29 @@ test.describe("문서 흐름 — 작성 → 전송 → 승인 → 보관", () =>
       timeout: 30_000,
     });
 
-    // --- 3. 전송 필수값 — 판정을 비우면 막혀야 한다 (음성 검증) --------------
+    /*
+     * --- 3. 전송 필수값 ---------------------------------------------------
+     * 판정은 2026-08-27 부터 **적합으로 깔려 나온다** — 현장 기록이 대부분 적합이라
+     * 행마다 라디오를 한 번씩 더 누르게 하지 않는다. 그래서 「판정을 선택하세요」로는
+     * 더 이상 막히지 않는다. 대신 **깔려 있는지**를 여기서 확인한다.
+     */
+    const unjudged = await page.evaluate(() => {
+      const byName = new Map<string, HTMLInputElement[]>();
+      for (const el of Array.from(
+        document.querySelectorAll<HTMLInputElement>('input[type="radio"]:not([disabled])'),
+      )) {
+        if (!/(^|-)pf-|^yn-/.test(el.name)) continue;
+        byName.set(el.name, [...(byName.get(el.name) ?? []), el]);
+      }
+      return Array.from(byName.values()).filter((g) => !g.some((e) => e.checked)).length;
+    });
+    expect(unjudged, "판정이 안 깔린 행이 있다 — 기본값이 안 먹었다").toBe(0);
+
+    // 시각은 여전히 필수다 — 비면 전송이 막힌다
     await page.getByRole("button", { name: "전송", exact: true }).click();
     // 필수값 안내는 토스트라 버튼이 없다 — 떴다 사라지는 것만 확인한다
-    await expect(page.getByText(/판정을 선택하세요/)).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/입력하세요|선택하세요/)).toBeVisible({ timeout: 20_000 });
 
-    /*
-     * 필수값을 채운다.
-     * 기록 표는 「작업 전·작업 종료」 두 줄이라 라디오 그룹이 줄마다 따로 있다.
-     * 그룹 하나만 찍으면 나머지 줄에서 다시 막힌다.
-     */
-    const groups = [
-      ...new Set(
-        await page
-          .locator('input[type="radio"]:not([disabled])')
-          .evaluateAll((els) => els.map((e) => (e as HTMLInputElement).name)),
-      ),
-    ];
-    for (const name of groups) {
-      await page.locator(`input[type="radio"][name="${name}"]`).first().check({ force: true });
-    }
     const emptyTimes = page.locator('input[type="time"]:not([disabled])');
     for (let i = 0; i < (await emptyTimes.count()); i += 1) {
       if (!(await emptyTimes.nth(i).inputValue())) await emptyTimes.nth(i).fill("09:30");
