@@ -1883,9 +1883,19 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_schedule_cycle_management_form_r_000(p_c
       LEFT JOIN tbl_schedule_rule r ON r.co_cd = ct.co_cd AND r.tmpl_cd = ct.tmpl_cd
       LEFT JOIN tbl_approval_line al ON al.co_cd = ct.co_cd AND al.appr_line_cd = ct.appr_line_cd
      WHERE ct.co_cd = p_co_cd
-       -- 표준(_000)만 뺀다 — 표준은 복사 원본이라 주기를 걸 대상이 아니다.
-       -- 예전에는 양식코드 정규식 목록이었고, 새 양식이 늘 때마다 이 SP 를 고쳐야 했다
+       /*
+        * 복사 원본은 뺀다 — 주기를 걸 대상이 아니다. 자사 양식만 남긴다.
+        *
+        * 지금 원본은 `*_000` 으로 이름이 통일돼 있어 규칙 하나로 걸린다.
+        * 다만 이름 규칙이 생기기 전에 만든 원본이 둘 있다 —
+        *   html_sys_001 → 일반위생·공정점검 (sp_tbl_html_hyg_prc_ver_copy_c_000 이 읽는다)
+        *   html_sys_006 → CCP 검증점검표     (sp_tbl_tml_ccp_chk_ver_copy_c_000 이 읽는다)
+        * 이 둘은 지우면 복사가 죽어서 남겨 두는데, 목록에는 나오면 안 된다.
+        * 새 양식이 이 이름으로 생기지 않으므로 닫힌 집합이다 —
+        * 「양식코드를 나열하지 않는다」가 막으려는 「늘어나는 목록」이 아니다.
+        */
        AND ct.tmpl_cd NOT LIKE '%\_000'
+       AND ct.tmpl_cd NOT IN ('html_sys_001', 'html_sys_006')
        AND (
             COALESCE(NULLIF(btrim(p_use_yn), ''), '') = ''
             OR upper(COALESCE(ct.use_yn, 'N')) = upper(btrim(p_use_yn))
@@ -1900,7 +1910,7 @@ $_$;
 -- Name: FUNCTION sp_schedule_cycle_management_form_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_use_yn character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_schedule_cycle_management_form_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_use_yn character varying) IS '문서주기관리 좌측 — 113 필터 + 결재선. 예시 000 숨김';
+COMMENT ON FUNCTION sasshaccp.sp_schedule_cycle_management_form_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_use_yn character varying) IS '문서주기관리 좌측 — 자사 양식만. 복사 원본(*_000 과 옛 html_sys_001·006) 숨김 + 결재선';
 
 
 --

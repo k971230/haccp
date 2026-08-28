@@ -18,11 +18,9 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 // 역할 — rhwp iframe 편집기
 import { createEditor, type RhwpEditor } from "@rhwp/editor";
-// 역할 — 스튜디오 주소·도구상자 접기·더티 감지
+// 역할 — 스튜디오 주소·더티 감지
 import {
-  foldRhwpToolboxes,
   installRhwpDirtyListeners,
-  installRhwpEarlyFold,
   resolveRhwpStudioUrl,
 } from "@/lib/rhwpStudio";
 // 역할 — 양식 원본·문서 첨부 읽기 (기존 HWP 화면과 같은 API)
@@ -75,7 +73,7 @@ export function HwpEditorPane({
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState("rhwp 편집기를 준비하고 있습니다.");
   // 마지막으로 연 대상 — 같은 문서를 다시 열지 않는다. 실패한 대상도 기록해 재시도 폭주를 막는다
-  const openedRef = useRef<string>("");
+  const openedRef = useRef<string | null>("");
   // 리스너·콜백은 최신값을 본다 — createEditor 효과를 다시 돌리지 않으려고 ref 에 둔다
   const canEditRef = useRef(canEdit);
   canEditRef.current = canEdit;
@@ -107,7 +105,13 @@ export function HwpEditorPane({
     const host = hostRef.current;
     if (!host) return undefined;
     let disposed = false;
-    const disposeEarlyFold = installRhwpEarlyFold(host);
+    /*
+     * 도구상자를 접지 않는다.
+     *
+     * 이 화면은 사람이 한글 문서를 **직접 고치는** 곳이다. 글꼴·표·정렬을 쓸 수 없으면
+     * 일지를 채울 방법이 없다 — 「도구함이 없어 쓰기 어렵다」는 보고가 그것이다.
+     * 미리보기 화면(사용양식관리)은 고칠 일이 없어 거기서만 접는다.
+     */
 
     void (async () => {
       try {
@@ -123,7 +127,6 @@ export function HwpEditorPane({
           created.destroy();
           return;
         }
-        foldRhwpToolboxes(created.element);
         attachDirty(created.element);
         editorRef.current = created;
         setReady(true);
@@ -135,7 +138,6 @@ export function HwpEditorPane({
 
     return () => {
       disposed = true;
-      disposeEarlyFold();
       disposeDirtyRef.current?.();
       disposeDirtyRef.current = undefined;
       editorRef.current?.destroy();
@@ -153,21 +155,40 @@ export function HwpEditorPane({
    */
   useEffect(() => {
     const editor = editorRef.current;
-    if (!ready || !editor || !tmplCd) return;
+    if (!ready || !editor || !tmplCd) return undefined;
     const src = latestSource(files);
     // 문서·양식·본문 조합이 같으면 다시 열지 않는다. 사용자가 쓰던 내용이 날아가면 안 된다
     const token = `${docIdx ?? 0}:${tmplCd}:${src?.idx ?? 0}`;
-    if (openedRef.current === token) return;
+    if (openedRef.current === token) return undefined;
     openedRef.current = token;
+
+    /*
+     * 늦게 온 응답이 화면을 덮지 않게 한다.
+     *
+     * HWP 는 내려받기와 loadFile 둘 다 느리다. 목록에서 문서를 빠르게 바꾸면
+     * 먼저 시작한 A 의 loadFile 이 나중에 끝나 B 위에 A 가 실린다 —
+     * 「다른 파일이 열린다」로 보고된 것이 이것이다.
+     * await 마다 표식이 아직 내 것인지 확인하고, 아니면 조용히 그만둔다.
+     * (HtmlDocumentPreview 가 쓰는 alive 패턴과 같은 것이다)
+     */
+    let alive = true;
+    const mine = () => alive && openedRef.current === token;
+
+    // 여는 동안 앞 문서 이름이 남아 있으면 다른 파일이 열린 것처럼 보인다
+    setMessage("문서를 여는 중입니다…");
 
     void (async () => {
       try {
         if (src) {
           const blob = await downloadDocumentFile(src.idx);
-          await editor.loadFile(await blob.arrayBuffer(), src.fileNm, {
+          if (!mine()) return;
+          const buf = await blob.arrayBuffer();
+          if (!mine()) return;
+          await editor.loadFile(buf, src.fileNm, {
             skipUnsavedGuard: true,
             suppressDialogs: true,
           });
+          if (!mine()) return;
           attachDirty(editor.element);
           onCleanRef.current?.();
           setMessage(`${src.fileNm} 을(를) 열었습니다.`);
@@ -175,23 +196,35 @@ export function HwpEditorPane({
         }
         // 본문이 아직 없을 때(= 첫 작성) 양식 원본을 연다
         const tmpl = (await listDocumentTemplates()).find((t) => t.tmplCd === tmplCd);
+        if (!mine()) return;
         if (!tmpl?.formUrl) {
           setMessage("이 양식의 원본 파일이 없습니다. 사용양식 관리에서 양식을 올리세요.");
           return;
         }
         const buffer = await loadHwpTemplateFile(tmpl.formUrl);
+        if (!mine()) return;
         await editor.loadFile(buffer, tmpl.formFileNm || `${tmplCd}.hwp`, {
           skipUnsavedGuard: true,
           suppressDialogs: true,
         });
+        if (!mine()) return;
         attachDirty(editor.element);
         onCleanRef.current?.();
         setMessage(`${tmpl.tmplNm} 양식을 열었습니다.`);
       } catch (error) {
         // 토스트를 띄우지 않는다 — 같은 문서에서 여러 번 뜨면 화면이 가려진다. 상태 줄로만 알린다
-        setMessage(toUserMessage(error));
+        if (mine()) setMessage(toUserMessage(error));
       }
     })();
+
+    return () => {
+      alive = false;
+      /*
+       * 표식을 되돌린다 — 중간에 그만둔 문서는 「연 적 없음」이어야 한다.
+       * 안 그러면 사용자가 A → B → A 로 돌아왔을 때 A 가 이미 열린 것으로 보여 빈 편집기가 남는다.
+       */
+      if (openedRef.current === token) openedRef.current = null;
+    };
   }, [attachDirty, docIdx, editorRef, files, ready, tmplCd]);
 
   return (

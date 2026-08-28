@@ -224,6 +224,8 @@ export function HtmlFormDraftPage({
   const [listFolded, setListFolded] = useState(false);
   // 문서 첨부 목록 — HWP 만 쓴다. 우측을 직접 그리는 화면이 본문을 여는 데 필요하다
   const [detailFiles, setDetailFiles] = useState<HtmlFormDraftDetailCtx["files"]>([]);
+  // 상세 요청 순번 — 늦게 온 응답이 나중 문서의 첨부를 덮는 것을 막는다
+  const detailSeq = useRef(0);
 
   const {
     listRows, activeKey, activeBuffer: buf, addDraft, selectKey, patchActive,
@@ -331,13 +333,25 @@ export function HtmlFormDraftPage({
    *   3) 양식 미선택 신규 행은 서버를 부르지 않고 빈 버퍼를 준다
    */
   const handleSelect = useCallback((key: string | null) => {
+    /*
+     * 첨부를 먼저 비운다.
+     *
+     * 문서를 바꾸면 docIdx 는 바로 바뀌는데 첨부는 상세 응답이 와야 바뀐다.
+     * 그 틈에 우측 편집기가 「새 문서 + 앞 문서 첨부」를 보고 앞 문서 본문을 연다 —
+     * 「빠르게 바꾸면 다른 파일이 열린다」가 이것이다. 실제로 843 자리에 844 본문이 실렸다.
+     */
+    setDetailFiles([]);
+    // 늦게 온 상세가 다른 문서의 첨부를 덮지 않게 한다
+    const seq = detailSeq.current + 1;
+    detailSeq.current = seq;
     return selectKey(key, async (_k, row) => {
       // 아직 양식을 안 고른 행일 때(= 팝업 전) 상세를 부를 수 없다
       if (!row.tmplCd) return emptyDraftBuf(user);
       try {
         const detail = await api.detail(row.tmplCd, row.docIdx ?? null);
-        // 첨부 목록 — 우측을 직접 그리는 화면(HWP)이 본문을 여는 데 쓴다
-        setDetailFiles(detail.files ?? []);
+        // 첨부 목록 — 우측을 직접 그리는 화면(HWP)이 본문을 여는 데 쓴다.
+        // 그 사이 사용자가 다른 문서로 갔으면 버린다
+        if (detailSeq.current === seq) setDetailFiles(detail.files ?? []);
         return detailToDraftBuf(detail, { tmplCd: row.tmplCd, tmplNm: row.tmplNm }, user);
       } catch (error) {
         mesError(error);
