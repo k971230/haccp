@@ -63,6 +63,7 @@ export interface MesTableViewApi<T extends GridRowBase> {
   setShowFilter: (v: boolean) => void;
   widthOf: (c: GridColumn<T>) => number;
   setWidth: (field: string, w: number) => void;
+  resetLayout: () => void;
   columnOrder: ColumnOrderState;
   setColumnOrder: (updater: Updater<ColumnOrderState>) => void;
   columnPinning: ColumnPinningState;
@@ -644,6 +645,27 @@ export function useMesTable<T extends GridRowBase>(opts: UseMesTableOptions<T>):
     [onColumnSizingChange],
   );
 
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-08-28
+   * 코멘트:
+   *   1) 열 꾸미기(숨김·순서·너비)를 컬럼 정의 기본값으로 되돌린다
+   *   2) GridChrome 「열」메뉴의 초기화가 부른다
+   *   3) 숨김·순서는 메뉴·끌기로 되돌릴 길이 있으나 **순서는 한 칸씩 끌어야** 한다.
+   *      열을 여럿 옮겨 놓고 헤맬 때 한 번에 푸는 자리다.
+   *      세 handler 를 따로 부르지만 persistLayout 이 500ms debounce 라 저장은 한 번만 나간다
+   */
+  const resetLayout = useCallback(() => {
+    const vis: VisibilityState = {};
+    // 컬럼 정의가 처음부터 숨기라고 한 열(defaultHidden)은 그대로 숨긴 채 돌아간다
+    for (const c of columns) {
+      if (c.defaultHidden) vis[c.field] = false;
+    }
+    onColumnVisibilityChange(vis);
+    onColumnOrderChange(defaultColumnOrder(columns, enableRowSelection));
+    onColumnSizingChange({});
+  }, [columns, enableRowSelection, onColumnVisibilityChange, onColumnOrderChange, onColumnSizingChange]);
+
 // 설명 — 정렬·필터 적용 후 표시 행
   const displayRows = table.getRowModel().rows.map((r) => r.original);
 // 설명 — 필터만 적용된 행 — 푸터 집계 기준
@@ -690,6 +712,7 @@ export function useMesTable<T extends GridRowBase>(opts: UseMesTableOptions<T>):
     setShowFilter,
     widthOf,
     setWidth,
+    resetLayout,
     columnOrder,
     setColumnOrder: onColumnOrderChange,
     columnPinning,
