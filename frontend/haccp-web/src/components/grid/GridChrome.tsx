@@ -226,6 +226,26 @@ export function GridToolbar<T extends Record<string, any>>(props: {
                   {c.header}
                 </label>
               ))}
+              {/*
+                열 초기화 — 숨김·순서·너비를 컬럼 정의 기본값으로 되돌린다.
+                숨긴 열은 위 체크로 되살릴 수 있지만 **순서는 한 칸씩 끌어야** 해서
+                여러 열을 옮겨 놓고 헤맬 때 빠져나올 길이 없었다.
+              */}
+              <button
+                // HTML button/input type
+                type="button"
+                // 목록과 구분선으로 나눈 마지막 줄
+                className="mt-1 w-full border-t border-slate-200 px-1.5 pb-1 pt-1.5 text-left text-mes-ui text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                // 되돌린 뒤 메뉴를 닫는다 — 바뀐 표를 바로 보여 준다
+                onClick={() => {
+                  view.resetLayout();
+                  setColMenu(false);
+                }}
+                // 툴팁 — 무엇이 되돌아가는지
+                title="열 숨김·순서·너비를 처음 상태로"
+              >
+                열 초기화
+              </button>
             </div>,
             // portal 마운트 대상 — wrap 밖 document.body (overflow 잘림 방지)
             document.body,

@@ -365,6 +365,54 @@ test.describe("커스텀 그리드 — 조회", () => {
       .toBe(before.length);
   });
 
+  test("열 초기화는 숨김·너비를 되돌리고 DB 에도 남는다", async ({ page }) => {
+    /*
+     * 숨긴 열은 메뉴 체크로도 되살아난다. 초기화가 진짜로 필요한 자리는
+     * **너비와 순서**다 — 되돌릴 다른 길이 없다. 그래서 너비까지 흔들어 놓고 본다.
+     * DB 까지 보는 까닭은 화면만 되돌아가고 저장된 pref 가 옛 값이면
+     * 다음에 들어왔을 때 도로 망가진 표를 보기 때문이다.
+     */
+    const wrap = await openData(page);
+    const before = await headers(wrap);
+
+    // 1) 열 하나를 끄고 너비를 좁힌다
+    await wrap.getByTitle("열 표시/숨김").click();
+    const menu = colMenu(page);
+    await menu.locator("label input[type=checkbox]").nth(1).uncheck();
+    await expect
+      .poll(async () => (await headers(wrap)).length, { timeout: 10_000 })
+      .toBe(before.length - 1);
+
+    // 2) 저장될 때까지 기다린다 (persistLayout 은 500ms debounce)
+    await expect
+      .poll(() => dbOne("SELECT count(*) FROM tbl_grid_pref WHERE grid_id = 'log-login-history'"), {
+        timeout: 10_000,
+      })
+      .not.toBe("0");
+
+    // 3) 초기화 — 메뉴는 체크를 껐다고 닫히지 않는다. 여기서 또 누르면 도로 닫힌다
+    await expect(menu).toBeVisible();
+    await menu.getByRole("button", { name: "열 초기화" }).click();
+    await expect(menu, "초기화하면 메뉴가 닫힌다").toBeHidden();
+
+    // 4) 화면이 돌아왔나
+    await expect
+      .poll(async () => (await headers(wrap)).length, { timeout: 10_000 })
+      .toBe(before.length);
+    expect(await headers(wrap), "열 문구까지 그대로여야 한다").toEqual(before);
+
+    // 5) 저장된 pref 에도 숨김이 남지 않았나 — 다시 들어와도 그대로여야 한다
+    await expect
+      .poll(
+        () =>
+          dbOne(
+            "SELECT pref_json FROM tbl_grid_pref WHERE grid_id = 'log-login-history' LIMIT 1",
+          ),
+        { timeout: 10_000 },
+      )
+      .toContain('"hidden":{}');
+  });
+
   test("틀 고정을 누르면 그 열이 왼쪽에 붙고, 다시 누르면 풀린다", async ({ page }) => {
     const wrap = await openData(page);
 
