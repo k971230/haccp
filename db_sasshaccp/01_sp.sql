@@ -267,7 +267,18 @@ BEGIN
             co_cd, hdr_idx, row_seq, item_cd, cycle_nm, proc_nm, verify_desc,
             input_type, unit_nm, answer_cd, record_desc, ins_id
         ) VALUES (
-            p_co_cd, v_hdr, COALESCE(NULLIF(e->>'sortNo', '')::int, v_seq),
+            /*
+             * 자리 번호는 **보내온 배열 순서**로 우리가 매긴다. 화면이 준 sortNo 를 쓰지 않는다.
+             *
+             * ux_tbl_ccp_verify_item (hdr_idx, row_seq) 가 유니크인데 예전에는
+             * COALESCE(sortNo, v_seq) 로 화면 값을 그대로 받았다. 겹친 값이 오면 23505 가 나고,
+             * 그게 「다른 사용자가 동시에 처리 중입니다」(409)로 둔갑해 사람을 엉뚱한 데로 보냈다.
+             * 실제로 상세 조회가 지면 머리와 점검항목에 각각 1번을 붙여 내려준다 —
+             * 화면이 머리를 걸러 보내서 지금은 안 터질 뿐이다.
+             *
+             * 배열 순서가 곧 지면에 찍히는 순서라 v_seq 로 충분하고, 겹칠 수가 없다.
+             */
+            p_co_cd, v_hdr, v_seq,
             COALESCE(NULLIF(e->>'itemCd', ''), 'cv-u-' || lpad(v_seq::text, 3, '0')),
             NULLIF(e->>'cycleNm', ''), NULLIF(e->>'grpNm', ''),
             -- verify_desc 는 NOT NULL — 항목명이 비면 자리표시자를 넣는다
@@ -4445,7 +4456,13 @@ BEGIN
         INSERT INTO tbl_hyg_process_item (
             co_cd, hdr_idx, sort_no, item_cd, cycle_nm, grp_nm, item_nm, input_type, unit_nm, yn, val_nm, ins_id
         ) VALUES (
-            p_co_cd, v_hdr, COALESCE(NULLIF(e->>'sortNo', '')::int, v_seq),
+            /*
+             * 자리 번호는 **보내온 배열 순서**로 우리가 매긴다. 화면이 준 sortNo 를 쓰지 않는다.
+             * 까닭은 sp_ccp_verify_c_000 과 같다 —
+             * ux_tbl_hyg_process_item (hdr_idx, sort_no) 가 유니크라 겹친 값이 오면
+             * 23505 가 409 「다른 사용자가 동시에 처리 중입니다」로 둔갑한다.
+             */
+            p_co_cd, v_hdr, v_seq,
             COALESCE(NULLIF(e->>'itemCd', ''), 'hp-u-' || lpad(v_seq::text, 3, '0')),
             NULLIF(e->>'cycleNm', ''), NULLIF(e->>'grpNm', ''), NULLIF(e->>'itemNm', ''),
             COALESCE(NULLIF(e->>'inputType', ''), 'radio'), NULLIF(e->>'unitNm', ''),
