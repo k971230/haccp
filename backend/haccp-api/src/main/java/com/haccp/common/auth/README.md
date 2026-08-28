@@ -23,6 +23,26 @@ JWT 다음 단계다. **로그인했는지**는 `JwtFilter` 가, **그 화면을
 
 - `/api/v1/docs/documents/**` — 문서 허브. 삭제·HWP 저장은 `HWP_HUB_SCREENS`, 나머지는 `DOC_HUB_SCREENS`
 - `/auth/**` · 셸 공용 · `/sys/users/me` — 화이트리스트
+- `/api/v1/docs/templates/list` — **공용 조회**라 화이트리스트. 나머지 `/docs/templates/**` 는 `hwp-template-management`
+
+## 여러 화면이 쓰는 조회는 화면에 묶지 않는다
+
+콤보를 채우는 목록 같은 것은 **부르는 화면이 여럿**이라 특정 화면 권한에 묶으면
+「내가 볼 권한을 가진 화면인데 남의 화면 권한 때문에 403」이 난다.
+
+실제로 났다 — `/api/v1/docs/templates/list` 가 `hwp-template-management` 에 묶여 있어서,
+그 화면이 `read_yn='N'` 인 조회 전용(VIEWER)이 **이탈·개선조치 화면에서** 양식 콤보가 비었다.
+그 화면은 VIEWER 도 읽기 권한이 있는데도 그랬다. 부르는 곳은 둘이다 —
+`draft/hwp-doc/HwpEditorPane` 과 `flow/ca/CorrectiveActionManagementPage`.
+
+**목록만 연다.** 원본 파일 스트림(`/{tmplCd}/form`)과 업로드는 그대로 화면 권한을 본다.
+회사 범위는 어차피 JWT 로 SP 가 가른다.
+
+새 조회를 더할 때 **부르는 화면이 둘 이상이면** 화면에 묶지 말고 여기를 본다.
+
+## 변경 (2026-08-28)
+
+`/api/v1/docs/templates/list` 를 화이트리스트로 옮겼다. 위 문단이 까닭이다.
 
 ## 변경 (2026-08-25)
 
