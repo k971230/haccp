@@ -80,6 +80,36 @@ class ScreenAuthResolverTest {
         assertTrue(ScreenAuthResolver.resolve("POST", "/api/v1/sys/users/me/sign").isEmpty());
     }
 
+    /*
+     * 사용양식 목록은 공용 조회다. 여러 화면의 콤보가 쓴다.
+     * 여기가 화면에 묶여 있어서 조회 전용(VIEWER)이 이탈·개선조치 화면에서 403 을 맞고
+     * 양식 콤보가 비었다 — 정작 그 화면은 볼 권한이 있는데 남의 화면 권한에 걸렸다.
+     */
+    @Test
+    void 사용양식_목록은_공용조회라_화면권한을_안본다() {
+        assertTrue(
+                ScreenAuthResolver.resolve("GET", "/api/v1/docs/templates/list").isEmpty(),
+                "목록이 화면 권한에 묶이면 조회 전용 계정의 양식 콤보가 빈다"
+        );
+    }
+
+    /** 목록만 열었다 — 원본 파일과 업로드는 작성 화면의 일이라 그대로 막는다. */
+    @Test
+    void 양식_원본과_업로드는_사용양식관리_화면이다() {
+        ScreenAuthMatch read = ScreenAuthResolver.resolve(
+                "GET",
+                "/api/v1/docs/templates/hwp_sys_001/form"
+        ).orElseThrow();
+        assertEquals("hwp-template-management", read.scrnCd());
+        assertEquals(ScreenAuthAction.READ, read.action());
+
+        ScreenAuthMatch write = ScreenAuthResolver.resolve(
+                "POST",
+                "/api/v1/docs/templates/hwp_usr_001/form"
+        ).orElseThrow();
+        assertEquals("hwp-template-management", write.scrnCd());
+    }
+
     @Test
     void 타인_서명은_사용자관리_화면이다() {
         ScreenAuthMatch m = ScreenAuthResolver.resolve(

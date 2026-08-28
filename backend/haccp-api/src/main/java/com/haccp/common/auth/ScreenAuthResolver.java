@@ -154,6 +154,19 @@ public final class ScreenAuthResolver {
         if (path.startsWith("/api/v1/code/")) return true;
         if (path.startsWith("/api/v1/pref/")) return true;
         if (path.startsWith("/api/v1/log/")) return true;
+        /*
+         * 사용양식 목록은 공통코드와 같은 **공용 조회**다 — 여러 화면의 콤보가 쓴다.
+         * HWP 작성(hwp-write)과 이탈·개선조치(corrective-action-management) 둘이 부른다.
+         *
+         * 아래에서 /api/v1/docs/templates 전체를 hwp-template-management 화면에 묶는 바람에,
+         * 조회 전용(VIEWER)이 **자기가 볼 권한을 가진 이탈·개선조치 화면에서**
+         * 남의 화면 권한 때문에 403 을 맞고 양식 콤보가 비었다.
+         *
+         * 목록만 연다. 원본 파일 스트림(/{tmplCd}/form)과 업로드는 그대로 화면 권한을 본다 —
+         * 그쪽은 작성 화면의 일이라 조회 전용이 볼 것이 아니다.
+         * 회사 범위는 JWT 로 SP 가 이미 가른다.
+         */
+        if (path.equals("/api/v1/docs/templates/list")) return true;
         return path.startsWith("/api/v1/sys/users/me");
     }
 
