@@ -13,15 +13,27 @@
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-07
+ * 일자: 2026-08-28
  * 코멘트:
  *   1) YYYYMMDD → input type=date 값(YYYY-MM-DD)으로 바꾼다
- *   2) DocFormMeta·목록 기준일 표시에 쓴다
- *   3) 8자리가 아니면 빈 문자열을 반환한다
+ *   2) DocFormMeta·목록 기준일·그리드 date 셀이 쓴다
+ *   3) 8자리가 아니거나 **달력에 없는 날**이면 빈 문자열을 반환한다
+ *
+ * 자리 수만 보면 안 된다. `20240082` 는 8자리라 통과했고 `2024-00-82` 가 만들어졌다.
+ * 브라우저가 `<input type=date>` 에서 그 값을 거부하고 콘솔에 경고를 쌓는다 —
+ * 실제로 화면에서 그 경고가 계속 났다. 날짜로 되읽어 같은 값인지까지 본다.
  */
 export function toInputDate(ymd: string | null | undefined): string {
   const raw = (ymd ?? "").replace(/\D/g, "");
   if (raw.length !== 8) return "";
+  const y = Number(raw.slice(0, 4));
+  const m = Number(raw.slice(4, 6));
+  const d = Number(raw.slice(6, 8));
+  // 월·일이 범위 밖일 때(= 00월·82일 같은 값) 날짜가 아니다
+  if (m < 1 || m > 12 || d < 1 || d > 31) return "";
+  // 2월 30일처럼 자리 수는 맞고 달력엔 없는 날 — Date 가 다음 달로 넘겨 버린다
+  const probe = new Date(Date.UTC(y, m - 1, d));
+  if (probe.getUTCFullYear() !== y || probe.getUTCMonth() !== m - 1 || probe.getUTCDate() !== d) return "";
   return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
 }
 

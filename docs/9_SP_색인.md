@@ -177,7 +177,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | tsk | `sp_tbl_notification_u_000` | 쓰기 | `tsk/TaskMapper.xml` | `tbl_notification` |
 | tsk | `sp_tbl_schedule_task_generate_c_000` | 쓰기 | `tsk/TaskMapper.xml` | `tbl_company_template<br>tbl_notification<br>tbl_schedule_task<br>tbl_template<br>tbl_user` |
 | tsk | `sp_tbl_today_task_doc_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_document_file<br>tbl_template<br>tbl_user` |
-| tsk | `sp_tbl_today_task_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_schedule_task<br>tbl_template` |
+| tsk | `sp_tbl_today_task_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_schedule_task<br>tbl_template` |
 
 ## 관련
 

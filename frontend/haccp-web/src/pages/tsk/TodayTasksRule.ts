@@ -503,15 +503,23 @@ export function todayTaskHref(
 export function taskStatusLabel(
   // SP task_type — CA 이면 개선조치 상태
   taskType: unknown,
-  // TASK: TODO/ING/LATE/APV · CA: OPEN/ING/DONE
+  // TASK: TODO/ING/LATE/APV 또는 문서상태 WRK/REQ/REV/APV/RJT · CA: OPEN/ING/DONE
   status: unknown,
   // CA_STATUS 공통코드 subCd → 표시명. 화면이 넘긴다
   caNm: Record<string, string>,
+  // DOC_STATUS 공통코드 subCd → 표시명. 그 날짜로 쓴 문서가 있으면 이 값이 온다
+  docNm: Record<string, string> = {},
 ): string {
   const st = String(status ?? "");
   if (!st) return "";
   if (isCaTask(taskType)) return caNm[st] || st;
-  return TASK_STATUS_NM[st] || st;
+  /*
+   * 작성과제인데 문서상태가 오는 경우가 있다 — 그 날짜·양식으로 쓴 문서가 있으면
+   * SP 가 문서 상태를 준다(승인요청·반려 등). 할 일에는 「예정」인데 문서는
+   * 승인요청이던 것을 맞추려는 것이다.
+   * 일정 상태(TODO·LATE)를 먼저 보고, 없으면 문서상태 공통코드에서 찾는다.
+   */
+  return TASK_STATUS_NM[st] || docNm[st] || st;
 }
 
 /**
