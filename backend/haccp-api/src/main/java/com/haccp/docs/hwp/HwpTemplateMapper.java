@@ -39,7 +39,11 @@ public interface HwpTemplateMapper {
             // 양식코드 검색어 — 공백이면 전체
             @Param("tmplCd") String tmplCd,
             // 양식명 검색어 — 공백이면 전체
-            @Param("tmplNm") String tmplNm
+            @Param("tmplNm") String tmplNm,
+            // 구분 — sys(시스템제공)|usr(자사). 공백이면 전체
+            @Param("sysYn") String sysYn,
+            // 사용여부 — Y|N. 공백이면 전체(미사용 포함)
+            @Param("useYn") String useYn
     );
 
     /**

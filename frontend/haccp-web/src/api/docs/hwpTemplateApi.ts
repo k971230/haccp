@@ -64,17 +64,28 @@ export interface HwpTemplateFile {
  * 코멘트:
  *   1) 사용양식관리 목록(hwp 양식·미사용 포함)을 조회한다
  *   2) 화면 진입·조회·저장/삭제/파일작업 후 재조회에서 호출한다
- *   3) 검색어가 비면 전체 목록 — 구분·현재 파일명·이력건수까지 한 번에 받는다
+ *   3) 검색어·구분·사용여부가 비면 전체 목록 — 현재 파일명·이력건수까지 한 번에 받는다
  */
 export async function listHwpTemplates(params?: {
   // 양식코드 검색어 — 공백이면 전체
   tmplCd?: string;
   // 양식명 검색어 — 공백이면 전체
   tmplNm?: string;
+  // 구분 — sys(시스템제공) | usr(자사). 공백이면 전체
+  sysYn?: string;
+  // 사용여부 — Y | N. 공백이면 전체(미사용 포함)
+  useYn?: string;
 }): Promise<HwpTemplateRow[]> {
   const { data } = await http.get<CommonResponse<HwpTemplateRow[]>>(
     `${BASE}/list`,
-    { params: { tmplCd: params?.tmplCd ?? "", tmplNm: params?.tmplNm ?? "" } },
+    {
+      params: {
+        tmplCd: params?.tmplCd ?? "",
+        tmplNm: params?.tmplNm ?? "",
+        sysYn: params?.sysYn ?? "",
+        useYn: params?.useYn ?? "",
+      },
+    },
   );
   return data.data ?? [];
 }

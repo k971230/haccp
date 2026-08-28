@@ -47,7 +47,7 @@ public class HwpTemplateService {
      * 개발자: 박승우
      * 일자: 2026-08-14
      * 코멘트:
-     *   1) 사용양식관리 좌측 목록을 조회한다 — hwp 양식만, 미사용도 포함한다
+     *   1) 사용양식관리 좌측 목록을 조회한다 — hwp 양식만. 검색을 안 걸면 미사용도 포함한다
      *   2) 화면 진입·조회·저장 후 재조회에서 호출한다
      *   3) 구분·현재 파일명·기본/현재 파일 idx·이력건수까지 한 번에 내려 버튼 판정을 한 곳에서 한다
      */
@@ -55,9 +55,14 @@ public class HwpTemplateService {
             // 헤더 양식코드 검색어 — 공백이면 전체
             String tmplCd,
             // 헤더 양식명 검색어 — 공백이면 전체
-            String tmplNm
+            String tmplNm,
+            // 헤더 구분 — sys|usr. 공백이면 전체
+            String sysYn,
+            // 헤더 사용여부 — Y|N. 공백이면 전체(미사용 포함)
+            String useYn
     ) {
-        return toCamelMaps(mapper.selectHwpTemplates(LoginUserContext.coCd(), text(tmplCd), text(tmplNm)));
+        return toCamelMaps(mapper.selectHwpTemplates(
+                LoginUserContext.coCd(), text(tmplCd), text(tmplNm), text(sysYn), text(useYn)));
     }
 
     /**

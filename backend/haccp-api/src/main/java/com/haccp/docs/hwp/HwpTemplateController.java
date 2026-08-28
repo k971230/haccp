@@ -42,16 +42,20 @@ public class HwpTemplateController {
      * 코멘트:
      *   1) 사용양식관리 좌측 목록(hwp 양식·미사용 포함)을 조회한다
      *   2) 화면 진입·조회·저장/삭제 후 재조회가 호출한다
-     *   3) 검색어는 빈 문자열 허용 — 공백이면 전체 목록
+     *   3) 검색어·구분·사용여부는 빈 문자열 허용 — 공백이면 전체 목록
      */
     @GetMapping("/list")
     public CommonResponse<List<Map<String, Object>>> hwpTemplates(
             // 양식코드 검색어 — 공백이면 전체
             @RequestParam(required = false, defaultValue = "") String tmplCd,
             // 양식명 검색어 — 공백이면 전체
-            @RequestParam(required = false, defaultValue = "") String tmplNm
+            @RequestParam(required = false, defaultValue = "") String tmplNm,
+            // 구분 — sys(시스템제공)|usr(자사). 공백이면 전체
+            @RequestParam(required = false, defaultValue = "") String sysYn,
+            // 사용여부 — Y|N. 공백이면 전체(미사용 포함)
+            @RequestParam(required = false, defaultValue = "") String useYn
     ) {
-        return CommonResponse.ok(service.hwpTemplates(tmplCd, tmplNm));
+        return CommonResponse.ok(service.hwpTemplates(tmplCd, tmplNm, sysYn, useYn));
     }
 
     /**

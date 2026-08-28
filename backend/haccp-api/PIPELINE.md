@@ -147,7 +147,7 @@ cd backend/haccp-api
 **단위 테스트로는 매퍼 XML 이 안 잡힌다.** 화면까지 도는지는 프론트 E2E 가 본다.
 
 ```sh
-cd frontend/haccp-web ; npx playwright test    # 151건, DB 대조 포함
+cd frontend/haccp-web ; npx playwright test    # 152건, DB 대조 포함
 ```
 
 ---

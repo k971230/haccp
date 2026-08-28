@@ -119,7 +119,7 @@ HWP 문서 작성 → 문서번호 `hwp_sys_001-20260826-001` 채번까지 확�
 # 빈 DB 에 7본을 순서대로 → 표 53 / SP 152 / 메뉴 43 / 코드 86 / 사용양식 45 / 회사지면 5
 bash apply-all.sh
 
-# 화면까지 도는지 — 프론트 E2E 151건
+# 화면까지 도는지 — 프론트 E2E 152건
 cd ../frontend/haccp-web ; npx playwright test
 ```
 
