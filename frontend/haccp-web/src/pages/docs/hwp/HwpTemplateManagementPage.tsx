@@ -50,7 +50,7 @@ import { useGridAccess } from "@/hooks/useGridAccess";
 import type { EditableRow } from "@/types/editable";
 // 역할 — 페이지 카드·검색 영역·좌우 분할(공통코드 관리와 같은 뼈대)
 import { PageCard } from "@/components/layout/PageCard";
-import { SearchArea, SearchButton, SearchField } from "@/components/layout/SearchArea";
+import { SearchArea, SearchButton, SearchField, SearchSelect } from "@/components/layout/SearchArea";
 import { ResizableSplit } from "@/components/layout/ResizableSplit";
 import { gridHeadClass, pageRootClass, splitPanelClass } from "@/components/layout/pageClasses";
 // 역할 — HWP 원본 읽기·업로드 API
@@ -108,11 +108,17 @@ export default function HwpTemplateManagementPage() {
   // 목록 구분 문구 — 시스템제공/사용자추가. 불러오기 src-ty 와 섞지 않는다
   const sysYnCodes = useCommonCodes(SYS_YN_MAIN_CD);
 
-  // 조회 조건 — 양식코드·양식명 부분검색(서버 LIKE)
+  /*
+   * 조회 조건 — 양식코드·양식명은 서버 LIKE, 구분·사용여부는 서버가 값으로 거른다.
+   * 넷 다 빈값이 「전체」다. 사용여부 기본을 Y 로 두지 않는다 —
+   * 이 화면은 미사용 양식을 다시 쓰게 만드는 곳이라 안 보이면 손을 못 댄다.
+   */
   const [qTmplCd, setQTmplCd] = useState("");
   const [qTmplNm, setQTmplNm] = useState("");
-  const searchRef = useRef({ qTmplCd, qTmplNm });
-  searchRef.current = { qTmplCd, qTmplNm };
+  const [qSysYn, setQSysYn] = useState("");
+  const [qUseYn, setQUseYn] = useState("");
+  const searchRef = useRef({ qTmplCd, qTmplNm, qSysYn, qUseYn });
+  searchRef.current = { qTmplCd, qTmplNm, qSysYn, qUseYn };
 
   const templates = useEditableRows<TmplListRow>("tmplCd");
   const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -164,6 +170,8 @@ export default function HwpTemplateManagementPage() {
       const rows = await listHwpTemplates({
         tmplCd: query.qTmplCd.trim(),
         tmplNm: query.qTmplNm.trim(),
+        sysYn: query.qSysYn,
+        useYn: query.qUseYn,
       });
       const drafts = templates.rowsRef.current.filter((row) => row._rowState === "C");
       templates.load(rows);
@@ -606,6 +614,31 @@ export default function HwpTemplateManagementPage() {
                 onChange={(event) => setQTmplNm(event.target.value)}
               />
             </SearchField>
+            <SearchSelect
+              // 구분 — 시스템제공/자사. 빈값이 전체
+              label="구분"
+              // 검색 구분 — sys|usr 또는 빈값(전체)
+              value={qSysYn}
+              // 바꾸면 SearchSelect 가 즉시 조회를 건다
+              onChange={setQSysYn}
+            >
+              <option value="">전체</option>
+              {sysYnCodes.codes.map((code) => (
+                <option key={code.subCd} value={String(code.subCd).toLowerCase()}>{code.codeNm}</option>
+              ))}
+            </SearchSelect>
+            <SearchSelect
+              // 사용여부 — 빈값이 전체. 미사용 양식을 되살리는 화면이라 기본을 Y 로 두지 않는다
+              label="사용여부"
+              // 검색 사용여부 — Y|N 또는 빈값(전체)
+              value={qUseYn}
+              onChange={setQUseYn}
+            >
+              <option value="">전체</option>
+              {useOpts.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </SearchSelect>
           </SearchArea>
         )}
       >

@@ -135,7 +135,7 @@ npx tsc --noEmit          # 타입
 npx eslint src e2e        # 규칙
 npx vitest run            # 단위 144건
 npm run build             # 번들
-npx playwright test       # E2E 151건 — 화면·API·SP·DB 를 한 줄로 꿴다
+npx playwright test       # E2E 152건 — 화면·API·SP·DB 를 한 줄로 꿴다
 ```
 
 E2E 는 화면 문구가 아니라 **DB 를 직접 읽어** 판정한다.

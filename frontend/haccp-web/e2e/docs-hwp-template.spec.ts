@@ -181,6 +181,67 @@ test.describe.serial("HWP 사용양식관리", () => {
     ).toBe("0");
   });
 
+  test("구분·사용여부로 목록이 실제로 줄어든다", async ({ page }) => {
+    /*
+     * 검색 조건을 화면에서 고르고 **DB 건수와 대조**한다.
+     * 시험 DB 는 hwp 양식이 전부 sys·Y 라 그대로는 갈리지 않는다 —
+     * 두 건을 미사용·자사로 돌려 놓고 보고, 끝나면 되돌린다.
+     */
+    const flip = ["hwp_sys_002", "hwp_sys_003"].map((c) => `'${c}'`).join(",");
+    dbOne(`UPDATE tbl_company_template SET use_yn='N' WHERE co_cd='0000' AND tmpl_cd IN (${flip})`);
+    dbOne(`UPDATE tbl_company_template SET sys_yn='usr' WHERE co_cd='0000' AND tmpl_cd='hwp_sys_005'`);
+    try {
+      const total = Number(dbOne(`SELECT count(*) FROM tbl_company_template ct
+                                    JOIN tbl_template t ON t.tmpl_cd = ct.tmpl_cd
+                                   WHERE ct.co_cd='0000' AND t.doc_kind='HWP'`));
+      const { user, pass } = adminCreds();
+      await login(page, user, pass);
+      await openScreen(page, PATH);
+      const grid = grids(page).first();
+      await expect.poll(() => grid.locator("tbody tr").count(), { timeout: 30_000 }).toBe(total);
+
+      // 콤보 둘 — 앞이 구분, 뒤가 사용여부
+      const sels = page.locator("select").filter({ visible: true });
+      const sysSel = sels.nth((await sels.count()) - 2);
+      const useSel = sels.nth((await sels.count()) - 1);
+
+      /*
+       * 기대값을 숫자로 박지 않는다 — 앞 시험이 만든 자사 양식이 남아 있어
+       * 「usr 는 1건」 같은 상수는 실행 순서에 따라 어긋난다. DB 에서 세어 대조한다.
+       */
+      const cnt = (where: string) => Number(dbOne(
+        `SELECT count(*) FROM tbl_company_template ct
+           JOIN tbl_template t ON t.tmpl_cd = ct.tmpl_cd
+          WHERE ct.co_cd='0000' AND t.doc_kind='HWP' AND ${where}`,
+      ));
+      const nCnt = cnt("upper(coalesce(ct.use_yn,'Y')) = 'N'");
+      const usrCnt = cnt("lower(coalesce(ct.sys_yn,'sys')) IN ('n','usr')");
+
+      await useSel.selectOption("N");
+      await expect
+        .poll(() => grid.locator("tbody tr").count(), { timeout: 20_000 })
+        .toBe(nCnt);
+      await useSel.selectOption("Y");
+      await expect
+        .poll(() => grid.locator("tbody tr").count(), { timeout: 20_000 })
+        .toBe(total - nCnt);
+      await useSel.selectOption("");
+
+      await sysSel.selectOption("usr");
+      await expect
+        .poll(() => grid.locator("tbody tr").count(), { timeout: 20_000 })
+        .toBe(usrCnt);
+      await sysSel.selectOption("sys");
+      await expect
+        .poll(() => grid.locator("tbody tr").count(), { timeout: 20_000 })
+        .toBe(total - usrCnt);
+    } finally {
+      // 뒷정리 — 다른 시험이 이 값을 보고 돈다
+      dbOne(`UPDATE tbl_company_template SET use_yn='Y' WHERE co_cd='0000' AND tmpl_cd IN (${flip})`);
+      dbOne(`UPDATE tbl_company_template SET sys_yn='sys' WHERE co_cd='0000' AND tmpl_cd='hwp_sys_005'`);
+    }
+  });
+
   test("화면을 우회해 API 를 직접 쳐도 시스템 양식은 막는다", async ({ request }) => {
     const apiBase = process.env.E2E_API_BASE_URL || "http://localhost:7070";
     const { user, pass } = adminCreds();

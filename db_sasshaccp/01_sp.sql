@@ -1242,10 +1242,25 @@ COMMENT ON FUNCTION sasshaccp.sp_hwp_template_management_file_r_000(p_co_cd char
 
 
 --
--- Name: sp_hwp_template_management_r_000(character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_hwp_template_management_r_000(character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_hwp_template_management_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying) RETURNS TABLE(tmpl_cd character varying, tmpl_nm character varying, sys_yn character varying, doc_kind character varying, category_cd character varying, mng_no character varying, form_path character varying, form_file_nm character varying, use_yn character varying, default_file_idx bigint, current_file_idx bigint, file_hist_cnt integer)
+-- 인자가 3 → 5 로 늘었다. CREATE OR REPLACE 만 하면 옛 3인자 함수가 남아
+-- 매퍼가 어느 쪽을 부를지 모호해진다. 먼저 지운다 (sp_tbl_today_task_r_000 과 같은 방식)
+DROP FUNCTION IF EXISTS sasshaccp.sp_hwp_template_management_r_000(character varying, character varying, character varying);
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_hwp_template_management_r_000(
+    -- p_co_cd: JWT 회사코드 — 사용양식 범위. 테넌트 격리는 SP 책임이다
+    p_co_cd character varying,
+    -- p_tmpl_cd: 양식코드 부분검색. 비면 전체
+    p_tmpl_cd character varying,
+    -- p_tmpl_nm: 양식명 부분검색. 비면 전체
+    p_tmpl_nm character varying,
+    -- p_sys_yn: 구분 — sys(시스템제공) | usr(자사). 비면 전체
+    p_sys_yn character varying DEFAULT NULL,
+    -- p_use_yn: 사용여부 — Y | N. 비면 전체
+    p_use_yn character varying DEFAULT NULL
+) RETURNS TABLE(tmpl_cd character varying, tmpl_nm character varying, sys_yn character varying, doc_kind character varying, category_cd character varying, mng_no character varying, form_path character varying, form_file_nm character varying, use_yn character varying, default_file_idx bigint, current_file_idx bigint, file_hist_cnt integer)
     LANGUAGE sql STABLE
     AS $_$
     SELECT ct.tmpl_cd,
@@ -1273,15 +1288,23 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_hwp_template_management_r_000(p_co_cd ch
        AND t.doc_kind = 'HWP'
        AND ct.tmpl_cd LIKE CONCAT('%', COALESCE(p_tmpl_cd, ''), '%')
        AND COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm) LIKE CONCAT('%', COALESCE(p_tmpl_nm, ''), '%')
+       -- 구분 — 화면이 보내는 값과 저장값의 표기를 맞춘다.
+       -- ct.sys_yn 은 옛 'N'/'n' 도 남아 있어 목록 컬럼과 같은 규칙으로 정규화해서 비교한다
+       AND (NULLIF(btrim(COALESCE(p_sys_yn, '')), '') IS NULL
+            OR lower(CASE WHEN COALESCE(ct.sys_yn, 'sys') IN ('N', 'n', 'usr') THEN 'usr' ELSE 'sys' END)
+               = lower(btrim(p_sys_yn)))
+       -- 사용여부 — 비면 미사용까지 전부 본다. 이 화면은 미사용 양식도 다뤄야 한다
+       AND (NULLIF(btrim(COALESCE(p_use_yn, '')), '') IS NULL
+            OR upper(COALESCE(ct.use_yn, 'Y')) = upper(btrim(p_use_yn)))
      ORDER BY t.sort_no, ct.tmpl_cd;
 $_$;
 
 
 --
--- Name: FUNCTION sp_hwp_template_management_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: FUNCTION sp_hwp_template_management_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_sys_yn character varying, p_use_yn character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_hwp_template_management_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying) IS '사용양식 목록 — hwp_sys_001~027 시스템제공 + hwp_usr_* 사용자추가. html_sys·028+ 숨김';
+COMMENT ON FUNCTION sasshaccp.sp_hwp_template_management_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_sys_yn character varying, p_use_yn character varying) IS '사용양식 목록 — doc_kind=HWP 전량(미사용 포함). 검색: 양식코드·양식명 부분일치, 구분(sys|usr)·사용여부(Y|N)는 비면 전체';
 
 
 --
