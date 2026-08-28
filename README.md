@@ -78,7 +78,7 @@ PIPELINE 전수 표는 이 파일이 아니라 [`docs/5_PIPELINE_색인.md`](doc
 포트: **API 7070** · **Vite 4173** (MES 5173/8080과 분리). 상세는 [`환경구축.md`](환경구축.md).
 
 ```bash
-# DB — 정본은 db_sasshaccp/ 6본이다. 빈 DB 에 순서대로 깔면 끝난다
+# DB — 정본은 db_sasshaccp/ 7본이다. 빈 DB 에 순서대로 깔면 끝난다
 #   PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 #   새 업체:  CO_CD=0001 CO_NM='업체명' ADMIN_ID=admin0001 bash db_sasshaccp/apply-all.sh
 

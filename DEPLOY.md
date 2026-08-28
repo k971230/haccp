@@ -26,7 +26,7 @@
 
 ## 2. DB — 파이프라인이 안 건드린다
 
-스키마 정본은 `db_sasshaccp/` **6본**이고, 배포 담당이 **따로** 돌린다.
+스키마 정본은 `db_sasshaccp/` **7본**이고, 배포 담당이 **따로** 돌린다.
 
 ```sh
 PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
