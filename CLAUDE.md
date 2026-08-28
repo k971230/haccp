@@ -47,7 +47,7 @@ npx playwright test          # E2E — 화면·API·SP·DB 를 한 줄로 꿴다
 # 백엔드
 cd backend/haccp-api ; ./mvnw -q -o test
 
-# DB — 빈 DB 에 6본을 순서대로 (재실행 안전)
+# DB — 빈 DB 에 7본을 순서대로 (재실행 안전)
 PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 ```
 
