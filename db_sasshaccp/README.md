@@ -123,6 +123,31 @@ bash apply-all.sh
 cd ../frontend/haccp-web ; npx playwright test
 ```
 
+### 알림이 한 번만 쌓이는지
+
+**두 번 이상 불러 봐야 뜻이 있다.** 한 번만 부르고 넘어가면 막으려던 것을 시험하지 않은 셈이다.
+
+```sh
+# 1) 일일 배치는 알림을 만들지 않는다 — 지연 과제가 있어도 건수가 그대로여야 한다
+node ../tools/q.mjs "SELECT count(*) FROM tbl_notification"
+node ../tools/q.mjs "CALL sp_tbl_schedule_task_generate_c_000('0000','20260828','system')"
+node ../tools/q.mjs "SELECT count(*) FROM tbl_notification"     # 위와 같아야 한다
+
+# 2) 휴면 회사는 건너뛴다 — 로그인 이력을 밀어 두고 부른다
+node ../tools/q.mjs "UPDATE tbl_login_log SET login_dt = login_dt - interval '60 days' WHERE co_cd='0000'"
+node ../tools/q.mjs "CALL sp_tbl_notification_task_c_000('system', 30)"
+node ../tools/q.mjs "SELECT count(*) FROM tbl_notification"     # 안 늘어야 한다
+# 다만 alarm_send_yn 은 'Y' 로 닫혀야 한다 — 깨어났을 때 지난 마감이 몰려 터지지 않게
+node ../tools/q.mjs "SELECT alarm_send_yn, count(*) FROM tbl_schedule_task WHERE co_cd='0000' AND alarm_dt <= now() GROUP BY 1"
+node ../tools/q.mjs "UPDATE tbl_login_log SET login_dt = login_dt + interval '60 days' WHERE co_cd='0000'"
+
+# 3) 중복 인덱스가 무는지 — 막히지 않으면 인덱스가 없는 것이다
+node ../tools/q.mjs "INSERT INTO tbl_notification(co_cd,noti_type_cd,user_id,title,content) SELECT co_cd,noti_type_cd,user_id,title,content FROM tbl_notification LIMIT 1"
+# → duplicate key value violates unique constraint "ux_tbl_notification_dedup"
+```
+
+**시험 DB 에서만 한다** (`tbl_login_log` 를 되돌려 놓는 것을 잊지 않는다).
+
 ## 관련
 
 - 규칙: `.cursor/rules/07-haccp-db.mdc`
@@ -156,6 +181,17 @@ UPDATE tbl_approval_line_step
 
 ## 변경
 
+- 2026-08-28 — **알림을 만드는 곳을 하나로 줄였다.** `sp_tbl_schedule_task_generate_c_000` 에서
+  알림 INSERT 를 걷어내고, `sp_tbl_notification_task_c_000`(10분 크론)만 남겼다.
+  셋이 겹쳐 있었다 — 지연분이 날마다 다시 들어갔고, `NOT EXISTS` 가드가
+  **같은 INSERT 가 방금 넣은 행을 못 봐서** 한 문장이 여러 행을 넣었고(운영 중복 조합 15개),
+  그 SP 를 화면 조회(`TaskService.todayTasks`)도 불러 사람이 화면을 열 때마다 알림이 생겼다.
+  남은 SP 에는 `p_dormant_days` 를 더해 **로그인 없는 회사를 건너뛴다** —
+  예정일이 1년치 미리 깔려 있어 안 쓰는 업체도 저절로 쌓였다.
+  `00_ddl.sql` 에 `ux_tbl_notification_dedup` 을 두고, 그 INSERT 에 `ON CONFLICT DO NOTHING` 을 붙였다.
+  안 붙이면 유니크에 걸리는 순간 **그 실행의 모든 회사 알림이 같이 롤백된다** — 시험에서 실제로 그렇게 났다.
+  기본 설정으로는 겹칠 길이 좁지만 `alarm-before-minutes` 를 하루 넘게 키우면 열린다.
+  1회성 정리: `DELETE FROM tbl_notification WHERE noti_type_cd='TASK_LATE'`
 - 2026-08-28 — `07_company_forms.sql` 신설. 업체 개설 뒤 **회사 지면 5본**을 표준에서 복사한다.
   이게 없으면 새 업체는 작성 화면에 고를 양식이 0건이라 아무것도 못 쓴다.
   별담푸드(0001)를 실제로 열어 보고 알았다. `apply-all.sh` 가 06 다음에 돌린다.

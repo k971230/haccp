@@ -138,6 +138,8 @@ public interface DocCycleMapper {
      */
     void sendTaskAlarms(
             // 배치 실행 주체 ID — 감사 로그용
-            @Param("userId") String userId
+            @Param("userId") String userId,
+            // 휴면 판정 날수 — 이 기간 로그인이 없는 회사는 적재를 건너뛴다. 0 이하면 안 거른다
+            @Param("dormantDays") int dormantDays
     );
 }

@@ -104,7 +104,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | docs/sch | `sp_schedule_cycle_management_d_000` | 쓰기 | `docs/sch/DocCycleMapper.xml` | `tbl_schedule_rule<br>tbl_schedule_rule_detail<br>tbl_schedule_task` |
 | docs/sch | `sp_schedule_cycle_management_form_r_000` | 조회 | `docs/sch/DocCycleMapper.xml` | `tbl_approval_line<br>tbl_company_template<br>tbl_schedule_rule<br>tbl_template` |
 | docs/sch | `sp_schedule_cycle_management_r_000` | 조회 | `docs/sch/DocCycleMapper.xml` | `tbl_approval_line<br>tbl_company_template<br>tbl_dept<br>tbl_schedule_rule<br>tbl_schedule_rule_detail<br>tbl_template<br>tbl_user` |
-| docs/sch | `sp_tbl_notification_task_c_000` | 쓰기 | `docs/sch/DocCycleMapper.xml` | `tbl_company_template<br>tbl_notification<br>tbl_schedule_task<br>tbl_template<br>tbl_user` |
+| docs/sch | `sp_tbl_notification_task_c_000` | 쓰기 | `docs/sch/DocCycleMapper.xml` | `tbl_company_template<br>tbl_login_log<br>tbl_notification<br>tbl_schedule_task<br>tbl_template<br>tbl_user` |
 | docs/sch | `sp_tbl_schedule_rule_active_r_000` | 조회 | `docs/sch/DocCycleMapper.xml` | `tbl_company_template<br>tbl_schedule_rule<br>tbl_schedule_rule_detail` |
 | docs/sch | `sp_tbl_schedule_task_regen_c_000` | 쓰기 | `docs/sch/DocCycleMapper.xml` | `tbl_schedule_task` |
 | draft/ccpmonitoring | `sp_ccp_log_r_000` | 조회 | `draft/ccpmonitoring/CcpLogDraftMapper.xml` | `tbl_ccp_generic_monitor<br>tbl_ccp_generic_monitor_row<br>tbl_company_template<br>tbl_document<br>tbl_template<br>tbl_user` |
@@ -175,7 +175,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | tsk | `sp_tbl_document_relation_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_document<br>tbl_document_relation` |
 | tsk | `sp_tbl_notification_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_notification` |
 | tsk | `sp_tbl_notification_u_000` | 쓰기 | `tsk/TaskMapper.xml` | `tbl_notification` |
-| tsk | `sp_tbl_schedule_task_generate_c_000` | 쓰기 | `tsk/TaskMapper.xml` | `tbl_company_template<br>tbl_notification<br>tbl_schedule_task<br>tbl_template<br>tbl_user` |
+| tsk | `sp_tbl_schedule_task_generate_c_000` | 쓰기 | `tsk/TaskMapper.xml` | `tbl_schedule_task` |
 | tsk | `sp_tbl_today_task_doc_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_document_file<br>tbl_template<br>tbl_user` |
 | tsk | `sp_tbl_today_task_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_schedule_task<br>tbl_template` |
 
