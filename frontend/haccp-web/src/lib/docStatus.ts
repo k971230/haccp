@@ -50,6 +50,14 @@ export const TASK_STATUS_BADGE: Record<string, StatusBadgeTone> = {
   ING: "blue",
   LATE: "red",
   APV: "green",
+  /*
+   * 그 날짜로 쓴 문서가 있으면 오늘 할 일에 문서상태가 그대로 온다.
+   * 색이 없으면 배지가 회색으로 뭉개져 「썼는지 안 썼는지」가 안 보인다.
+   */
+  WRK: "blue",
+  REQ: "amber",
+  REV: "amber",
+  RJT: "red",
 };
 
 /**

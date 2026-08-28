@@ -407,6 +407,15 @@ public class GlobalExceptionHandler {
         }
         // 조건식이 참일 때(= 23505(중복키)·40P01(교착) — 동시 처리 충돌, 재시도 유도) 기존 분기 처리를 실행
         if ("23505".equals(state) || "40P01".equals(state)) {
+            /*
+             * 어느 제약이 걸렸는지 남긴다.
+             *
+             * 사용자에게는 「다른 사용자가 동시에 처리 중」이라고만 보이는데,
+             * 실제로는 혼자 쓰면서도 같은 날짜·같은 양식으로 여러 건을 저장하면 났다.
+             * 로그가 없어서 어느 유일키인지 알 수 없었다 — 원인을 짚으려면 제약 이름이 필요하다.
+             */
+            log.warn("DB conflict (sqlState={}): {} [{}]",
+                    state, oneLine(sql != null ? sql.getMessage() : ""), callerOf(t));
             // 409 Conflict
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(

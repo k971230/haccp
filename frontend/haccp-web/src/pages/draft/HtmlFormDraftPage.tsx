@@ -20,6 +20,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, 
 import { useSearchParams } from "react-router-dom";
 // 역할 — 로그인 사용자·화면 권한
 import { useAuthStore } from "@/stores/authStore";
+// 역할 — 지금 보고 있는 탭 — 숨은 탭이 남의 URL 쿼리를 먹지 않게 한다
+import { useTabStore } from "@/stores/tabStore";
 // 역할 — 비동기 중복 실행 차단·busy
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 // 역할 — 좌측 draft·건별 버퍼·일괄 저장 세션
@@ -196,6 +198,8 @@ export function HtmlFormDraftPage({
   showDeviationColumn = false,
 }: HtmlFormDraftPageProps) {
   const user = useAuthStore((s) => s.user);
+  // 지금 화면에 보이는 탭의 화면코드 — 숨은 탭은 URL 쿼리를 소비하지 않는다
+  const activeTabCd = useTabStore((s) => s.activeCd);
   const canWrite = useAuthStore((s) => s.can(scrnCd, "write"));
   const canModify = useAuthStore((s) => s.can(scrnCd, "modify"));
   const canDelete = useAuthStore((s) => s.can(scrnCd, "delete"));
@@ -421,6 +425,16 @@ export function HtmlFormDraftPage({
    */
   useEffect(() => {
     if (!bootDone || addQueryDone.current) return;
+    /*
+     * 이 화면이 지금 보고 있는 탭일 때만 쿼리를 먹는다.
+     *
+     * searchParams 는 라우터 전역인데 셸은 탭을 mount 한 채 숨긴다.
+     * 그래서 열려 있는 작성 화면 **전부**가 add=1·tmplCd 를 자기 것으로 읽고
+     * 남의 양식코드로 자기 API 를 불렀다 —
+     * ccp-pkg 가 tml_ccp_mtl_002 로 detail 을 쳐서 400 이 났다.
+     * 안 보이는 탭에 행이 하나씩 붙는 것도 같은 원인이다.
+     */
+    if (activeTabCd !== scrnCd) return;
     if (searchParams.get("add") !== "1") return;
     const tmplCd = (searchParams.get("tmplCd") ?? "").trim();
     addQueryDone.current = true;
@@ -437,7 +451,7 @@ export function HtmlFormDraftPage({
     });
     // handleAdd 는 매 렌더 새 함수 — 쿼리는 ref 로 한 번만 쓴다
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bootDone, searchParams, setSearchParams]);
+  }, [activeTabCd, bootDone, scrnCd, searchParams, setSearchParams]);
 
   /**
    * 개발자: 박승우
@@ -507,10 +521,18 @@ export function HtmlFormDraftPage({
             ? ((row as EditableRow<ListMeta>).deviationYn ?? "N")
             : undefined,
         });
-        // 저장 뒤 화면이 더 할 일 — HWP 는 여기서 본문 파일을 올린다. 실패하면 저장도 실패로 본다
-        if (afterSave) await afterSave(saved);
+        /*
+         * 저장 뒤 화면이 더 할 일 — HWP 는 여기서 본문 파일을 올린다.
+         *
+         * **지금 편집기에 열려 있는 행에만** 건다. 편집기는 한 문서만 들고 있어서
+         * 모든 행에 걸면 그 하나의 본문이 저장된 문서 전부에 붙는다 —
+         * 「왼쪽만 저장했는데 오른쪽이 엮인다」가 이것이고, 같은 본문을 연달아 올리다
+         * 충돌(409)까지 났다. 열지 않은 행은 본문이 없는 게 맞다.
+         */
+        const isOpenRow = row._key === activeKeyRef.current;
+        if (afterSave && isOpenRow) await afterSave(saved);
         savedIdxs.push(saved);
-        if (row._key === activeKeyRef.current) savedActiveIdx = saved;
+        if (isOpenRow) savedActiveIdx = saved;
         return {
           docIdx: saved,
           listMeta: {
@@ -595,7 +617,18 @@ export function HtmlFormDraftPage({
     const listDirty = listRowsRef.current.some((r) => r._rowState === "C" || r._rowState === "U");
     // 목록이 깨끗할 때(= 일자·양식은 그대로) 본문만 고친 경우 — 메타 PUT 없이 파일만 덮어쓴다
     if (!listDirty) {
-      if (!isBodyDirty?.()) {
+      /*
+       * 본문 dirty 는 **추정**이다 — rhwp SDK 에 dirty API 가 없어 DOM 이벤트로 본다
+       * (`installRhwpDirtyListeners`). 편집기 안에서 한 조작을 놓칠 수 있다.
+       *
+       * 그래서 문서형(HWP)은 「안 바뀐 것 같다」로 저장을 막지 않는다.
+       * 문서를 열어 두고 저장을 누른 것은 「지금 내용으로 덮어써 달라」는 뜻이다 —
+       * 추정 하나로 그걸 거절하면 사람이 쓴 것이 날아간다.
+       * 지면형(HTML)은 dirty 가 React 상태라 믿을 수 있어 그대로 막는다.
+       */
+      const openBuf = activeKeyRef.current ? getBuffer(activeKeyRef.current) : null;
+      const forceBody = !!renderDetail && !!openBuf?.docIdx;
+      if (!forceBody && !isBodyDirty?.()) {
         mesToast("저장할 변경 내용이 없습니다.", "warn");
         return false;
       }

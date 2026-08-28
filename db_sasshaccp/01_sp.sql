@@ -6078,11 +6078,29 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_today_task_r_000(p_co_cd character v
     AS $$
     -- 작성과제: 오늘(미작성·진행·기한경과·승인완료) + 전날·기한이 지난 미완료
     -- content 는 양식코드 폴백, tmpl_cd·base_dt 는 예정 행추가에 그대로 싣는다
-    SELECT t.idx, 'TASK', COALESCE(ct.tmpl_nm_ovr, tp.tmpl_nm, t.tmpl_cd), t.status, t.due_dt, t.due_time,
-           tp.scrn_cd, t.doc_idx, t.idx, t.tmpl_cd, t.tmpl_cd, t.base_dt
+    SELECT t.idx, 'TASK', COALESCE(ct.tmpl_nm_ovr, tp.tmpl_nm, t.tmpl_cd),
+           /*
+            * 그 날짜·그 양식으로 쓴 문서가 있으면 **문서 상태**를 보여 준다.
+            *
+            * 예전에는 일정 과제의 status 만 봤다. 문서를 쓰고 전송해도 아무도
+            * tbl_schedule_task 를 안 고쳐서 오늘 할 일이 계속 「예정」이었다 —
+            * 화면에는 승인요청인데 할 일에는 예정이라 사람이 헷갈렸다.
+            * 저장 SP 마다 과제를 고치게 하면 다섯 군데가 갈린다. 읽을 때 이어 붙인다.
+            */
+           COALESCE(dc.status, t.status), t.due_dt, t.due_time,
+           tp.scrn_cd, COALESCE(dc.idx, t.doc_idx), t.idx, t.tmpl_cd, t.tmpl_cd, t.base_dt
       FROM tbl_schedule_task t
       JOIN tbl_template tp ON tp.tmpl_cd = t.tmpl_cd
       LEFT JOIN tbl_company_template ct ON ct.co_cd = t.co_cd AND ct.tmpl_cd = t.tmpl_cd
+      -- 같은 회사·양식·기준일 문서 중 가장 나중 것. 하루에 여러 장을 쓰면 마지막 것을 본다
+      LEFT JOIN LATERAL (
+          SELECT d.idx, d.status
+            FROM tbl_document d
+           WHERE d.co_cd = t.co_cd AND d.tmpl_cd = t.tmpl_cd
+             AND d.base_dt = t.base_dt AND d.del_yn = 'N'
+           ORDER BY d.idx DESC
+           LIMIT 1
+      ) dc ON TRUE
      WHERE t.co_cd = p_co_cd
        AND (t.user_id IS NULL OR t.user_id = p_user_id)
        AND (
