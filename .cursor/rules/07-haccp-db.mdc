@@ -80,6 +80,19 @@ CO_CD=0001 CO_NM='업체명' ADMIN_ID=admin0001 bash db_sasshaccp/apply-all.sh
 node scripts/gen_sp_index.mjs --check
 ```
 
+## 표에 어떤 컬럼이 있나
+
+[`docs/10_테이블_레이아웃.md`](../../docs/10_테이블_레이아웃.md) — **생성기가 만든다.**
+`00_ddl.sql` 의 `CREATE TABLE`·`COMMENT ON`·제약·인덱스를 읽어
+표 53 × 컬럼 767 을 「기초코드 → 기초문서 → 업무 → 로그·통계」 순으로 낸다.
+같은 이름의 `.xls` 가 함께 나온다 — 첫 시트 표제, 둘째 목차, 셋째부터 표마다 한 장.
+
+```sh
+node scripts/gen_table_layout.mjs --check
+```
+
+**분류에 안 적힌 표는 「미분류」로 뒤에 붙는다.** 표를 새로 만들면 생성기 `GROUPS` 에 넣는다.
+
 **결재 SP 정본은 `01_sp.sql` 한 곳이다.** `sp_tbl_document_approval_c_000` —
 상신(REQUEST) 때 `use_yn='Y'` 단계만 스냅샷하고, 꺼 둔 검토 단계는 넣지 않는다.
 `WRITE` 단계의 결재자는 결재선 값을 무시하고 **실제 상신자**로 덮는다.

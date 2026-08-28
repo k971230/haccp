@@ -66,6 +66,7 @@ PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 | 화면 하나 만들기 | [`docs/2_화면_추가하기.md`](docs/2_화면_추가하기.md) |
 | 지금 있는 화면 | [`docs/3_화면_지도.md`](docs/3_화면_지도.md) — 생성기 |
 | 이 표를 고치면 어느 SP 가 걸리나 | [`docs/9_SP_색인.md`](docs/9_SP_색인.md) — 생성기 |
+| 표에 어떤 컬럼이 있나 | [`docs/10_테이블_레이아웃.md`](docs/10_테이블_레이아웃.md) — 생성기 · 엑셀본 동봉 |
 | `PIPELINE[HF130]` 이 무슨 파일인가 | [`docs/5_PIPELINE_색인.md`](docs/5_PIPELINE_색인.md) — 생성기 |
 | 이름·경로 규칙 | [`docs/4_명명과_경로.md`](docs/4_명명과_경로.md) |
 | 왜 이렇게 돼 있나 | [`docs/8_결정_이력.md`](docs/8_결정_이력.md) |
