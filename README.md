@@ -51,7 +51,7 @@ PIPELINE 전수 표는 이 파일이 아니라 [`docs/5_PIPELINE_색인.md`](doc
 | 왜 이렇게 돼 있나 | [`docs/8_결정_이력.md`](docs/8_결정_이력.md) |
 | **작업을 이어받는다** | [`세션_인수인계.md`](세션_인수인계.md) — 지금 어디까지 왔고 무엇을 조심하나 |
 
-문서 전체 지도는 [`docs/README.md`](docs/README.md) — **정본 9본**이다.
+문서 전체 지도는 [`docs/README.md`](docs/README.md) — **정본 10본**이다.
 양식 HWP(로컬)는 `docs/templates/`. 폴더 역할은 각 디렉터리 `README.md`.
 
 ## 구성
