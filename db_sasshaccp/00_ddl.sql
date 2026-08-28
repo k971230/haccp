@@ -7159,3 +7159,18 @@ ALTER TABLE sasshaccp.tbl_ccp_metal_sens_row
     ALTER COLUMN check_time TYPE character varying(10);
 
 COMMENT ON COLUMN sasshaccp.tbl_ccp_metal_sens_row.check_time IS '점검 시각 HH:MM — 다른 CCP 표와 같은 자리 폭(10)';
+
+
+--
+-- 알림 중복 방지 — 이미 도는 DB 에도 붙는다. 다시 돌려도 결과가 같다
+--
+-- 일일 배치가 알림을 넣던 시절, 가드가 `NOT EXISTS (... ins_dt::date = current_date)` 였는데
+-- 그 서브쿼리는 **같은 INSERT 가 방금 넣은 행을 못 본다**. 같은 양식의 지연 과제가 셋이면
+-- 한 문장이 세 행을 넣었다 — 운영에 중복 조합이 15개 쌓여 있었다.
+--
+-- 그 INSERT 자체는 sp_tbl_schedule_task_generate_c_000 에서 걷어냈다. 이 인덱스는 재발 방지다.
+-- 지금 유일한 적재처인 sp_tbl_notification_task_c_000 은 여기 안 걸린다 —
+-- ux_tbl_schedule_task(co_cd, tmpl_cd, base_dt) 가 유니크라 과제가 양식·날짜당 하나뿐이고,
+-- content 에 due_dt·due_time 이 들어가 한 문장 안에서 겹칠 수 없다.
+CREATE UNIQUE INDEX IF NOT EXISTS ux_tbl_notification_dedup
+    ON sasshaccp.tbl_notification (co_cd, user_id, noti_type_cd, content, ((ins_dt)::date));

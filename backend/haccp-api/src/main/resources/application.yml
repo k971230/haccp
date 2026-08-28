@@ -78,6 +78,9 @@ app:
     generate-months: ${SCHEDULE_GENERATE_MONTHS:12}
     # 마감 임박 알림 점검 주기 — 기본 10분 간격(알림 지연이 마감 시간을 넘지 않게)
     alarm-cron: ${SCHEDULE_ALARM_CRON:0 */10 * * * *}
+    # 이 날수만큼 아무도 로그인하지 않은 회사는 알림을 만들지 않는다.
+    # 예정일이 1년치 미리 깔려 있어 안 쓰는 업체도 저절로 쌓인다 — 0 이하면 안 거른다
+    dormant-days: ${SCHEDULE_ALARM_DORMANT_DAYS:30}
   # 화면 UV/PV 일자 집계 — 과제 생성(00:05) 직후 전일·당일 업서트
   view-stat-daily:
     cron: ${VIEW_STAT_DAILY_CRON:0 15 0 * * *}

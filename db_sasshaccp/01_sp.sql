@@ -4871,10 +4871,19 @@ $$;
 
 
 --
--- Name: sp_tbl_notification_task_c_000(character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_notification_task_c_000(character varying, integer); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_notification_task_c_000(IN p_id character varying)
+-- 인자가 1 → 2 로 늘었다. CREATE OR REPLACE 만 하면 옛 1인자 프로시저가 남아
+-- 매퍼가 어느 쪽을 부를지 모호해진다. 먼저 지운다 (sp_hwp_template_management_r_000 과 같은 방식)
+DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_notification_task_c_000(character varying);
+
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_notification_task_c_000(
+    -- p_id: 갱신자 — 배치가 부르므로 'system'
+    IN p_id character varying,
+    -- p_dormant_days: 이 날수만큼 아무도 로그인하지 않은 회사는 건너뛴다. 0 이하·NULL 이면 안 거른다
+    IN p_dormant_days integer DEFAULT NULL
+)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -4892,8 +4901,48 @@ BEGIN
        AND t.alarm_dt IS NOT NULL AND t.alarm_dt <= now()
        -- 담당자 지정이 있으면 그 사람에게만, 부서 지정만 있으면 그 부서 전원에게 보낸다
        AND (t.user_id IS NULL OR t.user_id = u.user_id)
-       AND (t.dept_cd IS NULL OR t.dept_cd = u.dept_cd);
+       AND (t.dept_cd IS NULL OR t.dept_cd = u.dept_cd)
+       /*
+        * 휴면 회사는 건너뛴다.
+        *
+        * 예정일은 주기를 저장할 때 1년치가 미리 깔린다. 그래서 아무도 안 들어오는 업체도
+        * 예정 1,586건 × 사용자 3명 ≈ 4,700행이 저절로 쌓인다 (별담푸드 실측).
+        * 읽는 사람이 없는 자료를 그만큼 적을 이유가 없다.
+        *
+        * 기준을 **로그인**으로 잡는다. 「문서를 안 썼다」로 잡으면 막 개설한 신규 업체가
+        * 첫날부터 휴면이 돼서 정작 안내가 필요한 사람에게 안 간다.
+        * ix_tbl_login_log_co (co_cd, login_dt DESC) 를 탄다.
+        */
+       AND (COALESCE(p_dormant_days, 0) <= 0
+            OR EXISTS (SELECT 1 FROM tbl_login_log l
+                        WHERE l.co_cd = t.co_cd
+                          AND l.login_dt >= now() - make_interval(days => p_dormant_days)))
+    /*
+     * 이미 있으면 조용히 넘어간다 — ux_tbl_notification_dedup 이 막는다.
+     *
+     * 없으면 배치 하나가 통째로 죽는다. INSERT 는 한 문장이라 유니크에 걸리는 순간
+     * 그 회사뿐 아니라 **그 실행의 모든 회사 알림**이 같이 롤백된다.
+     * 시험에서 실제로 그렇게 났다 — 손으로 alarm_send_yn 을 되돌린 뒤 크론이 죽었다.
+     *
+     * 기본 설정(alarm-before-minutes=60)으로는 겹칠 길이 좁다.
+     * alarm_send_yn 이 과제당 한 번을 이미 보장하고, content 에 due_dt·due_time 이 들어가며,
+     * ux_tbl_schedule_task(co_cd, tmpl_cd, base_dt) 가 유니크라 과제가 양식·날짜당 하나다.
+     * sp_tbl_schedule_task_regen_c_000 은 플래그를 되돌리지 않는다 — 확인했다.
+     *
+     * 그래도 붙인다. 알림 리드타임을 하루 넘게 키우면(alarm-before-minutes > 1440)
+     * 「이미 알린 미래 과제」가 생기고, 그 상태에서 주기를 고쳐 저장하면 그 행이 지워졌다
+     * 다시 'N' 으로 깔린다 — 그때 같은 날 같은 알림을 또 넣으려 든다.
+     * 설정 하나 바꿨다고 전 회사 알림이 멎는 것은 너무 비싼 대가다.
+     */
+    ON CONFLICT DO NOTHING;
 
+    /*
+     * 잠그는 것은 **거르지 않는다.**
+     *
+     * 휴면 회사 과제도 여기서 'Y' 로 닫는다. 안 그러면 그 회사가 한 달 뒤 다시 들어왔을 때
+     * 그동안 지나간 마감이 한꺼번에 터진다 — 지난 알림은 이미 쓸모가 없다.
+     * 「깨어나면 그날부터 다시」가 되게 하려는 것이다.
+     */
     UPDATE tbl_schedule_task
        SET alarm_send_yn = 'Y', upd_id = p_id, upd_dt = now()
      WHERE status IN ('TODO', 'ING')
@@ -4903,10 +4952,10 @@ END$$;
 
 
 --
--- Name: PROCEDURE sp_tbl_notification_task_c_000(IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: PROCEDURE sp_tbl_notification_task_c_000(IN p_id character varying, IN p_dormant_days integer); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_notification_task_c_000(IN p_id character varying) IS '마감 임박 알림 — alarm_dt 도달분 1회 발송 후 alarm_send_yn=Y. 담당자·부서 배정 기준으로 대상 선정';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_notification_task_c_000(IN p_id character varying, IN p_dormant_days integer) IS '마감 임박 알림 — 알림을 만드는 유일한 곳. alarm_dt 도달분 1회 적재 후 alarm_send_yn=Y. p_dormant_days 일간 로그인 없는 회사는 적재를 건너뛰되 플래그는 닫는다';
 
 
 --
@@ -4943,29 +4992,26 @@ BEGIN
        AND (due_dt < p_base_dt
             OR (due_dt = p_base_dt AND COALESCE(due_time, '2359') < to_char(now(), 'HH24MI')));
 
-    -- 오늘 할 일·지연 일일 알림 — 같은 내용은 하루 1건만 남긴다
-    INSERT INTO tbl_notification(co_cd, noti_type_cd, user_id, title, content, link_scrn_cd, link_doc_idx)
-    SELECT t.co_cd, CASE WHEN t.status = 'LATE' THEN 'TASK_LATE' ELSE 'TASK_DUE' END,
-           u.user_id,
-           CASE WHEN t.status = 'LATE' THEN '작성 기한이 지난 과제가 있습니다.' ELSE '오늘 작성할 문서 과제가 있습니다.' END,
-           COALESCE(ct.tmpl_nm_ovr, tp.tmpl_nm, t.tmpl_cd),
-           tp.scrn_cd, t.doc_idx
-      FROM tbl_schedule_task t
-      JOIN tbl_template tp ON tp.tmpl_cd = t.tmpl_cd
-      LEFT JOIN tbl_company_template ct ON ct.co_cd = t.co_cd AND ct.tmpl_cd = t.tmpl_cd
-      JOIN tbl_user u ON u.co_cd = t.co_cd AND u.use_yn = 'Y'
-     WHERE (COALESCE(p_co_cd, '') = '' OR t.co_cd = p_co_cd)
-       AND t.status IN ('TODO', 'LATE')
-       AND t.base_dt <= p_base_dt
-       AND (t.user_id IS NULL OR t.user_id = u.user_id)
-       AND (t.dept_cd IS NULL OR t.dept_cd = u.dept_cd)
-       AND NOT EXISTS (
-           SELECT 1 FROM tbl_notification n
-            WHERE n.co_cd = t.co_cd AND n.user_id = u.user_id
-              AND n.noti_type_cd = CASE WHEN t.status = 'LATE' THEN 'TASK_LATE' ELSE 'TASK_DUE' END
-              AND n.content = COALESCE(ct.tmpl_nm_ovr, tp.tmpl_nm, t.tmpl_cd)
-              AND n.ins_dt::date = current_date
-       );
+    /*
+     * 알림은 여기서 만들지 않는다.
+     *
+     * 예전에는 이 자리에서 오늘분(TASK_DUE)·지연분(TASK_LATE)을 같이 넣었다.
+     * 세 가지가 겹쳐 표가 끝없이 불었다 —
+     *
+     *   1) 지연분이 **날마다** 다시 들어갔다. 가드가 「오늘 이미 넣었나」뿐이라
+     *      날짜가 바뀌면 조건이 새로 성립했다. 안 쓰는 회사는 영원히 늘었다
+     *   2) 그 가드(NOT EXISTS)는 **같은 INSERT 가 방금 넣은 행을 못 본다.**
+     *      같은 양식의 지연 과제가 셋이면 한 문장이 세 행을 넣었다.
+     *      운영에 중복 조합이 15개 쌓여 있었다
+     *   3) 이 SP 를 **화면 조회(TaskService.todayTasks)** 도 부른다.
+     *      사람이 「오늘 할 일」을 열 때마다 알림이 생겼다 — 조회가 쓰기를 했다
+     *
+     * 마감 임박 알림은 sp_tbl_notification_task_c_000(10분 크론)이 이미
+     * **과제당 정확히 한 번** 넣는다 (alarm_send_yn 으로 잠근다). 같은 말을 두 번 하지 않는다.
+     * 지연은 「오늘 할 일」 화면이 빨간 줄·맨 위 정렬로 보여 준다 — 알림으로 또 쌓을 것이 아니다.
+     *
+     * 이 SP 는 이름값대로 **과제 생성·지연 판정**만 한다.
+     */
 END$_$;
 
 
@@ -4973,7 +5019,7 @@ END$_$;
 -- Name: PROCEDURE sp_tbl_schedule_task_generate_c_000(IN p_co_cd character varying, IN p_base_dt character varying, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_schedule_task_generate_c_000(IN p_co_cd character varying, IN p_base_dt character varying, IN p_id character varying) IS '일일 배치 — 마감 경과 지연 처리 + 오늘/지연 알림. 예정일 생성은 CycleScheduleGenerator 담당';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_schedule_task_generate_c_000(IN p_co_cd character varying, IN p_base_dt character varying, IN p_id character varying) IS '일일 배치 — 마감 경과 지연 처리만. 알림은 sp_tbl_notification_task_c_000 한 곳에서만 만든다. 예정일 생성은 CycleScheduleGenerator 담당';
 
 
 --

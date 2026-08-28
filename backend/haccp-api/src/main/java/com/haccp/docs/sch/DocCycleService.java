@@ -54,6 +54,10 @@ public class DocCycleService {
     @Value("${app.schedule.generate-months:12}")
     private int generateMonths;
 
+    // 며칠간 로그인이 없으면 휴면으로 보고 알림을 만들지 않을지 — 0 이하면 안 거른다
+    @Value("${app.schedule.dormant-days:30}")
+    private int dormantDays;
+
     /**
      * 개발자: 박승우
      * 일자: 2026-08-14
@@ -176,13 +180,13 @@ public class DocCycleService {
      * 개발자: 박승우
      * 일자: 2026-08-14
      * 코멘트:
-     *   1) 마감 임박 예정일의 알림을 적재한다
+     *   1) 마감 임박 예정일의 알림을 적재한다 — **알림을 만드는 유일한 자리다**
      *   2) DocumentAlarmScheduler가 주기적으로 호출한다
-     *   3) 발송 플래그로 중복 알림을 막는다
+     *   3) 발송 플래그로 중복 알림을 막고, 휴면 회사는 dormantDays 로 건너뛴다
      */
     @Transactional(timeout = 60)
     public void sendTaskAlarms() {
-        mapper.sendTaskAlarms("system");
+        mapper.sendTaskAlarms("system", dormantDays);
     }
 
     /** 규칙을 예정일 배열로 바꿔 tbl_schedule_task에 반영한다. */
