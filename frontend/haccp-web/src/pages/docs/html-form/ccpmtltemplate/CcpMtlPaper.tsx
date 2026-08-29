@@ -131,13 +131,15 @@ export function CcpMtlPaper({
   });
 
   /*
-   * 「모두 적합」이 채울 감도 5칸 — 해당 없음 열은 뺀다.
-   * 그 열은 지면에 입력칸이 없어서(「해당 없음」 글자만 나온다) 값을 넣으면
-   * 화면에 안 보이는 값이 저장된다.
+   * 「모두 적합」이 채울 감도 5칸 — **다섯 칸 전부** 준다.
+   *
+   * 「해당 없음」은 열 단위 설정이지만 지면은 **고정행에서만** 그렇게 그린다
+   * (`fixed && col.na`). 사람이 더한 행에는 그 열에도 입력칸이 있다.
+   * 그래서 열 단위로 빼면 안 되고, 고정행에서만 빼야 한다 — 그 판단은 allLogRowsPass 가 한다.
    */
-  const passCells = Object.fromEntries(
-    hdrs.filter((col) => !col.na).map((col) => [col.cd, col.pass]),
-  );
+  const passCells = Object.fromEntries(hdrs.map((col) => [col.cd, col.pass]));
+  // 고정행에서 「해당 없음」인 열 — 그 행에서만 안 채운다
+  const naOnFixed = hdrs.filter((col) => col.na).map((col) => col.cd);
 
   const limitMetal = htmlFormItemNm(items, MTL_ITEM.LIMIT_METAL);
   const cycleNm = htmlFormItemNm(items, MTL_ITEM.CYCLE);
@@ -342,7 +344,7 @@ export function CcpMtlPaper({
             icon="check"
             // 금속검출은 감도 5칸까지 같이 채운다 — 판정만 바꾸면 근거 없는 적합이 남는다
             title="판정과 감도 5칸을 적합 모양으로 채운다. 이미 찍은 칸은 그대로 둔다"
-            onClick={() => onLogRowsChange?.(allLogRowsPass(rows, passCells))}
+            onClick={() => onLogRowsChange?.(allLogRowsPass(rows, passCells, naOnFixed))}
           >
             모두 적합
           </MesButton>

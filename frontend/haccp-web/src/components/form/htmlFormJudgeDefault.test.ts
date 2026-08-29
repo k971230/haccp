@@ -96,6 +96,41 @@ describe("모두 적합 — 기록 행", () => {
     expect(after.cells["hdr-sus"], "비어 있던 칸만 채운다").toBe("O");
   });
 
+  /*
+   * 「해당 없음」은 **고정행에만** 적용된다.
+   * 양식은 열 단위로 정하지만 지면은 `fixed && na` 일 때만 그렇게 그리고,
+   * 사람이 더한 행에는 그 열에도 입력칸이 있다.
+   * 열 단위로 빼면 **사람이 더한 행의 근거 칸이 빈 채로 판정만 적합**이 된다 —
+   * 운영에서 실제로 그렇게 났다.
+   */
+  it("해당 없음은 고정행에서만 뺀다 — 사람이 더한 행은 다 채운다", () => {
+    const rows = [
+      row(1, ""),   // 영역 첫 줄 = 고정 라벨 행
+      row(2, ""),   // 사람이 더한 행
+    ];
+    const pass = { "hdr-fe": "O", "hdr-prod": "X", "hdr-fe-prod": "O" };
+    const out = allLogRowsPass(rows, pass, ["hdr-prod", "hdr-fe-prod"]);
+
+    expect(out[0].cells["hdr-fe"], "고정행도 해당 없음 아닌 칸은 채운다").toBe("O");
+    expect(out[0].cells["hdr-prod"], "고정행은 해당 없음이라 비운다").toBeUndefined();
+
+    expect(out[1].cells["hdr-fe"]).toBe("O");
+    expect(out[1].cells["hdr-prod"], "사람이 더한 행은 입력칸이 있으니 채운다").toBe("X");
+    expect(out[1].cells["hdr-fe-prod"]).toBe("O");
+  });
+
+  it("영역이 다르면 각자 첫 줄이 고정행이다", () => {
+    const rows = [
+      { ...row(1, ""), phaseCd: "BEFORE" as const },
+      { ...row(5, ""), phaseCd: "AFTER" as const },
+      { ...row(6, ""), phaseCd: "AFTER" as const },
+    ];
+    const out = allLogRowsPass(rows, { "hdr-prod": "X" }, ["hdr-prod"]);
+    expect(out[0].cells["hdr-prod"], "작업 전 첫 줄").toBeUndefined();
+    expect(out[1].cells["hdr-prod"], "작업 후 첫 줄도 고정행이다").toBeUndefined();
+    expect(out[2].cells["hdr-prod"], "작업 후 둘째 줄은 사람이 더한 행").toBe("X");
+  });
+
   it("채울 칸을 안 주면 판정만 바꾼다 — 포장·가열", () => {
     const before = row(1, JUDGE.FAIL);
     before.cells = { temp: "72" };
