@@ -141,7 +141,7 @@ DB  tbl_screen · tbl_role_screen · tbl_menu
 
 ```sh
 cd backend/haccp-api
-./mvnw -q -o test          # 단위 104건 — DB·기동 없이 도는 것만
+./mvnw -q -o test          # 단위 108건 — DB·기동 없이 도는 것만
 ```
 
 **단위 테스트로는 매퍼 XML 이 안 잡힌다.** 화면까지 도는지는 프론트 E2E 가 본다.
