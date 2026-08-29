@@ -1003,13 +1003,29 @@ export function allLogRowsPass(
    * 부르는 쪽이 「적합일 때의 값」을 알고 있으니 여기서 같이 채운다.
    */
   passCells?: Record<string, string>,
+  /*
+   * **고정행에서만** 「해당 없음」인 칸 — 그 행에서는 안 채운다.
+   *
+   * 「해당 없음」은 양식이 **열 단위**로 정하지만, 지면은 `fixed && na` 일 때만 그렇게 그린다.
+   * 사람이 더한 행에는 그 열에도 입력칸이 있다.
+   * 열 단위로 빼 버리면 **사람이 더한 행의 근거 칸이 빈 채로 판정만 적합**이 된다 —
+   * 이 인자가 막으려던 바로 그 모양이다. 운영 확인에서 실제로 그렇게 났다.
+   */
+  naOnFixed?: string[],
 ): HtmlFormLogRow[] {
-  return rows.map((r) => ({
-    ...r,
-    judgeCd: JUDGE.PASS,
-    // 이미 찍힌 칸은 덮지 않는다 — 사람이 실제로 본 값이 이긴다. 빈 칸만 채운다
-    cells: passCells ? fillEmptyCells(r.cells, passCells) : r.cells,
-  }));
+  const naSet = new Set(naOnFixed ?? []);
+  return rows.map((r) => {
+    if (!passCells) return { ...r, judgeCd: JUDGE.PASS };
+    const fill = isFixedLabelRow(rows, r)
+      ? Object.fromEntries(Object.entries(passCells).filter(([cd]) => !naSet.has(cd)))
+      : passCells;
+    return {
+      ...r,
+      judgeCd: JUDGE.PASS,
+      // 이미 찍힌 칸은 덮지 않는다 — 사람이 실제로 본 값이 이긴다. 빈 칸만 채운다
+      cells: fillEmptyCells(r.cells, fill),
+    };
+  });
 }
 
 /** 빈 칸만 기본값으로 채운다 — 값이 있는 칸은 그대로 둔다 */
