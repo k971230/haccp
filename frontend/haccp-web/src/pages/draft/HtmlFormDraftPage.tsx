@@ -839,13 +839,14 @@ export function HtmlFormDraftPage({
    *   2) 전송 필수값 검사가 걸렸을 때만 호출한다
    *   3) 그 행을 못 찾으면 아무 일도 하지 않는다 — 토스트는 이미 떠 있다
    *
-   * 항목형 지면은 data-item-cd, 기록 표는 data-log-seq 로 행을 찾는다.
+   * 항목형 지면은 data-item-cd, 기록 표는 data-log-seq, 통과표는 data-pass-seq 로 행을 찾는다.
    * 기록 표는 작업 전·후를 나눠 그려서 배열 위치로는 못 찾는다.
    */
   const focusBlockedCell = (block: TransferBlock) => {
     const sel = block.itemCd
       ? `[data-item-cd="${CSS.escape(block.itemCd)}"]`
-      : block.logRowSeq != null ? `[data-log-seq="${block.logRowSeq}"]` : "";
+      : block.logRowSeq != null ? `[data-log-seq="${block.logRowSeq}"]`
+        : block.passRowSeq != null ? `[data-pass-seq="${block.passRowSeq}"]` : "";
     if (!sel) return;
     const row = document.querySelector<HTMLElement>(sel);
     if (!row) return;
@@ -879,7 +880,7 @@ export function HtmlFormDraftPage({
      * renderDetail 을 넘긴 화면(= HWP 문서형)은 본문이 rhwp 파일이라 점검 항목이 없다.
      * 항목형 규칙을 그대로 태우면 「점검 행이 없습니다」로 영영 전송이 막힌다.
      */
-    const block = firstInvalidTarget(cur.baseKey, cur.items, cur.logRows, !renderDetail);
+    const block = firstInvalidTarget(cur.baseKey, cur.items, cur.logRows, !renderDetail, cur.passRows);
     if (block) {
       mesToast(block.message, "warn");
       // 문구만 띄우면 항목이 수십 개인 지면에서 어느 칸인지 사람이 찾아야 한다.
@@ -939,7 +940,7 @@ export function HtmlFormDraftPage({
           user,
         );
         // 필수값이 빈 건은 전송 가능 건이 아니다
-        if (validateForTransfer(cur.baseKey, cur.items, cur.logRows, !renderDetail)) {
+        if (validateForTransfer(cur.baseKey, cur.items, cur.logRows, !renderDetail, cur.passRows)) {
           skipped += 1;
           continue;
         }

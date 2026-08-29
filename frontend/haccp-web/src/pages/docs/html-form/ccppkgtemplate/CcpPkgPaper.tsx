@@ -23,6 +23,7 @@ import {
   SignSlot,
   allLogRowsPass,
   appendLogRow,
+  isFixedLabelRow,
   logRowsOf,
   patchLogRow,
   removeLogRow,
@@ -200,8 +201,10 @@ export function CcpPkgPaper({
                   label={idx === 0 ? (phase === "BEFORE" ? "작업 전" : "작업 종료") : undefined}
                   writeEdit={writeEdit}
                   row={row}
-                  // 작성 때는 첫 줄도 지운다. 표가 통째로 비면 저장 SP 가 막으므로 마지막 한 줄만 남긴다
-                  onRemove={rows.length > 1 ? () => onLogRowsChange?.(removeLogRow(rows, row.rowSeq)) : undefined}
+                  // 영역 첫 줄(작업 전·작업 종료)은 라벨이라 지우지 않는다. 추가한 행만 ×
+                  onRemove={!isFixedLabelRow(rows, row) && rows.length > 1
+                    ? () => onLogRowsChange?.(removeLogRow(rows, row.rowSeq))
+                    : undefined}
                   onPatch={(patch) => onLogRowsChange?.(patchLogRow(rows, row.rowSeq, patch))}
                 />
               )))

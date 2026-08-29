@@ -57,11 +57,12 @@ export interface HtmlFormLookupModalProps {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-24
+ * 일자: 2026-08-29
  * 코멘트:
  *   1) 사용 가능 양식을 일자·양식코드·양식명 3열로 보여 주고 1건을 고른다
  *   2) 좌측 작성 행의 양식코드 셀 버튼이 연다
- *   3) 행을 클릭하면 즉시 확정하고 팝업을 닫는다
+ *   3) 행을 클릭하면 즉시 확정하고 팝업을 닫는다. 검색창 autoFocus 는 두지 않는다
+ *      — 첫 클릭이 포커스만 옮기고 선택이 빠지는 보고가 있었다
  */
 export function HtmlFormLookupModal({
   title = "양식 선택",
@@ -160,6 +161,7 @@ export function HtmlFormLookupModal({
           >
             <input
               // 양식코드 부분검색 — 팝업 안 로컬 필터
+              // autoFocus 금지. 켜면 첫 행 클릭이 포커스만 가져가고 선택이 안 붙는다
               className={cn(searchInputClass, "h-8 w-[8.5rem] bg-white")}
               placeholder="양식코드"
               value={draftCode}
@@ -170,7 +172,6 @@ export function HtmlFormLookupModal({
                   runSearch();
                 }
               }}
-              autoFocus
             />
             <input
               // 양식명 부분검색
