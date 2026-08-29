@@ -248,7 +248,31 @@ describe("validateForTransfer — 기록 표가 있는 화면(CCP 모니터링)"
     expect(msg).toContain("판정");
   });
 
-  it("품명이 비어도 막지 않는다 — 구간 첫 줄은 라벨이라 비는 게 정상이다", () => {
-    expect(validateForTransfer("20260825", [], [log({ productNm: "" })])).toBeNull();
+  /*
+   * 품명은 사람이 더한 행에서만 필수다.
+   * 영역 첫 줄(작업 전·작업 종료)은 화면이 품명 자리에 라벨을 대신 그려서
+   * 사람이 채울 칸이 아예 없다 — 거기서 막으면 아무도 전송을 못 한다.
+   */
+  it("영역 첫 줄은 품명이 비어도 막지 않는다 — 라벨 자리라 채울 칸이 없다", () => {
+    const rows = [log({ rowSeq: 1, phaseCd: "BEFORE" as const, productNm: "" })];
+    expect(validateForTransfer("20260825", [], rows)).toBeNull();
+  });
+
+  it("사람이 더한 행은 품명이 비면 막는다", () => {
+    const rows = [
+      log({ rowSeq: 1, phaseCd: "BEFORE" as const, productNm: "" }),
+      log({ rowSeq: 2, phaseCd: "BEFORE" as const, productNm: "" }),
+    ];
+    const msg = validateForTransfer("20260825", [], rows);
+    expect(msg, "둘째 줄부터가 사람이 더한 행이다").toContain("2번째");
+    expect(msg).toContain("품명");
+  });
+
+  it("영역이 다르면 각자 첫 줄이 라벨이다", () => {
+    const rows = [
+      log({ rowSeq: 1, phaseCd: "BEFORE" as const, productNm: "" }),
+      log({ rowSeq: 5, phaseCd: "AFTER" as const, productNm: "" }),
+    ];
+    expect(validateForTransfer("20260825", [], rows), "작업 종료 첫 줄도 라벨이다").toBeNull();
   });
 });

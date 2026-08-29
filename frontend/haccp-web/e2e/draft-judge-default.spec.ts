@@ -124,19 +124,23 @@ test.describe("작성 5화면 — 판정 기본값", () => {
     });
   }
 
-  test(`${AUTO_JUDGED.name} — 화면이 판정을 미리 칠하지 않는다`, async ({ page }) => {
-    /*
-     * 감도 5칸을 안 채운 행을 화면이 적합으로 칠하면, 저장할 때 서버가 부적합으로
-     * 뒤집는다. 보이는 값과 저장되는 값이 달라지고, 확인 안 한 것을 확인했다고
-     * 기록하게 된다. 그래서 여기만 기본값을 안 깐다.
-     */
+  /*
+   * 금속검출도 이제 다른 넷과 같다.
+   *
+   * 예전에는 여기만 판정을 안 깔았다 — 서버가 감도 5칸으로 계산해서(O,O,X,O,O 라야 적합)
+   * 화면이 미리 칠하면 저장할 때 뒤집혔기 때문이다.
+   * 그 자동 판정을 걷어냈다. 판정은 다섯 화면 모두 사람이 정한 값이 그대로 저장된다.
+   */
+  test(`${AUTO_JUDGED.name} — 새 문서는 판정이 전부 적합으로 깔린다`, async ({ page }) => {
     await openDraft(page, AUTO_JUDGED.path, AUTO_JUDGED.tmpl);
     const pairs = await settledPairs(page, AUTO_JUDGED.name);
 
+    const unset = pairs.filter((p) => !p.pass && !p.fail);
     expect(
-      pairs.some((p) => p.pass),
-      "감도 확인도 안 했는데 적합으로 깔렸다 — 저장하면 서버가 부적합으로 뒤집는다",
-    ).toBe(false);
+      unset.length,
+      `판정이 안 깔린 행이 ${unset.length}개 있다 (전체 ${pairs.length})`,
+    ).toBe(0);
+    expect(pairs.every((p) => p.pass), "적합이 아닌 행이 있다").toBe(true);
   });
 });
 

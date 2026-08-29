@@ -76,6 +76,7 @@ import {
   hhmmToInput,
   inputToHhmm,
   inputToYmd,
+  validateCycleSave,
   ymdToInput,
   type CycleForm,
 } from "./ScheduleCycleManagementRule";
@@ -404,16 +405,14 @@ export default function ScheduleCycleManagementPage() {
       mesToast("주기를 설정할 양식을 선택하세요.", "warn");
       return;
     }
-    if (!inputToYmd(form.baseDt)) {
-      mesToast(MES.required("관리 시작일"), "warn");
-      return;
-    }
-    if (form.cycleCd === "W" && form.weekDays.length === 0) {
-      mesToast("반복할 요일을 선택하세요.", "warn");
-      return;
-    }
-    if (form.cycleCd === "M" && form.monthDays.length === 0 && !form.monthEnd) {
-      mesToast("실행일 또는 말일을 선택하세요.", "warn");
+    /*
+     * 필수값은 ScheduleCycleManagementRule.validateCycleSave 한 곳에서 본다.
+     * 화면과 규칙이 갈리면 「화면은 막는데 시험은 통과」 같은 일이 생긴다.
+     */
+    const picked = apprLines.find((row) => row.apprLineCd === form.apprLineCd);
+    const invalid = validateCycleSave(form, picked?.steps);
+    if (invalid) {
+      mesToast(invalid, "warn");
       return;
     }
     if (!(await mesConfirm(MES.saveConfirm))) return;

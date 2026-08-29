@@ -242,3 +242,42 @@ export function buildFormColumns(
     },
   ];
 }
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-29
+ * 코멘트:
+ *   1) 저장 전 필수값을 한곳에서 본다 — 통과면 null, 아니면 안내 문구
+ *   2) ScheduleCycleManagementPage.handleSave 가 호출한다
+ *   3) 순서가 곧 사람이 채우는 순서다 — 양식 → 시작일 → 반복 → 결재선 → 담당자
+ *
+ * DB 는 결재선·담당자에 NULL 을 받는다. 그래서 예전에는 저장이 됐는데,
+ * 결재선이 없으면 올린 일지가 **아무 결재함에도 안 가고**,
+ * 담당자가 없으면 그 과제가 **누구의 「오늘 할 일」에도 안 뜬다** —
+ * 저장은 됐는데 아무 일도 일어나지 않아 사람이 원인을 못 찾는다.
+ */
+export function validateCycleSave(
+  // 우측 폼 전체
+  form: CycleForm,
+  // 고른 결재선의 단계 — 승인 결재자가 있는지 본다. 없으면 결재가 안 간다
+  apprSteps?: { roleCd?: string | null; approverId?: string | null }[],
+): string | null {
+  if (!inputToYmd(form.baseDt)) return "관리 시작일을 입력하세요.";
+  if (form.cycleCd === "W" && form.weekDays.length === 0) return "반복할 요일을 선택하세요.";
+  if (form.cycleCd === "M" && form.monthDays.length === 0 && !form.monthEnd) {
+    return "실행일 또는 말일을 선택하세요.";
+  }
+  if (!String(form.apprLineCd ?? "").trim()) return "결재선을 선택하세요.";
+  /*
+   * 결재선관리는 두 걸음으로 만든다 — 코드·명만 저장해 줄을 만들고 그 다음 결재자를 넣는다.
+   * 그래서 「결재자가 아직 없는 결재선」이 목록에 있는 것은 정상이다.
+   * 만드는 자리에서 막으면 결재선을 새로 못 만들게 되므로 **쓰는 자리인 여기서** 막는다.
+   */
+  const hasApprover = (apprSteps ?? []).some((step) =>
+    String(step.roleCd ?? "").toUpperCase() === "APPROVE"
+    && String(step.approverId ?? "").trim(),
+  );
+  if (!hasApprover) return "고른 결재선에 승인 결재자가 없습니다. 결재선관리에서 먼저 지정하세요.";
+  if (!String(form.userId ?? "").trim()) return "담당자를 선택하세요.";
+  return null;
+}

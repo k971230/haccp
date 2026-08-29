@@ -345,6 +345,20 @@ export default function ApprovalLineManagementPage() {
       const kept = await hg.reloadKeepSelection(fetchHeaderRows, savedCd);
       setActiveKey(kept.key);
       loadStepsFor(kept.row);
+      /*
+       * 저장은 됐는데 **결재가 안 도는 결재선**을 알려 준다.
+       *
+       * 여기서 막지는 않는다 — 결재선은 두 걸음으로 만든다. 코드·명만 저장해 줄을 만들고
+       * 그 줄을 골라 결재자를 넣는다. 첫 걸음에서 막으면 두 번째로 갈 방법이 없다.
+       * 대신 아무 말도 안 하면 사람이 **눈으로 확인해야** 한다 — 세팅에서 가장 자주 놓치는 자리다.
+       * 실제로 이 결재선을 문서주기에 걸 때는 문서주기 화면이 막는다.
+       */
+      const missing = stepsToPayload(stepSource).filter((step) =>
+        step.useYn !== "N" && !String(step.approverId ?? "").trim(),
+      );
+      if (missing.length > 0) {
+        mesToast("결재자를 아직 안 넣었습니다. 이 결재선으로는 결재가 가지 않습니다.", "warn");
+      }
     } catch (error) {
       mesError(error);
     }

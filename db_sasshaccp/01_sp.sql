@@ -2050,6 +2050,16 @@ BEGIN
             WHEN v_role = 'REVIEW' AND upper(COALESCE(v_step ->> 'useYn', 'N')) = 'N' THEN 'N'
             ELSE 'Y'
         END;
+        /*
+         * 결재자가 비어도 저장한다 — **여기서 막으면 결재선을 새로 못 만든다.**
+         *
+         * 화면이 두 걸음으로 만든다. 먼저 왼쪽에서 코드·결재선명만 저장해 줄을 만들고
+         * (그때 단계 1~3 이 결재자 없이 깔린다), 그 줄을 골라 오른쪽에서 결재자를 넣는다.
+         * 첫 걸음에서 막으면 두 번째 걸음으로 갈 방법이 없다.
+         *
+         * 「결재자 없는 결재선」이 해를 끼치는 자리는 **그 결재선을 문서주기에 걸 때**다.
+         * 거기서 막는다 (ScheduleCycleManagementPage.handleSave).
+         */
         INSERT INTO tbl_approval_line_step(
             co_cd, appr_line_cd, step_no, role_cd, approver_id, dept_cd, pos_cd, use_yn, ins_id, ins_dt
         ) VALUES (
@@ -2469,7 +2479,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_r_000(p_co_cd character
 CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_ccp_cd character varying, p_fe_size numeric, p_sts_size numeric, p_mng_user_id character varying, p_mng_nm character varying, p_sens_rows_json jsonb, p_pass_rows_json jsonb, p_id character varying, p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying) RETURNS bigint
     LANGUAGE plpgsql
     AS $$
-DECLARE v_doc_idx bigint; v_hdr_idx bigint; v_status varchar(4); v_name varchar; v_appr varchar; v_retain int; r jsonb; v_judge varchar(1);
+DECLARE v_doc_idx bigint; v_hdr_idx bigint; v_status varchar(4); v_name varchar; v_appr varchar; v_retain int; r jsonb;
 BEGIN
     IF COALESCE(p_base_dt, '') = '' OR length(p_base_dt) <> 8 THEN RAISE EXCEPTION '작성일은 YYYYMMDD 8자리로 입력하세요.' USING ERRCODE = '45000'; END IF;
     IF p_sens_rows_json IS NULL OR jsonb_typeof(p_sens_rows_json) <> 'array' THEN RAISE EXCEPTION '감도 점검 행 자료가 올바르지 않습니다.' USING ERRCODE = '45000'; END IF;
@@ -2497,10 +2507,21 @@ BEGIN
     END IF;
     FOR r IN SELECT * FROM jsonb_array_elements(p_sens_rows_json) LOOP
         IF COALESCE((r->>'rowSeq')::int,0) <= 0 THEN RAISE EXCEPTION '감도 점검 행 순번이 올바르지 않습니다.' USING ERRCODE='45000'; END IF;
-        -- 자동 판정 — 5칸이 기준과 같으면 적합. 사용자가 고쳤으면(judgeModYn=Y) 그 값을 쓴다
-        v_judge := CASE WHEN r->>'feOnlyCd'='O' AND r->>'stsOnlyCd'='O' AND r->>'prodOnlyCd'='X' AND r->>'feProdCd'='O' AND r->>'stsProdCd'='O' THEN 'P' ELSE 'F' END;
+        /*
+         * 판정은 **사람이 정한 값을 그대로** 넣는다. 포장·가열(sp_tbl_ccp_generic_monitor_c_000)과 같다.
+         *
+         * 예전에는 감도 5칸으로 여기서 계산했다(O,O,X,O,O 면 적합). 두 가지가 어긋났다 —
+         *   1) 뒤 세 열은 양식에서 「해당 없음」이 기본이라 고정행(작업 전·작업 종료)에는
+         *      입력칸 자체가 없다. 값이 안 들어오니 조건이 성립할 수 없어 **늘 부적합**이 됐다
+         *   2) 그걸 덮으려고 화면이 judgeModYn=Y 를 붙여 사람 값을 이기게 했는데,
+         *      그 표식을 읽는 화면이 없어 **누가 뒤집었는지 아무도 못 봤다**.
+         *      실제로 5칸이 전부 X(시편 미검출 = 검출기 고장)인데 적합인 기록이 남아 있었다
+         *
+         * 근거와 결론이 어긋나지 않게 하는 일은 화면이 맡는다 —
+         * 「모두 적합」이 판정과 감도 5칸을 같이 채운다(CcpMtlPaper.MTL_HDR.pass).
+         */
         INSERT INTO tbl_ccp_metal_sens_row(co_cd,hdr_idx,row_seq,phase_cd,product_cd,product_nm,place_nm,check_time,fe_only_cd,sts_only_cd,prod_only_cd,fe_prod_cd,sts_prod_cd,judge_cd,judge_mod_yn,checker_id,checker_nm,ins_id)
-        VALUES(p_co_cd,v_hdr_idx,(r->>'rowSeq')::int,COALESCE(NULLIF(r->>'phaseCd',''),'DURING'),NULLIF(r->>'productCd',''),NULLIF(r->>'productNm',''),NULLIF(r->>'placeNm',''),NULLIF(r->>'checkTime',''),NULLIF(r->>'feOnlyCd',''),NULLIF(r->>'stsOnlyCd',''),NULLIF(r->>'prodOnlyCd',''),NULLIF(r->>'feProdCd',''),NULLIF(r->>'stsProdCd',''),CASE WHEN r->>'judgeModYn'='Y' AND NULLIF(r->>'judgeCd','') IS NOT NULL THEN r->>'judgeCd' ELSE v_judge END,COALESCE(NULLIF(r->>'judgeModYn',''),'N'),NULLIF(r->>'checkerId',''),NULLIF(r->>'checkerNm',''),p_id);
+        VALUES(p_co_cd,v_hdr_idx,(r->>'rowSeq')::int,COALESCE(NULLIF(r->>'phaseCd',''),'DURING'),NULLIF(r->>'productCd',''),NULLIF(r->>'productNm',''),NULLIF(r->>'placeNm',''),NULLIF(r->>'checkTime',''),NULLIF(r->>'feOnlyCd',''),NULLIF(r->>'stsOnlyCd',''),NULLIF(r->>'prodOnlyCd',''),NULLIF(r->>'feProdCd',''),NULLIF(r->>'stsProdCd',''),NULLIF(r->>'judgeCd',''),COALESCE(NULLIF(r->>'judgeModYn',''),'N'),NULLIF(r->>'checkerId',''),NULLIF(r->>'checkerNm',''),p_id);
     END LOOP;
     FOR r IN SELECT * FROM jsonb_array_elements(COALESCE(p_pass_rows_json,'[]'::jsonb)) LOOP
         INSERT INTO tbl_ccp_metal_pass_row(co_cd,hdr_idx,row_seq,product_cd,product_nm,pass_qty,detect_qty,unit_nm,remark,ins_id)
@@ -4192,6 +4213,16 @@ BEGIN
     IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' THEN
         RAISE EXCEPTION '점검항목 자료가 올바르지 않습니다.' USING ERRCODE = '45000';
     END IF;
+    /*
+     * 점검 항목이 하나도 없는 양식은 저장하지 않는다.
+     *
+     * 예전에는 0건도 저장됐다. 그런데 그 양식으로 쓴 일지는 **전송할 때** 「점검 행이 없습니다」로
+     * 막힌다 — 양식을 만든 사람과 막히는 사람이 다르고, 시점도 며칠 떨어져 있어
+     * 작성자는 자기가 뭘 잘못했는지 알 길이 없다. 만든 자리에서 막는다.
+     */
+    IF jsonb_array_length(p_items) = 0 THEN
+        RAISE EXCEPTION '점검항목을 한 줄 이상 넣으세요.' USING ERRCODE = '45000';
+    END IF;
     DELETE FROM tbl_html_hyg_prc_ver_item WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
     FOR e IN SELECT * FROM jsonb_array_elements(p_items) LOOP
         v_cnt := v_cnt + 1;
@@ -5273,6 +5304,16 @@ BEGIN
     IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' THEN
         RAISE EXCEPTION '점검항목 자료가 올바르지 않습니다.' USING ERRCODE = '45000';
     END IF;
+    /*
+     * 점검 항목이 하나도 없는 양식은 저장하지 않는다.
+     *
+     * 예전에는 0건도 저장됐다. 그런데 그 양식으로 쓴 일지는 **전송할 때** 「점검 행이 없습니다」로
+     * 막힌다 — 양식을 만든 사람과 막히는 사람이 다르고, 시점도 며칠 떨어져 있어
+     * 작성자는 자기가 뭘 잘못했는지 알 길이 없다. 만든 자리에서 막는다.
+     */
+    IF jsonb_array_length(p_items) = 0 THEN
+        RAISE EXCEPTION '점검항목을 한 줄 이상 넣으세요.' USING ERRCODE = '45000';
+    END IF;
     DELETE FROM tbl_tml_ccp_chk_ver_item WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
     FOR e IN SELECT * FROM jsonb_array_elements(p_items) LOOP
         v_cnt := v_cnt + 1;
@@ -5515,6 +5556,16 @@ BEGIN
     END IF;
     IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' THEN
         RAISE EXCEPTION '점검항목 자료가 올바르지 않습니다.' USING ERRCODE = '45000';
+    END IF;
+    /*
+     * 점검 항목이 하나도 없는 양식은 저장하지 않는다.
+     *
+     * 예전에는 0건도 저장됐다. 그런데 그 양식으로 쓴 일지는 **전송할 때** 「점검 행이 없습니다」로
+     * 막힌다 — 양식을 만든 사람과 막히는 사람이 다르고, 시점도 며칠 떨어져 있어
+     * 작성자는 자기가 뭘 잘못했는지 알 길이 없다. 만든 자리에서 막는다.
+     */
+    IF jsonb_array_length(p_items) = 0 THEN
+        RAISE EXCEPTION '점검항목을 한 줄 이상 넣으세요.' USING ERRCODE = '45000';
     END IF;
     DELETE FROM tbl_tml_ccp_htg_ver_item WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
     FOR e IN SELECT * FROM jsonb_array_elements(p_items) LOOP
@@ -5759,6 +5810,16 @@ BEGIN
     IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' THEN
         RAISE EXCEPTION '점검항목 자료가 올바르지 않습니다.' USING ERRCODE = '45000';
     END IF;
+    /*
+     * 점검 항목이 하나도 없는 양식은 저장하지 않는다.
+     *
+     * 예전에는 0건도 저장됐다. 그런데 그 양식으로 쓴 일지는 **전송할 때** 「점검 행이 없습니다」로
+     * 막힌다 — 양식을 만든 사람과 막히는 사람이 다르고, 시점도 며칠 떨어져 있어
+     * 작성자는 자기가 뭘 잘못했는지 알 길이 없다. 만든 자리에서 막는다.
+     */
+    IF jsonb_array_length(p_items) = 0 THEN
+        RAISE EXCEPTION '점검항목을 한 줄 이상 넣으세요.' USING ERRCODE = '45000';
+    END IF;
     DELETE FROM tbl_tml_ccp_mtl_ver_item WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
     FOR e IN SELECT * FROM jsonb_array_elements(p_items) LOOP
         v_cnt := v_cnt + 1;
@@ -6001,6 +6062,16 @@ BEGIN
     END IF;
     IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' THEN
         RAISE EXCEPTION '점검항목 자료가 올바르지 않습니다.' USING ERRCODE = '45000';
+    END IF;
+    /*
+     * 점검 항목이 하나도 없는 양식은 저장하지 않는다.
+     *
+     * 예전에는 0건도 저장됐다. 그런데 그 양식으로 쓴 일지는 **전송할 때** 「점검 행이 없습니다」로
+     * 막힌다 — 양식을 만든 사람과 막히는 사람이 다르고, 시점도 며칠 떨어져 있어
+     * 작성자는 자기가 뭘 잘못했는지 알 길이 없다. 만든 자리에서 막는다.
+     */
+    IF jsonb_array_length(p_items) = 0 THEN
+        RAISE EXCEPTION '점검항목을 한 줄 이상 넣으세요.' USING ERRCODE = '45000';
     END IF;
     DELETE FROM tbl_tml_ccp_pkg_ver_item WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
     FOR e IN SELECT * FROM jsonb_array_elements(p_items) LOOP

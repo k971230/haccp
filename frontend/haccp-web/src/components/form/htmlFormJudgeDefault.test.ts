@@ -73,17 +73,44 @@ describe("모두 적합 — 기록 행", () => {
     expect(after.checkTime).toBe("1030");
   });
 
-  it("사람이 정한 판정이라고 표시한다 — 금속검출은 이게 있어야 서버 자동판정을 누른다", () => {
-    // judge_mod_yn='Y' 가 없으면 sp_tbl_ccp_metal_monitor_c_000 이 감도 5칸으로
-    // 다시 계산해 부적합으로 덮는다. 화면에서 누른 적합이 저장에서 사라진다
-    const [after] = allLogRowsPass([row(1, JUDGE.FAIL)]);
+  /*
+   * 금속검출은 판정만 바꾸면 안 된다.
+   * 감도 5칸이 비었는데 판정만 적합이면 **근거 없는 적합 종이**가 나온다 —
+   * 실제로 5칸이 전부 X(시편 미검출 = 검출기 고장)인데 적합인 기록이 운영에 남아 있었다.
+   */
+  it("적합일 때의 칸 값을 같이 채운다 — 금속검출 감도 5칸", () => {
+    const [after] = allLogRowsPass(
+      [row(1, "")],
+      { "hdr-fe": "O", "hdr-sus": "O", "hdr-prod": "X" },
+    );
     expect(after.judgeCd).toBe(JUDGE.PASS);
-    expect(after.judgeModYn).toBe("Y");
+    expect(after.cells["hdr-fe"]).toBe("O");
+    expect(after.cells["hdr-prod"], "제품만 통과는 검출되면 안 되니 X 다").toBe("X");
   });
 
-  it("이미 적합이고 수동 표시까지 있으면 같은 객체를 그대로 둔다 — 헛되이 다시 그리지 않는다", () => {
-    const same = { ...row(1, JUDGE.PASS), judgeModYn: "Y" };
-    expect(allLogRowsPass([same])[0]).toBe(same);
+  it("이미 찍은 칸은 안 덮는다 — 사람이 실제로 본 값이 이긴다", () => {
+    const before = row(1, "");
+    before.cells = { "hdr-fe": "X" };
+    const [after] = allLogRowsPass([before], { "hdr-fe": "O", "hdr-sus": "O" });
+    expect(after.cells["hdr-fe"], "사람이 X 로 찍은 것을 O 로 덮으면 안 된다").toBe("X");
+    expect(after.cells["hdr-sus"], "비어 있던 칸만 채운다").toBe("O");
+  });
+
+  it("채울 칸을 안 주면 판정만 바꾼다 — 포장·가열", () => {
+    const before = row(1, JUDGE.FAIL);
+    before.cells = { temp: "72" };
+    const [after] = allLogRowsPass([before]);
+    expect(after.judgeCd).toBe(JUDGE.PASS);
+    expect(after.cells).toEqual({ temp: "72" });
+  });
+
+  /*
+   * 서버 자동 판정을 걷어냈으므로 judgeModYn 은 붙일 이유가 없다.
+   * 붙이면 「사람이 뒤집었다」는 뜻인데 그걸 읽는 화면이 없어 아무도 못 본다.
+   */
+  it("판정 수동수정 표시를 새로 붙이지 않는다", () => {
+    const [after] = allLogRowsPass([row(1, JUDGE.FAIL)]);
+    expect(after.judgeModYn).not.toBe("Y");
   });
 });
 
