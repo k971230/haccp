@@ -2,11 +2,12 @@
  * ApprovalDocumentPreview — 결재 화면 공통 문서 본문 미리보기.
  *
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-08-29
  * 코멘트:
  *   1) 결재 화면은 문서 종류(HWP/HTML)를 몰라도 된다 — 이 컴포넌트가 docKind 로 렌더러를 고른다
  *   2) sign-ready(결재 대기)·sign-ok(결재 완료)가 같은 컴포넌트를 쓴다. 화면마다 복제하지 않는다
  *   3) 두 경로 모두 읽기전용이다. 결재자는 확인 후 결재·반려·취소만 한다
+ *      HTML 은 status 가 바뀌면 지면을 다시 읽는다. 승인 직후 도장이 비던 자리
  *
  * 첨부파일 미리보기와는 다른 개념이다 — 여기는 문서 본문, 첨부는 목록·다운로드로만 다룬다.
  * 무거운 rhwp 편집기는 문서를 고른 뒤에만 마운트된다 (목록 전체를 미리 그리지 않는다).
@@ -33,6 +34,8 @@ export interface ApprovalDocumentPreviewProps {
   docKind?: string | null;
   // 문서 첨부 목록 — HWP 본문(HWP_SRC)을 여기서 찾는다
   files: HtmlFormDraftFile[];
+  // 문서 상태 — HTML 지면이 승인 직후 같은 문서를 다시 읽게 한다. HWP 는 안 쓴다
+  status?: string | null;
 }
 
 /**
@@ -49,10 +52,23 @@ export function ApprovalDocumentPreview({
   tmplNm,
   docKind,
   files,
+  // 승인 후 REQ→APV 처럼 같은 문서의 상태가 바뀌면 HTML 지면을 다시 읽는다
+  status,
 }: ApprovalDocumentPreviewProps) {
   // 문서가 없을 때(= 목록에서 아직 고르지 않음) 렌더러를 만들지 않는다
   if (!docIdx || !tmplCd) return null;
   return isHwpKind(docKind)
     ? <HwpDocumentPreview docIdx={docIdx} tmplCd={tmplCd} files={files} />
-    : <HtmlDocumentPreview docIdx={docIdx} tmplCd={tmplCd} tmplNm={tmplNm} />;
+    : (
+      <HtmlDocumentPreview
+        // 문서 대리키 — 목록에서 고른 1건
+        docIdx={docIdx}
+        // 양식코드 — 지면·API
+        tmplCd={tmplCd}
+        // 양식명 — 지면 제목
+        tmplNm={tmplNm}
+        // 문서 상태 — 승인 직후 도장을 다시 읽는다
+        status={status}
+      />
+    );
 }
