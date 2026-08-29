@@ -54,13 +54,20 @@ export const MTL_ITEM = {
   CORRECTIVE: "corrective",
 } as const;
 
-/** 감도 열 — unitNm=Y 이면 고정행에 해당 없음 */
+/**
+ * 감도 열 — unitNm=Y 이면 고정행에 해당 없음.
+ *
+ * `pass` 는 **감도점검이 정상일 때의 값**이다.
+ * 시편(Fe·SUS)은 검출돼야 하니 O, **제품만 통과는 검출되면 안 되니 X** 다.
+ * 「모두 적합」이 빈 칸을 이 값으로 채운다 — 판정만 적합으로 두면
+ * 근거는 비었는데 결론만 적합인 종이가 나온다.
+ */
 export const MTL_HDR = [
-  { cd: "hdr-fe", fallback: "Fe만 통과", defaultNa: false },
-  { cd: "hdr-sus", fallback: "SUS만 통과", defaultNa: false },
-  { cd: "hdr-prod", fallback: "제품만 통과", defaultNa: true },
-  { cd: "hdr-fe-prod", fallback: "Fe+제품 통과", defaultNa: true },
-  { cd: "hdr-sus-prod", fallback: "SUS+제품 통과", defaultNa: true },
+  { cd: "hdr-fe", fallback: "Fe만 통과", defaultNa: false, pass: "O" },
+  { cd: "hdr-sus", fallback: "SUS만 통과", defaultNa: false, pass: "O" },
+  { cd: "hdr-prod", fallback: "제품만 통과", defaultNa: true, pass: "X" },
+  { cd: "hdr-fe-prod", fallback: "Fe+제품 통과", defaultNa: true, pass: "O" },
+  { cd: "hdr-sus-prod", fallback: "SUS+제품 통과", defaultNa: true, pass: "O" },
 ] as const;
 
 const PASS_CNT = 4;
@@ -120,8 +127,17 @@ export function CcpMtlPaper({
   const hdrs = MTL_HDR.map((col) => {
     const row = htmlFormItemOf(items, col.cd);
     const na = (row?.unitNm ?? (col.defaultNa ? "Y" : "N")) === "Y";
-    return { cd: col.cd, label: row?.itemNm || col.fallback, na };
+    return { cd: col.cd, label: row?.itemNm || col.fallback, na, pass: col.pass };
   });
+
+  /*
+   * 「모두 적합」이 채울 감도 5칸 — 해당 없음 열은 뺀다.
+   * 그 열은 지면에 입력칸이 없어서(「해당 없음」 글자만 나온다) 값을 넣으면
+   * 화면에 안 보이는 값이 저장된다.
+   */
+  const passCells = Object.fromEntries(
+    hdrs.filter((col) => !col.na).map((col) => [col.cd, col.pass]),
+  );
 
   const limitMetal = htmlFormItemNm(items, MTL_ITEM.LIMIT_METAL);
   const cycleNm = htmlFormItemNm(items, MTL_ITEM.CYCLE);
@@ -324,9 +340,9 @@ export function CcpMtlPaper({
             // 보라 틴트 — 행추가(amber)와 구분
             variant="pass"
             icon="check"
-            // 판정만 채운다는 것을 이름만으로는 알 수 없다 — 온도를 안 채워 전송이 막힌다는 보고가 있었다
-            title="판정만 적합으로 채운다. 온도·수치는 실측값이라 직접 넣어야 한다"
-            onClick={() => onLogRowsChange?.(allLogRowsPass(rows))}
+            // 금속검출은 감도 5칸까지 같이 채운다 — 판정만 바꾸면 근거 없는 적합이 남는다
+            title="판정과 감도 5칸을 적합 모양으로 채운다. 이미 찍은 칸은 그대로 둔다"
+            onClick={() => onLogRowsChange?.(allLogRowsPass(rows, passCells))}
           >
             모두 적합
           </MesButton>
@@ -512,7 +528,7 @@ function SensRow({
           type="radio"
           name={`mtl-pf-${rowKey}`}
           disabled={!writeEdit}
-          {...(row ? { checked: row.judgeCd === "P", onChange: () => onPatch?.({ judgeCd: "P", judgeModYn: "Y" }) } : {})}
+          {...(row ? { checked: row.judgeCd === "P", onChange: () => onPatch?.({ judgeCd: "P" }) } : {})}
         />
       </td>
       <td className="text-center ccp-pf-yn">
@@ -521,7 +537,7 @@ function SensRow({
           type="radio"
           name={`mtl-pf-${rowKey}`}
           disabled={!writeEdit}
-          {...(row ? { checked: row.judgeCd === "F", onChange: () => onPatch?.({ judgeCd: "F", judgeModYn: "Y" }) } : {})}
+          {...(row ? { checked: row.judgeCd === "F", onChange: () => onPatch?.({ judgeCd: "F" }) } : {})}
         />
       </td>
       <td>

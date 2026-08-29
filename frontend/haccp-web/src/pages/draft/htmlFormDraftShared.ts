@@ -25,6 +25,7 @@ import { htmlFormInputLayout, type HtmlFormItem } from "@/api/docs/htmlFormApi";
 import {
   fillBlankItemJudges,
   fillBlankLogJudges,
+  isFixedLabelRow,
   paperBodyItems,
   type HtmlFormLogRow,
   type HtmlFormPaperProps,
@@ -32,9 +33,6 @@ import {
 } from "@/components/form/htmlFormPaperShared";
 // 역할 — 일자 YYYYMMDD ↔ input[type=date] · 오늘
 import { toInputDate, todayYmd } from "@/lib/docDateTime";
-
-/** 금속검출 양식코드 접두 — 서버가 판정을 자동 계산하는 유일한 계열 */
-const MTL_TMPL_PREFIX = "tml_ccp_mtl";
 
 /** 결재 여부 3단계 — 화면 표시 단위 */
 export type SendState = "wait" | "sent" | "done";
@@ -354,6 +352,16 @@ function firstInvalidLogRow(
     if (!String(row.judgeCd ?? "").trim()) {
       return { message: `${where}의 판정을 선택하세요.`, logRowSeq: row.rowSeq };
     }
+    /*
+     * 품명은 **사람이 더한 행에서만** 필수다.
+     *
+     * 영역 첫 줄(작업 전·작업 종료)은 고정 라벨 행이라 화면이 품명 자리에 라벨을 대신 그린다.
+     * 그 행에 품명을 요구하면 아무도 채울 수 없는 칸으로 전송이 막힌다.
+     * isFixedLabelRow 로 가른다 — 지면이 그 행을 라벨로 그리는 규칙과 같은 함수다.
+     */
+    if (!isFixedLabelRow(rows, row) && !String(row.productNm ?? "").trim()) {
+      return { message: `${where}의 품명을 입력하세요.`, logRowSeq: row.rowSeq };
+    }
   }
   return null;
 }
@@ -479,13 +487,12 @@ export function detailToDraftBuf(
    * 안 본 것을 봤다고 기록하는 셈이다.
    */
   /*
-   * 금속검출만 뺀다. 거기는 서버가 감도 5칸으로 판정을 계산한다
-   * (sp_tbl_ccp_metal_monitor_c_000 — 5칸이 기준과 같아야 적합).
-   * 화면이 미리 적합으로 칠하면 저장하는 순간 부적합으로 뒤집혀
-   * 「보이는 값」과 「저장되는 값」이 달라진다.
-   * 감도 확인을 안 한 행을 적합으로 남기는 건 HACCP 에서 하면 안 되는 일이다.
+   * 금속검출도 이제 다른 화면과 같다.
+   *
+   * 예전에는 여기서 금속검출만 뺐다 — 서버가 감도 5칸으로 판정을 계산해서
+   * 화면이 미리 적합으로 칠하면 저장하는 순간 뒤집혔기 때문이다.
+   * 그 자동 판정을 걷어냈다(sp_tbl_ccp_metal_monitor_c_000). 판정은 사람이 정한 값이 그대로 남는다.
    */
-  const autoJudged = (asText(header.tmplCd) || form.tmplCd).startsWith(MTL_TMPL_PREFIX);
   /*
    * **비어 있는 판정만** 적합으로 채운다. 이미 정해진 판정은 안 건드린다 —
    * 저장해 둔 부적합을 적합으로 덮으면 사람이 남긴 판정을 지우는 셈이다.
@@ -494,10 +501,8 @@ export function detailToDraftBuf(
    * 우측 지면이 열려서, 지면을 처음 여는 시점에는 이미 docIdx 가 있다.
    * 빈 판정은 어차피 전송이 막히는 미완성 상태다(validateForTransfer).
    */
-  const items = autoJudged ? (detail.items ?? []) : fillBlankItemJudges(detail.items ?? []);
-  const logRows = autoJudged
-    ? (detail.logRows ?? [])
-    : fillBlankLogJudges(detail.logRows ?? []);
+  const items = fillBlankItemJudges(detail.items ?? []);
+  const logRows = fillBlankLogJudges(detail.logRows ?? []);
   return {
     docIdx,
     docNo: asText(header.docNo),

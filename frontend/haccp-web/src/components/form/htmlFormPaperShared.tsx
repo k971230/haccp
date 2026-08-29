@@ -831,7 +831,13 @@ export interface HtmlFormLogRow {
   checkTime: string;
   // 판정 P=적합 F=부적합. 빈값이면 미판정
   judgeCd: string;
-  // 판정 수동수정 여부 Y/N — 금속은 서버가 자동 판정하므로 Y 여야 사용자 값이 남는다
+  /*
+   * 판정 수동수정 여부 Y/N — **지금은 쓰이지 않는다. 항상 N 이다.**
+   *
+   * 금속검출만 서버가 감도 5칸으로 판정을 계산하고 이 값이 Y 면 사람 값이 이겼다.
+   * 그 자동 판정을 걷어냈다 — 판정은 다섯 화면 모두 사람이 정한다.
+   * DB 칸(judge_mod_yn NOT NULL)이 남아 있어 왕복만 시킨다. 새로 Y 를 붙이지 않는다.
+   */
   judgeModYn?: string;
   // 행 서명 이름
   checkerNm: string;
@@ -908,6 +914,26 @@ export function logRowsOf(
 
 /**
  * 개발자: 박승우
+ * 일자: 2026-08-29
+ * 코멘트:
+ *   1) 영역 첫 줄(작업 전·작업 종료 라벨 행)인지 — 지면이 `idx === 0` 으로 그리는 그 행이다
+ *   2) 지면과 전송 검증이 같이 쓴다. 두 군데서 따로 판단하면 어긋난다
+ *   3) 그 행은 품명 자리에 화면이 라벨을 대신 그린다 — 사람이 채울 칸이 없다
+ *
+ * 행에 `fixedYn` 칸이 있지만 **아무도 채우지 않는다.** 그 값을 믿으면 전 행이 라벨이 아닌 것으로 잡힌다.
+ */
+export function isFixedLabelRow(
+  // 기록 행 전체
+  rows: HtmlFormLogRow[],
+  // 판단할 행
+  row: HtmlFormLogRow,
+): boolean {
+  const first = logRowsOf(rows, row.phaseCd)[0];
+  return !!first && first.rowSeq === row.rowSeq;
+}
+
+/**
+ * 개발자: 박승우
  * 일자: 2026-08-24
  * 코멘트:
  *   1) 지정한 영역 끝에 빈 행을 붙인다 — 다른 영역 행은 건드리지 않는다
@@ -923,9 +949,9 @@ export function appendLogRow(
    * 새 행의 판정. 기본은 적합이다 — 현장 기록은 대부분이 적합이라
    * 빈 값으로 두면 행마다 라디오를 한 번씩 더 눌러야 한다.
    *
-   * **금속검출은 빈 값("")을 넘긴다.** 거기는 서버가 감도 5칸으로 자동 판정하므로
-   * (sp_tbl_ccp_metal_monitor_c_000) 화면이 미리 적합으로 칠해 봐야 저장하면 뒤집힌다.
-   * 미리 칠하면 「보이는 값」과 「저장되는 값」이 달라진다.
+   * 금속검출도 이제 같다. 예전에는 빈 값("")을 넘겼다 — 서버가 감도 5칸으로 자동 판정해서
+   * 화면이 미리 칠해 봐야 저장하면 뒤집혔기 때문이다. 그 자동 판정을 걷어냈다.
+   * 판정은 다섯 화면 모두 **사람이 정하고 그대로 저장된다.**
    */
   judgeCd: string = JUDGE.PASS,
 ): HtmlFormLogRow[] {
@@ -968,14 +994,36 @@ export const ITEM_YN = { PASS: "Y", FAIL: "N" } as const;
 export function allLogRowsPass(
   // 기록 행 전체
   rows: HtmlFormLogRow[],
+  /*
+   * 같이 채울 입력칸 — 금속검출 감도 5칸처럼 「적합이면 이 모양」이 정해진 칸이 있을 때 준다.
+   *
+   * 판정만 적합으로 바꾸면 **근거는 비었는데 결론만 적합인 종이**가 나온다.
+   * 실제로 감도 5칸이 전부 X(시편이 검출 안 됨 = 검출기 고장)인데
+   * 판정만 적합인 기록이 운영에 남아 있었다.
+   * 부르는 쪽이 「적합일 때의 값」을 알고 있으니 여기서 같이 채운다.
+   */
+  passCells?: Record<string, string>,
 ): HtmlFormLogRow[] {
-  return rows.map((r) => (
-    r.judgeCd === JUDGE.PASS && r.judgeModYn === "Y"
-      ? r
-      // judgeModYn=Y — 사람이 정한 판정이라는 뜻이다. 금속검출은 이게 있어야
-      // 서버 자동 판정(감도 5칸)을 누르고 이 값이 남는다. 감사에도 그렇게 남는다
-      : { ...r, judgeCd: JUDGE.PASS, judgeModYn: "Y" }
-  ));
+  return rows.map((r) => ({
+    ...r,
+    judgeCd: JUDGE.PASS,
+    // 이미 찍힌 칸은 덮지 않는다 — 사람이 실제로 본 값이 이긴다. 빈 칸만 채운다
+    cells: passCells ? fillEmptyCells(r.cells, passCells) : r.cells,
+  }));
+}
+
+/** 빈 칸만 기본값으로 채운다 — 값이 있는 칸은 그대로 둔다 */
+function fillEmptyCells(
+  // 지금 행의 칸
+  cells: Record<string, string>,
+  // 적합일 때의 값
+  passCells: Record<string, string>,
+): Record<string, string> {
+  const next = { ...cells };
+  for (const [cd, val] of Object.entries(passCells)) {
+    if (!String(next[cd] ?? "").trim()) next[cd] = val;
+  }
+  return next;
 }
 
 /**
