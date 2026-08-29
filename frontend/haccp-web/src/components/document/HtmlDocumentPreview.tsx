@@ -2,11 +2,12 @@
  * HtmlDocumentPreview — DB 입력형(HTML) 문서의 결재 미리보기 지면.
  *
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-08-29
  * 코멘트:
  *   1) 결재 당시 저장된 작성 데이터로 기존 지면(Paper)을 읽기전용으로 그린다
  *   2) sign-ready·sign-ok 에서 ApprovalDocumentPreview 를 통해 마운트된다
  *   3) HTML 문자열을 만들어 iframe 에 넣지 않는다 — 작성 화면과 같은 컴포넌트를 그대로 쓴다
+ *      승인은 되고 지면만 한 박자 늦던 것은 status 가 바뀌면 다시 읽어서 막는다
  *
  * 지면 값은 양식(template)의 현재 모습이 아니라 문서가 가진 항목 사본이다.
  * 상세 SP 가 tbl_*_item(문서 소유 행)에서 읽으므로 나중에 양식을 고쳐도 상신 당시 지면이 유지된다.
@@ -34,17 +35,20 @@ export interface HtmlDocumentPreviewProps {
   tmplCd: string;
   // 양식명 — 지면 제목. 없으면 Rule 기본 제목
   tmplNm?: string | null;
+  // 문서 상태 WRK/REQ/REV/APV/RJT — 같은 문서를 승인해 docIdx 가 그대로여도 지면을 다시 읽는다
+  status?: string | null;
 }
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-08-29
  * 코멘트:
  *   1) 선택 문서 1건의 작성 데이터를 받아 지면을 읽기전용으로 그린다
  *   2) 결재 대기·결재 완료 화면에서 문서를 고를 때마다 다시 적재한다
  *   3) 매핑 없는 구양식은 지면 대신 안내 문구를 보여 준다 — 결재 자체는 막지 않는다
+ *      승인 직후 같은 docIdx 면 status(REQ→APV)가 바뀌어 승인자 칸을 다시 채운다
  */
-export function HtmlDocumentPreview({ docIdx, tmplCd, tmplNm }: HtmlDocumentPreviewProps) {
+export function HtmlDocumentPreview({ docIdx, tmplCd, tmplNm, status }: HtmlDocumentPreviewProps) {
   const entry = previewEntryOf(tmplCd);
   const [buf, setBuf] = useState<HtmlFormDraftBuf | null>(null);
   const [message, setMessage] = useState("문서를 불러오고 있습니다.");
@@ -69,7 +73,7 @@ export function HtmlDocumentPreview({ docIdx, tmplCd, tmplNm }: HtmlDocumentPrev
     return () => {
       alive = false;
     };
-  }, [docIdx, entry, tmplCd, tmplNm]);
+  }, [docIdx, entry, tmplCd, tmplNm, status]);
 
   // 매핑이 없을 때(= html_sys_* 구양식) 지면을 그리지 않는다
   if (!entry) {

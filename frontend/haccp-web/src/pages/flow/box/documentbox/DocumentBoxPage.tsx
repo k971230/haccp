@@ -2,11 +2,12 @@
  * DocumentBoxPage — 통합 문서함·결재 패널 (document-inbox/sign-ready/sign-ok).
  *
  * 개발자: 박승우
- * 일자: 2026-08-26
+ * 일자: 2026-08-29
  * 코멘트:
  *   1) 공통 DocFormSearchToolbar로 기간·문서번호·작성자를 조회하고 타입 필터를 얹는다
  *   2) 목록은 MesEditableGrid + 타입(docKind)·상태 배지. 문서함은 조회 전용이다
  *   3) 결재 모드(sign-ready·sign-ok)만 결재 툴바를 낸다. 본문 미리보기는 세 화면 공통
+ *      승인 후 header.status 를 미리보기에 넘겨 같은 문서 지면 도장을 다시 읽는다
  *
  * PIPELINE[HF83] DOC 화면
  * PIPELINE[HF82, HF29, HF39, HF56, HF120] 연관 모듈
@@ -385,6 +386,8 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
                       docKind={detail.header.docKind}
                       // HWP 본문(HWP_SRC)을 찾는 데 쓴다
                       files={detail.files}
+                      // 문서 상태 — 승인 직후 같은 docIdx 여도 지면 도장을 다시 읽는다
+                      status={detail.header.status}
                     />
                   </div>
                 </section>

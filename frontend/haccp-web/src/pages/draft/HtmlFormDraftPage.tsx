@@ -2,12 +2,13 @@
  * HtmlFormDraftPage — 양식 작성 공통 화면 (상단 검색 · 좌 작성 목록 50% · 우 상세 50%).
  *
  * 개발자: 박승우
- * 일자: 2026-08-24
+ * 일자: 2026-08-29
  * 코멘트:
  *   1) HYG(hyg-process)·CCP(ccp-verify)가 같은 프레임을 쓴다. 화면별로 다른 것은 config 뿐이다
  *      — 양식관리 5화면이 HtmlFormTemplatePage 를 공유하는 것과 같은 패턴이다
  *   2) 상단은 검색 전용(일자·양식코드·양식명·작성자ID·작성자명·결재 여부). 작성 입력과 섞지 않는다
  *   3) 오른쪽 상세는 왼쪽 기본정보(저장)를 한 뒤에만 수정할 수 있다 — docIdx 없으면 지면이 잠긴다
+ *      우측 삭제도 전송대기만 켠다. 결재완료에서 버튼만 살아 있으면 지울 수 있어 보인다
  *
  * 전송·전송취소는 문서 허브 결재 API(processDocumentApproval REQUEST/CANCEL)를 그대로 쓴다.
  * 필수값은 저장 때 보지 않고 전송 직전에 htmlFormDraftShared.validateForTransfer 만 본다.
@@ -1086,11 +1087,11 @@ export function HtmlFormDraftPage({
                     전송
                   </MesButton>
                   <MesButton
-                    // 삭제 — docIdx 없을 때(= 좌측 미저장) 비활성. draft 삭제는 좌측 삭제
+                    // 삭제 — 저장된 전송대기만. 전송·결재완료는 핸들러가 막아도 버튼부터 끈다
                     size="sm"
                     variant="danger"
                     icon="trash"
-                    disabled={!buf || !buf.docIdx || action.isBusy()}
+                    disabled={!buf || !buf.docIdx || !canModifyDoc(status) || action.isBusy()}
                     loading={action.isBusy("del")}
                     onClick={() => void handleDeleteActive()}
                   >
