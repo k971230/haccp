@@ -7,8 +7,34 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 서버 파일(`.env.docker`)과 Jenkins Credentials로만 주입한다.
 예제(`.env.example` · `.env.docker.example`)만 저장소에 둔다.
 
-## 읽기 순서 (주니어·에이전트)
+---
 
+## 지금 어디까지 왔나 (2026-08-29)
+
+| 항목 | 값 |
+|---|---|
+| 단계 | **개발은 어느 정도 끝났다.** 남은 것은 매뉴얼과 현장 검증이다 |
+| 배포 서버 | `http://180.71.58.87/haccp/` — **운영 개시 전**. `https` 로 열지 않는다(아래) |
+| 업무 고리 | 팀원이 쓰고 팀장이 결재하고 **종이에 결재자가 남는** 고리가 두 업체에서 돈다 |
+| 화면 | **28화면.** 전수 URL 은 [`docs/3_화면_지도.md`](docs/3_화면_지도.md) — 생성기가 만든다 |
+| 시험 | `vitest` **177** · `playwright` **153** · `mvnw` **108** |
+| DB | 정본 7본. 표 53 · SP 152 |
+
+**남은 일 넷은 사람 손에 있다** — 서명 등록 · 매뉴얼 작성 · 알림 방향 결정 · 현장 한 달 사용.
+자세한 것은 [`세션_인수인계.md`](세션_인수인계.md).
+
+> **배포 서버는 `http://` 로 본다.** 지금 인증서가 자체서명이라 `https` 로 열면
+> rhwp 편집기 ServiceWorker 오류가 70건 쌓여 **진짜 신호를 덮는다**(화면·저장은 정상).
+> `http` 로는 0건이다. 까닭과 실측은 [`운영.md`](운영.md) 10.2.
+
+---
+
+## 읽기 순서
+
+**작업을 이어받는 사람은 [`세션_인수인계.md`](세션_인수인계.md) 부터 읽는다.**
+지금 무엇이 되어 있고, 무엇을 조심해야 하고, 어디를 먼저 보는지가 거기 있다.
+
+그다음은 필요한 만큼만 —
 이 파일 E2E 절 → [`docs/5_PIPELINE_색인.md`](docs/5_PIPELINE_색인.md) (태그→파일) → [`docs/1_시작하기.md`](docs/1_시작하기.md) (유형별 이야기) → 해당 도메인 README (`pages/docs/`, `pages/sys/` …) → 화면 README가 있으면 그 파일 → 소스 주석.
 
 화면마다 `<Route>`가 없다. 식별자는 `scrnCd`. URL은 `tabRoute.routeOf(scrnCd)` 계층 경로다. Vite·Router **basename은 `/haccp/`** 이고, 라우터 pathname에는 `/haccp`를 다시 넣지 않는다 (`/draft/ccp-monitoring/ccp-htg`).  
@@ -49,10 +75,23 @@ PIPELINE 전수 표는 이 파일이 아니라 [`docs/5_PIPELINE_색인.md`](doc
 | 배포 뒤 감시·장애 대응 | [`운영.md`](운영.md) |
 | 테스트를 돌린다 / 결과를 본다 | [`docs/6_테스트.md`](docs/6_테스트.md) · [`E2E.md`](E2E.md) |
 | 왜 이렇게 돼 있나 | [`docs/8_결정_이력.md`](docs/8_결정_이력.md) |
+| 표에 어떤 칸이 있나 | [`docs/10_테이블_레이아웃.md`](docs/10_테이블_레이아웃.md) — 생성기 · 엑셀본 동봉 |
+| 이 표를 고치면 어느 SP 가 걸리나 | [`docs/9_SP_색인.md`](docs/9_SP_색인.md) — 생성기 |
+| 사용자에게 무엇을 안내하나 | [`사용자_매뉴얼.md`](사용자_매뉴얼.md) |
 | **작업을 이어받는다** | [`세션_인수인계.md`](세션_인수인계.md) — 지금 어디까지 왔고 무엇을 조심하나 |
 
 문서 전체 지도는 [`docs/README.md`](docs/README.md) — **정본 10본**이다.
 양식 HWP(로컬)는 `docs/templates/`. 폴더 역할은 각 디렉터리 `README.md`.
+
+### 지난 회차 기록 (읽을 필요는 없다)
+
+아래는 **그때의 기록**이다. 지금 상태를 알려면 위 표를 본다.
+
+| 파일 | 무엇 |
+|---|---|
+| [`배포전_최종검증_계획.md`](배포전_최종검증_계획.md) · [`배포전_최종검증_결과.md`](배포전_최종검증_결과.md) | 첫 배포 전 점검 |
+| [`배포후_개선점.md`](배포후_개선점.md) | 배포 직후 나온 것들 |
+| [`E2E_ERRORS.md`](E2E_ERRORS.md) | E2E 가 잡아낸 결함 대장 (`E2E-001`…) |
 
 ## 구성
 
@@ -106,12 +145,31 @@ MyBatis 매퍼 XML 은 컴파일에 안 잡혀서, 패키지를 옮기면 반드
 cd frontend/haccp-web
 npx tsc --noEmit ; npx eslint src e2e ; npx vitest run ; npm run build
 
-# 화면까지 실제로 도는지 — Playwright E2E 152건 (DB 대조 포함)
+# 화면까지 실제로 도는지 — Playwright E2E 153건 (DB 대조 포함)
 npx playwright test
 
 # 백엔드
 cd backend/haccp-api ; ./mvnw -q -o test
+
+# 생성 문서 — 화면·SP·표를 고쳤으면 표도 다시 뽑는다
+bash scripts/audit_generated_docs.sh
 ```
+
+**여기서 자주 데인다.**
+
+- **E2E 는 `dist/` 를 본다.** 프론트를 고쳤으면 **반드시 다시 빌드**한다.
+  `tsc` 오류로 빌드가 멈추면 **옛 `dist` 가 그대로 남아** 고치기 전 화면을 시험하게 된다
+- **시험은 통과만 보고 넘기지 않는다.** 새 시험은 **깨뜨려서 무는지** 확인한다 —
+  이번 회차에 「통과하는데 실은 안 잡는 시험」을 여러 번 걸렀다
+- **운영에 전체 E2E 를 돌리지 않는다.** `resetDocuments()` 가 **문서를 전량 삭제**하고 시작한다.
+  배포 서버 상대 시험은 `Jenkinsfile.e2e` 가 전용 계정으로 한다
+- **배포된 것이 맞는지는 번들 문자열로 본다.** 화면을 눌러 보는 것보다 확실하다 —
+  JS 가 파일 하나라 새 회차의 문구가 있으면 그 회차가 올라간 것이다
+
+  ```sh
+  B=$(curl -s http://180.71.58.87/haccp/ | grep -o 'index-[A-Za-z0-9_-]*\.js' | head -1)
+  curl -s "http://180.71.58.87/haccp/assets/$B" | grep -c "열 초기화"   # 0 이면 옛 프론트다
+  ```
 
 층별로 무엇이 어떤 순서로 도는지는 파이프라인 문서에 파일명까지 적혀 있다 —
 [`backend/haccp-api/PIPELINE.md`](backend/haccp-api/PIPELINE.md) ·
