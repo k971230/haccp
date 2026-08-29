@@ -304,7 +304,12 @@ export function HaccpShell() {
           })}
         </section>
 
-        <ShellFooter user={user} />
+        <ShellFooter
+          // 로그인 사용자 — 회사·부서·이름을 하단 바에 그린다
+          user={user}
+          // 활성 화면코드 — 풋터 도움말이 public/manual/{scrnCd}.html 을 연다
+          scrnCd={activeCd}
+        />
       </main>
 
       {/* 확인·토스트 — 셸에 한 번만 마운트한다 */}

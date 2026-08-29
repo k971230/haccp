@@ -1,6 +1,6 @@
 # 5. PIPELINE 색인 — 태그에서 파일로
 
-> 개발자: 박승우 · 일자: 2026-08-26
+> 개발자: 박승우 · 일자: 2026-08-29
 > 소스의 `PIPELINE[HFn]` / `PIPELINE[HBn]` 주석에서 뽑았다.
 
 코드에 태그를 달아 두고 여기서 파일을 찾는다.
@@ -20,7 +20,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 [`backend/haccp-api/PIPELINE.md`](../backend/haccp-api/PIPELINE.md) ·
 [`frontend/haccp-web/PIPELINE.md`](../frontend/haccp-web/PIPELINE.md).
 
-## 프론트 (HF) — 태그 85개 · 파일 267곳
+## 프론트 (HF) — 태그 85개 · 파일 268곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
@@ -86,6 +86,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/shell/dialog.tsx` | 셸 인프라 |
 | `HF62` | `frontend/haccp-web/src/shell/HomeView.tsx` | 홈 화면 |
 | `HF64` | `frontend/haccp-web/src/shell/HaccpShell.tsx` | 연관 모듈 |
+|  | `frontend/haccp-web/src/shell/manualUrl.ts` | 하단 상태 바 |
 |  | `frontend/haccp-web/src/shell/ShellFooter.tsx` | 하단 상태 바 |
 | `HF66` | `frontend/haccp-web/src/shell/HaccpShell.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/shell/SideMenu.tsx` | 셸 인프라 |
