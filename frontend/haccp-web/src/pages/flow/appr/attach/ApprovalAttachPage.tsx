@@ -288,7 +288,7 @@ export default function ApprovalAttachPage() {
       await entry.api.detail(row.tmplCd, row.docIdx),
       { tmplCd: row.tmplCd, tmplNm: row.tmplNm },
     );
-    return validateForTransfer(buf.baseKey, buf.items, buf.logRows);
+    return validateForTransfer(buf.baseKey, buf.items, buf.logRows, true, buf.passRows);
   };
 
   /** 전송 — 결재 프로세스를 시작한다. 이후 첨부·수정이 잠긴다 */

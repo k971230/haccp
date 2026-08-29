@@ -265,8 +265,10 @@ export function validateForTransfer(
   logRows?: HtmlFormLogRow[],
   // 항목형 지면인지 — HWP 문서형은 false. 자세한 것은 firstInvalidTarget
   itemPaper = true,
+  // 금속 제품통과표 — 있으면 품명을 본다
+  passRows?: HtmlFormPassRow[],
 ): string | null {
-  return firstInvalidTarget(baseKey, items, logRows, itemPaper)?.message ?? null;
+  return firstInvalidTarget(baseKey, items, logRows, itemPaper, passRows)?.message ?? null;
 }
 
 /** 전송을 막은 첫 자리 — 문구와 그 자리를 함께 준다 */
@@ -277,6 +279,8 @@ export interface TransferBlock {
   itemCd?: string;
   // 기록 표에서 막힌 행의 rowSeq — 항목형이면 없다. 지면이 phase 로 갈라 그려서 배열 위치로는 못 찾는다
   logRowSeq?: number;
+  // 금속 제품통과표에서 막힌 행의 rowSeq — data-pass-seq 와 짝
+  passRowSeq?: number;
 }
 
 /**
@@ -306,13 +310,17 @@ export function firstInvalidTarget(
    * 문서형은 일자만 본다.
    */
   itemPaper = true,
+  // 금속 제품통과표 — 감도 검사가 끝난 뒤 품명을 본다
+  passRows?: HtmlFormPassRow[],
 ): TransferBlock | null {
   if (!/^\d{8}$/.test(baseKey)) return { message: MES.required("일자") };
   // 문서형일 때(= HWP) 볼 항목이 없다. 일자만 맞으면 전송한다
   if (!itemPaper) return null;
   // 기록 표가 있는 화면일 때(= CCP 모니터링) items 는 한계기준·주기·방법 안내문이라 입력값이 아니다.
   // 사용자가 채우는 곳은 기록 표뿐이므로 그 행만 본다
-  if (logRows && logRows.length > 0) return firstInvalidLogRow(logRows);
+  if (logRows && logRows.length > 0) {
+    return firstInvalidLogRow(logRows) ?? firstInvalidPassRow(passRows);
+  }
   const body = paperBodyItems(items);
   if (body.length === 0) return { message: "점검 행이 없습니다." };
   for (const item of body) {
@@ -361,6 +369,32 @@ function firstInvalidLogRow(
      */
     if (!isFixedLabelRow(rows, row) && !String(row.productNm ?? "").trim()) {
       return { message: `${where}의 품명을 입력하세요.`, logRowSeq: row.rowSeq };
+    }
+  }
+  return null;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-08-29
+ * 코멘트:
+ *   1) 금속 제품통과표 품명을 본다. 감도 라벨 행은 품명 칸이 없어 여기로 온다
+ *   2) firstInvalidTarget 이 기록 표 통과 뒤에 호출한다
+ *   3) 첫 줄은 항상 필수. 나머지 시드 빈 줄은 건너뛴다. 통과량·검출량·비고를 쓴 줄은 품명도 필수
+ */
+function firstInvalidPassRow(
+  // 제품통과표. 없으면(= 포장·가열) 볼 칸이 없다
+  rows?: HtmlFormPassRow[],
+): TransferBlock | null {
+  if (!rows?.length) return null;
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i];
+    const used = [row.productNm, row.passQty, row.detectQty, row.remark]
+      .some((v) => String(v ?? "").trim());
+    // 둘째 줄부터 전부 비었을 때(= 시드 빈 줄) 품명을 요구하지 않는다
+    if (!used && i > 0) continue;
+    if (!String(row.productNm ?? "").trim()) {
+      return { message: `${i + 1}번째 통과 행의 품명을 입력하세요.`, passRowSeq: row.rowSeq };
     }
   }
   return null;

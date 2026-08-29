@@ -275,4 +275,29 @@ describe("validateForTransfer — 기록 표가 있는 화면(CCP 모니터링)"
     ];
     expect(validateForTransfer("20260825", [], rows), "작업 종료 첫 줄도 라벨이다").toBeNull();
   });
+
+  it("금속 통과 첫 줄은 품명이 비면 막는다", () => {
+    const pass = [{ rowSeq: 1, productNm: "", passQty: "", detectQty: "", remark: "" }];
+    const msg = validateForTransfer("20260825", [], [log()], true, pass);
+    expect(msg).toContain("통과 행");
+    expect(msg).toContain("품명");
+  });
+
+  it("금속 통과 둘째 줄이 전부 비면 건너뛴다", () => {
+    const pass = [
+      { rowSeq: 1, productNm: "삼겹살", passQty: "", detectQty: "", remark: "" },
+      { rowSeq: 2, productNm: "", passQty: "", detectQty: "", remark: "" },
+    ];
+    expect(validateForTransfer("20260825", [], [log()], true, pass)).toBeNull();
+  });
+
+  it("통과량을 쓴 줄은 품명이 비면 막는다", () => {
+    const pass = [
+      { rowSeq: 1, productNm: "삼겹살", passQty: "", detectQty: "", remark: "" },
+      { rowSeq: 2, productNm: "", passQty: "10", detectQty: "", remark: "" },
+    ];
+    const msg = validateForTransfer("20260825", [], [log()], true, pass);
+    expect(msg).toContain("2번째");
+    expect(msg).toContain("품명");
+  });
 });
