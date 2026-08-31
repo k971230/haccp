@@ -2,11 +2,10 @@
  * HaccpShell — 사이드 메뉴 + 탭바 + 화면 영역 + 하단 바를 조립한 앱 셸.
  *
  * 개발자: 박승우
- * 일자: 2026-08-05
+ * 일자: 2026-08-31
  * 코멘트:
  *   1) 로그인 후 모든 화면은 이 셸 안에서 열린다. 주소가 바뀌면 해당 화면 탭을 열고 활성화한다
- *   2) 탭을 여러 개 열어 둔 채 전환할 수 있다 — 비활성·홈 전환 시에도 마운트 유지(hidden)로
- *      입력값·그리드 상태가 남고 재진입 깜박임을 막는다
+ *   2) 권한 없는 화면 URL은 토스트 후 홈(/)으로 보낸다. 401 로그인 만료와 섞지 않는다
  *   3) UV/PV 수집과 그리드·트리 헤더 초록(bindMesSec)은 셸에서 일괄한다
  *
  * PIPELINE[HF49] 앱 셸
@@ -126,15 +125,16 @@ export function HaccpShell() {
        */
       if (!row) {
         mesToast("이 화면을 볼 권한이 없습니다.", "warn");
-        nav(routeOf("today-tasks"), { replace: true });
+        // 권한 밖은 홈(/haccp/). 401 로그인 만료와 섞지 않는다
+        nav("/", { replace: true });
         return;
       }
       openTab(scrn, cleanTitle(row.menuNm));
       return;
     }
-    // 마지막 탭 닫기 URL은 "/". HomeView 가 today-tasks 로 replace. /screen 등 미등록은 오늘 할 일
+    // 마지막 탭 닫기·미등록은 "/". HomeView가 조회권 있으면 today-tasks로 replace
     if (loc.pathname !== "/") {
-      nav(routeOf("today-tasks"), { replace: true });
+      nav("/", { replace: true });
     }
   }, [loc.pathname, menuQ.data, nav, openTab]);
 

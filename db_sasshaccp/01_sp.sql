@@ -4113,9 +4113,7 @@ BEGIN
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
       FROM tbl_check_item c WHERE c.tmpl_cd = 'html_sys_001' AND c.use_yn = 'Y';
-    INSERT INTO tbl_schedule_rule (co_cd, tmpl_cd, rule_seq, cycle_cd, nonwork_rule, due_time, use_yn, ins_id, ins_dt)
-    VALUES (p_co_cd, v_cd, 1, 'D', 'keep', '1800', 'Y', p_id, now())
-    ON CONFLICT (co_cd, tmpl_cd) DO NOTHING;
+    -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
 
@@ -5205,9 +5203,7 @@ BEGIN
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
       FROM tbl_check_item c WHERE c.tmpl_cd = 'tml_ccp_chk_000' AND c.use_yn = 'Y';
-    INSERT INTO tbl_schedule_rule (co_cd, tmpl_cd, rule_seq, cycle_cd, nonwork_rule, due_time, use_yn, ins_id, ins_dt)
-    VALUES (p_co_cd, v_cd, 1, v_cycle, 'keep', '1800', 'Y', p_id, now())
-    ON CONFLICT (co_cd, tmpl_cd) DO NOTHING;
+    -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
 
@@ -5458,9 +5454,7 @@ BEGIN
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
       FROM tbl_check_item c WHERE c.tmpl_cd = 'tml_ccp_htg_000' AND c.use_yn = 'Y';
-    INSERT INTO tbl_schedule_rule (co_cd, tmpl_cd, rule_seq, cycle_cd, nonwork_rule, due_time, use_yn, ins_id, ins_dt)
-    VALUES (p_co_cd, v_cd, 1, 'D', 'keep', '1800', 'Y', p_id, now())
-    ON CONFLICT (co_cd, tmpl_cd) DO NOTHING;
+    -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
 
@@ -5711,9 +5705,7 @@ BEGIN
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
       FROM tbl_check_item c WHERE c.tmpl_cd = 'tml_ccp_mtl_000' AND c.use_yn = 'Y';
-    INSERT INTO tbl_schedule_rule (co_cd, tmpl_cd, rule_seq, cycle_cd, nonwork_rule, due_time, use_yn, ins_id, ins_dt)
-    VALUES (p_co_cd, v_cd, 1, 'D', 'keep', '1800', 'Y', p_id, now())
-    ON CONFLICT (co_cd, tmpl_cd) DO NOTHING;
+    -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
 
@@ -5964,9 +5956,7 @@ BEGIN
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
       FROM tbl_check_item c WHERE c.tmpl_cd = 'tml_ccp_pkg_000' AND c.use_yn = 'Y';
-    INSERT INTO tbl_schedule_rule (co_cd, tmpl_cd, rule_seq, cycle_cd, nonwork_rule, due_time, use_yn, ins_id, ins_dt)
-    VALUES (p_co_cd, v_cd, 1, 'D', 'keep', '1800', 'Y', p_id, now())
-    ON CONFLICT (co_cd, tmpl_cd) DO NOTHING;
+    -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
 
