@@ -334,7 +334,7 @@ screenusage/ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE
 | 화면 | 트리 | 코드 대분류 | API | SP | 테이블 |
 |---|---|---|---|---|---|
 | 로그인 이력 | 사용자 평면(`listUsers`) | `login-result` | `GET /api/v1/sys/logs/login-history/list` | `sp_login_history_r_000` | `tbl_login_log` `tbl_user` |
-| 변경 감사 로그 | 메뉴 계층(`listAdminMenus`) | `audit-result` | `GET /api/v1/sys/logs/audit-log/list` | `sp_audit_log_r_000` | `tbl_audit_log` `tbl_user` |
+| 변경 감사 로그 | 메뉴 계층(`listAdminMenus`) | `AUDIT_RESULT` | `GET /api/v1/sys/logs/audit-log/list` | `sp_audit_log_r_000` | `tbl_audit_log` `tbl_user` |
 | 화면 이용 통계 | 메뉴 계층 | 없음 | `GET /api/v1/sys/logs/screen-usage-statistics/list` | `sp_screen_usage_statistics_r_000` | `tbl_view_stat_daily` `tbl_menu` `tbl_screen` |
 
 리프 노드는 서버 조건으로, 폴더 노드는 기간 전건 조회 후 Rule의 `fetchRows`가 하위 키로 FE 필터한다.
@@ -348,7 +348,7 @@ screenusage/ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE
 | `tbl_code` `tbl_menu` `tbl_role` `tbl_role_screen` `tbl_dept` `tbl_user` | 시스템 관리 5화면 Service의 `save`·`delete` | I·U·D (사용자 서명 업로드·삭제는 U) |
 | `tbl_document` `tbl_document_file` | `docs.document.DocumentService` | I·U·D·APV·RJT |
 
-- 대상 테이블은 `audit-target` 공통코드(`sub_cd`=테이블명, `ref1`=화면코드)에 있어야 표시명·트리 필터가 붙는다
+- 대상 테이블은 `AUDIT_TARGET` 공통코드(`sub_cd`=테이블명, `ref1`=화면코드)에 있어야 표시명·트리 필터가 붙는다
 - `after_json`은 화면 payload 그대로이고 `_key`·`_rowState`는 버려지며 `userPw`는 `***`로 가려진다. `before_json`은 남기지 않는다
 - 원 업무 트랜잭션 안에서 기록하므로 저장이 실패하면 이력도 남지 않는다
 
@@ -361,5 +361,5 @@ screenusage/ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE
 3. FE: `api/{대}/` → `pages/{대}/{중}/{화면}Page.tsx` + `{화면}Rule.ts`. 경로 `docs/24`
 4. 팝업이 필요하면 `components/common/modal/`에 추가하고 `modalTypes.ModalPropsMap`·`GlobalModal` 분기를 늘린다
 5. `shell/screenRegistry.tsx`에 화면코드 엔트리 등록, `tbl_menu`·`tbl_screen` 시드 추가
-6. 폴더 README 작성 + 이 문서의 표 갱신. 변경 추적이 필요한 화면이면 Service에 `AuditWriter.record(...)`를 넣고 `audit-target` 공통코드에 대상 1건을 추가한다
+6. 폴더 README 작성 + 이 문서의 표 갱신. 변경 추적이 필요한 화면이면 Service에 `AuditWriter.record(...)`를 넣고 `AUDIT_TARGET` 공통코드에 대상 1건을 추가한다
 7. 검증: `./mvnw -q -DskipTests compile` · `npx tsc --noEmit` · 조회/행추가/저장/삭제(참조 차단) 스모크

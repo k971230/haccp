@@ -59,7 +59,7 @@ public class AuditWriter {
      *   3) 직렬화에 실패하면 이력이 비는 대신 업무를 중단한다 (BizException)
      */
     public void record(
-            // 대상 테이블명 — tbl_ 접두 포함. audit-target 공통코드 sub_cd와 같아야 화면에 표시명이 붙는다
+            // 대상 테이블명 — tbl_ 접두 포함. AUDIT_TARGET 공통코드 sub_cd와 같아야 화면에 표시명이 붙는다
             String tblNm,
             // 대상 행 idx — 신규 등록처럼 채번 전이면 null
             Long tgtIdx,

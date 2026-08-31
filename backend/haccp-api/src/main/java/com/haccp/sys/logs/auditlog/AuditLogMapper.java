@@ -60,7 +60,7 @@ public interface AuditLogMapper {
             @Param("coCd") String coCd,
             // 행위자 로그인 아이디 — JWT에서만 읽는다
             @Param("userId") String userId,
-            // 대상 테이블명 — tbl_ 접두 포함. audit-target 공통코드의 sub_cd와 같아야 표시명이 붙는다
+            // 대상 테이블명 — tbl_ 접두 포함. AUDIT_TARGET 공통코드의 sub_cd와 같아야 표시명이 붙는다
             @Param("tblNm") String tblNm,
             // 대상 행 idx — 신규 등록처럼 아직 idx를 모르면 null
             @Param("tgtIdx") Long tgtIdx,
