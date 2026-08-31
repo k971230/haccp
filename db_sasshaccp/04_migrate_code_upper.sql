@@ -10,7 +10,8 @@
 --       신형 소문자(num·radio·text)가 같은 컬럼에 공존했다. 이번에 한 벌로 맞춘다
 --    3) 한 번 돌린 DB 에 다시 돌려도 안전하다 — 이미 대문자면 그대로다
 --
---  AUDIT_TARGET 은 읽는 코드가 없어 그룹째 지웠다 (03_code_seed.sql). 예외가 없다.
+--  AUDIT_TARGET 은 sp_audit_log_r_000 이 읽는다. 03_code_seed.sql 에 두고 지우지 않는다.
+--  sub_cd 는 테이블명(tbl_code)이라 소문자 그대로 둔다 — 04 의 UPPER 변환 대상이 아니다.
 --
 --  적용: psql -f 04_migrate_code_upper.sql   (03_code_seed.sql 보다 먼저)
 -- ============================================================

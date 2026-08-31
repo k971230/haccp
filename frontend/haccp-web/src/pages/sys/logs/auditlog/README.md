@@ -21,4 +21,4 @@
 | 좌측 메뉴 트리 | `menuApi.listAdminMenus` | `sp_menu_management_r_000` | `tbl_menu` `tbl_screen` |
 | 적재 (화면 아님) | `AuditWriter.record` | `sp_tbl_audit_log_c_000` | `tbl_audit_log` |
 
-행위 라벨은 공통코드 `audit-result`. 대상 표시명·트리 필터는 `audit-target`. 시스템 관리 5화면 저장·삭제가 `record(...)`를 부른다.
+행위 라벨은 공통코드 `AUDIT_RESULT`. 대상 표시명·트리 필터는 `AUDIT_TARGET`(`sub_cd`=테이블명, `ref1`=화면코드). 시스템 관리 5화면 저장·삭제가 `record(...)`를 부른다.

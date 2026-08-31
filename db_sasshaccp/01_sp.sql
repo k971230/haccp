@@ -32,7 +32,10 @@ DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_menu_sort_encode_u_000(character varyi
 -- Name: sp_audit_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_menu_key character varying, p_user_id character varying, p_action_cd character varying) RETURNS TABLE(idx bigint, user_id character varying, user_nm character varying, menu_nm character varying, tbl_nm character varying, tgt_idx bigint, action_cd character varying, before_json jsonb, after_json jsonb, reason character varying, ip_addr character varying, ins_dt timestamp without time zone)
+-- 반환에 scrn_cd를 더하므로 REPLACE만으로는 시그니처가 안 바뀐다
+DROP FUNCTION IF EXISTS sasshaccp.sp_audit_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying);
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_menu_key character varying, p_user_id character varying, p_action_cd character varying) RETURNS TABLE(idx bigint, user_id character varying, user_nm character varying, menu_nm character varying, tbl_nm character varying, scrn_cd character varying, tgt_idx bigint, action_cd character varying, before_json jsonb, after_json jsonb, reason character varying, ip_addr character varying, ins_dt timestamp without time zone)
     LANGUAGE sql
     AS $$
     SELECT a.idx,
@@ -41,6 +44,8 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varyin
            -- 표준코드에 매핑이 없으면 테이블명을 그대로 보여준다
            COALESCE(c.code_nm, a.tbl_nm) AS menu_nm,
            a.tbl_nm,
+           -- 트리와 같은 키 — AUDIT_TARGET.ref1 = 화면코드
+           c.ref1 AS scrn_cd,
            a.tgt_idx,
            a.action_cd,
            a.before_json,
@@ -51,10 +56,10 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varyin
       FROM tbl_audit_log a
       -- 행위자명 — 삭제된 사용자도 이력은 남으므로 LEFT JOIN
       LEFT JOIN tbl_user u ON u.user_id = a.user_id
-      -- audit-target 공통코드 — 테이블명 → 화면/메뉴 표시명. 회사별 고유 격리
+      -- AUDIT_TARGET — 테이블명 → 화면코드(ref1)·표시명. 회사별 고유 격리
       LEFT JOIN tbl_code c
              ON c.co_cd = p_co_cd
-            AND c.main_cd = 'audit-target'
+            AND c.main_cd = 'AUDIT_TARGET'
             AND c.sub_cd = a.tbl_nm
      WHERE a.co_cd = p_co_cd
        AND a.ins_dt >= to_timestamp(p_from_dt, 'YYYYMMDD')
