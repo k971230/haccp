@@ -1,6 +1,6 @@
 # 5. PIPELINE 색인 — 태그에서 파일로
 
-> 개발자: 박승우 · 일자: 2026-08-29
+> 개발자: 박승우 · 일자: 2026-08-31
 > 소스의 `PIPELINE[HFn]` / `PIPELINE[HBn]` 주석에서 뽑았다.
 
 코드에 태그를 달아 두고 여기서 파일을 찾는다.
@@ -293,7 +293,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachRule.ts` | 결재 첨부 화면 |
 | `HF200` | `frontend/haccp-web/src/shell/gridRules/gridSave.ts` | 편집 그리드 저장 공통 |
 
-## 백엔드 (HB) — 태그 79개 · 파일 273곳
+## 백엔드 (HB) — 태그 79개 · 파일 276곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
@@ -537,13 +537,16 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/resources/mapper/docs/htmlform/ccphtgtemplate/CcpHtgTemplateMapper.xml` | CCP-2B 가열일지 양식 XML |
 | `HB134` | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/ccpmtltemplate/CcpMtlTemplateMapper.java` | CCP-3P 금속검출일지 양식 Mapper |
 |  | `backend/haccp-api/src/main/resources/mapper/docs/htmlform/ccpmtltemplate/CcpMtlTemplateMapper.xml` | CCP-3P 금속검출일지 양식 XML |
-| `HB135` | `backend/haccp-api/src/main/java/com/haccp/draft/DraftSupport.java` | 양식 작성 공용 유틸 |
+| `HB135` | `backend/haccp-api/src/main/java/com/haccp/draft/DraftPaperStamp.java` | 양식 작성 공용 유틸 |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/DraftPaperStampMapper.java` | 양식 작성 공용 유틸 |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/DraftSupport.java` | 양식 작성 공용 유틸 |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftDeleteItem.java` | 양식 작성 공용 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftFormRow.java` | 양식 작성 공용 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftListRow.java` | 양식 작성 공용 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftSaveRequest.java` | 양식 작성 공용 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HygProcessDraftMapper.java` | 위생공정 작성 Mapper |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HygProcessDraftService.java` | 위생공정 작성 Service |
+|  | `backend/haccp-api/src/main/resources/mapper/draft/DraftPaperStampMapper.xml` | 양식 작성 공용 유틸 |
 |  | `backend/haccp-api/src/main/resources/mapper/draft/html/HygProcessDraftMapper.xml` | 위생공정 작성 XML |
 | `HB136` | `backend/haccp-api/src/main/java/com/haccp/draft/html/HygProcessDraftController.java` | 위생공정 작성 Controller |
 | `HB137` | `backend/haccp-api/src/main/java/com/haccp/draft/html/CcpVerifyDraftMapper.java` | CCP 검증점검 작성 Mapper |

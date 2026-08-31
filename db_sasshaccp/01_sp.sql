@@ -3353,6 +3353,56 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_approval_r_000(p_co_cd character v
 
 
 --
+-- Name: sp_tbl_document_paper_stamp_r_000(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+-- 지면 작성자·승인자 칸 — CCP 모니터 detail 이 헤더에 안 실어 문서함 도장이 비었다.
+-- hyg·ccp-verify SP 와 같은 출처(tbl_document · tbl_document_approval)를 한 곳에서 읽는다.
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_paper_stamp_r_000(
+    -- p_co_cd: JWT 회사코드 — 테넌트 범위
+    p_co_cd character varying,
+    -- p_doc_idx: tbl_document.idx
+    p_doc_idx bigint
+) RETURNS TABLE(
+    writer_id character varying,
+    writer_nm character varying,
+    writer_sign_yn character varying,
+    approver_id character varying,
+    approver_nm character varying,
+    approver_sign_yn character varying
+)
+    LANGUAGE sql STABLE
+    AS $$
+    SELECT d.writer_id,
+           (SELECT u.user_nm FROM tbl_user u
+             WHERE u.co_cd = d.co_cd AND u.user_id = d.writer_id),
+           CASE WHEN EXISTS (
+               SELECT 1 FROM tbl_user u
+                WHERE u.co_cd = d.co_cd AND u.user_id = d.writer_id AND u.sign_img IS NOT NULL
+           ) THEN 'Y' ELSE 'N' END,
+           (SELECT a.approver_id FROM tbl_document_approval a
+             WHERE a.co_cd = d.co_cd AND a.doc_idx = d.idx
+               AND a.role_cd = 'APPROVE' AND a.result_cd = 'A'
+             ORDER BY a.step_no DESC LIMIT 1),
+           (SELECT a.approver_nm FROM tbl_document_approval a
+             WHERE a.co_cd = d.co_cd AND a.doc_idx = d.idx
+               AND a.role_cd = 'APPROVE' AND a.result_cd = 'A'
+             ORDER BY a.step_no DESC LIMIT 1),
+           CASE WHEN (
+               SELECT a.sign_img FROM tbl_document_approval a
+                WHERE a.co_cd = d.co_cd AND a.doc_idx = d.idx
+                  AND a.role_cd = 'APPROVE' AND a.result_cd = 'A'
+                ORDER BY a.step_no DESC LIMIT 1
+           ) IS NOT NULL THEN 'Y' ELSE 'N' END
+      FROM tbl_document d
+     WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.del_yn = 'N';
+$$;
+
+
+COMMENT ON FUNCTION sasshaccp.sp_tbl_document_paper_stamp_r_000(p_co_cd character varying, p_doc_idx bigint) IS '지면 도장칸 — 작성자·승인 완료 결재자 이름·서명여부 (CCP 모니터 detail 공용)';
+
+
+--
 -- Name: sp_tbl_document_approval_u_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 

@@ -4,6 +4,7 @@
 
 ```
 mapper/draft/
+ ├ DraftPaperStampMapper.xml           (sp_tbl_document_paper_stamp_*)
  ├ hyg/    HygProcessDraftMapper.xml   (sp_tbl_hyg_process_*)
  └ ccp/    CcpVerifyDraftMapper.xml    (sp_ccp_verify_*)
 ```

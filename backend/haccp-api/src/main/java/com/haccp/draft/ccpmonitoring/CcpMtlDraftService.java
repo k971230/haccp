@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) 데이터는 기존 tbl_ccp_metal_monitor(+_sens_row·_pass_row). 신규 테이블을 만들지 않았다
  *   2) 감도표는 phaseCd(BEFORE·AFTER) 로 작업 전/작업 후를 가르고, 통과량표는 별도 행 배열이다
- *   3) 지면 하단 4칸은 저장할 컬럼이 없어 DocCorrectiveSupport(tbl_corrective_action)로 넘긴다
+ *   3) 지면 하단 4칸은 DocCorrectiveSupport, 작성자·승인자는 DraftPaperStamp(문서·결재 스냅샷)
  *
  * 감도 5칸(Fe만·SUS만·제품만·Fe+제품·SUS+제품)은 화면 cells 맵으로 오고 여기서 컬럼으로 편다.
  *
@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 import com.haccp.draft.DraftSupport;
+import com.haccp.draft.DraftPaperStamp;
+import com.haccp.draft.DraftPaperStampMapper;
 import com.haccp.flow.ca.dto.DocCorrectiveDto;
 import com.haccp.draft.dto.DraftDeleteItem;
 import com.haccp.draft.dto.DraftFormRow;
@@ -61,6 +63,8 @@ public class CcpMtlDraftService {
     private final CcpMtlDraftMapper mapper;
     private final ObjectMapper objectMapper;
     private final DocCorrectiveSupport correctiveSupport;
+    // 지면 작성자·승인자 칸 — 문서함 미리보기가 같은 detail 을 쓴다
+    private final DraftPaperStampMapper paperStampMapper;
 
     /**
      * 개발자: 박승우
@@ -123,6 +127,8 @@ public class CcpMtlDraftService {
             header.put("baseDt", DraftSupport.asText(head.get("baseDt")));
             header.put("tmplCd", tmpl);
             header.put("checkerNm", DraftSupport.asText(head.get("mngNm")));
+            // 작성자·승인자 — 금속 모니터 헤더에 컬럼이 없어 문서·결재 스냅샷을 붙인다
+            DraftPaperStamp.apply(header, paperStampMapper.selectPaperStamp(coCd, docIdx));
             for (Map<String, Object> row : DraftSupport.camelMaps(mapper.selectSensRows(coCd, hdrIdx))) {
                 logRows.add(toLogRowNode(row));
             }

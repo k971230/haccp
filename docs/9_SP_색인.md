@@ -1,6 +1,6 @@
 # 9. SP 색인 — 매퍼에서 표까지
 
-> 개발자: 박승우 · 일자: 2026-08-29
+> 개발자: 박승우 · 일자: 2026-08-31
 > `db_sasshaccp/01_sp.sql` 의 정의와 `backend/haccp-api/src/main/resources/mapper` 의 호출을 맞춰 뽑았다.
 
 **「이 화면을 고치면 어느 표가 움직이나」를 검색 없이 알려는 표다.**
@@ -23,7 +23,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 
 **아무도 안 부르는 SP 없음.**
 
-## 매퍼 → SP → 표 (151건)
+## 매퍼 → SP → 표 (152건)
 
 | 도메인 | SP | 종류 | 매퍼 | 건드리는 표 |
 |---|---|---|---|---|
@@ -55,7 +55,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | docs/documents | `sp_tbl_document_version_r_000` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_document_version` |
 | docs/documents | `sp_tbl_hwp_document_c_000` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_company_template<br>tbl_document<br>tbl_template` |
 | docs/htmlform/ccphtgtemplate | `sp_tbl_tml_ccp_htg_ver_apply_u_000` | 쓰기 | `docs/htmlform/ccphtgtemplate/CcpHtgTemplateMapper.xml` | `tbl_tml_ccp_htg_ver` |
-| docs/htmlform/ccphtgtemplate | `sp_tbl_tml_ccp_htg_ver_copy_c_000` | 조회 | `docs/htmlform/ccphtgtemplate/CcpHtgTemplateMapper.xml` | `tbl_check_item<br>tbl_company_template<br>tbl_schedule_rule<br>tbl_template<br>tbl_tml_ccp_htg_ver<br>tbl_tml_ccp_htg_ver_item` |
+| docs/htmlform/ccphtgtemplate | `sp_tbl_tml_ccp_htg_ver_copy_c_000` | 조회 | `docs/htmlform/ccphtgtemplate/CcpHtgTemplateMapper.xml` | `tbl_check_item<br>tbl_company_template<br>tbl_template<br>tbl_tml_ccp_htg_ver<br>tbl_tml_ccp_htg_ver_item` |
 | docs/htmlform/ccphtgtemplate | `sp_tbl_tml_ccp_htg_ver_d_000` | 쓰기 | `docs/htmlform/ccphtgtemplate/CcpHtgTemplateMapper.xml` | `tbl_company_template<br>tbl_schedule_rule<br>tbl_schedule_rule_detail<br>tbl_tml_ccp_htg_ver` |
 | docs/htmlform/ccphtgtemplate | `sp_tbl_tml_ccp_htg_ver_delete_blocker_r_000` | 조회 | `docs/htmlform/ccphtgtemplate/CcpHtgTemplateMapper.xml` | `tbl_document<br>tbl_schedule_task<br>tbl_tml_ccp_htg_ver` |
 | docs/htmlform/ccphtgtemplate | `sp_tbl_tml_ccp_htg_ver_item_r_000` | 조회 | `docs/htmlform/ccphtgtemplate/CcpHtgTemplateMapper.xml<br>draft/ccpmonitoring/CcpLogDraftMapper.xml` | `tbl_check_item<br>tbl_tml_ccp_htg_ver_item` |
@@ -63,7 +63,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | docs/htmlform/ccphtgtemplate | `sp_tbl_tml_ccp_htg_ver_nm_u_000` | 쓰기 | `docs/htmlform/ccphtgtemplate/CcpHtgTemplateMapper.xml` | `tbl_company_template<br>tbl_template<br>tbl_tml_ccp_htg_ver` |
 | docs/htmlform/ccphtgtemplate | `sp_tbl_tml_ccp_htg_ver_r_000` | 조회 | `docs/htmlform/ccphtgtemplate/CcpHtgTemplateMapper.xml<br>draft/ccpmonitoring/CcpLogDraftMapper.xml` | `tbl_company_template<br>tbl_tml_ccp_htg_ver<br>tbl_user` |
 | docs/htmlform/ccpmtltemplate | `sp_tbl_tml_ccp_mtl_ver_apply_u_000` | 쓰기 | `docs/htmlform/ccpmtltemplate/CcpMtlTemplateMapper.xml` | `tbl_tml_ccp_mtl_ver` |
-| docs/htmlform/ccpmtltemplate | `sp_tbl_tml_ccp_mtl_ver_copy_c_000` | 조회 | `docs/htmlform/ccpmtltemplate/CcpMtlTemplateMapper.xml` | `tbl_check_item<br>tbl_company_template<br>tbl_schedule_rule<br>tbl_template<br>tbl_tml_ccp_mtl_ver<br>tbl_tml_ccp_mtl_ver_item` |
+| docs/htmlform/ccpmtltemplate | `sp_tbl_tml_ccp_mtl_ver_copy_c_000` | 조회 | `docs/htmlform/ccpmtltemplate/CcpMtlTemplateMapper.xml` | `tbl_check_item<br>tbl_company_template<br>tbl_template<br>tbl_tml_ccp_mtl_ver<br>tbl_tml_ccp_mtl_ver_item` |
 | docs/htmlform/ccpmtltemplate | `sp_tbl_tml_ccp_mtl_ver_d_000` | 쓰기 | `docs/htmlform/ccpmtltemplate/CcpMtlTemplateMapper.xml` | `tbl_company_template<br>tbl_schedule_rule<br>tbl_schedule_rule_detail<br>tbl_tml_ccp_mtl_ver` |
 | docs/htmlform/ccpmtltemplate | `sp_tbl_tml_ccp_mtl_ver_delete_blocker_r_000` | 조회 | `docs/htmlform/ccpmtltemplate/CcpMtlTemplateMapper.xml` | `tbl_document<br>tbl_schedule_task<br>tbl_tml_ccp_mtl_ver` |
 | docs/htmlform/ccpmtltemplate | `sp_tbl_tml_ccp_mtl_ver_item_r_000` | 조회 | `docs/htmlform/ccpmtltemplate/CcpMtlTemplateMapper.xml<br>draft/ccpmonitoring/CcpMtlDraftMapper.xml` | `tbl_check_item<br>tbl_tml_ccp_mtl_ver_item` |
@@ -71,7 +71,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | docs/htmlform/ccpmtltemplate | `sp_tbl_tml_ccp_mtl_ver_nm_u_000` | 쓰기 | `docs/htmlform/ccpmtltemplate/CcpMtlTemplateMapper.xml` | `tbl_company_template<br>tbl_template<br>tbl_tml_ccp_mtl_ver` |
 | docs/htmlform/ccpmtltemplate | `sp_tbl_tml_ccp_mtl_ver_r_000` | 조회 | `docs/htmlform/ccpmtltemplate/CcpMtlTemplateMapper.xml<br>draft/ccpmonitoring/CcpMtlDraftMapper.xml` | `tbl_company_template<br>tbl_tml_ccp_mtl_ver<br>tbl_user` |
 | docs/htmlform/ccppkgtemplate | `sp_tbl_tml_ccp_pkg_ver_apply_u_000` | 쓰기 | `docs/htmlform/ccppkgtemplate/CcpPkgTemplateMapper.xml` | `tbl_tml_ccp_pkg_ver` |
-| docs/htmlform/ccppkgtemplate | `sp_tbl_tml_ccp_pkg_ver_copy_c_000` | 조회 | `docs/htmlform/ccppkgtemplate/CcpPkgTemplateMapper.xml` | `tbl_check_item<br>tbl_company_template<br>tbl_schedule_rule<br>tbl_template<br>tbl_tml_ccp_pkg_ver<br>tbl_tml_ccp_pkg_ver_item` |
+| docs/htmlform/ccppkgtemplate | `sp_tbl_tml_ccp_pkg_ver_copy_c_000` | 조회 | `docs/htmlform/ccppkgtemplate/CcpPkgTemplateMapper.xml` | `tbl_check_item<br>tbl_company_template<br>tbl_template<br>tbl_tml_ccp_pkg_ver<br>tbl_tml_ccp_pkg_ver_item` |
 | docs/htmlform/ccppkgtemplate | `sp_tbl_tml_ccp_pkg_ver_d_000` | 쓰기 | `docs/htmlform/ccppkgtemplate/CcpPkgTemplateMapper.xml` | `tbl_company_template<br>tbl_schedule_rule<br>tbl_schedule_rule_detail<br>tbl_tml_ccp_pkg_ver` |
 | docs/htmlform/ccppkgtemplate | `sp_tbl_tml_ccp_pkg_ver_delete_blocker_r_000` | 조회 | `docs/htmlform/ccppkgtemplate/CcpPkgTemplateMapper.xml` | `tbl_document<br>tbl_schedule_task<br>tbl_tml_ccp_pkg_ver` |
 | docs/htmlform/ccppkgtemplate | `sp_tbl_tml_ccp_pkg_ver_item_r_000` | 조회 | `docs/htmlform/ccppkgtemplate/CcpPkgTemplateMapper.xml<br>draft/ccpmonitoring/CcpLogDraftMapper.xml` | `tbl_check_item<br>tbl_tml_ccp_pkg_ver_item` |
@@ -79,7 +79,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | docs/htmlform/ccppkgtemplate | `sp_tbl_tml_ccp_pkg_ver_nm_u_000` | 쓰기 | `docs/htmlform/ccppkgtemplate/CcpPkgTemplateMapper.xml` | `tbl_company_template<br>tbl_template<br>tbl_tml_ccp_pkg_ver` |
 | docs/htmlform/ccppkgtemplate | `sp_tbl_tml_ccp_pkg_ver_r_000` | 조회 | `docs/htmlform/ccppkgtemplate/CcpPkgTemplateMapper.xml<br>draft/ccpmonitoring/CcpLogDraftMapper.xml` | `tbl_company_template<br>tbl_tml_ccp_pkg_ver<br>tbl_user` |
 | docs/htmlform/ccpverifytemplate | `sp_tbl_tml_ccp_chk_ver_apply_u_000` | 쓰기 | `docs/htmlform/ccpverifytemplate/CcpVerifyTemplateMapper.xml` | `tbl_tml_ccp_chk_ver` |
-| docs/htmlform/ccpverifytemplate | `sp_tbl_tml_ccp_chk_ver_copy_c_000` | 조회 | `docs/htmlform/ccpverifytemplate/CcpVerifyTemplateMapper.xml` | `tbl_check_item<br>tbl_company_template<br>tbl_schedule_rule<br>tbl_template<br>tbl_tml_ccp_chk_ver<br>tbl_tml_ccp_chk_ver_item` |
+| docs/htmlform/ccpverifytemplate | `sp_tbl_tml_ccp_chk_ver_copy_c_000` | 조회 | `docs/htmlform/ccpverifytemplate/CcpVerifyTemplateMapper.xml` | `tbl_check_item<br>tbl_company_template<br>tbl_template<br>tbl_tml_ccp_chk_ver<br>tbl_tml_ccp_chk_ver_item` |
 | docs/htmlform/ccpverifytemplate | `sp_tbl_tml_ccp_chk_ver_d_000` | 쓰기 | `docs/htmlform/ccpverifytemplate/CcpVerifyTemplateMapper.xml` | `tbl_company_template<br>tbl_schedule_rule<br>tbl_schedule_rule_detail<br>tbl_tml_ccp_chk_ver` |
 | docs/htmlform/ccpverifytemplate | `sp_tbl_tml_ccp_chk_ver_delete_blocker_r_000` | 조회 | `docs/htmlform/ccpverifytemplate/CcpVerifyTemplateMapper.xml` | `tbl_document<br>tbl_schedule_task<br>tbl_tml_ccp_chk_ver` |
 | docs/htmlform/ccpverifytemplate | `sp_tbl_tml_ccp_chk_ver_item_r_000` | 조회 | `docs/htmlform/ccpverifytemplate/CcpVerifyTemplateMapper.xml` | `tbl_check_item<br>tbl_tml_ccp_chk_ver_item` |
@@ -87,7 +87,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | docs/htmlform/ccpverifytemplate | `sp_tbl_tml_ccp_chk_ver_nm_u_000` | 쓰기 | `docs/htmlform/ccpverifytemplate/CcpVerifyTemplateMapper.xml` | `tbl_company_template<br>tbl_template<br>tbl_tml_ccp_chk_ver` |
 | docs/htmlform/ccpverifytemplate | `sp_tbl_tml_ccp_chk_ver_r_000` | 조회 | `docs/htmlform/ccpverifytemplate/CcpVerifyTemplateMapper.xml<br>draft/html/CcpVerifyDraftMapper.xml` | `tbl_company_template<br>tbl_tml_ccp_chk_ver<br>tbl_user` |
 | docs/htmlform/htmltemplate | `sp_tbl_html_hyg_prc_ver_apply_u_000` | 쓰기 | `docs/htmlform/htmltemplate/HtmlTemplateMapper.xml` | `tbl_html_hyg_prc_ver` |
-| docs/htmlform/htmltemplate | `sp_tbl_html_hyg_prc_ver_copy_c_000` | 조회 | `docs/htmlform/htmltemplate/HtmlTemplateMapper.xml` | `tbl_check_item<br>tbl_company_template<br>tbl_html_hyg_prc_ver<br>tbl_html_hyg_prc_ver_item<br>tbl_schedule_rule<br>tbl_template` |
+| docs/htmlform/htmltemplate | `sp_tbl_html_hyg_prc_ver_copy_c_000` | 조회 | `docs/htmlform/htmltemplate/HtmlTemplateMapper.xml` | `tbl_check_item<br>tbl_company_template<br>tbl_html_hyg_prc_ver<br>tbl_html_hyg_prc_ver_item<br>tbl_template` |
 | docs/htmlform/htmltemplate | `sp_tbl_html_hyg_prc_ver_d_000` | 쓰기 | `docs/htmlform/htmltemplate/HtmlTemplateMapper.xml` | `tbl_company_template<br>tbl_html_hyg_prc_ver<br>tbl_schedule_rule<br>tbl_schedule_rule_detail` |
 | docs/htmlform/htmltemplate | `sp_tbl_html_hyg_prc_ver_delete_blocker_r_000` | 조회 | `docs/htmlform/htmltemplate/HtmlTemplateMapper.xml` | `tbl_document<br>tbl_html_hyg_prc_ver<br>tbl_schedule_task` |
 | docs/htmlform/htmltemplate | `sp_tbl_html_hyg_prc_ver_item_r_000` | 조회 | `docs/htmlform/htmltemplate/HtmlTemplateMapper.xml` | `tbl_check_item<br>tbl_html_hyg_prc_ver_item` |
@@ -107,6 +107,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | docs/sch | `sp_tbl_notification_task_c_000` | 쓰기 | `docs/sch/DocCycleMapper.xml` | `tbl_company_template<br>tbl_login_log<br>tbl_notification<br>tbl_schedule_task<br>tbl_template<br>tbl_user` |
 | docs/sch | `sp_tbl_schedule_rule_active_r_000` | 조회 | `docs/sch/DocCycleMapper.xml` | `tbl_company_template<br>tbl_schedule_rule<br>tbl_schedule_rule_detail` |
 | docs/sch | `sp_tbl_schedule_task_regen_c_000` | 쓰기 | `docs/sch/DocCycleMapper.xml` | `tbl_schedule_task` |
+| draft | `sp_tbl_document_paper_stamp_r_000` | 조회 | `draft/DraftPaperStampMapper.xml` | `tbl_document<br>tbl_document_approval<br>tbl_user` |
 | draft/ccpmonitoring | `sp_ccp_log_r_000` | 조회 | `draft/ccpmonitoring/CcpLogDraftMapper.xml` | `tbl_ccp_generic_monitor<br>tbl_ccp_generic_monitor_row<br>tbl_company_template<br>tbl_document<br>tbl_template<br>tbl_user` |
 | draft/ccpmonitoring | `sp_ccp_mtl_r_000` | 조회 | `draft/ccpmonitoring/CcpMtlDraftMapper.xml` | `tbl_ccp_metal_monitor<br>tbl_ccp_metal_sens_row<br>tbl_company_template<br>tbl_document<br>tbl_template<br>tbl_user` |
 | draft/ccpmonitoring | `sp_tbl_ccp_generic_monitor_c_000` | 조회 | `draft/ccpmonitoring/CcpLogDraftMapper.xml` | `tbl_ccp_generic_monitor<br>tbl_ccp_generic_monitor_cell<br>tbl_ccp_generic_monitor_row<br>tbl_company_template<br>tbl_doc_no_rule<br>tbl_document<br>tbl_template<br>tbl_user` |

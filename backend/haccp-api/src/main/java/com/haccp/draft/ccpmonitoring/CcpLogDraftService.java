@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) 포장(pkg)·가열(htg)은 업무가 같고 양식군만 다르다. Family 하나로 두 화면이 이 서비스를 공유한다
  *   2) 데이터는 기존 tbl_ccp_generic_monitor(+_row·_cell). 신규 테이블을 만들지 않았다
- *   3) 지면 하단 4칸은 저장할 컬럼이 없어 DocCorrectiveSupport(tbl_corrective_action)로 넘긴다
+ *   3) 지면 하단 4칸은 DocCorrectiveSupport, 작성자·승인자는 DraftPaperStamp(문서·결재 스냅샷)
  *
  * 작업 전/작업 종료는 행의 phaseCd 로만 가른다. 전송·전송취소는 문서 허브 결재 API 를 그대로 쓴다.
  *
@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 import com.haccp.draft.DraftSupport;
+import com.haccp.draft.DraftPaperStamp;
+import com.haccp.draft.DraftPaperStampMapper;
 import com.haccp.flow.ca.dto.DocCorrectiveDto;
 import com.haccp.draft.dto.DraftDeleteItem;
 import com.haccp.draft.dto.DraftFormRow;
@@ -75,6 +77,8 @@ public class CcpLogDraftService {
     private final CcpLogDraftMapper mapper;
     private final ObjectMapper objectMapper;
     private final DocCorrectiveSupport correctiveSupport;
+    // 지면 작성자·승인자 칸 — 문서함 미리보기가 같은 detail 을 쓴다
+    private final DraftPaperStampMapper paperStampMapper;
 
     /**
      * 개발자: 박승우
@@ -152,6 +156,8 @@ public class CcpLogDraftService {
             header.put("baseDt", DraftSupport.asText(saved.get("baseDt")));
             header.put("tmplCd", DraftSupport.asText(saved.get("tmplCd")));
             header.put("checkerNm", DraftSupport.asText(saved.get("mngNm")));
+            // 작성자·승인자 — 모니터 헤더에 컬럼이 없어 문서·결재 스냅샷을 붙인다 (#54 hyg 와 동일 출처)
+            DraftPaperStamp.apply(header, paperStampMapper.selectPaperStamp(coCd, docIdx));
             // SP cells 는 EAV 배열 — 지면은 itemCd → 값 맵. 저장 toGenericRows 의 역변환
             root.set("logRows", foldCellsToMap(readJson(saved.get("rowsJson"))));
         } else {
