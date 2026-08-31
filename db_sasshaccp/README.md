@@ -216,6 +216,8 @@ UPDATE tbl_approval_line_step
   안 붙이면 유니크에 걸리는 순간 **그 실행의 모든 회사 알림이 같이 롤백된다** — 시험에서 실제로 그렇게 났다.
   기본 설정으로는 겹칠 길이 좁지만 `alarm-before-minutes` 를 하루 넘게 키우면 열린다.
   1회성 정리: `DELETE FROM tbl_notification WHERE noti_type_cd='TASK_LATE'`
+- 2026-08-31 — 볼륨 실물 없는 HWP `hwp_sys_028`~`038` 11종을 운영 DB·시드·매니페스트에서
+  삭제(문서 0건). 화면 삭제 SP는 시스템 제공을 막아 직접 `DELETE`.
 - 2026-08-28 — `07_company_forms.sql` 신설. 업체 개설 뒤 **회사 지면 5본**을 표준에서 복사한다.
   이게 없으면 새 업체는 작성 화면에 고를 양식이 0건이라 아무것도 못 쓴다.
   별담푸드(0001)를 실제로 열어 보고 알았다. `apply-all.sh` 가 06 다음에 돌린다.

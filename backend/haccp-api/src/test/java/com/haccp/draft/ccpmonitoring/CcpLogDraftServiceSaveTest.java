@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haccp.common.exception.BizException;
+import com.haccp.draft.DraftPaperStampMapper;
 import com.haccp.draft.dto.DraftLogRow;
 import com.haccp.draft.dto.DraftSaveRequest;
 import com.haccp.flow.ca.DocCorrectiveSupport;
@@ -48,12 +49,13 @@ class CcpLogDraftServiceSaveTest {
 
     @Mock private CcpLogDraftMapper mapper;
     @Mock private DocCorrectiveSupport correctiveSupport;
+    @Mock private DraftPaperStampMapper paperStampMapper;
 
     private CcpLogDraftService service;
 
     private CcpLogDraftService service() {
         if (service == null) {
-            service = new CcpLogDraftService(mapper, new ObjectMapper(), correctiveSupport);
+            service = new CcpLogDraftService(mapper, new ObjectMapper(), correctiveSupport, paperStampMapper);
             when(mapper.save(any(), any(), any(), any(), any(), any(), any())).thenReturn(448L);
         }
         return service;

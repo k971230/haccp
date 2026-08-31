@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+DraftPaperStampMapper.xml — 지면 도장칸 SP.
+
+개발자: 박승우
+일자: 2026-08-31
+코멘트:
+  1) CCP 포장·가열·금속 detail 이 작성자·승인자 칸을 채울 때 부른다
+  2) 업무 SQL 은 SP 한곳 — hyg·ccp-verify 상세와 같은 출처다
+  3) 문서가 없으면 행 0건 → MyBatis null
+
+PIPELINE[HB135] 양식 작성 공용 유틸
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.draft.DraftPaperStampMapper">
+
+    <!-- 작성자·승인 완료 결재자 — 서명 실물은 SignSlot 이 userId 로 다시 읽는다 -->
+    <select id="selectPaperStamp" resultType="map">
+        SELECT * FROM sp_tbl_document_paper_stamp_r_000(#{coCd}, #{docIdx})
+    </select>
+</mapper>
