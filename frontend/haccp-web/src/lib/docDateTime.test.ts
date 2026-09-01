@@ -9,7 +9,7 @@
  *   3) 되돌리기(fromInputDate)까지 왕복으로 확인한다
  */
 import { describe, expect, it } from "vitest";
-import { fromInputDate, toInputDate, toDisplayDate } from "./docDateTime";
+import { fromInputDate, joinHm, toInputDate, toDisplayDate } from "./docDateTime";
 
 describe("toInputDate — 저장형을 달력 입력값으로", () => {
   it("정상 날짜를 바꾼다", () => {
@@ -54,5 +54,17 @@ describe("toDisplayDate — 화면 표시", () => {
   it("읽을 수 없으면 대시 한 글자", () => {
     expect(toDisplayDate("20240082")).toBe("-");
     expect(toDisplayDate("")).toBe("-");
+  });
+});
+
+describe("joinHm — 시·분 셀렉트를 HH:MM 으로", () => {
+  it("시 9 · 분 10 은 09:10 이다", () => {
+    expect(joinHm("09", "10")).toBe("09:10");
+  });
+
+  it("한쪽이 비거나 범위를 벗어나면 빈 문자열", () => {
+    expect(joinHm("09", "")).toBe("");
+    expect(joinHm("24", "00")).toBe("");
+    expect(joinHm("09", "60")).toBe("");
   });
 });

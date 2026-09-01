@@ -59,6 +59,8 @@ import { listUsers } from "@/api/sys/userApi";
 import { DEFAULT_USE_YN, ynOptions } from "@/lib/yn";
 // 역할 — 구분 헤더 배지 — 공통코드 sys-yn
 import { SysYnBadge } from "@/components/ui/SysYnBadge";
+// 역할 — 마감시간 24시간 시·분 (type=time 의 OS AM/PM 을 피한다)
+import { DocCellTime } from "@/components/form/DocCell";
 // 역할 — 화면 규칙(주기 상수·변환·좌측 컬럼·pref 키)
 import {
   CYCLE_FALLBACK,
@@ -597,8 +599,6 @@ export default function ScheduleCycleManagementPage() {
                 loading={listLoading}
                 // 결과 내 검색·열 설정
                 showToolbar
-                // 목록 헤더에 건수를 두지 않으므로 푸터 총 N건도 숨긴다
-                showFooter={false}
                 sortable
                 showRowNum
                 // 부모 높이 채움
@@ -699,12 +699,13 @@ export default function ScheduleCycleManagementPage() {
                     <label className={formLabelClass}>
                       {/* 마감시간 — 알림은 이 시각 기준으로 앞당겨 보낸다 */}
                       마감시간
-                      <input
-                        type="time"
+                      <DocCellTime
+                        // 마감시간 — 알림은 이 시각 기준으로 앞당겨 보낸다. 24시간 시·분
                         className={formFieldClass}
                         value={form.dueTime}
                         disabled={!canEdit}
-                        onChange={(event) => setForm((prev) => ({ ...prev, dueTime: event.target.value }))}
+                        storage="hm"
+                        onChange={(dueTime) => setForm((prev) => ({ ...prev, dueTime }))}
                       />
                     </label>
                     <div className={`${formLabelClass} md:col-span-2`}>

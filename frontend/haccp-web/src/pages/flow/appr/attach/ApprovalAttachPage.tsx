@@ -27,16 +27,16 @@ import { useDocIdxQuery } from "@/hooks/useDocIdxQuery";
 import { useCommonCodes } from "@/hooks/useCommonCodes";
 // 역할 — 목록 그리드
 import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
-// 역할 — 그리드 패널 헤더
-import { gridHeadClass } from "@/components/layout/pageClasses";
+// 역할 — 페이지 카드·그리드 패널 헤더
+import { PageCard } from "@/components/layout/PageCard";
+import { SearchArea, SearchButton, SearchDateRange, SearchField } from "@/components/layout/SearchArea";
+import { gridHeadClass, pageRootClass } from "@/components/layout/pageClasses";
+import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 표준 버튼
 import { MesButton } from "@/components/ui/MesButton";
 // 역할 — 공통 조회 헤더
-import {
-  DocFormSearchToolbar,
-  defaultDocFormSearch,
-  type DocFormSearchValues,
-} from "@/components/form/DocFormSearchToolbar";
+import { defaultDocFormSearch, type DocFormSearchValues } from "@/components/form/docFormSearch";
+import { fromInputDate, toInputDate } from "@/lib/docDateTime";
 // 역할 — 확인·토스트
 import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
 // 역할 — 오류 업무 문구
@@ -347,26 +347,46 @@ export default function ApprovalAttachPage() {
   });
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-3">
-      <DocFormSearchToolbar
-        // 기간·문서번호 (작성자는 항상 로그인 사용자)
-        values={search}
-        onChange={(patch) => setSearch((prev) => ({ ...prev, ...patch }))}
-        onSearch={() => void asyncAct.run(loadList, "search")}
-        searchBusy={listLoading || asyncAct.isBusy("search")}
-        actionBusy={asyncAct.isBusy()}
-        actions={(
-          <MesButton
-            // 저장하지 않은 비고·고른 파일만 되돌린다
-            variant="search"
-            icon="reset"
-            onClick={handleReset}
+    <div className={pageRootClass}>
+      <PageCard
+        search={(
+          <SearchArea
+            // 조회 — 검색조건으로 좌측 목록을 다시 읽는다. 이 영역은 검색 전용이다
+            onSearch={() => void asyncAct.run(loadList, "search")}
+            actions={(
+              <>
+                <SearchButton loading={listLoading || asyncAct.isBusy("search")} />
+                <MesButton
+                  // 저장하지 않은 비고·고른 파일만 되돌린다
+                  variant="search"
+                  icon="reset"
+                  onClick={handleReset}
+                >
+                  초기화
+                </MesButton>
+              </>
+            )}
           >
-            초기화
-          </MesButton>
+            <SearchDateRange
+              // 일자 — YYYYMMDD 상태를 input[type=date] 로 변환한 구간 검색
+              label="일자"
+              from={toInputDate(search.fromDt)}
+              to={toInputDate(search.toDt)}
+              onFrom={(v) => setSearch((prev) => ({ ...prev, fromDt: fromInputDate(v) }))}
+              onTo={(v) => setSearch((prev) => ({ ...prev, toDt: fromInputDate(v) }))}
+            />
+            <SearchField label="문서번호">
+              <input
+                // 문서번호 부분검색 — SP ILIKE
+                className={searchInputClass}
+                value={search.docNo}
+                placeholder="문서번호"
+                onChange={(event) => setSearch((prev) => ({ ...prev, docNo: event.target.value }))}
+              />
+            </SearchField>
+          </SearchArea>
         )}
-      />
-
+      >
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(340px,42%)_1fr]">
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded border border-slate-200 bg-white p-2">
           <div className={gridHeadClass}>
@@ -597,6 +617,7 @@ export default function ApprovalAttachPage() {
           )}
         </div>
       </div>
+      </PageCard>
     </div>
   );
 }

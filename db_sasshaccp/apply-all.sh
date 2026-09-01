@@ -14,7 +14,7 @@
 #    PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** bash apply-all.sh
 #
 #    # 새 업체 개설 — 위를 끝낸 DB 에 업체 하나를 더 얹는다
-#    CO_CD=0001 CO_NM='별담푸드' ADMIN_ID=admin0001 bash apply-all.sh
+#    CO_CD=0003 CO_NM='알엠에이' ADMIN_ID=rmasys WRITER_ID=rmausr bash apply-all.sh
 #
 #  변경
 #    2026-08-25 — 번호 마이그레이션 133본을 5본으로 접었다. 04 는 구 DB 전용이라 여기서 안 돌린다
@@ -58,6 +58,7 @@ if [ "$CO_CD" != "0000" ]; then
     ARGS=(-v co_cd="$CO_CD")
     [ -n "$CO_NM" ] && ARGS+=(-v co_nm="$CO_NM")
     [ -n "$ADMIN_ID" ] && ARGS+=(-v admin_id="$ADMIN_ID")
+    [ -n "${WRITER_ID:-}" ] && ARGS+=(-v writer_id="$WRITER_ID")
     run "${ARGS[@]}" -f "$DIR/06_company_seed.sql"
     echo "   ** 초기 비밀번호는 1234 다. 첫 로그인 후 반드시 바꾼다 **"
 fi

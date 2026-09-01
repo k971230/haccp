@@ -1242,17 +1242,23 @@ PIPELINE[HF49] 연관 모듈
     font-size: 11px;
     box-sizing: border-box;
   }
-  /* time 입력은 text-align 이 안 먹는다 — 내부 필드 묶음을 가운데로 민다 */
-  .html-form-sign-input[type="time"] {
-    text-align: center;
-  }
-  .html-form-sign-input[type="time"]::-webkit-datetime-edit {
+  /* 시·분 셀렉트 — type=time 의 OS 오전/오후를 쓰지 않는다 */
+  .doc-cell-time,
+  .html-form-sign-input.doc-cell-time {
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 1px;
+    width: 100%;
   }
-  /* 시계 아이콘이 칸 폭을 먹고 값을 왼쪽으로 밀어낸다 */
-  .html-form-sign-input[type="time"]::-webkit-calendar-picker-indicator {
-    display: none;
+  .doc-cell-time select {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-size: inherit;
+    text-align: center;
+    min-width: 0;
   }
   .html-form-pre {
     white-space: pre-wrap;

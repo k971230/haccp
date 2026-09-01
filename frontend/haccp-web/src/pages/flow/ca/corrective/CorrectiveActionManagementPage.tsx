@@ -197,41 +197,43 @@ export default function CorrectiveActionManagementPage() {
 
   return (
     <div className={pageRootClass}>
-      <SearchArea
-        // 조회 — 검색조건으로 목록을 다시 읽는다
-        onSearch={() => void asyncAct.run(load, "search")}
-        actions={<SearchButton loading={loading || asyncAct.isBusy("search")} />}
+      <PageCard
+        search={(
+          <SearchArea
+            // 조회 — 검색조건으로 목록을 다시 읽는다
+            onSearch={() => void asyncAct.run(load, "search")}
+            actions={<SearchButton loading={loading || asyncAct.isBusy("search")} />}
+          >
+            <SearchDateRange
+              // 일자 — 원문서 기준일 구간
+              label="일자"
+              from={toInputDate(search.fromDt)}
+              to={toInputDate(search.toDt)}
+              onFrom={(v: string) => setSearch((p) => ({ ...p, fromDt: fromInputDate(v) }))}
+              onTo={(v: string) => setSearch((p) => ({ ...p, toDt: fromInputDate(v) }))}
+            />
+            <SearchSelect
+              // 양식 — 회사가 쓰는 HWP·HTML 양식만 콤보에 올린다
+              label="양식"
+              value={search.tmplCd}
+              onChange={(v) => setSearch((p) => ({ ...p, tmplCd: v }))}
+            >
+              <option value="">전체</option>
+              {forms.map((form) => (
+                <option key={form.tmplCd} value={form.tmplCd}>{form.tmplNm}</option>
+              ))}
+            </SearchSelect>
+            <SearchField label="작성자">
+              <input
+                // 작성자 ID·이름 부분검색 — 서버 LIKE
+                className={searchInputClass}
+                value={search.writer}
+                onChange={(e) => setSearch((p) => ({ ...p, writer: e.target.value }))}
+              />
+            </SearchField>
+          </SearchArea>
+        )}
       >
-        <SearchDateRange
-          // 일자 — 원문서 기준일 구간
-          label="일자"
-          from={toInputDate(search.fromDt)}
-          to={toInputDate(search.toDt)}
-          onFrom={(v: string) => setSearch((p) => ({ ...p, fromDt: fromInputDate(v) }))}
-          onTo={(v: string) => setSearch((p) => ({ ...p, toDt: fromInputDate(v) }))}
-        />
-        <SearchSelect
-          // 양식 — 회사가 쓰는 HWP·HTML 양식만 콤보에 올린다
-          label="양식"
-          value={search.tmplCd}
-          onChange={(v) => setSearch((p) => ({ ...p, tmplCd: v }))}
-        >
-          <option value="">전체</option>
-          {forms.map((form) => (
-            <option key={form.tmplCd} value={form.tmplCd}>{form.tmplNm}</option>
-          ))}
-        </SearchSelect>
-        <SearchField label="작성자">
-          <input
-            // 작성자 ID·이름 부분검색 — 서버 LIKE
-            className={searchInputClass}
-            value={search.writer}
-            onChange={(e) => setSearch((p) => ({ ...p, writer: e.target.value }))}
-          />
-        </SearchField>
-      </SearchArea>
-
-      <PageCard>
         <div className={gridHeadClass}>
           {/* 보이는 그리드명 — title prop 과 동일 */}
           <b>이탈·개선조치</b>

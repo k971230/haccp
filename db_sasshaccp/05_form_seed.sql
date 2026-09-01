@@ -198,7 +198,8 @@ DELETE FROM tbl_check_item c
 INSERT INTO tbl_company_template(co_cd, tmpl_cd, use_yn, ins_id, ins_dt)
 SELECT :'co_cd', t.tmpl_cd, 'Y', 'system', now()
   FROM (SELECT DISTINCT tmpl_cd FROM tmp_item) t
-  JOIN tbl_template x ON x.tmpl_cd = t.tmpl_cd
+  JOIN tbl_template x ON x.tmpl_cd = t.tmpl_cd AND x.co_cd = '0000'
+  -- 표준 지면은 공용 카탈로그(0000) 한 줄. 자사 복사본과 tmpl_cd 가 같아도 여기선 0000 만 본다
 ON CONFLICT DO NOTHING;
 
 COMMIT;

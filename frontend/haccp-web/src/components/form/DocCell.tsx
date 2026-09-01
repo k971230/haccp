@@ -15,8 +15,8 @@
 import { Fragment, type ChangeEvent, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
 // 역할 — className 병합
 import { cn } from "@/lib/cn";
-// 역할 — type=time ↔ HHMM/HH:MM 저장 변환
-import { fromInputTimeHhmm, fromInputTimeHm, toInputTime } from "@/lib/docDateTime";
+// 역할 — HH:MM 조립·표시 변환. type=time 은 쓰지 않는다
+import { fromInputTimeHhmm, joinHm, toInputTime } from "@/lib/docDateTime";
 
 export interface DocCellInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> {
   // 현재 값 — null은 빈 문자열로 렌더
@@ -109,22 +109,33 @@ export function DocCellSelect({
 /** DocCellTime 저장 형식 — hhmm=HHMM 4자리, hm=HH:MM */
 export type DocCellTimeStorage = "hhmm" | "hm";
 
-export interface DocCellTimeProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "value" | "type"> {
+export interface DocCellTimeProps {
   // 저장 형식의 현재 값 — null은 빈 선택
   value: string | null | undefined;
   // 저장 형식으로 변경 전달
   onChange: (value: string) => void;
   // DB 저장 형식 — 기본 hhmm(Cold·Metal·Hygiene)
   storage?: DocCellTimeStorage;
+  // 클래스
+  className?: string;
+  // 잠금 — 미리보기·전송 후
+  disabled?: boolean;
+  // 마우스 오버 설명
+  title?: string;
 }
+
+/** 시 00~23 — 24시간제. OS 오전/오후 표시를 쓰지 않는다 */
+const HOUR_OPTS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+/** 분 00~59 */
+const MIN_OPTS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-07
+ * 일자: 2026-09-01
  * 코멘트:
- *   1) 문서 셀용 type=time 콤보를 렌더링한다
- *   2) CCP·위생 점검시간에 쓴다
- *   3) value/onChange는 storage 형식(HHMM 또는 HH:MM)이다
+ *   1) 시(00-23)·분(00-59) 셀렉트다. type=time 은 Windows 12시간제에서 오전/오후가 붙는다
+ *   2) CCP 측정시각·주기 마감시간이 같이 쓴다
+ *   3) value/onChange 는 storage 형식(HHMM 또는 HH:MM)이다. 한쪽만 고르면 빈 값
  */
 export function DocCellTime({
   // 저장 형식 값
@@ -135,27 +146,52 @@ export function DocCellTime({
   storage = "hhmm",
   // 클래스
   className,
-  ...rest
+  // 잠금
+  disabled,
+  // 칸 이름
+  title,
 }: DocCellTimeProps) {
-  // 표시용 HH:MM — input type=time
+  // 표시용 HH:MM — 셀렉트 두 칸
   const display = toInputTime(value);
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const next = event.target.value;
+  const hour = display.slice(0, 2);
+  const minute = display.slice(3, 5);
+  const emit = (nextHour: string, nextMinute: string) => {
+    const hm = joinHm(nextHour, nextMinute);
     // storage에 맞게 저장 문자열로 변환
-    onChange(storage === "hm" ? fromInputTimeHm(next) : fromInputTimeHhmm(next));
+    onChange(storage === "hm" ? hm : fromInputTimeHhmm(hm));
   };
   return (
-    <input
-      {...rest}
-      // 브라우저 시간 콤보
-      type="time"
-      // 표시 값 HH:MM
-      value={display}
-      // 저장 형식 전달
-      onChange={handleChange}
-      // 문서 셀 스타일
-      className={cn("doc-cell-input", className)}
-    />
+    <span
+      // 시·분 묶음 — 가운데 정렬은 CSS
+      className={cn("doc-cell-time", className)}
+      title={title}
+    >
+      <select
+        // 시 00-23
+        aria-label="시"
+        disabled={disabled}
+        value={hour}
+        onChange={(event) => emit(event.target.value, minute)}
+      >
+        <option value="">--</option>
+        {HOUR_OPTS.map((h) => (
+          <option key={h} value={h}>{h}</option>
+        ))}
+      </select>
+      <span>:</span>
+      <select
+        // 분 00-59
+        aria-label="분"
+        disabled={disabled}
+        value={minute}
+        onChange={(event) => emit(hour, event.target.value)}
+      >
+        <option value="">--</option>
+        {MIN_OPTS.map((m) => (
+          <option key={m} value={m}>{m}</option>
+        ))}
+      </select>
+    </span>
   );
 }
 

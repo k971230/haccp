@@ -5,7 +5,7 @@
 --  일자: 2026-08-26
 --  코멘트:
 --    1) 업체 하나를 「로그인해서 문서를 쓸 수 있는 상태」까지 만든다
---    2) 메뉴·권한·부서·관리자·결재선·문서번호규칙을 한 번에 깐다.
+--    2) 메뉴·권한·부서·관리자·(선택)작성자·결재선·문서번호규칙을 한 번에 깐다.
 --       03(공통코드)·05(양식)는 따로 돌린다 — 이 파일은 그 둘을 대신하지 않는다
 --    3) 재실행 안전 — 이미 있는 것은 건드리지 않는다(업체가 고친 값을 덮지 않는다)
 --
@@ -14,7 +14,7 @@
 --    0000(플랫폼 표준)을 원본으로 복제하면 02_seed.sql 한 곳만 정본이 된다.
 --
 --  적용
---    psql -v co_cd=0001 -v co_nm='업체명' -v admin_id='admin0001' -f 06_company_seed.sql
+--    psql -v co_cd=0003 -v co_nm='알엠에이' -v admin_id='rmasys' -v writer_id='rmausr' -f 06_company_seed.sql
 --
 --    전체 순서:
 --      00_ddl → 01_sp → 02_seed → 03_code_seed(-v co_cd) → 05_form_seed(-v co_cd) → 06_company_seed(-v co_cd)
@@ -40,6 +40,12 @@ SET search_path TO sasshaccp;
 \if :{?admin_id}
 \else
 \set admin_id 'admin'
+\endif
+
+-- 있으면 팀원(HACCP_TEAM)을 만들고 기본 결재선 WRITE 에 붙인다. 없으면 관리자 혼자(0000 방식)
+\if :{?writer_id}
+\else
+\set writer_id ''
 \endif
 
 -- '1234' 의 BCrypt 해시 — 첫 로그인 후 변경 전제
@@ -115,17 +121,31 @@ SELECT :'co_cd', 'HQ', '본사', 10, 'Y', 'system', now()
  WHERE NOT EXISTS (SELECT 1 FROM tbl_dept WHERE co_cd = :'co_cd' AND dept_cd = 'HQ');
 
 -- ------------------------------------------------------------
--- 6. 초기 관리자 — user_id 는 전역 UNIQUE 다. 업체마다 다른 ID 를 준다
+-- 6. 초기 계정 — user_id 는 전역 UNIQUE 다. 업체마다 다른 ID 를 준다
+--    writer_id 가 있으면 0001(별담)과 같다: 팀장 HACCP_MASTER + 팀원 HACCP_TEAM
+--    없으면 관리자 한 명(ADMIN)만 — E2E·단독 개설
 -- ------------------------------------------------------------
 INSERT INTO tbl_user (user_id, co_cd, user_nm, user_pw, usrgrp_cd, dept_cd,
                       login_fail_cnt, lock_yn, use_yn, pw_upd_dt, ins_id, ins_dt)
-SELECT :'admin_id', :'co_cd', '시스템관리자', :'admin_pw', 'ADMIN', 'HQ',
+SELECT :'admin_id', :'co_cd',
+       CASE WHEN length(trim(:'writer_id')) > 0 THEN :'co_nm' || '팀장' ELSE '시스템관리자' END,
+       :'admin_pw',
+       CASE WHEN length(trim(:'writer_id')) > 0 THEN 'HACCP_MASTER' ELSE 'ADMIN' END,
+       'HQ',
        0, 'N', 'Y', now(), 'system', now()
  WHERE NOT EXISTS (SELECT 1 FROM tbl_user WHERE user_id = :'admin_id');
+
+INSERT INTO tbl_user (user_id, co_cd, user_nm, user_pw, usrgrp_cd, dept_cd,
+                      login_fail_cnt, lock_yn, use_yn, pw_upd_dt, ins_id, ins_dt)
+SELECT :'writer_id', :'co_cd', :'co_nm' || '팀원', :'admin_pw', 'HACCP_TEAM', 'HQ',
+       0, 'N', 'Y', now(), 'system', now()
+ WHERE length(trim(:'writer_id')) > 0
+   AND NOT EXISTS (SELECT 1 FROM tbl_user WHERE user_id = :'writer_id');
 
 -- ------------------------------------------------------------
 -- 7. 결재선 — 기본선 하나. 검토(REVIEW)는 꺼 둔다
 --    켜 두면 전송한 문서가 검토 단계에서 멈춘 채 승인으로 못 넘어간다
+--    writer 가 있으면 WRITE=팀원 · APPROVE=팀장 (0001 과 동일)
 -- ------------------------------------------------------------
 INSERT INTO tbl_approval_line (co_cd, appr_line_cd, appr_line_nm, use_yn, ins_id, ins_dt)
 SELECT :'co_cd', 'DEFAULT', '기본 결재선', 'Y', 'system', now()
@@ -134,7 +154,13 @@ SELECT :'co_cd', 'DEFAULT', '기본 결재선', 'Y', 'system', now()
  );
 
 INSERT INTO tbl_approval_line_step (co_cd, appr_line_cd, step_no, role_cd, approver_id, use_yn, ins_id, ins_dt)
-SELECT :'co_cd', 'DEFAULT', v.step_no, v.role_cd, :'admin_id', v.use_yn, 'system', now()
+SELECT :'co_cd', 'DEFAULT', v.step_no, v.role_cd,
+       CASE v.role_cd
+         WHEN 'WRITE' THEN CASE WHEN length(trim(:'writer_id')) > 0 THEN :'writer_id' ELSE :'admin_id' END
+         WHEN 'APPROVE' THEN :'admin_id'
+         ELSE CASE WHEN length(trim(:'writer_id')) > 0 THEN NULL ELSE :'admin_id' END
+       END,
+       v.use_yn, 'system', now()
   FROM (VALUES (1, 'WRITE', 'Y'), (2, 'REVIEW', 'N'), (3, 'APPROVE', 'Y'))
        AS v(step_no, role_cd, use_yn)
  WHERE NOT EXISTS (
@@ -144,9 +170,10 @@ SELECT :'co_cd', 'DEFAULT', v.step_no, v.role_cd, :'admin_id', v.use_yn, 'system
 
 -- ------------------------------------------------------------
 -- 8. 사용 양식 — 시스템 제공(sys)만 준다.
---    05_form_seed 는 HTML 표준 지면 항목만 깐다. 실제로 쓸 양식(HWP 38종·HTML 자사본)은
+--    05_form_seed 는 HTML 표준 지면 항목만 깐다. 실제로 쓸 양식(HWP 27종·HTML sys)은
 --    여기서 원본 업체의 sys 목록을 그대로 물려준다.
 --    usr(그 업체가 직접 만든 양식)은 남의 것이라 복제하지 않는다.
+--    볼륨 실물 없는 hwp_sys_028~038 은 카탈로그에 남아 있어도 안 물려준다.
 -- ------------------------------------------------------------
 INSERT INTO tbl_company_template (co_cd, tmpl_cd, sys_yn, use_yn, base_use_yn,
                                   retention_month, form_path, ins_id, ins_dt)
@@ -155,6 +182,16 @@ SELECT :'co_cd', s.tmpl_cd, s.sys_yn, s.use_yn, s.base_use_yn,
   FROM tbl_company_template s
  WHERE s.co_cd = :'src_co'
    AND COALESCE(s.sys_yn, 'sys') NOT IN ('N', 'n', 'usr')
+   -- HWP 시스템 양식은 매니페스트 required=Y 27종(hwp_sys_001~027)만. HTML sys 는 그대로
+   AND (
+        s.tmpl_cd NOT LIKE 'hwp_sys_%'
+        OR s.tmpl_cd ~ '^hwp_sys_0(0[1-9]|1[0-9]|2[0-7])$'
+   )
+   -- 카탈로그에 없는 코드는 사용양식만 생기면 화면이 빈 파일을 가리킨다
+   AND EXISTS (
+       SELECT 1 FROM tbl_template t
+        WHERE t.tmpl_cd = s.tmpl_cd AND t.co_cd IN (:'src_co', '0000')
+   )
    AND NOT EXISTS (
        SELECT 1 FROM tbl_company_template o
         WHERE o.co_cd = :'co_cd' AND o.tmpl_cd = s.tmpl_cd

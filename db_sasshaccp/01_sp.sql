@@ -103,7 +103,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying,
            (SELECT count(*)::int FROM tbl_ccp_generic_monitor_row r WHERE r.monitor_idx = m.idx AND r.co_cd = m.co_cd AND r.judge_cd = 'F')
       FROM tbl_document d
       JOIN tbl_ccp_generic_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
-      LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd AND d.del_yn = 'N'
@@ -146,7 +152,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying,
            (SELECT count(*)::int FROM tbl_ccp_metal_sens_row s WHERE s.hdr_idx = h.idx AND s.co_cd = h.co_cd AND s.judge_cd = 'F')
       FROM tbl_document d
       JOIN tbl_ccp_metal_monitor h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
-      LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd AND d.del_yn = 'N'
@@ -199,7 +211,7 @@ BEGIN
       INTO v_name, v_appr, v_retain
       FROM tbl_template t
       LEFT JOIN tbl_company_template ct ON ct.co_cd = p_co_cd AND ct.tmpl_cd = t.tmpl_cd AND ct.use_yn = 'Y'
-     WHERE t.tmpl_cd = v_tmpl AND t.use_yn = 'Y';
+     WHERE t.tmpl_cd = v_tmpl AND t.use_yn = 'Y' AND t.co_cd = COALESCE((SELECT x.co_cd FROM tbl_template x WHERE x.tmpl_cd = v_tmpl AND x.co_cd = p_co_cd), '0000');
     IF v_name IS NULL THEN
         RAISE EXCEPTION '등록되지 않은 양식입니다.' USING ERRCODE = '45000';
     END IF;
@@ -358,7 +370,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varyi
            (SELECT count(*)::int FROM tbl_ccp_verify_item i WHERE i.hdr_idx = h.idx AND i.co_cd = h.co_cd AND i.answer_cd = 'N')
       FROM tbl_document d
       JOIN tbl_ccp_verify_check h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
-      LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd AND d.del_yn = 'N'
@@ -487,7 +505,13 @@ BEGIN
           INTO v_out
           FROM tbl_document d
           JOIN tbl_ccp_verify_check h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
-          LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+          -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+          LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
           LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
          WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.tmpl_cd = v_tmpl AND d.del_yn = 'N';
         IF v_out IS NULL THEN
@@ -513,7 +537,7 @@ BEGIN
                                   FROM tbl_template t
                                   LEFT JOIN tbl_company_template ct
                                          ON ct.co_cd = p_co_cd AND ct.tmpl_cd = t.tmpl_cd
-                                 WHERE t.tmpl_cd = v_tmpl), ''),
+                                 WHERE t.tmpl_cd = v_tmpl AND t.co_cd = COALESCE((SELECT x.co_cd FROM tbl_template x WHERE x.tmpl_cd = v_tmpl AND x.co_cd = p_co_cd), '0000')), ''),
             'status', NULL,
             'baseDt', to_char(CURRENT_DATE, 'YYYYMMDD'),
             'checkerNm', '', 'checkerId', '', 'checkerSignYn', 'N',
@@ -1020,7 +1044,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varyin
                      WHERE ca2.co_cd = d.co_cd AND ca2.src_doc_idx = d.idx
                 ) THEN 'Y' ELSE 'N' END)::varchar
       FROM tbl_document d
-      LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd
@@ -1063,7 +1093,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_draft_hwp_task_r_000(p_co_cd character v
            t.status,
            t.doc_idx
       FROM tbl_schedule_task t
-      JOIN tbl_template tp ON tp.tmpl_cd = t.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = t.tmpl_cd AND x.co_cd IN (t.co_cd, '0000')
+         ORDER BY (x.co_cd = t.co_cd) DESC
+         LIMIT 1
+      ) tp ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd = t.co_cd AND ct.tmpl_cd = t.tmpl_cd
      WHERE t.co_cd = p_co_cd
        AND t.base_dt = p_base_dt
@@ -1112,14 +1148,15 @@ BEGIN
         RETURN;
     END IF;
 
-    SELECT co_cd INTO v_owner FROM tbl_template WHERE tmpl_cd = p_tmpl_cd;
+    -- 자사 카탈로그가 있으면 그걸 쓰고, 공용(0000)이면 카탈로그 INSERT 없이 사용양식만 붙인다.
+    -- 다른 회사가 같은 tmpl_cd 를 쓰는 것은 허용한다 — UNIQUE 가 (co_cd, tmpl_cd) 이다.
+    SELECT co_cd INTO v_owner FROM tbl_template WHERE tmpl_cd = p_tmpl_cd AND co_cd = p_co_cd;
     IF NOT FOUND THEN
-        -- 카탈로그에 없는 새 코드 — 이 회사 소유 자사 양식으로 카탈로그를 만든다
-        INSERT INTO tbl_template(co_cd, tmpl_cd, tmpl_nm, doc_kind, use_yn, impl_yn, ins_id, ins_dt)
-        VALUES (p_co_cd, p_tmpl_cd, p_tmpl_nm, 'HWP', 'Y', 'Y', p_id, now());
-    ELSIF v_owner <> '0000' AND v_owner <> p_co_cd THEN
-        -- 다른 회사가 쓰는 코드 — 전역 유일 제약이라 재사용할 수 없다
-        RAISE EXCEPTION '이미 사용 중인 양식코드입니다: %', p_tmpl_cd USING ERRCODE = '45000';
+        SELECT co_cd INTO v_owner FROM tbl_template WHERE tmpl_cd = p_tmpl_cd AND co_cd = '0000';
+        IF NOT FOUND THEN
+            INSERT INTO tbl_template(co_cd, tmpl_cd, tmpl_nm, doc_kind, use_yn, impl_yn, ins_id, ins_dt)
+            VALUES (p_co_cd, p_tmpl_cd, p_tmpl_nm, 'HWP', 'Y', 'Y', p_id, now());
+        END IF;
     END IF;
 
     -- 사용자가 화면에서 만드는 양식은 항상 자사양식(usr)
@@ -1297,7 +1334,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_hwp_template_management_r_000(
               FROM tbl_company_template_file f
              WHERE f.co_cd = ct.co_cd AND f.tmpl_cd = ct.tmpl_cd AND f.del_yn = 'N')
       FROM tbl_company_template ct
-      JOIN tbl_template t ON t.tmpl_cd = ct.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = ct.tmpl_cd AND x.co_cd IN (ct.co_cd, '0000')
+         ORDER BY (x.co_cd = ct.co_cd) DESC
+         LIMIT 1
+      ) t ON true
      WHERE ct.co_cd = p_co_cd
        -- HWP 양식만 — 양식코드 범위를 박지 않는다.
        -- 예전에는 hwp_sys_001~027 정규식이었고, 028 부터는 등록해도 목록에 안 떴다
@@ -1895,7 +1938,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_schedule_cycle_management_form_r_000(p_c
            ct.appr_line_cd,
            al.appr_line_nm
       FROM tbl_company_template ct
-      JOIN tbl_template t ON t.tmpl_cd = ct.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = ct.tmpl_cd AND x.co_cd IN (ct.co_cd, '0000')
+         ORDER BY (x.co_cd = ct.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_schedule_rule r ON r.co_cd = ct.co_cd AND r.tmpl_cd = ct.tmpl_cd
       LEFT JOIN tbl_approval_line al ON al.co_cd = ct.co_cd AND al.appr_line_cd = ct.appr_line_cd
      WHERE ct.co_cd = p_co_cd
@@ -1950,7 +1999,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_schedule_cycle_management_r_000(p_co_cd 
               WHERE x.co_cd = r.co_cd AND x.tmpl_cd = r.tmpl_cd
            ), '[]'::jsonb)
       FROM tbl_schedule_rule r
-      JOIN tbl_template t ON t.tmpl_cd = r.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = r.tmpl_cd AND x.co_cd IN (r.co_cd, '0000')
+         ORDER BY (x.co_cd = r.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd = r.co_cd AND ct.tmpl_cd = r.tmpl_cd
       LEFT JOIN tbl_approval_line al ON al.co_cd = r.co_cd AND al.appr_line_cd = ct.appr_line_cd
       LEFT JOIN tbl_dept d ON d.co_cd = r.co_cd AND d.dept_cd = r.dept_cd
@@ -2197,7 +2252,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_audit_export_r_000(p_co_cd character
              WHERE ca.co_cd=d.co_cd AND ca.src_doc_idx=d.idx AND ca.status <> 'DONE'),
            d.doc_kind, d.tmpl_cd, t.category_cd
       FROM tbl_document d
-      LEFT JOIN tbl_template t ON t.tmpl_cd=d.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd=d.co_cd AND ct.tmpl_cd=d.tmpl_cd
      WHERE d.co_cd=p_co_cd AND d.del_yn='N'
        AND COALESCE(t.category_cd, '') <> 'LAW'
@@ -2259,7 +2320,7 @@ BEGIN
       INTO v_title, v_appr, v_retain
       FROM tbl_template t
       LEFT JOIN tbl_company_template ct ON ct.co_cd = p_co_cd AND ct.tmpl_cd = t.tmpl_cd AND ct.use_yn = 'Y'
-     WHERE t.tmpl_cd = p_tmpl_cd AND t.doc_kind = 'HTML' AND t.use_yn = 'Y';
+     WHERE t.tmpl_cd = p_tmpl_cd AND t.doc_kind = 'HTML' AND t.use_yn = 'Y' AND t.co_cd = COALESCE((SELECT x.co_cd FROM tbl_template x WHERE x.tmpl_cd = p_tmpl_cd AND x.co_cd = p_co_cd), '0000');
     IF v_title IS NULL THEN
         RAISE EXCEPTION '사용할 공통 CCP 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000';
     END IF;
@@ -2490,7 +2551,7 @@ BEGIN
     IF p_sens_rows_json IS NULL OR jsonb_typeof(p_sens_rows_json) <> 'array' THEN RAISE EXCEPTION '감도 점검 행 자료가 올바르지 않습니다.' USING ERRCODE = '45000'; END IF;
     SELECT COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm), COALESCE(ct.appr_line_cd, 'DEFAULT'), COALESCE(ct.retention_month, t.default_retention_month)
       INTO v_name, v_appr, v_retain FROM tbl_template t LEFT JOIN tbl_company_template ct ON ct.co_cd=p_co_cd AND ct.tmpl_cd=t.tmpl_cd AND ct.use_yn='Y'
-     WHERE t.tmpl_cd=p_tmpl_cd AND t.use_yn='Y';
+     WHERE t.tmpl_cd=p_tmpl_cd AND t.use_yn='Y' AND t.co_cd = COALESCE((SELECT x.co_cd FROM tbl_template x WHERE x.tmpl_cd = p_tmpl_cd AND x.co_cd = p_co_cd), '0000');
     IF v_name IS NULL THEN RAISE EXCEPTION 'CCP 금속검출 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000'; END IF;
     IF p_doc_idx IS NULL OR p_doc_idx = 0 THEN
         -- 자사 양식 복사 SP 는 채번 규칙을 만들지 않는다. 없을 때만 기본 규칙을 깐다
@@ -2697,7 +2758,7 @@ BEGIN
     DELETE FROM tbl_template
      WHERE tmpl_cd = p_tmpl_cd
        AND co_cd = p_co_cd
-       AND NOT EXISTS (SELECT 1 FROM tbl_document d WHERE d.tmpl_cd = p_tmpl_cd);
+       AND NOT EXISTS (SELECT 1 FROM tbl_document d WHERE d.tmpl_cd = p_tmpl_cd AND d.co_cd = p_co_cd);
 END$$;
 
 
@@ -2775,7 +2836,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_corrective_action_r_000(p_co_cd char
       FROM tbl_corrective_action ca
       LEFT JOIN tbl_document d
              ON d.co_cd = ca.co_cd AND d.idx = ca.src_doc_idx AND d.del_yn = 'N'
-      LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE ca.co_cd = p_co_cd
@@ -2990,7 +3057,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_appr_hist_r_000(p_co_cd cha
        AND a.result_cd IN ('A', 'R')
        -- 작성자 단계(WRITE)는 상신 때 자동 승인된다. 이력에 넣으면 작성자가 자기 미결 문서를 본다
        AND a.role_cd IN ('REVIEW', 'APPROVE')
-      LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd
@@ -3033,7 +3106,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_appr_inbox_r_000(p_co_cd ch
        AND a.result_cd = 'W'
        AND a.approver_id = p_user_id
        AND a.role_cd IN ('REVIEW', 'APPROVE')
-      LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd
@@ -3779,7 +3858,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_r_000(p_co_cd character var
            (SELECT count(*)::int FROM tbl_corrective_action ca
              WHERE ca.co_cd = d.co_cd AND ca.src_doc_idx = d.idx AND ca.status <> 'DONE')
       FROM tbl_document d
-      LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd
@@ -3841,7 +3926,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_r_001(p_co_cd character var
            d.retention_until,
            d.remark
       FROM tbl_document d
-      LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_company_template ct
         ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user wu ON wu.co_cd = d.co_cd AND wu.user_id = d.writer_id
@@ -3914,11 +4005,17 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_template_r_000(p_co_cd char
              ELSE regexp_replace(COALESCE(NULLIF(ct.form_path, ''), t.form_path), '^.*/', '')
            END,
            COALESCE(ct.sys_yn, 'Y')
-      FROM tbl_template t
-      JOIN tbl_company_template ct
-        ON ct.co_cd = p_co_cd
-       AND ct.tmpl_cd = t.tmpl_cd
-     WHERE t.impl_yn = 'Y'
+      FROM tbl_company_template ct
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = ct.tmpl_cd AND x.co_cd IN (ct.co_cd, '0000')
+         ORDER BY (x.co_cd = ct.co_cd) DESC
+         LIMIT 1
+      ) t ON true
+     -- p_co_cd 가 빠지면 전 회사 사용양식이 한 콤보에 섞인다 (HWP 작성 양식 선택)
+     WHERE ct.co_cd = p_co_cd
+       AND t.impl_yn = 'Y'
        AND t.use_yn = 'Y'
        AND ct.use_yn = 'Y'
        AND (
@@ -3933,7 +4030,7 @@ $$;
 -- Name: FUNCTION sp_tbl_document_template_r_000(p_co_cd character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_document_template_r_000(p_co_cd character varying) IS '회사 사용양식 목록 — LAW는 form 없이도 노출, 그 외는 form_path 필수';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_document_template_r_000(p_co_cd character varying) IS '회사 사용양식 목록 — p_co_cd 자사만. LAW는 form 없이도 노출, 그 외는 form_path 필수';
 
 
 --
@@ -3954,11 +4051,17 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_template_r_001(p_co_cd char
              ELSE regexp_replace(COALESCE(NULLIF(ct.form_path, ''), t.form_path), '^.*/', '')
            END,
            COALESCE(ct.sys_yn, 'Y')
-      FROM tbl_template t
-      JOIN tbl_company_template ct
-        ON ct.co_cd = p_co_cd
-       AND ct.tmpl_cd = t.tmpl_cd
-     WHERE t.tmpl_cd = p_tmpl_cd
+      FROM tbl_company_template ct
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = ct.tmpl_cd AND x.co_cd IN (ct.co_cd, '0000')
+         ORDER BY (x.co_cd = ct.co_cd) DESC
+         LIMIT 1
+      ) t ON true
+     -- 단건도 자사 행만. 빠지면 같은 tmpl_cd 의 타사 form_path 가 열릴 수 있다
+     WHERE ct.co_cd = p_co_cd
+       AND t.tmpl_cd = p_tmpl_cd
        AND t.impl_yn = 'Y'
        AND t.use_yn = 'Y'
        AND ct.use_yn = 'Y';
@@ -3969,7 +4072,7 @@ $$;
 -- Name: FUNCTION sp_tbl_document_template_r_001(p_co_cd character varying, p_tmpl_cd character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_document_template_r_001(p_co_cd character varying, p_tmpl_cd character varying) IS '회사 사용양식 단건 — form_path 없어도 메타 반환(법적서류 최초 업로드용)';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_document_template_r_001(p_co_cd character varying, p_tmpl_cd character varying) IS '회사 사용양식 단건 — p_co_cd 자사만. form_path 없어도 메타 반환(법적서류 최초 업로드용)';
 
 
 --
@@ -4127,13 +4230,14 @@ BEGIN
     IF v_nm = '' THEN
         RAISE EXCEPTION '양식명은 필수입니다.' USING ERRCODE = '45000';
     END IF;
-    SELECT * INTO v_src FROM tbl_template WHERE tmpl_cd = 'html_sys_001';
+    SELECT * INTO v_src FROM tbl_template WHERE tmpl_cd = 'html_sys_001' AND co_cd = '0000';
     IF NOT FOUND THEN
         RAISE EXCEPTION '표준 양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
+    -- 다음 번호는 이 회사 카탈로그 MAX+1. 전역 MAX 면 0000 의 012 다음이 013 이 된다
     SELECT COALESCE(MAX(substring(t.tmpl_cd from '[0-9]{3}$')::int), 0) INTO v_n
       FROM tbl_template t
-     WHERE t.tmpl_cd ~ '^html_hyg_prc_[0-9]{3}$' AND t.tmpl_cd <> 'html_hyg_prc_000';
+     WHERE t.co_cd = p_co_cd AND t.tmpl_cd ~ '^html_hyg_prc_[0-9]{3}$' AND t.tmpl_cd <> 'html_hyg_prc_000';
     LOOP
         v_try := v_try + 1; v_n := v_n + 1;
         IF v_n > 999 OR v_try > 50 THEN
@@ -4141,7 +4245,7 @@ BEGIN
         END IF;
         v_cd := 'html_hyg_prc_' || lpad(v_n::text, 3, '0');
         IF v_cd = 'html_hyg_prc_000' THEN CONTINUE; END IF;
-        EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd);
+        EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd AND co_cd = p_co_cd);
     END LOOP;
     INSERT INTO tbl_template (
         co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
@@ -4383,7 +4487,8 @@ BEGIN
         ON ct.co_cd = p_co_cd AND ct.tmpl_cd = t.tmpl_cd
      WHERE t.tmpl_cd = p_tmpl_cd
        AND t.impl_yn = 'Y'
-       AND t.use_yn = 'Y';
+       AND t.use_yn = 'Y'
+       AND t.co_cd = COALESCE((SELECT x.co_cd FROM tbl_template x WHERE x.tmpl_cd = p_tmpl_cd AND x.co_cd = p_co_cd), '0000');
 
     -- 양식이 없거나 HWP 형이 아니거나 회사 미사용일 때(= 이 화면 대상 아님) 업무 오류
     IF NOT FOUND OR v_doc_kind <> 'HWP' OR v_use_yn <> 'Y' THEN
@@ -4468,7 +4573,7 @@ BEGIN
       INTO v_name, v_appr, v_retain
       FROM tbl_template t
       LEFT JOIN tbl_company_template ct ON ct.co_cd = p_co_cd AND ct.tmpl_cd = t.tmpl_cd AND ct.use_yn = 'Y'
-     WHERE t.tmpl_cd = v_tmpl AND t.use_yn = 'Y';
+     WHERE t.tmpl_cd = v_tmpl AND t.use_yn = 'Y' AND t.co_cd = COALESCE((SELECT x.co_cd FROM tbl_template x WHERE x.tmpl_cd = v_tmpl AND x.co_cd = p_co_cd), '0000');
     IF v_name IS NULL THEN
         RAISE EXCEPTION '등록되지 않은 양식입니다.' USING ERRCODE = '45000';
     END IF;
@@ -4618,7 +4723,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character 
            (SELECT count(*)::int FROM tbl_hyg_process_item i WHERE i.hdr_idx = h.idx AND i.co_cd = h.co_cd AND i.yn = 'N')
       FROM tbl_document d
       JOIN tbl_hyg_process h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
-      LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd AND d.del_yn = 'N'
@@ -4759,7 +4870,13 @@ BEGIN
           INTO v_out
           FROM tbl_document d
           JOIN tbl_hyg_process h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
-          LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+          -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+          LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
           LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
          WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.tmpl_cd = v_tmpl AND d.del_yn = 'N';
         IF v_out IS NULL THEN
@@ -4792,7 +4909,7 @@ BEGIN
                                   FROM tbl_template t
                                   LEFT JOIN tbl_company_template ct
                                          ON ct.co_cd = p_co_cd AND ct.tmpl_cd = t.tmpl_cd
-                                 WHERE t.tmpl_cd = v_tmpl), ''),
+                                 WHERE t.tmpl_cd = v_tmpl AND t.co_cd = COALESCE((SELECT x.co_cd FROM tbl_template x WHERE x.tmpl_cd = v_tmpl AND x.co_cd = p_co_cd), '0000')), ''),
             'status', NULL,
             'baseDt', to_char(CURRENT_DATE, 'YYYYMMDD'),
             'checkerNm', '',
@@ -4994,7 +5111,13 @@ BEGIN
            COALESCE(ct.tmpl_nm_ovr, tp.tmpl_nm, t.tmpl_cd) || ' · ' || t.due_dt || ' ' || COALESCE(t.due_time, ''),
            tp.scrn_cd, t.doc_idx
       FROM tbl_schedule_task t
-      JOIN tbl_template tp ON tp.tmpl_cd = t.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = t.tmpl_cd AND x.co_cd IN (t.co_cd, '0000')
+         ORDER BY (x.co_cd = t.co_cd) DESC
+         LIMIT 1
+      ) tp ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd = t.co_cd AND ct.tmpl_cd = t.tmpl_cd
       JOIN tbl_user u ON u.co_cd = t.co_cd AND u.use_yn = 'Y'
      WHERE t.status IN ('TODO', 'ING')
@@ -5218,12 +5341,13 @@ BEGIN
     END IF;
     v_nm := btrim(COALESCE(p_ver_nm, ''));
     IF v_nm = '' THEN RAISE EXCEPTION '양식명은 필수입니다.' USING ERRCODE = '45000'; END IF;
-    SELECT * INTO v_src FROM tbl_template WHERE tmpl_cd = 'html_sys_006';
+    SELECT * INTO v_src FROM tbl_template WHERE tmpl_cd = 'html_sys_006' AND co_cd = '0000';
     IF NOT FOUND THEN RAISE EXCEPTION '표준 양식을 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
     v_cycle := COALESCE(NULLIF(btrim(v_src.default_cycle_cd), ''), 'M');
+    -- 다음 번호는 이 회사 카탈로그 MAX+1. 전역 MAX 면 0000 의 012 다음이 013 이 된다
     SELECT COALESCE(MAX(substring(t.tmpl_cd from '[0-9]{3}$')::int), 0) INTO v_n
       FROM tbl_template t
-     WHERE t.tmpl_cd ~ '^tml_ccp_chk_[0-9]{3}$' AND t.tmpl_cd <> 'tml_ccp_chk_000';
+     WHERE t.co_cd = p_co_cd AND t.tmpl_cd ~ '^tml_ccp_chk_[0-9]{3}$' AND t.tmpl_cd <> 'tml_ccp_chk_000';
     LOOP
         v_try := v_try + 1; v_n := v_n + 1;
         IF v_n > 999 OR v_try > 50 THEN
@@ -5231,7 +5355,7 @@ BEGIN
         END IF;
         v_cd := 'tml_ccp_chk_' || lpad(v_n::text, 3, '0');
         IF v_cd = 'tml_ccp_chk_000' THEN CONTINUE; END IF;
-        EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd);
+        EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd AND co_cd = p_co_cd);
     END LOOP;
     INSERT INTO tbl_template (
         co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
@@ -5472,9 +5596,10 @@ BEGIN
     END IF;
     v_nm := btrim(COALESCE(p_ver_nm, ''));
     IF v_nm = '' THEN RAISE EXCEPTION '양식명은 필수입니다.' USING ERRCODE = '45000'; END IF;
+    -- 다음 번호는 이 회사 카탈로그 MAX+1. 전역 MAX 면 0000 의 012 다음이 013 이 된다
     SELECT COALESCE(MAX(substring(t.tmpl_cd from '[0-9]{3}$')::int), 0) INTO v_n
       FROM tbl_template t
-     WHERE t.tmpl_cd ~ '^tml_ccp_htg_[0-9]{3}$' AND t.tmpl_cd <> 'tml_ccp_htg_000';
+     WHERE t.co_cd = p_co_cd AND t.tmpl_cd ~ '^tml_ccp_htg_[0-9]{3}$' AND t.tmpl_cd <> 'tml_ccp_htg_000';
     LOOP
         v_try := v_try + 1; v_n := v_n + 1;
         IF v_n > 999 OR v_try > 50 THEN
@@ -5482,7 +5607,7 @@ BEGIN
         END IF;
         v_cd := 'tml_ccp_htg_' || lpad(v_n::text, 3, '0');
         IF v_cd = 'tml_ccp_htg_000' THEN CONTINUE; END IF;
-        EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd);
+        EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd AND co_cd = p_co_cd);
     END LOOP;
     -- 카탈로그 html_sys 없이 usr 행. 작성 화면 scrn_cd 는 후속
     INSERT INTO tbl_template (
@@ -5723,9 +5848,10 @@ BEGIN
     END IF;
     v_nm := btrim(COALESCE(p_ver_nm, ''));
     IF v_nm = '' THEN RAISE EXCEPTION '양식명은 필수입니다.' USING ERRCODE = '45000'; END IF;
+    -- 다음 번호는 이 회사 카탈로그 MAX+1. 전역 MAX 면 0000 의 012 다음이 013 이 된다
     SELECT COALESCE(MAX(substring(t.tmpl_cd from '[0-9]{3}$')::int), 0) INTO v_n
       FROM tbl_template t
-     WHERE t.tmpl_cd ~ '^tml_ccp_mtl_[0-9]{3}$' AND t.tmpl_cd <> 'tml_ccp_mtl_000';
+     WHERE t.co_cd = p_co_cd AND t.tmpl_cd ~ '^tml_ccp_mtl_[0-9]{3}$' AND t.tmpl_cd <> 'tml_ccp_mtl_000';
     LOOP
         v_try := v_try + 1; v_n := v_n + 1;
         IF v_n > 999 OR v_try > 50 THEN
@@ -5733,7 +5859,7 @@ BEGIN
         END IF;
         v_cd := 'tml_ccp_mtl_' || lpad(v_n::text, 3, '0');
         IF v_cd = 'tml_ccp_mtl_000' THEN CONTINUE; END IF;
-        EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd);
+        EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd AND co_cd = p_co_cd);
     END LOOP;
     -- 카탈로그 html_sys 없이 usr 행. 작성 화면 scrn_cd 는 후속
     INSERT INTO tbl_template (
@@ -5974,9 +6100,10 @@ BEGIN
     END IF;
     v_nm := btrim(COALESCE(p_ver_nm, ''));
     IF v_nm = '' THEN RAISE EXCEPTION '양식명은 필수입니다.' USING ERRCODE = '45000'; END IF;
+    -- 다음 번호는 이 회사 카탈로그 MAX+1. 전역 MAX 면 0000 의 012 다음이 013 이 된다
     SELECT COALESCE(MAX(substring(t.tmpl_cd from '[0-9]{3}$')::int), 0) INTO v_n
       FROM tbl_template t
-     WHERE t.tmpl_cd ~ '^tml_ccp_pkg_[0-9]{3}$' AND t.tmpl_cd <> 'tml_ccp_pkg_000';
+     WHERE t.co_cd = p_co_cd AND t.tmpl_cd ~ '^tml_ccp_pkg_[0-9]{3}$' AND t.tmpl_cd <> 'tml_ccp_pkg_000';
     LOOP
         v_try := v_try + 1; v_n := v_n + 1;
         IF v_n > 999 OR v_try > 50 THEN
@@ -5984,7 +6111,7 @@ BEGIN
         END IF;
         v_cd := 'tml_ccp_pkg_' || lpad(v_n::text, 3, '0');
         IF v_cd = 'tml_ccp_pkg_000' THEN CONTINUE; END IF;
-        EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd);
+        EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd AND co_cd = p_co_cd);
     END LOOP;
     -- 카탈로그 html_sys 없이 usr 행. 작성 화면 scrn_cd 는 후속
     INSERT INTO tbl_template (
@@ -6225,7 +6352,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_today_task_doc_r_000(p_co_cd charact
                AND ca.status <> 'DONE'),
            COUNT(*) OVER()::int
       FROM tbl_document d
-      LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      LEFT JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = d.tmpl_cd AND x.co_cd IN (d.co_cd, '0000')
+         ORDER BY (x.co_cd = d.co_cd) DESC
+         LIMIT 1
+      ) t ON true
       LEFT JOIN tbl_company_template ct
         ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
@@ -6269,7 +6402,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_today_task_r_000(p_co_cd character v
            COALESCE(dc.status, t.status), t.due_dt, t.due_time,
            tp.scrn_cd, COALESCE(dc.idx, t.doc_idx), t.idx, t.tmpl_cd, t.tmpl_cd, t.base_dt
       FROM tbl_schedule_task t
-      JOIN tbl_template tp ON tp.tmpl_cd = t.tmpl_cd
+      -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
+      JOIN LATERAL (
+        SELECT * FROM tbl_template x
+         WHERE x.tmpl_cd = t.tmpl_cd AND x.co_cd IN (t.co_cd, '0000')
+         ORDER BY (x.co_cd = t.co_cd) DESC
+         LIMIT 1
+      ) tp ON true
       LEFT JOIN tbl_company_template ct ON ct.co_cd = t.co_cd AND ct.tmpl_cd = t.tmpl_cd
       -- 같은 회사·양식·기준일 문서 중 가장 나중 것. 하루에 여러 장을 쓰면 마지막 것을 본다
       LEFT JOIN LATERAL (

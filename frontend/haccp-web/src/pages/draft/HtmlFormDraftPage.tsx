@@ -857,7 +857,7 @@ export function HtmlFormDraftPage({
      * 값이 빈 항목인데도 앞에 있는 라디오가 잡힌다 — 커서가 엉뚱한 칸에 선다.
      */
     const value = row.querySelector<HTMLElement>(
-      "input:not([type=radio]):not([type=checkbox]):not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly])",
+      "input:not([type=radio]):not([type=checkbox]):not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly]), select:not([disabled])",
     );
     const target = value ?? row.querySelector<HTMLElement>("input[type=radio]:not([disabled])");
     target?.focus();
