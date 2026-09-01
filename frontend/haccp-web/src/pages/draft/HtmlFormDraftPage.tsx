@@ -102,6 +102,9 @@ type ListMeta = DocListMeta & {
 /** 우측 지면 편집 버퍼 — 문서 1건. 모양은 공통(htmlFormDraftShared)이 갖는다 */
 type Buf = HtmlFormDraftBuf;
 
+/** 저장 전 지면 잠금 안내 — 헤더에 깔면 h-9 가 깨져 저장 버튼 title 로 둔다 */
+const SAVE_FIRST_HINT = "왼쪽 목록에서 저장을 먼저 눌러야 이 지면에 값을 쓸 수 있습니다";
+
 
 
 export interface HtmlFormDraftPageProps {
@@ -1053,16 +1056,6 @@ export function HtmlFormDraftPage({
                       {!canEdit && buf.docIdx ? " · 수정 불가" : ""}
                     </span>
                   ) : null}
-                  {buf && !buf.docIdx ? (
-                    /*
-                     * 저장 전에는 지면 칸이 전부 잠긴다 — docIdx 가 있어야 지면을 만들 수 있다.
-                     * 회색 작은 글씨로 붙여 뒀더니 실무 검증에서 세 사람이 연달아
-                     * 「칸이 안 써진다」로 막혔다. 눈에 띄게 띄우고 무엇을 눌러야 하는지 적는다.
-                     */
-                    <span className="rounded bg-amber-50 px-2 py-0.5 text-xs font-normal text-amber-800">
-                      왼쪽 목록에서 <b>저장</b>을 먼저 눌러야 이 지면에 값을 쓸 수 있습니다
-                    </span>
-                  ) : null}
                 </div>
                 <div className="ml-auto flex shrink-0 items-center gap-1.5">
                   <MesButton
@@ -1070,6 +1063,8 @@ export function HtmlFormDraftPage({
                     size="sm"
                     variant="save"
                     icon="save"
+                    // 저장 전(= docIdx 없음)이면 칸이 잠긴다. 헤더에 긴 안내를 안 깔고 툴팁만 둔다
+                    title={buf && !buf.docIdx ? SAVE_FIRST_HINT : undefined}
                     disabled={!buf || !canEdit || action.isBusy()}
                     loading={action.isBusy("save")}
                     onClick={() => void handleSaveDetail()}
@@ -1284,6 +1279,8 @@ export function HtmlFormDraftPage({
                     size="sm"
                     variant="save"
                     icon="save"
+                    // 우측 지면이 잠기는 이유 — 헤더 span 대신 버튼 툴팁
+                    title={SAVE_FIRST_HINT}
                     disabled={action.isBusy()}
                     loading={action.isBusy("saveHeader")}
                     onClick={() => void handleSaveHeader()}

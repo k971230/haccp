@@ -620,9 +620,6 @@ export default function ScheduleCycleManagementPage() {
                       sysYn={activeForm.formTy}
                     />
                   ) : null}
-                  {dirty ? (
-                    <span className="shrink-0 text-sm text-amber-600">{MES.unsavedChanges}</span>
-                  ) : null}
                 </div>
                 <div className="ml-auto flex shrink-0 items-center gap-1.5">
                   <MesButton
@@ -630,6 +627,8 @@ export default function ScheduleCycleManagementPage() {
                     variant="save"
                     size="sm"
                     icon="save"
+                    // 미저장 변경 — 헤더 span 대신 버튼 툴팁
+                    title={dirty ? MES.unsavedChanges : undefined}
                     disabled={!canEdit || !activeTmplCd || asyncAct.isBusy("save")}
                     loading={asyncAct.isBusy("save")}
                     onClick={() => void asyncAct.run(handleSave, "save")}

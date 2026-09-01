@@ -12,11 +12,11 @@ type RunFn = <T>(fn: () => Promise<T>, key: string) => Promise<T | undefined>;
 
 /**
  * 개발자: 박승우
- * 일자: 2026-07-10
+ * 일자: 2026-09-01
  * 코멘트:
  *   1) 그리드 패널 헤더 CRUD 버튼 묶음 — 행추가·저장·삭제
  *   2) 모듈 import·화면/훅에서 호출될 때
- *   3) 성공 시 정상 반환, 실패 시 예외·가드 메시지
+ *   3) 긴 안내는 헤더 span 이 아니라 저장 버튼 title(툴팁)로 둔다. 헤더 h-9 가 깨지지 않게
  */
 // 설명 — 그리드 패널 헤더 CRUD 버튼 묶음 — 행추가·저장·삭제
 export function GridCrudButtons({
@@ -35,6 +35,8 @@ export function GridCrudButtons({
   // 저장 버튼 표시 문구
   // 기본 "저장"
   saveLabel = "저장",
+  // 저장 버튼 네이티브 툴팁 — 헤더에 긴 안내를 깔지 않고 여기에 둔다
+  saveTitle,
   // 삭제 버튼 표시 문구
   // 기본 "삭제"
   delLabel = "삭제",
@@ -53,6 +55,7 @@ export function GridCrudButtons({
   onDel?: () => void | Promise<void>;
   addLabel?: string;
   saveLabel?: string;
+  saveTitle?: string;
   delLabel?: string;
   busy?: { add?: boolean; save?: boolean; del?: boolean };
   run?: RunFn;
@@ -74,7 +77,16 @@ export function GridCrudButtons({
       )}
       {children}
       {onSave && (
-        <MesButton variant="save" size="sm" icon="save" loading={busy?.save} onClick={wrap(onSave, "save")}>
+        <MesButton
+          // 저장 — 변경분 반영
+          variant="save"
+          size="sm"
+          icon="save"
+          // 긴 헤더 안내를 여기 툴팁으로 넘긴다. 없으면 네이티브 title 생략
+          title={saveTitle}
+          loading={busy?.save}
+          onClick={wrap(onSave, "save")}
+        >
           {saveLabel}
         </MesButton>
       )}

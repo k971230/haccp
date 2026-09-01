@@ -54,8 +54,8 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varyin
            a.ip_addr,
            a.ins_dt
       FROM tbl_audit_log a
-      -- 행위자명 — 삭제된 사용자도 이력은 남으므로 LEFT JOIN
-      LEFT JOIN tbl_user u ON u.user_id = a.user_id
+      -- 행위자명 — 삭제된 사용자도 이력은 남으므로 LEFT JOIN. 동명 아이디가 타사에 있어도 자사 행만 붙인다
+      LEFT JOIN tbl_user u ON u.co_cd = a.co_cd AND u.user_id = a.user_id
       -- AUDIT_TARGET — 테이블명 → 화면코드(ref1)·표시명. 회사별 고유 격리
       LEFT JOIN tbl_code c
              ON c.co_cd = p_co_cd
@@ -1376,8 +1376,8 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_login_history_r_000(p_co_cd character va
     SELECT l.idx, l.user_id, u.user_nm, l.sid, l.login_dt, l.logout_dt,
            l.result_cd, l.fail_reason, l.ip_addr, l.device_gbn
       FROM tbl_login_log l
-      -- 사용자명 — 없는 아이디로 실패한 로그도 남기려면 LEFT JOIN이어야 한다
-      LEFT JOIN tbl_user u ON u.user_id = l.user_id
+      -- 사용자명 — 없는 아이디로 실패한 로그도 남기려면 LEFT JOIN이어야 한다. 테넌트도 같이 본다
+      LEFT JOIN tbl_user u ON u.co_cd = l.co_cd AND u.user_id = l.user_id
      WHERE l.co_cd = p_co_cd
        AND l.login_dt >= to_timestamp(p_from_dt, 'YYYYMMDD')
        AND l.login_dt <  to_timestamp(p_to_dt,   'YYYYMMDD') + interval '1 day'
@@ -2350,7 +2350,8 @@ BEGIN
     ELSE
         SELECT m.idx INTO v_monitor_idx
           FROM tbl_ccp_generic_monitor m
-          JOIN tbl_document d ON d.idx = m.doc_idx
+          -- 모니터 행과 문서를 같은 회사로만 잇는다 — idx 만 보면 타사 문서에 붙을 수 있다
+          JOIN tbl_document d ON d.idx = m.doc_idx AND d.co_cd = m.co_cd
          WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx AND d.del_yn = 'N' AND d.status IN ('WRK', 'RJT');
         IF v_monitor_idx IS NULL THEN
             RAISE EXCEPTION '전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.' USING ERRCODE = '45000';
