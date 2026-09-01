@@ -6,9 +6,7 @@
  * 코멘트:
  *   1) rhwp 편집기를 만들고, 열린 문서가 바뀔 때만 본문(또는 양식 원본)을 다시 연다
  *   2) HwpDraftPage 의 renderDetail 이 이 컴포넌트를 그린다 — 화면 슬롯이 같아 마운트가 유지된다
- *   3) 칸 입력 dirty 는 목록 _rowState 가 아니다. 골드 HwpDocumentEditorPage 와 같이
- *      installRhwpDirtyListeners 로만 알린다. 문서를 여는 일은 반드시 useEffect 에서 한다
- *      (렌더 중에 부르면 실패할 때마다 다시 렌더되어 같은 요청이 끝없이 나간다)
+ *   3) 저장된 문서에 첨부가 없으면 양식 원본을 열지 않는다. loadFile 은 한 줄 직렬
  *
  * 편집기 인스턴스는 부모가 준 ref 에 올려 둔다 — 저장할 때 부모가 본문을 뽑아 올려야 한다.
  *
@@ -35,6 +33,8 @@ import type { HtmlFormDraftFile } from "@/api/draft/htmlFormDraftTypes";
 import { toUserMessage } from "@/shell/errors";
 // 역할 — 본문 파일 종류
 import { HWP_SRC_KIND } from "./HwpDraftRule";
+// 역할 — 저장 문서에 첨부가 없을 때 양식 원본 금지
+import { hwpOpenMode } from "./hwpOpenMode";
 
 /** 첨부 중 가장 나중에 올린 본문 — 여러 번 저장하면 첨부가 쌓인다 */
 function latestSource(files: HtmlFormDraftFile[]): HtmlFormDraftFile | null {
@@ -83,6 +83,14 @@ export function HwpEditorPane({
   onCleanRef.current = onClean;
   // dirty 리스너 해제 — 파일을 다시 열면 iframe 문서가 바뀌어 다시 붙인다
   const disposeDirtyRef = useRef<(() => void) | undefined>(undefined);
+  // loadFile 은 취소가 없다. 한 줄로 직렬화한다
+  const loadQueue = useRef(Promise.resolve());
+  const filesRef = useRef(files);
+  filesRef.current = files;
+  const docIdxRef = useRef(docIdx);
+  docIdxRef.current = docIdx;
+  const tmplCdRef = useRef(tmplCd);
+  tmplCdRef.current = tmplCd;
 
   const attachDirty = useCallback((iframe: HTMLIFrameElement | null | undefined) => {
     disposeDirtyRef.current?.();
@@ -147,82 +155,95 @@ export function HwpEditorPane({
 
   /**
    * 개발자: 박승우
-   * 일자: 2026-08-25
+   * 일자: 2026-09-01
    * 코멘트:
-   *   1) 열린 문서가 바뀌면 저장된 본문을, 없으면 양식 원본을 편집기에 싣는다
+   *   1) 열린 문서가 바뀌면 저장된 본문을 싣는다. 첨부가 올 때까지 양식 원본은 열지 않는다
    *   2) 좌측에서 행을 고르거나 양식을 고르면 이 효과가 다시 돈다
-   *   3) 대상 표식을 요청 전에 먼저 남긴다 — 실패해도 같은 대상을 다시 부르지 않는다
+   *   3) loadFile 은 한 줄 직렬. 큐에서 꺼냈을 때 표식이 아니면 호출하지 않고, 끝난 뒤 바뀌었으면 지금 표식을 다시 연다
    */
   useEffect(() => {
     const editor = editorRef.current;
     if (!ready || !editor || !tmplCd) return undefined;
     const src = latestSource(files);
+    const mode = hwpOpenMode(docIdx, !!src);
+    // 저장된 문서인데 본문이 아직 없으면 빈 양식을 열지 않는다
+    if (mode === "wait") {
+      openedRef.current = `${docIdx}:${tmplCd}:wait`;
+      setMessage("문서를 여는 중입니다…");
+      return undefined;
+    }
     // 문서·양식·본문 조합이 같으면 다시 열지 않는다. 사용자가 쓰던 내용이 날아가면 안 된다
     const token = `${docIdx ?? 0}:${tmplCd}:${src?.idx ?? 0}`;
     if (openedRef.current === token) return undefined;
     openedRef.current = token;
 
-    /*
-     * 늦게 온 응답이 화면을 덮지 않게 한다.
-     *
-     * HWP 는 내려받기와 loadFile 둘 다 느리다. 목록에서 문서를 빠르게 바꾸면
-     * 먼저 시작한 A 의 loadFile 이 나중에 끝나 B 위에 A 가 실린다 —
-     * 「다른 파일이 열린다」로 보고된 것이 이것이다.
-     * await 마다 표식이 아직 내 것인지 확인하고, 아니면 조용히 그만둔다.
-     * (HtmlDocumentPreview 가 쓰는 alive 패턴과 같은 것이다)
-     */
     let alive = true;
-    const mine = () => alive && openedRef.current === token;
-
-    // 여는 동안 앞 문서 이름이 남아 있으면 다른 파일이 열린 것처럼 보인다
     setMessage("문서를 여는 중입니다…");
 
-    void (async () => {
+    const loadToken = async (want: string) => {
+      if (!alive || openedRef.current !== want) return;
+      const currentSrc = latestSource(filesRef.current);
+      const currentTmpl = tmplCdRef.current;
+      const currentDoc = docIdxRef.current;
+      const currentMode = hwpOpenMode(currentDoc, !!currentSrc);
+      if (currentMode === "wait") {
+        setMessage("문서를 여는 중입니다…");
+        return;
+      }
+      const nowToken = `${currentDoc ?? 0}:${currentTmpl}:${currentSrc?.idx ?? 0}`;
+      if (nowToken !== want) return;
       try {
-        if (src) {
-          const blob = await downloadDocumentFile(src.idx);
-          if (!mine()) return;
+        if (currentSrc) {
+          const blob = await downloadDocumentFile(currentSrc.idx);
+          if (!alive || openedRef.current !== want) return;
           const buf = await blob.arrayBuffer();
-          if (!mine()) return;
-          await editor.loadFile(buf, src.fileNm, {
+          if (!alive || openedRef.current !== want) return;
+          await editor.loadFile(buf, currentSrc.fileNm, {
             skipUnsavedGuard: true,
             suppressDialogs: true,
           });
-          if (!mine()) return;
+          if (!alive) return;
+          if (openedRef.current !== want) {
+            await loadToken(openedRef.current ?? "");
+            return;
+          }
           attachDirty(editor.element);
           onCleanRef.current?.();
-          setMessage(`${src.fileNm} 을(를) 열었습니다.`);
+          setMessage(`${currentSrc.fileNm} 을(를) 열었습니다.`);
           return;
         }
-        // 본문이 아직 없을 때(= 첫 작성) 양식 원본을 연다
-        const tmpl = (await listDocumentTemplates()).find((t) => t.tmplCd === tmplCd);
-        if (!mine()) return;
+        const tmpl = (await listDocumentTemplates()).find((t) => t.tmplCd === currentTmpl);
+        if (!alive || openedRef.current !== want) return;
         if (!tmpl?.formUrl) {
           setMessage("이 양식의 원본 파일이 없습니다. 사용양식 관리에서 양식을 올리세요.");
           return;
         }
         const buffer = await loadHwpTemplateFile(tmpl.formUrl);
-        if (!mine()) return;
-        await editor.loadFile(buffer, tmpl.formFileNm || `${tmplCd}.hwp`, {
+        if (!alive || openedRef.current !== want) return;
+        await editor.loadFile(buffer, tmpl.formFileNm || `${currentTmpl}.hwp`, {
           skipUnsavedGuard: true,
           suppressDialogs: true,
         });
-        if (!mine()) return;
+        if (!alive) return;
+        if (openedRef.current !== want) {
+          await loadToken(openedRef.current ?? "");
+          return;
+        }
         attachDirty(editor.element);
         onCleanRef.current?.();
         setMessage(`${tmpl.tmplNm} 양식을 열었습니다.`);
       } catch (error) {
-        // 토스트를 띄우지 않는다 — 같은 문서에서 여러 번 뜨면 화면이 가려진다. 상태 줄로만 알린다
-        if (mine()) setMessage(toUserMessage(error));
+        if (alive && openedRef.current === want) setMessage(toUserMessage(error));
       }
-    })();
+    };
+
+    loadQueue.current = loadQueue.current.then(
+      () => loadToken(token),
+      () => loadToken(token),
+    );
 
     return () => {
       alive = false;
-      /*
-       * 표식을 되돌린다 — 중간에 그만둔 문서는 「연 적 없음」이어야 한다.
-       * 안 그러면 사용자가 A → B → A 로 돌아왔을 때 A 가 이미 열린 것으로 보여 빈 편집기가 남는다.
-       */
       if (openedRef.current === token) openedRef.current = null;
     };
   }, [attachDirty, docIdx, editorRef, files, ready, tmplCd]);

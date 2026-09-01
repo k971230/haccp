@@ -47,6 +47,14 @@ export const SEND_STATE_NM: Record<SendState, string> = {
 /** 3단계 배지 색 — 전송대기 회색, 전송 파랑, 결재완료 초록 */
 export const SEND_STATE_BADGE = { wait: "gray", sent: "blue", done: "green" } as const;
 
+/** BE saveAutoIfNg 가 체크만으로 CA 를 남길 때 넣는 문구. 지면 이탈내용에는 안 보여 준다 */
+export const AUTO_DEVIATION_DESC = "자동생성: 부적합이 감지되었습니다. 조치 내용을 입력·보완하세요.";
+
+/** 자동문구면 빈 칸 — 이탈 시그널(체크)은 호출측이 raw 값으로 판정한다 */
+function paperNote(s: string): string {
+  return s.trim() === AUTO_DEVIATION_DESC ? "" : s;
+}
+
 /** 양식 미선택 표시 — 행 추가 직후 양식코드가 비어 있을 때 */
 export const TMPL_NOT_SELECTED_NM = "미선택";
 
@@ -472,6 +480,8 @@ export interface HtmlFormDraftDetailLike {
   items: HtmlFormItem[];
   logRows?: HtmlFormLogRow[];
   passRows?: HtmlFormPassRow[];
+  // 이탈·개선조치 — 있으면 시그널 체크를 복원한다
+  corrective?: { deviationDesc?: string | null; actionDesc?: string | null } | null;
 }
 
 /**
@@ -506,7 +516,7 @@ export function emptyDraftBuf(
  * 코멘트:
  *   1) 상세 API 응답을 지면 편집 버퍼로 옮긴다
  *   2) 작성 화면의 행 선택·양식 선택·저장 후 재적재, 결재 미리보기의 최초 적재가 호출한다
- *   3) 작성자·점검자 이름이 비면 로그인 사용자로 채운다 — 미리보기는 user 를 넘기지 않는다
+   *   3) 작성자·점검자 이름이 비면 로그인 사용자로 채운다. 자동생성 이탈문구는 칸을 비우고 체크만 켠다
  */
 export function detailToDraftBuf(
   // 상세 API 응답 — header·items
@@ -543,6 +553,10 @@ export function detailToDraftBuf(
    */
   const items = fillBlankItemJudges(detail.items ?? []);
   const logRows = fillBlankLogJudges(detail.logRows ?? []);
+  const ca = detail.corrective;
+  const rawNote = asText(header.specialNote);
+  const hasCa = !!(String(ca?.deviationDesc ?? "").trim() || String(ca?.actionDesc ?? "").trim());
+  const hasFailLog = logRows.some((row) => String(row.judgeCd ?? "").toUpperCase() === "F");
   return {
     docIdx,
     docNo: asText(header.docNo),
@@ -561,14 +575,18 @@ export function detailToDraftBuf(
     approverSignYn: asYn(header.approverSignYn),
     verNo: Number(header.verNo) || 0,
     items,
-    specialNote: asText(header.specialNote),
+    specialNote: paperNote(rawNote),
     improveNote: asText(header.improveNote),
     actionNm: asText(header.actionNm),
     confirmNm: asText(header.confirmNm),
     confirmId: asText(header.confirmId),
     confirmSignYn: asYn(header.confirmSignYn),
-    // 이탈 표시는 저장 컬럼이 없다 — 다시 읽을 때는 아래 근거로 화면이 판단한다
-    deviationYn: false,
+    // CA·푸터·부적합 행이 있으면 시그널을 켠다. 저장한 Y 도 헤더에서 복원한다
+    deviationYn: hasCa
+      || !!asText(header.specialNote)
+      || !!asText(header.improveNote)
+      || hasFailLog
+      || asYn(header.deviationYn) === "Y",
     // 기록행 — CCP 모니터링일지만 채워 온다. 나머지 화면은 빈 배열
     logRows,
     passRows: detail.passRows ?? [],

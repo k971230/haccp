@@ -123,7 +123,7 @@ export interface HtmlFormDraftSaveRequest {
   actionNm?: string;
   confirmNm?: string;
   corrective?: DocCorrectiveValue | null;
-  /** 이탈여부 Y/N — HWP 작성 목록의 이탈여부 칸만 보낸다 */
+  /** 이탈여부 Y/N — HTML 시그널·HWP 목록 칸. 서버가 개선조치 행을 만들거나 지운다 */
   deviationYn?: string;
   /** 기록 표 행 — CCP 모니터링일지 작성만 채운다 */
   logRows?: HtmlFormLogRow[];

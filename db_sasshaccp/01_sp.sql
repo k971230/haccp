@@ -1162,6 +1162,11 @@ BEGIN
     -- 사용자가 화면에서 만드는 양식은 항상 자사양식(usr)
     INSERT INTO tbl_company_template(co_cd, tmpl_cd, tmpl_nm_ovr, use_yn, sys_yn, ins_id, ins_dt)
     VALUES (p_co_cd, p_tmpl_cd, p_tmpl_nm, COALESCE(NULLIF(p_use_yn, ''), 'Y'), 'usr', p_id, now());
+
+    -- 자사 HWP 양식은 채번 규칙이 없으면 문서 저장이 막힌다. 없을 때만 깐다
+    INSERT INTO tbl_doc_no_rule (co_cd, tmpl_cd, prefix, date_fmt, seq_len, reset_cycle, ins_id, ins_dt)
+    VALUES (p_co_cd, p_tmpl_cd, left(p_tmpl_cd, 20), 'YYYYMMDD', 3, 'D', p_id, now())
+    ON CONFLICT (co_cd, tmpl_cd) DO NOTHING;
 END$$;
 
 
@@ -1170,6 +1175,99 @@ END$$;
 --
 
 COMMENT ON PROCEDURE sasshaccp.sp_hwp_template_management_c_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_tmpl_nm character varying, IN p_use_yn character varying, IN p_id character varying) IS '사용양식 저장 — 신규는 sys_yn=usr 강제 + 자사 카탈로그 생성, 수정은 양식명·사용유무만(구분·코드 불변)';
+
+
+--
+-- Name: sp_hwp_template_management_ensure_default_000(character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+-- 시드가 tbl_company_template_file 을 안 넣고 default_file_idx 만 덤프 번호로 남긴 구멍을 메운다.
+-- 불러오기 목록·초기화가 호출한다. 카탈로그 표준 경로로 SYS 이력 1건을 만든다.
+--
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_hwp_template_management_ensure_default_000(
+    p_co_cd character varying,
+    p_tmpl_cd character varying
+) RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    -- 기본 제공 이력 idx
+    v_idx  bigint;
+    -- 카탈로그 표준 경로 — HaccpTemplates/{tmpl_cd}/...
+    v_path varchar(300);
+    -- SYS 행을 맨 앞에 두기 위한 순번 (기존 업로드보다 작게)
+    v_seq  int;
+BEGIN
+    IF COALESCE(p_co_cd, '') = '' OR COALESCE(p_tmpl_cd, '') = '' THEN
+        RETURN NULL;
+    END IF;
+
+    -- default_file_idx 가 살아 있는 이력과 맞으면 그대로
+    SELECT f.idx INTO v_idx
+      FROM tbl_company_template ct
+      JOIN tbl_company_template_file f
+        ON f.idx = ct.default_file_idx
+       AND f.co_cd = ct.co_cd AND f.tmpl_cd = ct.tmpl_cd AND f.del_yn = 'N'
+     WHERE ct.co_cd = p_co_cd AND ct.tmpl_cd = p_tmpl_cd;
+    IF v_idx IS NOT NULL THEN
+        RETURN v_idx;
+    END IF;
+
+    -- 이력에 SYS 행이 있으면 그걸 기본으로 붙인다 (대소문자 무시)
+    SELECT f.idx INTO v_idx
+      FROM tbl_company_template_file f
+     WHERE f.co_cd = p_co_cd AND f.tmpl_cd = p_tmpl_cd AND f.del_yn = 'N'
+       AND lower(f.src_ty) = 'sys'
+     ORDER BY f.file_seq
+     LIMIT 1;
+    IF v_idx IS NOT NULL THEN
+        UPDATE tbl_company_template
+           SET default_file_idx = v_idx
+         WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+        RETURN v_idx;
+    END IF;
+
+    -- 카탈로그 표준 경로로 SYS 이력 1건
+    SELECT t.form_path INTO v_path
+      FROM tbl_company_template ct
+      JOIN LATERAL (
+        SELECT x.form_path FROM tbl_template x
+         WHERE x.tmpl_cd = ct.tmpl_cd AND x.co_cd IN (ct.co_cd, '0000')
+         ORDER BY (x.co_cd = ct.co_cd) DESC
+         LIMIT 1
+      ) t ON true
+     WHERE ct.co_cd = p_co_cd AND ct.tmpl_cd = p_tmpl_cd;
+
+    IF COALESCE(v_path, '') = '' THEN
+        RETURN NULL;
+    END IF;
+
+    SELECT COALESCE(MIN(file_seq), 1) - 1 INTO v_seq
+      FROM tbl_company_template_file
+     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+
+    INSERT INTO tbl_company_template_file(co_cd, tmpl_cd, file_seq, file_nm, form_path, file_size, src_ty, ins_id)
+    VALUES (
+        p_co_cd, p_tmpl_cd, v_seq,
+        regexp_replace(v_path, '^.*/', ''),
+        v_path, NULL, 'SYS', 'system'
+    )
+    RETURNING idx INTO v_idx;
+
+    UPDATE tbl_company_template
+       SET default_file_idx = v_idx,
+           current_file_idx = COALESCE(current_file_idx, v_idx)
+     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+
+    RETURN v_idx;
+END$$;
+
+
+--
+-- Name: FUNCTION sp_hwp_template_management_ensure_default_000(character varying, character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON FUNCTION sasshaccp.sp_hwp_template_management_ensure_default_000(character varying, character varying) IS '사용양식 기본 제공 파일 — 이력이 없거나 idx 가 끊겼으면 카탈로그 경로로 SYS 행을 만든다';
 
 
 --
@@ -1184,13 +1282,13 @@ DECLARE
     v_idx  bigint;
     -- 적용 대상 경로
     v_path varchar(300);
-    -- 적용 대상 출처 — sys면 표준 원본이라 자사 경로를 비운다
+    -- 적용 대상 출처 — SYS면 표준 원본이라 자사 경로를 비운다
     v_src  varchar(10);
 BEGIN
     v_idx := p_file_idx;
+    -- 초기화일 때(= fileIdx 없음) 끊긴 default_file_idx 를 카탈로그로 다시 붙인다
     IF v_idx IS NULL THEN
-        SELECT default_file_idx INTO v_idx
-          FROM tbl_company_template WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+        v_idx := sp_hwp_template_management_ensure_default_000(p_co_cd, p_tmpl_cd);
         IF v_idx IS NULL THEN
             RAISE EXCEPTION '초기화할 기본 양식이 없습니다.' USING ERRCODE = '45000';
         END IF;
@@ -1204,7 +1302,7 @@ BEGIN
     END IF;
 
     UPDATE tbl_company_template
-       SET form_path        = CASE WHEN v_src = 'sys' THEN NULL ELSE v_path END,
+       SET form_path        = CASE WHEN lower(v_src) = 'sys' THEN NULL ELSE v_path END,
            current_file_idx = v_idx,
            upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
@@ -1245,9 +1343,9 @@ BEGIN
       FROM tbl_company_template_file WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
 
     INSERT INTO tbl_company_template_file(co_cd, tmpl_cd, file_seq, file_nm, form_path, file_size, src_ty, ins_id)
-    VALUES (p_co_cd, p_tmpl_cd, v_seq,
+    VALUES (            p_co_cd, p_tmpl_cd, v_seq,
             COALESCE(NULLIF(p_file_nm, ''), regexp_replace(p_form_path, '^.*/', '')),
-            p_form_path, p_file_size, 'usr', p_id)
+            p_form_path, p_file_size, 'USR', p_id)
     RETURNING idx INTO v_idx;
 
     UPDATE tbl_company_template
@@ -1271,27 +1369,34 @@ COMMENT ON PROCEDURE sasshaccp.sp_hwp_template_management_file_c_000(IN p_co_cd 
 -- Name: sp_hwp_template_management_file_r_000(character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
+-- 인자가 같다. LANGUAGE sql STABLE → plpgsql 로 바꾸려면 먼저 지운다 (REPLACE 는 휘발성을 안 바꾼다)
+DROP FUNCTION IF EXISTS sasshaccp.sp_hwp_template_management_file_r_000(character varying, character varying);
+
 CREATE OR REPLACE FUNCTION sasshaccp.sp_hwp_template_management_file_r_000(p_co_cd character varying, p_tmpl_cd character varying) RETURNS TABLE(idx bigint, file_seq integer, file_nm character varying, file_size bigint, src_ty character varying, current_yn character varying, default_yn character varying, ins_id character varying, ins_dt timestamp without time zone)
-    LANGUAGE sql STABLE
+    LANGUAGE plpgsql
     AS $$
-    SELECT f.idx, f.file_seq, f.file_nm, f.file_size, f.src_ty,
+BEGIN
+    -- 불러오기 팝업을 열 때 기본 제공 행이 없으면 카탈로그에서 한 줄 만든다
+    PERFORM sp_hwp_template_management_ensure_default_000(p_co_cd, p_tmpl_cd);
+    RETURN QUERY
+    SELECT f.idx, f.file_seq, f.file_nm, f.file_size, upper(f.src_ty)::character varying,
            -- 현재 적용 파일일 때(= current_file_idx 일치) 그리드 문구
-           CASE WHEN f.idx = ct.current_file_idx THEN '현재적용' ELSE '' END,
+           (CASE WHEN f.idx = ct.current_file_idx THEN '현재적용' ELSE '' END)::character varying,
            -- 기본 제공 파일일 때(= default_file_idx 일치) 그리드 문구
-           CASE WHEN f.idx = ct.default_file_idx THEN '기본양식' ELSE '' END,
+           (CASE WHEN f.idx = ct.default_file_idx THEN '기본양식' ELSE '' END)::character varying,
            f.ins_id, f.ins_dt
       FROM tbl_company_template_file f
       JOIN tbl_company_template ct ON ct.co_cd = f.co_cd AND ct.tmpl_cd = f.tmpl_cd
      WHERE f.co_cd = p_co_cd AND f.tmpl_cd = p_tmpl_cd AND f.del_yn = 'N'
      ORDER BY f.file_seq DESC;
-$$;
+END$$;
 
 
 --
 -- Name: FUNCTION sp_hwp_template_management_file_r_000(p_co_cd character varying, p_tmpl_cd character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_hwp_template_management_file_r_000(p_co_cd character varying, p_tmpl_cd character varying) IS '양식 파일 이력 — 최근 업로드 우선. 현재적용·기본양식 문구는 CASE';
+COMMENT ON FUNCTION sasshaccp.sp_hwp_template_management_file_r_000(p_co_cd character varying, p_tmpl_cd character varying) IS '양식 파일 이력 — 최근 업로드 우선. 기본 제공 행이 없으면 카탈로그에서 SYS 를 채운다. 현재적용·기본양식 문구는 CASE';
 
 
 --

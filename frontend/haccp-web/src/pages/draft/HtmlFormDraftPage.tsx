@@ -336,7 +336,7 @@ export function HtmlFormDraftPage({
    * 개발자: 박승우
    * 일자: 2026-08-24
    * 코멘트:
-   *   1) 행을 열어 우측 상세에 싣는다. 버퍼가 있으면 서버를 다시 부르지 않는다
+   *   1) 행을 열어 우측 상세에 싣는다. 버퍼가 있어도 첨부는 다시 읽는다
    *   2) 행 클릭·양식 선택·저장·전송 후 재적재에서 호출한다
    *   3) 양식 미선택 신규 행은 서버를 부르지 않고 빈 버퍼를 준다
    */
@@ -520,10 +520,10 @@ export function HtmlFormDraftPage({
           // 기록 표 행 — 행 추가로 만든 행까지 그대로 DB 로 간다
           logRows: b.logRows,
           passRows: b.passRows,
-          // 이탈여부 — 목록 칸을 쓰는 화면만. 서버가 개선조치 행을 만들거나 지운다
+          // 이탈여부 — HTML CCP 시그널·HWP 목록 칸 모두 보낸다. 안 보내면 재적재 때 체크가 풀린다
           deviationYn: showDeviationColumn
             ? ((row as EditableRow<ListMeta>).deviationYn ?? "N")
-            : undefined,
+            : (b.deviationYn ? "Y" : "N"),
         });
         /*
          * 저장 뒤 화면이 더 할 일 — HWP 는 여기서 본문 파일을 올린다.
@@ -550,12 +550,14 @@ export function HtmlFormDraftPage({
         };
       },
       afterAll: async () => {
+        const seq = detailSeq.current;
         await loadList();
         for (const idx of savedIdxs) {
           try {
             const b = getBuffer(String(idx));
             const detail = await api.detail(b?.tmplCd ?? "", idx);
-            setDetailFiles(detail.files ?? []);
+            // 저장 중에 다른 행을 열었으면 첨부를 덮지 않는다
+            if (detailSeq.current === seq) setDetailFiles(detail.files ?? []);
             const next = detailToDraftBuf(detail, { tmplCd: b?.tmplCd ?? "", tmplNm: b?.tmplNm ?? "" }, user);
             putBuffer(String(idx), next, {
               status: next.status,

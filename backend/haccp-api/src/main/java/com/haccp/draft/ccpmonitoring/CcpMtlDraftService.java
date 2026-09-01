@@ -241,8 +241,9 @@ public class CcpMtlDraftService {
                 ca.setConfirmUserNm(DraftSupport.nvl(req.getConfirmNm()));
             }
             boolean hasNg = rows.stream().anyMatch(r -> "F".equalsIgnoreCase(DraftSupport.nvl(r.getJudgeCd())));
+            boolean keepCa = hasNg || "Y".equalsIgnoreCase(DraftSupport.nvl(req.getDeviationYn()));
             correctiveSupport.saveAutoIfNg(
-                    coCd, docIdx, tmpl, req.getBaseDt().trim(), ca, hasNg, LoginUserContext.userId());
+                    coCd, docIdx, tmpl, req.getBaseDt().trim(), ca, keepCa, LoginUserContext.userId());
             return docIdx;
         } catch (JsonProcessingException e) {
             throw new BizException("작성 자료를 저장 형식으로 변환하지 못했습니다.");

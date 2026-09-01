@@ -16,10 +16,12 @@ import { describe, expect, it } from "vitest";
 import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
 // 역할 — 검증 대상 순수 함수
 import {
+  AUTO_DEVIATION_DESC,
   canCancelSendDoc,
   canEditDetail,
   canModifyDoc,
   canSendDoc,
+  detailToDraftBuf,
   htmlFormDraftGridRules,
   sendStateOf,
   validateForTransfer,
@@ -170,6 +172,52 @@ describe("validateForTransfer — 전송 직전 필수값", () => {
       item({ itemCd: "hp-01", sortNo: 2, inputType: "radio", yn: "Y" }),
     ];
     expect(validateForTransfer("20260824", rows)).toBeNull();
+  });
+});
+
+describe("detailToDraftBuf — 이탈 시그널 복원", () => {
+  it("이탈내용이 있으면 체크를 켠다", () => {
+    const buf = detailToDraftBuf(
+      {
+        header: { docIdx: 1, specialNote: "온도 이탈", improveNote: "", baseDt: "20260901" },
+        items: [],
+      },
+      { tmplCd: "tml_ccp_pkg_001", tmplNm: "포장" },
+    );
+    expect(buf.deviationYn).toBe(true);
+  });
+
+  it("근거가 없으면 꺼 둔다", () => {
+    const buf = detailToDraftBuf(
+      {
+        header: { docIdx: 1, specialNote: "", improveNote: "", baseDt: "20260901" },
+        items: [],
+        logRows: [],
+      },
+      { tmplCd: "tml_ccp_pkg_001", tmplNm: "포장" },
+    );
+    expect(buf.deviationYn).toBe(false);
+  });
+
+  it("자동문구는 이탈내용 칸을 비우고 체크는 켠다", () => {
+    const buf = detailToDraftBuf(
+      {
+        header: {
+          docIdx: 1,
+          specialNote: AUTO_DEVIATION_DESC,
+          improveNote: "",
+          baseDt: "20260901",
+        },
+        items: [],
+        corrective: {
+          deviationDesc: AUTO_DEVIATION_DESC,
+          actionDesc: "",
+        },
+      },
+      { tmplCd: "tml_ccp_pkg_001", tmplNm: "포장" },
+    );
+    expect(buf.specialNote).toBe("");
+    expect(buf.deviationYn).toBe(true);
   });
 });
 

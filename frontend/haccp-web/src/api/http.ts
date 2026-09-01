@@ -112,8 +112,8 @@ function attachInterceptors(instance: AxiosInstance): void {
   // 요청 인터셉터 — 저장된 토큰이 있으면 Authorization 헤더를 붙인다
   instance.interceptors.request.use((config) => {
     const token = useAuthStore.getState().token;
-    // token이 있을 때(= 로그인 상태) Bearer를 붙인다. 로그인 API는 토큰이 없어도 통과한다
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    // token이 있을 때(= 로그인 상태) Bearer를 붙인다. FormData 업로드는 set 이 아니면 헤더가 빠질 수 있다
+    if (token) config.headers.set("Authorization", `Bearer ${token}`);
     return config;
   });
 

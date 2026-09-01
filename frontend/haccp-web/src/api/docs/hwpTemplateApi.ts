@@ -38,7 +38,7 @@ export interface HwpTemplateRow {
   defaultFileIdx?: number | null;
   // 현재 적용 파일 idx
   currentFileIdx?: number | null;
-  // 살아있는 파일 이력 건수 — 불러오기 활성 판정
+  // 살아있는 파일 이력 건수 — 표시용. 불러오기 버튼은 저장행이면 연다
   fileHistCnt?: number | null;
 }
 

@@ -310,7 +310,7 @@ export function PaperTitleCell({
  * 일자: 2026-08-20
  * 코멘트:
  *   1) 제목·결재·일자·점검자. 작성·수정이 같은 표·같은 칸 크기
- *   2) 일자 라벨만 화면이 넘긴다. 포장·가열·금속은 작성일자, 공정·검증은 점검일자
+ *   2) 일자 라벨만 화면이 넘긴다. 작성 모드 일자는 표시만 — 수정은 왼쪽 그리드
  *   3) 5개 HTML 지면이 같이 쓴다
  */
 export function HtmlFormBanner({
@@ -397,13 +397,12 @@ export function HtmlFormBanner({
             colSpan={2}
           >
             {mode === "write" ? (
-              <input
-                // 일자 YYYY-MM-DD
+              <span
+                // 작성일자는 왼쪽 목록 baseDtDisp 만 고친다. 지면에서 지우면 저장값이 비었다
                 className="html-form-sign-input"
-                value={header.baseDt}
-                disabled={!writeEdit}
-                onChange={(e) => onHeaderChange?.({ baseDt: e.target.value })}
-              />
+              >
+                {header.baseDt}
+              </span>
             ) : (
               header.baseDt
             )}

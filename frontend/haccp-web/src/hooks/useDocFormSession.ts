@@ -128,35 +128,47 @@ export function useDocFormSession<TBuf, TList extends DocListMeta>() {
     return key;
   }, [bump, flushActive, syncList]);
 
+  const selectGen = useRef(0);
+
   /**
    * 개발자: 박승우
-   * 일자: 2026-08-06
+   * 일자: 2026-09-01
    * 코멘트:
-   *   1) 행을 선택하고 버퍼를 활성으로 올린다
+   *   1) 행을 선택하고 버퍼를 활성으로 올린다. 버퍼가 없어도 ensureBuffer 는 호출한다(첨부 재조회)
    *   2) 좌측 그리드 onActivate에서 호출한다
-   *   3) ensureBuffer가 없으면 전환만 하고 null 버퍼일 수 있다
+   *   3) await 뒤 순번이 바뀌면 activeKey 를 쓰지 않는다. 같은 키를 다시 열면 flushActive 를 건너 저장 직후 버퍼를 덮지 않는다
    */
   const selectKey = useCallback(async (
     key: string | null,
     ensureBuffer?: (key: string, row: EditableRow<TList>) => Promise<TBuf | null>,
   ) => {
-    flushActive();
+    // 같은 행을 다시 열 때(= 저장 직후 afterAll) React state 는 한 박자 늦다.
+    // 방금 putBuffer 한 ref 를 빈 activeBuffer 로 덮지 않는다
+    if (key !== activeKey) flushActive();
     if (!key) {
+      selectGen.current += 1;
       setActiveKey(null);
       setActiveBuffer(null);
       return;
     }
     const row = listRef.current.find((r) => r._key === key);
     if (!row) return;
+    const gen = ++selectGen.current;
     let buf: TBuf | null = buffersRef.current.get(key) ?? null;
-    if (!buf && ensureBuffer) {
-      buf = await ensureBuffer(key, row);
-      if (buf) buffersRef.current.set(key, buf);
+    if (ensureBuffer) {
+      const next = await ensureBuffer(key, row);
+      if (selectGen.current !== gen) return;
+      // 버퍼가 없을 때만 상세로 채운다. 있으면 미저장 편집을 덮지 않는다
+      if (!buf && next) {
+        buf = next;
+        buffersRef.current.set(key, buf);
+      }
     }
+    if (selectGen.current !== gen) return;
     setActiveKey(key);
     setActiveBuffer(buf);
     bump();
-  }, [bump, flushActive]);
+  }, [activeKey, bump, flushActive]);
 
   /**
    * 개발자: 박승우

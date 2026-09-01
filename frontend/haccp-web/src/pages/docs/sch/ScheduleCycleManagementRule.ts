@@ -79,7 +79,7 @@ export type CycleForm = {
   weekDays: number[];
   // 매월 — 실행일 목록
   monthDays: number[];
-  // 매월 — 말일 실행 여부(31일 지정과 별개로 걸 수 있다)
+  // 매월·분기·반기·매년 — 말일 실행 여부(지정일과 별개로 걸 수 있다)
   monthEnd: boolean;
   // 분기·반기 = 주기 내 월 순번, 매년 = 월 번호
   periodMonth: number;
@@ -160,7 +160,11 @@ export function detailsToForm(base: CycleForm, details?: DocCycleDetail[]): Cycl
     else if (type === "month-end") next.monthEnd = true;
     else if (type === "quarter-month" || type === "half-month" || type === "year-month") {
       if (val1 >= 1) next.periodMonth = val1;
-      if (val2 >= 1) next.periodDay = val2;
+      // val2<=0 은 그달 말일 sentinel. 값이 없으면 실행일 기본(1)을 유지한다
+      if (detail.val2 != null) {
+        if (val2 >= 1) next.periodDay = val2;
+        else next.monthEnd = true;
+      }
     }
   }
   next.weekDays.sort((a, b) => a - b);
@@ -186,11 +190,11 @@ export function formToDetails(form: CycleForm): DocCycleDetail[] {
       return rows;
     }
     case "Q":
-      return [{ detailTy: "quarter-month", val1: form.periodMonth, val2: form.periodDay }];
+      return [{ detailTy: "quarter-month", val1: form.periodMonth, val2: form.monthEnd ? 0 : form.periodDay }];
     case "H":
-      return [{ detailTy: "half-month", val1: form.periodMonth, val2: form.periodDay }];
+      return [{ detailTy: "half-month", val1: form.periodMonth, val2: form.monthEnd ? 0 : form.periodDay }];
     case "Y":
-      return [{ detailTy: "year-month", val1: form.periodMonth, val2: form.periodDay }];
+      return [{ detailTy: "year-month", val1: form.periodMonth, val2: form.monthEnd ? 0 : form.periodDay }];
     default:
       return [];
   }

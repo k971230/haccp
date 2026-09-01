@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) 좌측은 조회 전용이다 — 양식 등록·삭제는 사용양식 관리 몫이고 이 화면은 주기만 다룬다
  *   2) 양식 1개 = 주기 0..1건이라 우측은 그리드가 아닌 단일 폼이며 저장은 업서트다
- *   3) 반복설정은 주기 콤보에 따라 영역만 바뀐다 — 매일·비정기는 안내, 매주는 요일, 매월은 실행일·말일, 분기·반기·매년은 월+일
+ *   3) 반복설정은 주기 콤보에 따라 영역만 바뀐다 — 매일·비정기는 안내, 매주는 요일, 매월은 실행일·말일, 분기·반기·매년은 월+일·말일
  *   4) 결재선은 결재선관리 목록에서 고른다. 작성(WRITE)에 사람이 있으면 담당자·담당부서를 채운다
  *
  * PIPELINE[HF89] 문서주기관리 화면
@@ -850,7 +850,8 @@ export default function ScheduleCycleManagementPage() {
                     ) : null}
 
                     {form.cycleCd === "Q" || form.cycleCd === "H" || form.cycleCd === "Y" ? (
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="flex min-w-0 flex-col gap-2">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <label className={formLabelClass}>
                           {/* 분기·반기는 주기 내 월 순번(1=첫 달), 매년은 실제 월 번호 */}
                           {periodMonthLabel}
@@ -871,12 +872,12 @@ export default function ScheduleCycleManagementPage() {
                           </select>
                         </label>
                         <label className={formLabelClass}>
-                          {/* 실행일 — 그달에 없는 날은 그달의 마지막 날에 실행한다 */}
+                          {/* 실행일 — 그달에 없는 날은 그달의 마지막 날에 실행한다. 말일이면 이 칸은 쓰지 않는다 */}
                           실행일
                           <select
                             className={formFieldClass}
                             value={form.periodDay}
-                            disabled={!canEdit}
+                            disabled={!canEdit || form.monthEnd}
                             onChange={(event) => setForm((prev) => ({
                               ...prev,
                               periodDay: Number(event.target.value),
@@ -887,6 +888,16 @@ export default function ScheduleCycleManagementPage() {
                             ))}
                           </select>
                         </label>
+                        </div>
+                        <button
+                          // 말일 실행 — 분기·반기·매년에서도 그달 마지막 날
+                          type="button"
+                          className={monthEndChipClass(form.monthEnd)}
+                          disabled={!canEdit}
+                          onClick={() => setForm((prev) => ({ ...prev, monthEnd: !prev.monthEnd }))}
+                        >
+                          말일 실행
+                        </button>
                       </div>
                     ) : null}
                   </fieldset>

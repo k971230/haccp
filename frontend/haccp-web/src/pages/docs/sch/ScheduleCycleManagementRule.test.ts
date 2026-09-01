@@ -11,7 +11,7 @@
  *   3) 순서가 곧 사람이 채우는 순서다 — 앞 칸이 비면 뒤 칸은 안 본다
  */
 import { describe, expect, it } from "vitest";
-import { emptyForm, validateCycleSave, type CycleForm } from "./ScheduleCycleManagementRule";
+import { emptyForm, formToDetails, validateCycleSave, type CycleForm } from "./ScheduleCycleManagementRule";
 
 /** 승인 결재자가 제대로 든 결재선 */
 const okSteps = [
@@ -68,5 +68,15 @@ describe("문서주기 저장 필수값", () => {
   it("매월이어도 말일을 고르면 통과한다", () => {
     const form = filled({ cycleCd: "M", monthDays: [], monthEnd: true });
     expect(validateCycleSave(form, okSteps)).toBeNull();
+  });
+
+  it("분기 말일이면 실행일 sentinel은 0이다", () => {
+    const rows = formToDetails(filled({
+      cycleCd: "Q",
+      periodMonth: 2,
+      periodDay: 31,
+      monthEnd: true,
+    }));
+    expect(rows).toEqual([{ detailTy: "quarter-month", val1: 2, val2: 0 }]);
   });
 });

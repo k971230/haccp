@@ -121,8 +121,19 @@ export function GridToolbar<T extends Record<string, any>>(props: {
     };
   }, [colMenu]);
 
-  // IME 조합 중이 아닐 때만 debounce 후 view.setQuery 호출
+  // IME 조합 중이 아닐 때만 debounce 후 view.setQuery 호출.
+  // 빈 값은 즉시 반영한다 — 지우고 Enter 해도 debounce·조합 중 skip 때문에 필터가 안 풀리던 구멍.
+  const flushQuery = (v: string) => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    view.setQuery(v);
+  };
   const pushQuery = (v: string) => {
+    if (v === "") {
+      composing.current = false;
+      flushQuery("");
+      return;
+    }
     if (composing.current) return;
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => view.setQuery(v), FILTER_DEBOUNCE_MS);
@@ -156,6 +167,16 @@ export function GridToolbar<T extends Record<string, any>>(props: {
             composing.current = false;
             setLocalQuery(e.currentTarget.value);
             pushQuery(e.currentTarget.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            composing.current = false;
+            flushQuery(localQuery);
+          }}
+          onBlur={() => {
+            if (composing.current) return;
+            flushQuery(localQuery);
           }}
         />
       </div>
