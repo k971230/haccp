@@ -87,6 +87,15 @@ class CycleScheduleGeneratorTest {
         ), dates);
     }
 
+    /** 분기 말일 — val2=0 이면 2월은 28/29일로 당긴다. */
+    @Test
+    void quarterlyMonthEndUsesFebruaryLastDay() {
+        Rule rule = new Rule("Q", "keep", LocalDate.of(2026, 1, 1), List.of(new Detail("quarter-month", 2, 0)));
+        List<LocalDate> dates = generator.generate(rule, LocalDate.of(2026, 1, 1), 3);
+
+        assertTrue(dates.contains(LocalDate.of(2026, 2, 28)), "2026년 2월 말일");
+    }
+
     /** 비정기 — 예정일을 만들지 않는다. 필요할 때 문서를 작성한다. */
     @Test
     void eventCycleProducesNoDates() {

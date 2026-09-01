@@ -166,13 +166,14 @@ public class CcpVerifyDraftService {
                 Object yn = row.get("yn");
                 return yn != null && "N".equalsIgnoreCase(String.valueOf(yn).trim());
             });
+            boolean keepCa = hasNg || "Y".equalsIgnoreCase(DraftSupport.nvl(req.getDeviationYn()));
             correctiveSupport.saveAutoIfNg(
                     LoginUserContext.coCd(),
                     docIdx,
                     tmpl,
                     req.getBaseDt().trim(),
                     req.getCorrective(),
-                    hasNg,
+                    keepCa,
                     LoginUserContext.userId()
             );
             return docIdx;

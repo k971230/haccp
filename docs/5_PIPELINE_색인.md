@@ -288,6 +288,8 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/components/document/HwpDocumentPreview.tsx` | 결재 문서 미리보기 |
 | `HF185` | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachPage.tsx` | 결재 첨부 화면 |
 |  | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachRule.ts` | 결재 첨부 화면 |
+| `HF186` | `frontend/haccp-web/src/pages/draft/hwp-doc/hwpOpenMode.ts` | HWP 열기 판정 |
+|  | `frontend/haccp-web/src/pages/draft/hwp-doc/hwpOpenMode.test.ts` | HWP 열기 판정 |
 | `HF200` | `frontend/haccp-web/src/shell/gridRules/gridSave.ts` | 편집 그리드 저장 공통 |
 
 ## 백엔드 (HB) — 태그 79개 · 파일 276곳

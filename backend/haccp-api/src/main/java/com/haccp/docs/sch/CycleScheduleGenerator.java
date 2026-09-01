@@ -34,7 +34,7 @@ public class CycleScheduleGenerator {
             String detailTy,
             // val1: week-day=ISO 요일(1 월 ~ 7 일) / month-day=일(1~31) / quarter·half=반기·분기 내 월 순번 / year-month=월(1~12)
             Integer val1,
-            // val2: quarter-month·half-month·year-month의 실행일(1~31). 나머지 유형은 null
+            // val2: quarter-month·half-month·year-month의 실행일(1~31). 0 이하는 그달 말일. 나머지 유형은 null
             Integer val2
     ) {}
 
@@ -165,7 +165,9 @@ public class CycleScheduleGenerator {
             int compare = "Y".equals(cycle) ? monthNo : position;
             if (compare != wanted) continue;
             int day = detail.val2() == null ? startDt.getDayOfMonth() : detail.val2();
-            out.add(clamp(month, day));
+            // val2<=0 은 그달 말일 — 분기·반기·매년 말일 실행
+            if (day <= 0) out.add(month.withDayOfMonth(month.lengthOfMonth()));
+            else out.add(clamp(month, day));
         }
         return out;
     }

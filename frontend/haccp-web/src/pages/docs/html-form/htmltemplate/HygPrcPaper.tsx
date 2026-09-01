@@ -39,6 +39,8 @@ import { GripVertical } from "lucide-react";
 import { HTML_INPUT_TY_MAIN_CD, JUDGE_YN_MAIN_CD, useCommonCodes } from "@/hooks/useCommonCodes";
 // 역할 — className 병합
 import { cn } from "@/lib/cn";
+// 역할 — 전체행 삭제 확인
+import { mesConfirmDanger } from "@/shell/dialog";
 // 역할 — 드래그 출발 행
 import { useRef, useState } from "react";
 
@@ -64,10 +66,10 @@ function sortedBodyItems(items: HtmlFormItem[]): HtmlFormItem[] {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-20
+ * 일자: 2026-09-01
  * 코멘트:
  *   1) 점검 행만 순서를 바꾼다. 제목·부제 hdr 행은 앞에 둔다
- *   2) 드롭 위치 앞에 끼우고 sortNo 를 1부터 다시 매긴다
+ *   2) 드롭이 행 위(before)·아래(after) 중 어디인지에 맞춰 끼운다
  *   3) 저장은 기존 items PUT. SP 가 sortNo 를 sort_no 에 쓴다
  */
 function moveHtmlFormBody(
@@ -77,6 +79,8 @@ function moveHtmlFormBody(
   fromCd: string,
   // 놓은 item_cd
   toCd: string,
+  // 대상 행의 위(before) 또는 아래(after)
+  edge: "before" | "after",
 ): HtmlFormItem[] {
   const hdr = items.filter((row) => isPaperHdrItem(row.itemCd));
   const body = sortedBodyItems(items);
@@ -85,7 +89,10 @@ function moveHtmlFormBody(
   if (from < 0 || to < 0 || from === to) return items;
   const next = [...body];
   const [row] = next.splice(from, 1);
-  next.splice(to, 0, row);
+  // from 이 to 앞이면 splice 뒤 to 인덱스가 한 칸 당겨진다
+  let insertAt = from < to ? to - 1 : to;
+  if (edge === "after") insertAt += 1;
+  next.splice(Math.max(0, Math.min(insertAt, next.length)), 0, row);
   return [...hdr, ...next.map((item, i) => ({ ...item, sortNo: i + 1 }))];
 }
 
@@ -124,6 +131,8 @@ export function HygPrcPaper({
   const judgeYn = useCommonCodes(JUDGE_YN_MAIN_CD);
   const dragCd = useRef<string | null>(null);
   const [overCd, setOverCd] = useState<string | null>(null);
+  // 드롭 선 — 행 위(before) 또는 아래(after)
+  const [overEdge, setOverEdge] = useState<"before" | "after" | null>(null);
   const typeOptions: { subCd: string; codeNm: string }[] =
     inputTy.codes.length > 0 ? inputTy.codes : [...FALLBACK_HTML_INPUT_TY];
   const yesNm = judgeYn.label("y", "예");
@@ -164,6 +173,20 @@ export function HygPrcPaper({
       .filter((row) => row.itemCd !== itemCd)
       .map((row, i) => ({ ...row, sortNo: i + 1 }));
     onItemsChange([...hdr, ...nextBody]);
+  };
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-09-01
+   * 코멘트:
+   *   1) 점검 행만 비운다. 제목·부제 hdr 는 남긴다
+   *   2) 행추가 옆 버튼이 호출한다. 저장 전 화면 상태만 지운다
+   *   3) 확인을 거절하면 그대로 둔다
+   */
+  const clearBodyRows = async () => {
+    if (!onItemsChange || bodyItems.length === 0) return;
+    if (!(await mesConfirmDanger("점검 행을 모두 삭제하시겠습니까?"))) return;
+    onItemsChange(items.filter((row) => isPaperHdrItem(row.itemCd)));
   };
 
   return (
@@ -255,26 +278,35 @@ export function HygPrcPaper({
                   data-item-cd={item.itemCd}
                   className={cn(
                     selectedIndex === index && "bg-sky-50",
-                    templateEdit && overCd === item.itemCd && "html-form-drag-over",
+                    templateEdit && overCd === item.itemCd && overEdge === "before" && "html-form-drag-over-before",
+                    templateEdit && overCd === item.itemCd && overEdge === "after" && "html-form-drag-over-after",
                   )}
                   onClick={() => onSelectIndex?.(index)}
                   onDragOver={(e) => {
                     if (!templateEdit) return;
                     e.preventDefault();
                     e.dataTransfer.dropEffect = "move";
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const edge = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
                     if (overCd !== item.itemCd) setOverCd(item.itemCd);
+                    if (overEdge !== edge) setOverEdge(edge);
                   }}
                   onDragLeave={() => {
-                    if (overCd === item.itemCd) setOverCd(null);
+                    if (overCd === item.itemCd) {
+                      setOverCd(null);
+                      setOverEdge(null);
+                    }
                   }}
                   onDrop={(e) => {
                     if (!templateEdit) return;
                     e.preventDefault();
+                    const edge = overEdge ?? "before";
                     setOverCd(null);
+                    setOverEdge(null);
                     const from = dragCd.current;
                     dragCd.current = null;
                     if (!from || !onItemsChange) return;
-                    onItemsChange(moveHtmlFormBody(items, from, item.itemCd));
+                    onItemsChange(moveHtmlFormBody(items, from, item.itemCd, edge));
                   }}
                 >
                   {cycleSpans[index] > 0 ? (
@@ -383,6 +415,7 @@ export function HygPrcPaper({
                             onDragEnd={() => {
                               dragCd.current = null;
                               setOverCd(null);
+                              setOverEdge(null);
                             }}
                           >
                             <GripVertical
@@ -446,15 +479,27 @@ export function HygPrcPaper({
         onItemsChange={onItemsChange}
       >
         {templateEdit ? (
-          <MesButton
-            // 표 오른쪽 끝 행 추가 — 바로 위 행의 주기·관리·유형을 이어 받는다
-            size="sm"
-            variant="add"
-            icon="plus"
-            onClick={addRow}
-          >
-            행추가
-          </MesButton>
+          <>
+            <MesButton
+              // 표 오른쪽 끝 행 추가 — 바로 위 행의 주기·관리·유형을 이어 받는다
+              size="sm"
+              variant="add"
+              icon="plus"
+              onClick={addRow}
+            >
+              행추가
+            </MesButton>
+            <MesButton
+              // 점검 행만 비운다. hdr(제목·부제)는 남긴다
+              size="sm"
+              variant="danger"
+              icon="trash"
+              disabled={bodyItems.length === 0}
+              onClick={() => { void clearBodyRows(); }}
+            >
+              전체행 삭제
+            </MesButton>
+          </>
         ) : null}
         {writeEdit && onItemsChange ? (
           <MesButton

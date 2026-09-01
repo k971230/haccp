@@ -128,7 +128,7 @@ export type HwpButtonState = {
  * 코멘트:
  *   1) 선택행·권한으로 툴바 버튼 활성을 한 곳에서 계산한다
  *   2) Page useMemo가 호출한다
- *   3) 시스템양식도 업로드·내보내기·불러오기·초기화는 켠다
+ *   3) 시스템양식도 업로드·내보내기·불러오기·초기화는 켠다. 불러오기는 이력 0건이어도 연다 — SP 가 기본양식 행을 채운다
  */
 export function buildButtonState(
   // 현재 선택행 — 없으면 파일 기능 전부 잠금
@@ -142,7 +142,7 @@ export function buildButtonState(
     canDeleteRow: canDeleteAuth && !!row && (row._rowState === "C" || isCompanyForm(row.sysYn)),
     canUpload: canEdit && persisted,
     canExport: persisted && !!row?.formFileNm,
-    canImport: canEdit && persisted && Number(row?.fileHistCnt ?? 0) > 0,
+    canImport: canEdit && persisted,
     canReset: canEdit && persisted && !!row?.defaultFileIdx,
   };
 }
@@ -180,7 +180,7 @@ export function buildFileHistColumns(
       width: 100,
       type: "code",
       codeMap: srcTyMap,
-      badge: { sys: "blue", usr: "green" },
+      badge: { SYS: "blue", USR: "green", sys: "blue", usr: "green" },
     },
     {
       // 지금 적용 중인 버전 — SP CASE 문구(현재적용). 배지가 잘리지 않게 88보다 넓힌다

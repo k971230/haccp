@@ -7,7 +7,7 @@
 - 좌우 50:50 프레임(`HtmlFormTemplatePage`). 지면은 `HygPrcPaper`. 검증점검 `CcpChkPaper` 도 이 파일을 쓴다.
 - 표준(`html_hyg_prc_000`)은 수정·삭제 불가. 사용여부는 항상 미사용. 자사는 행추가로만 만들고 기본 사용.
 - 자사 저장은 `html_hyg_prc_001`부터 채번, 테이블 `tbl_html_hyg_prc_ver`. 문서주기 좌측에 오른다.
-- 우측 수정은 저장한 자사 양식만. 제목·부제·항목 PUT은 좌 저장과 분리. 입력유형 열은 표 안에 두고 삭제도 같은 행에 둔다.
+- 우측 수정은 저장한 자사 양식만. 제목·부제·항목 PUT은 좌 저장과 분리. 입력유형 열은 표 안에 두고 삭제도 같은 행에 둔다. 수정 때 행을 사이 선으로 끌어 순서를 바꾸고, 행추가 옆에서 점검 행을 한꺼번에 지울 수 있다.
 
 scrnCd `hyg-process-template` · API `/api/v1/docs/html-form/hyg-process-template`
 

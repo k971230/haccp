@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) 코드조회와 같은 셸 — 보라 헤더·검색행·MesDataGrid·푸터. 사용양식만 쓰므로 공통 모달에 넣지 않는다
  *   2) 라디오 1건 + 행 클릭으로 고르고, 적용은 푸터에서 확정한다
- *   3) 목록 API는 호출하지 않는다 — 호출 화면이 이력을 넘기고 파일명·src-ty 만 거른다
+ *   3) 목록 API는 호출하지 않는다 — 호출 화면이 이력을 넘기고 파일명·src-ty 만 거른다. 구분은 SYS/USR 대소문자를 같이 본다
  *
  * PIPELINE[HF123] 사용양식 파일 이력 팝업
  */
@@ -98,8 +98,9 @@ export function HwpTemplateFileHistModal({
     return rows.filter((file) => {
       // 파일명 칸 — 부분일치 (빈 칸이면 통과)
       const nameOk = !nq || String(file.fileNm ?? "").toLowerCase().includes(nq);
-      // 구분 칸 — srcTy 일치 (빈 값이면 통과)
-      const srcOk = !appliedSrc || file.srcTy === appliedSrc;
+      // 구분 칸 — SRC_TY 대소문자 무시 (빈 값이면 통과). 옛 저장값 sys/usr 과 코드 SYS/USR 를 같이 본다
+      const srcOk = !appliedSrc
+        || String(file.srcTy ?? "").toUpperCase() === String(appliedSrc).toUpperCase();
       return nameOk && srcOk;
     });
   }, [appliedNm, appliedSrc, rows]);

@@ -301,8 +301,9 @@ public class CcpLogDraftService {
             ca.setConfirmUserNm(DraftSupport.nvl(req.getConfirmNm()));
         }
         boolean hasNg = rows.stream().anyMatch(r -> "F".equalsIgnoreCase(DraftSupport.nvl(r.getJudgeCd())));
+        boolean keepCa = hasNg || "Y".equalsIgnoreCase(DraftSupport.nvl(req.getDeviationYn()));
         correctiveSupport.saveAutoIfNg(
-                coCd, docIdx, tmplCd, req.getBaseDt().trim(), ca, hasNg, LoginUserContext.userId());
+                coCd, docIdx, tmplCd, req.getBaseDt().trim(), ca, keepCa, LoginUserContext.userId());
     }
 
     /**
