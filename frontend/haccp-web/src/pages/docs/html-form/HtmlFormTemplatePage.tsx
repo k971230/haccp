@@ -566,6 +566,8 @@ export function HtmlFormTemplatePage({
                     onAdd={handleAdd}
                     onSave={handleCommit}
                     onDel={handleDelete}
+                    // pending 이면 좌 저장을 먼저 — 헤더 span 대신 툴팁
+                    saveTitle={pending ? "미저장 · 저장 후 수정" : undefined}
                     busy={{
                       add: action.isBusy("add"),
                       save: action.isBusy("save"),
@@ -608,14 +610,18 @@ export function HtmlFormTemplatePage({
             <div className={splitPanelClass}>
               <div className={gridHeadClass}>
                 <div className="flex min-w-0 items-center gap-2 overflow-hidden">
-                  <b className="truncate">{active?.verNm || paperTitle}</b>
-                  {pending ? (
-                    <span className="text-xs font-normal text-slate-500">미저장 · 저장 후 수정</span>
-                  ) : locked ? (
-                    <span className="text-xs font-normal text-slate-500">표준 · 수정 불가</span>
-                  ) : paperEditing ? (
-                    <span className="text-xs font-normal text-slate-500">수정 중 · 저장하면 반영됩니다</span>
-                  ) : null}
+                  <b
+                    // 폭이 모자라면 말줄임 — 상태 안내는 헤더 span 대신 title
+                    className="truncate"
+                    title={
+                      pending ? "미저장 · 저장 후 수정"
+                        : locked ? "표준 · 수정 불가"
+                          : paperEditing ? "수정 중 · 저장하면 반영됩니다"
+                            : (active?.verNm || paperTitle)
+                    }
+                  >
+                    {active?.verNm || paperTitle}
+                  </b>
                 </div>
                 <div className="ml-auto flex shrink-0 items-center gap-1.5">
                   {paperEditing ? (
@@ -625,6 +631,7 @@ export function HtmlFormTemplatePage({
                         size="sm"
                         variant="save"
                         icon="save"
+                        title="수정 중 · 저장하면 반영됩니다"
                         disabled={action.isBusy()}
                         onClick={() => void handleSaveItems()}
                       >
@@ -641,14 +648,15 @@ export function HtmlFormTemplatePage({
                       </MesButton>
                     </>
                   ) : canEditPaper ? (
-                    <MesButton
-                      // 저장한 자사 양식만. 표준은 버튼 자체를 두지 않는다
-                      size="sm"
-                      variant="excel"
-                      icon="edit"
-                      disabled={action.isBusy()}
-                      onClick={() => setEditing(true)}
-                    >
+                      <MesButton
+                        // 저장한 자사 양식만. 표준은 버튼 자체를 두지 않는다
+                        size="sm"
+                        variant="excel"
+                        icon="edit"
+                        title={pending ? "미저장 · 저장 후 수정" : undefined}
+                        disabled={action.isBusy()}
+                        onClick={() => setEditing(true)}
+                      >
                       수정
                     </MesButton>
                   ) : null}

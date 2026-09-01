@@ -7,7 +7,8 @@ HTML 양식 표는 화면 폴더의 Paper 가 그린다. 여기서는 서명 칸
 | 파일 | 역할 |
 |---|---|
 | `htmlFormPaperShared.tsx` | `HtmlFormPaperProps` · `SignSlot` · `PaperTitleCell` · 기록행·판정 헬퍼 |
-| `DocFormLayout.tsx` · `DocFormSearchToolbar.tsx` | 작성 화면 셸 |
+| `docFormSearch.ts` | 문서함·첨부 검색 기간 기본값. 검색 UI 는 `SearchArea` |
+| `DocFormLayout.tsx` | 옛 작성 셸 — 신규 화면은 `PageCard` + `SearchArea` |
 
 기준관리 5화면은 `HtmlFormTemplatePage` 50:50 프레임. 표준은 수정 불가, 자사는 행추가만.
 

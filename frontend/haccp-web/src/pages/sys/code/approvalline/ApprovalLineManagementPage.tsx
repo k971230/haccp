@@ -524,14 +524,12 @@ export default function ApprovalLineManagementPage() {
             <div {...sec.bind("d", splitPanelClass)}>
               <div className={gridHeadClass}>
                 <b>{stepTitle}</b>
-                {approverWarn ? (
-                  // 승인자가 관리자로 남아 있을 때만 보인다 — 저장을 막지는 않는다
-                  <span className="text-[11px] font-normal text-amber-700">{approverWarn}</span>
-                ) : null}
                 <GridCrudButtons
                   // 우측은 고정 3단계 — 저장만. 결재자·사용여부 수정 후 바로 저장
                   run={asyncAct.run}
                   onSave={editable && activeKey ? handleSave : undefined}
+                  // 개설 관리자가 승인자로 남아 있을 때 — 헤더에 안 깔고 저장 툴팁만
+                  saveTitle={approverWarn || undefined}
                   busy={{
                     save: asyncAct.isBusy("save"),
                   }}

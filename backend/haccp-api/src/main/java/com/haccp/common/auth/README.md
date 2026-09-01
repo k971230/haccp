@@ -23,7 +23,9 @@ JWT 다음 단계다. **로그인했는지**는 `JwtFilter` 가, **그 화면을
 
 - `/api/v1/docs/documents/**` — 문서 허브. 삭제·HWP 저장은 `HWP_HUB_SCREENS`, 나머지는 `DOC_HUB_SCREENS`
 - `/auth/**` · 셸 공용 · `/sys/users/me` — 화이트리스트
-- `/api/v1/docs/templates/list` — **공용 조회**라 화이트리스트. 나머지 `/docs/templates/**` 는 `hwp-template-management`
+- `/api/v1/docs/templates/list` · GET `/{tmplCd}/form` — **공용 조회**. 업로드 POST 만 `hwp-template-management`
+- GET `/api/v1/sys/users/{userId}/sign` — 지면 도장. 업로드·삭제는 `user-management`
+- GET `user-management/list` · `approval-line-management/list` — 문서주기 콤보. 저장·삭제는 그 화면
 
 ## 여러 화면이 쓰는 조회는 화면에 묶지 않는다
 
@@ -35,10 +37,15 @@ JWT 다음 단계다. **로그인했는지**는 `JwtFilter` 가, **그 화면을
 그 화면은 VIEWER 도 읽기 권한이 있는데도 그랬다. 부르는 곳은 둘이다 —
 `draft/hwp-doc/HwpEditorPane` 과 `flow/ca/CorrectiveActionManagementPage`.
 
-**목록만 연다.** 원본 파일 스트림(`/{tmplCd}/form`)과 업로드는 그대로 화면 권한을 본다.
+**목록·GET 원본·GET 서명·사용자/결재선 목록** 은 연다. 업로드·삭제는 화면 권한을 본다.
 회사 범위는 어차피 JWT 로 SP 가 가른다.
 
 새 조회를 더할 때 **부르는 화면이 둘 이상이면** 화면에 묶지 말고 여기를 본다.
+
+## 변경 (2026-09-01)
+
+HWP 작성 팀원(사용자관리·사용양식관리 없음)이 양식 원본·서명·사용자 목록에서 403 이 나던 것을 고쳤다.
+GET `/{tmplCd}/form` · GET `/{userId}/sign` · 사용자/결재선 목록 GET 을 공용 조회로 열었다.
 
 ## 변경 (2026-08-28)
 

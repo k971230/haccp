@@ -464,6 +464,7 @@ export function confirmDeleteBtn(page: Page): Locator {
  *   1) 그 파일은 psql 전용 메타명령(\if·\set·\gset)을 머리말에만 쓴다. 본문은 순수 SQL 이다
  *   2) psql 이 없는 개발 PC 에서도 시드를 **실제로 돌려 보려고** 여기서 변수만 바꿔 넣는다
  *   3) 값 치환 규칙은 psql 과 같다 — :'x' 는 작은따옴표 문자열이다. 본문 SQL 은 손대지 않는다
+ *      writerId 가 있으면 팀원을 만들고 기본 결재선 WRITE 에 붙인다. 없으면 빈 문자열
  *
  * 시드 자체를 베끼지 않는다. 파일을 읽어 돌리므로 정본은 계속 06_company_seed.sql 하나다.
  */
@@ -471,6 +472,7 @@ export function seedCompany(vars: {
   coCd: string;
   coNm?: string;
   adminId?: string;
+  writerId?: string;
   srcCo?: string;
 }): void {
   if (!hasDbTools()) {
@@ -484,6 +486,7 @@ export function seedCompany(vars: {
     co_cd: vars.coCd,
     co_nm: vars.coNm ?? "E2E 신규업체",
     admin_id: vars.adminId ?? `admin${vars.coCd}`,
+    writer_id: vars.writerId ?? "",
     // '1234' 의 BCrypt 해시 — 시드 기본값과 같다
     admin_pw: "$2a$10$omCFk.XMhqOp5dAmMQ7Me.Rp9c0f87cCPZS3IRg1avF5PVWRzjw4O",
     src_co: vars.srcCo ?? "0000",

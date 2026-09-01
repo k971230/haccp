@@ -2,7 +2,7 @@
  * ScreenAuthResolverTest — 경로 → 화면·권한 칸 정적 맵.
  *
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-09-01
  * 코멘트:
  *   1) draft·sys·기준정보 대표 3경로가 각각 삭제 권한으로 해석되는지 고정한다
  *   2) 화이트리스트와 문서 허브 우회 경로도 같이 본다 — 맵이 빠지면 403 테스트가 거짓 통과한다
@@ -93,15 +93,16 @@ class ScreenAuthResolverTest {
         );
     }
 
-    /** 목록만 열었다 — 원본 파일과 업로드는 작성 화면의 일이라 그대로 막는다. */
+    /*
+     * GET 원본은 HWP 작성이 연다. 사용양식관리 권한이 없는 팀원도 양식을 열 수 있어야 한다.
+     * 업로드 POST 만 사용양식관리에 남긴다.
+     */
     @Test
-    void 양식_원본과_업로드는_사용양식관리_화면이다() {
-        ScreenAuthMatch read = ScreenAuthResolver.resolve(
-                "GET",
-                "/api/v1/docs/templates/hwp_sys_001/form"
-        ).orElseThrow();
-        assertEquals("hwp-template-management", read.scrnCd());
-        assertEquals(ScreenAuthAction.READ, read.action());
+    void 양식_원본_GET은_공용조회_업로드는_사용양식관리다() {
+        assertTrue(
+                ScreenAuthResolver.resolve("GET", "/api/v1/docs/templates/hwp_sys_001/form").isEmpty(),
+                "원본 GET 이 사용양식관리에 묶이면 HWP 작성 팀원이 403 이다"
+        );
 
         ScreenAuthMatch write = ScreenAuthResolver.resolve(
                 "POST",
@@ -111,12 +112,35 @@ class ScreenAuthResolverTest {
     }
 
     @Test
-    void 타인_서명은_사용자관리_화면이다() {
-        ScreenAuthMatch m = ScreenAuthResolver.resolve(
+    void 자사_서명_GET은_공용조회_업로드삭제는_사용자관리다() {
+        assertTrue(
+                ScreenAuthResolver.resolve("GET", "/api/v1/sys/users/rmausr/sign").isEmpty(),
+                "지면 도장이 사용자관리 권한을 요구하면 작성 화면이 403 이다"
+        );
+        ScreenAuthMatch upload = ScreenAuthResolver.resolve(
+                "POST",
+                "/api/v1/sys/users/other/sign"
+        ).orElseThrow();
+        assertEquals("user-management", upload.scrnCd());
+        ScreenAuthMatch del = ScreenAuthResolver.resolve(
                 "POST",
                 "/api/v1/sys/users/other/sign/delete"
         ).orElseThrow();
-        assertEquals("user-management", m.scrnCd());
-        assertEquals(ScreenAuthAction.DELETE, m.action());
+        assertEquals("user-management", del.scrnCd());
+        assertEquals(ScreenAuthAction.DELETE, del.action());
+    }
+
+    @Test
+    void 사용자_결재선_목록_GET은_공용조회다() {
+        assertTrue(ScreenAuthResolver.resolve("GET", "/api/v1/sys/code/user-management/list").isEmpty());
+        assertTrue(ScreenAuthResolver.resolve(
+                "GET",
+                "/api/v1/sys/code/approval-line-management/list"
+        ).isEmpty());
+        ScreenAuthMatch save = ScreenAuthResolver.resolve(
+                "PUT",
+                "/api/v1/sys/code/user-management/save"
+        ).orElseThrow();
+        assertEquals("user-management", save.scrnCd());
     }
 }

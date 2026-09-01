@@ -18,6 +18,8 @@ import { htmlFormInputLayout, type HtmlFormItem } from "@/api/docs/htmlFormApi";
 import { fetchUserSignBlob } from "@/api/sys/userApi";
 // 역할 — 적합/부적합 공통코드
 import { JUDGE_PF_MAIN_CD, useCommonCodes } from "@/hooks/useCommonCodes";
+// 역할 — 24시간 시·분 셀렉트 (type=time 의 OS AM/PM 을 피한다)
+import { DocCellTime } from "./DocCell";
 
 export type HtmlFormPaperMode = "template" | "write";
 export type HtmlFormPaperVariant = "a4" | "fill";
@@ -1352,17 +1354,21 @@ export function HtmlFormCellInput({
     readOnly: !editable,
     title,
   };
-  if (kind === CELL_KIND.TIME || kind === CELL_KIND.DURATION) {
+  if (kind === CELL_KIND.TIME) {
     return (
-      <input
-        // 시간 콤보 — 브라우저 기본 입력기라 형식이 어긋난 값이 들어올 수 없다
-        {...common}
-        type="time"
-        // 분 단위까지만 받는다 — 초를 열면 칸이 넓어지고 현장에서 쓰지도 않는다
-        step={60}
-        {...(controlled
-          ? { value: value ?? "", onChange: (e) => onChange?.(e.target.value) }
-          : {})}
+      <DocCellTime
+        // 24시간 시·분 — OS 오전/오후 표시를 쓰지 않는다
+        className={`html-form-sign-input ${align}`}
+        // 작성 중이 아니면 고를 수 없다
+        disabled={!editable}
+        // 칸 이름 — 시각
+        title={title}
+        // 지면 저장값은 HH:MM
+        storage="hm"
+        // 미리보기 행이면 빈 값. 작성 행이면 현재 시각
+        value={controlled ? (value ?? "") : ""}
+        // 작성 행만 버퍼로 올린다
+        onChange={controlled ? (next) => onChange?.(next) : () => {}}
       />
     );
   }

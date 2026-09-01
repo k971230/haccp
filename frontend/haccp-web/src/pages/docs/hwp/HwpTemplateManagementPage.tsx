@@ -722,14 +722,22 @@ export default function HwpTemplateManagementPage() {
             <div className={splitPanelClass}>
               <div className={gridHeadClass}>
                 <div className="flex min-w-0 items-center gap-2 overflow-hidden">
-                  <b className="truncate">{activeRow?.tmplNm || activeRow?.tmplCd || "양식 미리보기"}</b>
+                  <b
+                    // 폭이 모자라면 말줄임 — 미리보기 안내는 헤더 span 대신 title
+                    className="truncate"
+                    title={[
+                      activeRow?.tmplNm || activeRow?.tmplCd || "양식 미리보기",
+                      editorMessage,
+                    ].filter(Boolean).join(" — ")}
+                  >
+                    {activeRow?.tmplNm || activeRow?.tmplCd || "양식 미리보기"}
+                  </b>
                   {activeRow ? (
                     <SysYnBadge
                       // 미리보기 대상 구분 — sys/usr. 문구는 공통코드 sys-yn
                       sysYn={activeRow.sysYn}
                     />
                   ) : null}
-                  <span className="truncate text-xs font-normal text-slate-500">{editorMessage}</span>
                 </div>
                 <div className="ml-auto flex shrink-0 items-center gap-1.5">
                   <MesButton

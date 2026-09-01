@@ -6755,7 +6755,7 @@ ALTER TABLE ONLY sasshaccp.tbl_screen
 --
 
 ALTER TABLE ONLY sasshaccp.tbl_template
-    ADD CONSTRAINT ux_tbl_template UNIQUE (tmpl_cd);
+    ADD CONSTRAINT ux_tbl_template UNIQUE (co_cd, tmpl_cd);
 
 
 --
@@ -7174,3 +7174,13 @@ COMMENT ON COLUMN sasshaccp.tbl_ccp_metal_sens_row.check_time IS '점검 시각 
 -- content 에 due_dt·due_time 이 들어가 한 문장 안에서 겹칠 수 없다.
 CREATE UNIQUE INDEX IF NOT EXISTS ux_tbl_notification_dedup
     ON sasshaccp.tbl_notification (co_cd, user_id, noti_type_cd, content, ((ins_dt)::date));
+
+
+--
+-- 양식코드 유일 범위를 회사로 — 이미 도는 DB 용. 다시 돌려도 결과가 같다
+--
+-- 예전에는 tmpl_cd 전역 UNIQUE 였다. 0000 이 html_hyg_prc_001~012 를 쓰면
+-- 0003 첫 복사가 013 이 됐다. 자사 HTML 은 회사 안에서 001 부터 채번한다.
+-- 표준(html_sys_001, hwp_sys_*) 은 계속 co_cd=0000 한 줄이다.
+ALTER TABLE sasshaccp.tbl_template DROP CONSTRAINT IF EXISTS ux_tbl_template;
+ALTER TABLE sasshaccp.tbl_template ADD CONSTRAINT ux_tbl_template UNIQUE (co_cd, tmpl_cd);

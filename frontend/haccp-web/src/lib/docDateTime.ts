@@ -93,6 +93,22 @@ export function fromInputTimeHm(value: string | null | undefined): string {
 
 /**
  * 개발자: 박승우
+ * 일자: 2026-09-01
+ * 코멘트:
+ *   1) 시·분 셀렉트 두 값을 HH:MM 으로 붙인다. 한쪽이 비면 빈 문자열
+ *   2) DocCellTime 이 브라우저 type=time 대신 이걸 쓴다 — OS 12시간제 AM/PM 을 피한다
+ *   3) 시 0~23 · 분 0~59 가 아니면 빈 문자열. 화면이 잘못된 옵션을 올려도 저장하지 않는다
+ */
+export function joinHm(hour: string, minute: string): string {
+  if (!/^\d{2}$/.test(hour) || !/^\d{2}$/.test(minute)) return "";
+  const h = Number(hour);
+  const m = Number(minute);
+  if (h < 0 || h > 23 || m < 0 || m > 59) return "";
+  return `${hour}:${minute}`;
+}
+
+/**
+ * 개발자: 박승우
  * 일자: 2026-08-07
  * 코멘트:
  *   1) 오늘 날짜를 YYYYMMDD로 만든다

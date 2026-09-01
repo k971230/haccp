@@ -319,7 +319,8 @@ export function firstInvalidTarget(
   // 기록 표가 있는 화면일 때(= CCP 모니터링) items 는 한계기준·주기·방법 안내문이라 입력값이 아니다.
   // 사용자가 채우는 곳은 기록 표뿐이므로 그 행만 본다
   if (logRows && logRows.length > 0) {
-    return firstInvalidLogRow(logRows) ?? firstInvalidPassRow(passRows);
+    // 금속은 통과표가 있다. 포장·가열만 온도(cells.temp)를 본다
+    return firstInvalidLogRow(logRows, !passRows?.length) ?? firstInvalidPassRow(passRows);
   }
   const body = paperBodyItems(items);
   if (body.length === 0) return { message: "점검 행이 없습니다." };
@@ -340,16 +341,18 @@ export function firstInvalidTarget(
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-09-01
  * 코멘트:
  *   1) 기록 표(CCP 포장·가열·금속검출)의 전송 필수값을 본다
  *   2) validateForTransfer 가 기록 표가 있는 화면에서만 호출한다
- *   3) 시각·판정만 필수다. 품명은 구간 첫 줄이 라벨이라 비어 있는 게 정상이고,
- *      금속검출 칸은 해당 없음 열이 있어 값 유무로 막지 않는다
+ *   3) 시각·판정은 공통. 품명은 구간 첫 줄이 라벨이라 비어 있는 게 정상이다.
+ *      포장·가열은 온도(cells.temp)도 필수. 금속검출 칸은 해당 없음 열이 있어 값 유무로 막지 않는다
  */
 function firstInvalidLogRow(
   // rows: 기록 표 전체 행
   rows: HtmlFormLogRow[],
+  // 포장·가열일 때 true. 금속은 온도 칸이 없다
+  requireTemp: boolean,
 ): TransferBlock | null {
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i];
@@ -359,6 +362,9 @@ function firstInvalidLogRow(
     }
     if (!String(row.judgeCd ?? "").trim()) {
       return { message: `${where}의 판정을 선택하세요.`, logRowSeq: row.rowSeq };
+    }
+    if (requireTemp && !String(row.cells?.temp ?? "").trim()) {
+      return { message: `${where}의 온도를 입력하세요.`, logRowSeq: row.rowSeq };
     }
     /*
      * 품명은 **사람이 더한 행에서만** 필수다.

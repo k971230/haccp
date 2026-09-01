@@ -2,10 +2,10 @@
  * CorrectiveActionManagementPage — 이탈·개선조치 (그리드 1개).
  *
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-09-01
  * 코멘트:
  *   1) 작성 화면에서 이탈로 등록한 문서를 모두 모아 한 표에서 조치를 적는다
- *   2) 검색은 다른 작성 화면과 같다 — 일자 구간·양식·작성자
+ *   2) 골격은 사용자 관리와 같다 — PageCardPanel · treePanelHeadClass · GridCrudButtons. 행추가는 없다
  *   3) 저장은 변경된 행만 건별로 보낸다. 완료 상태 삭제는 서버 SP 가 막는다
  *
  * 우측 상세 폼을 두지 않는다 — 적을 칸이 다섯이라 표에서 바로 치는 편이 빠르다.
@@ -25,11 +25,11 @@ import {
 } from "@/api/taskWorkflowApi";
 // 역할 — 사용 중인 양식 목록 (검색 콤보)
 import { listDocumentTemplates, type DocumentTemplateRow } from "@/api/documentApi";
-// 역할 — mes-web형 그리드·버튼
+// 역할 — mes-web형 그리드·헤더 CRUD 버튼
 import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
-import { MesButton } from "@/components/ui/MesButton";
+import { GridCrudButtons } from "@/components/grid/GridCrudButtons";
 // 역할 — 페이지 카드·검색 영역
-import { PageCard } from "@/components/layout/PageCard";
+import { PageCard, PageCardPanel } from "@/components/layout/PageCard";
 import {
   SearchArea,
   SearchButton,
@@ -37,7 +37,8 @@ import {
   SearchField,
   SearchSelect,
 } from "@/components/layout/SearchArea";
-import { gridHeadClass, pageRootClass } from "@/components/layout/pageClasses";
+import { pageRootClass } from "@/components/layout/pageClasses";
+import { treePanelHeadClass } from "@/components/layout/TreePanelSearch";
 import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 권한·비동기·편집행·셸 명령
 import { useAuthStore } from "@/stores/authStore";
@@ -61,10 +62,10 @@ import {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-09-01
  * 코멘트:
  *   1) 이탈로 등록된 문서를 조회하고 조치 내용을 표에서 바로 적는다
- *   2) corrective-action-management 메뉴에서 마운트한다
+ *   2) corrective-action-management 메뉴에서 마운트한다 — 본문 골격은 사용자 관리와 같다
  *   3) 권한·검증 실패는 업무 토스트로만 안내한다
  */
 export default function CorrectiveActionManagementPage() {
@@ -197,80 +198,81 @@ export default function CorrectiveActionManagementPage() {
 
   return (
     <div className={pageRootClass}>
-      <SearchArea
-        // 조회 — 검색조건으로 목록을 다시 읽는다
-        onSearch={() => void asyncAct.run(load, "search")}
-        actions={<SearchButton loading={loading || asyncAct.isBusy("search")} />}
+      <PageCard
+        search={(
+          <SearchArea
+            // 조회 — 검색조건으로 목록을 다시 읽는다
+            onSearch={() => void asyncAct.run(load, "search")}
+            actions={<SearchButton loading={loading || asyncAct.isBusy("search")} />}
+          >
+            <SearchDateRange
+              // 일자 — 원문서 기준일 구간
+              label="일자"
+              from={toInputDate(search.fromDt)}
+              to={toInputDate(search.toDt)}
+              onFrom={(v: string) => setSearch((p) => ({ ...p, fromDt: fromInputDate(v) }))}
+              onTo={(v: string) => setSearch((p) => ({ ...p, toDt: fromInputDate(v) }))}
+            />
+            <SearchSelect
+              // 양식 — 회사가 쓰는 HWP·HTML 양식만 콤보에 올린다
+              label="양식"
+              value={search.tmplCd}
+              onChange={(v) => setSearch((p) => ({ ...p, tmplCd: v }))}
+            >
+              <option value="">전체</option>
+              {forms.map((form) => (
+                <option key={form.tmplCd} value={form.tmplCd}>{form.tmplNm}</option>
+              ))}
+            </SearchSelect>
+            <SearchField label="작성자">
+              <input
+                // 작성자 ID·이름 부분검색 — 서버 LIKE
+                className={searchInputClass}
+                value={search.writer}
+                onChange={(e) => setSearch((p) => ({ ...p, writer: e.target.value }))}
+              />
+            </SearchField>
+          </SearchArea>
+        )}
       >
-        <SearchDateRange
-          // 일자 — 원문서 기준일 구간
-          label="일자"
-          from={toInputDate(search.fromDt)}
-          to={toInputDate(search.toDt)}
-          onFrom={(v: string) => setSearch((p) => ({ ...p, fromDt: fromInputDate(v) }))}
-          onTo={(v: string) => setSearch((p) => ({ ...p, toDt: fromInputDate(v) }))}
-        />
-        <SearchSelect
-          // 양식 — 회사가 쓰는 HWP·HTML 양식만 콤보에 올린다
-          label="양식"
-          value={search.tmplCd}
-          onChange={(v) => setSearch((p) => ({ ...p, tmplCd: v }))}
-        >
-          <option value="">전체</option>
-          {forms.map((form) => (
-            <option key={form.tmplCd} value={form.tmplCd}>{form.tmplNm}</option>
-          ))}
-        </SearchSelect>
-        <SearchField label="작성자">
-          <input
-            // 작성자 ID·이름 부분검색 — 서버 LIKE
-            className={searchInputClass}
-            value={search.writer}
-            onChange={(e) => setSearch((p) => ({ ...p, writer: e.target.value }))}
-          />
-        </SearchField>
-      </SearchArea>
-
-      <PageCard>
-        <div className={gridHeadClass}>
-          {/* 보이는 그리드명 — title prop 과 동일 */}
-          <b>이탈·개선조치</b>
-          <div className="ml-auto flex items-center gap-2">
-            <MesButton
-              // 고친 행만 저장한다
-              variant="save"
-              disabled={!(canWrite || canModify) || asyncAct.isBusy("save")}
-              onClick={() => void handleSave()}
-            >
-              저장
-            </MesButton>
-            <MesButton
-              // 체크한 행 삭제 — 완료 건은 서버가 막는다
-              variant="danger"
-              disabled={!canDelete || asyncAct.isBusy("del")}
-              onClick={() => void handleDelete()}
-            >
-              삭제
-            </MesButton>
+        <PageCardPanel className="p-2">
+          <div className={treePanelHeadClass}>
+            {/* 보이는 그리드명 — title prop 과 동일 */}
+            <b>이탈·개선조치</b>
+            <GridCrudButtons
+              // 저장·삭제만. 행추가는 없다 — 이탈 행은 작성 화면에서 생긴다
+              onSave={canWrite || canModify ? handleSave : undefined}
+              onDel={canDelete ? handleDelete : undefined}
+              // 버튼별 busy — handleSave/handleDelete 가 이미 asyncAct.run 을 쓴다
+              busy={{
+                save: asyncAct.isBusy("save"),
+                del: asyncAct.isBusy("del"),
+              }}
+            />
           </div>
-        </div>
-        <MesEditableGrid
-          // 열 너비 저장 키 — 값 변경 금지
-          persistId={PERSIST_ID}
-          rows={g.rows as EditableRow<Row>[]}
-          columns={columns}
-          // 조치 칸만 편집 — 문서에서 온 칸은 컬럼 정의가 잠근다
-          editable={canWrite || canModify}
-          onCellChange={(key, field, value) => g.updateCell(key, field as keyof Row, value)}
-          title="이탈·개선조치"
-          height="100%"
-          loading={loading || asyncAct.isBusy("search")}
-          // 삭제 대상 체크박스
-          selectable
-          onSelectionChange={(picked) => setSelKeys(picked.map((row) => String(row.idx)))}
-          selectionResetKey={selReset}
-          showRowNum
-        />
+          <MesEditableGrid
+            // 열 너비 저장 키 — 값 변경 금지
+            persistId={PERSIST_ID}
+            // pref 저장용 화면코드
+            scrnCd={SCRN_CD}
+            rows={g.rows as EditableRow<Row>[]}
+            columns={columns}
+            // 조치 칸만 편집 — 문서에서 온 칸은 컬럼 정의가 잠근다
+            editable={canWrite || canModify}
+            onCellChange={(key, field, value) => g.updateCell(key, field as keyof Row, value)}
+            // 그리드 제목 — 패널 헤더와 동일
+            title="이탈·개선조치"
+            // 패널 높이를 채운다
+            height="100%"
+            // 조회·저장·삭제 busy 오버레이
+            loading={loading || asyncAct.isBusy("search") || asyncAct.isBusy("save") || asyncAct.isBusy("del")}
+            // 삭제 대상 체크박스
+            selectable
+            onSelectionChange={(picked) => setSelKeys(picked.map((row) => String(row.idx)))}
+            selectionResetKey={selReset}
+            showRowNum
+          />
+        </PageCardPanel>
       </PageCard>
     </div>
   );

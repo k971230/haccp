@@ -211,7 +211,7 @@ describe("validateForTransfer — 기록 표가 있는 화면(CCP 모니터링)"
     judgeCd: "P",
     checkerNm: "",
     signYn: "N",
-    cells: {},
+    cells: { temp: "5" },
     ...over,
   });
 
@@ -246,6 +246,11 @@ describe("validateForTransfer — 기록 표가 있는 화면(CCP 모니터링)"
   it("기록 행의 판정이 비면 전송을 막는다", () => {
     const msg = validateForTransfer("20260825", [], [log({ judgeCd: "" })]);
     expect(msg).toContain("판정");
+  });
+
+  it("포장·가열 기록 행의 온도가 비면 전송을 막는다", () => {
+    const msg = validateForTransfer("20260825", [], [log({ cells: {} })]);
+    expect(msg).toContain("온도");
   });
 
   /*
@@ -289,6 +294,13 @@ describe("validateForTransfer — 기록 표가 있는 화면(CCP 모니터링)"
       { rowSeq: 2, productNm: "", passQty: "", detectQty: "", remark: "" },
     ];
     expect(validateForTransfer("20260825", [], [log()], true, pass)).toBeNull();
+  });
+
+  it("금속은 온도가 비어도 막지 않는다 — 온도 칸이 없다", () => {
+    const pass = [
+      { rowSeq: 1, productNm: "삼겹살", passQty: "", detectQty: "", remark: "" },
+    ];
+    expect(validateForTransfer("20260825", [], [log({ cells: {} })], true, pass)).toBeNull();
   });
 
   it("통과량을 쓴 줄은 품명이 비면 막는다", () => {

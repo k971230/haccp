@@ -2,7 +2,7 @@
  * ScreenAuthResolver — 요청 경로 → 화면코드·권한 칸 정적 맵.
  *
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-09-01
  * 코멘트:
  *   1) FE SCREEN_PATH 와 같은 칸을 /api/v1 앞에 붙인 접두로 화면을 찾는다. 정책 테이블은 없다
  *   2) 문서 허브·서명 /sys/users 는 화면 URL 이 아니라서 여기 예외 맵으로 둔다
@@ -121,12 +121,22 @@ public final class ScreenAuthResolver {
             return Optional.of(ScreenAuthMatch.hubDoc(action));
         }
         if (path.startsWith("/api/v1/docs/templates")) {
+            // GET 원본 — HWP 작성이 양식을 연다. JWT+SP 가 회사를 가른다.
+            // 업로드 POST 는 사용양식 관리 화면이다.
+            if (isGet(method) && path.endsWith("/form")) {
+                return Optional.empty();
+            }
             return Optional.of(ScreenAuthMatch.screen("hwp-template-management", action));
         }
         if (path.startsWith("/api/v1/tsk/today-tasks") || path.startsWith("/api/v1/tsk/notifications")) {
             return Optional.of(ScreenAuthMatch.screen("today-tasks", action));
         }
         if (path.startsWith("/api/v1/sys/users/")) {
+            // GET 서명 이미지 — HTML 지면 도장이 자사 서명을 그린다.
+            // 업로드·삭제는 사용자관리 화면이다. /me 는 이미 화이트리스트.
+            if (isGet(method) && path.toLowerCase(Locale.ROOT).endsWith("/sign")) {
+                return Optional.empty();
+            }
             return Optional.of(ScreenAuthMatch.screen("user-management", action));
         }
         for (Map.Entry<String, String> e : SCREEN_PREFIXES) {
@@ -162,12 +172,24 @@ public final class ScreenAuthResolver {
          * 조회 전용(VIEWER)이 **자기가 볼 권한을 가진 이탈·개선조치 화면에서**
          * 남의 화면 권한 때문에 403 을 맞고 양식 콤보가 비었다.
          *
-         * 목록만 연다. 원본 파일 스트림(/{tmplCd}/form)과 업로드는 그대로 화면 권한을 본다 —
-         * 그쪽은 작성 화면의 일이라 조회 전용이 볼 것이 아니다.
+         * 목록은 여기. GET 원본(/{tmplCd}/form)은 resolve 에서 GET 만 연다(업로드 POST 는 화면).
          * 회사 범위는 JWT 로 SP 가 이미 가른다.
          */
         if (path.equals("/api/v1/docs/templates/list")) return true;
+        /*
+         * 자사 사용자·결재선 목록도 콤보다. 문서주기 담당자·로그인 이력 트리가 부른다.
+         * 사용자관리·결재선관리 화면에 묶이면 작성 계정은 메뉴는 있는데 403 이다.
+         * 저장·삭제는 그대로 그 화면 권한이다.
+         */
+        if (path.equals("/api/v1/sys/code/user-management/list")) return true;
+        if (path.equals("/api/v1/sys/code/approval-line-management/list")) return true;
         return path.startsWith("/api/v1/sys/users/me");
+    }
+
+    /** GET·HEAD 이면 조회. 업로드 POST 와 나눠 공용 조회만 열 때 쓴다 */
+    static boolean isGet(String method) {
+        String m = method == null ? "GET" : method.toUpperCase(Locale.ROOT);
+        return "GET".equals(m) || "HEAD".equals(m);
     }
 
     /**

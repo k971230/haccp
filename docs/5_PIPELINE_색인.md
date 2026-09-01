@@ -1,6 +1,6 @@
 # 5. PIPELINE 색인 — 태그에서 파일로
 
-> 개발자: 박승우 · 일자: 2026-08-31
+> 개발자: 박승우 · 일자: 2026-09-01
 > 소스의 `PIPELINE[HFn]` / `PIPELINE[HBn]` 주석에서 뽑았다.
 
 코드에 태그를 달아 두고 여기서 파일을 찾는다.
@@ -20,7 +20,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 [`backend/haccp-api/PIPELINE.md`](../backend/haccp-api/PIPELINE.md) ·
 [`frontend/haccp-web/PIPELINE.md`](../frontend/haccp-web/PIPELINE.md).
 
-## 프론트 (HF) — 태그 85개 · 파일 268곳
+## 프론트 (HF) — 태그 85개 · 파일 265곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
@@ -100,7 +100,6 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/shell/useActiveGrid.ts` | 셸 인프라 — mes-web useActiveGrid와 동일 계약 |
 | `HF76` | `frontend/haccp-web/src/shell/useSection.ts` | 셸 인프라 |
 | `HF81` | `frontend/haccp-web/src/components/form/DocFormLayout.tsx` | 연관 모듈 |
-|  | `frontend/haccp-web/src/components/form/DocFormSearchToolbar.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/hooks/useDocFormSession.ts` | 연관 모듈 |
 | `HF82` | `frontend/haccp-web/src/api/documentApi.ts` | API 레이어 |
 |  | `frontend/haccp-web/src/components/document/ApprovalDocumentPreview.tsx` | 연관 모듈 |
@@ -112,15 +111,13 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/pages/docs/hwp/HwpTemplateManagementPage.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachPage.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/pages/flow/box/documentbox/DocumentBoxPage.tsx` | 연관 모듈 |
-| `HF83` | `frontend/haccp-web/src/components/form/DocFormSearchToolbar.tsx` | 연관 모듈 |
-|  | `frontend/haccp-web/src/hooks/useDocFormSession.ts` | 연관 모듈 |
+| `HF83` | `frontend/haccp-web/src/hooks/useDocFormSession.ts` | 연관 모듈 |
 |  | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachPage.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/pages/flow/box/documentbox/DocumentBoxPage.tsx` | DOC 화면 |
 |  | `frontend/haccp-web/src/pages/flow/box/documentbox/DocumentBoxRule.ts` | 문서함 그리드 규칙 |
 | `HF84` | `frontend/haccp-web/src/lib/rhwpStudio.ts` | HWP 문서 편집 연관 |
 |  | `frontend/haccp-web/src/pages/docs/hwp/HwpTemplateManagementPage.tsx` | 연관 모듈 |
-| `HF85` | `frontend/haccp-web/src/components/form/DocFormSearchToolbar.tsx` | 연관 모듈 |
-|  | `frontend/haccp-web/src/hooks/useDocFormSession.ts` | 연관 모듈 |
+| `HF85` | `frontend/haccp-web/src/hooks/useDocFormSession.ts` | 연관 모듈 |
 | `HF86` | `frontend/haccp-web/src/api/sys/approvalLineApi.ts` | 결재선 관리 API |
 |  | `frontend/haccp-web/src/pages/sys/code/approvalline/ApprovalLineManagementPage.tsx` | 연관 모듈 |
 | `HF87` | `frontend/haccp-web/src/api/taskWorkflowApi.ts` | 워크플로 화면 API |
@@ -204,7 +201,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `HF120` | `frontend/haccp-web/src/components/form/DocCell.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/components/form/DocDeviationFooter.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/components/form/DocFormLayout.tsx` | 연관 모듈 |
-|  | `frontend/haccp-web/src/components/form/DocFormSearchToolbar.tsx` | 문서 공통 헤더 |
+|  | `frontend/haccp-web/src/components/form/docFormSearch.ts` | 문서 검색 기본값 |
 |  | `frontend/haccp-web/src/hooks/useDocFormSession.ts` | DB형 문서 세션 |
 |  | `frontend/haccp-web/src/pages/docs/hwp/HwpTemplateManagementPage.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/pages/flow/box/documentbox/DocumentBoxPage.tsx` | 연관 모듈 |

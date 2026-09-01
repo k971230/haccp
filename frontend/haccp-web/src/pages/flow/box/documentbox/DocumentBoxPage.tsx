@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-29
  * 코멘트:
- *   1) 공통 DocFormSearchToolbar로 기간·문서번호·작성자를 조회하고 타입 필터를 얹는다
+ *   1) 작성 화면과 같은 SearchArea 로 일자·문서번호·작성자를 조회하고 타입 필터를 얹는다
  *   2) 목록은 MesEditableGrid + 타입(docKind)·상태 배지. 문서함은 조회 전용이다
  *   3) 결재 모드(sign-ready·sign-ok)만 결재 툴바를 낸다. 본문 미리보기는 세 화면 공통
  *      승인 후 header.status 를 미리보기에 넘겨 같은 문서 지면 도장을 다시 읽는다
@@ -20,16 +20,16 @@ import { useAuthStore } from "@/stores/authStore";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 // 역할 — mes-web형 목록 그리드
 import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
-// 역할 — SoPage형 그리드 패널 헤더(보이는 그리드명)
-import { gridHeadClass } from "@/components/layout/pageClasses";
+// 역할 — 페이지 카드·그리드 패널 헤더
+import { PageCard } from "@/components/layout/PageCard";
+import { SearchArea, SearchButton, SearchDateRange, SearchField, SearchSelect } from "@/components/layout/SearchArea";
+import { gridHeadClass, pageRootClass } from "@/components/layout/pageClasses";
+import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 표준 버튼
 import { MesButton } from "@/components/ui/MesButton";
 // 역할 — 공통 조회 헤더
-import {
-  DocFormSearchToolbar,
-  defaultDocFormSearch,
-  type DocFormSearchValues,
-} from "@/components/form/DocFormSearchToolbar";
+import { defaultDocFormSearch, type DocFormSearchValues } from "@/components/form/docFormSearch";
+import { fromInputDate, toInputDate } from "@/lib/docDateTime";
 // 역할 — 오류 업무 문구
 import { mesError } from "@/shell/errors";
 // 역할 — 셸 조회 명령
@@ -233,37 +233,55 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
   });
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-3">
-      <DocFormSearchToolbar
-        // 기간·문서번호·작성자
-        values={search}
-        // 조건 부분 갱신
-        onChange={(patch) => setSearch((prev) => ({ ...prev, ...patch }))}
-        // 목록 재조회
-        onSearch={() => void asyncAct.run(loadList, "search")}
-        // 조회 busy
-        searchBusy={listLoading || asyncAct.isBusy("search")}
-        // 액션 busy
-        actionBusy={asyncAct.isBusy()}
-        // 상태·타입 필터 — 문서함만
-        extraFilters={boxMode === "inbox" ? (
-          <label className="flex flex-col gap-1 text-xs text-slate-600">
-            타입
-            <select
-              value={docKind}
-              onChange={(e) => setDocKind(e.target.value)}
-              className="h-mes-input rounded-mes border border-slate-300 bg-white px-2 text-sm"
-            >
-              {DOC_KIND_OPTIONS.map((opt) => (
-                <option key={opt.value || "ALL"} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </label>
-        ) : undefined}
-        // 조회 전용 — 행추가·저장·삭제를 내지 않는다
-        showCrudActions={false}
-      />
-
+    <div className={pageRootClass}>
+      <PageCard
+        search={(
+          <SearchArea
+            // 조회 — 검색조건으로 좌측 목록을 다시 읽는다. 이 영역은 검색 전용이다
+            onSearch={() => void asyncAct.run(loadList, "search")}
+            actions={<SearchButton loading={listLoading || asyncAct.isBusy("search")} />}
+          >
+            <SearchDateRange
+              // 일자 — YYYYMMDD 상태를 input[type=date] 로 변환한 구간 검색
+              label="일자"
+              from={toInputDate(search.fromDt)}
+              to={toInputDate(search.toDt)}
+              onFrom={(v) => setSearch((prev) => ({ ...prev, fromDt: fromInputDate(v) }))}
+              onTo={(v) => setSearch((prev) => ({ ...prev, toDt: fromInputDate(v) }))}
+            />
+            <SearchField label="문서번호">
+              <input
+                // 문서번호 부분검색 — SP ILIKE
+                className={searchInputClass}
+                value={search.docNo}
+                placeholder="문서번호"
+                onChange={(event) => setSearch((prev) => ({ ...prev, docNo: event.target.value }))}
+              />
+            </SearchField>
+            <SearchField label="작성자">
+              <input
+                // 작성자 ID·이름 부분검색
+                className={searchInputClass}
+                value={search.writer}
+                placeholder="ID 또는 이름"
+                onChange={(event) => setSearch((prev) => ({ ...prev, writer: event.target.value }))}
+              />
+            </SearchField>
+            {boxMode === "inbox" ? (
+              <SearchSelect
+                // 양식 유형 — HWP/HTML/전체. 바꾸면 즉시 조회
+                label="타입"
+                value={docKind}
+                onChange={setDocKind}
+              >
+                {DOC_KIND_OPTIONS.map((opt) => (
+                  <option key={opt.value || "ALL"} value={opt.value}>{opt.label}</option>
+                ))}
+              </SearchSelect>
+            ) : null}
+          </SearchArea>
+        )}
+      >
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(340px,42%)_1fr]">
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded border border-slate-200 bg-white p-2">
           <div className={gridHeadClass}>
@@ -442,6 +460,7 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
           )}
         </div>
       </div>
+      </PageCard>
     </div>
   );
 }
