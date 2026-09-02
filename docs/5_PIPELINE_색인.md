@@ -1,6 +1,6 @@
 # 5. PIPELINE 색인 — 태그에서 파일로
 
-> 개발자: 박승우 · 일자: 2026-09-01
+> 개발자: 박승우 · 일자: 2026-09-02
 > 소스의 `PIPELINE[HFn]` / `PIPELINE[HBn]` 주석에서 뽑았다.
 
 코드에 태그를 달아 두고 여기서 파일을 찾는다.
@@ -20,7 +20,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 [`backend/haccp-api/PIPELINE.md`](../backend/haccp-api/PIPELINE.md) ·
 [`frontend/haccp-web/PIPELINE.md`](../frontend/haccp-web/PIPELINE.md).
 
-## 프론트 (HF) — 태그 85개 · 파일 265곳
+## 프론트 (HF) — 태그 86개 · 파일 267곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
@@ -288,8 +288,8 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/components/document/HwpDocumentPreview.tsx` | 결재 문서 미리보기 |
 | `HF185` | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachPage.tsx` | 결재 첨부 화면 |
 |  | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachRule.ts` | 결재 첨부 화면 |
-| `HF186` | `frontend/haccp-web/src/pages/draft/hwp-doc/hwpOpenMode.ts` | HWP 열기 판정 |
-|  | `frontend/haccp-web/src/pages/draft/hwp-doc/hwpOpenMode.test.ts` | HWP 열기 판정 |
+| `HF186` | `frontend/haccp-web/src/pages/draft/hwp-doc/hwpOpenMode.test.ts` | HWP 열기 판정 |
+|  | `frontend/haccp-web/src/pages/draft/hwp-doc/hwpOpenMode.ts` | HWP 열기 판정 |
 | `HF200` | `frontend/haccp-web/src/shell/gridRules/gridSave.ts` | 편집 그리드 저장 공통 |
 
 ## 백엔드 (HB) — 태그 79개 · 파일 276곳

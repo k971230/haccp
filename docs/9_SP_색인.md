@@ -1,6 +1,6 @@
 # 9. SP 색인 — 매퍼에서 표까지
 
-> 개발자: 박승우 · 일자: 2026-08-31
+> 개발자: 박승우 · 일자: 2026-09-02
 > `db_sasshaccp/01_sp.sql` 의 정의와 `backend/haccp-api/src/main/resources/mapper` 의 호출을 맞춰 뽑았다.
 
 **「이 화면을 고치면 어느 표가 움직이나」를 검색 없이 알려는 표다.**
@@ -94,7 +94,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | docs/htmlform/htmltemplate | `sp_tbl_html_hyg_prc_ver_item_u_000` | 쓰기 | `docs/htmlform/htmltemplate/HtmlTemplateMapper.xml` | `tbl_html_hyg_prc_ver<br>tbl_html_hyg_prc_ver_item` |
 | docs/htmlform/htmltemplate | `sp_tbl_html_hyg_prc_ver_nm_u_000` | 쓰기 | `docs/htmlform/htmltemplate/HtmlTemplateMapper.xml` | `tbl_company_template<br>tbl_html_hyg_prc_ver<br>tbl_template` |
 | docs/htmlform/htmltemplate | `sp_tbl_html_hyg_prc_ver_r_000` | 조회 | `docs/htmlform/htmltemplate/HtmlTemplateMapper.xml<br>draft/html/HygProcessDraftMapper.xml` | `tbl_company_template<br>tbl_html_hyg_prc_ver<br>tbl_user` |
-| docs/hwp | `sp_hwp_template_management_c_000` | 쓰기 | `docs/hwp/HwpTemplateMapper.xml` | `tbl_company_template<br>tbl_template` |
+| docs/hwp | `sp_hwp_template_management_c_000` | 쓰기 | `docs/hwp/HwpTemplateMapper.xml` | `tbl_company_template<br>tbl_doc_no_rule<br>tbl_template` |
 | docs/hwp | `sp_hwp_template_management_current_u_000` | 쓰기 | `docs/hwp/HwpTemplateMapper.xml` | `tbl_company_template<br>tbl_company_template_file` |
 | docs/hwp | `sp_hwp_template_management_file_r_000` | 조회 | `docs/hwp/HwpTemplateMapper.xml` | `tbl_company_template<br>tbl_company_template_file` |
 | docs/hwp | `sp_hwp_template_management_r_000` | 조회 | `docs/hwp/HwpTemplateMapper.xml` | `tbl_company_template<br>tbl_company_template_file<br>tbl_template` |
