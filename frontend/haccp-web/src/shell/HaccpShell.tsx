@@ -35,6 +35,10 @@ import { loginBrowserPath } from "@/shell/authPaths";
 import { logout as logoutApi } from "@/api/authApi";
 // 역할 — 권한 반영 메뉴 조회
 import { getMenu } from "@/api/menuApi";
+// 역할 — 로그인 시 반려 건수 1회 조회
+import { listDocuments } from "@/api/documentApi";
+// 역할 — 반려 토스트 세션 키
+import { REJECT_TOAST_KEY } from "@/shell/authKeys";
 // 역할 — className 병합
 import { cn } from "@/lib/cn";
 // 역할 — 공통 버튼
@@ -84,6 +88,20 @@ export function HaccpShell() {
   const keepOnly = useTabStore((s) => s.keepOnly);
   // 그리드·트리 헤더 초록 — 화면마다 bind 를 달지 않고 셸에서 한 번만 듣는다
   useEffect(() => bindMesSec(), []);
+  useEffect(() => {
+    // 로그인 세션당 1회 — 본인 반려 문서가 있으면 토스트
+    if (!user?.userId) return;
+    if (sessionStorage.getItem(REJECT_TOAST_KEY)) return;
+    sessionStorage.setItem(REJECT_TOAST_KEY, "1");
+    void listDocuments({ status: "RJT", writerId: user.userId })
+      .then((rows) => {
+        if (rows.length === 0) return;
+        mesToast(`반려된 문서가 ${rows.length}건 있습니다. 결재 첨부에서 사유를 확인하세요.`, "warn");
+      })
+      .catch(() => {
+        // 목록 실패는 로그인 흐름을 막지 않는다
+      });
+  }, [user?.userId]);
   // 사이드바 펼침 여부 — 저장값이 "0"일 때만 접힌 상태로 시작한다
   const [sideOpen, setSideOpen] = useState(() => sessionStorage.getItem(SIDE_KEY) !== "0");
 

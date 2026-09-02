@@ -188,7 +188,9 @@ public interface DocumentMapper {
     void undoApproval(
             @Param("coCd") String coCd,
             @Param("docIdx") Long docIdx,
-            @Param("userId") String userId
+            @Param("userId") String userId,
+            // opinion: 결재 취소 사유 — tbl_document.cancel_reason 으로 남긴다
+            @Param("opinion") String opinion
     );
 
     void processApproval(

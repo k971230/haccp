@@ -60,6 +60,21 @@ export const TMPL_NOT_SELECTED_NM = "미선택";
 
 /**
  * 개발자: 박승우
+ * 일자: 2026-09-02
+ * 코멘트:
+ *   1) 반려(RJT) 행을 노란색으로 칠할 클래스명을 준다
+ *   2) 작성 목록·결재 첨부 목록이 호출한다
+ *   3) 배지(전송대기)로는 반려를 못 가리므로 행 색으로 구분한다
+ */
+export function draftRejectedRowClass(
+  // DOC_STATUS 원본
+  status: string | null | undefined,
+): string | undefined {
+  return (status ?? "").trim().toUpperCase() === "RJT" ? "mes-row-rejected" : undefined;
+}
+
+/**
+ * 개발자: 박승우
  * 일자: 2026-08-24
  * 코멘트:
  *   1) DOC_STATUS 원본을 화면 3단계로 묶는다
@@ -158,6 +173,10 @@ export type HtmlFormDraftRowView = {
   writerNm?: string;
   // 3단계 상태 키 — codeMap 이 문구로 바꾼다
   sendState?: SendState;
+  // DOC_STATUS 원본 — 반려 행 노란 표시에 쓴다
+  status?: string;
+  // 문서 비고 — tbl_document.remark
+  remark?: string;
   /** 이탈여부 Y/N — 이탈 칸을 쓰는 화면(HWP)만 채운다 */
   deviationYn?: string;
 };
@@ -172,7 +191,7 @@ export type HtmlFormDraftRowView = {
  */
 export const htmlFormDraftGridRules: ScreenGridRules = {
   // 팝업·업무상태로만 정해지는 칸 — 셀에서 절대 못 고친다
-  alwaysReadonly: ["tmplNm", "writerNm", "sendState", "docNo"],
+  alwaysReadonly: ["tmplNm", "writerNm", "sendState", "docNo", "remark"],
   // 저장 후에도 바꿀 수 없는 칸 — 양식코드는 팝업(canOpenPopup 이 저장행을 막는다)
   newOnly: ["tmplCd"],
   // 전송·결재완료 행은 통째로 잠근다
@@ -238,6 +257,13 @@ export function buildDraftListColumns(
       field: "writerNm",
       header: "작성자",
       width: 90,
+      editable: false,
+    },
+    {
+      // 문서 비고 — 결재 첨부에서 적는 tbl_document.remark. 이 화면에서 고치지 않는다
+      field: "remark",
+      header: "비고",
+      width: 160,
       editable: false,
     },
     // 이탈여부 — HTML 5화면은 지면 하단 시그널이 같은 일을 한다. 두 곳에 두지 않는다

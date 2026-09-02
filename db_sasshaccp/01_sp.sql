@@ -82,7 +82,8 @@ COMMENT ON FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varying, p_fr
 -- Name: sp_ccp_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer)
+DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, remark character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx, m.idx,
@@ -93,7 +94,8 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying,
            COALESCE(u.user_nm, d.writer_id, '')::varchar,
            d.status,
            (SELECT count(*)::int FROM tbl_ccp_generic_monitor_row r WHERE r.monitor_idx = m.idx AND r.co_cd = m.co_cd),
-           (SELECT count(*)::int FROM tbl_ccp_generic_monitor_row r WHERE r.monitor_idx = m.idx AND r.co_cd = m.co_cd AND r.judge_cd = 'F')
+           (SELECT count(*)::int FROM tbl_ccp_generic_monitor_row r WHERE r.monitor_idx = m.idx AND r.co_cd = m.co_cd AND r.judge_cd = 'F'),
+           d.remark
       FROM tbl_document d
       JOIN tbl_ccp_generic_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
       -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
@@ -116,22 +118,24 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying,
        AND (COALESCE(NULLIF(btrim(p_to_dt), ''), '') = '' OR m.base_dt <= btrim(p_to_dt))
        AND (COALESCE(NULLIF(btrim(p_writer_id), ''), '') = '' OR COALESCE(d.writer_id, '') ILIKE '%' || btrim(p_writer_id) || '%')
        AND (COALESCE(NULLIF(btrim(p_writer_nm), ''), '') = '' OR COALESCE(u.user_nm, '') ILIKE '%' || btrim(p_writer_nm) || '%')
+       AND (COALESCE(NULLIF(btrim(p_remark), ''), '') = '' OR COALESCE(d.remark, '') ILIKE '%' || btrim(p_remark) || '%')
      ORDER BY m.base_dt DESC, d.doc_no DESC;
 $$;
 
 
 --
--- Name: FUNCTION sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: FUNCTION sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) IS 'CCP 포장·가열 작성 목록 — 양식군 접두로 가른다. 자사 양식만';
+COMMENT ON FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying) IS 'CCP 포장·가열 작성 목록 — 양식군 접두로 가른다. 자사 양식만. 비고(remark) 부분검색';
 
 
 --
 -- Name: sp_ccp_mtl_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer)
+DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_mtl_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, remark character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT d.idx, h.idx,
@@ -142,7 +146,8 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying,
            COALESCE(u.user_nm, d.writer_id, '')::varchar,
            d.status,
            (SELECT count(*)::int FROM tbl_ccp_metal_sens_row s WHERE s.hdr_idx = h.idx AND s.co_cd = h.co_cd),
-           (SELECT count(*)::int FROM tbl_ccp_metal_sens_row s WHERE s.hdr_idx = h.idx AND s.co_cd = h.co_cd AND s.judge_cd = 'F')
+           (SELECT count(*)::int FROM tbl_ccp_metal_sens_row s WHERE s.hdr_idx = h.idx AND s.co_cd = h.co_cd AND s.judge_cd = 'F'),
+           d.remark
       FROM tbl_document d
       JOIN tbl_ccp_metal_monitor h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
       -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
@@ -165,15 +170,16 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying,
        AND (COALESCE(NULLIF(btrim(p_to_dt), ''), '') = '' OR h.base_dt <= btrim(p_to_dt))
        AND (COALESCE(NULLIF(btrim(p_writer_id), ''), '') = '' OR COALESCE(d.writer_id, '') ILIKE '%' || btrim(p_writer_id) || '%')
        AND (COALESCE(NULLIF(btrim(p_writer_nm), ''), '') = '' OR COALESCE(u.user_nm, '') ILIKE '%' || btrim(p_writer_nm) || '%')
+       AND (COALESCE(NULLIF(btrim(p_remark), ''), '') = '' OR COALESCE(d.remark, '') ILIKE '%' || btrim(p_remark) || '%')
      ORDER BY h.base_dt DESC, d.doc_no DESC;
 $_$;
 
 
 --
--- Name: FUNCTION sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: FUNCTION sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) IS 'CCP 금속검출 작성 목록 — tml_ccp_mtl_NNN 자사 양식만';
+COMMENT ON FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying) IS 'CCP 금속검출 작성 목록 — tml_ccp_mtl_NNN 자사 양식만. 비고(remark) 부분검색';
 
 
 --
@@ -349,7 +355,8 @@ COMMENT ON PROCEDURE sasshaccp.sp_ccp_verify_d_000(IN p_co_cd character varying,
 -- Name: sp_ccp_verify_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer)
+DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_verify_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, remark character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT d.idx, h.idx,
@@ -360,7 +367,8 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varyi
            COALESCE(u.user_nm, d.writer_id, '')::varchar,
            d.status,
            (SELECT count(*)::int FROM tbl_ccp_verify_item i WHERE i.hdr_idx = h.idx AND i.co_cd = h.co_cd),
-           (SELECT count(*)::int FROM tbl_ccp_verify_item i WHERE i.hdr_idx = h.idx AND i.co_cd = h.co_cd AND i.answer_cd = 'N')
+           (SELECT count(*)::int FROM tbl_ccp_verify_item i WHERE i.hdr_idx = h.idx AND i.co_cd = h.co_cd AND i.answer_cd = 'N'),
+           d.remark
       FROM tbl_document d
       JOIN tbl_ccp_verify_check h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
       -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
@@ -394,15 +402,16 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varyi
             COALESCE(NULLIF(btrim(p_writer_nm), ''), '') = ''
             OR COALESCE(u.user_nm, '') ILIKE '%' || btrim(p_writer_nm) || '%'
            )
+       AND (COALESCE(NULLIF(btrim(p_remark), ''), '') = '' OR COALESCE(d.remark, '') ILIKE '%' || btrim(p_remark) || '%')
      ORDER BY h.base_dt DESC, d.doc_no DESC;
 $_$;
 
 
 --
--- Name: FUNCTION sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: FUNCTION sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) IS 'CCP 검증점검 작성 목록 — tml_ccp_chk_NNN 자사 양식만. 결재 여부는 화면이 DOC_STATUS 로 묶어 거른다';
+COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying) IS 'CCP 검증점검 작성 목록 — tml_ccp_chk_NNN 자사 양식만. 비고 부분검색. 결재 여부는 화면이 DOC_STATUS 로 묶어 거른다';
 
 
 --
@@ -1011,7 +1020,8 @@ COMMENT ON FUNCTION sasshaccp.sp_department_management_r_000(p_co_cd character v
 -- Name: sp_draft_hwp_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, deviation_yn character varying)
+DROP FUNCTION IF EXISTS sasshaccp.sp_draft_hwp_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, deviation_yn character varying, remark character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx,
@@ -1035,7 +1045,8 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varyin
            (CASE WHEN EXISTS (
                     SELECT 1 FROM tbl_corrective_action ca2
                      WHERE ca2.co_cd = d.co_cd AND ca2.src_doc_idx = d.idx
-                ) THEN 'Y' ELSE 'N' END)::varchar
+                ) THEN 'Y' ELSE 'N' END)::varchar,
+           d.remark
       FROM tbl_document d
       -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
       LEFT JOIN LATERAL (
@@ -1059,15 +1070,16 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varyin
             OR COALESCE(d.writer_id, '') ILIKE '%' || btrim(p_writer_id) || '%')
        AND (COALESCE(NULLIF(btrim(p_writer_nm), ''), '') = ''
             OR COALESCE(u.user_nm, '') ILIKE '%' || btrim(p_writer_nm) || '%')
+       AND (COALESCE(NULLIF(btrim(p_remark), ''), '') = '' OR COALESCE(d.remark, '') ILIKE '%' || btrim(p_remark) || '%')
      ORDER BY d.base_dt DESC, d.idx DESC;
 $$;
 
 
 --
--- Name: FUNCTION sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: FUNCTION sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying) IS 'HWP 작성 목록 — 130에서 이탈여부(deviation_yn) 추가';
+COMMENT ON FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying) IS 'HWP 작성 목록 — 비고(remark) 부분검색. 130에서 이탈여부(deviation_yn) 추가';
 
 
 --
@@ -3358,6 +3370,8 @@ BEGIN
            SET status = 'REQ',
                write_dt = now(),
                reject_reason = NULL,
+               -- 다시 상신하면 직전 취소 사유는 더 이상 현재 건이 아니다
+               cancel_reason = NULL,
                upd_id = p_id,
                upd_dt = now()
          WHERE idx = p_doc_idx
@@ -3584,10 +3598,11 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_paper_stamp_r_000(p_co_cd characte
 
 
 --
--- Name: sp_tbl_document_approval_u_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_document_approval_u_000(character varying, bigint, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_approval_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
+DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_document_approval_u_000(character varying, bigint, character varying);
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_approval_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying, IN p_opinion character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -3671,6 +3686,8 @@ BEGIN
                approver_id = NULL,
                approve_dt = NULL,
                reject_reason = NULL,
+               -- 작성자가 결재 첨부에서 보게 남긴다. 재상신 때 비운다
+               cancel_reason = NULLIF(btrim(COALESCE(p_opinion, '')), ''),
                upd_id = p_id,
                upd_dt = now()
          WHERE idx = p_doc_idx
@@ -3691,6 +3708,7 @@ BEGIN
                reviewer_id = NULL,
                review_dt = NULL,
                reject_reason = NULL,
+               cancel_reason = NULLIF(btrim(COALESCE(p_opinion, '')), ''),
                upd_id = p_id,
                upd_dt = now()
          WHERE idx = p_doc_idx
@@ -3700,10 +3718,10 @@ END$$;
 
 
 --
--- Name: PROCEDURE sp_tbl_document_approval_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: PROCEDURE sp_tbl_document_approval_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying, IN p_opinion character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_approval_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying) IS '결재취소 — 본인이 처리한 마지막 단계를 되돌린다. 다음 결재자가 처리했으면 차단';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_approval_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying, IN p_opinion character varying) IS '결재취소 — 본인이 처리한 마지막 단계를 되돌린다. 다음 결재자가 처리했으면 차단. p_opinion 은 cancel_reason 으로 남긴다';
 
 
 --
@@ -4000,7 +4018,8 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_r_000(p_co_cd character varying, p
 -- Name: sp_tbl_document_r_001(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_r_001(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, base_dt_to character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, reviewer_id character varying, reviewer_nm character varying, review_dt timestamp without time zone, approver_id character varying, approver_nm character varying, approve_dt timestamp without time zone, reject_reason character varying, ver_no integer, retention_until character varying, remark character varying)
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_document_r_001(character varying, bigint);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_r_001(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, base_dt_to character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, reviewer_id character varying, reviewer_nm character varying, review_dt timestamp without time zone, approver_id character varying, approver_nm character varying, approve_dt timestamp without time zone, reject_reason character varying, ver_no integer, retention_until character varying, remark character varying, cancel_reason character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx AS doc_idx,
@@ -4026,7 +4045,8 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_r_001(p_co_cd character var
            d.reject_reason,
            d.ver_no,
            d.retention_until,
-           d.remark
+           d.remark,
+           d.cancel_reason
       FROM tbl_document d
       -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
       LEFT JOIN LATERAL (
@@ -4811,7 +4831,8 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_hyg_process_d_000(IN p_co_cd character var
 -- Name: sp_tbl_hyg_process_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_from_dt character varying, p_to_dt character varying, p_doc_no character varying, p_writer character varying, p_tmpl_nm character varying DEFAULT NULL::character varying, p_writer_id character varying DEFAULT NULL::character varying, p_writer_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer)
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_hyg_process_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_from_dt character varying, p_to_dt character varying, p_doc_no character varying, p_writer character varying, p_tmpl_nm character varying DEFAULT NULL::character varying, p_writer_id character varying DEFAULT NULL::character varying, p_writer_nm character varying DEFAULT NULL::character varying, p_remark character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, remark character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT d.idx, h.idx,
@@ -4822,7 +4843,8 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character 
            COALESCE(u.user_nm, d.writer_id, '')::varchar,
            d.status,
            (SELECT count(*)::int FROM tbl_hyg_process_item i WHERE i.hdr_idx = h.idx AND i.co_cd = h.co_cd),
-           (SELECT count(*)::int FROM tbl_hyg_process_item i WHERE i.hdr_idx = h.idx AND i.co_cd = h.co_cd AND i.yn = 'N')
+           (SELECT count(*)::int FROM tbl_hyg_process_item i WHERE i.hdr_idx = h.idx AND i.co_cd = h.co_cd AND i.yn = 'N'),
+           d.remark
       FROM tbl_document d
       JOIN tbl_hyg_process h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
       -- 카탈로그는 자사 행이 있으면 그걸, 없으면 공용(0000)
@@ -4867,15 +4889,16 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character 
             OR COALESCE(u.user_nm, '') LIKE '%' || btrim(p_writer) || '%'
             OR COALESCE(h.checker_nm, '') LIKE '%' || btrim(p_writer) || '%'
            )
+       AND (COALESCE(NULLIF(btrim(p_remark), ''), '') = '' OR COALESCE(d.remark, '') ILIKE '%' || btrim(p_remark) || '%')
      ORDER BY d.base_dt DESC, d.doc_no DESC;
 $_$;
 
 
 --
--- Name: FUNCTION sp_tbl_hyg_process_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_from_dt character varying, p_to_dt character varying, p_doc_no character varying, p_writer character varying, p_tmpl_nm character varying, p_writer_id character varying, p_writer_nm character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: FUNCTION sp_tbl_hyg_process_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_from_dt character varying, p_to_dt character varying, p_doc_no character varying, p_writer character varying, p_tmpl_nm character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_from_dt character varying, p_to_dt character varying, p_doc_no character varying, p_writer character varying, p_tmpl_nm character varying, p_writer_id character varying, p_writer_nm character varying) IS '공정점검 작성 목록 — 121 6인자 + 양식명·작성자ID·작성자명. 결재여부는 화면이 DOC_STATUS 로 묶어 거른다';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_from_dt character varying, p_to_dt character varying, p_doc_no character varying, p_writer character varying, p_tmpl_nm character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying) IS '공정점검 작성 목록 — 비고 부분검색. 결재여부는 화면이 DOC_STATUS 로 묶어 거른다';
 
 
 --

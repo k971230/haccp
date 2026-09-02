@@ -181,9 +181,10 @@ PIPELINE[HB84] MyBatis XML
     <!-- 결재취소 — 본인이 처리한 마지막 단계를 되돌린다 -->
     <update id="undoApproval" statementType="CALLABLE">
         CALL sp_tbl_document_approval_u_000(
-            #{coCd,   mode=IN, jdbcType=VARCHAR},
-            #{docIdx, mode=IN, jdbcType=BIGINT},
-            #{userId, mode=IN, jdbcType=VARCHAR}
+            #{coCd,     mode=IN, jdbcType=VARCHAR},
+            #{docIdx,   mode=IN, jdbcType=BIGINT},
+            #{userId,   mode=IN, jdbcType=VARCHAR},
+            #{opinion,  mode=IN, jdbcType=VARCHAR}
         )
     </update>
 

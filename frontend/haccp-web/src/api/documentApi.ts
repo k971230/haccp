@@ -74,6 +74,7 @@ export interface DocumentDetail {
     approverNm?: string | null;
     approveDt?: string | null;
     rejectReason?: string | null;
+    cancelReason?: string | null;
     retentionUntil?: string | null;
     remark?: string | null;
   };

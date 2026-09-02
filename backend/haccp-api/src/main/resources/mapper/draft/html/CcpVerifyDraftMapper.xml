@@ -38,7 +38,7 @@ PIPELINE[HB137] CCP 검증점검 작성 XML
     -->
     <select id="selectList" resultType="com.haccp.draft.dto.DraftListRow">
         SELECT * FROM sp_ccp_verify_r_000(
-            #{coCd}, #{tmplCd}, #{tmplNm}, #{fromDt}, #{toDt}, #{writerId}, #{writerNm}
+            #{coCd}, #{tmplCd}, #{tmplNm}, #{fromDt}, #{toDt}, #{writerId}, #{writerNm}, #{remark}
         )
     </select>
 

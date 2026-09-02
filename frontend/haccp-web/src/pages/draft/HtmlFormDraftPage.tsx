@@ -81,6 +81,7 @@ import {
   emptyDraftBuf,
   htmlFormDraftGridRules,
   sendStateOf,
+  draftRejectedRowClass,
   validateForTransfer,
   firstInvalidTarget,
   type TransferBlock,
@@ -95,6 +96,8 @@ type ListMeta = DocListMeta & {
   baseDtDisp?: string;
   writerNm?: string;
   sendState?: SendState;
+  // 문서 비고
+  remark?: string;
   // 이탈여부 Y/N — 목록 칸을 쓰는 화면(HWP)만 채운다
   deviationYn?: string;
 };
@@ -217,7 +220,7 @@ export function HtmlFormDraftPage({
   const [forms, setForms] = useState<HtmlFormDraftForm[]>([]);
   // 상단 검색 조건 6개 — 작성 입력과 별개다
   const [search, setSearch] = useState({
-    fromDt: "", toDt: "", tmplCd: "", tmplNm: "", writerId: "", writerNm: "", sendState: "",
+    fromDt: "", toDt: "", tmplCd: "", tmplNm: "", remark: "", sendState: "",
   });
   const searchRef = useRef(search);
   searchRef.current = search;
@@ -282,8 +285,7 @@ export function HtmlFormDraftPage({
       tmplNm: q.tmplNm,
       fromDt: q.fromDt,
       toDt: q.toDt,
-      writerId: q.writerId,
-      writerNm: q.writerNm,
+      remark: q.remark,
     });
     const mapped = rows
       .map((r) => ({
@@ -295,6 +297,7 @@ export function HtmlFormDraftPage({
         baseKey: r.baseDt,
         baseDtDisp: toInputDate(r.baseDt),
         writerNm: r.writerNm ?? "",
+        remark: r.remark ?? "",
         sendState: sendStateOf(r.status),
         ngCnt: r.ngCnt ?? 0,
         // 서버가 안 주는 화면(HTML)은 N — 칸 자체를 그리지 않는다
@@ -1210,22 +1213,13 @@ export function HtmlFormDraftPage({
                 onChange={(event) => setSearch((prev) => ({ ...prev, tmplNm: event.target.value }))}
               />
             </SearchField>
-            <SearchField label="작성자 ID">
+            <SearchField label="비고">
               <input
-                // 작성자 ID 부분검색 — tbl_document.writer_id
+                // 문서 비고 부분검색 — tbl_document.remark. 결재 첨부에서 적는 칸
                 className={searchInputClass}
-                value={search.writerId}
-                placeholder="작성자 ID"
-                onChange={(event) => setSearch((prev) => ({ ...prev, writerId: event.target.value }))}
-              />
-            </SearchField>
-            <SearchField label="작성자명">
-              <input
-                // 작성자명 부분검색 — tbl_user.user_nm
-                className={searchInputClass}
-                value={search.writerNm}
-                placeholder="작성자명"
-                onChange={(event) => setSearch((prev) => ({ ...prev, writerNm: event.target.value }))}
+                value={search.remark}
+                placeholder="비고"
+                onChange={(event) => setSearch((prev) => ({ ...prev, remark: event.target.value }))}
               />
             </SearchField>
             <SearchSelect
@@ -1339,6 +1333,8 @@ export function HtmlFormDraftPage({
                 activeKey={activeKey}
                 // 행 클릭 시 우측 상세 전환
                 onActivate={(row) => { void handleSelect(row._key ?? null); }}
+                // 반려 행은 노란색 — 배지(전송대기)로는 구분하지 못한다
+                rowClassName={(row) => draftRejectedRowClass((row as ListMeta).status)}
                 onCellChange={(key, field, cellValue) => {
                   /*
                    * 이탈여부 — HWP 화면만 목록 칸으로 켠다.

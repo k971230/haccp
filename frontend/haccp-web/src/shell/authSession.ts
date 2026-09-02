@@ -19,7 +19,7 @@ import { useAuthStore } from "@/stores/authStore";
 // 역할 — 열린 탭 목록 스토어 (reset)
 import { useTabStore } from "@/stores/tabStore";
 // 역할 — 복귀 경로 sessionStorage 키
-import { RETURN_URL_KEY } from "@/shell/authKeys";
+import { REJECT_TOAST_KEY, RETURN_URL_KEY } from "@/shell/authKeys";
 // 역할 — 타 탭에 로그아웃 알림
 import { broadcastAuthLogout } from "@/shell/authCrossTab";
 // 역할 — Path basename 정합 로그인·복귀 경로
@@ -145,6 +145,8 @@ export function clearAuthSession() {
   broadcastAuthLogout();
   useTabStore.getState().reset();
   useAuthStore.getState().logout();
+  // 다음 로그인에서 반려 토스트를 다시 띄운다
+  sessionStorage.removeItem(REJECT_TOAST_KEY);
   clearQueryCache?.();
 }
 

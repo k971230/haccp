@@ -495,11 +495,11 @@ function SensRow({
             >
               해당 없음
             </span>
-          ) : writeEdit ? (
+          ) : (
             <span className="ccp-pkg-num-wrap">
               <label className="ccp-pkg-judge-opt">
                 <input
-                  // 검출 O
+                  // 검출 O — 전송 후에도 값은 보이게. 수정은 writeEdit 일 때만
                   type="radio"
                   name={`mtl-ox-${rowKey}-${col.cd}`}
                   disabled={!writeEdit}
@@ -512,7 +512,7 @@ function SensRow({
               </label>
               <label className="ccp-pkg-judge-opt">
                 <input
-                  // 불검출 X
+                  // 불검출 X — 전송 후 disabled. 숨기지 않는다
                   type="radio"
                   name={`mtl-ox-${rowKey}-${col.cd}`}
                   disabled={!writeEdit}
@@ -524,7 +524,7 @@ function SensRow({
                 X
               </label>
             </span>
-          ) : null}
+          )}
         </td>
       ))}
       <td className="text-center ccp-pf-yn">

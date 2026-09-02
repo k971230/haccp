@@ -68,6 +68,8 @@ export interface HtmlFormDraftListRow {
   ngCnt?: number;
   /** 이탈여부 Y/N — HWP 작성 목록만 채워 온다. 미완료 수(ngCnt)와 다른 축이다 */
   deviationYn?: string | null;
+  // 문서 비고 — tbl_document.remark
+  remark?: string | null;
 }
 
 /** 상세 — 헤더 JSON + 점검행 + 이탈 푸터 */
@@ -103,6 +105,8 @@ export interface HtmlFormDraftListParams {
   writerId?: string;
   // 작성자명 부분검색
   writerNm?: string;
+  // 문서 비고 부분검색
+  remark?: string;
 }
 
 /** 저장 본문 — 전송 전이라 서버는 필수값을 보지 않는다 */

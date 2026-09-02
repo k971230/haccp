@@ -24,6 +24,7 @@ import {
   detailToDraftBuf,
   htmlFormDraftGridRules,
   sendStateOf,
+  draftRejectedRowClass,
   validateForTransfer,
   firstInvalidTarget,
 } from "./htmlFormDraftShared";
@@ -60,6 +61,15 @@ describe("sendStateOf — DOC_STATUS 3단계 묶음", () => {
 
   it("승인완료는 결재완료", () => {
     expect(sendStateOf("APV")).toBe("done");
+  });
+});
+
+describe("draftRejectedRowClass — 반려 행 노란 표시", () => {
+  it("RJT 만 클래스를 준다", () => {
+    expect(draftRejectedRowClass("RJT")).toBe("mes-row-rejected");
+    expect(draftRejectedRowClass("WRK")).toBeUndefined();
+    expect(draftRejectedRowClass("REQ")).toBeUndefined();
+    expect(draftRejectedRowClass(null)).toBeUndefined();
   });
 });
 
@@ -236,7 +246,7 @@ describe("htmlFormDraftGridRules — 좌측 셀 편집 잠금", () => {
   });
 
   it("양식명·작성자·결재 여부는 셀에서 절대 못 고친다", () => {
-    for (const field of ["tmplNm", "writerNm", "sendState"]) {
+    for (const field of ["tmplNm", "writerNm", "sendState", "remark"]) {
       expect(rules.alwaysReadonly ?? []).toContain(field);
     }
   });

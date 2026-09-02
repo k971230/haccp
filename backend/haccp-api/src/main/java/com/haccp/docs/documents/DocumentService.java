@@ -497,7 +497,7 @@ public class DocumentService {
         }
         // 결재취소는 되돌리기 규칙이 달라 전용 SP 를 탄다 — 전이 SP 는 손대지 않는다
         if ("UNDO".equals(action)) {
-            mapper.undoApproval(coCd, docIdx, LoginUserContext.userId());
+            mapper.undoApproval(coCd, docIdx, LoginUserContext.userId(), text(req.getOpinion()));
         } else {
             mapper.processApproval(coCd, docIdx, action, text(req.getOpinion()), LoginUserContext.userId());
         }
