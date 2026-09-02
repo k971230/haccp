@@ -83,7 +83,8 @@ COMMENT ON FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varying, p_fr
 --
 
 DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
-CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, remark character varying)
+DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, title character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx, m.idx,
@@ -113,7 +114,7 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying,
        AND (COALESCE(NULLIF(btrim(p_to_dt), ''), '') = '' OR m.base_dt <= btrim(p_to_dt))
        AND (COALESCE(NULLIF(btrim(p_writer_id), ''), '') = '' OR COALESCE(d.writer_id, '') ILIKE '%' || btrim(p_writer_id) || '%')
        AND (COALESCE(NULLIF(btrim(p_writer_nm), ''), '') = '' OR COALESCE(u.user_nm, '') ILIKE '%' || btrim(p_writer_nm) || '%')
-       AND (COALESCE(NULLIF(btrim(p_remark), ''), '') = '' OR COALESCE(d.title, '') ILIKE '%' || btrim(p_remark) || '%')
+       AND (COALESCE(NULLIF(btrim(p_title), ''), '') = '' OR COALESCE(d.title, '') ILIKE '%' || btrim(p_title) || '%')
      ORDER BY m.base_dt DESC, d.doc_no DESC;
 $$;
 
@@ -122,7 +123,7 @@ $$;
 -- Name: FUNCTION sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying) IS 'CCP 포장·가열 작성 목록 — 양식군 접두로 가른다. 자사 양식만. 목록 비고는 title 부분검색';
+COMMENT ON FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying) IS 'CCP 포장·가열 작성 목록 — 양식군 접두로 가른다. 자사 양식만. 제목은 tbl_document.title 부분검색';
 
 
 --
@@ -130,7 +131,8 @@ COMMENT ON FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl
 --
 
 DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_mtl_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying);
-CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, remark character varying)
+DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_mtl_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, title character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT d.idx, h.idx,
@@ -160,7 +162,7 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying,
        AND (COALESCE(NULLIF(btrim(p_to_dt), ''), '') = '' OR h.base_dt <= btrim(p_to_dt))
        AND (COALESCE(NULLIF(btrim(p_writer_id), ''), '') = '' OR COALESCE(d.writer_id, '') ILIKE '%' || btrim(p_writer_id) || '%')
        AND (COALESCE(NULLIF(btrim(p_writer_nm), ''), '') = '' OR COALESCE(u.user_nm, '') ILIKE '%' || btrim(p_writer_nm) || '%')
-       AND (COALESCE(NULLIF(btrim(p_remark), ''), '') = '' OR COALESCE(d.title, '') ILIKE '%' || btrim(p_remark) || '%')
+       AND (COALESCE(NULLIF(btrim(p_title), ''), '') = '' OR COALESCE(d.title, '') ILIKE '%' || btrim(p_title) || '%')
      ORDER BY h.base_dt DESC, d.doc_no DESC;
 $_$;
 
@@ -169,7 +171,7 @@ $_$;
 -- Name: FUNCTION sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying) IS 'CCP 금속검출 작성 목록 — tml_ccp_mtl_NNN 자사 양식만. 목록 비고는 title 부분검색';
+COMMENT ON FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying) IS 'CCP 금속검출 작성 목록 — tml_ccp_mtl_NNN 자사 양식만. 제목은 tbl_document.title 부분검색';
 
 
 --
@@ -183,6 +185,8 @@ DECLARE
     v_doc bigint; v_hdr bigint; v_status varchar; v_no varchar; v_name varchar; v_appr varchar; v_retain int;
     v_ver int; e jsonb; v_seq int := 0;
     v_tmpl varchar(40) := btrim(COALESCE(p_tmpl_cd, ''));
+    -- 목록 제목 — payload title 이 있으면 그 값, 없으면 신규는 자동값·수정은 기존값
+    v_in varchar(300); v_auto varchar(300);
 BEGIN
     IF COALESCE(p_co_cd, '') = '' OR COALESCE(p_base_dt, '') = '' OR length(p_base_dt) <> 8 THEN
         RAISE EXCEPTION '일자는 YYYYMMDD 8자리로 입력하세요.' USING ERRCODE = '45000';
@@ -213,6 +217,8 @@ BEGIN
     END IF;
 
     v_ver := COALESCE(NULLIF(p_payload->>'verNo', '')::int, 0);
+    v_auto := v_name || ' (' || substr(p_base_dt, 1, 4) || '-' || substr(p_base_dt, 5, 2) || '-' || substr(p_base_dt, 7, 2) || ')';
+    v_in := NULLIF(btrim(COALESCE(p_payload->>'title', '')), '');
 
     IF COALESCE(p_doc_idx, 0) = 0 THEN
         -- 양식 복사 SP 는 채번 규칙을 만들지 않는다. 없을 때만 기본 규칙을 깐다
@@ -226,7 +232,7 @@ BEGIN
             writer_id, write_dt, ver_no, retention_until, del_yn, ins_id, ins_dt
         ) VALUES (
             p_co_cd, v_tmpl, 'HTML', v_no, p_base_dt,
-            v_name || ' (' || substr(p_base_dt, 1, 4) || '-' || substr(p_base_dt, 5, 2) || '-' || substr(p_base_dt, 7, 2) || ')',
+            COALESCE(v_in, v_auto),
             'WRK', v_appr, p_id, now(), 1,
             to_char((to_date(p_base_dt, 'YYYYMMDD') + (COALESCE(v_retain, 24) || ' months')::interval)::date, 'YYYYMMDD'),
             'N', p_id, now()
@@ -253,7 +259,7 @@ BEGIN
         END IF;
         UPDATE tbl_document SET
             base_dt = p_base_dt,
-            title = v_name || ' (' || substr(p_base_dt, 1, 4) || '-' || substr(p_base_dt, 5, 2) || '-' || substr(p_base_dt, 7, 2) || ')',
+            title = COALESCE(v_in, title),
             upd_id = p_id, upd_dt = now()
          WHERE idx = v_doc AND co_cd = p_co_cd;
         UPDATE tbl_ccp_verify_check SET
@@ -346,7 +352,8 @@ COMMENT ON PROCEDURE sasshaccp.sp_ccp_verify_d_000(IN p_co_cd character varying,
 --
 
 DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_verify_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying);
-CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, remark character varying)
+DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_verify_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, title character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT d.idx, h.idx,
@@ -387,7 +394,7 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varyi
             COALESCE(NULLIF(btrim(p_writer_nm), ''), '') = ''
             OR COALESCE(u.user_nm, '') ILIKE '%' || btrim(p_writer_nm) || '%'
            )
-       AND (COALESCE(NULLIF(btrim(p_remark), ''), '') = '' OR COALESCE(d.title, '') ILIKE '%' || btrim(p_remark) || '%')
+       AND (COALESCE(NULLIF(btrim(p_title), ''), '') = '' OR COALESCE(d.title, '') ILIKE '%' || btrim(p_title) || '%')
      ORDER BY h.base_dt DESC, d.doc_no DESC;
 $_$;
 
@@ -396,7 +403,7 @@ $_$;
 -- Name: FUNCTION sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying) IS 'CCP 검증점검 작성 목록 — tml_ccp_chk_NNN 자사 양식만. 비고 부분검색. 결재 여부는 화면이 DOC_STATUS 로 묶어 거른다';
+COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying) IS 'CCP 검증점검 작성 목록 — tml_ccp_chk_NNN 자사 양식만. 제목은 tbl_document.title 부분검색. 결재 여부는 화면이 DOC_STATUS 로 묶어 거른다';
 
 
 --
@@ -1001,7 +1008,8 @@ COMMENT ON FUNCTION sasshaccp.sp_department_management_r_000(p_co_cd character v
 --
 
 DROP FUNCTION IF EXISTS sasshaccp.sp_draft_hwp_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying);
-CREATE OR REPLACE FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, deviation_yn character varying, remark character varying)
+DROP FUNCTION IF EXISTS sasshaccp.sp_draft_hwp_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, deviation_yn character varying, title character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx,
@@ -1045,7 +1053,7 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varyin
             OR COALESCE(d.writer_id, '') ILIKE '%' || btrim(p_writer_id) || '%')
        AND (COALESCE(NULLIF(btrim(p_writer_nm), ''), '') = ''
             OR COALESCE(u.user_nm, '') ILIKE '%' || btrim(p_writer_nm) || '%')
-       AND (COALESCE(NULLIF(btrim(p_remark), ''), '') = '' OR COALESCE(d.title, '') ILIKE '%' || btrim(p_remark) || '%')
+       AND (COALESCE(NULLIF(btrim(p_title), ''), '') = '' OR COALESCE(d.title, '') ILIKE '%' || btrim(p_title) || '%')
      ORDER BY d.base_dt DESC, d.idx DESC;
 $$;
 
@@ -1054,7 +1062,7 @@ $$;
 -- Name: FUNCTION sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying) IS 'HWP 작성 목록 — 목록 비고는 title 부분검색. 130에서 이탈여부(deviation_yn) 추가';
+COMMENT ON FUNCTION sasshaccp.sp_draft_hwp_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying) IS 'HWP 작성 목록 — 제목은 tbl_document.title 부분검색. 130에서 이탈여부(deviation_yn) 추가';
 
 
 --
@@ -2350,7 +2358,8 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_audit_log_c_000(IN p_co_cd character varyi
 -- Name: sp_tbl_ccp_generic_monitor_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying, character varying, character varying, jsonb, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying) RETURNS bigint
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_generic_monitor_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying, character varying, character varying, jsonb, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying, p_title character varying DEFAULT NULL::character varying) RETURNS bigint
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -2390,7 +2399,9 @@ BEGIN
             co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status, appr_line_cd,
             writer_id, write_dt, ver_no, retention_until, form_src, del_yn, ins_id
         ) VALUES (
-            p_co_cd, p_tmpl_cd, 'HTML', v_doc_no, p_base_dt, v_title, 'WRK', v_appr,
+            p_co_cd, p_tmpl_cd, 'HTML', v_doc_no, p_base_dt,
+            COALESCE(NULLIF(btrim(COALESCE(p_title, '')), ''), v_title),
+            'WRK', v_appr,
             p_id, now(), 1,
             to_char((to_date(p_base_dt, 'YYYYMMDD') + (COALESCE(v_retain, 24) || ' months')::interval)::date, 'YYYYMMDD'),
             'BASE', 'N', p_id
@@ -2411,7 +2422,10 @@ BEGIN
             RAISE EXCEPTION '전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.' USING ERRCODE = '45000';
         END IF;
         v_doc_idx := p_doc_idx;
-        UPDATE tbl_document SET base_dt = p_base_dt, title = v_title, upd_id = p_id, upd_dt = now()
+        -- 제목이 넘어오면 그 값, 없으면 기존 title 유지
+        UPDATE tbl_document SET base_dt = p_base_dt,
+            title = COALESCE(NULLIF(btrim(COALESCE(p_title, '')), ''), title),
+            upd_id = p_id, upd_dt = now()
          WHERE idx = v_doc_idx AND co_cd = p_co_cd;
         UPDATE tbl_ccp_generic_monitor
            SET base_dt = p_base_dt, tmpl_cd = p_tmpl_cd, ccp_cd = nullif(p_ccp_cd, ''),
@@ -2464,7 +2478,7 @@ END$$;
 -- Name: FUNCTION sp_tbl_ccp_generic_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying) IS '공통 CCP 저장 — 124에서 phase_cd·채번 규칙·결재선/보존기간 보강. 기존 인자 그대로';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying, p_title character varying) IS '공통 CCP 저장 — 제목이 있으면 그 값, 없으면 신규는 양식명·수정은 기존 title';
 
 
 --
@@ -2597,10 +2611,12 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_r_000(p_co_cd character
 -- Name: sp_tbl_ccp_metal_monitor_c_000(character varying, bigint, character varying, character varying, numeric, numeric, character varying, character varying, jsonb, jsonb, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_ccp_cd character varying, p_fe_size numeric, p_sts_size numeric, p_mng_user_id character varying, p_mng_nm character varying, p_sens_rows_json jsonb, p_pass_rows_json jsonb, p_id character varying, p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying) RETURNS bigint
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_metal_monitor_c_000(character varying, bigint, character varying, character varying, numeric, numeric, character varying, character varying, jsonb, jsonb, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_ccp_cd character varying, p_fe_size numeric, p_sts_size numeric, p_mng_user_id character varying, p_mng_nm character varying, p_sens_rows_json jsonb, p_pass_rows_json jsonb, p_id character varying, p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying, p_title character varying DEFAULT NULL::character varying) RETURNS bigint
     LANGUAGE plpgsql
     AS $$
 DECLARE v_doc_idx bigint; v_hdr_idx bigint; v_status varchar(4); v_name varchar; v_appr varchar; v_retain int; r jsonb;
+    v_in varchar(300); v_auto varchar(300);
 BEGIN
     IF COALESCE(p_base_dt, '') = '' OR length(p_base_dt) <> 8 THEN RAISE EXCEPTION '작성일은 YYYYMMDD 8자리로 입력하세요.' USING ERRCODE = '45000'; END IF;
     IF p_sens_rows_json IS NULL OR jsonb_typeof(p_sens_rows_json) <> 'array' THEN RAISE EXCEPTION '감도 점검 행 자료가 올바르지 않습니다.' USING ERRCODE = '45000'; END IF;
@@ -2608,6 +2624,8 @@ BEGIN
       INTO v_name, v_appr, v_retain FROM tbl_template t LEFT JOIN tbl_company_template ct ON ct.co_cd=p_co_cd AND ct.tmpl_cd=t.tmpl_cd AND ct.use_yn='Y'
      WHERE t.tmpl_cd=p_tmpl_cd AND t.use_yn='Y' AND t.co_cd = p_co_cd;
     IF v_name IS NULL THEN RAISE EXCEPTION 'CCP 금속검출 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000'; END IF;
+    v_auto := v_name || ' (' || p_base_dt || ')';
+    v_in := NULLIF(btrim(COALESCE(p_title, '')), '');
     IF p_doc_idx IS NULL OR p_doc_idx = 0 THEN
         -- 자사 양식 복사 SP 는 채번 규칙을 만들지 않는다. 없을 때만 기본 규칙을 깐다
         INSERT INTO tbl_doc_no_rule (co_cd, tmpl_cd, prefix, date_fmt, seq_len, reset_cycle, ins_id, ins_dt)
@@ -2615,13 +2633,13 @@ BEGIN
         ON CONFLICT (co_cd, tmpl_cd) DO NOTHING;
 
         INSERT INTO tbl_document(co_cd,tmpl_cd,doc_kind,doc_no,base_dt,title,status,appr_line_cd,writer_id,write_dt,ver_no,retention_until,del_yn,ins_id)
-        VALUES(p_co_cd,p_tmpl_cd,'HTML',sp_tbl_doc_no_gen_c_000(p_co_cd,p_tmpl_cd,p_base_dt),p_base_dt,v_name || ' (' || p_base_dt || ')','WRK',v_appr,p_id,now(),1,to_char((to_date(p_base_dt,'YYYYMMDD')+(COALESCE(v_retain,24)||' months')::interval)::date,'YYYYMMDD'),'N',p_id) RETURNING idx INTO v_doc_idx;
+        VALUES(p_co_cd,p_tmpl_cd,'HTML',sp_tbl_doc_no_gen_c_000(p_co_cd,p_tmpl_cd,p_base_dt),p_base_dt,COALESCE(v_in, v_auto),'WRK',v_appr,p_id,now(),1,to_char((to_date(p_base_dt,'YYYYMMDD')+(COALESCE(v_retain,24)||' months')::interval)::date,'YYYYMMDD'),'N',p_id) RETURNING idx INTO v_doc_idx;
         INSERT INTO tbl_ccp_metal_monitor(co_cd,doc_idx,base_dt,ccp_cd,fe_size,sts_size,mng_user_id,mng_nm,ins_id) VALUES(p_co_cd,v_doc_idx,p_base_dt,p_ccp_cd,p_fe_size,p_sts_size,NULLIF(p_mng_user_id,''),NULLIF(p_mng_nm,''),p_id) RETURNING idx INTO v_hdr_idx;
     ELSE
         SELECT d.idx,d.status,h.idx INTO v_doc_idx,v_status,v_hdr_idx FROM tbl_document d JOIN tbl_ccp_metal_monitor h ON h.doc_idx=d.idx AND h.co_cd=d.co_cd WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd=p_tmpl_cd AND d.del_yn='N';
         IF v_doc_idx IS NULL THEN RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE='45000'; END IF;
         IF v_status IN ('REQ','REV','APV') THEN RAISE EXCEPTION '전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.' USING ERRCODE='45000'; END IF;
-        UPDATE tbl_document SET base_dt=p_base_dt,title=v_name || ' (' || p_base_dt || ')',upd_id=p_id,upd_dt=now() WHERE idx=v_doc_idx AND co_cd=p_co_cd;
+        UPDATE tbl_document SET base_dt=p_base_dt,title=COALESCE(v_in, title),upd_id=p_id,upd_dt=now() WHERE idx=v_doc_idx AND co_cd=p_co_cd;
         UPDATE tbl_ccp_metal_monitor SET base_dt=p_base_dt,ccp_cd=p_ccp_cd,fe_size=p_fe_size,sts_size=p_sts_size,mng_user_id=NULLIF(p_mng_user_id,''),mng_nm=NULLIF(p_mng_nm,''),upd_id=p_id,upd_dt=now() WHERE idx=v_hdr_idx AND co_cd=p_co_cd;
         DELETE FROM tbl_ccp_metal_sens_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx;
         DELETE FROM tbl_ccp_metal_pass_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx;
@@ -2656,7 +2674,7 @@ END$$;
 -- Name: FUNCTION sp_tbl_ccp_metal_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_ccp_cd character varying, p_fe_size numeric, p_sts_size numeric, p_mng_user_id character varying, p_mng_nm character varying, p_sens_rows_json jsonb, p_pass_rows_json jsonb, p_id character varying, p_tmpl_cd character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_ccp_cd character varying, p_fe_size numeric, p_sts_size numeric, p_mng_user_id character varying, p_mng_nm character varying, p_sens_rows_json jsonb, p_pass_rows_json jsonb, p_id character varying, p_tmpl_cd character varying) IS 'CCP 금속검출 저장 — 124에서 p_tmpl_cd 개방·채번 규칙 보강. 기본값은 기존 양식';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_ccp_cd character varying, p_fe_size numeric, p_sts_size numeric, p_mng_user_id character varying, p_mng_nm character varying, p_sens_rows_json jsonb, p_pass_rows_json jsonb, p_id character varying, p_tmpl_cd character varying, p_title character varying) IS 'CCP 금속검출 저장 — 제목이 있으면 그 값, 없으면 신규는 양식명(일자)·수정은 기존 title';
 
 
 --
@@ -4592,7 +4610,7 @@ BEGIN
         UPDATE tbl_document
            SET base_dt = p_base_dt,
                base_dt_to = NULLIF(p_base_dt_to, ''),
-               title = COALESCE(NULLIF(trim(p_title), ''), v_tmpl_nm || ' (' || to_char(to_date(p_base_dt, 'YYYYMMDD'), 'YYYY-MM-DD') || ')'),
+               title = COALESCE(NULLIF(trim(p_title), ''), title),
                upd_id = p_id,
                upd_dt = now()
          WHERE idx = v_idx
@@ -4607,7 +4625,7 @@ END$_$;
 -- Name: FUNCTION sp_tbl_hwp_document_c_000(p_co_cd character varying, p_doc_idx bigint, p_tmpl_cd character varying, p_base_dt character varying, p_base_dt_to character varying, p_title character varying, p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_hwp_document_c_000(p_co_cd character varying, p_doc_idx bigint, p_tmpl_cd character varying, p_base_dt character varying, p_base_dt_to character varying, p_title character varying, p_id character varying) IS 'HWP 문서형 공통 헤더 신규·수정 — 문서번호·보존기간 자동 설정';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_hwp_document_c_000(p_co_cd character varying, p_doc_idx bigint, p_tmpl_cd character varying, p_base_dt character varying, p_base_dt_to character varying, p_title character varying, p_id character varying) IS 'HWP 문서형 공통 헤더 신규·수정 — 제목이 있으면 그 값, 없으면 신규는 양식명(일자)·수정은 기존 title';
 
 
 --
@@ -4621,6 +4639,8 @@ DECLARE
     v_doc bigint; v_hdr bigint; v_status varchar; v_no varchar; v_name varchar; v_appr varchar; v_retain int;
     v_ver int; e jsonb; v_seq int := 0;
     v_tmpl varchar(40) := btrim(COALESCE(p_tmpl_cd, ''));
+    -- 목록 제목 — payload title 이 있으면 그 값, 없으면 신규는 자동값·수정은 기존값
+    v_in varchar(300); v_auto varchar(300);
 BEGIN
     IF COALESCE(p_co_cd, '') = '' OR COALESCE(p_base_dt, '') = '' OR length(p_base_dt) <> 8 THEN
         RAISE EXCEPTION '점검일자는 YYYYMMDD 8자리로 입력하세요.' USING ERRCODE = '45000';
@@ -4650,6 +4670,8 @@ BEGIN
     END IF;
 
     v_ver := COALESCE(NULLIF(p_payload->>'verNo', '')::int, 0);
+    v_auto := v_name || ' (' || substr(p_base_dt, 1, 4) || '-' || substr(p_base_dt, 5, 2) || '-' || substr(p_base_dt, 7, 2) || ')';
+    v_in := NULLIF(btrim(COALESCE(p_payload->>'title', '')), '');
 
     IF COALESCE(p_doc_idx, 0) = 0 THEN
         -- 자사 양식 복사 SP 는 채번 규칙을 만들지 않는다. 없을 때만 기본 규칙을 깐다
@@ -4663,7 +4685,7 @@ BEGIN
             writer_id, write_dt, ver_no, retention_until, del_yn, ins_id, ins_dt
         ) VALUES (
             p_co_cd, v_tmpl, 'HTML', v_no, p_base_dt,
-            v_name || ' (' || substr(p_base_dt, 1, 4) || '-' || substr(p_base_dt, 5, 2) || '-' || substr(p_base_dt, 7, 2) || ')',
+            COALESCE(v_in, v_auto),
             'WRK', v_appr, p_id, now(), 1,
             to_char((to_date(p_base_dt, 'YYYYMMDD') + (COALESCE(v_retain, 24) || ' months')::interval)::date, 'YYYYMMDD'),
             'N', p_id, now()
@@ -4690,7 +4712,7 @@ BEGIN
         END IF;
         UPDATE tbl_document SET
             base_dt = p_base_dt,
-            title = v_name || ' (' || substr(p_base_dt, 1, 4) || '-' || substr(p_base_dt, 5, 2) || '-' || substr(p_base_dt, 7, 2) || ')',
+            title = COALESCE(v_in, title),
             upd_id = p_id, upd_dt = now()
          WHERE idx = v_doc AND co_cd = p_co_cd;
         UPDATE tbl_hyg_process SET
@@ -4774,7 +4796,8 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_hyg_process_d_000(IN p_co_cd character var
 --
 
 DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_hyg_process_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_from_dt character varying, p_to_dt character varying, p_doc_no character varying, p_writer character varying, p_tmpl_nm character varying DEFAULT NULL::character varying, p_writer_id character varying DEFAULT NULL::character varying, p_writer_nm character varying DEFAULT NULL::character varying, p_remark character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, remark character varying)
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_hyg_process_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_from_dt character varying, p_to_dt character varying, p_doc_no character varying, p_writer character varying, p_tmpl_nm character varying DEFAULT NULL::character varying, p_writer_id character varying DEFAULT NULL::character varying, p_writer_nm character varying DEFAULT NULL::character varying, p_title character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, title character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT d.idx, h.idx,
@@ -4826,7 +4849,7 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character 
             OR COALESCE(u.user_nm, '') LIKE '%' || btrim(p_writer) || '%'
             OR COALESCE(h.checker_nm, '') LIKE '%' || btrim(p_writer) || '%'
            )
-       AND (COALESCE(NULLIF(btrim(p_remark), ''), '') = '' OR COALESCE(d.title, '') ILIKE '%' || btrim(p_remark) || '%')
+       AND (COALESCE(NULLIF(btrim(p_title), ''), '') = '' OR COALESCE(d.title, '') ILIKE '%' || btrim(p_title) || '%')
      ORDER BY d.base_dt DESC, d.doc_no DESC;
 $_$;
 
@@ -4835,7 +4858,7 @@ $_$;
 -- Name: FUNCTION sp_tbl_hyg_process_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_from_dt character varying, p_to_dt character varying, p_doc_no character varying, p_writer character varying, p_tmpl_nm character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_from_dt character varying, p_to_dt character varying, p_doc_no character varying, p_writer character varying, p_tmpl_nm character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying) IS '공정점검 작성 목록 — 목록 비고는 title 부분검색. 결재여부는 화면이 DOC_STATUS 로 묶어 거른다';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_hyg_process_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_from_dt character varying, p_to_dt character varying, p_doc_no character varying, p_writer character varying, p_tmpl_nm character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying) IS '공정점검 작성 목록 — 제목은 tbl_document.title 부분검색. 결재여부는 화면이 DOC_STATUS 로 묶어 거른다';
 
 
 --

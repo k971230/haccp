@@ -253,13 +253,13 @@ describe("htmlFormDraftGridRules — 좌측 셀 편집 잠금", () => {
   });
 
   it("제목은 전송 이후에도 칸을 연다", () => {
-    expect(rules.alwaysReadonly ?? []).not.toContain("remark");
-    expect(rules.editableWhenLocked ?? []).toContain("remark");
-    const remark = buildDraftListColumns(() => {}).find((c) => c.field === "remark");
-    expect(remark?.header).toBe("제목");
-    expect(remark?.type).toBe("text");
-    expect(remark?.editable).toBe(true);
-    expect(remark?.maxLength).toBe(300);
+    expect(rules.alwaysReadonly ?? []).not.toContain("title");
+    expect(rules.editableWhenLocked ?? []).toContain("title");
+    const titleCol = buildDraftListColumns(() => {}).find((c) => c.field === "title");
+    expect(titleCol?.header).toBe("제목");
+    expect(titleCol?.type).toBe("text");
+    expect(titleCol?.editable).toBe(true);
+    expect(titleCol?.maxLength).toBe(300);
   });
 
   it("전송·결재완료 행은 잠그되 제목만 예외다", () => {

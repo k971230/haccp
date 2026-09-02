@@ -57,4 +57,6 @@ public class DraftSaveRequest {
      * HTML 5화면은 지면 하단 시그널과 이탈내용으로 판단하므로 넘기지 않는다.
      */
     private String deviationYn;
+    // 목록 제목 — tbl_document.title. 빈값이면 SP 가 신규는 양식명·수정은 기존값을 쓴다
+    private String title;
 }

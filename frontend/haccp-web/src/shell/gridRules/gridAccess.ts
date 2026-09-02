@@ -343,7 +343,7 @@ export function canSaveRow(
       if (k.startsWith("_")) return false;
       return String(row[k] ?? "") !== String(orig?.[k] ?? "");
     });
-    // 잠긴 칸만 고쳤을 때(= 목록 비고 같은 제목) 저장을 연다
+    // 잠긴 칸만 고쳤을 때(= 목록 제목) 저장을 연다
     if (whitelist.length > 0 && dirty.length > 0 && dirty.every((f) => whitelist.includes(f))) {
       return ok();
     }

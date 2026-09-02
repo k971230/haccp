@@ -41,7 +41,7 @@ PIPELINE[HB144] HWP 작성 XML
             #{toDt,     jdbcType=VARCHAR},
             #{writerId, jdbcType=VARCHAR},
             #{writerNm, jdbcType=VARCHAR},
-            #{remark,   jdbcType=VARCHAR}
+            #{title,    jdbcType=VARCHAR}
         )
     </select>
 

@@ -78,11 +78,11 @@ public abstract class CcpLogDraftControllerBase {
             @RequestParam(required = false) String writerId,
             // writerNm: 작성자명 부분검색
             @RequestParam(required = false) String writerNm,
-            // remark: 문서 비고 부분검색
-            @RequestParam(required = false) String remark
+            // title: 제목 부분검색 — tbl_document.title
+            @RequestParam(required = false) String title
     ) {
         return CommonResponse.ok(
-                service().list(family(), tmplCd, tmplNm, fromDt, toDt, writerId, writerNm, remark));
+                service().list(family(), tmplCd, tmplNm, fromDt, toDt, writerId, writerNm, title));
     }
 
     /**

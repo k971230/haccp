@@ -135,6 +135,8 @@ export const hwpDraftApi: HtmlFormDraftApi = {
       docIdx: body.docIdx,
       baseDt: body.baseDt,
       deviationYn: body.deviationYn ?? "N",
+      // 목록 제목 — 빈값이면 서버가 신규는 양식명·수정은 기존값을 쓴다
+      title: body.title,
     });
     return data.data.docIdx;
   },

@@ -97,7 +97,7 @@ type ListMeta = DocListMeta & {
   writerNm?: string;
   sendState?: SendState;
   // 제목 — tbl_document.title
-  remark?: string;
+  title?: string;
   // 이탈여부 Y/N — 목록 칸을 쓰는 화면(HWP)만 채운다
   deviationYn?: string;
 };
@@ -220,7 +220,7 @@ export function HtmlFormDraftPage({
   const [forms, setForms] = useState<HtmlFormDraftForm[]>([]);
   // 상단 검색 조건 6개 — 작성 입력과 별개다
   const [search, setSearch] = useState({
-    fromDt: "", toDt: "", tmplCd: "", tmplNm: "", remark: "", sendState: "",
+    fromDt: "", toDt: "", tmplCd: "", tmplNm: "", title: "", sendState: "",
   });
   const searchRef = useRef(search);
   searchRef.current = search;
@@ -285,7 +285,7 @@ export function HtmlFormDraftPage({
       tmplNm: q.tmplNm,
       fromDt: q.fromDt,
       toDt: q.toDt,
-      remark: q.remark,
+      title: q.title,
     });
     const mapped = rows
       .map((r) => ({
@@ -297,7 +297,7 @@ export function HtmlFormDraftPage({
         baseKey: r.baseDt,
         baseDtDisp: toInputDate(r.baseDt),
         writerNm: r.writerNm ?? "",
-        remark: r.remark ?? "",
+        title: r.title ?? "",
         sendState: sendStateOf(r.status),
         ngCnt: r.ngCnt ?? 0,
         // 서버가 안 주는 화면(HTML)은 N — 칸 자체를 그리지 않는다
@@ -492,7 +492,7 @@ export function HtmlFormDraftPage({
    * 일자: 2026-08-25
    * 코멘트:
    *   1) dirty 전건을 검증·저장한다 — validate 만 좌/우 저장마다 다르다
-   *   2) 전송대기면 본문+제목. 전송 이후면 제목만. 첨부 remark 가 아니다
+   *   2) 전송대기면 본문에 제목을 같이 보낸다. 전송 이후면 제목만. 첨부 remark 가 아니다
    *   3) 저장 후 목록을 다시 읽고 활성 행을 서버 키로 다시 연다. 임시 키를 getBuffer 하면 버퍼가 없다
    */
   const persistSave = useCallback(async (
@@ -508,7 +508,7 @@ export function HtmlFormDraftPage({
     const err = await saveAll({
       validate,
       saveOne: async (row, b) => {
-        const title = (row as EditableRow<ListMeta>).remark ?? "";
+        const title = (row as EditableRow<ListMeta>).title ?? "";
         const status = b?.status ?? (row as EditableRow<ListMeta>).status;
         const existingIdx = b?.docIdx ?? (row as EditableRow<ListMeta>).docIdx ?? null;
         const isOpenRow = row._key === activeKeyRef.current;
@@ -519,11 +519,10 @@ export function HtmlFormDraftPage({
           if (isOpenRow) savedActiveIdx = existingIdx;
           return {
             docIdx: existingIdx,
-            listMeta: { remark: title },
+            listMeta: { title },
           };
         }
         if (!b) throw new Error("편집 내용이 없습니다.");
-        const hadDoc = !!b.docIdx;
         const saved = await api.save({
           tmplCd: b.tmplCd,
           docIdx: b.docIdx,
@@ -543,12 +542,9 @@ export function HtmlFormDraftPage({
           deviationYn: showDeviationColumn
             ? ((row as EditableRow<ListMeta>).deviationYn ?? "N")
             : (b.deviationYn ? "Y" : "N"),
+          // 목록 제목 — 본문 SP 가 값이 있으면 쓰고 없으면 기존/자동값을 유지한다
+          title,
         });
-        // api.save 가 title 을 양식명(일자)로 덮는다. 목록 제목을 다시 쓴다
-        // 신규이고 제목이 비었을 때(= 안 씀) 자동 제목을 지워 버리지 않는다
-        if (title.trim() || hadDoc) {
-          await saveDocumentTitle(saved, title);
-        }
         /*
          * 저장 뒤 화면이 더 할 일 — HWP 는 여기서 본문 파일을 올린다.
          *
@@ -569,7 +565,7 @@ export function HtmlFormDraftPage({
             baseKey: b.baseKey,
             baseDtDisp: toInputDate(b.baseKey),
             deviationYn: (row as EditableRow<ListMeta>).deviationYn ?? "N",
-            remark: title,
+            title,
           },
         };
       },
@@ -1242,9 +1238,9 @@ export function HtmlFormDraftPage({
               <input
                 // 제목 부분검색 — tbl_document.title. 결재 첨부 remark 가 아니다
                 className={searchInputClass}
-                value={search.remark}
+                value={search.title}
                 placeholder="제목"
-                onChange={(event) => setSearch((prev) => ({ ...prev, remark: event.target.value }))}
+                onChange={(event) => setSearch((prev) => ({ ...prev, title: event.target.value }))}
               />
             </SearchField>
             <SearchSelect
@@ -1362,8 +1358,8 @@ export function HtmlFormDraftPage({
                 rowClassName={(row) => draftRejectedRowClass((row as ListMeta).status)}
                 onCellChange={(key, field, cellValue) => {
                   // 제목 — tbl_document.title. 결재 첨부 remark 가 아니다. 상태와 무관
-                  if (field === "remark") {
-                    patchRow(key, { remark: String(cellValue ?? "") } as Partial<ListMeta>);
+                  if (field === "title") {
+                    patchRow(key, { title: String(cellValue ?? "") } as Partial<ListMeta>);
                     return;
                   }
                   /*

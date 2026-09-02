@@ -32,7 +32,7 @@ PIPELINE[HB140] CCP 금속검출 작성 XML
     <!-- 좌측 작성 목록 — 자사 양식(tml_ccp_mtl_NNN)만 -->
     <select id="selectList" resultType="com.haccp.draft.dto.DraftListRow">
         SELECT * FROM sp_ccp_mtl_r_000(
-            #{coCd}, #{tmplCd}, #{tmplNm}, #{fromDt}, #{toDt}, #{writerId}, #{writerNm}, #{remark}
+            #{coCd}, #{tmplCd}, #{tmplNm}, #{fromDt}, #{toDt}, #{writerId}, #{writerNm}, #{title}
         )
     </select>
 
@@ -61,7 +61,7 @@ PIPELINE[HB140] CCP 금속검출 작성 XML
             NULL, NULL, '', #{mngNm},
             CAST(#{sensRowsJson} AS jsonb),
             CAST(#{passRowsJson} AS jsonb),
-            #{userId}, #{tmplCd}
+            #{userId}, #{tmplCd}, #{title}
         )
     </select>
 

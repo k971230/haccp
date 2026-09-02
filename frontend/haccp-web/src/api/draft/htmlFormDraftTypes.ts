@@ -66,10 +66,10 @@ export interface HtmlFormDraftListRow {
   status: string;
   rowCnt?: number;
   ngCnt?: number;
-  /** 이탈여부 Y/N — HWP 작성 목록만 채워 온다. 미완료 수(ngCnt)와 다른 축이다 */
-  deviationYn?: string | null;
-  // 문서 비고 — tbl_document.remark
-  remark?: string | null;
+    /** 이탈여부 Y/N — HWP 작성 목록만 채워 온다. 미완료 수(ngCnt)와 다른 축이다 */
+    deviationYn?: string | null;
+    // 제목 — tbl_document.title. 결재 첨부 remark 가 아니다
+    title?: string | null;
 }
 
 /** 상세 — 헤더 JSON + 점검행 + 이탈 푸터 */
@@ -105,8 +105,8 @@ export interface HtmlFormDraftListParams {
   writerId?: string;
   // 작성자명 부분검색
   writerNm?: string;
-  // 문서 비고 부분검색
-  remark?: string;
+  // 제목 부분검색 — tbl_document.title
+  title?: string;
 }
 
 /** 저장 본문 — 전송 전이라 서버는 필수값을 보지 않는다 */
@@ -133,6 +133,8 @@ export interface HtmlFormDraftSaveRequest {
   logRows?: HtmlFormLogRow[];
   /** 금속검출 통과량 표 행 — MTL 작성만 채운다 */
   passRows?: HtmlFormPassRow[];
+  // 목록 제목 — tbl_document.title. 빈값이면 서버가 신규는 양식명·수정은 기존값을 쓴다
+  title?: string;
 }
 
 /**

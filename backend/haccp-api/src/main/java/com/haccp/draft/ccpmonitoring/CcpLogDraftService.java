@@ -118,13 +118,13 @@ public class CcpLogDraftService {
             String writerId,
             // writerNm: 작성자명 부분검색
             String writerNm,
-            // remark: 문서 비고 부분검색
-            String remark
+            // title: 제목 부분검색 — tbl_document.title
+            String title
     ) {
         return mapper.selectList(
                 LoginUserContext.coCd(), family.prefix(), DraftSupport.nvl(tmplCd), DraftSupport.nvl(tmplNm),
                 DraftSupport.nvl(fromDt), DraftSupport.nvl(toDt), DraftSupport.nvl(writerId), DraftSupport.nvl(writerNm),
-                DraftSupport.nvl(remark));
+                DraftSupport.nvl(title));
     }
 
     /**
@@ -221,7 +221,8 @@ public class CcpLogDraftService {
                     tmpl,
                     DraftSupport.nvl(req.getCheckerNm()),
                     objectMapper.writeValueAsString(toGenericRows(rows)),
-                    LoginUserContext.userId()
+                    LoginUserContext.userId(),
+                    DraftSupport.nvl(req.getTitle())
             );
             if (docIdx == null || docIdx <= 0) {
                 throw new BizException("저장에 실패했습니다.");
