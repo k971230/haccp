@@ -87,11 +87,14 @@ public class CcpMtlDraftService {
      *   3) 결재 여부는 파생값이라 화면이 거른다
      */
     public List<DraftListRow> list(
-            String tmplCd, String tmplNm, String fromDt, String toDt, String writerId, String writerNm
+            String tmplCd, String tmplNm, String fromDt, String toDt, String writerId, String writerNm,
+            // remark: 문서 비고 부분검색
+            String remark
     ) {
         return mapper.selectList(
                 LoginUserContext.coCd(), DraftSupport.nvl(tmplCd), DraftSupport.nvl(tmplNm),
-                DraftSupport.nvl(fromDt), DraftSupport.nvl(toDt), DraftSupport.nvl(writerId), DraftSupport.nvl(writerNm));
+                DraftSupport.nvl(fromDt), DraftSupport.nvl(toDt), DraftSupport.nvl(writerId), DraftSupport.nvl(writerNm),
+                DraftSupport.nvl(remark));
     }
 
     /**

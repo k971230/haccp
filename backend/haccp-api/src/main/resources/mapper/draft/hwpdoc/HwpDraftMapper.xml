@@ -40,7 +40,8 @@ PIPELINE[HB144] HWP 작성 XML
             #{fromDt,   jdbcType=VARCHAR},
             #{toDt,     jdbcType=VARCHAR},
             #{writerId, jdbcType=VARCHAR},
-            #{writerNm, jdbcType=VARCHAR}
+            #{writerNm, jdbcType=VARCHAR},
+            #{remark,   jdbcType=VARCHAR}
         )
     </select>
 

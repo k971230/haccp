@@ -990,7 +990,7 @@ export const ITEM_YN = { PASS: "Y", FAIL: "N" } as const;
  * 코멘트:
  *   1) 기록 행 전부를 적합으로 바꾼다
  *   2) 지면의 「모두 적합」 버튼이 호출한다
- *   3) 이미 적합인 행도 그대로 적합이다 — 되돌리기는 행마다 부적합을 누르면 된다
+ *   3) 이미 적합인 행·이미 찍힌 O/X 도 적합 모양으로 덮는다 — 되돌리기는 행마다 부적합을 누르면 된다
  */
 export function allLogRowsPass(
   // 기록 행 전체
@@ -1023,24 +1023,27 @@ export function allLogRowsPass(
     return {
       ...r,
       judgeCd: JUDGE.PASS,
-      // 이미 찍힌 칸은 덮지 않는다 — 사람이 실제로 본 값이 이긴다. 빈 칸만 채운다
-      cells: fillEmptyCells(r.cells, fill),
+      // 부적합으로 찍힌 O/X 도 적합 모양으로 덮는다 — 「모두 적합」은 일괄이다
+      cells: applyPassCells(r.cells, fill),
     };
   });
 }
 
-/** 빈 칸만 기본값으로 채운다 — 값이 있는 칸은 그대로 둔다 */
-function fillEmptyCells(
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-02
+ * 코멘트:
+ *   1) 적합일 때의 칸 값을 빈 칸·이미 찍힌 칸 모두에 넣는다
+ *   2) allLogRowsPass 가 「모두 적합」에서 호출한다
+ *   3) 값이 있어도 덮는다 — 부적합 O/X 를 적합으로 되돌리기 위함이다
+ */
+function applyPassCells(
   // 지금 행의 칸
   cells: Record<string, string>,
   // 적합일 때의 값
   passCells: Record<string, string>,
 ): Record<string, string> {
-  const next = { ...cells };
-  for (const [cd, val] of Object.entries(passCells)) {
-    if (!String(next[cd] ?? "").trim()) next[cd] = val;
-  }
-  return next;
+  return { ...cells, ...passCells };
 }
 
 /**

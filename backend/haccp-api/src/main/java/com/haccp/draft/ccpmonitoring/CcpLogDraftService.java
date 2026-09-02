@@ -117,11 +117,14 @@ public class CcpLogDraftService {
             // writerId: 작성자 ID 부분검색
             String writerId,
             // writerNm: 작성자명 부분검색
-            String writerNm
+            String writerNm,
+            // remark: 문서 비고 부분검색
+            String remark
     ) {
         return mapper.selectList(
                 LoginUserContext.coCd(), family.prefix(), DraftSupport.nvl(tmplCd), DraftSupport.nvl(tmplNm),
-                DraftSupport.nvl(fromDt), DraftSupport.nvl(toDt), DraftSupport.nvl(writerId), DraftSupport.nvl(writerNm));
+                DraftSupport.nvl(fromDt), DraftSupport.nvl(toDt), DraftSupport.nvl(writerId), DraftSupport.nvl(writerNm),
+                DraftSupport.nvl(remark));
     }
 
     /**

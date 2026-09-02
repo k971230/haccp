@@ -88,12 +88,13 @@ describe("모두 적합 — 기록 행", () => {
     expect(after.cells["hdr-prod"], "제품만 통과는 검출되면 안 되니 X 다").toBe("X");
   });
 
-  it("이미 찍은 칸은 안 덮는다 — 사람이 실제로 본 값이 이긴다", () => {
+  it("이미 찍은 칸도 적합 모양으로 덮는다 — 부적합 O/X 를 일괄 되돌린다", () => {
     const before = row(1, "");
-    before.cells = { "hdr-fe": "X" };
-    const [after] = allLogRowsPass([before], { "hdr-fe": "O", "hdr-sus": "O" });
-    expect(after.cells["hdr-fe"], "사람이 X 로 찍은 것을 O 로 덮으면 안 된다").toBe("X");
-    expect(after.cells["hdr-sus"], "비어 있던 칸만 채운다").toBe("O");
+    before.cells = { "hdr-fe": "X", "hdr-prod": "O" };
+    const [after] = allLogRowsPass([before], { "hdr-fe": "O", "hdr-sus": "O", "hdr-prod": "X" });
+    expect(after.cells["hdr-fe"], "시편 미검출 X 를 검출 O 로 덮는다").toBe("O");
+    expect(after.cells["hdr-prod"], "제품 검출 O 를 통과 X 로 덮는다").toBe("X");
+    expect(after.cells["hdr-sus"], "비어 있던 칸도 채운다").toBe("O");
   });
 
   /*

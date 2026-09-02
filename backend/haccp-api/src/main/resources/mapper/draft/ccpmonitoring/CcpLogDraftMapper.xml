@@ -52,7 +52,7 @@ PIPELINE[HB139] CCP 모니터링 작성 XML
     <!-- 좌측 작성 목록 — 결재 여부는 DOC_STATUS 파생이라 화면이 거른다 -->
     <select id="selectList" resultType="com.haccp.draft.dto.DraftListRow">
         SELECT * FROM sp_ccp_log_r_000(
-            #{coCd}, #{tmplPfx}, #{tmplCd}, #{tmplNm}, #{fromDt}, #{toDt}, #{writerId}, #{writerNm}
+            #{coCd}, #{tmplPfx}, #{tmplCd}, #{tmplNm}, #{fromDt}, #{toDt}, #{writerId}, #{writerNm}, #{remark}
         )
     </select>
 

@@ -74,7 +74,9 @@ public class HwpDraftService {
             // writerId: 작성자 ID 부분검색
             String writerId,
             // writerNm: 작성자명 부분검색
-            String writerNm
+            String writerNm,
+            // remark: 문서 비고 부분검색
+            String remark
     ) {
         return mapper.selectList(
                 LoginUserContext.coCd(),
@@ -83,7 +85,8 @@ public class HwpDraftService {
                 DraftSupport.nvl(fromDt),
                 DraftSupport.nvl(toDt),
                 DraftSupport.nvl(writerId),
-                DraftSupport.nvl(writerNm)
+                DraftSupport.nvl(writerNm),
+                DraftSupport.nvl(remark)
         );
     }
 

@@ -2675,7 +2675,8 @@ CREATE TABLE sasshaccp.tbl_document (
     upd_dt timestamp without time zone,
     form_src character varying(10) DEFAULT 'BASE'::character varying NOT NULL,
     co_form_idx bigint,
-    remark character varying(500)
+    remark character varying(500),
+    cancel_reason character varying(500)
 );
 
 
@@ -2803,6 +2804,13 @@ COMMENT ON COLUMN sasshaccp.tbl_document.approve_dt IS '승인 일시';
 --
 
 COMMENT ON COLUMN sasshaccp.tbl_document.reject_reason IS '반려 사유 — status=RJT일 때 필수';
+
+
+--
+-- Name: COLUMN tbl_document.cancel_reason; Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON COLUMN sasshaccp.tbl_document.cancel_reason IS '결재 취소 사유 — UNDO 시 남기고 재상신(REQUEST) 때 비운다';
 
 
 --
@@ -7216,3 +7224,11 @@ CREATE INDEX IF NOT EXISTS ix_tbl_audit_log_scrn
     ON sasshaccp.tbl_audit_log USING btree (co_cd, scrn_cd, ins_dt DESC);
 -- 화면코드 없는 옛 행은 메뉴를 복원할 수 없다. 새 적재분만 남긴다.
 DELETE FROM sasshaccp.tbl_audit_log WHERE scrn_cd = '';
+
+
+--
+-- 결재 취소 사유 — 이미 도는 DB 용. 다시 돌려도 결과가 같다
+--
+ALTER TABLE sasshaccp.tbl_document
+    ADD COLUMN IF NOT EXISTS cancel_reason character varying(500);
+COMMENT ON COLUMN sasshaccp.tbl_document.cancel_reason IS '결재 취소 사유 — UNDO 시 남기고 재상신(REQUEST) 때 비운다';

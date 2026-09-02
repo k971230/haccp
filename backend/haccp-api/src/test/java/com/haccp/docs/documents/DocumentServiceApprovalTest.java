@@ -79,7 +79,7 @@ class DocumentServiceApprovalTest {
                 BizException.class, () -> service.processApproval(req(448L, "DELETE_ALL", null), null));
         assertEquals("결재 처리 구분이 올바르지 않습니다.", e.getMessage());
         verify(mapper, never()).processApproval(any(), any(), any(), any(), any());
-        verify(mapper, never()).undoApproval(any(), any(), any());
+        verify(mapper, never()).undoApproval(any(), any(), any(), any());
     }
 
     @Test
@@ -107,7 +107,7 @@ class DocumentServiceApprovalTest {
 
         service.processApproval(req(448L, "UNDO", "잘못 승인함"), null);
 
-        verify(mapper, times(1)).undoApproval(any(), eq(448L), any());
+        verify(mapper, times(1)).undoApproval(any(), eq(448L), any(), eq("잘못 승인함"));
         verify(mapper, never()).processApproval(any(), any(), any(), any(), any());
     }
 
@@ -118,7 +118,7 @@ class DocumentServiceApprovalTest {
         service.processApproval(req(448L, "APPROVE", null), null);
 
         verify(mapper, times(1)).processApproval(any(), eq(448L), eq("APPROVE"), any(), any());
-        verify(mapper, never()).undoApproval(any(), any(), any());
+        verify(mapper, never()).undoApproval(any(), any(), any(), any());
     }
 
     @Test

@@ -57,7 +57,9 @@ public interface HwpDraftMapper {
             // writerId: 작성자 ID 부분검색. 빈값이면 전체
             @Param("writerId") String writerId,
             // writerNm: 작성자명 부분검색. 빈값이면 전체
-            @Param("writerNm") String writerNm
+            @Param("writerNm") String writerNm,
+            // remark: 문서 비고 부분검색. 빈값이면 전체
+            @Param("remark") String remark
     );
 
     /**

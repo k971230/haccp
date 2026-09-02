@@ -69,9 +69,11 @@ public class HygProcessDraftController {
             // writerId: 작성자 ID 부분검색
             @RequestParam(required = false) String writerId,
             // writerNm: 작성자명 부분검색
-            @RequestParam(required = false) String writerNm
+            @RequestParam(required = false) String writerNm,
+            // remark: 문서 비고 부분검색
+            @RequestParam(required = false) String remark
     ) {
-        return CommonResponse.ok(service.list(tmplCd, tmplNm, fromDt, toDt, writerId, writerNm));
+        return CommonResponse.ok(service.list(tmplCd, tmplNm, fromDt, toDt, writerId, writerNm, remark));
     }
 
     /**

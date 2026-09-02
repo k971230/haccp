@@ -369,6 +369,28 @@ PIPELINE[HF49] 연관 모듈
     @apply bg-red-200 text-red-800;
   }
 
+  /* 반려 문서 — 배지로는 전송대기와 같다. 행 색으로 가른다 */
+  .mes-grid tbody tr.mes-row-rejected td,
+  .mes-grid tbody tr.mes-row-rejected td.mes-cell-locked,
+  .mes-grid tbody tr.mes-row-rejected td.mes-rownum,
+  .mes-grid tbody tr.mes-row-rejected td.mes-rownum-active {
+    @apply bg-yellow-100 text-yellow-900;
+  }
+  .mes-grid tbody tr.mes-row-rejected td:first-child {
+    @apply shadow-[inset_3px_0_0_0_#ca8a04];
+  }
+  .mes-grid tbody tr.mes-row-rejected:hover td,
+  .mes-grid tbody tr.mes-row-rejected:hover td.mes-cell-locked,
+  .mes-grid tbody tr.mes-row-rejected:hover td.mes-rownum {
+    @apply bg-yellow-200 text-yellow-900;
+  }
+  .mes-grid tbody tr.mes-row-rejected.mes-row-active td,
+  .mes-grid tbody tr.mes-row-rejected.mes-row-active td.mes-cell-locked,
+  .mes-grid tbody tr.mes-row-rejected.mes-row-active td.mes-rownum,
+  .mes-grid tbody tr.mes-row-rejected.mes-row-active td.mes-rownum-active {
+    @apply bg-yellow-200 text-yellow-900;
+  }
+
   /* 활성 섹션 그리드 래퍼 — CSV excel 틴트와 동일 emerald */
   .mes-sec-active .mes-grid-wrap { @apply ring-1 ring-emerald-200; }
 

@@ -406,6 +406,8 @@ export default function ApprovalAttachPage() {
             activeKey={listActiveKey}
             onActivate={(row) => { void loadDetail(row); }}
             showRowNum
+            // 반려 행은 노란색 — 작성 목록과 같은 클래스
+            rowClassName={(row) => (row.status === "RJT" ? "mes-row-rejected" : undefined)}
           />
         </section>
 
@@ -613,6 +615,30 @@ export default function ApprovalAttachPage() {
                   </MesButton>
                 </div>
               </section>
+
+              {detail.header.status === "RJT" && (detail.header.rejectReason ?? "").trim() ? (
+                <section>
+                  <h3 className="mb-2 text-sm font-semibold text-slate-700">반려 사유</h3>
+                  <p
+                    // 결재자가 남긴 반려 사유 — 작성자는 고치지 못한다
+                    className="whitespace-pre-wrap rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-sm text-slate-800"
+                  >
+                    {detail.header.rejectReason}
+                  </p>
+                </section>
+              ) : null}
+
+              {(detail.header.cancelReason ?? "").trim() ? (
+                <section>
+                  <h3 className="mb-2 text-sm font-semibold text-slate-700">결재 취소 사유</h3>
+                  <p
+                    // 결재자가 남긴 취소 사유 — 재상신하면 비워진다
+                    className="whitespace-pre-wrap rounded border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm text-slate-800"
+                  >
+                    {detail.header.cancelReason}
+                  </p>
+                </section>
+              ) : null}
             </div>
           )}
         </div>
