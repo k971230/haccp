@@ -75,8 +75,8 @@ public class HwpDraftService {
             String writerId,
             // writerNm: 작성자명 부분검색
             String writerNm,
-            // remark: 문서 비고 부분검색
-            String remark
+            // title: 제목 부분검색 — tbl_document.title
+            String title
     ) {
         return mapper.selectList(
                 LoginUserContext.coCd(),
@@ -86,7 +86,7 @@ public class HwpDraftService {
                 DraftSupport.nvl(toDt),
                 DraftSupport.nvl(writerId),
                 DraftSupport.nvl(writerNm),
-                DraftSupport.nvl(remark)
+                DraftSupport.nvl(title)
         );
     }
 
@@ -157,8 +157,8 @@ public class HwpDraftService {
         hwp.setDocIdx(req.getDocIdx());
         hwp.setTmplCd(DraftSupport.nvl(req.getTmplCd()));
         hwp.setBaseDt(DraftSupport.requireBaseDt(req.getBaseDt()));
-        // 제목은 비워 보낸다 — 문서 허브가 양식명과 기준일로 만든다
-        hwp.setTitle(null);
+        // 목록 제목 — 빈값이면 SP 가 신규는 양식명·수정은 기존값을 쓴다
+        hwp.setTitle(req.getTitle());
         if (hwp.getTmplCd().isEmpty()) {
             throw new BizException("작성할 양식을 선택하세요.");
         }

@@ -56,7 +56,7 @@ class CcpLogDraftServiceSaveTest {
     private CcpLogDraftService service() {
         if (service == null) {
             service = new CcpLogDraftService(mapper, new ObjectMapper(), correctiveSupport, paperStampMapper);
-            when(mapper.save(any(), any(), any(), any(), any(), any(), any())).thenReturn(448L);
+            when(mapper.save(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(448L);
         }
         return service;
     }
@@ -180,7 +180,7 @@ class CcpLogDraftServiceSaveTest {
         q.setBaseDt("2026-08-27");
 
         assertThrows(BizException.class, () -> service().save(CcpLogDraftService.Family.PKG, q));
-        verify(mapper, never()).save(any(), any(), any(), any(), any(), any(), any());
+        verify(mapper, never()).save(any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -188,7 +188,7 @@ class CcpLogDraftServiceSaveTest {
         assertThrows(
                 BizException.class,
                 () -> service().save(CcpLogDraftService.Family.PKG, req(List.of())));
-        verify(mapper, never()).save(any(), any(), any(), any(), any(), any(), any());
+        verify(mapper, never()).save(any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -198,7 +198,7 @@ class CcpLogDraftServiceSaveTest {
         q.setTmplCd("tml_ccp_pkg_000");
 
         assertThrows(BizException.class, () -> service().save(CcpLogDraftService.Family.PKG, q));
-        verify(mapper, never()).save(any(), any(), any(), any(), any(), any(), any());
+        verify(mapper, never()).save(any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -208,14 +208,14 @@ class CcpLogDraftServiceSaveTest {
         q.setTmplCd("tml_ccp_htg_007");
 
         assertThrows(BizException.class, () -> service().save(CcpLogDraftService.Family.PKG, q));
-        verify(mapper, never()).save(any(), any(), any(), any(), any(), any(), any());
+        verify(mapper, never()).save(any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
     void 저장이_0을_돌려주면_실패로_본다() {
         // SP 가 0 을 주는데 성공으로 넘기면 화면은 저장됐다고 말하고 자료는 없다
         service();
-        when(mapper.save(any(), any(), any(), any(), any(), any(), any())).thenReturn(0L);
+        when(mapper.save(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(0L);
 
         assertThrows(
                 BizException.class,
@@ -230,7 +230,7 @@ class CcpLogDraftServiceSaveTest {
     void 가열_양식군은_가열_접두만_받는다() {
         service().save(CcpLogDraftService.Family.HTG, htgReq());
 
-        verify(mapper).save(any(), any(), eq("20260827"), eq("tml_ccp_htg_007"), any(), any(), any());
+        verify(mapper).save(any(), any(), eq("20260827"), eq("tml_ccp_htg_007"), any(), any(), any(), any());
     }
 
     private static DraftSaveRequest htgReq() {
@@ -244,7 +244,7 @@ class CcpLogDraftServiceSaveTest {
     /** mapper.save 에 넘어간 기록행 JSON */
     private String savedRowsJson() {
         ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
-        verify(mapper).save(any(), any(), any(), any(), any(), json.capture(), any());
+        verify(mapper).save(any(), any(), any(), any(), any(), json.capture(), any(), any());
         return json.getValue();
     }
 }

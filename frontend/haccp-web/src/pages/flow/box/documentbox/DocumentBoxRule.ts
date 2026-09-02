@@ -75,6 +75,21 @@ export function listPersistIdOf(mode: DocumentBoxMode): string {
   return "doc-document-inbox";
 }
 
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-02
+ * 코멘트:
+ *   1) 좌우 분할 비율 localStorage 키 — 세 화면이 비율을 따로 기억한다
+ *   2) DocumentBoxPage ResizableSplit 이 마운트할 때 쓴다
+ *   3) persistId 와 달리 이번에 처음 넣는 키라 화면코드(document-inbox·sign-ready·sign-ok)를 그대로 쓴다
+ */
+export function splitKeyOf(
+  // inbox/approval/history — scrnCdOf 와 같은 세 값
+  mode: DocumentBoxMode,
+): string {
+  return `haccp-split-${scrnCdOf(mode)}-50`;
+}
+
 /** byte → 사람이 읽는 크기 */
 export function fileSize(size?: number | null): string {
   if (size == null) return "";

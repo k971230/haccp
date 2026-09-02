@@ -23,7 +23,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 
 **아무도 안 부르는 SP 없음.**
 
-## 매퍼 → SP → 표 (152건)
+## 매퍼 → SP → 표 (153건)
 
 | 도메인 | SP | 종류 | 매퍼 | 건드리는 표 |
 |---|---|---|---|---|
@@ -34,7 +34,6 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | auth | `sp_tbl_user_login_u_000` | 쓰기 | `auth/AuthMapper.xml` | `tbl_user` |
 | code | `sp_common_code_management_r_001` | 조회 | `code/CodeMapper.xml<br>sys/code/commoncode/CommonCodeMapper.xml` | `tbl_code` |
 | docs/documents | `sp_hwp_template_management_file_c_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_company_template<br>tbl_company_template_file` |
-| docs/documents | `sp_tbl_audit_log_c_000` | 쓰기 | `docs/documents/DocumentMapper.xml<br>sys/logs/auditlog/AuditLogMapper.xml` | `tbl_audit_log` |
 | docs/documents | `sp_tbl_document_appr_hist_r_000` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_document_approval<br>tbl_document_file<br>tbl_template<br>tbl_user` |
 | docs/documents | `sp_tbl_document_appr_inbox_r_000` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_document_approval<br>tbl_document_file<br>tbl_template<br>tbl_user` |
 | docs/documents | `sp_tbl_document_approval_c_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_approval_line_step<br>tbl_document<br>tbl_document_approval<br>tbl_document_file<br>tbl_document_version<br>tbl_user` |
@@ -51,6 +50,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | docs/documents | `sp_tbl_document_r_001` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_company_template<br>tbl_document<br>tbl_template<br>tbl_user` |
 | docs/documents | `sp_tbl_document_template_r_000` | 조회 | `docs/documents/DocumentMapper.xml<br>draft/hwpdoc/HwpDraftMapper.xml` | `tbl_company_template<br>tbl_template` |
 | docs/documents | `sp_tbl_document_template_r_001` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_company_template<br>tbl_template` |
+| docs/documents | `sp_tbl_document_title_u_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_document` |
 | docs/documents | `sp_tbl_document_u_001` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_document` |
 | docs/documents | `sp_tbl_document_version_r_000` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_document_version` |
 | docs/documents | `sp_tbl_hwp_document_c_000` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_company_template<br>tbl_document<br>tbl_template` |
@@ -168,7 +168,8 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | sys/code/user | `sp_user_management_sign_info_r_000` | 조회 | `sys/code/user/UserMapper.xml` | `tbl_user` |
 | sys/code/user | `sp_user_management_sign_r_000` | 조회 | `sys/code/user/UserMapper.xml` | `tbl_user` |
 | sys/code/user | `sp_user_management_sign_u_000` | 쓰기 | `sys/code/user/UserMapper.xml` | `tbl_user` |
-| sys/logs/auditlog | `sp_audit_log_r_000` | 조회 | `sys/logs/auditlog/AuditLogMapper.xml` | `tbl_audit_log<br>tbl_code<br>tbl_user` |
+| sys/logs/auditlog | `sp_audit_log_r_000` | 조회 | `sys/logs/auditlog/AuditLogMapper.xml` | `tbl_audit_log<br>tbl_screen<br>tbl_user` |
+| sys/logs/auditlog | `sp_tbl_audit_log_c_000` | 쓰기 | `sys/logs/auditlog/AuditLogMapper.xml` | `tbl_audit_log` |
 | sys/logs/loginhistory | `sp_login_history_r_000` | 조회 | `sys/logs/loginhistory/LoginHistoryMapper.xml` | `tbl_login_log<br>tbl_user` |
 | sys/logs/screenusage | `sp_screen_usage_statistics_r_000` | 조회 | `sys/logs/screenusage/ScreenUsageMapper.xml` | `tbl_menu<br>tbl_screen<br>tbl_view_stat_daily` |
 | tsk | `sp_tbl_audit_export_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_document_file<br>tbl_document_relation<br>tbl_template` |

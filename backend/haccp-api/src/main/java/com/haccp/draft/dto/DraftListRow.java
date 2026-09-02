@@ -47,6 +47,6 @@ public class DraftListRow {
 
     /** 이탈여부 Y/N — 개선조치가 붙어 있으면 Y. 미완료 수(ngCnt)와 다른 축이다 */
     private String deviationYn;
-    // 문서 비고 — tbl_document.remark. 결재 첨부에서 적는 칸
-    private String remark;
+    // 제목 — tbl_document.title. 결재 첨부 remark 가 아니다
+    private String title;
 }

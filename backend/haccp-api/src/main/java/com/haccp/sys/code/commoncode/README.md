@@ -19,7 +19,7 @@
 - `listDetails`는 `mainCd`가 비면 `BizException`. FE `useCommonCodes`도 `enabled` 가드로 빈 호출을 막는다
 - 시스템 코드(`sys_yn='Y'`)는 수정·삭제 불가. FE 잠금과 별개로 SP가 다시 막는다
 - `co_cd`는 `LoginUserContext.coCd()`에서만 온다
-- 조회는 회사코드 완전 격리다. `WHERE c.co_cd = p_co_cd`만 쓰고 표준코드 `0000`을 병합하지 않는다. 대신 업체 생성 시 표준코드를 복제해 넣는다(`sp_tbl_company_code_copy_c_000`)
+- 조회는 회사코드 완전 격리다. `WHERE c.co_cd = p_co_cd`만 쓰고 표준코드 `0000`을 병합하지 않는다. 대신 업체 생성 시 표준코드를 복제해 넣는다(`03_code_seed.sql -v co_cd`)
 - 저장은 `p_co_cd = '0000'`(플랫폼 테넌트)일 때 차단한다. 표준코드는 화면에서 고치지 않는다
 
 ## 영향 범위 (주의)

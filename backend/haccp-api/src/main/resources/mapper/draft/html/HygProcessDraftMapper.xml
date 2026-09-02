@@ -38,7 +38,7 @@ PIPELINE[HB135] 위생공정 작성 XML
     <select id="selectList" resultType="com.haccp.draft.dto.DraftListRow">
         SELECT * FROM sp_tbl_hyg_process_r_000(
             #{coCd}, #{tmplCd}, #{fromDt}, #{toDt}, '', '',
-            #{tmplNm}, #{writerId}, #{writerNm}, #{remark}
+            #{tmplNm}, #{writerId}, #{writerNm}, #{title}
         )
     </select>
 

@@ -88,13 +88,13 @@ public class CcpMtlDraftService {
      */
     public List<DraftListRow> list(
             String tmplCd, String tmplNm, String fromDt, String toDt, String writerId, String writerNm,
-            // remark: 문서 비고 부분검색
-            String remark
+            // title: 제목 부분검색 — tbl_document.title
+            String title
     ) {
         return mapper.selectList(
                 LoginUserContext.coCd(), DraftSupport.nvl(tmplCd), DraftSupport.nvl(tmplNm),
                 DraftSupport.nvl(fromDt), DraftSupport.nvl(toDt), DraftSupport.nvl(writerId), DraftSupport.nvl(writerNm),
-                DraftSupport.nvl(remark));
+                DraftSupport.nvl(title));
     }
 
     /**
@@ -230,7 +230,8 @@ public class CcpMtlDraftService {
                     objectMapper.writeValueAsString(toSensRows(rows)),
                     objectMapper.writeValueAsString(toPassRows(req.getPassRows())),
                     LoginUserContext.userId(),
-                    tmpl
+                    tmpl,
+                    DraftSupport.nvl(req.getTitle())
             );
             if (docIdx == null || docIdx <= 0) {
                 throw new BizException("저장에 실패했습니다.");

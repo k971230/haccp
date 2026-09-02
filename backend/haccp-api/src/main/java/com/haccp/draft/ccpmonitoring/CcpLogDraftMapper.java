@@ -84,8 +84,8 @@ public interface CcpLogDraftMapper {
             @Param("writerId") String writerId,
             // writerNm: 작성자명 부분검색
             @Param("writerNm") String writerNm,
-            // remark: 문서 비고 부분검색
-            @Param("remark") String remark
+            // title: 제목 부분검색 — tbl_document.title
+            @Param("title") String title
     );
 
     /**
@@ -125,7 +125,9 @@ public interface CcpLogDraftMapper {
             // rowsJson: 기록 행 배열 JSON — rowSeq·phaseCd·checkTime·productNm·judgeCd·checkerNm·signYn·cells
             @Param("rowsJson") String rowsJson,
             // userId: JWT 작업자 ID
-            @Param("userId") String userId
+            @Param("userId") String userId,
+            // title: 목록 제목. 빈값이면 SP 가 신규는 양식명·수정은 기존값을 쓴다
+            @Param("title") String title
     );
 
     /**

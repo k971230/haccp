@@ -78,13 +78,13 @@ public class HygProcessDraftService {
             String writerId,
             // writerNm: 작성자명 부분검색
             String writerNm,
-            // remark: 문서 비고 부분검색
-            String remark
+            // title: 제목 부분검색 — tbl_document.title
+            String title
     ) {
         return mapper.selectList(
                 LoginUserContext.coCd(), DraftSupport.nvl(tmplCd), DraftSupport.nvl(tmplNm),
                 DraftSupport.nvl(fromDt), DraftSupport.nvl(toDt), DraftSupport.nvl(writerId), DraftSupport.nvl(writerNm),
-                DraftSupport.nvl(remark));
+                DraftSupport.nvl(title));
     }
 
     /**
@@ -143,6 +143,8 @@ public class HygProcessDraftService {
             payload.put("improveNote", DraftSupport.note(req.getImproveNote()));
             payload.put("actionNm", DraftSupport.note(req.getActionNm()));
             payload.put("confirmNm", DraftSupport.note(req.getConfirmNm()));
+            // 목록 제목 — 빈값이면 SP 가 신규는 양식명·수정은 기존값을 쓴다
+            payload.put("title", DraftSupport.nvl(req.getTitle()));
             Long docIdx = mapper.save(
                     LoginUserContext.coCd(),
                     tmpl,

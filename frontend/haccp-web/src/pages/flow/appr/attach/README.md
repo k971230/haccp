@@ -5,8 +5,8 @@ URL `/flow/appr/attach`. **내가 작성한 문서**의 첨부·비고를 관리
 
 | 파일 | 역할 |
 |---|---|
-| `ApprovalAttachPage.tsx` | 렌더·상태·API. 좌 내 문서 목록 + 우 진행상태·전송·첨부·비고 |
-| `ApprovalAttachRule.ts` | `SCRN_CD` · `PERSIST_ID` · 컬럼 · 첨부 상한 · 잠금·전송 가능 판정 |
+| `ApprovalAttachPage.tsx` | 렌더·상태·API. 좌 내 문서 목록 + 우 진행상태·전송·첨부·비고. 좌우 `ResizableSplit` |
+| `ApprovalAttachRule.ts` | `SCRN_CD` · `PERSIST_ID` · `SPLIT_KEY` · 컬럼 · 첨부 상한 · 잠금·전송 가능 판정 |
 | `approvalAttachRule.test.ts` | 첨부·비고 잠금 기준이 다르다는 것과 개수 세기 단위 테스트 |
 
 ## 이 화면에 없는 것

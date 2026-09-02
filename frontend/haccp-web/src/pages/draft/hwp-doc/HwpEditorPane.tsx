@@ -7,6 +7,7 @@
  *   1) rhwp 편집기를 만들고, 열린 문서가 바뀔 때만 본문(또는 양식 원본)을 다시 연다
  *   2) HwpDraftPage 의 renderDetail 이 이 컴포넌트를 그린다 — 화면 슬롯이 같아 마운트가 유지된다
  *   3) 저장된 문서에 첨부가 없으면 양식 원본을 열지 않는다. loadFile 은 한 줄 직렬
+ *      CanvasView 「페이지 0 정보가 없습니다」는 @rhwp/editor 번들 로그다. 호스트 가드로 줄인다.
  *
  * 편집기 인스턴스는 부모가 준 ref 에 올려 둔다 — 저장할 때 부모가 본문을 뽑아 올려야 한다.
  *
@@ -40,6 +41,49 @@ import { hwpOpenMode } from "./hwpOpenMode";
 function latestSource(files: HtmlFormDraftFile[]): HtmlFormDraftFile | null {
   const sources = files.filter((f) => f.fileKind === HWP_SRC_KIND);
   return sources.length > 0 ? sources[sources.length - 1] : null;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-02
+ * 코멘트:
+ *   1) 호스트 높이가 0이면 rhwp CanvasView 가 빈 페이지 0 을 그린다
+ *   2) createEditor 직전에 한 번 기다린다
+ *   3) 높이가 생기면 resolve. 언마운트면 abort 로 끊는다
+ */
+function waitForHostSize(
+  // rhwp iframe 을 붙일 호스트
+  host: HTMLElement,
+  // 언마운트 abort — 대기 중 화면을 떠나면 관찰을 끊는다
+  signal: AbortSignal,
+): Promise<void> {
+  if (host.clientHeight > 0) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const finish = () => {
+      ro.disconnect();
+      signal.removeEventListener("abort", onAbort);
+    };
+    const onAbort = () => {
+      finish();
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    const ro = new ResizeObserver(() => {
+      if (host.clientHeight > 0) {
+        finish();
+        resolve();
+      }
+    });
+    if (signal.aborted) {
+      onAbort();
+      return;
+    }
+    signal.addEventListener("abort", onAbort);
+    ro.observe(host);
+    if (host.clientHeight > 0) {
+      finish();
+      resolve();
+    }
+  });
 }
 
 export function HwpEditorPane({
@@ -103,16 +147,17 @@ export function HwpEditorPane({
 
   /**
    * 개발자: 박승우
-   * 일자: 2026-08-25
+   * 일자: 2026-09-02
    * 코멘트:
    *   1) rhwp 편집기를 한 번만 만들고 화면을 떠날 때 정리한다
-   *   2) 패널이 마운트될 때 실행한다
+   *   2) 패널이 마운트될 때 실행한다. 호스트 높이가 생긴 뒤에 createEditor 한다
    *   3) 골드와 같은 dirty 리스너를 iframe 에 붙인다 — SDK 에 dirty API 가 없어 DOM 으로 본다
    */
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return undefined;
     let disposed = false;
+    const abort = new AbortController();
     /*
      * 도구상자를 접지 않는다.
      *
@@ -123,6 +168,8 @@ export function HwpEditorPane({
 
     void (async () => {
       try {
+        await waitForHostSize(host, abort.signal);
+        if (disposed) return;
         const created = await createEditor(host, {
           // 동일출처 스튜디오 — /rhwp 프록시
           studioUrl: resolveRhwpStudioUrl(),
@@ -140,12 +187,15 @@ export function HwpEditorPane({
         setReady(true);
         setMessage("왼쪽에서 문서를 고르거나 「행추가」를 눌러 작성하세요.");
       } catch (error) {
-        if (!disposed) setMessage(toUserMessage(error));
+        if (disposed) return;
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setMessage(toUserMessage(error));
       }
     })();
 
     return () => {
       disposed = true;
+      abort.abort();
       disposeDirtyRef.current?.();
       disposeDirtyRef.current = undefined;
       editorRef.current?.destroy();
@@ -264,9 +314,9 @@ export function HwpEditorPane({
           : tmplCd && !canEdit ? " (저장 전이거나 전송한 문서라 편집할 수 없습니다.)" : ""}
       </p>
       <div
-        // rhwp iframe 호스트 — 남은 높이 전부
+        // rhwp iframe 호스트 — 남은 높이 전부. overflow-hidden 은 부모 스크롤이 CanvasView page 0 을 깨지 않게 한다
         ref={hostRef}
-        className="min-h-0 flex-1"
+        className="min-h-0 flex-1 overflow-hidden"
       />
     </div>
   );

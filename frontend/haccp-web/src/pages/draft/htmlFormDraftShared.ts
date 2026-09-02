@@ -176,7 +176,7 @@ export type HtmlFormDraftRowView = {
   // DOC_STATUS 원본 — 반려 행 노란 표시에 쓴다
   status?: string;
   // 제목 — tbl_document.title. 결재 첨부 remark 가 아니다
-  remark?: string;
+  title?: string;
   /** 이탈여부 Y/N — 이탈 칸을 쓰는 화면(HWP)만 채운다 */
   deviationYn?: string;
 };
@@ -197,7 +197,7 @@ export const htmlFormDraftGridRules: ScreenGridRules = {
   // 전송·결재완료 행은 통째로 잠근다. 제목만 예외
   isRowEditLocked: (row) => (row as { sendState?: SendState }).sendState !== "wait",
   // 제목 = tbl_document.title. 결재 첨부 remark 와 다르다. 상태와 무관
-  editableWhenLocked: ["remark"],
+  editableWhenLocked: ["title"],
 };
 
 /**
@@ -263,7 +263,7 @@ export function buildDraftListColumns(
     },
     {
       // 제목 — tbl_document.title. 언제든 고친다. 첨부 remark 가 아니다
-      field: "remark",
+      field: "title",
       header: "제목",
       width: 160,
       type: "text",
