@@ -8,8 +8,8 @@
 
 | 파일 | 책임 |
 |---|---|
-| `DocumentBoxPage.tsx` | 렌더·상태·API. 좌 목록 + 우 상세·결재 |
-| `DocumentBoxRule.ts` | `scrnCdOf` · `listPersistIdOf` · 컬럼 · `DOC_KIND_OPTIONS` |
+| `DocumentBoxPage.tsx` | 렌더·상태·API. 좌 목록 + 우 상세·결재. 좌우 `ResizableSplit` |
+| `DocumentBoxRule.ts` | `scrnCdOf` · `listPersistIdOf` · `splitKeyOf` · 컬럼 · `DOC_KIND_OPTIONS` |
 
 ## 화면 규칙
 
@@ -26,3 +26,5 @@
 `document-inbox` → `doc-document-inbox` · `sign-ready` → `doc-approval-inbox` · `sign-ok` → `doc-approval-history` · 상세 결재이력 `doc-box-approval-history`
 
 pref 키는 2026-08-25 화면코드 개명 때 **일부러 그대로 뒀다** — 바꾸면 저장된 열 너비가 초기화된다.
+
+좌우 분할 키는 `haccp-split-{scrnCd}-50` (`splitKeyOf`). 이번에 처음 넣어서 화면코드를 그대로 쓴다.

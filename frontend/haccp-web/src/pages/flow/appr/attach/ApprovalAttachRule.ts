@@ -36,6 +36,9 @@ export const PERSIST_ID = "appr-attach-list" as const;
 /** 첨부 파일 목록 저장 키 */
 export const FILE_PERSIST_ID = "appr-attach-files" as const;
 
+/** 좌우 분할 비율 저장 키 — 50 은 기본 반반 */
+export const SPLIT_KEY = "haccp-split-attach-50" as const;
+
 /**
  * 사용자 첨부 상한 — 문서 1건당 5개.
  * HWP_SRC(본문)·PDF(완료본)는 시스템이 만드는 파일이라 세지 않는다.

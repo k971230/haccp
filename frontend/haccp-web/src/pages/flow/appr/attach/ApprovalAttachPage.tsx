@@ -27,10 +27,11 @@ import { useDocIdxQuery } from "@/hooks/useDocIdxQuery";
 import { useCommonCodes } from "@/hooks/useCommonCodes";
 // 역할 — 목록 그리드
 import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
-// 역할 — 페이지 카드·그리드 패널 헤더
+// 역할 — 페이지 카드·검색 영역·좌우 분할
 import { PageCard } from "@/components/layout/PageCard";
 import { SearchArea, SearchButton, SearchDateRange, SearchField } from "@/components/layout/SearchArea";
-import { gridHeadClass, pageRootClass } from "@/components/layout/pageClasses";
+import { ResizableSplit } from "@/components/layout/ResizableSplit";
+import { gridHeadClass, pageRootClass, splitPanelClass } from "@/components/layout/pageClasses";
 import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 표준 버튼
 import { MesButton } from "@/components/ui/MesButton";
@@ -77,6 +78,7 @@ import {
   FILE_PERSIST_ID,
   PERSIST_ID,
   SCRN_CD,
+  SPLIT_KEY,
   buildAttachListColumns,
   canCancelSend,
   canEditAttach,
@@ -387,31 +389,46 @@ export default function ApprovalAttachPage() {
           </SearchArea>
         )}
       >
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(340px,42%)_1fr]">
-        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded border border-slate-200 bg-white p-2">
-          <div className={gridHeadClass}>
-            {/* 보이는 그리드명 — title prop과 동일 */}
-            <b>내 문서 목록</b>
-          </div>
-          <MesEditableGrid
-            // 열 설정 저장 키
-            persistId={PERSIST_ID}
-            rows={listRows as EditableRow<AttachListRow>[]}
-            columns={listColumns}
-            // 목록만 조회 — 편집 금지
-            editable={false}
-            title="내 문서 목록"
-            height="100%"
-            loading={listLoading || asyncAct.isBusy("search")}
-            activeKey={listActiveKey}
-            onActivate={(row) => { void loadDetail(row); }}
-            showRowNum
-            // 반려 행은 노란색 — 작성 목록과 같은 클래스
-            rowClassName={(row) => (row.status === "RJT" ? "mes-row-rejected" : undefined)}
-          />
-        </section>
-
-        <div className="min-h-0 overflow-auto rounded border border-slate-200 bg-white p-3">
+        <ResizableSplit
+          // 좌 내 문서 목록 50 · 우 첨부·비고 50 — 작성 화면과 같은 프레임
+          orientation="horizontal"
+          // 비율 저장 키 — 결재첨부 화면 고유
+          storageKey={SPLIT_KEY}
+          // 좌 기본 50 — 가로 분할은 30 또는 50만
+          defaultPrimaryPct={50}
+          // 드래그 하한 — 목록이 안 보이게 접히지 않게
+          minPct={25}
+          // 드래그 상한 — 상세가 안 보이게 접히지 않게
+          maxPct={75}
+          className="mes-page-split min-h-0 h-full flex-1 gap-0"
+          primary={(
+            <div className={splitPanelClass}>
+              <div className={gridHeadClass}>
+                {/* 보이는 그리드명 — title prop과 동일 */}
+                <b>내 문서 목록</b>
+              </div>
+              <MesEditableGrid
+                // 열 설정 저장 키
+                persistId={PERSIST_ID}
+                rows={listRows as EditableRow<AttachListRow>[]}
+                columns={listColumns}
+                // 목록만 조회 — 편집 금지
+                editable={false}
+                title="내 문서 목록"
+                height="100%"
+                loading={listLoading || asyncAct.isBusy("search")}
+                activeKey={listActiveKey}
+                onActivate={(row) => { void loadDetail(row); }}
+                showRowNum
+                // 반려 행은 노란색 — 작성 목록과 같은 클래스
+                rowClassName={(row) => (row.status === "RJT" ? "mes-row-rejected" : undefined)}
+              />
+            </div>
+          )}
+          secondary={(
+            <div className={splitPanelClass}>
+              {/* 바깥 패널은 overflow-hidden. 상세만 스크롤한다 */}
+              <div className="min-h-0 flex-1 overflow-auto">
           {!detail ? (
             <div className="flex h-full items-center justify-center text-sm text-slate-400">
               목록에서 문서를 선택하세요.
@@ -641,8 +658,10 @@ export default function ApprovalAttachPage() {
               ) : null}
             </div>
           )}
-        </div>
-      </div>
+              </div>
+            </div>
+          )}
+        />
       </PageCard>
     </div>
   );
