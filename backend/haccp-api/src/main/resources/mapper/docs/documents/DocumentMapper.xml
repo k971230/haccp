@@ -178,6 +178,16 @@ PIPELINE[HB84] MyBatis XML
         )
     </update>
 
+    <!-- 작성 목록 제목 — tbl_document.title. 상태와 무관 -->
+    <update id="saveTitle" statementType="CALLABLE">
+        CALL sp_tbl_document_title_u_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{docIdx, mode=IN, jdbcType=BIGINT},
+            #{title,  mode=IN, jdbcType=VARCHAR},
+            #{userId, mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
     <!-- 결재취소 — 본인이 처리한 마지막 단계를 되돌린다 -->
     <update id="undoApproval" statementType="CALLABLE">
         CALL sp_tbl_document_approval_u_000(

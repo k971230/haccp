@@ -106,7 +106,7 @@ node scripts/gen_table_layout.mjs --check
 - 표준 양식·점검항목은 **플랫폼 소유**(`co_cd` 없음). 업체별 조정은 `tbl_company_template`,
   `tbl_company_check_item` 오버라이드 행으로만 처리하고 표준 시드를 직접 수정하지 않는다
 - 신규 테넌트는 `sp_tbl_company_init_c_000` 한 번으로 회사·권한·메뉴·사용양식·결재선·채번규칙·관리자 계정이 생성된다
-- 카탈로그 `tbl_template.co_cd` = `0000`(플랫폼 공용) / 그 외(자사 등록분). 목록 SP는 `t.co_cd IN ('0000', p_co_cd)` 로 좁힌다
+- 카탈로그 `tbl_template` 는 업체 행만 본다(`t.co_cd = 문서·사용양식.co_cd`). 0000 폴백 금지 — 시드가 업체에 복사한다
 - 사용양식 구분은 `tbl_company_template.sys_yn` = `sys`(시스템 제공) / `usr`(자사) — **UPDATE 대상이 아니다**. 삭제는 `usr`만 허용하고 SP가 다시 막는다
 - 양식 파일은 덮어쓰지 않는다: `tbl_company_template_file` 이력 + `current_file_idx`(적용) / `default_file_idx`(초기화 복원)
 - 문서주기는 **양식당 1건**(`ux_tbl_schedule_rule_tmpl UNIQUE(co_cd, tmpl_cd)`). 반복 상세는 `tbl_schedule_rule_detail.detail_ty`

@@ -265,6 +265,27 @@ public class DocumentController {
 
     /**
      * 개발자: 박승우
+     * 일자: 2026-09-02
+     * 코멘트:
+     *   1) 작성 목록 제목을 저장한다 — tbl_document.title
+     *   2) 작성 화면 좌측 저장이 호출한다
+     *   3) 결재 첨부 remark 와 다르다. 상태와 무관. 작성자만
+     */
+    @PutMapping("/{docIdx}/title")
+    public CommonResponse<Void> saveTitle(
+            // 문서 idx
+            @PathVariable Long docIdx,
+            // { title } — 빈 문자열이면 지운다
+            @RequestBody Map<String, String> body,
+            // 감사 IP 추출 원천
+            HttpServletRequest http
+    ) {
+        service.saveTitle(docIdx, body.get("title"), RequestMeta.of(http));
+        return CommonResponse.ok(null);
+    }
+
+    /**
+     * 개발자: 박승우
      * 일자: 2026-08-06
      * 코멘트:
      *   1) 결재 요청·검토·승인·반려를 한 API에서 처리한다

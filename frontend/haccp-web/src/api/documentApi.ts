@@ -286,7 +286,7 @@ export async function deleteDocumentFile(
   await http.post(`/api/v1/docs/documents/files/${fileIdx}/delete`);
 }
 
-/** 문서 비고 저장 — 결재 완료 전까지만 고칠 수 있다 */
+/** 문서 비고 저장 — 결재 첨부 화면. 결재 완료 전까지만 */
 export async function saveDocumentRemark(
   // 문서 idx
   docIdx: number,
@@ -294,6 +294,23 @@ export async function saveDocumentRemark(
   remark: string
 ): Promise<void> {
   await http.put(`/api/v1/docs/documents/${docIdx}/remark`, { remark });
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-02
+ * 코멘트:
+ *   1) 작성 목록 제목을 저장한다 — tbl_document.title
+ *   2) 작성 화면 좌측 저장이 호출한다. 전송·결재완료여도 고친다
+ *   3) 결재 첨부 remark 와 다르다
+ */
+export async function saveDocumentTitle(
+  // 문서 idx
+  docIdx: number,
+  // 제목 — 빈 문자열이면 지운다
+  title: string
+): Promise<void> {
+  await http.put(`/api/v1/docs/documents/${docIdx}/title`, { title });
 }
 
 /**

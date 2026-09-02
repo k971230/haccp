@@ -252,14 +252,17 @@ describe("htmlFormDraftGridRules — 좌측 셀 편집 잠금", () => {
     }
   });
 
-  it("비고는 전송대기 행에서 친다", () => {
+  it("제목은 전송 이후에도 칸을 연다", () => {
     expect(rules.alwaysReadonly ?? []).not.toContain("remark");
+    expect(rules.editableWhenLocked ?? []).toContain("remark");
     const remark = buildDraftListColumns(() => {}).find((c) => c.field === "remark");
+    expect(remark?.header).toBe("제목");
     expect(remark?.type).toBe("text");
     expect(remark?.editable).toBe(true);
+    expect(remark?.maxLength).toBe(300);
   });
 
-  it("전송·결재완료 행은 통째로 잠근다", () => {
+  it("전송·결재완료 행은 잠그되 제목만 예외다", () => {
     const locked = rules.isRowEditLocked;
     expect(locked).toBeTypeOf("function");
     expect(locked?.({ sendState: "wait" })).toBe(false);

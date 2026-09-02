@@ -196,6 +196,25 @@ export function useDocFormSession<TBuf, TList extends DocListMeta>() {
     }));
   }, [activeBuffer, activeKey, syncList]);
 
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-09-02
+   * 코멘트:
+   *   1) 목록 칸만 고친다 — 본문 버퍼는 건드리지 않는다
+   *   2) 작성 목록 제목 셀 편집이 호출한다
+   *   3) C 는 C, 저장행은 U
+   */
+  const patchRow = useCallback((key: string, listPatch: Partial<TList>) => {
+    syncList(listRef.current.map((r) => {
+      if (r._key !== key) return r;
+      return {
+        ...r,
+        ...listPatch,
+        _rowState: r._rowState === "C" ? "C" : "U",
+      } as EditableRow<TList>;
+    }));
+  }, [syncList]);
+
   /** 버퍼를 직접 교체 — 상세 API 적재 시 */
   const putBuffer = useCallback((key: string, buffer: TBuf, listPatch?: Partial<TList>) => {
     buffersRef.current.set(key, buffer);
@@ -253,7 +272,8 @@ export function useDocFormSession<TBuf, TList extends DocListMeta>() {
    */
   const saveAll = useCallback(async (args: {
     validate: (dirty: EditableRow<TList>[], getBuf: (key: string) => TBuf | null) => DocFormSessionValidateResult | null;
-    saveOne: (row: EditableRow<TList>, buf: TBuf) => Promise<{ docIdx: number; listMeta?: Partial<TList> }>;
+    // 제목만 고친 전송 이후 행은 버퍼가 없을 수 있다
+    saveOne: (row: EditableRow<TList>, buf: TBuf | null) => Promise<{ docIdx: number; listMeta?: Partial<TList> }>;
     afterAll?: () => Promise<void>;
   }): Promise<DocFormSessionValidateResult | null> => {
     flushActive();
@@ -269,11 +289,17 @@ export function useDocFormSession<TBuf, TList extends DocListMeta>() {
     for (const row of dirty) {
       const key = row._key;
       if (!key) continue;
-      const buf = buffersRef.current.get(key);
-      if (!buf) return { message: "편집 내용이 없습니다.", rowKey: key };
+      const buf = buffersRef.current.get(key) ?? null;
+      // 신규 draft 는 버퍼가 있어야 한다. 저장 문서는 제목만 고친 경우 버퍼 없이 제목만 남긴다
+      if (!buf && (row.docIdx == null || row.docIdx <= 0)) {
+        return { message: "편집 내용이 없습니다.", rowKey: key };
+      }
       const saved = await args.saveOne(row, buf);
-      const nextBuf = { ...buf, docIdx: saved.docIdx } as TBuf;
-      buffersRef.current.set(key, nextBuf);
+      if (buf) {
+        const nextBuf = { ...buf, docIdx: saved.docIdx } as TBuf;
+        buffersRef.current.set(key, nextBuf);
+        if (activeKey === key) setActiveBuffer(nextBuf);
+      }
       // C → 서버키로 교체 예약: afterAll 재조회에 맡기고 행은 일단 정리
       syncList(listRef.current.map((r) => {
         if (r._key !== key) return r;
@@ -284,9 +310,8 @@ export function useDocFormSession<TBuf, TList extends DocListMeta>() {
           _rowState: undefined,
         } as EditableRow<TList>;
       }));
-      if (activeKey === key) {
-        setActiveBuffer(nextBuf);
-        if (saved.docIdx != null && saved.docIdx > 0) activeSavedDocIdx = saved.docIdx;
+      if (activeKey === key && saved.docIdx != null && saved.docIdx > 0) {
+        activeSavedDocIdx = saved.docIdx;
       }
     }
 
@@ -327,6 +352,7 @@ export function useDocFormSession<TBuf, TList extends DocListMeta>() {
     addDraft,
     selectKey,
     patchActive,
+    patchRow,
     putBuffer,
     getDirty,
     getBuffer,

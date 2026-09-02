@@ -181,6 +181,14 @@ public interface DocumentMapper {
             @Param("userId") String userId
     );
 
+    /** 작성 목록 제목 저장 — tbl_document.title. 상태와 무관. 작성자만 */
+    void saveTitle(
+            @Param("coCd") String coCd,
+            @Param("docIdx") Long docIdx,
+            @Param("title") String title,
+            @Param("userId") String userId
+    );
+
     /**
      * 결재취소 — 본인이 처리한 마지막 단계를 되돌린다.
      * 기존 결재 전이 SP와 섞지 않는다 (되돌리기는 검증·복구 규칙이 다르다).

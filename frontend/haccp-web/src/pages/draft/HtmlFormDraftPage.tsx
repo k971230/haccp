@@ -57,7 +57,7 @@ import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 지면 공통 props·제목 메타를 뺀 점검 행
 import { paperBodyItems, type HtmlFormPaperProps } from "@/components/form/htmlFormPaperShared";
 // 역할 — 전송(REQUEST)·전송취소(CANCEL) 공통 결재 API
-import { processDocumentApproval, saveDocumentRemark } from "@/api/documentApi";
+import { processDocumentApproval, saveDocumentTitle } from "@/api/documentApi";
 // 역할 — 일자 YYYYMMDD ↔ input[type=date]
 import { fromInputDate, toInputDate } from "@/lib/docDateTime";
 // 역할 — 그리드·편집 행 타입
@@ -96,7 +96,7 @@ type ListMeta = DocListMeta & {
   baseDtDisp?: string;
   writerNm?: string;
   sendState?: SendState;
-  // 문서 비고
+  // 제목 — tbl_document.title
   remark?: string;
   // 이탈여부 Y/N — 목록 칸을 쓰는 화면(HWP)만 채운다
   deviationYn?: string;
@@ -239,7 +239,7 @@ export function HtmlFormDraftPage({
   const detailSeq = useRef(0);
 
   const {
-    listRows, activeKey, activeBuffer: buf, addDraft, selectKey, patchActive,
+    listRows, activeKey, activeBuffer: buf, addDraft, selectKey, patchActive, patchRow,
     replaceServerList, removeDraft, saveAll, getBuffer, putBuffer,
   } = useDocFormSession<Buf, ListMeta>();
 
@@ -492,7 +492,7 @@ export function HtmlFormDraftPage({
    * 일자: 2026-08-25
    * 코멘트:
    *   1) dirty 전건을 검증·저장한다 — validate 만 좌/우 저장마다 다르다
-   *   2) runSaveHeader·runSaveDetail 이 공통으로 호출한다
+   *   2) 전송대기면 본문+제목. 전송 이후면 제목만. 첨부 remark 가 아니다
    *   3) 저장 후 목록을 다시 읽고 활성 행을 서버 키로 다시 연다. 임시 키를 getBuffer 하면 버퍼가 없다
    */
   const persistSave = useCallback(async (
@@ -508,6 +508,22 @@ export function HtmlFormDraftPage({
     const err = await saveAll({
       validate,
       saveOne: async (row, b) => {
+        const title = (row as EditableRow<ListMeta>).remark ?? "";
+        const status = b?.status ?? (row as EditableRow<ListMeta>).status;
+        const existingIdx = b?.docIdx ?? (row as EditableRow<ListMeta>).docIdx ?? null;
+        const isOpenRow = row._key === activeKeyRef.current;
+        // 전송 이후일 때(= 전송·결재완료) 본문은 못 고친다. 제목만 남긴다
+        if (existingIdx && !canModifyDoc(status)) {
+          await saveDocumentTitle(existingIdx, title);
+          savedIdxs.push(existingIdx);
+          if (isOpenRow) savedActiveIdx = existingIdx;
+          return {
+            docIdx: existingIdx,
+            listMeta: { remark: title },
+          };
+        }
+        if (!b) throw new Error("편집 내용이 없습니다.");
+        const hadDoc = !!b.docIdx;
         const saved = await api.save({
           tmplCd: b.tmplCd,
           docIdx: b.docIdx,
@@ -528,8 +544,11 @@ export function HtmlFormDraftPage({
             ? ((row as EditableRow<ListMeta>).deviationYn ?? "N")
             : (b.deviationYn ? "Y" : "N"),
         });
-        // 문서 비고 — api.save 에 없어서 문서가 생긴 뒤 따로 남긴다
-        await saveDocumentRemark(saved, (row as EditableRow<ListMeta>).remark ?? "");
+        // api.save 가 title 을 양식명(일자)로 덮는다. 목록 제목을 다시 쓴다
+        // 신규이고 제목이 비었을 때(= 안 씀) 자동 제목을 지워 버리지 않는다
+        if (title.trim() || hadDoc) {
+          await saveDocumentTitle(saved, title);
+        }
         /*
          * 저장 뒤 화면이 더 할 일 — HWP 는 여기서 본문 파일을 올린다.
          *
@@ -538,7 +557,6 @@ export function HtmlFormDraftPage({
          * 「왼쪽만 저장했는데 오른쪽이 엮인다」가 이것이고, 같은 본문을 연달아 올리다
          * 충돌(409)까지 났다. 열지 않은 행은 본문이 없는 게 맞다.
          */
-        const isOpenRow = row._key === activeKeyRef.current;
         if (afterSave && isOpenRow) await afterSave(saved);
         savedIdxs.push(saved);
         if (isOpenRow) savedActiveIdx = saved;
@@ -551,7 +569,7 @@ export function HtmlFormDraftPage({
             baseKey: b.baseKey,
             baseDtDisp: toInputDate(b.baseKey),
             deviationYn: (row as EditableRow<ListMeta>).deviationYn ?? "N",
-            remark: (row as EditableRow<ListMeta>).remark ?? "",
+            remark: title,
           },
         };
       },
@@ -561,10 +579,13 @@ export function HtmlFormDraftPage({
         for (const idx of savedIdxs) {
           try {
             const b = getBuffer(String(idx));
-            const detail = await api.detail(b?.tmplCd ?? "", idx);
+            const listed = listRowsRef.current.find((r) => r.docIdx === idx);
+            const tmplCd = b?.tmplCd || listed?.tmplCd || "";
+            const tmplNm = b?.tmplNm || listed?.tmplNm || "";
+            const detail = await api.detail(tmplCd, idx);
             // 저장 중에 다른 행을 열었으면 첨부를 덮지 않는다
             if (detailSeq.current === seq) setDetailFiles(detail.files ?? []);
-            const next = detailToDraftBuf(detail, { tmplCd: b?.tmplCd ?? "", tmplNm: b?.tmplNm ?? "" }, user);
+            const next = detailToDraftBuf(detail, { tmplCd, tmplNm }, user);
             putBuffer(String(idx), next, {
               status: next.status,
               sendState: sendStateOf(next.status),
@@ -595,8 +616,8 @@ export function HtmlFormDraftPage({
    * 개발자: 박승우
    * 일자: 2026-08-24
    * 코멘트:
-   *   1) 좌측 기본정보(일자·양식코드)만 저장한다 — docIdx 를 만든다
-   *   2) 좌측 저장 버튼이 호출한다
+   *   1) 좌측 기본정보(일자·양식코드)와 제목을 저장한다
+   *   2) 좌측 저장 버튼이 호출한다. 전송 이후 행은 제목만 남긴다
    *   3) 점검 행 개수는 보지 않는다 — BE 도 items 빈 배열을 허용한다
    */
   const runSaveHeader = useCallback(async (): Promise<boolean> => {
@@ -605,11 +626,11 @@ export function HtmlFormDraftPage({
         const key = row._key;
         if (!key) continue;
         const b = getBuf(key);
-        if (!b) return { message: "편집 내용이 없습니다.", rowKey: key };
-        // 전송 이후일 때(= 전송·결재완료) 저장 자체를 막는다. 서버도 다시 막는다
-        if (!canModifyDoc(b.status) && b.docIdx) {
-          return { message: "전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.", rowKey: key };
+        // 전송 이후일 때(= 전송·결재완료) 제목만 고친다
+        if ((b?.docIdx ?? row.docIdx) && !canModifyDoc(b?.status ?? row.status)) {
+          continue;
         }
+        if (!b) return { message: "편집 내용이 없습니다.", rowKey: key };
         if (!b.tmplCd) return { message: "양식코드 버튼을 눌러 양식을 선택하세요.", rowKey: key };
         if (!/^\d{8}$/.test(b.baseKey)) return { message: MES.required("일자"), rowKey: key };
       }
@@ -664,10 +685,11 @@ export function HtmlFormDraftPage({
         const key = row._key;
         if (!key) continue;
         const b = getBuf(key);
-        if (!b) return { message: "편집 내용이 없습니다.", rowKey: key };
-        if (!canModifyDoc(b.status) && b.docIdx) {
-          return { message: "전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.", rowKey: key };
+        // 전송 이후 행은 본문을 안 고친다. 제목만 persistSave 가 남긴다
+        if ((b?.docIdx ?? row.docIdx) && !canModifyDoc(b?.status ?? row.status)) {
+          continue;
         }
+        if (!b) return { message: "편집 내용이 없습니다.", rowKey: key };
         if (!b.tmplCd) return { message: "양식코드 버튼을 눌러 양식을 선택하세요.", rowKey: key };
         if (!/^\d{8}$/.test(b.baseKey)) return { message: MES.required("일자"), rowKey: key };
         // 지면 규칙은 지금 열려 있는 문서에만 건다 — 아직 저장 안 한 다른 행이 우측 저장·전송을 막지 않게 한다
@@ -1216,12 +1238,12 @@ export function HtmlFormDraftPage({
                 onChange={(event) => setSearch((prev) => ({ ...prev, tmplNm: event.target.value }))}
               />
             </SearchField>
-            <SearchField label="비고">
+            <SearchField label="제목">
               <input
-                // 문서 비고 부분검색 — tbl_document.remark
+                // 제목 부분검색 — tbl_document.title. 결재 첨부 remark 가 아니다
                 className={searchInputClass}
                 value={search.remark}
-                placeholder="비고"
+                placeholder="제목"
                 onChange={(event) => setSearch((prev) => ({ ...prev, remark: event.target.value }))}
               />
             </SearchField>
@@ -1339,6 +1361,11 @@ export function HtmlFormDraftPage({
                 // 반려 행은 노란색 — 배지(전송대기)로는 구분하지 못한다
                 rowClassName={(row) => draftRejectedRowClass((row as ListMeta).status)}
                 onCellChange={(key, field, cellValue) => {
+                  // 제목 — tbl_document.title. 결재 첨부 remark 가 아니다. 상태와 무관
+                  if (field === "remark") {
+                    patchRow(key, { remark: String(cellValue ?? "") } as Partial<ListMeta>);
+                    return;
+                  }
                   /*
                    * 이탈여부 — HWP 화면만 목록 칸으로 켠다.
                    * HTML 5화면은 지면 하단 시그널이 같은 일을 하고 이 칸 자체가 없다.

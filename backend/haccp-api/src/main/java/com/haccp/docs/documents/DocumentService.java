@@ -550,6 +550,33 @@ public class DocumentService {
 
     /**
      * 개발자: 박승우
+     * 일자: 2026-09-02
+     * 코멘트:
+     *   1) 작성 목록 제목을 저장한다 — tbl_document.title 이다. 결재 첨부 remark 가 아니다
+     *   2) 작성 화면 좌측 저장이 호출한다. 전송·결재완료여도 고친다
+     *   3) 작성자 검증은 SP가 한다
+     */
+    @Transactional
+    public void saveTitle(
+            // 문서 대리키
+            Long docIdx,
+            // 제목 — null·빈 문자열이면 지운다
+            String title,
+            // 감사 로그용 요청 IP
+            RequestMeta requestMeta
+    ) {
+        Long requiredDocIdx = DeleteValidation.requirePositive(docIdx, "문서번호가 올바르지 않습니다.");
+        String coCd = LoginUserContext.coCd();
+        Map<String, Object> before = mapper.selectDocument(coCd, requiredDocIdx);
+        if (before == null) {
+            throw new BizException("문서를 찾을 수 없습니다.");
+        }
+        mapper.saveTitle(coCd, requiredDocIdx, text(title), LoginUserContext.userId());
+        audit("tbl_document", requiredDocIdx, "U", before, mapper.selectDocument(coCd, requiredDocIdx), null);
+    }
+
+    /**
+     * 개발자: 박승우
      * 일자: 2026-08-06
      * 코멘트:
      *   1) 문서형(HWP) 임시·반려 문서 삭제 가능 여부를 검사한다

@@ -335,9 +335,18 @@ export function canSaveRow(
   if (!row._rowState) return ok();
   // 행 단위 상태 잠금 사유
   const rowLock = rowStatusLocked(row, rules, ctx);
-  // 수정(U) 행이 전체 잠금이면 저장 불가
+  // 수정(U) 행이 전체 잠금이면 — 화이트리스트 칸만 바뀐 경우는 저장한다
   if (rowLock && row._rowState === "U") {
-    // 변경 행이 전체 잠금이면 저장 불가 (비고만 변경은 editableWhenLocked로 허용)
+    const whitelist = rules.editableWhenLocked ?? [];
+    const orig = row._original as Record<string, unknown> | undefined;
+    const dirty = Object.keys(row).filter((k) => {
+      if (k.startsWith("_")) return false;
+      return String(row[k] ?? "") !== String(orig?.[k] ?? "");
+    });
+    // 잠긴 칸만 고쳤을 때(= 목록 비고 같은 제목) 저장을 연다
+    if (whitelist.length > 0 && dirty.length > 0 && dirty.every((f) => whitelist.includes(f))) {
+      return ok();
+    }
     return deny(rowLock);
   }
   // 저장 허용

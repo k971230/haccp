@@ -175,7 +175,7 @@ export type HtmlFormDraftRowView = {
   sendState?: SendState;
   // DOC_STATUS 원본 — 반려 행 노란 표시에 쓴다
   status?: string;
-  // 문서 비고 — tbl_document.remark
+  // 제목 — tbl_document.title. 결재 첨부 remark 가 아니다
   remark?: string;
   /** 이탈여부 Y/N — 이탈 칸을 쓰는 화면(HWP)만 채운다 */
   deviationYn?: string;
@@ -187,15 +187,17 @@ export type HtmlFormDraftRowView = {
  * 코멘트:
  *   1) 일자는 전송대기 행에서 셀 편집한다. 양식코드는 팝업 전용이라 셀 입력을 막는다
  *   2) useGridAccess 에 넘긴다
- *   3) 전송 이후 행은 행 전체를 잠근다 — 셀 편집 시도는 토스트로만 안내
+ *   3) 전송 이후 행은 행을 잠근다. 제목만 화이트리스트로 연다
  */
 export const htmlFormDraftGridRules: ScreenGridRules = {
   // 팝업·업무상태로만 정해지는 칸 — 셀에서 절대 못 고친다
   alwaysReadonly: ["tmplNm", "writerNm", "sendState", "docNo"],
   // 저장 후에도 바꿀 수 없는 칸 — 양식코드는 팝업(canOpenPopup 이 저장행을 막는다)
   newOnly: ["tmplCd"],
-  // 전송·결재완료 행은 통째로 잠근다
+  // 전송·결재완료 행은 통째로 잠근다. 제목만 예외
   isRowEditLocked: (row) => (row as { sendState?: SendState }).sendState !== "wait",
+  // 제목 = tbl_document.title. 결재 첨부 remark 와 다르다. 상태와 무관
+  editableWhenLocked: ["remark"],
 };
 
 /**
@@ -260,13 +262,13 @@ export function buildDraftListColumns(
       editable: false,
     },
     {
-      // 문서 비고 — tbl_document.remark. 전송대기 행에서 친다
+      // 제목 — tbl_document.title. 언제든 고친다. 첨부 remark 가 아니다
       field: "remark",
-      header: "비고",
+      header: "제목",
       width: 160,
       type: "text",
       editable: true,
-      maxLength: 500,
+      maxLength: 300,
     },
     // 이탈여부 — HTML 5화면은 지면 하단 시그널이 같은 일을 한다. 두 곳에 두지 않는다
     ...(showDeviation ? [{

@@ -62,7 +62,7 @@ HYG·CCP검증·CCP모니터링과 **같은 화면**이며, 이 폴더는 우측
   실제 조치 내용은 거기서 적는다 — 이 화면은 「이탈이 있었다」만 표시한다
 - 끄면 개선조치 행을 지운다. 단 **이미 조치를 적어 둔 건은 지우지 않는다**
   (`HwpDraftService.applyDeviation`) — 다른 화면에서 쓴 내용이 사라지면 안 된다
-- 전송 이후 행은 `htmlFormDraftGridRules.isRowEditLocked` 가 행 전체를 잠근다
+- 전송 이후 행은 `htmlFormDraftGridRules.isRowEditLocked` 가 행을 잠근다. 제목만 `editableWhenLocked` 로 연다
 
 칸 노출은 `HtmlFormDraftPage` 의 `showDeviationColumn` 하나로 켠다.
 HTML 5화면은 켜지 않는다 — 지면 시그널과 두 곳에 두면 값이 갈린다.
