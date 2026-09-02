@@ -48,7 +48,7 @@ public class UserService {
     private static final String DEFAULT_NEW_USER_PW = "1234";
     /** 서명 이미지 최대 크기 — 10MB */
     private static final long SIGN_MAX_BYTES = 10L * 1024 * 1024;
-    /** 감사 이력 대상 테이블명 — AUDIT_TARGET 공통코드 sub_cd와 같아야 화면에 표시명이 붙는다 */
+    /** 감사 이력 대상 테이블명 */
     private static final String AUDIT_TBL = "tbl_user";
 
     // 사용자 관리 SP 호출

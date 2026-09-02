@@ -13,6 +13,6 @@
 
 ## AuditWriter
 
-시스템 관리 5화면(공통코드·메뉴·권한그룹·부서·사용자)이 같은 규칙으로 이력을 남긴다. 호출부는 각 Service의 save·delete.
+시스템 관리 화면과 문서 허브가 같은 규칙으로 이력을 남긴다. 화면코드는 요청 컨텍스트(`X-Haccp-Scrn` · URL 맵). 호출부는 각 Service의 save·delete·결재.
 
-FE: `pages/sys/auditlog/` · 공용 셸 `components/layout/LogPageShell.tsx`
+FE: `pages/sys/logs/auditlog/` · 공용 셸 `components/layout/LogPageShell.tsx`

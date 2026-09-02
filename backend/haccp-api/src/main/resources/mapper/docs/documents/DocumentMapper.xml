@@ -224,19 +224,4 @@ PIPELINE[HB84] MyBatis XML
         )
     </update>
 
-    <!-- 변경 감사 — DB형·HWP형·결재·파일의 공통 이력 -->
-    <update id="insertAudit" statementType="CALLABLE">
-        CALL sp_tbl_audit_log_c_000(
-            #{coCd,       mode=IN, jdbcType=VARCHAR},
-            #{userId,     mode=IN, jdbcType=VARCHAR},
-            #{tblNm,      mode=IN, jdbcType=VARCHAR},
-            #{tgtIdx,     mode=IN, jdbcType=BIGINT},
-            #{actionCd,   mode=IN, jdbcType=VARCHAR},
-            #{beforeJson, mode=IN, jdbcType=LONGVARCHAR},
-            #{afterJson,  mode=IN, jdbcType=LONGVARCHAR},
-            #{reason,     mode=IN, jdbcType=VARCHAR},
-            #{ipAddr,     mode=IN, jdbcType=VARCHAR}
-        )
-    </update>
-
 </mapper>

@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
 
 class ScreenAuthResolverTest {
 
@@ -142,5 +143,38 @@ class ScreenAuthResolverTest {
                 "/api/v1/sys/code/user-management/save"
         ).orElseThrow();
         assertEquals("user-management", save.scrnCd());
+    }
+
+    @Test
+    void 화면_API는_URL_화면코드를_붙이고_헤더는_무시한다() {
+        MockHttpServletRequest req = new MockHttpServletRequest("PUT", "/api/v1/sys/code/user-management/save");
+        req.setRequestURI("/api/v1/sys/code/user-management/save");
+        req.addHeader(ScreenAuthResolver.SCRN_HEADER, "sign-ready");
+        ScreenAuthResolver.bindRequestScreen(
+                req,
+                ScreenAuthResolver.resolve("PUT", "/api/v1/sys/code/user-management/save")
+        );
+        assertEquals("user-management", ScreenAuthResolver.requestScreen(req));
+    }
+
+    @Test
+    void 문서_허브는_허용_화면_헤더만_붙인다() {
+        MockHttpServletRequest ok = new MockHttpServletRequest("PUT", "/api/v1/docs/documents/approval");
+        ok.setRequestURI("/api/v1/docs/documents/approval");
+        ok.addHeader(ScreenAuthResolver.SCRN_HEADER, "sign-ready");
+        ScreenAuthResolver.bindRequestScreen(
+                ok,
+                ScreenAuthResolver.resolve("PUT", "/api/v1/docs/documents/approval")
+        );
+        assertEquals("sign-ready", ScreenAuthResolver.requestScreen(ok));
+
+        MockHttpServletRequest bad = new MockHttpServletRequest("PUT", "/api/v1/docs/documents/approval");
+        bad.setRequestURI("/api/v1/docs/documents/approval");
+        bad.addHeader(ScreenAuthResolver.SCRN_HEADER, "common-code-management");
+        ScreenAuthResolver.bindRequestScreen(
+                bad,
+                ScreenAuthResolver.resolve("PUT", "/api/v1/docs/documents/approval")
+        );
+        assertEquals("", ScreenAuthResolver.requestScreen(bad));
     }
 }

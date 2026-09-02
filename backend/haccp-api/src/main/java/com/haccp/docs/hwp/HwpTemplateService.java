@@ -37,7 +37,7 @@ public class HwpTemplateService {
     /** 삭제 차단 문구에 쓰는 업무명 */
     private static final String LABEL = "사용양식";
 
-    /** 감사 로그 대상 표 — AUDIT_TARGET 공통코드 sub_cd 와 같아야 화면에 표시명이 붙는다 */
+    /** 감사 로그 대상 표 */
     private static final String AUDIT_TBL = "tbl_company_template";
 
     private final HwpTemplateMapper mapper;

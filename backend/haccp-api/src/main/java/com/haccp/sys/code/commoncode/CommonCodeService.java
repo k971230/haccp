@@ -38,7 +38,7 @@ public class CommonCodeService {
 
     /** 삭제 차단 문구에 쓰는 업무명 — "선택한 항목 중 공통코드 '...'" */
     private static final String LABEL = "공통코드";
-    /** 감사 이력 대상 테이블명 — AUDIT_TARGET 공통코드 sub_cd와 같아야 화면에 표시명이 붙는다 */
+    /** 감사 이력 대상 테이블명 */
     private static final String AUDIT_TBL = "tbl_code";
 
     // 공통코드 SP 호출

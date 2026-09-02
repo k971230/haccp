@@ -34,7 +34,7 @@ export async function listAuditLog(params: {
   fromDt: string;
   // 조회 종료일 YYYYMMDD
   toDt: string;
-  // 좌측 메뉴 트리 선택값(테이블명·화면코드·메뉴명) — 생략하면 전체
+  // 좌측 메뉴 트리 선택값(화면코드) — 생략하면 전체
   menuKey?: string;
   // 행위자 아이디 검색어 — 생략하면 전체
   userId?: string;

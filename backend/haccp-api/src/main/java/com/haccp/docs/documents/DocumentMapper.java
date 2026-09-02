@@ -217,16 +217,4 @@ public interface DocumentMapper {
             @Param("docIdx") Long docIdx,
             @Param("userId") String userId
     );
-
-    void insertAudit(
-            @Param("coCd") String coCd,
-            @Param("userId") String userId,
-            @Param("tblNm") String tblNm,
-            @Param("tgtIdx") Long tgtIdx,
-            @Param("actionCd") String actionCd,
-            @Param("beforeJson") String beforeJson,
-            @Param("afterJson") String afterJson,
-            @Param("reason") String reason,
-            @Param("ipAddr") String ipAddr
-    );
 }

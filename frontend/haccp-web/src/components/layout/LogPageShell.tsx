@@ -146,19 +146,6 @@ export function collectScrnCds(node: HierNode): string[] {
   return out;
 }
 
-/** 감사 필터용 — 하위 메뉴코드·화면코드·메뉴명 키 집합 */
-export function collectAuditKeys(node: HierNode): Set<string> {
-  const keys = new Set<string>();
-  const walk = (n: HierNode) => {
-    keys.add(n.key);
-    if (n.scrnCd) keys.add(n.scrnCd);
-    if (n.label) keys.add(n.label);
-    n.children.forEach(walk);
-  };
-  walk(node);
-  return keys;
-}
-
 /** 트리에서 키로 노드 찾기 — 선택 노드의 하위 정보를 Rule에 넘기기 위해 쓴다 */
 export function findHierNode(nodes: HierNode[], key: string): HierNode | null {
   for (const n of nodes) {

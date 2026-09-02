@@ -268,6 +268,7 @@ CREATE TABLE sasshaccp.tbl_audit_log (
     idx bigint NOT NULL,
     co_cd character varying(10) NOT NULL,
     user_id character varying(20) NOT NULL,
+    scrn_cd character varying(30) DEFAULT ''::character varying NOT NULL,
     tbl_nm character varying(50) NOT NULL,
     tgt_idx bigint,
     action_cd character varying(20) NOT NULL,
@@ -308,6 +309,13 @@ COMMENT ON COLUMN sasshaccp.tbl_audit_log.user_id IS '행위자 로그인 ID';
 
 
 --
+-- Name: COLUMN tbl_audit_log.scrn_cd; Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON COLUMN sasshaccp.tbl_audit_log.scrn_cd IS '행위 화면코드 — tbl_screen.scrn_cd. 적재 시점에 남긴다. 조회는 이 값으로 메뉴 트리를 가른다';
+
+
+--
 -- Name: COLUMN tbl_audit_log.tbl_nm; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
@@ -325,7 +333,7 @@ COMMENT ON COLUMN sasshaccp.tbl_audit_log.tgt_idx IS '대상 행의 idx';
 -- Name: COLUMN tbl_audit_log.action_cd; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON COLUMN sasshaccp.tbl_audit_log.action_cd IS '행위 — I:등록, U:수정, D:삭제, APV:승인, RJT:반려, JUDGE_MOD:판정 수동변경, CO_SWITCH:업체 전환';
+COMMENT ON COLUMN sasshaccp.tbl_audit_log.action_cd IS '행위 — I:등록, U:수정, D:삭제, REQ:상신, REV:검토, APV:승인, RJT:반려, CANCEL:상신취소, UNDO:결재취소';
 
 
 --
@@ -346,7 +354,7 @@ COMMENT ON COLUMN sasshaccp.tbl_audit_log.after_json IS '변경 후 값 JSON —
 -- Name: COLUMN tbl_audit_log.reason; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON COLUMN sasshaccp.tbl_audit_log.reason IS '사유 — 판정 수동변경·결재 반려 시 필수 입력값';
+COMMENT ON COLUMN sasshaccp.tbl_audit_log.reason IS '사유 — 결재 반려·결재취소 시 입력값';
 
 
 --
@@ -6862,6 +6870,13 @@ CREATE INDEX ix_tbl_audit_log_tgt ON sasshaccp.tbl_audit_log USING btree (co_cd,
 
 
 --
+-- Name: ix_tbl_audit_log_scrn; Type: INDEX; Schema: sasshaccp; Owner: -
+--
+
+CREATE INDEX ix_tbl_audit_log_scrn ON sasshaccp.tbl_audit_log USING btree (co_cd, scrn_cd, ins_dt DESC);
+
+
+--
 -- Name: ix_tbl_ccp_metal_pass_row_hdr; Type: INDEX; Schema: sasshaccp; Owner: -
 --
 
@@ -7184,3 +7199,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_tbl_notification_dedup
 -- 표준(html_sys_001, hwp_sys_*) 은 계속 co_cd=0000 한 줄이다.
 ALTER TABLE sasshaccp.tbl_template DROP CONSTRAINT IF EXISTS ux_tbl_template;
 ALTER TABLE sasshaccp.tbl_template ADD CONSTRAINT ux_tbl_template UNIQUE (co_cd, tmpl_cd);
+
+
+--
+-- 변경 감사 로그 — 화면코드 직저. 이미 도는 DB 용. 다시 돌려도 결과가 같다
+--
+-- 예전에는 테이블명만 남기고 AUDIT_TARGET 공통코드로 화면을 역추적했다.
+-- tbl_document 한 장이 문서함·결재대기·첨부·작성에 공유되어 승인이 문서함에 붙었다.
+-- 행에 scrn_cd 가 없으면 화면을 복원할 수 없어 기존 이력은 비운다.
+ALTER TABLE sasshaccp.tbl_audit_log
+    ADD COLUMN IF NOT EXISTS scrn_cd character varying(30) DEFAULT ''::character varying NOT NULL;
+COMMENT ON COLUMN sasshaccp.tbl_audit_log.scrn_cd IS '행위 화면코드 — tbl_screen.scrn_cd. 적재 시점에 남긴다. 조회는 이 값으로 메뉴 트리를 가른다';
+COMMENT ON COLUMN sasshaccp.tbl_audit_log.action_cd IS '행위 — I:등록, U:수정, D:삭제, REQ:상신, REV:검토, APV:승인, RJT:반려, CANCEL:상신취소, UNDO:결재취소';
+COMMENT ON COLUMN sasshaccp.tbl_audit_log.reason IS '사유 — 결재 반려·결재취소 시 입력값';
+CREATE INDEX IF NOT EXISTS ix_tbl_audit_log_scrn
+    ON sasshaccp.tbl_audit_log USING btree (co_cd, scrn_cd, ins_dt DESC);
+-- 화면코드 없는 옛 행은 메뉴를 복원할 수 없다. 새 적재분만 남긴다.
+DELETE FROM sasshaccp.tbl_audit_log WHERE scrn_cd = '';

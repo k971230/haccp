@@ -5,7 +5,7 @@
  * 일자: 2026-08-12
  * 코멘트:
  *   1) LogPageShell에 넘길 설정 한 덩어리다 — 컬럼·pref 키·기간 기본값·조회 API를 갖는다
- *   2) 좌측 메뉴 트리에서 리프를 고르면 서버 필터, 폴더면 기간 전건 후 하위 키로 FE 필터한다
+ *   2) 좌측 메뉴 트리에서 리프를 고르면 서버 필터, 폴더면 기간 전건 후 하위 화면코드로 FE 필터한다
  *   3) persistId는 기존 값(log-audit-log)을 승계한다
  *
  * PIPELINE[HF98] 감사 로그 규칙
@@ -15,7 +15,7 @@ import { listAuditLog } from "@/api/sys/auditLogApi";
 // 역할 — 일시 표시 포맷(분 단위)
 import { fmtDateTimeMinute } from "@/utils/date";
 // 역할 — 셸 설정 계약·행 타입·트리 헬퍼
-import { collectAuditKeys, type LogRow, type LogRule } from "@/components/layout/LogPageShell";
+import { collectScrnCds, type LogRow, type LogRule } from "@/components/layout/LogPageShell";
 
 /** 기간 기본값 — 오늘부터 30일 전까지 */
 const RANGE_DAYS = 30;
@@ -52,27 +52,22 @@ export const AUDIT_LOG_RULE: LogRule = {
     { field: "ipAddr", header: "접속 IP", width: 130 },
   ],
 
-  /** 조회 — 리프는 서버 필터, 폴더는 하위 메뉴키 집합으로 FE 필터한다 */
+  /** 조회 — 리프는 서버 필터(화면코드), 폴더는 하위 화면코드로 FE 필터한다 */
   fetchRows: async ({ fromDt, toDt, selNode }) => {
-    // 리프 노드일 때(= 하위 없음) 화면코드·메뉴코드를 그대로 서버 조건으로 넘긴다
+    // 리프 노드일 때(= 하위 없음) 화면코드를 서버 조건으로 넘긴다
     const menuKey =
       selNode && selNode.children.length === 0
-        ? String(selNode.scrnCd ?? selNode.key).trim()
+        ? String(selNode.scrnCd ?? "").trim()
         : "";
     const raw = await listAuditLog({ fromDt, toDt, menuKey });
     let rows = raw.map((r): LogRow => ({
       ...r,
       insDt: fmtDateTimeMinute(String(r.insDt ?? "")) || r.insDt,
     }));
-    // 폴더 선택일 때(= menuKey 없음) 하위 테이블명·메뉴명·화면코드로 걸러낸다
+    // 폴더 선택일 때(= menuKey 없음) 하위 화면코드로 걸러낸다
     if (selNode && !menuKey) {
-      const keys = collectAuditKeys(selNode);
-      rows = rows.filter((r) => {
-        const tbl = String(r.tblNm ?? "").trim();
-        const menuNm = String(r.menuNm ?? "").trim();
-        const scrn = String(r.scrnCd ?? "").trim();
-        return keys.has(tbl) || keys.has(menuNm) || (scrn !== "" && keys.has(scrn));
-      });
+      const keys = new Set(collectScrnCds(selNode));
+      rows = rows.filter((r) => keys.has(String(r.scrnCd ?? "").trim()));
     }
     return rows;
   },

@@ -4,14 +4,16 @@
  * 개발자: 박승우
  * 일자: 2026-08-13
  * 코멘트:
- *   1) 공통코드·메뉴·권한그룹·부서·사용자 5화면이 같은 규칙으로 이력을 남기도록 한곳에 모았다
- *   2) 회사코드·행위자는 JWT 컨텍스트에서만 읽고, IP는 현재 요청에서 뽑는다 — 컨트롤러 시그니처를 건드리지 않는다
+ *   1) 공통코드·메뉴·권한그룹·부서·사용자·결재선·사용양식과 문서 허브가 같은 규칙으로 이력을 남긴다
+ *   2) 회사코드·행위자는 JWT, 화면코드는 요청(URL 맵·허브 헤더), IP는 현재 요청에서 뽑는다
  *   3) 원 업무 트랜잭션 안에서 호출하므로 저장이 롤백되면 이력도 함께 사라진다
  *
  * PIPELINE[HB92] 변경 감사 적재
  */
 package com.haccp.sys.logs.auditlog;
 
+// 역할 — 요청 경로에서 확정한 화면코드
+import com.haccp.common.auth.ScreenAuthResolver;
 // 역할 — JWT 테넌트·행위자
 import com.haccp.common.context.LoginUserContext;
 // 역할 — 요청 IP 추출 (로그인 이력·조회 로그와 같은 규칙)
@@ -54,12 +56,12 @@ public class AuditWriter {
      * 개발자: 박승우
      * 일자: 2026-08-13
      * 코멘트:
-     *   1) 변경 감사 이력 한 건을 남긴다 — 변경 후 값만 기록한다
+     *   1) 변경 감사 이력 한 건을 남긴다 — 변경 후 값만 기록한다. before 는 비운다
      *   2) 시스템 관리 5화면의 save·delete 루프 안에서 행마다 호출한다
      *   3) 직렬화에 실패하면 이력이 비는 대신 업무를 중단한다 (BizException)
      */
     public void record(
-            // 대상 테이블명 — tbl_ 접두 포함. AUDIT_TARGET 공통코드 sub_cd와 같아야 화면에 표시명이 붙는다
+            // 대상 테이블명 — tbl_ 접두 포함
             String tblNm,
             // 대상 행 idx — 신규 등록처럼 채번 전이면 null
             Long tgtIdx,
@@ -68,18 +70,50 @@ public class AuditWriter {
             // 변경 후 값. 삭제일 때(= 남길 값 없음) null을 넘긴다
             Object after
     ) {
+        record(tblNm, tgtIdx, actionCd, null, after, "");
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-02
+     * 코멘트:
+     *   1) 변경 전·후와 사유를 같이 남긴다 — 문서 허브 결재·첨부가 쓴다
+     *   2) 화면코드는 요청 컨텍스트에서만 읽는다. 호출부가 넘기지 않는다
+     *   3) 직렬화 실패면 업무를 중단한다
+     */
+    public void record(
+            // 대상 테이블명 — tbl_ 접두 포함
+            String tblNm,
+            // 대상 행 idx — 신규 등록처럼 채번 전이면 null
+            Long tgtIdx,
+            // 행위 — I/U/D/REQ/REV/APV/RJT/CANCEL/UNDO
+            String actionCd,
+            // 변경 전 값. 등록이면 null
+            Object before,
+            // 변경 후 값. 삭제면 null
+            Object after,
+            // 사유 — 반려·결재취소. 없으면 빈 문자열
+            String reason
+    ) {
         auditLogMapper.insertAudit(
                 LoginUserContext.coCd(),
                 LoginUserContext.userId(),
+                currentScrnCd(),
                 tblNm,
                 tgtIdx,
                 actionCd,
-                // before는 남기지 않는다 — 저장 SP가 UPSERT라 직전 값을 다시 읽어야 하고, 그 비용을 지지 않기로 했다
-                "",
+                json(before),
                 json(after),
-                // 시스템 관리 저장·삭제는 사유 입력이 없다 — 결재 반려·판정 수동변경만 사유를 받는다
-                "",
+                reason == null ? "" : reason,
                 clientIp());
+    }
+
+    /** 인터셉터가 붙인 화면코드. 요청 밖이면 빈 문자열 */
+    private static String currentScrnCd() {
+        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+        return attrs instanceof ServletRequestAttributes servlet
+                ? ScreenAuthResolver.requestScreen(servlet.getRequest())
+                : "";
     }
 
     /** 행 payload를 JSON 문자열로 바꾼다 — null이면 빈 문자열이라 SP가 NULL로 넣는다 */

@@ -12,6 +12,7 @@
  */
 package com.haccp.common.auth;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -146,6 +147,71 @@ public final class ScreenAuthResolver {
             }
         }
         return Optional.empty();
+    }
+
+    /** 감사 적재가 읽는 요청 화면코드 헤더 — FE 활성 탭. 허브 API 만 신뢰 집합으로 받는다 */
+    public static final String SCRN_HEADER = "X-Haccp-Scrn";
+
+    /** 요청에 붙인 확정 화면코드 — AuditWriter 가 읽는다 */
+    static final String SCRN_ATTR = "haccp.audit.scrnCd";
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-02
+     * 코멘트:
+     *   1) 변경 감사 로그에 남길 화면코드를 요청에 붙인다
+     *   2) 화면 API 는 URL 맵 값만 쓴다. 허브는 헤더가 허용 집합일 때만 받는다
+     *   3) 헤더를 속여도 화면 API 는 URL 이 이기고, 허브는 허용 화면 밖이면 빈다
+     */
+    public static void bindRequestScreen(
+            // 현재 요청 — 속성·헤더
+            HttpServletRequest request,
+            // resolve 결과. empty 면 화면코드를 안 붙인다
+            Optional<ScreenAuthMatch> match
+    ) {
+        if (request == null || match == null || match.isEmpty()) {
+            return;
+        }
+        ScreenAuthMatch m = match.get();
+        if (m.hubKind() == ScreenAuthMatch.HubKind.NONE) {
+            if (m.scrnCd() != null && !m.scrnCd().isBlank()) {
+                request.setAttribute(SCRN_ATTR, m.scrnCd());
+            }
+            return;
+        }
+        String hdr = request.getHeader(SCRN_HEADER);
+        if (hdr == null || hdr.isBlank()) {
+            return;
+        }
+        String cd = hdr.trim();
+        Set<String> allowed = m.hubKind() == ScreenAuthMatch.HubKind.HWP
+                ? HWP_HUB_SCREENS
+                : DOC_HUB_SCREENS;
+        if (allowed.contains(cd)) {
+            request.setAttribute(SCRN_ATTR, cd);
+        }
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-02
+     * 코멘트:
+     *   1) 인터셉터가 붙인 화면코드를 읽는다
+     *   2) 감사 적재기가 호출한다
+     *   3) 없으면 빈 문자열 — 배치·단위시험처럼 요청이 없을 때
+     */
+    public static String requestScreen(
+            // 현재 요청. null 이면 빈 문자열
+            HttpServletRequest request
+    ) {
+        if (request == null) {
+            return "";
+        }
+        Object attr = request.getAttribute(SCRN_ATTR);
+        if (attr instanceof String s && !s.isBlank()) {
+            return s.trim();
+        }
+        return "";
     }
 
     /** 쿼리스트링을 떼어 경로만 남긴다 */

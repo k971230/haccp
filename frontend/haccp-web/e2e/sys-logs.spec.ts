@@ -72,7 +72,7 @@ test.describe("이력·통계 3화면", () => {
   });
 
   test("기준정보를 고치면 감사로그에 남는다", async ({ page }) => {
-    const before = Number(dbOne("SELECT count(*) FROM tbl_audit_log WHERE tbl_nm='tbl_dept'"));
+    const before = Number(dbOne("SELECT count(*) FROM tbl_audit_log WHERE tbl_nm='tbl_dept' AND scrn_cd='department-management'"));
     const { user, pass } = adminCreds();
     await login(page, user, pass);
     await openScreen(page, "/sys/logs/audit-log");

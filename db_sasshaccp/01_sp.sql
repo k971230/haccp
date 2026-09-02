@@ -41,11 +41,10 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varyin
     SELECT a.idx,
            a.user_id,
            u.user_nm,
-           -- 표준코드에 매핑이 없으면 테이블명을 그대로 보여준다
-           COALESCE(c.code_nm, a.tbl_nm) AS menu_nm,
+           -- 화면 마스터 표시명. 없으면 화면코드를 그대로 보여준다
+           COALESCE(s.scrn_nm, a.scrn_cd) AS menu_nm,
            a.tbl_nm,
-           -- 트리와 같은 키 — AUDIT_TARGET.ref1 = 화면코드
-           c.ref1 AS scrn_cd,
+           a.scrn_cd,
            a.tgt_idx,
            a.action_cd,
            a.before_json,
@@ -56,21 +55,15 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varyin
       FROM tbl_audit_log a
       -- 행위자명 — 삭제된 사용자도 이력은 남으므로 LEFT JOIN. 동명 아이디가 타사에 있어도 자사 행만 붙인다
       LEFT JOIN tbl_user u ON u.co_cd = a.co_cd AND u.user_id = a.user_id
-      -- AUDIT_TARGET — 테이블명 → 화면코드(ref1)·표시명. 회사별 고유 격리
-      LEFT JOIN tbl_code c
-             ON c.co_cd = p_co_cd
-            AND c.main_cd = 'AUDIT_TARGET'
-            AND c.sub_cd = a.tbl_nm
+      -- 대상 메뉴명 — 적재 시점 화면코드. 공통코드 매핑을 쓰지 않는다
+      LEFT JOIN tbl_screen s ON s.scrn_cd = a.scrn_cd
      WHERE a.co_cd = p_co_cd
        AND a.ins_dt >= to_timestamp(p_from_dt, 'YYYYMMDD')
        AND a.ins_dt <  to_timestamp(p_to_dt,   'YYYYMMDD') + interval '1 day'
-       -- 트리 선택값은 테이블명·ref1·ref2·표시명 어디에 맞아도 통과시킨다
+       -- 리프 선택값 = 화면코드. 공백이면 기간 전건
        AND (
             COALESCE(p_menu_key, '') = ''
-            OR a.tbl_nm = p_menu_key
-            OR c.ref1   = p_menu_key
-            OR c.ref2   = p_menu_key
-            OR c.code_nm = p_menu_key
+            OR a.scrn_cd = p_menu_key
        )
        AND a.user_id   LIKE CONCAT('%', COALESCE(p_user_id,   ''), '%')
        AND a.action_cd LIKE CONCAT('%', COALESCE(p_action_cd, ''), '%')
@@ -82,7 +75,7 @@ $$;
 -- Name: FUNCTION sp_audit_log_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_menu_key character varying, p_user_id character varying, p_action_cd character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_menu_key character varying, p_user_id character varying, p_action_cd character varying) IS '변경 감사 이력 조회 — 기간·메뉴키·행위자·행위 필터, 최신순';
+COMMENT ON FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_menu_key character varying, p_user_id character varying, p_action_cd character varying) IS '변경 감사 이력 조회 — 기간·화면코드·행위자·행위 필터, 최신순';
 
 
 --
@@ -2378,13 +2371,16 @@ $$;
 -- Name: sp_tbl_audit_log_c_000(character varying, character varying, character varying, bigint, character varying, text, text, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_audit_log_c_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_tbl_nm character varying, IN p_tgt_idx bigint, IN p_action_cd character varying, IN p_before_json text, IN p_after_json text, IN p_reason character varying, IN p_ip_addr character varying)
+DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_audit_log_c_000(character varying, character varying, character varying, bigint, character varying, text, text, character varying, character varying);
+DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_audit_log_c_000(character varying, character varying, character varying, character varying, bigint, character varying, text, text, character varying, character varying);
+
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_audit_log_c_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_scrn_cd character varying, IN p_tbl_nm character varying, IN p_tgt_idx bigint, IN p_action_cd character varying, IN p_before_json text, IN p_after_json text, IN p_reason character varying, IN p_ip_addr character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    INSERT INTO tbl_audit_log(co_cd, user_id, tbl_nm, tgt_idx, action_cd,
+    INSERT INTO tbl_audit_log(co_cd, user_id, scrn_cd, tbl_nm, tgt_idx, action_cd,
                               before_json, after_json, reason, ip_addr, ins_dt)
-    VALUES (p_co_cd, p_user_id, p_tbl_nm, p_tgt_idx, p_action_cd,
+    VALUES (p_co_cd, p_user_id, COALESCE(NULLIF(p_scrn_cd, ''), ''), p_tbl_nm, p_tgt_idx, p_action_cd,
             NULLIF(p_before_json, '')::jsonb, NULLIF(p_after_json, '')::jsonb,
             NULLIF(p_reason, ''), p_ip_addr, now());
 END$$;
@@ -2394,7 +2390,7 @@ END$$;
 -- Name: PROCEDURE sp_tbl_audit_log_c_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_tbl_nm character varying, IN p_tgt_idx bigint, IN p_action_cd character varying, IN p_before_json text, IN p_after_json text, IN p_reason character varying, IN p_ip_addr character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_audit_log_c_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_tbl_nm character varying, IN p_tgt_idx bigint, IN p_action_cd character varying, IN p_before_json text, IN p_after_json text, IN p_reason character varying, IN p_ip_addr character varying) IS '변경 감사 로그 기록 — HACCP 기록의 사후 수정 추적';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_audit_log_c_000(IN p_co_cd character varying, IN p_user_id character varying, IN p_scrn_cd character varying, IN p_tbl_nm character varying, IN p_tgt_idx bigint, IN p_action_cd character varying, IN p_before_json text, IN p_after_json text, IN p_reason character varying, IN p_ip_addr character varying) IS '변경 감사 로그 기록 — 화면코드·테이블·행위. HACCP 기록의 사후 수정 추적';
 
 
 --

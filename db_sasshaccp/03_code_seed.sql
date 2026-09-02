@@ -148,28 +148,17 @@ INSERT INTO tmp_code(main_cd, sub_cd, code_nm, sort_no, ref1) VALUES
 ('LOGIN_RESULT', 'F',       '실패',        2, NULL),
 ('LOGIN_RESULT', 'L',       '잠금',        3, NULL),
 
--- 감사 행위 — tbl_audit_log.act_cd
-('AUDIT_RESULT', '*',          '감사 행위',     0, NULL),
-('AUDIT_RESULT', 'I',          '등록',          1, NULL),
-('AUDIT_RESULT', 'U',          '수정',          2, NULL),
-('AUDIT_RESULT', 'D',          '삭제',          3, NULL),
-('AUDIT_RESULT', 'APV',        '승인',          4, NULL),
-('AUDIT_RESULT', 'RJT',        '반려',          5, NULL),
-('AUDIT_RESULT', 'JUDGE_MOD',  '판정 수동변경', 6, NULL),
-('AUDIT_RESULT', 'CO_SWITCH',  '업체 전환',     7, NULL),
-
--- 감사 대상 — tbl_audit_log.tbl_nm → 트리 화면코드(ref1). sub_cd는 테이블명 그대로(저장값)
-('AUDIT_TARGET', '*',                    '감사 대상 메뉴', 0, NULL),
-('AUDIT_TARGET', 'tbl_document',         '문서함',         1, 'document-inbox'),
-('AUDIT_TARGET', 'tbl_document_file',    '문서함',         2, 'document-inbox'),
-('AUDIT_TARGET', 'tbl_code',             '공통코드관리',   3, 'common-code-management'),
-('AUDIT_TARGET', 'tbl_menu',             '메뉴관리',       4, 'menu-management'),
-('AUDIT_TARGET', 'tbl_role',             '권한그룹관리',   5, 'role-management'),
-('AUDIT_TARGET', 'tbl_role_screen',      '권한그룹관리',   6, 'role-management'),
-('AUDIT_TARGET', 'tbl_dept',             '부서관리',       7, 'department-management'),
-('AUDIT_TARGET', 'tbl_user',             '사용자관리',     8, 'user-management'),
-('AUDIT_TARGET', 'tbl_approval_line',    '결재선관리',     9, 'approval-line-management'),
-('AUDIT_TARGET', 'tbl_company_template', '사용양식관리',  10, 'hwp-template-management');
+-- 감사 행위 — tbl_audit_log.action_cd
+('AUDIT_RESULT', '*',          '감사 행위', 0, NULL),
+('AUDIT_RESULT', 'I',          '등록',      1, NULL),
+('AUDIT_RESULT', 'U',          '수정',      2, NULL),
+('AUDIT_RESULT', 'D',          '삭제',      3, NULL),
+('AUDIT_RESULT', 'REQ',        '상신',      4, NULL),
+('AUDIT_RESULT', 'REV',        '검토',      5, NULL),
+('AUDIT_RESULT', 'APV',        '승인',      6, NULL),
+('AUDIT_RESULT', 'RJT',        '반려',      7, NULL),
+('AUDIT_RESULT', 'CANCEL',     '상신취소',  8, NULL),
+('AUDIT_RESULT', 'UNDO',       '결재취소',  9, NULL),
 
 -- 없으면 넣고, 있으면 이름·정렬·사용여부를 시드에 맞춘다
 INSERT INTO tbl_code(co_cd, main_cd, sub_cd, code_nm, sort_no, ref1, sys_yn, use_yn, ins_id, ins_dt)

@@ -43,7 +43,7 @@ public class AuditLogService {
             String fromDt,
             // 조회 종료일 YYYYMMDD
             String toDt,
-            // 좌측 메뉴 트리 선택값. 공백이면 전체
+            // 좌측 메뉴 트리 선택값(화면코드). 공백이면 전체
             String menuKey,
             // 행위자 아이디 검색어. 공백이면 전체
             String userId,

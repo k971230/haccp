@@ -51,7 +51,7 @@ public class AuditLogController {
             @RequestParam(required = false) String fromDt,
             // 조회 종료일 — YYYY-MM-DD 또는 YYYYMMDD. 미입력이면 오늘
             @RequestParam(required = false) String toDt,
-            // 좌측 메뉴 트리 선택값(테이블명·화면코드·메뉴명) — 미입력이면 전체
+            // 좌측 메뉴 트리 선택값(화면코드) — 미입력이면 전체
             @RequestParam(required = false, defaultValue = "") String menuKey,
             // 행위자 아이디 검색어 — 미입력이면 전체
             @RequestParam(required = false, defaultValue = "") String userId,

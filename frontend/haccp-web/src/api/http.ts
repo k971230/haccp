@@ -14,6 +14,8 @@
 import axios, { type AxiosInstance } from "axios";
 // 역할 — 요청 시 JWT를 읽어올 인증 스토어
 import { useAuthStore } from "@/stores/authStore";
+// 역할 — 활성 탭 화면코드. 문서 허브 API 감사 적재가 어느 화면인지 가른다
+import { useTabStore } from "@/stores/tabStore";
 // 역할 — 401 세션 정리·전용 예외 타입
 import { handleUnauthorized, UnauthorizedError } from "@/shell/authSession";
 // 역할 — 타임아웃 3계층 설정값 (OPS_GLOBAL_CONFIG)
@@ -114,6 +116,9 @@ function attachInterceptors(instance: AxiosInstance): void {
     const token = useAuthStore.getState().token;
     // token이 있을 때(= 로그인 상태) Bearer를 붙인다. FormData 업로드는 set 이 아니면 헤더가 빠질 수 있다
     if (token) config.headers.set("Authorization", `Bearer ${token}`);
+    // 활성 탭 화면코드 — 문서 허브처럼 URL 만으로 화면을 못 가릴 때 서버가 감사 로그에 남긴다
+    const scrnCd = useTabStore.getState().activeCd;
+    if (scrnCd) config.headers.set("X-Haccp-Scrn", scrnCd);
     return config;
   });
 
