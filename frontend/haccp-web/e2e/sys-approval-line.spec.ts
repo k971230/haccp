@@ -44,12 +44,12 @@ test.describe.serial("결재선관리", () => {
     const at = await addRow(page, head);
     await fillCell(head, at, "결재선코드", LINE);
     await fillCell(head, at, "결재선명", "E2E 시험결재선");
-    const auditBefore = Number(dbOne("SELECT count(*) FROM tbl_audit_log WHERE tbl_nm='tbl_approval_line'"));
+    const auditBefore = Number(dbOne("SELECT count(*) FROM tbl_audit_log WHERE tbl_nm='tbl_approval_line' AND scrn_cd='approval-line-management'"));
     expect(await saveAndConfirm(page, "/approval-line-management/save")).toBe(200);
 
     // 결재선은 누가 결재하는지를 정한다 — 조용히 바뀌면 안 된다 (E2E-003)
     expect(
-      Number(dbOne("SELECT count(*) FROM tbl_audit_log WHERE tbl_nm='tbl_approval_line'")),
+      Number(dbOne("SELECT count(*) FROM tbl_audit_log WHERE tbl_nm='tbl_approval_line' AND scrn_cd='approval-line-management'")),
       "결재선 변경이 감사로그에 안 남는다",
     ).toBeGreaterThan(auditBefore);
 

@@ -39,7 +39,7 @@ public interface AuditLogMapper {
             @Param("fromDt") String fromDt,
             // 조회 종료일 YYYYMMDD — 그날 24시 직전까지 포함
             @Param("toDt") String toDt,
-            // 좌측 메뉴 트리 선택값(테이블명·화면코드·메뉴명). 공백이면 전체
+            // 좌측 메뉴 트리 선택값(화면코드). 공백이면 전체
             @Param("menuKey") String menuKey,
             // 행위자 아이디 검색어. 공백이면 전체
             @Param("userId") String userId,
@@ -60,7 +60,9 @@ public interface AuditLogMapper {
             @Param("coCd") String coCd,
             // 행위자 로그인 아이디 — JWT에서만 읽는다
             @Param("userId") String userId,
-            // 대상 테이블명 — tbl_ 접두 포함. AUDIT_TARGET 공통코드의 sub_cd와 같아야 표시명이 붙는다
+            // 행위 화면코드 — tbl_screen.scrn_cd. 인터셉터가 요청에 붙인 값
+            @Param("scrnCd") String scrnCd,
+            // 대상 테이블명 — tbl_ 접두 포함
             @Param("tblNm") String tblNm,
             // 대상 행 idx — 신규 등록처럼 아직 idx를 모르면 null
             @Param("tgtIdx") Long tgtIdx,

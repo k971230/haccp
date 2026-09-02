@@ -22,16 +22,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haccp.common.exception.BizException;
 import com.haccp.docs.documents.dto.DocumentApprovalRequest;
+import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -43,8 +42,8 @@ class DocumentServiceApprovalTest {
     @Mock
     private DocumentMapper mapper;
 
-    @Spy
-    private ObjectMapper objectMapper = new ObjectMapper();
+    @Mock
+    private AuditWriter auditWriter;
 
     @InjectMocks
     private DocumentService service;
@@ -140,12 +139,12 @@ class DocumentServiceApprovalTest {
         docExists("REQ");
 
         service.processApproval(req(448L, "APPROVE", null), null);
-        verify(mapper, times(1)).insertAudit(any(), any(), eq("tbl_document"), eq(448L), eq("APV"),
-                any(), any(), any(), any());
+        verify(auditWriter, times(1)).record(eq("tbl_document"), eq(448L), eq("APV"),
+                any(), any(), any());
 
         service.processApproval(req(448L, "REJECT", "값이 비었음"), null);
-        verify(mapper, times(1)).insertAudit(any(), any(), eq("tbl_document"), eq(448L), eq("RJT"),
-                any(), any(), any(), any());
+        verify(auditWriter, times(1)).record(eq("tbl_document"), eq(448L), eq("RJT"),
+                any(), any(), any());
     }
 
     @Test
@@ -155,8 +154,8 @@ class DocumentServiceApprovalTest {
 
         service.processApproval(req(448L, "REJECT", "온도 미기재"), null);
 
-        verify(mapper, times(1)).insertAudit(any(), any(), any(), any(), eq("RJT"),
-                any(), any(), eq("온도 미기재"), any());
+        verify(auditWriter, times(1)).record(eq("tbl_document"), any(), eq("RJT"),
+                any(), any(), eq("온도 미기재"));
     }
 
     @Test
@@ -168,7 +167,7 @@ class DocumentServiceApprovalTest {
 
         service.processApproval(req(448L, "REQUEST", "무시될 값"), null);
 
-        verify(mapper, times(1)).insertAudit(any(), any(), any(), any(), eq("U"),
-                any(), any(), eq(""), any());
+        verify(auditWriter, times(1)).record(eq("tbl_document"), any(), eq("REQ"),
+                any(), any(), eq(""));
     }
 }

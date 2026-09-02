@@ -6,7 +6,7 @@ AuditLogMapper.xml — 변경 감사 이력 화면 SP 호출 매퍼.
 일자: 2026-08-12
 코멘트:
   1) 조회 sp_audit_log_r_000 · 적재 sp_tbl_audit_log_c_000 두 SP만 호출한다 — 네이티브 SQL 금지
-  2) menuKey는 테이블명·화면코드·메뉴명 어디에 맞아도 통과하도록 SP가 4가지로 비교한다
+  2) menuKey는 화면코드(scrn_cd). 공백이면 기간 전건
   3) 기간은 Controller가 YYYYMMDD로 정규화한 값만 들어온다
 
 PIPELINE[HB92] 감사 이력 MyBatis XML
@@ -38,6 +38,7 @@ PIPELINE[HB92] 감사 이력 MyBatis XML
         CALL sp_tbl_audit_log_c_000(
             #{coCd,       mode=IN, jdbcType=VARCHAR},
             #{userId,     mode=IN, jdbcType=VARCHAR},
+            #{scrnCd,     mode=IN, jdbcType=VARCHAR},
             #{tblNm,      mode=IN, jdbcType=VARCHAR},
             #{tgtIdx,     mode=IN, jdbcType=BIGINT},
             #{actionCd,   mode=IN, jdbcType=VARCHAR},

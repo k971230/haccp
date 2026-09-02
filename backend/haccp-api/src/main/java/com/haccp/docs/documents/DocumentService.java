@@ -13,9 +13,6 @@
  */
 package com.haccp.docs.documents;
 
-// 역할 — JSON 감사 스냅샷
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 // 역할 — 요청 사용자·접속 IP
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.context.RequestMeta;
@@ -29,6 +26,8 @@ import com.haccp.docs.documents.dto.DocumentFileRow;
 import com.haccp.docs.documents.dto.HwpDocumentSaveRequest;
 // 역할 — HWP → PDF CLI
 import com.haccp.docs.templates.RhwpCliClient;
+// 역할 — 변경 감사 적재 (화면코드는 요청 컨텍스트)
+import com.haccp.sys.logs.auditlog.AuditWriter;
 // 역할 — 파일 경로·크기
 import java.io.IOException;
 import java.nio.file.Files;
@@ -56,7 +55,7 @@ public class DocumentService {
     private final DocumentMapper mapper;
     private final DocumentFileStorage storage;
     private final RhwpCliClient rhwpCliClient;
-    private final ObjectMapper objectMapper;
+    private final AuditWriter auditWriter;
     // CLI 대기 중 DB 커넥션을 붙잡지 않도록 PDF 등록만 짧은 트랜잭션으로 연다
     private final PlatformTransactionManager transactionManager;
 
@@ -193,8 +192,7 @@ public class DocumentService {
                 before == null ? "I" : "U",
                 before,
                 mapper.selectDocument(coCd, docIdx),
-                null,
-                requestMeta
+                null
         );
         return docIdx;
     }
@@ -224,7 +222,7 @@ public class DocumentService {
         String userId = LoginUserContext.userId();
         // HWP 본원본일 때(= 문서당 1건) 기존 HWP_SRC를 먼저 제거
         if ("HWP_SRC".equals(kind)) {
-            replaceExistingHwpSrc(coCd, requiredDocIdx, userId, requestMeta);
+            replaceExistingHwpSrc(coCd, requiredDocIdx, userId);
         }
         String path = storage.save(coCd, documentTmplCd(coCd, requiredDocIdx), file);
         try {
@@ -244,8 +242,7 @@ public class DocumentService {
                     "I",
                     null,
                     Map.of("docIdx", requiredDocIdx, "fileKind", kind, "fileNm", safeOriginalName(file.getOriginalFilename())),
-                    null,
-                    requestMeta
+                    null
             );
             DocumentFileRow saved = mapper.selectFile(coCd, fileIdx);
             return publicFile(saved);
@@ -274,9 +271,7 @@ public class DocumentService {
             // 대상 문서 idx
             Long docIdx,
             // 삭제 감사 userId
-            String userId,
-            // 감사 로그용 요청 IP
-            RequestMeta requestMeta
+            String userId
     ) {
         List<DocumentFileRow> oldSrc = mapper.selectFiles(coCd, docIdx).stream()
                 .filter(row -> "HWP_SRC".equalsIgnoreCase(text(row.getFileKind())))
@@ -291,7 +286,7 @@ public class DocumentService {
                 .filter(path -> path != null && !path.isBlank())
                 .toList();
         for (DocumentFileRow old : oldSrc) {
-            audit("tbl_document_file", old.getIdx(), "D", publicFile(old), null, null, requestMeta);
+            audit("tbl_document_file", old.getIdx(), "D", publicFile(old), null, null);
         }
         // 종류별 일괄 삭제 — 결재 잠금이면 SP가 BizException
         mapper.deleteFilesByKind(coCd, docIdx, "HWP_SRC", userId);
@@ -472,7 +467,7 @@ public class DocumentService {
         }
         mapper.deleteFile(coCd, requiredFileIdx, LoginUserContext.userId());
         storage.delete(file.getFilePath());
-        audit("tbl_document_file", requiredFileIdx, "D", publicFile(file), null, null, requestMeta);
+        audit("tbl_document_file", requiredFileIdx, "D", publicFile(file), null, null);
     }
 
     /**
@@ -481,7 +476,7 @@ public class DocumentService {
      * 코멘트:
      *   1) 상신·상신취소·검토·승인·반려·결재취소 중 하나를 처리한다
      *   2) 문서 결재 패널의 버튼이 호출한다
-     *   3) 성공 시 문서 상태를 갱신하고 APV/RJT 감사 이력을 남긴다
+     *   3) 성공 시 문서 상태를 갱신하고 상신·검토·승인·반려·취소를 감사 이력에 남긴다
      */
     @Transactional
     public void processApproval(
@@ -513,13 +508,16 @@ public class DocumentService {
                 switch (action) {
                     case "APPROVE" -> "APV";
                     case "REJECT" -> "RJT";
+                    case "REQUEST" -> "REQ";
+                    case "REVIEW" -> "REV";
+                    case "CANCEL" -> "CANCEL";
+                    case "UNDO" -> "UNDO";
                     default -> "U";
                 },
                 before,
                 after,
                 // 반려·결재취소 사유를 감사 이력 메모로 남긴다. 취소 SP 는 단계 opinion 을 비운다
-                action.equals("REJECT") || action.equals("UNDO") ? text(req.getOpinion()) : null,
-                requestMeta
+                action.equals("REJECT") || action.equals("UNDO") ? text(req.getOpinion()) : null
         );
     }
 
@@ -547,7 +545,7 @@ public class DocumentService {
             throw new BizException("문서를 찾을 수 없습니다.");
         }
         mapper.saveRemark(coCd, requiredDocIdx, text(remark), LoginUserContext.userId());
-        audit("tbl_document", requiredDocIdx, "U", before, mapper.selectDocument(coCd, requiredDocIdx), null, requestMeta);
+        audit("tbl_document", requiredDocIdx, "U", before, mapper.selectDocument(coCd, requiredDocIdx), null);
     }
 
     /**
@@ -593,7 +591,7 @@ public class DocumentService {
             for (DocumentFileRow file : files) {
                 storage.delete(file.getFilePath());
             }
-            audit("tbl_document", key.getDocIdx(), "D", header, null, null, requestMeta);
+            audit("tbl_document", key.getDocIdx(), "D", header, null, null);
         }
     }
 
@@ -646,8 +644,7 @@ public class DocumentService {
                     "I",
                     null,
                     Map.of("docIdx", docIdx, "fileKind", "PDF", "fileNm", pdfName),
-                    null,
-                    requestMeta
+                    null
             );
             return publicFile(mapper.selectFile(coCd, fileIdx));
         } catch (RuntimeException e) {
@@ -774,37 +771,16 @@ public class DocumentService {
         return file == null ? null : new LinkedHashMap<>(file);
     }
 
-    /** 감사 로그 SP 호출 — 감사 실패가 원 업무를 숨기지 않도록 같은 트랜잭션에서 처리 */
+    /** 감사 로그 SP 호출 — 화면코드는 요청 컨텍스트. 원 업무와 같은 트랜잭션 */
     private void audit(
             String tblNm,
             Long tgtIdx,
             String actionCd,
             Object before,
             Object after,
-            String reason,
-            RequestMeta requestMeta
+            String reason
     ) {
-        mapper.insertAudit(
-                LoginUserContext.coCd(),
-                LoginUserContext.userId(),
-                tblNm,
-                tgtIdx,
-                actionCd,
-                json(before),
-                json(after),
-                text(reason),
-                requestMeta == null ? null : requestMeta.ipAddr()
-        );
-    }
-
-    /** Object → JSON. 실패하면 감사 이력의 정확성이 깨지므로 업무를 중단한다 */
-    private String json(Object value) {
-        if (value == null) return "";
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
-            throw new BizException("감사 자료를 저장 형식으로 변환하지 못했습니다.");
-        }
+        auditWriter.record(tblNm, tgtIdx, actionCd, before, after, text(reason));
     }
 
     /** 업로드 원본 파일명 정규화 — 저장소의 파일명 규칙과 맞춘다 */

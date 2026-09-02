@@ -68,13 +68,15 @@ public class ScreenAuthInterceptor implements HandlerInterceptor {
         if (user == null) {
             return true;
         }
-        if (user.isAdmin()) {
-            return true;
-        }
         Optional<ScreenAuthMatch> match = ScreenAuthResolver.resolve(
                 request.getMethod(),
                 request.getRequestURI()
         );
+        // 감사 로그 화면코드 — ADMIN 전권이어도 적재기는 어느 화면인지 알아야 한다
+        ScreenAuthResolver.bindRequestScreen(request, match);
+        if (user.isAdmin()) {
+            return true;
+        }
         if (match.isEmpty()) {
             return true;
         }
