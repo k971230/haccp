@@ -18,7 +18,7 @@ import { htmlFormInputLayout, type HtmlFormItem } from "@/api/docs/htmlFormApi";
 import { fetchUserSignBlob } from "@/api/sys/userApi";
 // 역할 — 적합/부적합 공통코드
 import { JUDGE_PF_MAIN_CD, useCommonCodes } from "@/hooks/useCommonCodes";
-// 역할 — 24시간 시·분 셀렉트 (type=time 의 OS AM/PM 을 피한다)
+// 역할 — HTML type=time. 값은 HH:mm
 import { DocCellTime } from "./DocCell";
 
 export type HtmlFormPaperMode = "template" | "write";
@@ -1359,7 +1359,7 @@ export function HtmlFormCellInput({
   if (kind === CELL_KIND.TIME) {
     return (
       <DocCellTime
-        // 24시간 시·분 — OS 오전/오후 표시를 쓰지 않는다
+        // HTML type=time — 값은 HH:mm
         className={`html-form-sign-input ${align}`}
         // 작성 중이 아니면 고를 수 없다
         disabled={!editable}

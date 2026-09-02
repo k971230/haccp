@@ -1264,16 +1264,11 @@ PIPELINE[HF49] 연관 모듈
     font-size: 11px;
     box-sizing: border-box;
   }
-  /* 시·분 셀렉트 — type=time 의 OS 오전/오후를 쓰지 않는다 */
+  /* 시간 칸 — HTML type=time. 값은 HH:mm */
   .doc-cell-time,
   .html-form-sign-input.doc-cell-time {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
+    display: block;
     width: 100%;
-  }
-  .doc-cell-time select {
     border: 0;
     margin: 0;
     padding: 0;
@@ -1281,6 +1276,7 @@ PIPELINE[HF49] 연관 모듈
     font-size: inherit;
     text-align: center;
     min-width: 0;
+    box-sizing: border-box;
   }
   .html-form-pre {
     white-space: pre-wrap;

@@ -12,11 +12,11 @@
  * PIPELINE[HF120] 연관 모듈
  */
 // 역할 — React 노드·입력 이벤트
-import { Fragment, useEffect, useState, type ChangeEvent, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
+import { Fragment, type ChangeEvent, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
 // 역할 — className 병합
 import { cn } from "@/lib/cn";
-// 역할 — HH:MM 조립·표시 변환. type=time 은 쓰지 않는다
-import { fromInputTimeHhmm, joinHm, toInputTime } from "@/lib/docDateTime";
+// 역할 — type=time 값(HH:MM) ↔ 저장 형식(HHMM / HH:MM)
+import { fromInputTimeHhmm, fromInputTimeHm, toInputTime } from "@/lib/docDateTime";
 
 export interface DocCellInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> {
   // 현재 값 — null은 빈 문자열로 렌더
@@ -124,18 +124,13 @@ export interface DocCellTimeProps {
   title?: string;
 }
 
-/** 시 00~23 — 24시간제. OS 오전/오후 표시를 쓰지 않는다 */
-const HOUR_OPTS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
-/** 분 00~59 */
-const MIN_OPTS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
-
 /**
  * 개발자: 박승우
  * 일자: 2026-09-02
  * 코멘트:
- *   1) 시(00-23)·분(00-59) 셀렉트다. type=time 은 Windows 12시간제에서 오전/오후가 붙는다
- *   2) CCP 측정시각·주기 마감시간이 같이 쓴다
- *   3) 한쪽만 골라도 콤보에 남긴다. 시·분이 둘 다 채워졌을 때만 부모에 넘긴다
+ *   1) HTML 기본 type=time 한 칸이다. 값은 항상 HH:mm
+ *   2) CCP 측정시각·통과시간·주기 마감시간이 같이 쓴다
+ *   3) 화면 오전/오후는 OS 로케일. 저장값은 24시간이다
  */
 export function DocCellTime({
   // 저장 형식 값
@@ -151,59 +146,21 @@ export function DocCellTime({
   // 칸 이름
   title,
 }: DocCellTimeProps) {
-  // 부모 확정값 — HH:MM. 한쪽만 고른 중간값은 여기 없다
-  const committed = toInputTime(value);
-  const committedHour = committed.slice(0, 2);
-  const committedMinute = committed.slice(3, 5);
-  // 시·분 초안 — 한쪽만 골라도 콤보가 -- 로 돌아가지 않게 한다
-  const [draftHour, setDraftHour] = useState(committedHour);
-  const [draftMinute, setDraftMinute] = useState(committedMinute);
-  useEffect(() => {
-    // 부모가 확정값·빈 값을 주면 초안을 맞춘다. 중간 선택은 부모가 안 바꾸므로 여기로 안 온다
-    setDraftHour(committedHour);
-    setDraftMinute(committedMinute);
-  }, [committedHour, committedMinute]);
-  const emit = (nextHour: string, nextMinute: string) => {
-    setDraftHour(nextHour);
-    setDraftMinute(nextMinute);
-    const hm = joinHm(nextHour, nextMinute);
-    // 한쪽만 골랐을 때(= 아직 HH:MM 이 아님) 빈 문자열을 올리면 콤보가 리셋된다
-    if (!hm && (nextHour || nextMinute)) return;
-    // storage에 맞게 저장 문자열로 변환
-    onChange(storage === "hm" ? hm : fromInputTimeHhmm(hm));
-  };
   return (
-    <span
-      // 시·분 묶음 — 가운데 정렬은 CSS
+    <input
+      // HTML 시간 칸 — 값은 HH:mm
+      type="time"
       className={cn("doc-cell-time", className)}
+      disabled={disabled}
       title={title}
-    >
-      <select
-        // 시 00-23
-        aria-label="시"
-        disabled={disabled}
-        value={draftHour}
-        onChange={(event) => emit(event.target.value, draftMinute)}
-      >
-        <option value="">--</option>
-        {HOUR_OPTS.map((h) => (
-          <option key={h} value={h}>{h}</option>
-        ))}
-      </select>
-      <span>:</span>
-      <select
-        // 분 00-59
-        aria-label="분"
-        disabled={disabled}
-        value={draftMinute}
-        onChange={(event) => emit(draftHour, event.target.value)}
-      >
-        <option value="">--</option>
-        {MIN_OPTS.map((m) => (
-          <option key={m} value={m}>{m}</option>
-        ))}
-      </select>
-    </span>
+      // 저장값 → type=time 표시
+      value={toInputTime(value)}
+      onChange={(event) => {
+        const hm = event.target.value;
+        // storage에 맞게 저장 문자열로 변환
+        onChange(storage === "hm" ? fromInputTimeHm(hm) : fromInputTimeHhmm(hm));
+      }}
+    />
   );
 }
 

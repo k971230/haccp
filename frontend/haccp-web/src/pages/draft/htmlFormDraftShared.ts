@@ -191,7 +191,7 @@ export type HtmlFormDraftRowView = {
  */
 export const htmlFormDraftGridRules: ScreenGridRules = {
   // 팝업·업무상태로만 정해지는 칸 — 셀에서 절대 못 고친다
-  alwaysReadonly: ["tmplNm", "writerNm", "sendState", "docNo", "remark"],
+  alwaysReadonly: ["tmplNm", "writerNm", "sendState", "docNo"],
   // 저장 후에도 바꿀 수 없는 칸 — 양식코드는 팝업(canOpenPopup 이 저장행을 막는다)
   newOnly: ["tmplCd"],
   // 전송·결재완료 행은 통째로 잠근다
@@ -260,11 +260,13 @@ export function buildDraftListColumns(
       editable: false,
     },
     {
-      // 문서 비고 — 결재 첨부에서 적는 tbl_document.remark. 이 화면에서 고치지 않는다
+      // 문서 비고 — tbl_document.remark. 전송대기 행에서 친다
       field: "remark",
       header: "비고",
       width: 160,
-      editable: false,
+      type: "text",
+      editable: true,
+      maxLength: 500,
     },
     // 이탈여부 — HTML 5화면은 지면 하단 시그널이 같은 일을 한다. 두 곳에 두지 않는다
     ...(showDeviation ? [{

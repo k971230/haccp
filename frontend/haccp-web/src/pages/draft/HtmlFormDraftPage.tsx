@@ -57,7 +57,7 @@ import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 지면 공통 props·제목 메타를 뺀 점검 행
 import { paperBodyItems, type HtmlFormPaperProps } from "@/components/form/htmlFormPaperShared";
 // 역할 — 전송(REQUEST)·전송취소(CANCEL) 공통 결재 API
-import { processDocumentApproval } from "@/api/documentApi";
+import { processDocumentApproval, saveDocumentRemark } from "@/api/documentApi";
 // 역할 — 일자 YYYYMMDD ↔ input[type=date]
 import { fromInputDate, toInputDate } from "@/lib/docDateTime";
 // 역할 — 그리드·편집 행 타입
@@ -528,6 +528,8 @@ export function HtmlFormDraftPage({
             ? ((row as EditableRow<ListMeta>).deviationYn ?? "N")
             : (b.deviationYn ? "Y" : "N"),
         });
+        // 문서 비고 — api.save 에 없어서 문서가 생긴 뒤 따로 남긴다
+        await saveDocumentRemark(saved, (row as EditableRow<ListMeta>).remark ?? "");
         /*
          * 저장 뒤 화면이 더 할 일 — HWP 는 여기서 본문 파일을 올린다.
          *
@@ -549,6 +551,7 @@ export function HtmlFormDraftPage({
             baseKey: b.baseKey,
             baseDtDisp: toInputDate(b.baseKey),
             deviationYn: (row as EditableRow<ListMeta>).deviationYn ?? "N",
+            remark: (row as EditableRow<ListMeta>).remark ?? "",
           },
         };
       },
@@ -1215,7 +1218,7 @@ export function HtmlFormDraftPage({
             </SearchField>
             <SearchField label="비고">
               <input
-                // 문서 비고 부분검색 — tbl_document.remark. 결재 첨부에서 적는 칸
+                // 문서 비고 부분검색 — tbl_document.remark
                 className={searchInputClass}
                 value={search.remark}
                 placeholder="비고"

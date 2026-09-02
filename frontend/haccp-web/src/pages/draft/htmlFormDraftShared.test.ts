@@ -17,6 +17,7 @@ import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
 // 역할 — 검증 대상 순수 함수
 import {
   AUTO_DEVIATION_DESC,
+  buildDraftListColumns,
   canCancelSendDoc,
   canEditDetail,
   canModifyDoc,
@@ -246,9 +247,16 @@ describe("htmlFormDraftGridRules — 좌측 셀 편집 잠금", () => {
   });
 
   it("양식명·작성자·결재 여부는 셀에서 절대 못 고친다", () => {
-    for (const field of ["tmplNm", "writerNm", "sendState", "remark"]) {
+    for (const field of ["tmplNm", "writerNm", "sendState"]) {
       expect(rules.alwaysReadonly ?? []).toContain(field);
     }
+  });
+
+  it("비고는 전송대기 행에서 친다", () => {
+    expect(rules.alwaysReadonly ?? []).not.toContain("remark");
+    const remark = buildDraftListColumns(() => {}).find((c) => c.field === "remark");
+    expect(remark?.type).toBe("text");
+    expect(remark?.editable).toBe(true);
   });
 
   it("전송·결재완료 행은 통째로 잠근다", () => {
