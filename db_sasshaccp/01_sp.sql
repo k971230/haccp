@@ -6340,9 +6340,20 @@ $_$;
 -- Name: sp_tbl_today_task_doc_r_000(character varying, character varying, character varying, integer, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_today_task_doc_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_offset integer, p_limit integer) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer, total_cnt integer)
+-- 시그니처에 p_user_id 추가 — 라이브는 기존 5인자 오버로드를 먼저 지운다
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_today_task_doc_r_000(character varying, character varying, character varying, integer, integer);
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_today_task_doc_r_000(
+    p_co_cd character varying,
+    p_user_id character varying,
+    p_from_dt character varying,
+    p_to_dt character varying,
+    p_offset integer,
+    p_limit integer
+) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer, total_cnt integer)
     LANGUAGE sql STABLE
     AS $$
+    -- 대시보드 최근 문서 — 로그인 사용자가 쓴 문서만
     SELECT d.idx,
            d.co_cd,
            d.tmpl_cd,
@@ -6374,6 +6385,7 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_today_task_doc_r_000(p_co_cd charact
         ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd
+       AND d.writer_id = p_user_id
        AND d.del_yn = 'N'
        AND (COALESCE(p_from_dt, '') = '' OR d.base_dt >= p_from_dt)
        AND (COALESCE(p_to_dt, '') = '' OR d.base_dt <= p_to_dt)
@@ -6384,10 +6396,11 @@ $$;
 
 
 --
--- Name: FUNCTION sp_tbl_today_task_doc_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_offset integer, p_limit integer); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: FUNCTION sp_tbl_today_task_doc_r_000(...); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_today_task_doc_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_offset integer, p_limit integer) IS '오늘 할 일 최근 문서 — 기간 필터 + OFFSET/LIMIT + 총건수';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_today_task_doc_r_000(character varying, character varying, character varying, character varying, integer, integer)
+    IS '오늘 할 일 최근 문서 — 본인 작성분만. 기간 + OFFSET/LIMIT + 총건수';
 
 
 --
@@ -6895,3 +6908,157 @@ $$;
 
 COMMENT ON FUNCTION sasshaccp.sp_tbl_schedule_rule_active_r_000()
     IS '예정일 배치 재생성 대상 — 전 업체의 사용 중 주기 + 반복 상세. 테넌트 인자 없음';
+
+
+--
+-- Name: sp_calendar_r_000(character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+-- p_co_cd: JWT 회사코드 — 테넌트 범위
+-- p_from_ymd: 조회 시작일 YYYYMMDD — 캘린더가 그리는 첫 칸
+-- p_to_ymd: 조회 종료일 YYYYMMDD — 캘린더가 그리는 마지막 칸
+
+-- 반환 컬럼(due_time) 추가 — 라이브는 반환 타입이 바뀌므로 DROP 후 CREATE
+DROP FUNCTION IF EXISTS sasshaccp.sp_calendar_r_000(character varying, character varying, character varying);
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_calendar_r_000(
+    p_co_cd character varying,
+    p_from_ymd character varying,
+    p_to_ymd character varying
+) RETURNS TABLE(
+    task_idx bigint,
+    tmpl_cd character varying,
+    tmpl_nm character varying,
+    base_dt character varying,
+    due_dt character varying,
+    due_time character varying,
+    status character varying,
+    user_id character varying,
+    dept_cd character varying,
+    doc_idx bigint
+)
+    LANGUAGE sql STABLE
+    AS $$
+    -- 회사 전체 작성과제 — 오늘 할 일과 달리 담당자 필터를 걸지 않는다
+    -- doc_idx: 이미 쓴 문서면 더블클릭 시 그 문서를 연다. 없으면 0
+    SELECT t.idx,
+           t.tmpl_cd,
+           COALESCE(ct.tmpl_nm_ovr, tp.tmpl_nm, t.tmpl_cd),
+           t.base_dt,
+           t.due_dt,
+           t.due_time,
+           COALESCE(dc.status, t.status),
+           t.user_id,
+           t.dept_cd,
+           COALESCE(dc.idx, t.doc_idx)
+      FROM tbl_schedule_task t
+      JOIN tbl_template tp ON tp.tmpl_cd = t.tmpl_cd AND tp.co_cd = t.co_cd
+      LEFT JOIN tbl_company_template ct ON ct.co_cd = t.co_cd AND ct.tmpl_cd = t.tmpl_cd
+      LEFT JOIN LATERAL (
+          SELECT d.idx, d.status
+            FROM tbl_document d
+           WHERE d.co_cd = t.co_cd AND d.tmpl_cd = t.tmpl_cd
+             AND d.base_dt = t.base_dt AND d.del_yn = 'N'
+           ORDER BY d.idx DESC
+           LIMIT 1
+      ) dc ON TRUE
+     WHERE t.co_cd = p_co_cd
+       AND t.base_dt >= p_from_ymd
+       AND t.base_dt <= p_to_ymd
+     ORDER BY t.base_dt, t.idx;
+$$;
+
+COMMENT ON FUNCTION sasshaccp.sp_calendar_r_000(character varying, character varying, character varying)
+    IS '일정 캘린더 — 회사 전체 작성과제. 담당 색상은 서버가 JWT로 mine 을 붙인다';
+
+
+--
+-- Name: sp_calendar_workday_r_000(character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+-- p_co_cd: JWT 회사코드
+-- p_from_ymd: 조회 시작일 YYYYMMDD
+-- p_to_ymd: 조회 종료일 YYYYMMDD
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_calendar_workday_r_000(
+    p_co_cd character varying,
+    p_from_ymd character varying,
+    p_to_ymd character varying
+) RETURNS TABLE(ymd character varying)
+    LANGUAGE sql STABLE
+    AS $$
+    SELECT w.ymd
+      FROM tbl_workday_override w
+     WHERE w.co_cd = p_co_cd
+       AND w.ymd >= p_from_ymd
+       AND w.ymd <= p_to_ymd
+     ORDER BY w.ymd;
+$$;
+
+COMMENT ON FUNCTION sasshaccp.sp_calendar_workday_r_000(character varying, character varying, character varying)
+    IS '영업일 전환 목록 — 행이 있는 날을 영업일로 취급한다';
+
+
+--
+-- Name: sp_calendar_workday_u_000; Type: PROCEDURE; Schema: sasshaccp; Owner: -
+--
+-- p_co_cd: JWT 회사코드
+-- p_ymd: 대상일 YYYYMMDD
+-- p_work_yn: Y면 영업일 INSERT, N이면 DELETE
+-- p_user_id: JWT 작업자
+
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_calendar_workday_u_000(
+    IN p_co_cd character varying,
+    IN p_ymd character varying,
+    IN p_work_yn character varying,
+    IN p_user_id character varying
+)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    -- Y일 때(= 주말·공휴일을 영업일로) 행을 넣는다. 이미 있으면 그대로 둔다
+    IF upper(COALESCE(p_work_yn, '')) = 'Y' THEN
+        INSERT INTO tbl_workday_override (co_cd, ymd, ins_id, ins_dt)
+        VALUES (p_co_cd, p_ymd, p_user_id, now())
+        ON CONFLICT (co_cd, ymd) DO NOTHING;
+        RETURN;
+    END IF;
+    -- N일 때(= 다시 비영업일) 전환 행을 지운다
+    DELETE FROM tbl_workday_override
+     WHERE co_cd = p_co_cd AND ymd = p_ymd;
+END;
+$$;
+
+COMMENT ON PROCEDURE sasshaccp.sp_calendar_workday_u_000(character varying, character varying, character varying, character varying)
+    IS '영업일 전환 저장 — Y INSERT(중복 무시), N DELETE. 테넌트는 p_co_cd';
+
+
+--
+-- Name: sp_auth_password_u_000; Type: PROCEDURE; Schema: sasshaccp; Owner: -
+--
+-- p_co_cd: JWT 회사코드 — 테넌트 범위
+-- p_user_id: JWT 본인 아이디 — 남의 비밀번호를 바꾸지 못하게
+-- p_user_pw: BCrypt 해시 — 평문은 서비스에서만 받는다
+
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_auth_password_u_000(
+    IN p_co_cd character varying,
+    IN p_user_id character varying,
+    IN p_user_pw character varying
+)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE tbl_user
+       SET user_pw = p_user_pw,
+           pw_upd_dt = now(),
+           upd_id = p_user_id,
+           upd_dt = now()
+     WHERE co_cd = p_co_cd
+       AND user_id = p_user_id;
+    -- 대상이 없을 때(= 테넌트 밖이거나 없는 아이디) 업무 예외
+    IF NOT FOUND THEN
+        RAISE EXCEPTION '비밀번호를 변경할 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+END;
+$$;
+
+COMMENT ON PROCEDURE sasshaccp.sp_auth_password_u_000(character varying, character varying, character varying)
+    IS '본인 비밀번호 변경 — JWT 회사·아이디만. 해시는 서비스가 넘긴다';

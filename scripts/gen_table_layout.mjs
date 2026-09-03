@@ -63,7 +63,7 @@ const GROUPS = [
       "tbl_ccp_verify_check", "tbl_ccp_verify_item",
       "tbl_ccp_generic_monitor", "tbl_ccp_generic_monitor_row", "tbl_ccp_generic_monitor_cell",
       "tbl_ccp_metal_monitor", "tbl_ccp_metal_sens_row", "tbl_ccp_metal_pass_row",
-      "tbl_corrective_action", "tbl_schedule_task",
+      "tbl_corrective_action", "tbl_schedule_task", "tbl_workday_override",
     ],
   },
   {

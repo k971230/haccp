@@ -20,16 +20,16 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 [`backend/haccp-api/PIPELINE.md`](../backend/haccp-api/PIPELINE.md) ·
 [`frontend/haccp-web/PIPELINE.md`](../frontend/haccp-web/PIPELINE.md).
 
-## 프론트 (HF) — 태그 85개 · 파일 264곳
+## 프론트 (HF) — 태그 89개 · 파일 269곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
 | `HF1` | `frontend/haccp-web/src/main.tsx` | React 진입점 |
 | `HF2` | `frontend/haccp-web/src/main.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/routes/AppRoutes.tsx` | 라우팅 분기 |
-| `HF3` | `frontend/haccp-web/src/api/documentApi.ts` | 연관 모듈 |
+| `HF3` | `frontend/haccp-web/src/api/board/taskWorkflowApi.ts` | 연관 모듈 |
+|  | `frontend/haccp-web/src/api/documentApi.ts` | 연관 모듈 |
 |  | `frontend/haccp-web/src/api/http.ts` | HTTP 클라이언트 |
-|  | `frontend/haccp-web/src/api/taskWorkflowApi.ts` | 연관 모듈 |
 |  | `frontend/haccp-web/src/config/envConfig.ts` | 연관 — http 타임아웃 3계층 |
 | `HF4` | `frontend/haccp-web/src/api/authApi.ts` | API 레이어 |
 |  | `frontend/haccp-web/src/pages/auth/LoginPage.tsx` | 연관 모듈 |
@@ -72,7 +72,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/shell/useSection.ts` | 연관 모듈 |
 |  | `frontend/haccp-web/src/shell/useViewLog.ts` | 연관 — 조회 로그 API·셸 |
 |  | `frontend/haccp-web/src/stores/tabStore.ts` | 연관 모듈 |
-| `HF51` | `frontend/haccp-web/src/pages/tsk/TodayTasksPage.tsx` | 연관 모듈 |
+| `HF51` | `frontend/haccp-web/src/pages/board/TodayTasksPage.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/shell/HaccpShell.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/shell/screenRegistry.tsx` | 화면 레지스트리 |
 | `HF52` | `frontend/haccp-web/src/components/layout/SearchArea.tsx` | 연관 — useEditableRows / pageCommands(search) |
@@ -119,22 +119,22 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `HF85` | `frontend/haccp-web/src/hooks/useDocFormSession.ts` | 연관 모듈 |
 | `HF86` | `frontend/haccp-web/src/api/sys/approvalLineApi.ts` | 결재선 관리 API |
 |  | `frontend/haccp-web/src/pages/sys/code/approvalline/ApprovalLineManagementPage.tsx` | 연관 모듈 |
-| `HF87` | `frontend/haccp-web/src/api/taskWorkflowApi.ts` | 워크플로 화면 API |
+| `HF87` | `frontend/haccp-web/src/api/board/taskWorkflowApi.ts` | 워크플로 화면 API |
 |  | `frontend/haccp-web/src/lib/camelKeys.ts` | 연관 모듈 |
+|  | `frontend/haccp-web/src/pages/board/TodayTasksPage.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/pages/flow/ca/corrective/CorrectiveActionManagementPage.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/pages/sys/code/approvalline/ApprovalLineManagementPage.tsx` | 결재선 관리 화면 |
 |  | `frontend/haccp-web/src/pages/sys/code/approvalline/ApprovalLineManagementRule.ts` | 결재선 그리드 규칙 |
-|  | `frontend/haccp-web/src/pages/tsk/TodayTasksPage.tsx` | 연관 모듈 |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/TaskController.java` | 연관 모듈 |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/TaskMapper.java` | 연관 모듈 |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/TaskService.java` | 연관 모듈 |
-| `HF88` | `frontend/haccp-web/src/api/taskWorkflowApi.ts` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/TaskController.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/TaskMapper.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/TaskService.java` | 연관 모듈 |
+| `HF88` | `frontend/haccp-web/src/api/board/taskWorkflowApi.ts` | 연관 모듈 |
 |  | `frontend/haccp-web/src/lib/docStatus.ts` | 오늘 할 일 화면 |
-|  | `frontend/haccp-web/src/pages/tsk/TodayTasksPage.tsx` | 오늘 할 일 화면 |
-|  | `frontend/haccp-web/src/pages/tsk/TodayTasksRule.ts` | 오늘 할 일 화면 |
+|  | `frontend/haccp-web/src/pages/board/TodayTasksPage.tsx` | 오늘 할 일 화면 |
+|  | `frontend/haccp-web/src/pages/board/TodayTasksRule.ts` | 오늘 할 일 화면 |
 |  | `frontend/haccp-web/src/shell/HomeView.tsx` | 연관 모듈 |
-| `HF89` | `frontend/haccp-web/src/api/docs/docCycleApi.ts` | 연관 모듈 |
-|  | `frontend/haccp-web/src/api/taskWorkflowApi.ts` | 연관 모듈 |
+| `HF89` | `frontend/haccp-web/src/api/board/taskWorkflowApi.ts` | 연관 모듈 |
+|  | `frontend/haccp-web/src/api/docs/docCycleApi.ts` | 연관 모듈 |
 |  | `frontend/haccp-web/src/pages/docs/sch/ScheduleCycleManagementPage.tsx` | 문서주기관리 화면 |
 |  | `frontend/haccp-web/src/pages/docs/sch/ScheduleCycleManagementRule.ts` | 문서주기관리 그리드 규칙 |
 |  | `frontend/haccp-web/src/pages/flow/ca/corrective/CorrectiveActionManagementPage.tsx` | 개선조치 관리 화면 |
@@ -275,6 +275,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `HF181` | `frontend/haccp-web/src/pages/draft/HtmlFormDeviationSignal.tsx` | 이탈·개선조치 시그널 |
 | `HF182` | `frontend/haccp-web/src/api/draft/hwpDraftApi.ts` | HWP 작성 API |
 |  | `frontend/haccp-web/src/components/document/HwpDocumentPreview.tsx` | 연관 모듈 |
+|  | `frontend/haccp-web/src/components/document/RhwpStudioHost.tsx` | 연관 — rhwp 마운트 공통 |
 |  | `frontend/haccp-web/src/pages/draft/hwp-doc/HwpDraftPage.tsx` | HWP 작성 화면 |
 |  | `frontend/haccp-web/src/pages/draft/hwp-doc/HwpDraftRule.ts` | HWP 작성 규칙 |
 |  | `frontend/haccp-web/src/pages/draft/hwp-doc/HwpEditorPane.tsx` | HWP 작성 편집기 패널 |
@@ -288,14 +289,18 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `HF186` | `frontend/haccp-web/src/pages/draft/hwp-doc/hwpOpenMode.test.ts` | HWP 열기 판정 |
 |  | `frontend/haccp-web/src/pages/draft/hwp-doc/hwpOpenMode.ts` | HWP 열기 판정 |
 | `HF200` | `frontend/haccp-web/src/shell/gridRules/gridSave.ts` | 편집 그리드 저장 공통 |
+| `HF210` | `frontend/haccp-web/src/api/board/calendarApi.ts` | 일정 캘린더 API |
+| `HF211` | `frontend/haccp-web/src/pages/board/CalendarRule.ts` | 일정 캘린더 규칙 |
+| `HF212` | `frontend/haccp-web/src/pages/board/CalendarPage.tsx` | 일정 캘린더 화면 |
+| `HF213` | `frontend/haccp-web/src/components/common/modal/PasswordChangeModal.tsx` | 비밀번호 변경 팝업 |
 
-## 백엔드 (HB) — 태그 78개 · 파일 278곳
+## 백엔드 (HB) — 태그 83개 · 파일 286곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
 | `HB1` | `backend/haccp-api/src/main/java/com/haccp/HaccpApiApplication.java` | Spring Boot 진입 |
-| `HB2` | `backend/haccp-api/src/main/java/com/haccp/HaccpApiApplication.java` | 연관 — application.yml |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/DailyTaskGenerationJob.java` | 연관 모듈 |
+| `HB2` | `backend/haccp-api/src/main/java/com/haccp/board/DailyTaskGenerationJob.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/HaccpApiApplication.java` | 연관 — application.yml |
 | `HB3` | `backend/haccp-api/src/main/java/com/haccp/common/config/JwtFilter.java` | Spring 설정 |
 |  | `backend/haccp-api/src/main/java/com/haccp/common/config/JwtProvider.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/common/config/WebConfig.java` | 연관 모듈 |
@@ -398,12 +403,12 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `HB85` | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentFileStorage.java` | doc 파일 저장 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentService.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/templates/RhwpCliClient.java` | 연관 모듈 |
-| `HB86` | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentController.java` | 연관 모듈 |
+| `HB86` | `backend/haccp-api/src/main/java/com/haccp/board/TaskMapper.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentController.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentFileStorage.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentService.java` | Service |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto/HwpDocumentSaveRequest.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/templates/RhwpCliClient.java` | 연관 모듈 |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/TaskMapper.java` | 연관 모듈 |
 | `HB87` | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentController.java` | REST Controller |
 | `HB88` | `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto/DocumentTemplateResponse.java` | 템플릿 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto/DocumentTemplateRow.java` | 템플릿 DTO |
@@ -431,9 +436,9 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/templates/TemplateManifestLoader.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/templates/TemplateService.java` | 템플릿 Service |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/approvalline/dto/ApprovalLineDeleteItem.java` | 결재선 삭제 DTO |
-| `HB91` | `backend/haccp-api/src/main/java/com/haccp/docs/templates/TemplateController.java` | 템플릿 REST Controller |
+| `HB91` | `backend/haccp-api/src/main/java/com/haccp/board/TaskMapper.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/templates/TemplateController.java` | 템플릿 REST Controller |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/approvalline/ApprovalLineService.java` | 결재선 관리 Service |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/TaskMapper.java` | 연관 모듈 |
 | `HB92` | `backend/haccp-api/src/main/java/com/haccp/docs/hwp/HwpTemplateController.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/hwp/HwpTemplateMapper.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/hwp/HwpTemplateService.java` | 연관 모듈 |
@@ -462,7 +467,10 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/resources/mapper/sys/logs/auditlog/AuditLogMapper.xml` | 감사 이력 MyBatis XML |
 |  | `backend/haccp-api/src/main/resources/mapper/sys/logs/loginhistory/LoginHistoryMapper.xml` | 로그인 이력 MyBatis XML |
 |  | `backend/haccp-api/src/main/resources/mapper/sys/logs/screenusage/ScreenUsageMapper.xml` | 화면 이용 통계 MyBatis XML |
-| `HB93` | `backend/haccp-api/src/main/java/com/haccp/docs/templates/RhwpCliClient.java` | rhwp CLI PDF 변환 |
+| `HB93` | `backend/haccp-api/src/main/java/com/haccp/board/TaskController.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/TaskMapper.java` | 워크플로 작업 매퍼 |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/TaskService.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/templates/RhwpCliClient.java` | rhwp CLI PDF 변환 |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/commoncode/CommonCodeController.java` | 공통코드 REST Controller |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/department/DepartmentController.java` | 부서 관리 REST Controller |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/menu/MenuMgmtController.java` | 메뉴 관리 REST Controller |
@@ -472,11 +480,11 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/auditlog/AuditLogController.java` | 감사 이력 REST Controller |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/loginhistory/LoginHistoryController.java` | 로그인 이력 REST Controller |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/screenusage/ScreenUsageController.java` | 화면 이용 통계 REST Controller |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/TaskController.java` | 연관 모듈 |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/TaskMapper.java` | 워크플로 작업 매퍼 |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/TaskService.java` | 연관 모듈 |
-|  | `backend/haccp-api/src/main/resources/mapper/tsk/TaskMapper.xml` | 워크플로 작업 매퍼 |
-| `HB94` | `backend/haccp-api/src/main/java/com/haccp/docs/sch/CycleScheduleGenerator.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/resources/mapper/board/TaskMapper.xml` | 워크플로 작업 매퍼 |
+| `HB94` | `backend/haccp-api/src/main/java/com/haccp/board/DailyTaskGenerationJob.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/TaskController.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/TaskService.java` | 워크플로 작업 서비스 |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/CycleScheduleGenerator.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/DocCycleController.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/DocCycleMapper.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/DocCycleService.java` | 연관 모듈 |
@@ -493,21 +501,21 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/auditlog/AuditLogService.java` | 감사 이력 Service |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/loginhistory/LoginHistoryService.java` | 로그인 이력 Service |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/screenusage/ScreenUsageService.java` | 화면 이용 통계 Service |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/DailyTaskGenerationJob.java` | 연관 모듈 |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/TaskController.java` | 연관 모듈 |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/TaskService.java` | 워크플로 작업 서비스 |
 |  | `backend/haccp-api/src/main/resources/mapper/docs/sch/DocCycleMapper.xml` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/resources/mapper/flow/ca/CorrectiveActionMapper.xml` | 개선조치관리 MyBatis XML |
-| `HB95` | `frontend/haccp-web/src/pages/tsk/TodayTasksPage.tsx` | 연관 모듈 |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/TaskController.java` | 워크플로 작업 Controller |
-|  | `backend/haccp-api/src/main/java/com/haccp/tsk/TaskService.java` | 연관 모듈 |
-| `HB96` | `backend/haccp-api/src/main/java/com/haccp/tsk/DailyTaskGenerationJob.java` | 워크플로 일정 생성 |
+| `HB95` | `frontend/haccp-web/src/pages/board/TodayTasksPage.tsx` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/TaskController.java` | 워크플로 작업 Controller |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/TaskService.java` | 연관 모듈 |
+| `HB96` | `backend/haccp-api/src/main/java/com/haccp/board/DailyTaskGenerationJob.java` | 워크플로 일정 생성 |
+| `HB97` | `backend/haccp-api/src/main/java/com/haccp/docs/sch/CycleScheduleGenerator.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/KoreanHolidayDates.java` | 한국 공휴일 날짜 집합 |
 | `HB98` | `backend/haccp-api/src/main/java/com/haccp/docs/sch/CycleScheduleGenerator.java` | 문서주기 예정일 생성기 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/DocCycleController.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/DocCycleMapper.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/DocCycleService.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/DocumentAlarmScheduler.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/dto/DocCycleDeleteItem.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/KoreanHolidayDates.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/resources/mapper/docs/sch/DocCycleMapper.xml` | 연관 모듈 |
 | `HB99` | `backend/haccp-api/src/main/java/com/haccp/docs/sch/CycleScheduleGenerator.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/DocCycleController.java` | 문서주기 REST Controller |
@@ -571,3 +579,8 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/common/auth/ScreenAuthMatch.java` | 화면 권한 인터셉터 |
 |  | `backend/haccp-api/src/main/java/com/haccp/common/auth/ScreenAuthResolver.java` | 화면 권한 인터셉터 |
 |  | `backend/haccp-api/src/main/java/com/haccp/common/config/WebConfig.java` | 연관 모듈 |
+| `HB210` | `backend/haccp-api/src/main/java/com/haccp/board/CalendarMapper.java` | 일정 캘린더 매퍼 |
+|  | `backend/haccp-api/src/main/resources/mapper/board/CalendarMapper.xml` | 일정 캘린더 매퍼 |
+| `HB211` | `backend/haccp-api/src/main/java/com/haccp/board/CalendarService.java` | 일정 캘린더 서비스 |
+| `HB212` | `backend/haccp-api/src/main/java/com/haccp/board/CalendarController.java` | 일정 캘린더 Controller |
+| `HB213` | `backend/haccp-api/src/main/java/com/haccp/auth/dto/PasswordChangeRequest.java` | auth DTO |

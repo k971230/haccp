@@ -8,7 +8,7 @@
 - `docs/` — 문서 (`ccp` · `prp` · `logis` · `admin` · `sch` · `hwp` · `html`)
 - `flow/` — 문서 현황·결재 (`box` · `appr` · `ca`)
 - `sys/code/` · `sys/logs/` — 시스템
-- `tsk/` — 오늘 할 일
+- `board/` — 오늘 할 일 · 일정 캘린더
 
 ## 관련
 - 정본: `.cursor/rules/09-haccp-frontend.mdc` · `.cursor/rules/06-operations.mdc` · `docs/4_명명과_경로.md`

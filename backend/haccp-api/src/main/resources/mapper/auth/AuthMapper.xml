@@ -84,4 +84,17 @@ PIPELINE[HB28] MyBatis XML
         )
     </update>
 
+    <!--
+      본인 비밀번호 변경 — sp_auth_password_u_000
+      coCd·userId는 JWT. userPw는 서비스가 만든 BCrypt 해시
+      대상이 없으면 SP가 45000
+    -->
+    <update id="updatePassword" statementType="CALLABLE">
+        CALL sp_auth_password_u_000(
+            #{coCd,   mode=IN, jdbcType=VARCHAR},
+            #{userId, mode=IN, jdbcType=VARCHAR},
+            #{userPw, mode=IN, jdbcType=VARCHAR}
+        )
+    </update>
+
 </mapper>

@@ -98,6 +98,19 @@ public final class LoginUserContext {
 
     /**
      * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 현재 로그인 사용자의 부서코드를 조회한다
+     *   2) 일정 캘린더가 담당 과제(mine)를 가릴 때 호출한다
+     *   3) 컨텍스트가 있으면 부서코드, 미설정이면 null
+     */
+    public static String deptCd() {
+        LoginUser u = HOLDER.get();
+        return u == null ? null : u.getDeptCd();
+    }
+
+    /**
+     * 개발자: 박승우
      * 일자: 2026-08-05
      * 코멘트:
      *   1) 현재 로그인 세션의 식별자(sid)를 조회한다

@@ -40,7 +40,7 @@ Rule 에는 **배지 색만** 둔다.
 
 ## API · SP · 테이블
 
-| 동작 | API (`api/taskWorkflowApi.ts`) | SP | 테이블 |
+| 동작 | API (`api/board/taskWorkflowApi.ts`) | SP | 테이블 |
 |---|---|---|---|
 | 조회 | `listCorrectiveActions` | `sp_tbl_corrective_action_r_000` | `tbl_corrective_action` |
 | 저장 | `saveCorrectiveAction` | `sp_tbl_corrective_action_c_000` | 위 |

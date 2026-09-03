@@ -194,6 +194,29 @@ public class DocCycleService {
 
     /**
      * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 한 회사의 활성 주기만 예정일을 다시 만든다
+     *   2) 일정 캘린더가 영업일 전환을 저장한 뒤 호출한다
+     *   3) 대상 주기가 없으면 아무 것도 하지 않는다
+     */
+    @Transactional(timeout = 60)
+    public void regenerateCompany(
+            // 대상 회사코드 — JWT. 빈 값이면 건너뛴다
+            String coCd
+    ) {
+        if (coCd == null || coCd.isBlank()) return;
+        String userId = LoginUserContext.userId();
+        if (userId == null || userId.isBlank()) userId = "system";
+        List<Map<String, Object>> rules = mapper.selectActiveCycles();
+        if (rules == null) return;
+        for (Map<String, Object> rule : rules) {
+            if (coCd.equals(str(rule.get("coCd")))) regenerate(coCd, rule, userId);
+        }
+    }
+
+    /**
+     * 개발자: 박승우
      * 일자: 2026-08-14
      * 코멘트:
      *   1) 마감 임박 예정일의 알림을 적재한다 — **알림을 만드는 유일한 자리다**
@@ -210,7 +233,7 @@ public class DocCycleService {
         String tmplCd = str(rule.get("tmplCd"));
         // 사용유무 N일 때(= 주기 중지) 빈 배열을 넘겨 미래 미작성 예정일을 정리한다
         boolean active = !"N".equalsIgnoreCase(str(rule.get("useYn")));
-        List<String> dates = active ? generateDates(rule) : List.of();
+        List<String> dates = active ? generateDates(coCd, rule) : List.of();
         try {
             mapper.regenerateTasks(
                     coCd, tmplCd, objectMapper.writeValueAsString(dates),
@@ -223,7 +246,7 @@ public class DocCycleService {
     }
 
     /** 규칙 1건의 예정일을 yyyyMMdd 문자열 배열로 만든다. */
-    private List<String> generateDates(Map<String, Object> rule) {
+    private List<String> generateDates(String coCd, Map<String, Object> rule) {
         LocalDate startDt = parseYmd(str(rule.get("baseDt")));
         if (startDt == null) throw new BizException("관리 시작일을 입력하세요.");
         List<CycleScheduleGenerator.Detail> details = new ArrayList<>();
@@ -233,10 +256,26 @@ public class DocCycleService {
         }
         CycleScheduleGenerator.Rule spec = new CycleScheduleGenerator.Rule(
                 str(rule.get("cycleCd")), str(rule.get("nonworkRule")), startDt, details);
+        Set<LocalDate> workdays = loadWorkdays(coCd);
         // LinkedHashSet — 생성기가 정렬해 주지만 문자열 변환 후에도 중복이 없음을 보장한다
         Set<String> out = new LinkedHashSet<>();
-        for (LocalDate date : generator.generate(spec, LocalDate.now(), generateMonths)) out.add(date.format(YMD));
+        for (LocalDate date : generator.generate(spec, LocalDate.now(), generateMonths, workdays)) out.add(date.format(YMD));
         return new ArrayList<>(out);
+    }
+
+    /** 회사 영업일 전환을 LocalDate 집합으로 읽는다. 생성 구간보다 넓게 잡아 이동이 빠지지 않게 한다 */
+    private Set<LocalDate> loadWorkdays(String coCd) {
+        if (coCd == null || coCd.isBlank()) return Set.of();
+        LocalDate from = LocalDate.now().minusMonths(1);
+        LocalDate to = LocalDate.now().plusMonths(generateMonths + 1);
+        List<String> rows = mapper.selectWorkdays(coCd, from.format(YMD), to.format(YMD));
+        if (rows == null || rows.isEmpty()) return Set.of();
+        Set<LocalDate> out = new LinkedHashSet<>();
+        for (String ymd : rows) {
+            LocalDate d = parseYmd(ymd);
+            if (d != null) out.add(d);
+        }
+        return out;
     }
 
     /** jsonb::text 또는 화면 배열을 상세 Map 목록으로 통일한다. */

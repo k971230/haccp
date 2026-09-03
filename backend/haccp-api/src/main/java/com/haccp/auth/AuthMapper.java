@@ -116,4 +116,21 @@ public interface AuthMapper {
             // 종료할 세션 UUID — JWT sid 클레임. 값이 없으면 갱신 대상이 없어 0행이다
             @Param("sid") String sid
     );
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 본인 비밀번호 해시를 갱신한다
+     *   2) AuthService가 BCrypt 한 뒤에만 호출한다
+     *   3) 대상이 없으면 SP가 45000
+     */
+    int updatePassword(
+            // JWT 회사코드
+            @Param("coCd") String coCd,
+            // JWT 본인 아이디
+            @Param("userId") String userId,
+            // BCrypt 해시
+            @Param("userPw") String userPw
+    );
 }

@@ -11,7 +11,7 @@
  * PIPELINE[HB93] 워크플로 작업 매퍼
  * PIPELINE[HB86, HB91, HF87] 연관 모듈
  */
-package com.haccp.tsk;
+package com.haccp.board;
 
 // 역할 — 목록·가변 입력 자료
 import java.util.List;
@@ -28,15 +28,17 @@ public interface TaskMapper {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-25
+     * 일자: 2026-09-03
      * 코멘트:
-     *   1) 오늘 할 일 최근 문서를 기간 + OFFSET/LIMIT 으로 조회한다
+     *   1) 오늘 할 일 최근 문서를 기간 + OFFSET/LIMIT 으로 조회한다 — 본인 작성분만
      *   2) 랜딩 최근 문서 패널이 호출한다. 문서함 목록 SP 는 건드리지 않는다
      *   3) 각 행 total_cnt 는 기간 전체 건수다. 0건이면 빈 목록
      */
     List<Map<String, Object>> selectTodayTaskDocs(
             // JWT 회사코드
             @Param("coCd") String coCd,
+            // JWT 본인 아이디 — writer_id 필터
+            @Param("userId") String userId,
             // 기준일 시작 YYYYMMDD
             @Param("fromDt") String fromDt,
             // 기준일 종료 YYYYMMDD

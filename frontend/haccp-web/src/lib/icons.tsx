@@ -92,10 +92,10 @@ export function resolveMesIcon(
  *   3) 매칭이 없으면 폴더 아이콘 — 업체가 메뉴를 추가해도 빈칸이 없다
  */
 export function getModuleIcon(
-  // 대분류 menu_cd — today-tasks · docs · flow · draft · bas · sys
+  // 대분류 menu_cd — board · docs · flow · draft · bas · sys
   menuCd: string
 ): LucideIcon {
-  if (menuCd === "today-tasks") return ClipboardList;
+  if (menuCd === "board" || menuCd === "today-tasks") return ClipboardList;
   if (menuCd === "docs") return FileCheck2;
   if (menuCd === "flow") return ClipboardCheck;
   if (menuCd === "draft") return PenLine;

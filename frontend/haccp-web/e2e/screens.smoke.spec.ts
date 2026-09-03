@@ -6,16 +6,17 @@
  * 코멘트:
  *   1) 화면마다 라우트 진입·콘솔 error 0·4xx/5xx 0·뼈대 노출만 본다. 업무 시나리오는 다른 스펙이다
  *   2) 라우팅·권한·SP 오류가 한 번에 잡힌다 — 메뉴 개편 회귀 방어선이다
- *   3) 28개는 tbl_menu 에 남긴 화면과 같다. 메뉴를 늘리면 여기도 늘린다
+ *   3) 메뉴에 남은 화면과 같다. 메뉴를 늘리면 여기도 늘린다
  *
  * PIPELINE[HF130] E2E
  */
 import { expect, test } from "@playwright/test";
 import { adminCreds, login, openScreen } from "./helpers";
 
-/** 메뉴에 남은 28화면 — SCREEN_PATH 그대로 */
+/** 메뉴 화면 — SCREEN_PATH 그대로 */
 const SCREENS: Array<{ path: string; name: string }> = [
-  { path: "/today-tasks", name: "오늘 할 일" },
+  { path: "/board/today-tasks", name: "오늘 할 일" },
+  { path: "/board/calendar", name: "일정 캘린더" },
   { path: "/docs/sch/schedule-cycle-management", name: "문서주기관리" },
   { path: "/docs/hwp/hwp-template-management", name: "사용양식 관리" },
   { path: "/docs/html-form/hyg-process-template", name: "일반위생·공정점검 양식관리" },

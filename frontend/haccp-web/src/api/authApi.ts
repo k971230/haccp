@@ -65,3 +65,18 @@ export async function getMe(): Promise<LoginUser> {
   const { data } = await http.get<CommonResponse<LoginUser>>("/api/v1/auth/me");
   return data.data;
 }
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-03
+ * 코멘트:
+ *   1) 본인 비밀번호를 변경한다
+ *   2) 푸터 키 아이콘 팝업에서 호출한다
+ *   3) 성공 시 본문 없음. 실패는 서버 업무 문구
+ */
+export async function changePassword(
+  // 현재·새 비밀번호. 확인은 모달에서 맞춘다
+  params: { currentPassword: string; newPassword: string },
+): Promise<void> {
+  await http.post<CommonResponse<null>>("/api/v1/auth/change-password", params);
+}

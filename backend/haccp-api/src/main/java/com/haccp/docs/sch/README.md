@@ -24,7 +24,7 @@ XML `resources/mapper/docs/sch/DocCycleMapper.xml` · SP `db_sasshaccp/01_sp.sql
 | `KoreanHolidayDates` | holidays-kr JSON → 날짜 Set. 공휴일 규칙은 직접 계산하지 않는다 |
 | `DocumentAlarmScheduler` | 마감 임박 알림 — `app.schedule.alarm-cron` |
 
-일일 배치: `tsk/DailyTaskGenerationJob` → `DocCycleService.regenerateAllCompanies()` → `TaskService.generateAllCompanies()`.
+일일 배치: `board/DailyTaskGenerationJob` → `DocCycleService.regenerateAllCompanies()` → `TaskService.generateAllCompanies()`.
 
 비영업일은 토·일 + classpath `holidays/holidays-kr.json`([hyunbinseo/holidays-kr](https://github.com/hyunbinseo/holidays-kr) `basic.json`, npm `5.2027.1`).
 월력요항이 새 연도에 실리면 JSON만 덮어쓴다. 절차는 `src/main/resources/holidays/README.md`. JSON에 없는 연도는 주말만 본다.

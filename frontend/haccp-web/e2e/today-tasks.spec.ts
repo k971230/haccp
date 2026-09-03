@@ -19,7 +19,7 @@ import { adminCreds, btn, dbOne, grids, login, openScreen, visibleRows } from ".
  * KPI 문구는 조회 전에도 떠 있다. 그것만 기다리면 0행을 보고 지나간다.
  */
 async function openTodayTasks(page: import("@playwright/test").Page): Promise<void> {
-  await openScreen(page, "/today-tasks");
+  await openScreen(page, "/board/today-tasks");
   await expect(page.getByText("오늘 작성 과제").filter({ visible: true }).first()).toBeVisible({
     timeout: 30_000,
   });

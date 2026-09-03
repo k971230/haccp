@@ -42,7 +42,7 @@ describe("authPaths — base /haccp/", () => {
 
   it("toRouterPath 가 basename 을 벗긴다", () => {
     expect(toRouterPath("/haccp/ccp-cold-monitor", base)).toBe("/ccp-cold-monitor");
-    expect(toRouterPath("/haccp/today-tasks?a=1", base)).toBe("/today-tasks?a=1");
+    expect(toRouterPath("/haccp/board/today-tasks?a=1", base)).toBe("/board/today-tasks?a=1");
     expect(toRouterPath("/haccp", base)).toBe("/");
     expect(toRouterPath("/haccp/", base)).toBe("/");
   });

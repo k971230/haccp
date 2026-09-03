@@ -74,7 +74,7 @@ test.describe.serial("신규 업체 개설", () => {
 
   test("만든 계정으로 로그인해 화면이 열린다", async ({ page }) => {
     await login(page, ADMIN, "1234");
-    await openScreen(page, "/today-tasks");
+    await openScreen(page, "/board/today-tasks");
     await expect(
       page.getByText("오늘 작성 과제").filter({ visible: true }).first(),
       "새 업체 계정으로 랜딩 화면이 안 열린다",

@@ -23,15 +23,24 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 
 **아무도 안 부르는 SP 없음.**
 
-## 매퍼 → SP → 표 (150건)
+## 매퍼 → SP → 표 (154건)
 
 | 도메인 | SP | 종류 | 매퍼 | 건드리는 표 |
 |---|---|---|---|---|
+| auth | `sp_auth_password_u_000` | 쓰기 | `auth/AuthMapper.xml` | `tbl_user` |
 | auth | `sp_role_management_screen_r_000` | 조회 | `auth/AuthMapper.xml<br>sys/code/role/RoleMgmtMapper.xml` | `tbl_role_screen<br>tbl_screen` |
 | auth | `sp_tbl_login_log_c_000` | 쓰기 | `auth/AuthMapper.xml` | `tbl_login_log` |
 | auth | `sp_tbl_login_log_u_000` | 쓰기 | `auth/AuthMapper.xml` | `tbl_login_log` |
 | auth | `sp_tbl_user_login_r_000` | 조회 | `auth/AuthMapper.xml` | `tbl_company<br>tbl_dept<br>tbl_role<br>tbl_user` |
 | auth | `sp_tbl_user_login_u_000` | 쓰기 | `auth/AuthMapper.xml` | `tbl_user` |
+| board | `sp_calendar_r_000` | 조회 | `board/CalendarMapper.xml` | `tbl_company_template<br>tbl_document<br>tbl_schedule_task<br>tbl_template` |
+| board | `sp_calendar_workday_r_000` | 조회 | `board/CalendarMapper.xml<br>docs/sch/DocCycleMapper.xml` | `tbl_workday_override` |
+| board | `sp_calendar_workday_u_000` | 쓰기 | `board/CalendarMapper.xml` | `tbl_workday_override` |
+| board | `sp_tbl_notification_r_000` | 조회 | `board/TaskMapper.xml` | `tbl_notification` |
+| board | `sp_tbl_notification_u_000` | 쓰기 | `board/TaskMapper.xml` | `tbl_notification` |
+| board | `sp_tbl_schedule_task_generate_c_000` | 쓰기 | `board/TaskMapper.xml` | `tbl_schedule_task` |
+| board | `sp_tbl_today_task_doc_r_000` | 조회 | `board/TaskMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_document_file<br>tbl_template<br>tbl_user` |
+| board | `sp_tbl_today_task_r_000` | 조회 | `board/TaskMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_schedule_task<br>tbl_template` |
 | code | `sp_common_code_management_r_001` | 조회 | `code/CodeMapper.xml<br>sys/code/commoncode/CommonCodeMapper.xml` | `tbl_code` |
 | docs/documents | `sp_hwp_template_management_file_c_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_company_template<br>tbl_company_template_file` |
 | docs/documents | `sp_tbl_document_appr_hist_r_000` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_document_approval<br>tbl_document_file<br>tbl_template<br>tbl_user` |
@@ -172,11 +181,6 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | sys/logs/auditlog | `sp_tbl_audit_log_c_000` | 쓰기 | `sys/logs/auditlog/AuditLogMapper.xml` | `tbl_audit_log` |
 | sys/logs/loginhistory | `sp_login_history_r_000` | 조회 | `sys/logs/loginhistory/LoginHistoryMapper.xml` | `tbl_login_log<br>tbl_user` |
 | sys/logs/screenusage | `sp_screen_usage_statistics_r_000` | 조회 | `sys/logs/screenusage/ScreenUsageMapper.xml` | `tbl_menu<br>tbl_screen<br>tbl_view_stat_daily` |
-| tsk | `sp_tbl_notification_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_notification` |
-| tsk | `sp_tbl_notification_u_000` | 쓰기 | `tsk/TaskMapper.xml` | `tbl_notification` |
-| tsk | `sp_tbl_schedule_task_generate_c_000` | 쓰기 | `tsk/TaskMapper.xml` | `tbl_schedule_task` |
-| tsk | `sp_tbl_today_task_doc_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_document_file<br>tbl_template<br>tbl_user` |
-| tsk | `sp_tbl_today_task_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_schedule_task<br>tbl_template` |
 
 ## 관련
 

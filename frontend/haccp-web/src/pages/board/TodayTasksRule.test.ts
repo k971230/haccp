@@ -206,7 +206,9 @@ describe("컬럼 팩터리", () => {
   });
 
   it("최근 문서 상태는 DOC_STATUS 맵+배지", () => {
-    const statusCol = buildDocColumns({ WRK: "작성중" }).find((col) => col.field === "status");
+    const cols = buildDocColumns({ WRK: "작성중" });
+    expect(cols.map((c) => c.field)).toEqual(["status", "tmplNm", "title", "docNo", "baseDt"]);
+    const statusCol = cols.find((col) => col.field === "status");
     expect(statusCol?.type).toBe("code");
     expect(statusCol?.codeMap).toEqual({ WRK: "작성중" });
     expect(statusCol?.badge).toBe(DOC_STATUS_BADGE);

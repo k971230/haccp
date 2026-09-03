@@ -18,6 +18,8 @@ import type { CodeLookupModalProps, UserSignModalProps } from "./modalTypes";
 import { CodeLookupModal } from "./CodeLookupModal";
 // 역할 — 사용자 서명 팝업
 import { UserSignModal } from "./UserSignModal";
+// 역할 — 본인 비밀번호 변경
+import { PasswordChangeModal } from "./PasswordChangeModal";
 
 /**
  * 개발자: 박승우
@@ -40,6 +42,8 @@ export function GlobalModal() {
       return <CodeLookupModal {...(modalProps as CodeLookupModalProps)} />;
     case "UserSign":
       return <UserSignModal {...(modalProps as UserSignModalProps)} />;
+    case "PasswordChange":
+      return <PasswordChangeModal />;
     default:
       return null;
   }

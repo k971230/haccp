@@ -12,13 +12,13 @@
  * PIPELINE[HF3, HF88, HF89] 연관 모듈
  */
 // 역할 — 일반 API Axios
-import { http } from "./http";
+import { http } from "@/api/http";
 // 역할 — 공통 응답 형식
 import type { CommonResponse } from "@/types/common";
 // 역할 — SP Map snake_case → camelCase
 import { camelizeRows } from "@/lib/camelKeys";
 // 역할 — 최근 문서 행 타입 — 문서함과 동일
-import type { DocumentListRow } from "./documentApi";
+import type { DocumentListRow } from "@/api/documentApi";
 
 export type WorkflowRow = Record<string, unknown> & {
   idx?: number;
@@ -40,7 +40,7 @@ async function getRows(url: string, params?: Record<string, string>) {
   // ca_no·doc_idx 등 → camelCase — 그리드 field 공백 방지
   return camelizeRows<WorkflowRow>(data.data);
 }
-export const listTodayTasks = () => getRows("/api/v1/tsk/today-tasks/list");
+export const listTodayTasks = () => getRows("/api/v1/board/today-tasks/list");
 
 /**
  * 개발자: 박승우
@@ -55,7 +55,7 @@ export async function listTodayRecentDocs(
   params: { fromDt: string; toDt: string; offset: number; limit: number },
 ): Promise<{ rows: DocumentListRow[]; total: number }> {
   const { data } = await http.get<CommonResponse<{ rows?: Record<string, unknown>[]; total?: number }>>(
-    "/api/v1/tsk/today-tasks/recent-docs",
+    "/api/v1/board/today-tasks/recent-docs",
     {
       params: {
         fromDt: params.fromDt,
@@ -71,8 +71,8 @@ export async function listTodayRecentDocs(
     total: Number(payload.total ?? 0),
   };
 }
-export const listNotifications = () => getRows("/api/v1/tsk/notifications/list");
-export const readNotification = (idx: number) => http.put(`/api/v1/tsk/notifications/${idx}/read`);
+export const listNotifications = () => getRows("/api/v1/board/notifications/list");
+export const readNotification = (idx: number) => http.put(`/api/v1/board/notifications/${idx}/read`);
 /** 이탈·개선조치 목록 — 일자 구간·양식·작성자 */
 export const listCorrectiveActions = (params: { fromDt?: string; toDt?: string; tmplCd?: string; writer?: string }) => getRows("/api/v1/flow/ca/corrective-action-management/list", params as Record<string, string>);
 export const saveCorrectiveAction = (row: WorkflowRow) => http.put("/api/v1/flow/ca/corrective-action-management/save", row);

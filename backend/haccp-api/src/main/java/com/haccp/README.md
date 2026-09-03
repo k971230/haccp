@@ -10,7 +10,7 @@ HACCP API 루트 패키지. 화면은 `com.haccp.{대}.{중}`.
 - `draft/` — 작성 (`ccpmonitoring` · `html` · `hwpdoc`)
 - `flow/ca/` — 개선조치
 - `sys/code/` · `sys/logs/` — 시스템
-- `tsk/` — 오늘 할 일
+- `board/` — 오늘 할 일 · 일정 캘린더
 
 공유 허브는 `docs.documents` · `docs.templates` · `docs.htmlform` 이다 — 화면 경로와 별개.
 `bas/`·`workflow/` 는 없다.
