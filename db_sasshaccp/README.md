@@ -14,6 +14,7 @@ PostgreSQL `sasshaccp` 스키마 **정본**. 여기 7본이 곧 DB 다 — 손�
      ├─ 06_company_seed 업체·계정·결재선·사용양식   -v co_cd=  업체별
      └─ 07_company_forms 회사 지면 5본 복사         -v co_cd=  업체별
 04_migrate_code_upper  구 DB 1회용 — 신규 설치에는 안 쓴다
+08_rename_tml_html     이미 깔린 DB 1회용 — tml_ccp_ → html_ccp_. 빈 DB 는 00+01+02 가 처음부터 html_
 ```
 
 **업무 로직은 SP 에 둔다.** 백엔드는 SP 를 부르고 결과를 담아 넘기는 일만 한다
@@ -113,15 +114,15 @@ $P -v co_cd=0004 -f 07_company_forms.sql
   붙여 내려주므로 **읽은 것을 그대로 저장하면 터진다**.
   양식 원본 표(`*_ver_item`)는 유니크가 `item_cd` 라 해당 없다
 - **자사 HTML 양식코드는 회사 안에서 001부터** — `ux_tbl_template UNIQUE (co_cd, tmpl_cd)`.
-  `html_hyg_prc_NNN` · `tml_ccp_{chk,htg,mtl,pkg}_NNN` 복사 SP 가 전역 MAX 를 보면
+  `html_hyg_prc_NNN` · `html_ccp_{chk,htg,mtl,pkg}_NNN` 복사 SP 가 전역 MAX 를 보면
   0000 이 012 일 때 새 업체가 013 을 받는다. 표준(`html_sys_001`, `hwp_sys_*`) 은 계속 `co_cd=0000` 한 줄
 - **표준 원본 양식코드를 지우지 않는다** — 복사 SP 가 여기서 읽는다 (E2E-007)
 
   | 화면 | 표준 원본 | 읽는 SP |
   |---|---|---|
   | 일반위생·공정점검 양식관리 | `html_sys_001` | `sp_tbl_html_hyg_prc_ver_copy_c_000` |
-  | CCP 검증점검표 양식관리 | `html_sys_006` | `sp_tbl_tml_ccp_chk_ver_copy_c_000` |
-  | CCP 포장·가열·금속검출 양식관리 | `tml_ccp_{pkg,htg,mtl}_000` | 각 `*_ver_copy_c_000` |
+  | CCP 검증점검표 양식관리 | `html_sys_006` | `sp_tbl_html_ccp_chk_ver_copy_c_000` |
+  | CCP 포장·가열·금속검출 양식관리 | `html_ccp_{pkg,htg,mtl}_000` | 각 `*_ver_copy_c_000` |
 
   양식코드를 지우기 전에 `grep "그 코드" 01_sp.sql` 로 참조를 먼저 본다
 

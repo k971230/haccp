@@ -67,7 +67,7 @@ export function htmlFormListGridRules(stdTmplCd: string): ScreenGridRules {
  *   3) 000은 건너뛰고 빈 목록이면 001. 사용양식은 접두 hwp_usr_
  */
 export function nextUsrTmplCd(
-  // 접두 — html_hyg_prc_ / tml_ccp_chk_ / hwp_usr_
+  // 접두 — html_hyg_prc_ / html_ccp_chk_ / hwp_usr_
   prefix: string,
   // 현재 그리드 행
   rows: Array<{ tmplCd?: string | null }>,

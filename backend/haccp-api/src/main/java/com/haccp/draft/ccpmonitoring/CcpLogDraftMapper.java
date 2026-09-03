@@ -36,7 +36,7 @@ public interface CcpLogDraftMapper {
             @Param("coCd") String coCd,
             // family: pkg | htg — XML choose 가 계열 SP 를 고른다
             @Param("family") String family,
-            // stdTmplCd: 계열 예시코드 tml_ccp_pkg_000 · tml_ccp_htg_000
+            // stdTmplCd: 계열 예시코드 html_ccp_pkg_000 · html_ccp_htg_000
             @Param("stdTmplCd") String stdTmplCd
     );
 
@@ -70,7 +70,7 @@ public interface CcpLogDraftMapper {
     List<DraftListRow> selectList(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
-            // tmplPfx: 양식군 접두 tml_ccp_pkg_ · tml_ccp_htg_
+            // tmplPfx: 양식군 접두 html_ccp_pkg_ · html_ccp_htg_
             @Param("tmplPfx") String tmplPfx,
             // tmplCd: 양식코드 부분검색
             @Param("tmplCd") String tmplCd,

@@ -16,7 +16,7 @@ import lombok.Data;
 
 @Data
 public class HtmlFormVerDeleteItem {
-    // 양식코드 — html_hyg_prc_001·tml_ccp_chk_001 등. 예시는 *_000
+    // 양식코드 — html_hyg_prc_001·html_ccp_chk_001 등. 예시는 *_000
     private String tmplCd;
     // 회사 버전번호 — 1 이상
     private Integer verNo;

@@ -7,7 +7,7 @@ HtmlDraftMapper.xml — HTML 작성 2화면(일반위생·공정점검 · CCP �
 코멘트:
   1) 두 화면은 문장 구조가 같고 **SP 이름만** 다르다. family 로 고른다
      - hyg: sp_tbl_hyg_process_* · 버전 sp_tbl_html_hyg_prc_ver_r_000
-     - chk: sp_ccp_verify_*      · 버전 sp_tbl_tml_ccp_chk_ver_r_000
+     - chk: sp_ccp_verify_*      · 버전 sp_tbl_html_ccp_chk_ver_r_000
   2) **목록만 인자 형태가 다르다** — hyg 는 10개(문서번호·통합작성자 자리에 빈값을 넘긴다),
      chk 는 8개다. 그 차이는 여기 choose 안에만 둔다
   3) 삭제 차단은 계열과 무관한 문서 허브 공통 SP 라 choose 가 없다
@@ -33,7 +33,7 @@ PIPELINE[HB137] 연관 모듈
           FROM
         <choose>
             <when test="family == 'chk'">
-                sp_tbl_tml_ccp_chk_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v
+                sp_tbl_html_ccp_chk_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v
             </when>
             <otherwise>
                 sp_tbl_html_hyg_prc_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v

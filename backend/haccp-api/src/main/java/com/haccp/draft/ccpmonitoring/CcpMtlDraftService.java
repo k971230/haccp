@@ -44,10 +44,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class CcpMtlDraftService {
-    /** 계열 예시 양식코드 — 목록 SP 가 이 값으로 tbl_tml_ccp_mtl_ver 를 가른다 */
-    private static final String STD_TMPL_CD = "tml_ccp_mtl_000";
+    /** 계열 예시 양식코드 — 목록 SP 가 이 값으로 tbl_html_ccp_mtl_ver 를 가른다 */
+    private static final String STD_TMPL_CD = "html_ccp_mtl_000";
     /** 자사 양식 접두 — 이 화면이 다루는 범위 */
-    private static final String USR_TMPL_PREFIX = "tml_ccp_mtl_";
+    private static final String USR_TMPL_PREFIX = "html_ccp_mtl_";
 
     /** 감도 5칸 — 지면 감도열 item_cd(MTL_HDR)와 DB 컬럼(camelCase) 대응 */
     /** 신규 문서 통과량 기본 줄 수 — 지면 CcpMtlPaper.PASS_CNT 와 같은 값 */

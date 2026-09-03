@@ -46,7 +46,7 @@ import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
 import { MesButton } from "@/components/ui/MesButton";
 
 
-/** 시드 item_cd — tbl_check_item tml_ccp_htg_000 */
+/** 시드 item_cd — tbl_check_item html_ccp_htg_000 */
 export const HTG_ITEM = {
   LIMIT_TEMP: "limit-temp",
   LIMIT_TIME: "limit-time",

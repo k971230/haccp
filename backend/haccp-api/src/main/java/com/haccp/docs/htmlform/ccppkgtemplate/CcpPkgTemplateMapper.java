@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-20
  * 코멘트:
- *   1) 저장은 tbl_tml_ccp_pkg_ver. 검증점검은 CcpVerifyTemplateMapper
+ *   1) 저장은 tbl_html_ccp_pkg_ver. 검증점검은 CcpVerifyTemplateMapper
  *   2) 회사코드는 JWT coCd만 넘긴다
  *   3) 삭제는 blocker 후 d_000
  *
@@ -40,7 +40,7 @@ public interface CcpPkgTemplateMapper {
      * 개발자: 박승우
      * 일자: 2026-08-20
      * 코멘트:
-     *   1) 양식 항목을 반환한다. tml_ccp_pkg_000 이면 시드
+     *   1) 양식 항목을 반환한다. html_ccp_pkg_000 이면 시드
      *   2) 우측 A4가 호출한다
      *   3) 없으면 빈 목록
      */
@@ -54,7 +54,7 @@ public interface CcpPkgTemplateMapper {
      * 개발자: 박승우
      * 일자: 2026-08-20
      * 코멘트:
-     *   1) 표준 시드를 복사해 tml_ccp_pkg_NNN 1건을 만든다
+     *   1) 표준 시드를 복사해 html_ccp_pkg_NNN 1건을 만든다
      *   2) 좌 저장이 pending 행을 커밋할 때 호출한다
      *   3) 새 양식코드를 돌려 화면이 그 행을 선택한다
      */

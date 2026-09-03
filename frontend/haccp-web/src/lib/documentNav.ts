@@ -19,12 +19,12 @@ import { isHwpKind } from "@/lib/docKind";
 const TMPL_PREFIX_SCREEN: Array<{ prefix: string; scrnCd: string }> = [
   // 위생공정 양식 작성 — html_hyg_prc_001 이상. 예시 000 은 작성 대상이 아니다
   { prefix: "html_hyg_prc_", scrnCd: "hyg-process" },
-  // CCP 검증점검 양식 작성 — tml_ccp_chk_001 이상
-  { prefix: "tml_ccp_chk_", scrnCd: "ccp-verify" },
+  // CCP 검증점검 양식 작성 — html_ccp_chk_001 이상
+  { prefix: "html_ccp_chk_", scrnCd: "ccp-verify" },
   // CCP 모니터링일지 작성 — 포장·가열·금속검출
-  { prefix: "tml_ccp_pkg_", scrnCd: "ccp-pkg" },
-  { prefix: "tml_ccp_htg_", scrnCd: "ccp-htg" },
-  { prefix: "tml_ccp_mtl_", scrnCd: "ccp-mtl" },
+  { prefix: "html_ccp_pkg_", scrnCd: "ccp-pkg" },
+  { prefix: "html_ccp_htg_", scrnCd: "ccp-htg" },
+  { prefix: "html_ccp_mtl_", scrnCd: "ccp-mtl" },
 ];
 
 /**
@@ -107,7 +107,7 @@ export function screenForTmplWrite(
  *   3) 접두·HWP 둘 다 아니면 빈 문자열 — 호출부가 이동을 생략한다
  */
 export function routeForTmplWrite(
-  // 양식코드 — html_hyg_prc_001 · tml_ccp_chk_001 등
+  // 양식코드 — html_hyg_prc_001 · html_ccp_chk_001 등
   tmplCd: string,
   // 이미 만든 문서 대리키 — 없으면 목록만
   docIdx?: number | null,

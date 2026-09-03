@@ -42,7 +42,7 @@ test.describe("문서 흐름 — 작성 → 전송 → 승인 → 보관", () =>
      * 목록에는 문서번호 열이 없고 신규 행은 맨 끝에 붙는다.
      * 시험을 돌릴수록 문서가 쌓이므로 「추가 전 건수」로 내 행 자리를 잡는다.
      */
-    const rowsOf = () => visibleRows(page).filter({ hasText: "tml_ccp_htg_" });
+    const rowsOf = () => visibleRows(page).filter({ hasText: "html_ccp_htg_" });
     const before = await rowsOf().count();
     await page.getByRole("button", { name: "행추가" }).click();
     // 양식 선택 팝업 — 양식코드 셀 버튼이 연다.
@@ -51,12 +51,12 @@ test.describe("문서 흐름 — 작성 → 전송 → 승인 → 보관", () =>
     await pickBtn.scrollIntoViewIfNeeded();
     await pickBtn.click({ force: true });
     // 팝업 목록에서 양식을 고른다 — 그리드 행은 더블클릭으로 확정된다
-    const pick = visibleRows(page).filter({ hasText: "tml_ccp_htg_" }).last();
+    const pick = visibleRows(page).filter({ hasText: "html_ccp_htg_" }).last();
     await expect(pick).toBeVisible({ timeout: 20_000 });
     await pick.dblclick();
     // 고르면 좌측 양식코드 칸이 「미선택」에서 실제 코드로 바뀐다
     await expect(
-      visibleRows(page).filter({ hasText: "tml_ccp_htg_" }).first(),
+      visibleRows(page).filter({ hasText: "html_ccp_htg_" }).first(),
     ).toBeVisible({ timeout: 20_000 });
 
     /*
@@ -154,7 +154,7 @@ test.describe("문서 흐름 — 작성 → 전송 → 승인 → 보관", () =>
     await openScreen(page, "/flow/appr/attach");
     // 결재상태 열은 우측 미리보기에 밀려 가로로 잘린다 — 셀 가시성이 아니라 행 내용으로 본다
     await expect(
-      visibleRows(page).filter({ hasText: "tml_ccp_htg_" }).first(),
+      visibleRows(page).filter({ hasText: "html_ccp_htg_" }).first(),
     ).toContainText("승인요청", { timeout: 30_000 });
 
     // --- 5. 결재 대기 — 미리보기에 값이 보여야 한다 (회귀 고정) --------------

@@ -5,7 +5,7 @@
  * 일자: 2026-08-19
  * 코멘트:
  *   1) 기준관리는 화면별 /docs/html-form/{scrnCd}, 작성은 /docs/html-form/hyg-process-template
- *   2) 목록·복사는 tmplCd로 공정점검(html_hyg_prc)/검증점검(tml_ccp_chk)/포장일지(tml_ccp_pkg)/가열일지(tml_ccp_htg)/금속검출일지(tml_ccp_mtl) 테이블을 가른다
+ *   2) 목록·복사는 tmplCd로 공정점검(html_hyg_prc)/검증점검(html_ccp_chk)/포장일지(html_ccp_pkg)/가열일지(html_ccp_htg)/금속검출일지(html_ccp_mtl) 테이블을 가른다
  *   3) 삭제는 POST validate-delete → delete, Body는 객체 배열
  *
  * PIPELINE[HF130] HTML양식 API
@@ -23,10 +23,10 @@ import { toYn } from "@/lib/yn";
 export const HTML_SYS_001 = "html_sys_001";
 export const HTML_HYG_PRC_000 = "html_hyg_prc_000";
 export const HTML_HYG_000 = HTML_HYG_PRC_000;
-export const TML_CCP_CHK_000 = "tml_ccp_chk_000";
-export const TML_CCP_PKG_000 = "tml_ccp_pkg_000";
-export const TML_CCP_HTG_000 = "tml_ccp_htg_000";
-export const TML_CCP_MTL_000 = "tml_ccp_mtl_000";
+export const HTML_CCP_CHK_000 = "html_ccp_chk_000";
+export const HTML_CCP_PKG_000 = "html_ccp_pkg_000";
+export const HTML_CCP_HTG_000 = "html_ccp_htg_000";
+export const HTML_CCP_MTL_000 = "html_ccp_mtl_000";
 
 export interface HtmlFormVerRow {
   // PK. 표준 가상행은 null

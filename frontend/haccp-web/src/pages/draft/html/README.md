@@ -6,7 +6,7 @@ URL `/draft/html`. 양식관리에서 **사용여부 = 예**로 둔 자사 HTML 
 | 화면코드 | 기준 양식관리 | 자사 양식 접두 | 지면 |
 |---|---|---|---|
 | `hyg-process` | `hyg-process-template` | `html_hyg_prc_` | `docs/html-form/htmltemplate/HygPrcPaper` |
-| `ccp-verify` | `ccp-verify-template` | `tml_ccp_chk_` | `docs/html-form/ccpverifytemplate/CcpChkPaper` |
+| `ccp-verify` | `ccp-verify-template` | `html_ccp_chk_` | `docs/html-form/ccpverifytemplate/CcpChkPaper` |
 
 | 파일 | 역할 |
 |---|---|

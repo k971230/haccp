@@ -38,7 +38,7 @@ test.describe.serial("결재 첨부 — 전송", () => {
     await login(page, user, pass);
 
     // 작성 화면에서 문서를 하나 만들고 지면 필수값을 채운다
-    await createDraft(page, "/draft/ccp-monitoring/ccp-htg", "tml_ccp_htg_");
+    await createDraft(page, "/draft/ccp-monitoring/ccp-htg", "html_ccp_htg_");
     await fillPaperRequired(page);
     await btn(page, "저장").click();
 

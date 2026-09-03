@@ -6,7 +6,7 @@ HYG·CCP 는 형제 화면이며 업무 규칙·상태·버튼이 같다.
 ```
 draft/
  ├ hyg/    HYG 양식 — hyg-process  (html_hyg_prc_NNN · tbl_hyg_process)
- └ ccp/    CCP 양식 — ccp-verify   (tml_ccp_chk_NNN · tbl_ccp_verify_check)
+ └ ccp/    CCP 양식 — ccp-verify   (html_ccp_chk_NNN · tbl_ccp_verify_check)
 ```
 
 | 화면 | URL 중분류 | 자바 패키지 | 기준 양식관리 |

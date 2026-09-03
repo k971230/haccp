@@ -37,8 +37,8 @@ BEGIN
     FOREACH v_tbl IN ARRAY ARRAY[
         'tbl_check_item', 'tbl_html_form_ver_item', 'tbl_html_hyg_prc_ver_item',
         'tbl_hyg_process_item', 'tbl_ccp_verify_item',
-        'tbl_tml_ccp_chk_ver_item', 'tbl_tml_ccp_pkg_ver_item',
-        'tbl_tml_ccp_htg_ver_item', 'tbl_tml_ccp_mtl_ver_item'
+        'tbl_html_ccp_chk_ver_item', 'tbl_html_ccp_pkg_ver_item',
+        'tbl_html_ccp_htg_ver_item', 'tbl_html_ccp_mtl_ver_item'
     ]
     LOOP
         EXECUTE format(

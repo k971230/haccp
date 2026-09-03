@@ -43,7 +43,7 @@ public final class DraftSupport {
     public static String requireUsrTmpl(
             // tmplCd: 화면이 넘긴 양식코드
             String tmplCd,
-            // prefix: 이 화면 자사 양식 접두 — html_hyg_prc_ · tml_ccp_chk_ · tml_ccp_pkg_ …
+            // prefix: 이 화면 자사 양식 접두 — html_hyg_prc_ · html_ccp_chk_ · html_ccp_pkg_ …
             String prefix,
             // stdTmplCd: 계열 예시코드 — 작성 대상이 아니다
             String stdTmplCd

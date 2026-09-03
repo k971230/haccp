@@ -16,7 +16,7 @@ import { adminCreds, dbOne, login, loginCoCd, openScreen, sqlLit } from "./helpe
 
 const API = process.env.E2E_API_BASE_URL || "http://localhost:7070";
 /** 시험용 양식 — 실제 쓰는 양식을 건드리면 사람 화면이 흔들린다 */
-const TMPL = "tml_ccp_chk_001";
+const TMPL = "html_ccp_chk_001";
 
 async function tokenOf(request: APIRequestContext): Promise<string> {
   const { user, pass } = adminCreds();

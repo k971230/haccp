@@ -224,7 +224,7 @@ SELECT :'co_cd'                                                           AS 회
        (SELECT count(*) FROM tbl_company_template WHERE co_cd = :'co_cd') AS 사용양식,
        (SELECT count(*) FROM tbl_doc_no_rule  WHERE co_cd = :'co_cd')     AS 문서번호규칙,
          -- 0 이 정상이다. HTML 작성을 쓰려면 아래 「다음 단계」를 해야 한다
-         (SELECT count(*) FROM tbl_tml_ccp_htg_ver WHERE co_cd = :'co_cd')  AS HTML지면버전;
+         (SELECT count(*) FROM tbl_html_ccp_htg_ver WHERE co_cd = :'co_cd')  AS HTML지면버전;
 
 -- ============================================================
 --  다음 단계 — 이걸 안 하면 HTML 작성 화면이 빈 목록으로 뜬다

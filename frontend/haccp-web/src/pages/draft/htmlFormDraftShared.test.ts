@@ -193,7 +193,7 @@ describe("detailToDraftBuf — 이탈 시그널 복원", () => {
         header: { docIdx: 1, specialNote: "온도 이탈", improveNote: "", baseDt: "20260901" },
         items: [],
       },
-      { tmplCd: "tml_ccp_pkg_001", tmplNm: "포장" },
+      { tmplCd: "html_ccp_pkg_001", tmplNm: "포장" },
     );
     expect(buf.deviationYn).toBe(true);
   });
@@ -205,7 +205,7 @@ describe("detailToDraftBuf — 이탈 시그널 복원", () => {
         items: [],
         logRows: [],
       },
-      { tmplCd: "tml_ccp_pkg_001", tmplNm: "포장" },
+      { tmplCd: "html_ccp_pkg_001", tmplNm: "포장" },
     );
     expect(buf.deviationYn).toBe(false);
   });
@@ -225,7 +225,7 @@ describe("detailToDraftBuf — 이탈 시그널 복원", () => {
           actionDesc: "",
         },
       },
-      { tmplCd: "tml_ccp_pkg_001", tmplNm: "포장" },
+      { tmplCd: "html_ccp_pkg_001", tmplNm: "포장" },
     );
     expect(buf.specialNote).toBe("");
     expect(buf.deviationYn).toBe(true);

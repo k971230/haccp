@@ -107,7 +107,7 @@ describe("개선조치 미완료 · 기한경과 정렬", () => {
     const late = todayTaskHref({
       taskType: "TASK",
       status: "LATE",
-      tmplCd: "tml_ccp_chk_001",
+      tmplCd: "html_ccp_chk_001",
       baseDt: "20260826",
       title: "맞춤",
     });
@@ -118,20 +118,20 @@ describe("개선조치 미완료 · 기한경과 정렬", () => {
     const todo = todayTaskHref({
       taskType: "TASK",
       status: "TODO",
-      tmplCd: "tml_ccp_chk_001",
+      tmplCd: "html_ccp_chk_001",
       baseDt: "20260826",
       title: "맞춤",
     });
     const todoQ = new URLSearchParams(todo.slice(todo.indexOf("?") + 1));
     expect(todo.startsWith("/draft/html/ccp-verify?")).toBe(true);
     expect(todoQ.get("add")).toBe("1");
-    expect(todoQ.get("tmplCd")).toBe("tml_ccp_chk_001");
+    expect(todoQ.get("tmplCd")).toBe("html_ccp_chk_001");
     expect(todoQ.get("baseDt")).toBe("20260826");
     expect(todoQ.get("tmplNm")).toBe("맞춤");
     expect(todayTaskHref({
       taskType: "TASK",
       status: "APV",
-      tmplCd: "tml_ccp_chk_001",
+      tmplCd: "html_ccp_chk_001",
       docIdx: 99,
     })).toBe("/draft/html/ccp-verify?docIdx=99");
     expect(todayTaskHref({ taskType: "CA" })).toBe("/flow/ca/corrective-action-management");

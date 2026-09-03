@@ -347,7 +347,7 @@ screenusage/ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE
 |---|---|---|
 | `tbl_code` `tbl_menu` `tbl_role` `tbl_role_screen` `tbl_dept` `tbl_user` `tbl_approval_line` | 시스템 관리 Service의 `save`·`delete` | I·U·D |
 | `tbl_company_template` `tbl_company_template_file` | `HwpTemplateService` 저장·적용·삭제, `TemplateService.saveForm` | I·U·D |
-| `tbl_html_hyg_prc_ver` `tbl_tml_ccp_*_ver` | `HtmlTemplateService` 복사·항목저장·적용·이름·삭제 | I·U·D |
+| `tbl_html_hyg_prc_ver` `tbl_html_ccp_*_ver` | `HtmlTemplateService` 복사·항목저장·적용·이름·삭제 | I·U·D |
 | `tbl_schedule_rule` | `DocCycleService` 저장·삭제 | U·D |
 | `tbl_corrective_action` | `CorrectiveActionService` 저장·삭제 | I·U·D |
 | `tbl_document` `tbl_document_file` | `DocumentService`(HWP·결재) · HTML/CCP draft `save`·`delete` | I·U·D·REQ·REV·APV·RJT·CANCEL·UNDO |

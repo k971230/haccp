@@ -49,8 +49,8 @@ public class CcpLogDraftService {
      * family 는 XML choose 키, prefix 는 목록 SP 의 접두, std 는 예시 양식코드다.
      */
     public enum Family {
-        PKG("pkg", "tml_ccp_pkg_", "tml_ccp_pkg_000"),
-        HTG("htg", "tml_ccp_htg_", "tml_ccp_htg_000");
+        PKG("pkg", "html_ccp_pkg_", "html_ccp_pkg_000"),
+        HTG("htg", "html_ccp_htg_", "html_ccp_htg_000");
 
         private final String key;
         private final String prefix;

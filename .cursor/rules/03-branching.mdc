@@ -9,7 +9,7 @@ alwaysApply: true
 
 | 구분 | 규약 |
 |------|------|
-| 브랜치 | `main`(배포 대상) · `feature/<step-nn-slug>` · `hotfix/<slug>` — **main 직접 커밋 금지** |
+| 브랜치 | `main`(배포 대상) · `feature/<slug>` · `fix/<slug>` · `refactor/<slug>` · `docs/<slug>` · `test/<slug>` · `hotfix/<slug>`(운영 급한 것) — **main 직접 커밋 금지** |
 | 커밋 | `<type>(<scope>): <subject>` — type `feat`·`fix`·`chore`·`docs`·`refactor`·`build`·`ci`·`db` / scope `fe`·`be`·`db`·`infra`·`docs` |
 | PR | 제목 `[STEP nn] <type>(<scope>): <subject>` · 본문에 무엇을 왜 바꿨는지 · 리뷰어 없는 self-merge 금지 |
 | 라벨 | priority `P0`~`P3` · area `fe`/`be`/`db`/`infra`/`docs`/`security` · status `blocked`/`in-progress`/`review`/`done` |
