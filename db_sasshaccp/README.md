@@ -14,7 +14,6 @@ PostgreSQL `sasshaccp` 스키마 **정본**. 여기 7본이 곧 DB 다 — 손�
      ├─ 06_company_seed 업체·계정·결재선·사용양식   -v co_cd=  업체별
      └─ 07_company_forms 회사 지면 5본 복사         -v co_cd=  업체별
 04_migrate_code_upper  구 DB 1회용 — 신규 설치에는 안 쓴다
-08_rename_tml_html     이미 깔린 DB 1회용 — tml_ccp_ → html_ccp_. 빈 DB 는 00+01+02 가 처음부터 html_
 ```
 
 **업무 로직은 SP 에 둔다.** 백엔드는 SP 를 부르고 결과를 담아 넘기는 일만 한다
