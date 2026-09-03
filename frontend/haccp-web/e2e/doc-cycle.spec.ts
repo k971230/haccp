@@ -138,7 +138,7 @@ test.describe.serial("문서주기 7종", () => {
 
     const { user, pass } = adminCreds();
     await login(page, user, pass);
-    await openScreen(page, "/today-tasks");
+    await openScreen(page, "/board/today-tasks");
     // 화면 상단 요약이 DB 와 같은 수를 말해야 한다
     await expect(page.getByText(/오늘 작성 과제/).first()).toBeVisible({ timeout: 30_000 });
   });

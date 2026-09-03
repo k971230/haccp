@@ -11,7 +11,7 @@
 - `draft/` — 작성
 - `flow/ca/` — 개선조치
 - `sys/code/` · `sys/logs/` — 시스템
-- `tsk/` — 오늘 할 일
+- `board/` — 오늘 할 일 · 일정 캘린더
 
 `bas/`·`workflow/` 는 없다.
 

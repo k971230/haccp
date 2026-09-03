@@ -12,11 +12,13 @@
  * PIPELINE[HF49] 연관 — 셸
  */
 // 역할 — 도움말 아이콘
-import { CircleHelp } from "lucide-react";
+import { CircleHelp, KeyRound } from "lucide-react";
 // 역할 — 로그인 사용자 타입
 import type { LoginUser } from "@/types/common";
 // 역할 — 활성 화면 → 정적 매뉴얼 주소. 없으면 버튼을 숨긴다
 import { manualUrlOf } from "@/shell/manualUrl";
+// 역할 — 비밀번호 변경 팝업
+import { useModalStore } from "@/stores/modalStore";
 
 interface ShellFooterProps {
   user: LoginUser | null;
@@ -46,6 +48,7 @@ export function ShellFooter({
 }: ShellFooterProps) {
   // 정적 매뉴얼 URL — SCREEN_PATH 밖이거나 비면 null
   const manualUrl = manualUrlOf(scrnCd);
+  const openModal = useModalStore((s) => s.openModal);
   const co = fmtPair(user?.coNm, user?.coCd);
   const dept = fmtPair(user?.deptNm, user?.deptCd);
   // 사용자는 이름(아이디) 조합 — 동명이인 구분을 위해 아이디를 함께 보여준다
@@ -75,6 +78,18 @@ export function ShellFooter({
         )}
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
+        {user && (
+          <button
+            type="button"
+            // 본인 비밀번호 변경 — 로그인 중이면 항상
+            title="비밀번호 변경"
+            aria-label="비밀번호 변경"
+            onClick={() => openModal("PasswordChange", {})}
+            className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full bg-yellow-300 text-black ring-1 ring-white hover:bg-yellow-200"
+          >
+            <KeyRound className="h-3.5 w-3.5" strokeWidth={2.75} />
+          </button>
+        )}
         {manualUrl && (
           <button
             type="button"

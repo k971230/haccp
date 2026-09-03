@@ -16,7 +16,7 @@
 // 역할 — 그리드 컬럼 타입
 import type { GridColumn } from "@/types/grid";
 // 역할 — 개선조치 목록 행
-import type { WorkflowRow } from "@/api/taskWorkflowApi";
+import type { WorkflowRow } from "@/api/board/taskWorkflowApi";
 
 /** 화면코드 — URL·권한·pref. 폴더를 옮겨도 바꾸지 않는다 */
 export const SCRN_CD = "corrective-action-management" as const;

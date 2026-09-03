@@ -22,7 +22,7 @@ import {
   listCorrectiveActions,
   saveCorrectiveAction,
   validateDeleteCorrectiveActions,
-} from "@/api/taskWorkflowApi";
+} from "@/api/board/taskWorkflowApi";
 // 역할 — 사용 중인 양식 목록 (검색 콤보)
 import { listDocumentTemplates, type DocumentTemplateRow } from "@/api/documentApi";
 // 역할 — mes-web형 그리드·헤더 CRUD 버튼

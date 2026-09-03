@@ -53,7 +53,7 @@ public final class ScreenAuthResolver {
     private static final List<Map.Entry<String, String>> SCREEN_PREFIXES;
     static {
         Map<String, String> pathToScrn = new LinkedHashMap<>();
-        pathToScrn.put("/today-tasks", "today-tasks");
+        putAll(pathToScrn, "/board", "today-tasks", "calendar");
         putAll(pathToScrn, "/docs/sch", "schedule-cycle-management");
         putAll(pathToScrn, "/docs/hwp", "hwp-template-management");
         // 중분류 html 은 양식 작성(draft)이 쓴다 — tbl_menu UNIQUE (co_cd, menu_cd)
@@ -129,7 +129,7 @@ public final class ScreenAuthResolver {
             }
             return Optional.of(ScreenAuthMatch.screen("hwp-template-management", action));
         }
-        if (path.startsWith("/api/v1/tsk/today-tasks") || path.startsWith("/api/v1/tsk/notifications")) {
+        if (path.startsWith("/api/v1/board/notifications")) {
             return Optional.of(ScreenAuthMatch.screen("today-tasks", action));
         }
         if (path.startsWith("/api/v1/sys/users/")) {

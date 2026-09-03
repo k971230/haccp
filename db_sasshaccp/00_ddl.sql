@@ -7133,3 +7133,22 @@ COMMENT ON COLUMN sasshaccp.tbl_document.cancel_reason IS '결재 취소 사유 
 -- 문서 관계 표 — 화면이 안 써서 고아. 이미 도는 DB 용
 --
 DROP TABLE IF EXISTS sasshaccp.tbl_document_relation;
+
+
+--
+-- 영업일 전환 — 주말·공휴일을 회사 단위로 영업일로 취급. 이미 도는 DB 용
+--
+CREATE TABLE sasshaccp.tbl_workday_override (
+    idx bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    co_cd character varying(10) NOT NULL,
+    ymd character varying(8) NOT NULL,
+    ins_id character varying(20),
+    ins_dt timestamp without time zone DEFAULT now(),
+    CONSTRAINT ux_tbl_workday_override_ymd UNIQUE (co_cd, ymd)
+);
+COMMENT ON TABLE sasshaccp.tbl_workday_override IS '영업일 전환 — 행이 있으면 그 날(주말·공휴일)을 회사 영업일로 취급한다';
+COMMENT ON COLUMN sasshaccp.tbl_workday_override.idx IS 'PK 자동 채번 대리키';
+COMMENT ON COLUMN sasshaccp.tbl_workday_override.co_cd IS '회사코드 — 테넌트 키';
+COMMENT ON COLUMN sasshaccp.tbl_workday_override.ymd IS '대상일 YYYYMMDD — 주말·공휴일을 영업일로 바꾼 날';
+COMMENT ON COLUMN sasshaccp.tbl_workday_override.ins_id IS '전환 저장자 ID';
+COMMENT ON COLUMN sasshaccp.tbl_workday_override.ins_dt IS '전환 저장 시각';

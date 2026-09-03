@@ -35,8 +35,8 @@ function paths(
  * URL taxonomy 와 pages/{대}/{중}/ · tbl_menu.menu_cd 가 1:1 이다. 새 화면은 레지스트리 키와 여기 한 줄을 같이 넣는다.
  */
 export const SCREEN_PATH: Record<string, string> = {
-  // 랜딩 — 중분류 없음
-  "today-tasks": "/today-tasks",
+  // 게시판 — 오늘 할 일 · 일정 캘린더
+  ...paths("/board", ["today-tasks", "calendar"]),
 
   // 문서 기준 — 주기 · HWP 양식 원본 · HTML 양식 원본
   ...paths("/docs/sch", ["schedule-cycle-management"]),
@@ -100,7 +100,7 @@ function normalizePath(
  * 코멘트:
  *   1) 화면 식별자를 계층 경로로 바꾼다
  *   2) 메뉴·탭 클릭·문서 딥링크에서 호출한다
- *   3) 빈 값은 홈("/"). 맵에 없는 코드는 /today-tasks 로 보내 /screen/ 이 다시 생기지 않게 한다
+ *   3) 빈 값은 홈("/"). 맵에 없는 코드는 /board/today-tasks 로 보내 /screen/ 이 다시 생기지 않게 한다
  */
 export function routeOf(
   // 이동할 화면코드 — tbl_screen.scrn_cd와 문자 그대로 같아야 한다
@@ -109,7 +109,7 @@ export function routeOf(
   query?: Record<string, string | number | null | undefined>
 ): string {
   if (!scrnCd) return "/";
-  const path = SCREEN_PATH[scrnCd] ?? "/today-tasks";
+  const path = SCREEN_PATH[scrnCd] ?? "/board/today-tasks";
   if (!query) return path;
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {

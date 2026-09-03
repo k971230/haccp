@@ -17,6 +17,10 @@ package com.haccp.auth;
 
 // 역할 — 로그인 요청 DTO
 import com.haccp.auth.dto.LoginRequest;
+// 역할 — 비밀번호 변경 요청 DTO
+import com.haccp.auth.dto.PasswordChangeRequest;
+// 역할 — JWT 컨텍스트
+import com.haccp.common.context.LoginUserContext;
 // 역할 — 로그인 응답 DTO
 import com.haccp.auth.dto.LoginResponse;
 // 역할 — 화면권한 Row DTO
@@ -42,6 +46,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 // 역할 — @Service 등록
 import org.springframework.stereotype.Service;
+// 역할 — 비밀번호 변경만 트랜잭션
+import org.springframework.transaction.annotation.Transactional;
 
 // 역할 — 토큰 만료 일시 계산
 import java.time.LocalDateTime;
@@ -195,6 +201,38 @@ public class AuthService {
             writeLoginLog(row.getCoCd(), row.getUserId(), null, "F", "SERVICE_EXPIRED", meta, null);
             throw new BizException("SERVICE_EXPIRED", "서비스 이용 기간이 만료되었습니다. 관리자에게 문의해 주세요.");
         }
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 현재 비밀번호를 확인한 뒤 새 비밀번호를 해시해 저장한다
+     *   2) 푸터 키 아이콘 팝업에서 호출한다
+     *   3) userId는 JWT만. 실패 문구는 업무 문구만
+     */
+    @Transactional
+    public void changePassword(
+            // 현재·새 비밀번호. 확인 일치는 프론트에서 먼저 본다
+            PasswordChangeRequest req
+    ) {
+        String userId = LoginUserContext.userId();
+        String coCd = LoginUserContext.coCd();
+        if (userId == null || userId.isBlank()) throw new BizException("로그인이 필요합니다.");
+        String current = req.getCurrentPassword() == null ? "" : req.getCurrentPassword();
+        String next = req.getNewPassword() == null ? "" : req.getNewPassword();
+        if (current.isEmpty()) throw new BizException("현재 비밀번호를 입력해 주세요.");
+        if (next.isEmpty()) throw new BizException("새 비밀번호를 입력해 주세요.");
+        if (current.equals(next)) throw new BizException("새 비밀번호는 현재 비밀번호와 달라야 합니다.");
+
+        UserLoginRow row = authMapper.selectUserForLogin(userId);
+        if (row == null || !coCd.equals(row.getCoCd())) {
+            throw new BizException("비밀번호를 변경할 수 없습니다.");
+        }
+        boolean matched = row.getUserPw() != null && !row.getUserPw().isBlank()
+                && BCrypt.checkpw(current, row.getUserPw());
+        if (!matched) throw new BizException("현재 비밀번호가 일치하지 않습니다.");
+        authMapper.updatePassword(coCd, userId, BCrypt.hashpw(next, BCrypt.gensalt()));
     }
 
     /**

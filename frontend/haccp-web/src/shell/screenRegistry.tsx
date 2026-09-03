@@ -49,7 +49,8 @@ import CommonCodePage from "@/pages/sys/code/commoncode/CommonCodePage";
 import ApprovalLineManagementPage from "@/pages/sys/code/approvalline/ApprovalLineManagementPage";
 import ScheduleCycleManagementPage from "@/pages/docs/sch/ScheduleCycleManagementPage";
 // 역할 — 오늘 할 일·개선조치
-import TodayTasksPage from "@/pages/tsk/TodayTasksPage";
+import TodayTasksPage from "@/pages/board/TodayTasksPage";
+import { CalendarPage } from "@/pages/board/CalendarPage";
 import CorrectiveActionManagementPage from "@/pages/flow/ca/corrective/CorrectiveActionManagementPage";
 // 역할 — 사용자 관리 그리드
 import UserManagementPage from "@/pages/sys/code/user/UserManagementPage";
@@ -65,6 +66,8 @@ import AuditLogPage from "@/pages/sys/logs/auditlog/AuditLogPage";
 export const SCREEN_REGISTRY: Record<string, ComponentType> = {
   // 오늘 할 일 — 랜딩
   "today-tasks": TodayTasksPage,
+  // 일정 캘린더 — 회사 전체
+  "calendar": CalendarPage,
 
   // 시스템 관리 — company-management 제거(온보딩 외 미노출)
   "user-management": UserManagementPage,

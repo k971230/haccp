@@ -43,10 +43,14 @@ export interface UserSignModalProps {
   onUploaded: () => void;
 }
 
+/** 비밀번호 변경 모달 — 푸터에서 연다. 대상은 JWT 본인 */
+export type PasswordChangeModalProps = Record<string, never>;
+
 /** 모달 종류 → props 대응표 — 여기에 없는 종류는 열 수 없다 */
 export interface ModalPropsMap {
   CodeLookup: CodeLookupModalProps;
   UserSign: UserSignModalProps;
+  PasswordChange: PasswordChangeModalProps;
 }
 
 /** 열 수 있는 공통 모달 종류 */

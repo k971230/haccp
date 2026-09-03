@@ -16,7 +16,8 @@ Axios HTTP 클라이언트·도메인 API 함수.
 
 | 파일 | 대상 |
 |------|------|
-| `taskWorkflowApi.ts` | 오늘 할 일 `/api/v1/tsk/today-tasks` · 알림 `/api/v1/tsk/notifications` · 이탈개선조치 `/api/v1/flow/ca/*` |
+| `board/taskWorkflowApi.ts` | 오늘 할 일 `/api/v1/board/today-tasks` · 알림 `/api/v1/board/notifications` · 이탈개선조치 `/api/v1/flow/ca/*` |
+| `board/calendarApi.ts` | 일정 캘린더 `/api/v1/board/calendar` |
 | `sys/approvalLineApi.ts` | 결재선 `/api/v1/sys/code/approval-line-management/*` |
 | `documentApi.ts` | 문서함·결재·HWP 원본 `/api/v1/docs/documents` · `/api/v1/docs/templates` |
 

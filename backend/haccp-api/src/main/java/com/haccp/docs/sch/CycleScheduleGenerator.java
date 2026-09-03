@@ -66,16 +66,38 @@ public class CycleScheduleGenerator {
             // months: 생성 개월 수 — app.schedule.generate-months
             int months
     ) {
+        return generate(rule, from, months, Set.of());
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 회사 영업일 전환(workdays)을 반영해 예정일을 만든다
+     *   2) 일정 캘린더 저장 후 재생성과 일일 배치가 호출한다
+     *   3) workdays에 있는 날은 주말·공휴일이어도 영업일이다
+     */
+    public List<LocalDate> generate(
+            // rule: 주기·비영업일·관리 시작일·반복 상세 — null이면 빈 목록
+            Rule rule,
+            // from: 생성 시작일
+            LocalDate from,
+            // months: 생성 개월 수
+            int months,
+            // workdays: 영업일로 바꿀 날짜 — null·빈 집합이면 전환 없음
+            Set<LocalDate> workdays
+    ) {
         if (rule == null || rule.startDt() == null || from == null || months <= 0) return List.of();
         String cycle = rule.cycleCd() == null ? "" : rule.cycleCd().trim().toUpperCase(java.util.Locale.ROOT);
 
         // 구간 시작 — 관리 시작일이 from 보다 늦을 때(= 아직 시작 안 한 주기) 관리 시작일부터 만든다
         LocalDate begin = rule.startDt().isAfter(from) ? rule.startDt() : from;
         LocalDate end = begin.plusMonths(months);
+        Set<LocalDate> override = workdays == null ? Set.of() : workdays;
 
         Set<LocalDate> out = new TreeSet<>();
         for (LocalDate raw : rawDates(cycle, rule.details(), rule.startDt(), begin, end)) {
-            LocalDate moved = shift(raw, rule.nonworkRule());
+            LocalDate moved = shift(raw, rule.nonworkRule(), override);
             // 비영업일 이동으로 관리 시작일 이전이 됐을 때(= 시작 경계) 제외한다
             if (moved.isBefore(rule.startDt()) || moved.isBefore(begin)) continue;
             out.add(moved);
@@ -95,20 +117,38 @@ public class CycleScheduleGenerator {
             // date: 판정 대상 날짜 — null이면 비영업일이 아니다
             LocalDate date
     ) {
+        return isNonWorkingDay(date, Set.of());
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 토·일·공휴일이어도 workdays에 있으면 영업일이다
+     *   2) 캘린더 저장 후 재생성과 PREV/NEXT 이동이 같이 쓴다
+     *   3) workdays가 null이면 전환 없이 판정한다
+     */
+    public boolean isNonWorkingDay(
+            // date: 판정 대상 날짜 — null이면 비영업일이 아니다
+            LocalDate date,
+            // workdays: 영업일로 바꿀 날짜
+            Set<LocalDate> workdays
+    ) {
         if (date == null) return false;
+        // 전환 행이 있을 때(= 그 날을 영업일로) 주말·공휴일이어도 false
+        if (workdays != null && workdays.contains(date)) return false;
         DayOfWeek dow = date.getDayOfWeek();
-        // 토·일일 때(= 주말) 또는 JSON 공휴일일 때
         return dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY || KoreanHolidayDates.ALL.contains(date);
     }
 
     /** 비영업일 처리 규칙에 따라 날짜를 옮긴다. KEEP이거나 영업일이면 그대로 둔다. */
-    private LocalDate shift(LocalDate date, String nonworkRule) {
+    private LocalDate shift(LocalDate date, String nonworkRule, Set<LocalDate> workdays) {
         // 공통코드 NONWORK_RULE 은 UPPER_SNAKE. 옛 소문자 데이터가 와도 같이 본다
         String rule = nonworkRule == null ? "KEEP" : nonworkRule.trim().toUpperCase(java.util.Locale.ROOT);
-        if (!isNonWorkingDay(date)) return date;
+        if (!isNonWorkingDay(date, workdays)) return date;
         LocalDate moved = date;
         // 추석 연휴+주말+대체 연속을 넘기기 위한 상한 — 무한 루프 방지
-        for (int i = 0; i < 14 && isNonWorkingDay(moved); i++) {
+        for (int i = 0; i < 14 && isNonWorkingDay(moved, workdays); i++) {
             if ("PREV".equals(rule)) moved = moved.minusDays(1);
             else if ("NEXT".equals(rule)) moved = moved.plusDays(1);
             else return date;

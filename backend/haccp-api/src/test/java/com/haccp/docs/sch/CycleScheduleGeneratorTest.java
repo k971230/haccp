@@ -76,6 +76,9 @@ class CycleScheduleGeneratorTest {
         assertTrue(generator.isNonWorkingDay(LocalDate.of(2026, 3, 2)), "2026-03-02 대체공휴일");
         assertFalse(generator.isNonWorkingDay(LocalDate.of(2030, 1, 1)), "2030 JSON 없음·화");
         assertTrue(generator.isNonWorkingDay(LocalDate.of(2030, 1, 5)), "2030-01-05 토");
+        assertFalse(
+                generator.isNonWorkingDay(LocalDate.of(2030, 1, 5), java.util.Set.of(LocalDate.of(2030, 1, 5))),
+                "전환된 토요일은 영업일");
     }
 
     /** 관리 시작일 경계 — 시작일 이전 예정일은 만들지 않는다. */

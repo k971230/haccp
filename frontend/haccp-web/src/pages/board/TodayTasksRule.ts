@@ -13,7 +13,7 @@
 // 역할 — 그리드 컬럼 정의
 import type { GridColumn } from "@/types/grid";
 // 역할 — 오늘 과제 행
-import type { WorkflowRow } from "@/api/taskWorkflowApi";
+import type { WorkflowRow } from "@/api/board/taskWorkflowApi";
 // 역할 — 최근 문서 행
 import type { DocumentListRow } from "@/api/documentApi";
 // 역할 — 문서·과제·개선조치 상태 배지·과제 문구
@@ -569,7 +569,7 @@ export function buildTaskColumns(): GridColumn<TaskRow>[] {
  * 개발자: 박승우
  * 일자: 2026-08-25
  * 코멘트:
- *   1) 최근 문서 컬럼 — 문서·번호·상태 배지·기준일
+ *   1) 최근 문서 컬럼 — 상태·문서·제목·문서번호·기준일
  *   2) Page 가 DOC_STATUS 공통코드 맵을 넘겨 한 번 만든다
  *   3) WRK 는 작성중으로 보인다. 색은 DOC_STATUS_BADGE
  */
@@ -579,18 +579,6 @@ export function buildDocColumns(
 ): GridColumn<DocRow>[] {
   return [
     {
-      // 양식명
-      field: "tmplNm",
-      header: "문서",
-      width: 180,
-    },
-    {
-      // 문서번호
-      field: "docNo",
-      header: "문서번호",
-      width: 140,
-    },
-    {
       // 결재상태 — 작성중·검토요청 등. 업무 상태가 정하고 사용자가 바꾸지 않는다
       field: "status",
       header: "상태",
@@ -599,6 +587,24 @@ export function buildDocColumns(
       editable: false,
       codeMap: statusNm,
       badge: DOC_STATUS_BADGE,
+    },
+    {
+      // 양식명
+      field: "tmplNm",
+      header: "문서",
+      width: 160,
+    },
+    {
+      // 문서 제목 — SP title
+      field: "title",
+      header: "제목",
+      width: 180,
+    },
+    {
+      // 문서번호
+      field: "docNo",
+      header: "문서번호",
+      width: 140,
     },
     {
       // 기준일 — 저장은 YYYYMMDD 지만 화면에는 YYYY-MM-DD 로 보인다.

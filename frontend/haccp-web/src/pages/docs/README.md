@@ -66,7 +66,7 @@ pages/docs/
 | `htmlFormApi.ts` | HTML양식 원본 5화면 + 공정점검 작성 — URL `/api/v1/docs/html-form/{scrnCd}` · `/api/v1/docs/html-form/hyg-process-template` |
 | `docCycleApi.ts` | 문서주기 — URL `/api/v1/docs/sch/schedule-cycle-management` |
 
-파일 I/O는 공용 `api/documentApi.ts`. 개선조치는 `taskWorkflowApi`.
+파일 I/O는 공용 `api/documentApi.ts`. 개선조치는 `api/board/taskWorkflowApi`.
 
 ### 0-4. pref 키 (값 변경 금지)
 

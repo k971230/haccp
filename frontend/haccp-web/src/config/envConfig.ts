@@ -82,10 +82,10 @@ export const API_RETRY_COUNT = parsePositiveInt(
   2
 );
 
-/** 오늘 할 일·대시보드 자동 새로고침 주기(ms) */
+/** 오늘 할 일·일정 캘린더 자동 새로고침 주기(ms) — 기본 2분 */
 export const DASHBOARD_POLLING_MS = parsePositiveInt(
   import.meta.env.VITE_DASHBOARD_POLLING_MS,
-  10_000
+  120_000
 );
 
 /** 오늘 할 일 최근 문서 조회 일수 — 오늘을 포함한다 */

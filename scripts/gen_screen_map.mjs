@@ -99,12 +99,15 @@ const spOf = (scrnCd) =>
 const rows = [...urls.entries()]
   .map(([scrnCd, url]) => {
     const menu = [...menus.values()].find((v) => v.scrn === scrnCd);
-    const mid = menu?.parent ?? null;
-    const top = mid && menus.get(mid) ? menus.get(mid).parent : null;
+    const parent = menu?.parent ?? null;
+    const grand = parent && menus.get(parent) ? menus.get(parent).parent : null;
+    // 3단: 대=grand 중=parent. 2단(board 바로 아래 leaf): 대=parent 중=빈칸
+    const top = grand ?? parent;
+    const mid = grand ? parent : null;
     const fe = feOf(scrnCd);
     return {
       top: nameOf(top),
-      mid: top ? nameOf(mid) : "",
+      mid: mid ? nameOf(mid) : "",
       nm: menu?.nm ?? scrnCd,
       scrnCd,
       url,

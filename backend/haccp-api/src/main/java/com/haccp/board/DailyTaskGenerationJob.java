@@ -11,7 +11,7 @@
  * PIPELINE[HB96] 워크플로 일정 생성
  * PIPELINE[HB94, HB2] 연관 모듈
  */
-package com.haccp.tsk;
+package com.haccp.board;
 
 // 역할 — 문서주기 규칙 → 예정일 재생성 (규칙 해석은 이 서비스 한 곳에만 있다)
 import com.haccp.docs.sch.DocCycleService;

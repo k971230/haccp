@@ -11,7 +11,7 @@
  * PIPELINE[HB95] 워크플로 작업 Controller
  * PIPELINE[HB93, HB94, HF87] 연관 모듈
  */
-package com.haccp.tsk;
+package com.haccp.board;
 
 // 역할 — 공통 응답
 import com.haccp.common.response.CommonResponse;
@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TaskController {
     private final TaskService service;
 
-    @GetMapping("/api/v1/tsk/today-tasks/list")
+    @GetMapping("/api/v1/board/today-tasks/list")
     public CommonResponse<List<Map<String, Object>>> todayTasks() { return CommonResponse.ok(service.todayTasks()); }
 
     /**
@@ -42,7 +42,7 @@ public class TaskController {
      *   2) 랜딩 최근 문서 패널이 호출한다. 문서함 /docs/documents/list 는 그대로 둔다
      *   3) 성공 시 { rows, total }. total 은 기간 전체 건수
      */
-    @GetMapping("/api/v1/tsk/today-tasks/recent-docs")
+    @GetMapping("/api/v1/board/today-tasks/recent-docs")
     public CommonResponse<Map<String, Object>> todayTaskDocs(
             // 기준일 시작 YYYYMMDD
             @RequestParam(required = false) String fromDt,
@@ -57,10 +57,10 @@ public class TaskController {
     }
 
     /** 안 읽은 알림 목록 — 셸 종 아이콘이 호출한다 */
-    @GetMapping("/api/v1/tsk/notifications/list")
+    @GetMapping("/api/v1/board/notifications/list")
     public CommonResponse<List<Map<String, Object>>> notifications() { return CommonResponse.ok(service.notifications()); }
 
     /** 알림 1건을 읽음 처리한다 */
-    @PutMapping("/api/v1/tsk/notifications/{idx}/read")
+    @PutMapping("/api/v1/board/notifications/{idx}/read")
     public CommonResponse<Void> readNotification(@PathVariable Long idx) { service.readNotification(idx); return CommonResponse.ok(null); }
 }

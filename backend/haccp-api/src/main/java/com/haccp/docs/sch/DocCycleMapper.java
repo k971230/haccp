@@ -136,6 +136,23 @@ public interface DocCycleMapper {
      *   2) DocumentAlarmScheduler가 주기적으로 호출한다
      *   3) 성공 시 void — 같은 예정일은 alarm_send_yn='Y'로 재발송되지 않는다
      */
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 회사의 영업일 전환 날짜를 읽는다
+     *   2) 예정일 재생성 전에 호출한다
+     *   3) ymd YYYYMMDD 목록. 없으면 빈 목록
+     */
+    List<String> selectWorkdays(
+            // JWT·배치 회사코드
+            @Param("coCd") String coCd,
+            // 조회 시작일 YYYYMMDD — 생성 구간보다 넓게 잡는다
+            @Param("fromYmd") String fromYmd,
+            // 조회 종료일 YYYYMMDD
+            @Param("toYmd") String toYmd
+    );
+
     void sendTaskAlarms(
             // 배치 실행 주체 ID — 감사 로그용
             @Param("userId") String userId,

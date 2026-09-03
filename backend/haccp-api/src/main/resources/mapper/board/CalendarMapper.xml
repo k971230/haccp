@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CalendarMapper.xml — 일정 캘린더 SP 호출.
+
+개발자: 박승우
+일자: 2026-09-03
+코멘트:
+  1) 과제·영업일 조회는 FUNCTION, 전환 저장은 PROCEDURE
+  2) 회사·작업자는 Service JWT 만 넘긴다
+  3) 공휴일은 Java KoreanHolidayDates 가 붙인다
+
+PIPELINE[HB210] 일정 캘린더 매퍼
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.board.CalendarMapper">
+    <!-- 회사 전체 작성과제 — 월 칸에 뿌릴 행 -->
+    <select id="selectTasks" resultType="map">
+        SELECT * FROM sp_calendar_r_000(
+            #{coCd,    jdbcType=VARCHAR},
+            #{fromYmd, jdbcType=VARCHAR},
+            #{toYmd,   jdbcType=VARCHAR}
+        )
+    </select>
+    <!-- 영업일 전환 — 체크박스 초기값 -->
+    <select id="selectWorkdays" resultType="string">
+        SELECT ymd FROM sp_calendar_workday_r_000(
+            #{coCd,    jdbcType=VARCHAR},
+            #{fromYmd, jdbcType=VARCHAR},
+            #{toYmd,   jdbcType=VARCHAR}
+        )
+    </select>
+    <!-- 영업일 전환 저장 — Y INSERT / N DELETE -->
+    <update id="upsertWorkday" statementType="CALLABLE">
+        CALL sp_calendar_workday_u_000(
+            #{coCd,   jdbcType=VARCHAR},
+            #{ymd,    jdbcType=VARCHAR},
+            #{workYn, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+</mapper>

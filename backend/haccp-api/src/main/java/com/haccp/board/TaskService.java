@@ -11,7 +11,7 @@
  * PIPELINE[HB94] 워크플로 작업 서비스
  * PIPELINE[HB93, HB95, HF87] 연관 모듈
  */
-package com.haccp.tsk;
+package com.haccp.board;
 
 // 역할 — JSON 변환
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -49,9 +49,9 @@ public class TaskService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-25
+     * 일자: 2026-09-03
      * 코멘트:
-     *   1) 오늘 할 일 최근 문서를 OFFSET/LIMIT 으로 조회한다
+     *   1) 오늘 할 일 최근 문서를 OFFSET/LIMIT 으로 조회한다 — 본인 작성분만
      *   2) 랜딩 최근 문서 패널이 fromDt·toDt·offset·limit 을 넘긴다
      *   3) 응답은 rows + total. total 은 첫 행 totalCnt, 0건이면 0
      */
@@ -67,8 +67,9 @@ public class TaskService {
     ) {
         int off = offset == null || offset < 0 ? 0 : offset;
         int lim = limit == null || limit < 1 ? 1 : Math.min(limit, 100);
+        // coCd·userId: JWT — SP writer_id 필터로 내가 쓴 문서만
         List<Map<String, Object>> rows = camelRows(mapper.selectTodayTaskDocs(
-                LoginUserContext.coCd(), text(fromDt), text(toDt), off, lim));
+                LoginUserContext.coCd(), LoginUserContext.userId(), text(fromDt), text(toDt), off, lim));
         int total = 0;
         if (!rows.isEmpty()) {
             Object raw = rows.get(0).get("totalCnt");

@@ -18,9 +18,11 @@ import { useNavigate } from "react-router-dom";
 // 역할 — KPI 카드 문서형 아이콘 (이모지 대신 Lucide)
 import { ClipboardList, FileCheck2, FileClock, FileText, FileWarning, Files, type LucideIcon } from "lucide-react";
 // 역할 — 오늘 과제 API
-import { listTodayRecentDocs, listTodayTasks, type WorkflowRow } from "@/api/taskWorkflowApi";
+import { listTodayRecentDocs, listTodayTasks, type WorkflowRow } from "@/api/board/taskWorkflowApi";
 // 역할 — 결재대기
 import { listApprovalInbox, type DocumentListRow } from "@/api/documentApi";
+// 역할 — 2분 폴링 주기
+import { DASHBOARD_POLLING_MS } from "@/config/envConfig";
 // 역할 — mes-web형 그리드
 import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
 // 역할 — SoPage형 패널 헤더·활성 섹션
@@ -177,6 +179,16 @@ export default function TodayTasksPage() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  // 2분 무소음 폴링 — 일하고 있는 상태를 맞춘다. 실패는 다음 주기에 다시 본다
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      void load().catch(() => {
+        // 폴링 실패는 조용히 넘긴다
+      });
+    }, DASHBOARD_POLLING_MS);
+    return () => window.clearInterval(id);
+  }, [load]);
 
   usePageCommands({
     search: () => { void asyncAct.run(load, "search"); },

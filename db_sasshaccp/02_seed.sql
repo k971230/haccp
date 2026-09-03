@@ -424,7 +424,9 @@ INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd
 INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (1748, '0000', 'code', '권한·사용자·코드', 'sys', NULL, 6100, 'Y', 'system', '2026-08-12 10:28:56.424062', 'system', '2026-08-25 15:03:14.656149');
 INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (1749, '0000', 'logs', '이력·통계', 'sys', NULL, 6200, 'Y', 'system', '2026-08-12 10:28:56.424062', 'system', '2026-08-25 15:03:14.656149');
 INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (1734, '0000', 'sys', '시스템', NULL, NULL, 6000, 'Y', 'system', '2026-08-12 10:28:56.395891', 'system', '2026-08-25 15:03:14.656149');
-INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (10, '0000', 'today-tasks', '오늘 할 일·대시보드', NULL, 'today-tasks', 1001, 'Y', 'system', '2026-08-05 21:27:07.513497', 'system', '2026-08-25 15:03:14.656149');
+INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (2100, '0000', 'board', '게시판', NULL, NULL, 1000, 'Y', 'system', '2026-09-03 00:00:00', NULL, NULL);
+INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (10, '0000', 'today-tasks', '오늘 할 일·대시보드', 'board', 'today-tasks', 1001, 'Y', 'system', '2026-08-05 21:27:07.513497', 'system', '2026-09-03 00:00:00');
+INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (2101, '0000', 'calendar', '일정 캘린더', 'board', 'calendar', 1002, 'Y', 'system', '2026-09-03 00:00:00', NULL, NULL);
 INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (2069, '0000', 'html-form', 'HTML·양식 원본', 'docs', NULL, 2700, 'Y', 'system', '2026-08-19 17:49:26.628322', 'system', '2026-08-25 16:44:06.853568');
 INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (2074, '0000', 'ccp-pkg-template', 'CCP 포장공정 일지관리', 'html-form', 'ccp-pkg-template', 2703, 'Y', 'system', '2026-08-20 11:56:04.421735', 'system', '2026-08-25 16:44:06.853568');
 INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (2053, '0000', 'common-code-management', '공통코드관리', 'code', 'common-code-management', 6101, 'Y', 'system', '2026-08-19 16:32:04.90388', 'system', '2026-08-25 15:03:14.656149');
@@ -503,6 +505,9 @@ INSERT INTO sasshaccp.tbl_role_screen (idx, co_cd, usrgrp_cd, scrn_cd, read_yn, 
 INSERT INTO sasshaccp.tbl_role_screen (idx, co_cd, usrgrp_cd, scrn_cd, read_yn, write_yn, modify_yn, delete_yn, print_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (63, '0000', 'USER', 'corrective-action-management', 'Y', 'Y', 'Y', 'N', 'Y', 'system', '2026-08-05 21:27:07.513497', 'system', '2026-08-06 10:18:02.196642');
 INSERT INTO sasshaccp.tbl_role_screen (idx, co_cd, usrgrp_cd, scrn_cd, read_yn, write_yn, modify_yn, delete_yn, print_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (153, '0000', 'ADMIN', 'hwp-template-management', 'Y', 'Y', 'Y', 'Y', 'Y', 'system', '2026-08-07 09:18:50.640185', NULL, NULL);
 INSERT INTO sasshaccp.tbl_role_screen (idx, co_cd, usrgrp_cd, scrn_cd, read_yn, write_yn, modify_yn, delete_yn, print_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (371, '0000', 'VIEWER', 'today-tasks', 'Y', 'N', 'N', 'N', 'Y', 'system', '2026-08-11 10:49:00.244417', 'system', '2026-08-25 16:44:06.853568');
+INSERT INTO sasshaccp.tbl_role_screen (idx, co_cd, usrgrp_cd, scrn_cd, read_yn, write_yn, modify_yn, delete_yn, print_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (1760, '0000', 'ADMIN', 'calendar', 'Y', 'Y', 'Y', 'Y', 'Y', 'system', '2026-09-03 00:00:00', NULL, NULL);
+INSERT INTO sasshaccp.tbl_role_screen (idx, co_cd, usrgrp_cd, scrn_cd, read_yn, write_yn, modify_yn, delete_yn, print_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (1761, '0000', 'USER', 'calendar', 'Y', 'N', 'N', 'N', 'Y', 'system', '2026-09-03 00:00:00', NULL, NULL);
+INSERT INTO sasshaccp.tbl_role_screen (idx, co_cd, usrgrp_cd, scrn_cd, read_yn, write_yn, modify_yn, delete_yn, print_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (1762, '0000', 'VIEWER', 'calendar', 'Y', 'N', 'N', 'N', 'Y', 'system', '2026-09-03 00:00:00', NULL, NULL);
 INSERT INTO sasshaccp.tbl_role_screen (idx, co_cd, usrgrp_cd, scrn_cd, read_yn, write_yn, modify_yn, delete_yn, print_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (388, '0000', 'VIEWER', 'document-inbox', 'Y', 'N', 'N', 'N', 'Y', 'system', '2026-08-11 10:49:00.244417', 'system', '2026-08-25 16:44:06.853568');
 INSERT INTO sasshaccp.tbl_role_screen (idx, co_cd, usrgrp_cd, scrn_cd, read_yn, write_yn, modify_yn, delete_yn, print_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (390, '0000', 'VIEWER', 'corrective-action-management', 'Y', 'N', 'N', 'N', 'Y', 'system', '2026-08-11 10:49:00.244417', 'system', '2026-08-25 16:44:06.853568');
 INSERT INTO sasshaccp.tbl_role_screen (idx, co_cd, usrgrp_cd, scrn_cd, read_yn, write_yn, modify_yn, delete_yn, print_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (389, '0000', 'VIEWER', 'sign-ready', 'Y', 'N', 'N', 'N', 'Y', 'system', '2026-08-11 10:49:00.244417', 'system', '2026-08-25 16:44:06.853568');
@@ -530,6 +535,7 @@ INSERT INTO sasshaccp.tbl_role_screen (idx, co_cd, usrgrp_cd, scrn_cd, read_yn, 
 INSERT INTO sasshaccp.tbl_screen (idx, scrn_cd, scrn_nm, module_cd, tmpl_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (3687, 'hyg-process-template', '일반위생·공정점검 양식관리', 'SET', NULL, 1311, 'Y', 'system', '2026-08-19 17:49:26.622432', NULL, NULL);
 INSERT INTO sasshaccp.tbl_screen (idx, scrn_cd, scrn_nm, module_cd, tmpl_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (3691, 'ccp-htg-template', 'CCP 가열공정 일지관리', 'SET', NULL, 1314, 'Y', 'system', '2026-08-20 12:12:02.500456', NULL, NULL);
 INSERT INTO sasshaccp.tbl_screen (idx, scrn_cd, scrn_nm, module_cd, tmpl_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (1, 'today-tasks', '오늘 할 일·대시보드', 'TSK', NULL, 10, 'Y', 'system', '2026-08-05 20:08:12.467336', 'system', '2026-08-11 16:45:40.208062');
+INSERT INTO sasshaccp.tbl_screen (idx, scrn_cd, scrn_nm, module_cd, tmpl_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (3710, 'calendar', '일정 캘린더', 'TSK', NULL, 20, 'Y', 'system', '2026-09-03 00:00:00', NULL, NULL);
 INSERT INTO sasshaccp.tbl_screen (idx, scrn_cd, scrn_nm, module_cd, tmpl_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (20, 'corrective-action-management', '이탈·개선조치', 'APR', NULL, 250, 'Y', 'system', '2026-08-05 20:08:12.467336', 'system', '2026-08-11 16:45:40.219243');
 INSERT INTO sasshaccp.tbl_screen (idx, scrn_cd, scrn_nm, module_cd, tmpl_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (18, 'document-inbox', '문서함', 'APR', NULL, 220, 'Y', 'system', '2026-08-05 20:08:12.467336', 'system', '2026-08-11 16:45:40.219243');
 INSERT INTO sasshaccp.tbl_screen (idx, scrn_cd, scrn_nm, module_cd, tmpl_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (3693, 'hyg-process', '일반위생·공정점검 작성', 'HYG', NULL, 4101, 'Y', 'system', '2026-08-24 10:12:43.159752', 'system', '2026-08-24 14:50:57.268054');
@@ -699,7 +705,7 @@ SELECT pg_catalog.setval('sasshaccp.tbl_doc_no_rule_idx_seq', 442, true);
 -- Name: tbl_menu_idx_seq; Type: SEQUENCE SET; Schema: sasshaccp; Owner: -
 --
 
-SELECT pg_catalog.setval('sasshaccp.tbl_menu_idx_seq', 2099, true);
+SELECT pg_catalog.setval('sasshaccp.tbl_menu_idx_seq', 2101, true);
 
 
 --
@@ -713,14 +719,14 @@ SELECT pg_catalog.setval('sasshaccp.tbl_role_idx_seq', 6, true);
 -- Name: tbl_role_screen_idx_seq; Type: SEQUENCE SET; Schema: sasshaccp; Owner: -
 --
 
-SELECT pg_catalog.setval('sasshaccp.tbl_role_screen_idx_seq', 1752, true);
+SELECT pg_catalog.setval('sasshaccp.tbl_role_screen_idx_seq', 1762, true);
 
 
 --
 -- Name: tbl_screen_idx_seq; Type: SEQUENCE SET; Schema: sasshaccp; Owner: -
 --
 
-SELECT pg_catalog.setval('sasshaccp.tbl_screen_idx_seq', 3704, true);
+SELECT pg_catalog.setval('sasshaccp.tbl_screen_idx_seq', 3710, true);
 
 
 --
@@ -745,7 +751,9 @@ SELECT pg_catalog.setval('sasshaccp.tbl_user_idx_seq', 5, true);
 UPDATE sasshaccp.tbl_menu m
    SET menu_nm = v.nm, upd_id = 'system', upd_dt = now()
   FROM (VALUES
+        ('board', '게시판'),
         ('today-tasks', '오늘 할 일·대시보드'),
+        ('calendar', '일정 캘린더'),
         ('hwp-template-management', '사용양식관리'),
         ('ccp-verify-template', 'CCP 검증점검표 양식관리'),
         ('ccp-pkg-template', 'CCP 포장공정 일지관리'),
@@ -778,6 +786,7 @@ UPDATE sasshaccp.tbl_screen s
    SET scrn_nm = v.nm, upd_id = 'system', upd_dt = now()
   FROM (VALUES
         ('today-tasks', '오늘 할 일·대시보드'),
+        ('calendar', '일정 캘린더'),
         ('hwp-template-management', '사용양식관리'),
         ('ccp-verify-template', 'CCP 검증점검표 양식관리'),
         ('ccp-pkg-template', 'CCP 포장공정 일지관리'),

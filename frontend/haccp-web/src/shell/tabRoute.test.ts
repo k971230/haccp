@@ -27,7 +27,8 @@ describe("tabRoute — 계층 경로", () => {
   });
 
   it("사용자 예시 경로가 맞다", () => {
-    expect(routeOf("today-tasks")).toBe("/today-tasks");
+    expect(routeOf("today-tasks")).toBe("/board/today-tasks");
+    expect(routeOf("calendar")).toBe("/board/calendar");
     expect(routeOf("schedule-cycle-management")).toBe("/docs/sch/schedule-cycle-management");
     expect(routeOf("hwp-template-management")).toBe("/docs/hwp/hwp-template-management");
     expect(routeOf("hyg-process-template")).toBe("/docs/html-form/hyg-process-template");
@@ -66,7 +67,7 @@ describe("tabRoute — 계층 경로", () => {
 
   it("빈 코드는 홈, 없는 코드는 오늘 할 일", () => {
     expect(routeOf("")).toBe("/");
-    expect(routeOf("not-a-screen")).toBe("/today-tasks");
+    expect(routeOf("not-a-screen")).toBe("/board/today-tasks");
   });
 
   it("API 는 /api/v1 + SCREEN_PATH + 동작 이고 /haccp 는 없다", () => {

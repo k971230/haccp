@@ -11,9 +11,9 @@
 
 | | |
 |---|---|
-| 목차에 오른 폴더 | 189 |
-| README 있는 폴더 | 176 |
-| **README 없는데 소스가 있는 폴더** | **13** |
+| 목차에 오른 폴더 | 192 |
+| README 있는 폴더 | 178 |
+| **README 없는데 소스가 있는 폴더** | **14** |
 
 ## 트리
 
@@ -48,6 +48,8 @@ backend/
                   정본: FE pages/auth/README.md. 골드 AuthService.java. XML mapper/auth/.
                 dto/
                     auth 요청·응답 DTO (JSON camelCase).
+              board/
+                  정본: FE pages/board/README.md. TaskController · CalendarController · DailyTaskGenerationJob. XML mapper/board/.
               code/
                   도메인 code — 공통코드. Controller·Service·Mapper 인터페이스.
                 dto/
@@ -148,14 +150,16 @@ backend/
                       화면코드 login-history · XML resources/mapper/sys/logs/loginhistory/LoginHistoryMapper.xml · SP db_sasshaccp/01_…
                   screenusage/
                       화면코드 screen-usage-statistics · XML resources/mapper/sys/logs/screenusage/ScreenUsageMapper.xml · SP db_sassh…
-              tsk/
-                  정본: FE pages/tsk/README.md. TaskController · DailyTaskGenerationJob. XML mapper/tsk/.
         resources/
             application.yml·MyBatis mapper·템플릿 매니페스트.
+          holidays/
+              문서주기 비영업일 판정용. 규칙을 이 저장소에서 계산하지 않는다.
           mapper/
               도메인별 MyBatis XML. SP 호출은 lower_snake. 경로는 mapper/{대}/{중}/ —
             auth/
                 MyBatis XML — auth (인증·로그인·JWT). SP sp_tbl_ 호출.
+            board/
+                MyBatis XML — 게시판(오늘 할 일·일정 캘린더). SP sp_tbl_ · sp_calendar_ 호출.
             code/
                 MyBatis XML — code (공통코드). SP sp_tbl_ 호출.
             docs/
@@ -219,8 +223,6 @@ backend/
                     조회 전용 SP.
                 screenusage/
                     조회 전용 SP.
-            tsk/
-                MyBatis XML — tsk (오늘 할 일·과제). SP sp_tbl_ 호출.
           templates/
               classpath 템플릿·매니페스트(TSV 등).
             haccp/
@@ -237,6 +239,7 @@ backend/
                 hwpdoc/  ← README 없음
                 ca/  ← README 없음
                   user/  ← README 없음
+db_migration/  ← README 없음
 db_sasshaccp/
     PostgreSQL sasshaccp 스키마 정본. 여기 7본이 곧 DB 다 — 손으로 친 DDL·데이터는 남기지 않는다.
 docs/
@@ -261,6 +264,8 @@ frontend/
         SPA 소스 루트. 이야기 docs/15 · 태그 docs/23 · 경로 docs/24 · 찾는 법 docs/17.
       api/
           Axios HTTP 클라이언트·도메인 API 함수.
+        board/
+            게시판 화면 API. 오늘 할 일·알림·일정 캘린더.
         docs/
             /docs 대분류 화면이 쓰는 API. 베이스는 apiOf(scrnCd) 가 SCREEN_PATH 로 조립한다.
         draft/
@@ -293,6 +298,8 @@ frontend/
           화면 페이지. 폴더는 URL 대/중과 같다. 경로 정본 docs/4_명명과_경로.md. 체인 표는 각 영역 README.
         auth/
             로그인만. 평탄. 공개 라우트 /login (브라우저 Path /haccp/login).
+        board/
+            게시판 대분류. 오늘 할 일·일정 캘린더. URL /board/{scrnCd}.
         docs/
             문서 관리 소스. 골드 구조는 pages/sys/README.md와 같다.
           html-form/
@@ -357,8 +364,6 @@ frontend/
                 정본 파이프라인 요약은 상위 pages/sys/README.md 6장.
             screenusage/
                 정본 파이프라인 요약은 상위 pages/sys/README.md 6장.
-        tsk/
-            오늘 할 일. 화면 1개. Page + Rule.
       routes/
           React Router·SCREEN_REGISTRY 연동.
       shell/
@@ -384,7 +389,7 @@ scripts/
 tools/  ← README 없음
 ```
 
-## README 없는 폴더 (13)
+## README 없는 폴더 (14)
 
 `CLAUDE.md` 는 폴더를 새로 만들면 README 를 같이 만들라고 한다. 아래가 그 규칙 밖이다.
 
@@ -400,6 +405,7 @@ tools/  ← README 없음
 - `backend/haccp-api/src/test/java/com/haccp/draft/hwpdoc` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/flow/ca` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/sys/code/user` — 소스 1본
+- `db_migration` — 소스 2본
 - `tools` — 소스 8본
 
 ## 관련

@@ -49,7 +49,7 @@ alwaysApply: true
 | `VITE_GRID_VIRTUAL_THRESHOLD` | 100 | 가상화 임계 |
 | `VITE_SEARCH_DEBOUNCE_MS` | 300 | 검색 디바운스 |
 | `VITE_API_RETRY_COUNT` | 2 | GET 재시도 |
-| `VITE_DASHBOARD_POLLING_MS` | 10000 | 대시보드 폴링 |
+| `VITE_DASHBOARD_POLLING_MS` | 120000 | 오늘 할 일·일정 캘린더 폴링 |
 | `VITE_TODAY_TASKS_RECENT_DAYS` | 7 | 오늘 할 일 최근 문서 일수 |
 | `VITE_TODAY_TASKS_PAGE_SIZE` | 20 | 오늘 할 일 최근 문서 페이지 |
 | `VITE_VIEW_LOG_FLUSH_MS` | 30000 | 화면 조회 로그 배치 전송 주기 (`useViewLog.ts`) |

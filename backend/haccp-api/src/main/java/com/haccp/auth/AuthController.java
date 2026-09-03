@@ -15,6 +15,8 @@ package com.haccp.auth;
 
 // 역할 — 로그인 요청 DTO
 import com.haccp.auth.dto.LoginRequest;
+// 역할 — 비밀번호 변경 요청
+import com.haccp.auth.dto.PasswordChangeRequest;
 // 역할 — 로그인 응답 DTO
 import com.haccp.auth.dto.LoginResponse;
 // 역할 — 로그인 사용자 DTO
@@ -89,5 +91,22 @@ public class AuthController {
     @GetMapping("/me")
     public CommonResponse<LoginUser> me() {
         return CommonResponse.ok(LoginUserContext.get());
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 본인 비밀번호를 변경한다
+     *   2) 푸터 키 아이콘 팝업에서 호출한다. JWT 필수
+     *   3) 성공 시 본문 없음. 실패는 업무 문구
+     */
+    @PostMapping("/change-password")
+    public CommonResponse<Void> changePassword(
+            // 현재·새 비밀번호. userId는 본문에 없다
+            @Valid @RequestBody PasswordChangeRequest req
+    ) {
+        authService.changePassword(req);
+        return CommonResponse.ok(null);
     }
 }
