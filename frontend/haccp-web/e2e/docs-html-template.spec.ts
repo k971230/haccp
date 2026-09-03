@@ -21,8 +21,10 @@ import {
   fillCell,
   grids,
   login,
+  loginCoCd,
   openScreen,
   saveAndConfirm,
+  sqlLit,
 } from "./helpers";
 
 /** 화면 · 표준 양식코드 · 복사본 지면 항목이 들어가는 표 */
@@ -123,7 +125,7 @@ test.describe("HTML 양식 원본 5화면", () => {
     ).toBeGreaterThan(0);
     // 표준은 DB 행이 없다 — 복사가 표준을 실체화해 덮어쓰면 안 된다
     expect(
-      dbOne(`SELECT count(*) FROM tbl_template WHERE tmpl_cd='${target.std}' AND co_cd='0000'`),
+      dbOne(`SELECT count(*) FROM tbl_template WHERE tmpl_cd='${target.std}' AND co_cd='${sqlLit(loginCoCd())}'`),
       "복사 과정에서 표준이 회사 양식으로 만들어졌다",
     ).toBe("0");
   });
@@ -205,12 +207,12 @@ test.describe("HTML 양식 원본 5화면", () => {
      */
     await expect
       .poll(
-        () => dbOne(`SELECT count(*) FROM tbl_company_template WHERE co_cd='0000' AND tmpl_cd='${made}'`),
+        () => dbOne(`SELECT count(*) FROM tbl_company_template WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='${made}'`),
         { timeout: 20_000 },
       )
       .toBe("0");
     expect(
-      dbOne(`SELECT count(*) FROM tbl_schedule_rule WHERE co_cd='0000' AND tmpl_cd='${made}'`),
+      dbOne(`SELECT count(*) FROM tbl_schedule_rule WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='${made}'`),
       "삭제했는데 예정 규칙이 남았다 — 없는 양식의 과제가 계속 생긴다",
     ).toBe("0");
     expect(

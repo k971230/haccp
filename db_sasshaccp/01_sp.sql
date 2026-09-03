@@ -4312,8 +4312,13 @@ BEGIN
     ) THEN
         RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
+    -- 문서 없는 예정·밀린 과제·주기·채번·사용양식은 양식과 같이 지운다
+    DELETE FROM tbl_schedule_task
+     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd
+       AND status IN ('TODO', 'LATE') AND doc_idx IS NULL;
     DELETE FROM tbl_schedule_rule_detail WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_schedule_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+    DELETE FROM tbl_doc_no_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_company_template WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     UPDATE tbl_html_hyg_prc_ver SET use_yn = 'N', apply_yn = 'N', upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
@@ -4340,9 +4345,6 @@ BEGIN
     END IF;
     IF EXISTS (SELECT 1 FROM tbl_document d WHERE d.co_cd = p_co_cd AND d.tmpl_cd = p_tmpl_cd AND d.del_yn = 'N') THEN
         RETURN QUERY SELECT COALESCE(v_nm, v_key), '작성 문서'::varchar; RETURN;
-    END IF;
-    IF EXISTS (SELECT 1 FROM tbl_schedule_task t WHERE t.co_cd = p_co_cd AND t.tmpl_cd = p_tmpl_cd) THEN
-        RETURN QUERY SELECT COALESCE(v_nm, v_key), '오늘 할 일'::varchar;
     END IF;
 END$$;
 
@@ -5278,6 +5280,15 @@ BEGIN
         RAISE EXCEPTION '예정일 생성 대상이 올바르지 않습니다.' USING ERRCODE = '45000';
     END IF;
 
+    -- 관리시작일 이전 미작성 밀린 행 — 시작일을 늦춰 저장하면 같이 지운다. 문서 있는 ING/APV 는 둔다
+    DELETE FROM tbl_schedule_task t
+     USING tbl_schedule_rule r
+     WHERE t.co_cd = p_co_cd AND t.tmpl_cd = p_tmpl_cd
+       AND r.co_cd = t.co_cd AND r.tmpl_cd = t.tmpl_cd
+       AND t.base_dt < r.base_dt
+       AND t.status IN ('TODO', 'LATE')
+       AND t.doc_idx IS NULL;
+
     -- 규칙에서 빠진 미래 예정일 정리 — 작성 시작 전(TODO·doc 없음) 만 지운다
     DELETE FROM tbl_schedule_task t
      WHERE t.co_cd = p_co_cd AND t.tmpl_cd = p_tmpl_cd
@@ -5322,7 +5333,7 @@ END$_$;
 -- Name: PROCEDURE sp_tbl_schedule_task_regen_c_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_dates jsonb, IN p_due_time character varying, IN p_dept_cd character varying, IN p_user_id character varying, IN p_alarm_min integer, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_schedule_task_regen_c_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_dates jsonb, IN p_due_time character varying, IN p_dept_cd character varying, IN p_user_id character varying, IN p_alarm_min integer, IN p_id character varying) IS '예정일 재생성 — 생성기가 계산한 날짜 배열만 반영. 미래 미작성분만 지우고 알림시각까지 채운다';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_schedule_task_regen_c_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_dates jsonb, IN p_due_time character varying, IN p_dept_cd character varying, IN p_user_id character varying, IN p_alarm_min integer, IN p_id character varying) IS '예정일 재생성 — 관리시작일 이전 미작성 밀린 행과 미래 미작성분을 지우고, 생성기 날짜만 반영한다';
 
 
 --
@@ -5415,8 +5426,13 @@ BEGIN
     ) THEN
         RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
+    -- 문서 없는 예정·밀린 과제·주기·채번·사용양식은 양식과 같이 지운다
+    DELETE FROM tbl_schedule_task
+     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd
+       AND status IN ('TODO', 'LATE') AND doc_idx IS NULL;
     DELETE FROM tbl_schedule_rule_detail WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_schedule_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+    DELETE FROM tbl_doc_no_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_company_template WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     UPDATE tbl_tml_ccp_chk_ver SET use_yn = 'N', apply_yn = 'N', upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
@@ -5443,9 +5459,6 @@ BEGIN
     END IF;
     IF EXISTS (SELECT 1 FROM tbl_document d WHERE d.co_cd = p_co_cd AND d.tmpl_cd = p_tmpl_cd AND d.del_yn = 'N') THEN
         RETURN QUERY SELECT COALESCE(v_nm, v_key), '작성 문서'::varchar; RETURN;
-    END IF;
-    IF EXISTS (SELECT 1 FROM tbl_schedule_task t WHERE t.co_cd = p_co_cd AND t.tmpl_cd = p_tmpl_cd) THEN
-        RETURN QUERY SELECT COALESCE(v_nm, v_key), '오늘 할 일'::varchar;
     END IF;
 END$$;
 
@@ -5667,8 +5680,13 @@ BEGIN
     ) THEN
         RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
+    -- 문서 없는 예정·밀린 과제·주기·채번·사용양식은 양식과 같이 지운다
+    DELETE FROM tbl_schedule_task
+     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd
+       AND status IN ('TODO', 'LATE') AND doc_idx IS NULL;
     DELETE FROM tbl_schedule_rule_detail WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_schedule_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+    DELETE FROM tbl_doc_no_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_company_template WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     UPDATE tbl_tml_ccp_htg_ver SET use_yn = 'N', apply_yn = 'N', upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
@@ -5695,9 +5713,6 @@ BEGIN
     END IF;
     IF EXISTS (SELECT 1 FROM tbl_document d WHERE d.co_cd = p_co_cd AND d.tmpl_cd = p_tmpl_cd AND d.del_yn = 'N') THEN
         RETURN QUERY SELECT COALESCE(v_nm, v_key), '작성 문서'::varchar; RETURN;
-    END IF;
-    IF EXISTS (SELECT 1 FROM tbl_schedule_task t WHERE t.co_cd = p_co_cd AND t.tmpl_cd = p_tmpl_cd) THEN
-        RETURN QUERY SELECT COALESCE(v_nm, v_key), '오늘 할 일'::varchar;
     END IF;
 END$$;
 
@@ -5919,8 +5934,13 @@ BEGIN
     ) THEN
         RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
+    -- 문서 없는 예정·밀린 과제·주기·채번·사용양식은 양식과 같이 지운다
+    DELETE FROM tbl_schedule_task
+     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd
+       AND status IN ('TODO', 'LATE') AND doc_idx IS NULL;
     DELETE FROM tbl_schedule_rule_detail WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_schedule_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+    DELETE FROM tbl_doc_no_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_company_template WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     UPDATE tbl_tml_ccp_mtl_ver SET use_yn = 'N', apply_yn = 'N', upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
@@ -5947,9 +5967,6 @@ BEGIN
     END IF;
     IF EXISTS (SELECT 1 FROM tbl_document d WHERE d.co_cd = p_co_cd AND d.tmpl_cd = p_tmpl_cd AND d.del_yn = 'N') THEN
         RETURN QUERY SELECT COALESCE(v_nm, v_key), '작성 문서'::varchar; RETURN;
-    END IF;
-    IF EXISTS (SELECT 1 FROM tbl_schedule_task t WHERE t.co_cd = p_co_cd AND t.tmpl_cd = p_tmpl_cd) THEN
-        RETURN QUERY SELECT COALESCE(v_nm, v_key), '오늘 할 일'::varchar;
     END IF;
 END$$;
 
@@ -6171,8 +6188,13 @@ BEGIN
     ) THEN
         RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
+    -- 문서 없는 예정·밀린 과제·주기·채번·사용양식은 양식과 같이 지운다
+    DELETE FROM tbl_schedule_task
+     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd
+       AND status IN ('TODO', 'LATE') AND doc_idx IS NULL;
     DELETE FROM tbl_schedule_rule_detail WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_schedule_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+    DELETE FROM tbl_doc_no_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_company_template WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     UPDATE tbl_tml_ccp_pkg_ver SET use_yn = 'N', apply_yn = 'N', upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
@@ -6199,9 +6221,6 @@ BEGIN
     END IF;
     IF EXISTS (SELECT 1 FROM tbl_document d WHERE d.co_cd = p_co_cd AND d.tmpl_cd = p_tmpl_cd AND d.del_yn = 'N') THEN
         RETURN QUERY SELECT COALESCE(v_nm, v_key), '작성 문서'::varchar; RETURN;
-    END IF;
-    IF EXISTS (SELECT 1 FROM tbl_schedule_task t WHERE t.co_cd = p_co_cd AND t.tmpl_cd = p_tmpl_cd) THEN
-        RETURN QUERY SELECT COALESCE(v_nm, v_key), '오늘 할 일'::varchar;
     END IF;
 END$$;
 
@@ -6441,10 +6460,23 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_today_task_r_000(p_co_cd character v
      WHERE t.co_cd = p_co_cd
        AND (t.user_id IS NULL OR t.user_id = p_user_id)
        AND (
+            -- 오늘 칸: 관리시작일·사용양식과 관계없이 그대로
             (t.base_dt = p_base_dt AND t.status IN ('TODO','ING','LATE','APV'))
-         OR (t.status IN ('TODO','ING','LATE')
+         OR (
+             -- 밀린 칸: 관리시작일 이전·주기 목록에 없는 양식은 숨긴다
+             t.status IN ('TODO','ING','LATE')
              AND NULLIF(btrim(t.due_dt), '') IS NOT NULL
-             AND t.due_dt < p_base_dt)
+             AND t.due_dt < p_base_dt
+             AND EXISTS (
+                 SELECT 1 FROM tbl_schedule_rule sr
+                  WHERE sr.co_cd = t.co_cd AND sr.tmpl_cd = t.tmpl_cd
+                    AND t.base_dt >= sr.base_dt
+             )
+             AND EXISTS (
+                 SELECT 1 FROM tbl_company_template ct2
+                  WHERE ct2.co_cd = t.co_cd AND ct2.tmpl_cd = t.tmpl_cd
+             )
+         )
        )
     UNION ALL
     -- 개선조치: DONE 이 아닌 건. content=조치내용
@@ -6457,7 +6489,7 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_today_task_r_000(p_co_cd character v
     ORDER BY 5 NULLS LAST, 6 NULLS LAST, 1;
 $$;
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_today_task_r_000(character varying, character varying, character varying) IS '오늘 할 일 — 오늘+기한경과 작성과제 + 미완료 개선조치. tmpl_cd·base_dt 는 예정 행추가용';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_today_task_r_000(character varying, character varying, character varying) IS '오늘 할 일 — 오늘 칸 + 관리시작일 이후·사용양식 있는 밀린 과제 + 미완료 개선조치. tmpl_cd·base_dt 는 예정 행추가용';
 
 
 --

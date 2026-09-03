@@ -19,8 +19,10 @@ import {
   fillCell,
   grids,
   login,
+  loginCoCd,
   openScreen,
   saveAndConfirm,
+  sqlLit,
 } from "./helpers";
 
 const PATH = "/sys/code/common-code-management";
@@ -57,7 +59,7 @@ test.describe("공통코드관리", () => {
       dbOne(`SELECT code_nm FROM tbl_code WHERE main_cd='${MAIN}' AND sub_cd='${SUB}'`),
     ).toBe("E2E 시험코드");
     // 회사코드·시스템여부는 서버가 정한다 — 화면이 보낸 값이 아니다
-    expect(dbOne(`SELECT co_cd FROM tbl_code WHERE main_cd='${MAIN}' AND sub_cd='${SUB}'`)).toBe("0000");
+    expect(dbOne(`SELECT co_cd FROM tbl_code WHERE main_cd='${MAIN}' AND sub_cd='${SUB}'`)).toBe(loginCoCd());
 
     // --- 수정 ---------------------------------------------------------
     await page.reload();
@@ -80,7 +82,7 @@ test.describe("공통코드관리", () => {
     if (dbOne(`SELECT count(*) FROM tbl_code WHERE main_cd='${MAIN}' AND sub_cd='${SUB}'`) === "0") {
       dbOne(
         `INSERT INTO tbl_code (co_cd, main_cd, sub_cd, code_nm, sort_no, use_yn, sys_yn)
-         VALUES ('0000','${MAIN}','${SUB}','E2E 시험코드',999,'Y','N')`,
+         VALUES ('${sqlLit(loginCoCd())}','${MAIN}','${SUB}','E2E 시험코드',999,'Y','N')`,
       );
     }
     const before = dbOne(`SELECT count(*) FROM tbl_code WHERE main_cd='${MAIN}' AND sub_cd='${SUB}'`);

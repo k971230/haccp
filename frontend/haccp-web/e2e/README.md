@@ -21,7 +21,7 @@ Playwright E2E. **화면이 열리는가**가 아니라 **업무가 끝까지 �
 | 파일 | 맡는 것 |
 |---|---|
 | `helpers.ts` | 로그인·화면 열기·그리드 조작·DB 조회. 셀렉터 규칙을 여기 한곳에 둔다 |
-| `screens.smoke.spec.ts` | 28화면이 열리고 콘솔·네트워크 오류가 없다 |
+| `screens.smoke.spec.ts` | 29화면이 열리고 콘솔·네트워크 오류가 없다 |
 | `sys-common-code` `sys-master` `sys-user` `sys-approval-line` | 기준정보 6화면 CRUD·제약 |
 | `sys-logs` | 로그인이력·화면통계·감사로그 (조회 전용 확인 포함) |
 | `doc-cycle` `schedule-cycle-management` | 문서주기 7종·오늘 할 일 연동 |
@@ -101,7 +101,7 @@ Jenkins(`Jenkinsfile.e2e`)는 지금 도구 없이 돌아 DB 대조 시험이 �
 2. DB 접속 Credentials 를 `backend/haccp-api/.env` 형식으로 내려 준다
 3. `hasDbTools()` 가 참이 되면 나머지는 그대로 돈다 — 스펙은 안 고쳐도 된다
 
-도구 없이 도는 것: 28화면 스모크, 인증·권한·테넌트·상태전이(API 직접 호출),
+도구 없이 도는 것: 29화면 스모크, 인증·권한·테넌트·상태전이(API 직접 호출),
 문서함 조회 전용 확인. 도구가 있어야 도는 것: 저장 결과 DB 대조, 문서 흐름, 통합 시나리오.
 
 ## 스펙을 더할 때

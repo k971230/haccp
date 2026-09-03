@@ -5,9 +5,9 @@ PostgreSQL `sasshaccp` 스키마 **정본**. 여기 7본이 곧 DB 다 — 손�
 ## 파이프라인
 
 ```
-00_ddl        구조        표 52 · 인덱스 · 제약           회사코드 없음
-01_sp         로직        SP·함수 155                     회사코드 없음
-02_seed       플랫폼 기준  화면 28 · 양식 46 · 0000 업체   0000 고정
+00_ddl        구조        표 · 인덱스 · 제약 (수는 docs/10) 회사코드 없음
+01_sp         로직        SP·함수 (수는 docs/9)            회사코드 없음
+02_seed       플랫폼 기준  화면 · 양식 · 0000 업체          0000 고정
      │
      ├─ 03_code_seed    공통코드                    -v co_cd=  업체별
      ├─ 05_form_seed    HTML 표준 지면 항목         -v co_cd=  업체별
@@ -128,7 +128,7 @@ $P -v co_cd=0004 -f 07_company_forms.sql
 ## 검증
 
 ```sh
-# 빈 DB 에 7본을 순서대로 → 표 52 / SP 는 01_sp.sql · 메뉴·코드·양식은 시드
+# 빈 DB 에 7본을 순서대로 → 표는 docs/10 · SP 는 01_sp.sql · 메뉴·코드·양식은 시드
 bash apply-all.sh
 
 # 화면까지 도는지 — 프론트 E2E. 건수는 npx playwright test --list 로 센다

@@ -25,6 +25,43 @@ export function adminCreds(): { user: string; pass: string } {
   return { user, pass };
 }
 
+/** SQL 문자열 리터럴 — 작은따옴표만 이스케이프한다 */
+export function sqlLit(s: string): string {
+  return s.replace(/'/g, "''");
+}
+
+/** 로그인 사용자 아이디 — E2E_USER. 스펙에 admin 을 박지 않는다 */
+export function loginUserId(): string {
+  return adminCreds().user;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-03
+ * 코멘트:
+ *   1) 로그인 사용자 회사코드를 tbl_user 에서 읽는다 — 코드에 회사코드를 박지 않는다
+ *   2) 오늘 할 일·주기·양식 E2E 가 그 회사만 조회·정리할 때 쓴다
+ *   3) 사용자가 없으면 시험을 멈춘다. 빈 값으로 전 업체를 훑으면 안 된다
+ */
+export function loginCoCd(): string {
+  const user = loginUserId();
+  const co = dbOne(`SELECT co_cd FROM tbl_user WHERE user_id='${sqlLit(user)}'`);
+  if (!co) throw new Error(`로그인 사용자 ${user} 의 회사코드를 찾을 수 없다`);
+  return co;
+}
+
+/**
+ * 시드 원본 회사 — 새 업체가 복사해 오는 카탈로그.
+ * E2E_SRC_CO 가 있으면 그걸 쓰고, 없으면 표에서 가장 앞 업체를 읽는다. 코드에 회사코드를 박지 않는다.
+ */
+export function srcCoCd(): string {
+  const env = (process.env.E2E_SRC_CO || "").trim();
+  if (env) return env;
+  const fromDb = dbOne("SELECT co_cd FROM tbl_company ORDER BY co_cd LIMIT 1");
+  if (!fromDb) throw new Error("시드 원본 회사를 찾을 수 없다");
+  return fromDb;
+}
+
 /** 조회 전용 계정 — 권한 회귀 케이스만 쓴다. 없으면 그 케이스를 건너뛴다 */
 export function readonlyCreds(): { user: string; pass: string } | null {
   const user = (process.env.E2E_RO_USER || "").trim();
@@ -527,7 +564,7 @@ export function seedCompany(vars: {
     writer_id: vars.writerId ?? "",
     // '1234' 의 BCrypt 해시 — 시드 기본값과 같다
     admin_pw: "$2a$10$omCFk.XMhqOp5dAmMQ7Me.Rp9c0f87cCPZS3IRg1avF5PVWRzjw4O",
-    src_co: vars.srcCo ?? "0000",
+    src_co: vars.srcCo ?? srcCoCd(),
   };
 
   const body = raw
@@ -550,7 +587,9 @@ export function seedCompany(vars: {
 /** 업체 하나를 통째로 지운다 — 시드가 만든 표를 역순으로 비운다 */
 export function purgeCompany(coCd: string): void {
   if (!hasDbTools()) return;
-  if (coCd === "0000") throw new Error("표준 업체(0000)는 지울 수 없다");
+  if (coCd === srcCoCd() || coCd === loginCoCd()) {
+    throw new Error("시드 원본·로그인 회사는 지울 수 없다");
+  }
   assertTestDb("업체 통째 삭제");
   for (const t of [
     "tbl_doc_no_rule",

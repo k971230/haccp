@@ -38,11 +38,12 @@ DB 조회는 `e2e/helpers.ts` 의 `dbOne` / `dbRows` 가 맡는다.
 
 ---
 
-## 2. 대상 28화면
+## 2. 대상 29화면
 
 | 대분류 | 중분류 | 화면 | 스펙 |
 |---|---|---|---|
-| — | — | 오늘 할 일·대시보드 | `doc-cycle` · `scenario` |
+| 게시판 | — | 오늘 할 일·대시보드 | `doc-cycle` · `scenario` |
+| | — | 일정 캘린더 | `screens.smoke` |
 | 양식작성 | HTML 양식 | 일반위생·공정점검 작성 | `draft-all` |
 | | | CCP 검증점검표 작성 | `draft-all` |
 | | CCP 공정모니터링 | CCP 포장공정 작성 | `draft-all` |
@@ -71,7 +72,7 @@ DB 조회는 `e2e/helpers.ts` 의 `dbOne` / `dbRows` 가 맡는다.
 | | | 화면통계 | `sys-logs` |
 | | | 감사로그 | `sys-logs` |
 
-28화면 전체는 `screens.smoke.spec.ts` 가 매 회차 열어 보며 콘솔·네트워크 오류가 없는지도 본다.
+29화면 전체는 `screens.smoke.spec.ts` 가 매 회차 열어 보며 콘솔·네트워크 오류가 없는지도 본다.
 
 ---
 

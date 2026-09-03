@@ -11,7 +11,7 @@
  * PIPELINE[HF130] E2E
  */
 import { expect, test, type APIRequestContext } from "@playwright/test";
-import { adminCreds, dbOne, readonlyCreds } from "./helpers";
+import { adminCreds, dbOne, loginCoCd, readonlyCreds } from "./helpers";
 
 const API = process.env.E2E_API_BASE_URL || "http://localhost:7070";
 
@@ -87,7 +87,7 @@ test.describe("테넌트", () => {
     expect(
       dbOne("SELECT co_cd FROM tbl_dept WHERE dept_cd='E2ETNT'"),
       "본문의 회사코드가 그대로 저장됐다",
-    ).toBe("0000");
+    ).toBe(loginCoCd());
     dbOne("DELETE FROM tbl_dept WHERE dept_cd='E2ETNT'");
   });
 });

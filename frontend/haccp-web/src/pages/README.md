@@ -4,11 +4,11 @@
 
 ## 하위
 - `auth/` — 로그인
-- `bas/master/` — 기초정보 마스터 7종
-- `docs/` — 문서 (`ccp` · `prp` · `logis` · `admin` · `sch` · `hwp` · `html`)
+- `board/` — 오늘 할 일 · 일정 캘린더
+- `docs/` — 문서 (`sch` · `hwp` · `html-form`)
+- `draft/` — 양식작성 (`html` · `ccp-monitoring` · `hwp-doc`)
 - `flow/` — 문서 현황·결재 (`box` · `appr` · `ca`)
 - `sys/code/` · `sys/logs/` — 시스템
-- `board/` — 오늘 할 일 · 일정 캘린더
 
 ## 관련
 - 정본: `.cursor/rules/09-haccp-frontend.mdc` · `.cursor/rules/06-operations.mdc` · `docs/4_명명과_경로.md`

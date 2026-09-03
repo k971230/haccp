@@ -18,7 +18,7 @@
  */
 import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { adminCreds, dbOne, dbRows, hasDbTools, login, openScreen } from "./helpers";
+import { adminCreds, dbOne, dbRows, hasDbTools, login, loginCoCd, loginUserId, openScreen, sqlLit } from "./helpers";
 
 /** 조회 그리드 대표 — 행이 늘 있고 편집이 없다 */
 const DATA_SCREEN = "/sys/logs/login-history";
@@ -172,20 +172,20 @@ async function waitRows(wrap: Locator, atLeast = 2): Promise<void> {
  * pref 는 **SQL 에서 뽑는다.**
  * pref_json 을 통째로 가져오면 dbRows 의 " | " 분해에 걸려 JSON 이 잘린다.
  */
-function prefValue(expr: string, scrnCd: string, gridId: string, userId = "admin"): string {
+function prefValue(expr: string, scrnCd: string, gridId: string, userId = loginUserId()): string {
   return dbOne(
     `SELECT COALESCE((${expr})::text,'') FROM tbl_grid_pref
-      WHERE co_cd='0000' AND user_id='${userId}'
+      WHERE co_cd='${sqlLit(loginCoCd())}' AND user_id='${sqlLit(userId)}'
         AND scrn_cd='${scrnCd}' AND grid_id='${gridId}'`,
   );
 }
 
 /** pref 행이 있는가 — 저장 여부만 볼 때 */
-function hasPref(scrnCd: string, gridId: string, userId = "admin"): boolean {
+function hasPref(scrnCd: string, gridId: string, userId = loginUserId()): boolean {
   return (
     dbOne(
       `SELECT count(*) FROM tbl_grid_pref
-        WHERE co_cd='0000' AND user_id='${userId}'
+        WHERE co_cd='${sqlLit(loginCoCd())}' AND user_id='${sqlLit(userId)}'
           AND scrn_cd='${scrnCd}' AND grid_id='${gridId}'`,
     ) !== "0"
   );
@@ -501,7 +501,7 @@ test.describe("커스텀 그리드 — 조회", () => {
                 '{order}',
                 (SELECT jsonb_agg(x ORDER BY n DESC)
                    FROM jsonb_array_elements(pref_json::jsonb->'order') WITH ORDINALITY AS t(x, n)))::text
-        WHERE co_cd='0000' AND user_id='admin'
+        WHERE co_cd='${sqlLit(loginCoCd())}' AND user_id='${sqlLit(loginUserId())}'
           AND scrn_cd='${DATA_SCRN_CD}' AND grid_id='${DATA_GRID_ID}'`,
     );
 
@@ -668,7 +668,7 @@ test.describe("커스텀 그리드 — 아이디별 열 저장", () => {
     const OTHER = '{"v":2,"hidden":{},"order":[],"sizing":{}}';
     dbOne(
       `INSERT INTO tbl_grid_pref (co_cd, user_id, scrn_cd, grid_id, pref_json, ins_id)
-       VALUES ('0000','e2e_other','${DATA_SCRN_CD}','${DATA_GRID_ID}','${OTHER}','e2e')`,
+       VALUES ('${sqlLit(loginCoCd())}','e2e_other','${DATA_SCRN_CD}','${DATA_GRID_ID}','${OTHER}','e2e')`,
     );
 
     const wrap = await openData(page);
@@ -691,7 +691,7 @@ test.describe("커스텀 그리드 — 아이디별 열 저장", () => {
     // 두 행이 따로 서 있어야 한다
     const rows = dbRows(
       `SELECT user_id FROM tbl_grid_pref
-        WHERE co_cd='0000' AND scrn_cd='${DATA_SCRN_CD}' AND grid_id='${DATA_GRID_ID}'
+        WHERE co_cd='${sqlLit(loginCoCd())}' AND scrn_cd='${DATA_SCRN_CD}' AND grid_id='${DATA_GRID_ID}'
         ORDER BY user_id`,
     );
     // dbRows 는 첫 줄이 열 이름이다 — 자료는 그 다음부터다

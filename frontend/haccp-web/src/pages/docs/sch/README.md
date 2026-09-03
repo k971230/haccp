@@ -52,7 +52,7 @@
 | 양식 목록 | `listDocCycleForms` | `sp_schedule_cycle_management_form_r_000` | `tbl_company_template` `tbl_template` `tbl_schedule_rule` |
 | 단건 | `getDocCycle` | `sp_schedule_cycle_management_r_000` | `tbl_schedule_rule` `tbl_schedule_rule_detail` `tbl_company_template` `tbl_approval_line` |
 | 저장 | `saveDocCycle` | `sp_schedule_cycle_management_c_000` | `tbl_schedule_rule` `tbl_schedule_rule_detail` `tbl_company_template` |
-| 저장 직후 예정일 재생성 | (Service) | `sp_tbl_schedule_task_regen_c_000` | `tbl_schedule_task` |
+| 저장 직후 예정일 재생성 | (Service) | `sp_tbl_schedule_task_regen_c_000` | `tbl_schedule_task` — 관리시작일 이전 미작성 밀린 행과 미래 TODO 를 지운 뒤 생성기 날짜만 다시 깐다 |
 | 삭제 검증 | `validateDeleteDocCycles` | SP 없음 — Service가 `sp_schedule_cycle_management_r_000`으로 존재 확인 | `tbl_schedule_rule` |
 | 삭제 | `deleteDocCycles` | `sp_schedule_cycle_management_d_000` | `tbl_schedule_rule` |
 | 담당자 룩업 | `userApi.listUsers` | `sp_user_management_r_000` | `tbl_user` `tbl_dept` |

@@ -22,6 +22,8 @@ import {
   openScreen,
   resetDocuments,
   rowOfDoc,
+  loginCoCd,
+  sqlLit,
   visibleRows,
 } from "./helpers";
 
@@ -231,7 +233,10 @@ test.describe.serial("통합 시나리오", () => {
   test("E. 주기 변경 — 주기를 바꾸면 예정일이 따라 바뀐다", async ({ page, request }) => {
     const TMPL = "tml_ccp_chk_001";
     const token = await tokenOf(request);
-    const saved = dbOne(`SELECT cycle_cd FROM tbl_schedule_rule WHERE tmpl_cd='${TMPL}'`);
+    const co = sqlLit(loginCoCd());
+    const saved = dbOne(
+      `SELECT cycle_cd FROM tbl_schedule_rule WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'`,
+    );
 
     const body = (cycleCd: string, details: unknown[]) => ({
       tmplCd: TMPL,
@@ -245,7 +250,8 @@ test.describe.serial("통합 시나리오", () => {
     const future = () =>
       Number(
         dbOne(`SELECT count(*) FROM tbl_schedule_task
-                WHERE tmpl_cd='${TMPL}' AND base_dt > to_char(current_date,'YYYYMMDD')`),
+                WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'
+                  AND base_dt > to_char(current_date,'YYYYMMDD')`),
       );
 
     // 매일로 바꾸면 앞으로의 예정일이 깔린다
@@ -271,6 +277,19 @@ test.describe.serial("통합 시나리오", () => {
     await openScreen(page, "/board/today-tasks");
     await expect(page.getByText(/오늘 작성 과제/).first()).toBeVisible({ timeout: 30_000 });
 
-    if (saved) dbOne(`UPDATE tbl_schedule_rule SET cycle_cd='${saved}' WHERE tmpl_cd='${TMPL}'`);
+    dbOne(
+      `DELETE FROM tbl_schedule_task
+        WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'
+          AND status IN ('TODO','LATE') AND doc_idx IS NULL`,
+    );
+    if (saved) {
+      dbOne(
+        `UPDATE tbl_schedule_rule SET cycle_cd='${sqlLit(saved)}'
+          WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'`,
+      );
+    } else {
+      dbOne(`DELETE FROM tbl_schedule_rule_detail WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'`);
+      dbOne(`DELETE FROM tbl_schedule_rule WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'`);
+    }
   });
 });

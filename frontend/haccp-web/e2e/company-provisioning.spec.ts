@@ -5,15 +5,15 @@
  * 일자: 2026-08-26
  * 코멘트:
  *   1) 06_company_seed.sql 을 실제로 돌려 「로그인해서 문서를 쓸 수 있는 상태」까지 되는지 본다
- *   2) 메뉴·화면권한·양식이 표준 업체(0000)와 같은 수로 깔려야 한다 — 하나라도 빠지면 화면이 안 열린다
- *   3) 만든 업체 계정으로 0000 자료가 보이면 안 된다. 그게 보이면 남의 회사 기록이 새는 것이다
+ *   2) 메뉴·화면권한·양식이 시드 원본 업체와 같은 수로 깔려야 한다 — 하나라도 빠지면 화면이 안 열린다
+ *   3) 만든 업체 계정으로 원본 업체 자료가 보이면 안 된다. 그게 보이면 남의 회사 기록이 새는 것이다
  *
  * PIPELINE[HF130] E2E
  */
 import { expect, test } from "@playwright/test";
-import { dbOne, login, openScreen, purgeCompany, seedCompany } from "./helpers";
+import { dbOne, login, openScreen, purgeCompany, seedCompany, sqlLit, srcCoCd } from "./helpers";
 
-/** 시험 전용 업체코드 — 0000·0001 과 겹치지 않게 둔다 */
+/** 시험 전용 업체코드 — 시드 원본·로그인 회사와 겹치지 않게 둔다 */
 const CO = "9099";
 const ADMIN = `admin${CO}`;
 const API = process.env.E2E_API_BASE_URL || "http://localhost:7070";
@@ -25,10 +25,11 @@ test.describe.serial("신규 업체 개설", () => {
   test("시드를 돌리면 표준 업체와 같은 수의 메뉴·화면권한이 깔린다", async () => {
     seedCompany({ coCd: CO, coNm: "E2E 신규업체", adminId: ADMIN });
 
-    // 손으로 적은 기대치를 두지 않는다 — 표준 업체(0000)와 같은지만 본다.
+    // 손으로 적은 기대치를 두지 않는다 — 시드 원본 업체와 같은지만 본다.
     // 화면이 하나 늘면 두 곳이 같이 늘어야 하고, 한쪽만 늘면 여기서 걸린다
+    const src = sqlLit(srcCoCd());
     for (const tbl of ["tbl_menu", "tbl_role_screen"]) {
-      const std = dbOne(`SELECT count(*) FROM ${tbl} WHERE co_cd='0000'`);
+      const std = dbOne(`SELECT count(*) FROM ${tbl} WHERE co_cd='${src}'`);
       const made = dbOne(`SELECT count(*) FROM ${tbl} WHERE co_cd='${CO}'`);
       expect(made, `${tbl} 이 표준 업체와 다르다 (표준 ${std} / 신규 ${made})`).toBe(std);
       expect(Number(made), `${tbl} 이 비었다`).toBeGreaterThan(0);
@@ -85,7 +86,7 @@ test.describe.serial("신규 업체 개설", () => {
     await expect(page.getByRole("button", { name: "조회" })).toBeVisible({ timeout: 30_000 });
   });
 
-  test("새 업체 계정에는 0000 자료가 보이지 않는다", async ({ request }) => {
+  test("새 업체 계정에는 시드 원본 업체 자료가 보이지 않는다", async ({ request }) => {
     const res0 = await request.post(`${API}/api/v1/auth/login`, {
       data: { userId: ADMIN, password: "1234" },
     });
@@ -94,7 +95,7 @@ test.describe.serial("신규 업체 개설", () => {
     const token = (body?.data?.token ?? "") as string;
     expect(body?.data?.user?.coCd, "JWT 회사코드가 새 업체가 아니다").toBe(CO);
 
-    // 0000 이 만든 문서가 하나라도 새 업체 목록에 섞이면 안 된다
+    // 시드 원본 업체가 만든 문서가 하나라도 새 업체 목록에 섞이면 안 된다
     const docs = await request.get(`${API}/api/v1/docs/documents/list`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -110,22 +111,23 @@ test.describe.serial("신규 업체 개설", () => {
     ).toBe("0");
   });
 
-  test("본문에 0000 을 실어도 새 업체 자료만 만진다", async ({ request }) => {
+  test("본문에 시드 원본 회사코드를 실어도 새 업체 자료만 만진다", async ({ request }) => {
     const res0 = await request.post(`${API}/api/v1/auth/login`, {
       data: { userId: ADMIN, password: "1234" },
     });
     const token = ((await res0.json())?.data?.token ?? "") as string;
+    const src = srcCoCd();
 
     // 회사코드는 JWT 에서만 읽어야 한다 — 본문 값을 믿으면 남의 회사에 부서가 생긴다
     const save = await request.put(`${API}/api/v1/sys/code/department-management/save`, {
       headers: { Authorization: `Bearer ${token}` },
-      data: [{ coCd: "0000", deptCd: "E2ECO", deptNm: "회사코드 위조 시도", useYn: "Y" }],
+      data: [{ coCd: src, deptCd: "E2ECO", deptNm: "회사코드 위조 시도", useYn: "Y" }],
     });
     expect(save.status(), "저장이 실패했다 — 위조 검사 이전 문제다").toBe(200);
 
     expect(
-      dbOne("SELECT count(*) FROM tbl_dept WHERE co_cd='0000' AND dept_cd='E2ECO'"),
-      "본문 회사코드를 믿고 0000 에 부서를 만들었다",
+      dbOne(`SELECT count(*) FROM tbl_dept WHERE co_cd='${sqlLit(src)}' AND dept_cd='E2ECO'`),
+      "본문 회사코드를 믿고 시드 원본 업체에 부서를 만들었다",
     ).toBe("0");
     expect(
       dbOne(`SELECT count(*) FROM tbl_dept WHERE co_cd='${CO}' AND dept_cd='E2ECO'`),

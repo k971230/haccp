@@ -11,7 +11,7 @@
  * PIPELINE[HF130] E2E
  */
 import { expect, test } from "@playwright/test";
-import { adminCreds, dbOne, login, openScreen, readonlyCreds, visibleRows } from "./helpers";
+import { adminCreds, dbOne, login, loginCoCd, openScreen, readonlyCreds, sqlLit, visibleRows } from "./helpers";
 
 const PATH = "/docs/sch/schedule-cycle-management";
 
@@ -69,7 +69,7 @@ test.describe("문서주기관리", () => {
      * 주기가 실제로 걸린 양식을 DB 에서 집는다.
      */
     const tmplCd = dbOne(
-      "SELECT tmpl_cd FROM tbl_schedule_rule WHERE co_cd='0000' ORDER BY tmpl_cd LIMIT 1",
+      `SELECT tmpl_cd FROM tbl_schedule_rule WHERE co_cd='${sqlLit(loginCoCd())}' ORDER BY tmpl_cd LIMIT 1`,
     );
     expect(tmplCd, "주기가 걸린 양식이 하나도 없다").not.toBe("");
 
