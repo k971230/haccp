@@ -39,7 +39,9 @@ alwaysApply: false
 
 ## 마스터/디테일
 
-- `PageCard` / `PageCardTree` / `PageCardSplit` / `mes-page-split`
+- `PageCard` / `PageCardTree` / `PageCardSplit`
+  (`mes-page-split` 은 9곳에 붙어 있지만 `global.css` 에 정의가 없다 — 붙여도 아무 효과 없는 표식이다.
+  레이아웃은 같이 붙은 `min-h-0 h-full flex-1` 유틸리티가 낸다. 새로 붙이지 않는다)
 - 그리드: `MesEditableGrid` / `MesDataGrid` 기준 높이 유지
 
 ## 반응형

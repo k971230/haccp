@@ -14,7 +14,7 @@ alwaysApply: false
 | 로그인 | 아이디만 |
 | 권한 | `readYn`·`writeYn`·`modifyYn`·`deleteYn`·`printYn` |
 | storage | `haccp-*` (`authKeys.ts`) |
-| 메뉴 | 대분류·화면 2단 (`h_menu_cd`) |
+| 메뉴 | 대·중·소 3단 (`h_menu_cd` 자기참조). 중분류는 `scrn_cd` NULL 인 폴더 행이다 (`SideMenu.tsx`) |
 
 UI 마감: [`02-frontend-ui.mdc`](02-frontend-ui.mdc) · 운영: [`06-operations.mdc`](06-operations.mdc)  
 경로 정본: [`docs/4_명명과_경로.md`](../../docs/4_명명과_경로.md)
@@ -65,7 +65,7 @@ UI 마감: [`02-frontend-ui.mdc`](02-frontend-ui.mdc) · 운영: [`06-operations
 | API | `api/{대}/` — 화면 전용 함수. 공용 파일 I/O(`documentApi`)는 그대로 |
 | 키 | `scrnCd`·`persistId` 값은 폴더를 옮겨도 **바꾸지 않는다** |
 
-공유 페이지(MasterDataPage·점검항목·HWP 작성기)는 화면마다 복제하지 않고, 그 메뉴를 손볼 때 폴더만 옮긴다.
+공유 페이지(점검항목·HWP 작성기)는 화면마다 복제하지 않고, 그 메뉴를 손볼 때 폴더만 옮긴다.
 
 ## 화면 등록
 

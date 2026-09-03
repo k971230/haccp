@@ -1,4 +1,4 @@
-# .cursor/rules — HACCP 에이전트 규칙 (`00`~`09`)
+# .cursor/rules — HACCP 에이전트 규칙 (`00`~`10` + `ponytail`)
 
 이 저장소는 **HACCP만** 다룬다. 번호는 연속이다.
 
@@ -14,5 +14,7 @@
 | 07 | `07-haccp-db.mdc` | db_sasshaccp | PG·SP |
 | 08 | `08-haccp-backend.mdc` | haccp-api | BE 컨벤션 |
 | 09 | `09-haccp-frontend.mdc` | haccp-web | FE 컨벤션 |
+| 10 | `10-ide-workflow.mdc` | always | IDE 별 실행 · 같이 바꿀 것 |
+| — | `ponytail.mdc` | always | lazy 모드 — 가장 단순한 답부터 |
 
-문서 본문: 루트 `docs/1_`~`24_`. PIPELINE 색인 `docs/23_PIPELINE.md`. 경로 정본 `docs/24_URL_DB_폴더_패키지_정본.md`.
+문서 본문: 루트 `docs/1_`~`10_`. PIPELINE 색인 `docs/5_PIPELINE_색인.md`. 이름·경로 정본 `docs/4_명명과_경로.md`.

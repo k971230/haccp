@@ -25,7 +25,7 @@ alwaysApply: true
 |---|---|---|
 | 백엔드 `backend/haccp-api` | **IntelliJ IDEA** | `HaccpApiApplication` Run · 포트 7070 |
 | 프론트 `frontend/haccp-web` | **VSCode / Cursor** | `npm run dev` · 포트 4173 |
-| DB `db_sasshaccp` | DBeaver · psql | `00_ddl` → `01_sp` → `02_seed` → `03_code_seed` → `05_form_seed` |
+| DB `db_sasshaccp` | DBeaver · psql | `00_ddl` → `01_sp` → `02_seed` → `03_code_seed` → `05_form_seed` → `06_company_seed` → `07_company_forms` (7본. `04_migrate_code_upper` 는 구 DB 전용이라 뺀다 — `07-haccp-db.mdc`) |
 
 ## 어느 도구에서든 지켜야 하는 것
 
@@ -46,7 +46,11 @@ FE  shell/tabRoute.ts SCREEN_PATH      pages/{대}/{중}/
     shell/screenRegistry.tsx           README.md
 BE  com.haccp.{대}.{중}                 mapper/{대}/{중}/
     common/auth/ScreenAuthResolver     README.md
-DB  tbl_screen · tbl_role_screen · tbl_menu
+DB  tbl_screen · tbl_role_screen · tbl_menu   (라이브)
+    db_sasshaccp/01_sp.sql sp_*               db_sasshaccp/02_seed.sql 씨앗
 ```
+
+씨앗을 빼먹으면 라이브에서는 열리는데 빈 DB 에 `apply-all.sh` 로 깔면 그 화면이 없다.
+일곱 층 전체와 각 층의 이유는 [`docs/2_화면_추가하기.md`](../../docs/2_화면_추가하기.md).
 
 `scrnCd` 와 `persistId` 는 폴더·URL 이 바뀌어도 **바꾸지 않는다** — 사용자가 저장한 그리드 열 너비가 날아간다.

@@ -26,6 +26,9 @@ globs: docker-compose*.yml,nginx/**/*,Jenkinsfile*,scripts/{deploy,build,init,pr
 
 ## 시크릿·이미지
 
-- Jenkins Credentials · 서버 `/opt/haccp/.env.docker` 만 실값
+- Jenkins Credentials · 서버 `/home/ubuntu/haccp/.env.docker` 만 실값
+  (`Jenkinsfile`:41 `DEPLOY_DIR`. `/opt` 는 root 소유라 sudo 없이 못 써서 안 쓴다 — 되돌리지 않는다)
 - 이미지 빌드/배포: `scripts/build_images.sh` · `scripts/deploy_remote.sh`
-- 볼륨 시드: `scripts/init_volumes.sh` (선행 필수)
+- 볼륨 시드 (셋 다 `external: true` — **선행 필수**, 없으면 `compose up` 이 `volume not found` 로 죽는다)
+  - `scripts/init_volumes.sh` — `haccp-files` · `haccp-templates`
+  - `scripts/install_rhwp.sh` — `haccp-rhwp` (`init_volumes.sh` 는 이걸 안 만든다)

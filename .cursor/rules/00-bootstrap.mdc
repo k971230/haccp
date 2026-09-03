@@ -8,7 +8,7 @@ alwaysApply: true
 에이전트(Agent)는 **어떤 도구 호출·파일 수정 전에도** 아래 순서를 따른다:
 
 1. 루트 `README.md` — 무엇이 어디 있는지
-2. `docs/README.md` — 문서 8본 색인. 업무 흐름은 `docs/1_시작하기.md`
+2. `docs/README.md` — 문서 10본 색인. 업무 흐름은 `docs/1_시작하기.md`
 3. 코드가 도는 순서 — BE `backend/haccp-api/PIPELINE.md` · FE `frontend/haccp-web/PIPELINE.md`
    태그(`HB*`·`HF*`) → 파일 색인은 `docs/5_PIPELINE_색인.md`
 4. 해당 도메인 README (`pages/docs/`, `pages/sys/` …) → 화면 README가 있으면 그것.
@@ -16,12 +16,17 @@ alwaysApply: true
 5. `01-project-core.mdc`
 6. `05-handoff-comments.mdc` — FE·BE **동일 밀도** 인수인계 주석
 7. `06-operations.mdc` — 삭제·타임아웃·전역 env
-8. 작업 영역 scoped rule
+8. `10-ide-workflow.mdc` — 어느 도구로 돌리나 · 한 화면을 고칠 때 같이 바꿀 것
+9. `03-branching.mdc` — 브랜치·커밋·PR. 커밋을 만들기 전에 본다
+10. 작업 영역 scoped rule
    - DB: `07-haccp-db.mdc`
    - 백엔드: `08-haccp-backend.mdc`
    - 프론트: `09-haccp-frontend.mdc` · UI: `02-frontend-ui.mdc`
    - 배포: `04-deploy.mdc` · 절차 `DEPLOY.md`
-9. 화면 하나 만들기 — `docs/2_화면_추가하기.md` · 지금 있는 화면 `docs/3_화면_지도.md`
+11. 화면 하나 만들기 — `docs/2_화면_추가하기.md` · 지금 있는 화면 `docs/3_화면_지도.md`
+
+`00`·`01`·`03`·`05`·`06`·`10`·`ponytail` 은 프론트매터가 `alwaysApply: true` 다 — 도구가 알아서 붙인다.
+나머지(`02`·`04`·`07`·`08`·`09`)는 그 영역을 만질 때만 편다.
 
 ## 필수 행동
 
@@ -30,6 +35,7 @@ alwaysApply: true
 - **손대는 메뉴는 분할** — 아직 평탄하면 그 작업에서 sys와 같이 폴더 1개(Page+Rule+패키지)로 나눈다. 미리 전 메뉴를 나누지 않는다 (`01-project-core`)
 - 기존 코드 스타일·패턴을 따른다
 - **git commit/push**는 사용자 명시 요청 시에만
+- **문서 검수(`/doc-audit`)는 md만 고친다.** 코드는 보고만 한다. 코드 수정은 검수 보고를 본 사용자가 따로 지시할 때 — `docs/8_결정_이력.md`
 - **이모지 금지** — `01-project-core.mdc`
 - **인수인계 주석** — FE·BE 동일 밀도 (`05-handoff-comments.mdc`)
 - Windows: 명령 연결은 `;` (`&&` 지양)

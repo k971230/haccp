@@ -30,7 +30,9 @@ alwaysApply: false
 
 - 이름 규약은 **두 갈래가 병존**한다
   - 테이블 단위(업무 도메인 docs·ccp·hyg·bas·log 적재 등): `sp_tbl_{테이블명}_{r｜c｜d｜u}_{000}`
-  - 화면 단위(sys 6도메인 — 공통코드·메뉴·권한·부서·사용자·로그 3화면): `sp_{화면명}_{r｜c｜d｜u}_{000}`
+  - 화면 단위: `sp_{화면명}_{r｜c｜d｜u}_{000}` — **도메인을 가리지 않는다.**
+    sys 외에 `docs.hwp`(`sp_hwp_template_management_*`)·`docs.sch`(`sp_schedule_cycle_management_*`)·
+    `ccp`(`sp_ccp_verify_*`)·`draft`(`sp_draft_hwp_*`)도 이 규약을 쓴다 — 비-`sp_tbl_` 49본 중 19본이 sys 밖이다
     예: `sp_common_code_management_r_000`, `sp_user_management_sign_u_000`, `sp_screen_usage_statistics_r_000`
   - 신규 화면 전용 SP는 화면명 규약을, 여러 화면이 공유하는 테이블 CRUD는 테이블 규약을 쓴다
 - 조회: `FUNCTION ... RETURNS TABLE`, 쓰기: `PROCEDURE`
@@ -42,6 +44,9 @@ alwaysApply: false
 - 본문의 테이블 참조는 스키마를 생략한다. 대신 `ALTER DATABASE sasshaccp SET search_path TO sasshaccp, public`
   (`db_sasshaccp/00_ddl.sql`)로 세션 기본값을 고정해 둔다 — JDBC `currentSchema`에만 의존하지 않는다
 - 재실행 가능해야 한다: `CREATE OR REPLACE`, DDL은 `IF NOT EXISTS`, 시드는 `ON CONFLICT DO UPDATE`
+  — **앞으로의 규칙이고 지금 상태가 아니다.** `00_ddl.sql`:19 는 `CREATE SCHEMA sasshaccp;`(`IF NOT EXISTS` 없음),
+  `CREATE TABLE` 53개도 전부 없다. `02_seed.sql` 은 평문 `INSERT` 474건에 `ON CONFLICT` 0건.
+  **`apply-all.sh` 는 빈 DB 전용이다.** 다시 돌리려면 스키마를 지우고 시작한다
 
 ## 파일 순서 (apply-all.sh)
 
@@ -51,7 +56,7 @@ alwaysApply: false
 | # | 파일 | 무엇 | 회사코드 |
 |---|---|---|---|
 | 1 | `00_ddl.sql` | 표 53 · 인덱스 · 제약 · 주석 · `search_path` · 자리 넓힘 `ALTER` | — |
-| 2 | `01_sp.sql` | SP 152 (`CREATE OR REPLACE`) | — |
+| 2 | `01_sp.sql` | SP 155 선언 / 이름 146 (오버로드 9) — `CREATE OR REPLACE` | — |
 | 3 | `02_seed.sql` | 표준양식 · 화면 · 메뉴 · 공통코드 · 표준 점검항목 | — |
 | 4 | `03_code_seed.sql` | 업체 공통코드 | `-v co_cd` |
 | 5 | `05_form_seed.sql` | 업체 표준양식 · 점검항목 | `-v co_cd` |
@@ -66,8 +71,14 @@ alwaysApply: false
 ```sh
 # 플랫폼 초기화 (0000 만)
 PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
-# 새 업체 — 위를 끝낸 DB 에 하나 더 얹는다
-CO_CD=0001 CO_NM='업체명' ADMIN_ID=admin0001 bash db_sasshaccp/apply-all.sh
+# 새 업체 — 위를 끝낸 DB 에 하나 더 얹는다.
+# apply-all.sh 를 다시 부르지 않는다 — 1단계가 00_ddl 을 무조건 돌려 duplicate schema(42P06)로 죽는다.
+# 업체분 4본만 직접 돌린다 (apply-all.sh 2~4단계와 같은 인자)
+P="psql -v ON_ERROR_STOP=1"
+$P -v co_cd=0001 -f db_sasshaccp/03_code_seed.sql
+$P -v co_cd=0001 -f db_sasshaccp/05_form_seed.sql
+$P -v co_cd=0001 -v co_nm='업체명' -v admin_id=admin0001 -f db_sasshaccp/06_company_seed.sql
+$P -v co_cd=0001 -f db_sasshaccp/07_company_forms.sql
 ```
 
 ## 어느 SP 가 어느 표를 건드리나
@@ -84,7 +95,8 @@ node scripts/gen_sp_index.mjs --check
 
 [`docs/10_테이블_레이아웃.md`](../../docs/10_테이블_레이아웃.md) — **생성기가 만든다.**
 `00_ddl.sql` 의 `CREATE TABLE`·`COMMENT ON`·제약·인덱스를 읽어
-표 53 × 컬럼 767 을 「기초코드 → 기초문서 → 업무 → 로그·통계」 순으로 낸다.
+표 53 × 컬럼 769 를 「기초코드 → 기초문서 → 업무 → 로그·통계」 순으로 낸다.
+숫자는 여기 적지 말고 그 문서를 본다 — `node scripts/gen_table_layout.mjs --check` 가 정본이다.
 같은 이름의 `.xls` 가 함께 나온다 — 첫 시트 표제, 둘째 목차, 셋째부터 표마다 한 장.
 
 ```sh
@@ -98,11 +110,15 @@ node scripts/gen_table_layout.mjs --check
 `WRITE` 단계의 결재자는 결재선 값을 무시하고 **실제 상신자**로 덮는다.
 그래서 결재선에서 실제로 쓰이는 값은 `APPROVE` 단계의 `approver_id` 하나뿐이다.
 
-## 양식 42종
+## 양식 37종
 
-- `tbl_template.doc_kind` = `html`(HTML 입력 양식) / `hwp`(rhwp 문서작성 양식) — **소문자 정본** — SP·앱 비교까지 소문자로 맞춰져 있다
+- `tbl_template.doc_kind` = `HTML`(HTML 입력 양식) / `HWP`(rhwp 문서작성 양식) — **대문자 정본** —
+  공통코드 `TMPL_TY`·시드·SP·BE·FE 가 전부 대문자다. 소문자를 넣으면 목록이 0건이 된다
+  (`02_seed.sql` 의 소문자 `html`·`hwp` 는 `tbl_menu.menu_cd` — kebab 경로값이라 다른 컬럼이다)
 - 양식 파일 경로 = `HaccpTemplates/{tmpl_cd}/{파일}` · 자사 `CustomTemplates/{co_cd}/{tmpl_cd}/{파일}` · 작성 문서 `HaccpLogBooks/{co_cd}/{일자}/{tmpl_cd}/{파일}`. `html` 양식은 `form_path` NULL
-- `impl_yn = 'Y'` 30종은 해썹일지 PDF 실물 서식, `impl_yn = 'N'` 12종은 카탈로그 등재만 (미구현)
+- `02_seed.sql` 의 표준 `tbl_template` 은 37행이고 `impl_yn` 은 **전부 `'Y'`** 다
+  (`HWP`/`DOC` 27 · `HTML`/`CCP` 6 · `HTML`/`HYG` 4). `'N'` 은 `00_ddl.sql` 컬럼 DEFAULT 에만 남아 있다 —
+  "미구현 N종" 을 전제로 카탈로그를 거르지 않는다
 - 표준 양식·점검항목은 **플랫폼 소유**(`co_cd` 없음). 업체별 조정은 `tbl_company_template`,
   `tbl_company_check_item` 오버라이드 행으로만 처리하고 표준 시드를 직접 수정하지 않는다
 - 신규 테넌트는 `sp_tbl_company_init_c_000` 한 번으로 회사·권한·메뉴·사용양식·결재선·채번규칙·관리자 계정이 생성된다
@@ -111,6 +127,10 @@ node scripts/gen_table_layout.mjs --check
 - 양식 파일은 덮어쓰지 않는다: `tbl_company_template_file` 이력 + `current_file_idx`(적용) / `default_file_idx`(초기화 복원)
 - 문서주기는 **양식당 1건**(`ux_tbl_schedule_rule_tmpl UNIQUE(co_cd, tmpl_cd)`). 반복 상세는 `tbl_schedule_rule_detail.detail_ty`
   = `week-day` / `month-day` / `month-end` / `quarter-month` / `half-month` / `year-month` (kebab), 비영업일 `nonwork_rule` = `keep|prev|next`
+  — `nonwork_rule` 은 **저장이 소문자다.** 유일한 쓰기 경로 `sp_schedule_cycle_management_c_000`(`01_sp.sql`:1864)이 `lower()` 로 접고,
+  `00_ddl.sql` DEFAULT 도 `'keep'` 이다. 반면 공통코드 `sub_cd` 는 `KEEP|PREV|NEXT` 대문자 —
+  FE(`String(...).toUpperCase()`)와 Java(`CycleScheduleGenerator`)가 비교 전에 올려서 붙인다.
+  `sub_cd` = 저장값 규칙(`01-project-core`)이 깨진 유일한 칸이니 어느 쪽도 혼자 고치지 않는다
 - `cycle_cd`는 **대문자 1자 도메인 유지** — `D|W|M|Q|H|Y|E`(비정기). 소문자로 바꾸지 않는다 — SP·배치가 함께 걸린다. `E`는 예정일을 만들지 않는다
 - 예정일 날짜 계산은 SQL이 아니라 Java `CycleScheduleGenerator`가 한다. SP(`sp_tbl_schedule_task_regen_c_000`)는 전달받은 날짜 배열만 반영한다
 

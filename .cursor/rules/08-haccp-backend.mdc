@@ -11,7 +11,7 @@ alwaysApply: false
 | 패키지 | `com.haccp.*` |
 | 포트 | **7070** (로컬·컨테이너 동일) |
 | DB / 스키마 | `sasshaccp` / `sasshaccp` |
-| SP | 테이블 단위 `sp_tbl_{명칭}_*` · 화면 단위 `sp_{화면명}_*` (sys 6도메인) |
+| SP | 테이블 단위 `sp_tbl_{명칭}_*` · 화면 단위 `sp_{화면명}_*` (도메인 무관 — `07-haccp-db.mdc`) |
 | 로그인 | **아이디만** (전역 유일, 서버가 회사 판정) |
 | 화면 권한 | 조회·등록·수정·삭제·출력 5개 Y/N |
 | JWT | 단일 TTL (`app.jwt.expire-minutes`) |
@@ -22,7 +22,7 @@ DB 규약: [`07-haccp-db.mdc`](07-haccp-db.mdc) · 운영: [`06-operations.mdc`]
 ## 패키지
 
 셸: `auth`, `menu`, `code`, `pref`, `log`, `common`.  
-업무: `com.haccp.{대}.{중}` — URL `SCREEN_PATH` 칸과 동일 (`docs.ccp`, `docs.hwp`, `sys.code`). 공유 허브 `docs.document` · `docs.template` · `workflow` 는 화면 경로와 별개.
+업무: `com.haccp.{대}.{중}` — URL `SCREEN_PATH` 칸과 동일 (`docs.ccp`, `docs.hwp`, `sys.code`). 공유 허브 `docs.documents` · `docs.templates` · `docs.htmlform` 은 화면 경로와 별개.
 
 ## 화면 패키지 분할 (sys 골드)
 
@@ -32,7 +32,7 @@ DB 규약: [`07-haccp-db.mdc`](07-haccp-db.mdc) · 운영: [`06-operations.mdc`]
 |------|------|
 | 패키지 | `com.haccp.{대}.{중}` — URL 슬러그와 동일 (`docs.hwp`, `sys.logs`) |
 | XML | `resources/mapper/{대}/{중}/*.xml` — `namespace`는 인터페이스 FQCN |
-| URL | `/api/v1` + FE `SCREEN_PATH` + 동작. `/haccp` 는 API에 넣지 않는다. 폴더 이동만으로 경로를 바꾸지 않는다. 예외: `/api/v1/docs/documents`, `/api/v1/docs/templates/{tmplCd}/form`, `/api/v1/bas/company-templates`, `/api/v1/bas/{type}`, 셸 `/auth` `/menu` `/code` `/pref` `/log`, 서명 `/api/v1/sys/users` |
+| URL | `/api/v1` + FE `SCREEN_PATH` + 동작. `/haccp` 는 API에 넣지 않는다. 폴더 이동만으로 경로를 바꾸지 않는다. 예외: `/api/v1/docs/documents`, `/api/v1/docs/templates/{tmplCd}/form`, 셸 `/auth` `/menu` `/code` `/pref` `/log`, 서명 `/api/v1/sys/users` |
 | 공유 유틸 | 영역 루트에 둔다 (`SysPayload`). 공통코드 문구·sys-yn 판정은 FE `useCommonCodes` |
 
 ## 레이어
