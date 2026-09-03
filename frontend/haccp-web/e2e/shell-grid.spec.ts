@@ -11,7 +11,7 @@
  * PIPELINE[HF130] E2E
  */
 import { expect, test } from "@playwright/test";
-import { adminCreds, dbOne, grids, hasDbTools, login, openScreen } from "./helpers";
+import { adminCreds, dbOne, grids, hasDbTools, login, loginCoCd, openScreen, sqlLit } from "./helpers";
 
 /** 활성 행의 data-key 를 읽는다 — 없으면 빈 문자열 */
 async function activeKey(grid: import("@playwright/test").Locator): Promise<string> {
@@ -29,7 +29,7 @@ test.describe("셸 공통 그리드 동작", () => {
   test.beforeAll(() => {
     if (!hasDbTools()) return;
     dbOne(
-      "CALL sp_tbl_view_stat_daily_c_000('0000', to_char(now(),'YYYYMMDD'), 'system')",
+      `CALL sp_tbl_view_stat_daily_c_000('${sqlLit(loginCoCd())}', to_char(now(),'YYYYMMDD'), 'system')`,
     );
   });
 

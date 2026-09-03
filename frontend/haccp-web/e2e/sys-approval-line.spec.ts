@@ -18,8 +18,10 @@ import {
   fillCell,
   grids,
   login,
+  loginCoCd,
   openScreen,
   saveAndConfirm,
+  sqlLit,
 } from "./helpers";
 
 const PATH = "/sys/code/approval-line-management";
@@ -71,7 +73,7 @@ test.describe.serial("결재선관리", () => {
      */
     const rows = dbOne(
       `SELECT count(*) FROM tbl_approval_line_step
-        WHERE co_cd='0000' AND appr_line_cd='DEFAULT' AND role_cd='REVIEW' AND use_yn='Y'`,
+        WHERE co_cd='${sqlLit(loginCoCd())}' AND appr_line_cd='DEFAULT' AND role_cd='REVIEW' AND use_yn='Y'`,
     );
     expect(rows, "기본 결재선의 검토 단계가 켜져 있다").toBe("0");
   });

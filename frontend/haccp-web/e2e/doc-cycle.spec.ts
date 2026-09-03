@@ -12,7 +12,7 @@
  * PIPELINE[HF130] E2E
  */
 import { expect, test, type APIRequestContext } from "@playwright/test";
-import { adminCreds, dbOne, login, openScreen } from "./helpers";
+import { adminCreds, dbOne, login, loginCoCd, openScreen, sqlLit } from "./helpers";
 
 const API = process.env.E2E_API_BASE_URL || "http://localhost:7070";
 /** 시험용 양식 — 실제 쓰는 양식을 건드리면 사람 화면이 흔들린다 */
@@ -29,14 +29,17 @@ async function tokenOf(request: APIRequestContext): Promise<string> {
 /**
  * 앞으로의 예정일 개수 — 오늘 것은 세지 않는다.
  *
- * 재생성 SP 는 `base_dt > 오늘` 만 지운다. 오늘 몫은 이미 사람이 손대고 있을 수 있어 일부러 남긴다.
+ * 재생성 SP 는 미래 TODO 와 관리시작일 이전 미작성 밀린 행을 지운다.
+ * 오늘 몫은 이미 사람이 손대고 있을 수 있어 일부러 남긴다.
  * 그래서 주기를 바꾼 효과는 「내일 이후」로만 판정해야 한다.
  */
 function futureTasks(): number {
+  const co = sqlLit(loginCoCd());
   return Number(
     dbOne(
       `SELECT count(*) FROM tbl_schedule_task
-        WHERE tmpl_cd='${TMPL}' AND base_dt > to_char(current_date,'YYYYMMDD')`,
+        WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'
+          AND base_dt > to_char(current_date,'YYYYMMDD')`,
     ),
   );
 }
@@ -84,8 +87,11 @@ test.describe.serial("문서주기 7종", () => {
   let saved = "";
 
   test.beforeAll(() => {
-    // 원래 주기를 적어 두고 마지막에 되돌린다 — 사람이 쓰는 양식이다
-    saved = dbOne(`SELECT cycle_cd FROM tbl_schedule_rule WHERE tmpl_cd='${TMPL}'`);
+    // 원래 주기를 적어 두고 마지막에 되돌린다 — 로그인 회사·이 양식만
+    saved = dbOne(
+      `SELECT cycle_cd FROM tbl_schedule_rule
+        WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='${TMPL}'`,
+    );
   });
 
   for (const c of CASES) {
@@ -97,7 +103,12 @@ test.describe.serial("문서주기 7종", () => {
       );
       expect(res.status(), await res.text()).toBe(200);
 
-      expect(dbOne(`SELECT cycle_cd FROM tbl_schedule_rule WHERE tmpl_cd='${TMPL}'`)).toBe(c.cycleCd);
+      expect(
+        dbOne(
+          `SELECT cycle_cd FROM tbl_schedule_rule
+            WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='${TMPL}'`,
+        ),
+      ).toBe(c.cycleCd);
       const tasks = futureTasks();
       if (c.expectTasks) {
         expect(tasks, `${c.label} 인데 앞으로의 예정일이 하나도 없다`).toBeGreaterThan(0);
@@ -132,7 +143,8 @@ test.describe.serial("문서주기 7종", () => {
     });
     const today = dbOne(
       `SELECT count(*) FROM tbl_schedule_task
-        WHERE base_dt = to_char(current_date,'YYYYMMDD')`,
+        WHERE co_cd='${sqlLit(loginCoCd())}'
+          AND base_dt = to_char(current_date,'YYYYMMDD')`,
     );
     expect(Number(today), "오늘 예정일이 하나도 없다").toBeGreaterThan(0);
 
@@ -143,8 +155,22 @@ test.describe.serial("문서주기 7종", () => {
     await expect(page.getByText(/오늘 작성 과제/).first()).toBeVisible({ timeout: 30_000 });
   });
 
-  // 사람이 쓰는 양식이다 — 시험이 바꾼 주기를 원래대로 돌려놓는다
+  // 로그인 회사·이 양식만 되돌린다. 없었으면 규칙·미작성 과제까지 지운다
   test.afterAll(() => {
-    if (saved) dbOne(`UPDATE tbl_schedule_rule SET cycle_cd='${saved}' WHERE tmpl_cd='${TMPL}'`);
+    const co = sqlLit(loginCoCd());
+    dbOne(
+      `DELETE FROM tbl_schedule_task
+        WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'
+          AND status IN ('TODO','LATE') AND doc_idx IS NULL`,
+    );
+    if (saved) {
+      dbOne(
+        `UPDATE tbl_schedule_rule SET cycle_cd='${sqlLit(saved)}'
+          WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'`,
+      );
+    } else {
+      dbOne(`DELETE FROM tbl_schedule_rule_detail WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'`);
+      dbOne(`DELETE FROM tbl_schedule_rule WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'`);
+    }
   });
 });

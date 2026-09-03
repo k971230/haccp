@@ -20,8 +20,10 @@ import {
   fillCell,
   grids,
   login,
+  loginCoCd,
   openScreen,
   saveAndConfirm,
+  sqlLit,
   visibleRows,
 } from "./helpers";
 
@@ -142,7 +144,7 @@ test.describe.serial("HWP 사용양식관리", () => {
     );
     expect(cd, "자사 양식이 저장되지 않았다").not.toBe("");
     expect(
-      dbOne(`SELECT count(*) FROM tbl_company_template WHERE co_cd='0000' AND tmpl_cd='${cd}'`),
+      dbOne(`SELECT count(*) FROM tbl_company_template WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='${cd}'`),
     ).toBe("1");
 
     // 만든 양식을 골라 지운다 — 삭제 응답이 5xx 면 여기서 걸린다
@@ -171,7 +173,7 @@ test.describe.serial("HWP 사용양식관리", () => {
     // DB 에서 사라져야 한다 — 화면만 보고 통과시키지 않는다
     await expect
       .poll(
-        () => dbOne(`SELECT count(*) FROM tbl_company_template WHERE co_cd='0000' AND tmpl_cd='${cd}'`),
+        () => dbOne(`SELECT count(*) FROM tbl_company_template WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='${cd}'`),
         { timeout: 20_000 },
       )
       .toBe("0");
@@ -188,12 +190,12 @@ test.describe.serial("HWP 사용양식관리", () => {
      * 두 건을 미사용·자사로 돌려 놓고 보고, 끝나면 되돌린다.
      */
     const flip = ["hwp_sys_002", "hwp_sys_003"].map((c) => `'${c}'`).join(",");
-    dbOne(`UPDATE tbl_company_template SET use_yn='N' WHERE co_cd='0000' AND tmpl_cd IN (${flip})`);
-    dbOne(`UPDATE tbl_company_template SET sys_yn='usr' WHERE co_cd='0000' AND tmpl_cd='hwp_sys_005'`);
+    dbOne(`UPDATE tbl_company_template SET use_yn='N' WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd IN (${flip})`);
+    dbOne(`UPDATE tbl_company_template SET sys_yn='usr' WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='hwp_sys_005'`);
     try {
       const total = Number(dbOne(`SELECT count(*) FROM tbl_company_template ct
                                     JOIN tbl_template t ON t.tmpl_cd = ct.tmpl_cd
-                                   WHERE ct.co_cd='0000' AND t.doc_kind='HWP'`));
+                                   WHERE ct.co_cd='${sqlLit(loginCoCd())}' AND t.doc_kind='HWP'`));
       const { user, pass } = adminCreds();
       await login(page, user, pass);
       await openScreen(page, PATH);
@@ -212,7 +214,7 @@ test.describe.serial("HWP 사용양식관리", () => {
       const cnt = (where: string) => Number(dbOne(
         `SELECT count(*) FROM tbl_company_template ct
            JOIN tbl_template t ON t.tmpl_cd = ct.tmpl_cd
-          WHERE ct.co_cd='0000' AND t.doc_kind='HWP' AND ${where}`,
+          WHERE ct.co_cd='${sqlLit(loginCoCd())}' AND t.doc_kind='HWP' AND ${where}`,
       ));
       const nCnt = cnt("upper(coalesce(ct.use_yn,'Y')) = 'N'");
       const usrCnt = cnt("lower(coalesce(ct.sys_yn,'sys')) IN ('n','usr')");
@@ -237,8 +239,8 @@ test.describe.serial("HWP 사용양식관리", () => {
         .toBe(total - usrCnt);
     } finally {
       // 뒷정리 — 다른 시험이 이 값을 보고 돈다
-      dbOne(`UPDATE tbl_company_template SET use_yn='Y' WHERE co_cd='0000' AND tmpl_cd IN (${flip})`);
-      dbOne(`UPDATE tbl_company_template SET sys_yn='sys' WHERE co_cd='0000' AND tmpl_cd='hwp_sys_005'`);
+      dbOne(`UPDATE tbl_company_template SET use_yn='Y' WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd IN (${flip})`);
+      dbOne(`UPDATE tbl_company_template SET sys_yn='sys' WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='hwp_sys_005'`);
     }
   });
 

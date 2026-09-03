@@ -71,7 +71,7 @@
 | # | 파일 | 하는 일 |
 |---|---|---|
 | 4-1 | `shell/HaccpShell.tsx` | 좌측 메뉴 + 탭 + 본문 |
-| 4-2 | `shell/tabRoute.ts` `parseRoute` | pathname → `scrnCd`. 정본 표 `SCREEN_PATH`(28화면) |
+| 4-2 | `shell/tabRoute.ts` `parseRoute` | pathname → `scrnCd`. 정본 표 `SCREEN_PATH`(29화면) |
 | 4-3 | `shell/screenRegistry.tsx` `SCREEN_REGISTRY` | `scrnCd` → 컴포넌트. **탭은 keep-alive** — 닫기 전까지 언마운트하지 않는다 |
 | 4-4 | `api/menuApi.ts` `GET /api/v1/menu/list` | 좌측 메뉴 트리 (업체별 `tbl_menu`) |
 | 4-5 | `hooks/useCommonCodes.ts` `GET /api/v1/code` | 콤보용 공통코드. 화면이 필요할 때 캐시에서 꺼낸다 |
@@ -85,7 +85,7 @@
 
 ## 5단계 — 화면 한 장의 구조
 
-28화면이 같은 뼈대를 쓴다. 화면 폴더에는 보통 세 파일이 있다.
+29화면이 같은 뼈대를 쓴다. 화면 폴더에는 보통 세 파일이 있다.
 
 | 파일 | 맡는 것 |
 |---|---|

@@ -18,8 +18,10 @@ import {
   fillCell,
   grids,
   login,
+  loginCoCd,
   openScreen,
   saveAndConfirm,
+  sqlLit,
 } from "./helpers";
 
 const PATH = "/flow/ca/corrective-action-management";
@@ -35,17 +37,18 @@ const CA_NO = "E2E-CA-0001";
  * 이탈 → 개선조치 생성 경로는 draft-all.spec 이 따로 본다.
  */
 function seedCorrectiveAction(): string {
-  dbOne(`DELETE FROM tbl_corrective_action WHERE co_cd='0000' AND ca_no='${CA_NO}'`);
+  const co = sqlLit(loginCoCd());
+  dbOne(`DELETE FROM tbl_corrective_action WHERE co_cd='${co}' AND ca_no='${CA_NO}'`);
   dbOne(`INSERT INTO tbl_corrective_action
            (co_cd, ca_no, occur_dt, deviation_desc, status, ins_id, ins_dt)
-         VALUES ('0000', '${CA_NO}', to_char(now(),'YYYYMMDD'),
+         VALUES ('${co}', '${CA_NO}', to_char(now(),'YYYYMMDD'),
                  'E2E 이탈 내용', 'OPEN', 'system', now())`);
-  return dbOne(`SELECT idx FROM tbl_corrective_action WHERE co_cd='0000' AND ca_no='${CA_NO}'`);
+  return dbOne(`SELECT idx FROM tbl_corrective_action WHERE co_cd='${co}' AND ca_no='${CA_NO}'`);
 }
 
 /** 깔아 둔 자료를 걷어낸다 */
 function purgeCorrectiveAction(): void {
-  dbOne(`DELETE FROM tbl_corrective_action WHERE co_cd='0000' AND ca_no='${CA_NO}'`);
+  dbOne(`DELETE FROM tbl_corrective_action WHERE co_cd='${sqlLit(loginCoCd())}' AND ca_no='${CA_NO}'`);
 }
 
 /** 화면을 열고 첫 조회가 끝날 때까지 기다린다 */
@@ -62,7 +65,7 @@ test.describe("개선조치관리", () => {
     await login(page, user, pass);
     await openCa(page);
 
-    const inDb = Number(dbOne("SELECT count(*) FROM tbl_corrective_action WHERE co_cd='0000'"));
+    const inDb = Number(dbOne(`SELECT count(*) FROM tbl_corrective_action WHERE co_cd='${sqlLit(loginCoCd())}'`));
     const shown = await grids(page).first().locator("tbody tr").count();
     // 화면은 기간 조건이 걸려 있어 DB 전체보다 많을 수 없다
     expect(shown, `화면 ${shown}행 > DB ${inDb}행 — 없는 행을 그리고 있다`).toBeLessThanOrEqual(inDb);
@@ -93,7 +96,7 @@ test.describe("개선조치관리", () => {
     // 화면이 아니라 DB 에서 확인한다
     await expect
       .poll(
-        () => dbOne(`SELECT action_desc FROM tbl_corrective_action WHERE co_cd='0000' AND idx=${idx}`),
+        () => dbOne(`SELECT action_desc FROM tbl_corrective_action WHERE co_cd='${sqlLit(loginCoCd())}' AND idx=${idx}`),
         { timeout: 20_000 },
       )
       .toContain(memo.slice(0, 8));
@@ -125,7 +128,7 @@ test.describe("개선조치관리", () => {
     // 8자리인지까지 본다. 10자가 들어가면 길이가 다르다
     await expect
       .poll(
-        () => dbOne(`SELECT action_dt FROM tbl_corrective_action WHERE co_cd='0000' AND idx=${idx}`),
+        () => dbOne(`SELECT action_dt FROM tbl_corrective_action WHERE co_cd='${sqlLit(loginCoCd())}' AND idx=${idx}`),
         { timeout: 20_000 },
       )
       .toBe("20260827");

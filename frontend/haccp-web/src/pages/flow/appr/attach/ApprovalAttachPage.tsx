@@ -356,17 +356,18 @@ export default function ApprovalAttachPage() {
             // 조회 — 검색조건으로 좌측 목록을 다시 읽는다. 이 영역은 검색 전용이다
             onSearch={() => void asyncAct.run(loadList, "search")}
             actions={(
-              <>
-                <SearchButton loading={listLoading || asyncAct.isBusy("search")} />
+              <div className="flex items-end gap-1.5">
                 <MesButton
-                  // 저장하지 않은 비고·고른 파일만 되돌린다
-                  variant="search"
+                  // 저장하지 않은 비고·고른 파일만 되돌린다. 조회(blue-100)와 같은 농도 빨간 틴트
+                  variant="danger"
                   icon="reset"
+                  className="bg-red-100 hover:bg-red-200/80"
                   onClick={handleReset}
                 >
                   초기화
                 </MesButton>
-              </>
+                <SearchButton loading={listLoading || asyncAct.isBusy("search")} />
+              </div>
             )}
           >
             <SearchDateRange

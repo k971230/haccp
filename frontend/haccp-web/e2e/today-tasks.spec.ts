@@ -11,7 +11,7 @@
  * PIPELINE[HF130] E2E
  */
 import { expect, test } from "@playwright/test";
-import { adminCreds, btn, dbOne, grids, login, openScreen, visibleRows } from "./helpers";
+import { adminCreds, btn, dbOne, grids, login, loginCoCd, loginUserId, openScreen, sqlLit, visibleRows } from "./helpers";
 
 /**
  * 오늘 할 일 화면을 열고 **그리드가 채워질 때까지** 기다린다.
@@ -105,7 +105,7 @@ test.describe("오늘 할 일", () => {
      */
     // 그리드에는 양식코드가 안 보인다 — 업무명으로 행을 집고 이동한 주소로 양식코드를 확인한다
     const picked = dbOne(
-      "SELECT title||'|'||tmpl_cd FROM sp_tbl_today_task_r_000('0000','admin',to_char(now(),'YYYYMMDD'))"
+      `SELECT title||'|'||tmpl_cd FROM sp_tbl_today_task_r_000('${sqlLit(loginCoCd())}','${sqlLit(loginUserId())}',to_char(now(),'YYYYMMDD'))`
       + " WHERE task_type <> 'CA' AND doc_idx IS NULL AND tmpl_cd IS NOT NULL LIMIT 1",
     );
     expect(picked, "아직 안 쓴 작성과제가 하나도 없다 — 주기 설정을 봐야 한다").not.toBe("");
@@ -157,7 +157,7 @@ test.describe("오늘 할 일", () => {
 
     // SP 가 돌려주는 오늘 할 일 전체 — 화면 기본은 미완료만이라 이보다 많을 수 없다
     const all = Number(
-      dbOne("SELECT count(*) FROM sp_tbl_today_task_r_000('0000', 'admin', to_char(now(),'YYYYMMDD'))"),
+      dbOne(`SELECT count(*) FROM sp_tbl_today_task_r_000('${sqlLit(loginCoCd())}', '${sqlLit(loginUserId())}', to_char(now(),'YYYYMMDD'))`),
     );
     expect(all, "SP 가 오늘 할 일을 한 건도 안 돌려준다").toBeGreaterThan(0);
     const shown = await grids(page).first().locator("tbody tr").count();
