@@ -1,12 +1,12 @@
 /**
- * TaskMapper — 오늘 과제·알림·개선조치·문서관계·감사자료 MyBatis 매퍼.
+ * TaskMapper — 오늘 과제·알림 MyBatis 매퍼.
  *
  * 개발자: 박승우
  * 일자: 2026-08-06
  * 코멘트:
  *   1) 화면마다 다른 업무 SP를 명시 메서드로 연결해 범용 빌더를 만들지 않는다
  *   2) 회사·사용자는 Service의 JWT 컨텍스트에서만 전달한다
- *   3) 삭제와 관계 저장은 SP가 문서·테넌트 조건을 다시 검증한다
+ *   3) 삭제는 SP가 문서·테넌트 조건을 다시 검증한다
  *
  * PIPELINE[HB93] 워크플로 작업 매퍼
  * PIPELINE[HB86, HB91, HF87] 연관 모듈
@@ -48,7 +48,4 @@ public interface TaskMapper {
     );
     List<Map<String, Object>> selectNotifications(@Param("coCd") String coCd, @Param("userId") String userId);
     void readNotification(@Param("coCd") String coCd, @Param("idx") Long idx, @Param("userId") String userId);
-    List<Map<String, Object>> selectRelations(@Param("coCd") String coCd, @Param("docIdx") Long docIdx);
-    void saveRelation(@Param("coCd") String coCd, @Param("srcDocIdx") Long srcDocIdx, @Param("relType") String relType, @Param("tgtDocIdx") Long tgtDocIdx, @Param("userId") String userId);
-    List<Map<String, Object>> selectAuditExport(@Param("coCd") String coCd, @Param("fromDt") String fromDt, @Param("toDt") String toDt, @Param("status") String status);
 }

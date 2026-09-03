@@ -78,5 +78,3 @@ export const listCorrectiveActions = (params: { fromDt?: string; toDt?: string; 
 export const saveCorrectiveAction = (row: WorkflowRow) => http.put("/api/v1/flow/ca/corrective-action-management/save", row);
 export const validateDeleteCorrectiveActions = (keys: { idx: number }[]) => http.post("/api/v1/flow/ca/corrective-action-management/validate-delete", keys);
 export const deleteCorrectiveActions = (keys: { idx: number }[]) => http.post("/api/v1/flow/ca/corrective-action-management/delete", keys);
-export const listDocumentRelations = (docIdx: number) => getRows(`/api/v1/docs/documents/${docIdx}/relations`);
-export const saveDocumentRelation = (docIdx: number, relType: string, tgtDocIdx: number) => http.put(`/api/v1/docs/documents/${docIdx}/relations/save`, { relType, tgtDocIdx });

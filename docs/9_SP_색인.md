@@ -23,7 +23,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 
 **아무도 안 부르는 SP 없음.**
 
-## 매퍼 → SP → 표 (153건)
+## 매퍼 → SP → 표 (150건)
 
 | 도메인 | SP | 종류 | 매퍼 | 건드리는 표 |
 |---|---|---|---|---|
@@ -39,7 +39,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | docs/documents | `sp_tbl_document_approval_c_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_approval_line_step<br>tbl_document<br>tbl_document_approval<br>tbl_document_file<br>tbl_document_version<br>tbl_user` |
 | docs/documents | `sp_tbl_document_approval_r_000` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_document_approval<br>tbl_user` |
 | docs/documents | `sp_tbl_document_approval_u_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_approval_line_step<br>tbl_document<br>tbl_document_approval<br>tbl_document_version` |
-| docs/documents | `sp_tbl_document_d_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_document<br>tbl_document_approval<br>tbl_document_file<br>tbl_document_relation<br>tbl_document_version` |
+| docs/documents | `sp_tbl_document_d_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_document<br>tbl_document_approval<br>tbl_document_file<br>tbl_document_version` |
 | docs/documents | `sp_tbl_document_delete_blocker_r_000` | 조회 | `docs/documents/DocumentMapper.xml<br>draft/ccpmonitoring/CcpLogDraftMapper.xml<br>draft/ccpmonitoring/CcpMtlDraftMapper.xml<br>draft/html/HtmlDraftMapper.xml` | `tbl_document` |
 | docs/documents | `sp_tbl_document_file_c_000` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_document<br>tbl_document_file` |
 | docs/documents | `sp_tbl_document_file_d_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_document<br>tbl_document_file` |
@@ -172,9 +172,6 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | sys/logs/auditlog | `sp_tbl_audit_log_c_000` | 쓰기 | `sys/logs/auditlog/AuditLogMapper.xml` | `tbl_audit_log` |
 | sys/logs/loginhistory | `sp_login_history_r_000` | 조회 | `sys/logs/loginhistory/LoginHistoryMapper.xml` | `tbl_login_log<br>tbl_user` |
 | sys/logs/screenusage | `sp_screen_usage_statistics_r_000` | 조회 | `sys/logs/screenusage/ScreenUsageMapper.xml` | `tbl_menu<br>tbl_screen<br>tbl_view_stat_daily` |
-| tsk | `sp_tbl_audit_export_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_document_file<br>tbl_document_relation<br>tbl_template` |
-| tsk | `sp_tbl_document_relation_c_000` | 쓰기 | `tsk/TaskMapper.xml` | `tbl_document<br>tbl_document_relation` |
-| tsk | `sp_tbl_document_relation_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_document<br>tbl_document_relation` |
 | tsk | `sp_tbl_notification_r_000` | 조회 | `tsk/TaskMapper.xml` | `tbl_notification` |
 | tsk | `sp_tbl_notification_u_000` | 쓰기 | `tsk/TaskMapper.xml` | `tbl_notification` |
 | tsk | `sp_tbl_schedule_task_generate_c_000` | 쓰기 | `tsk/TaskMapper.xml` | `tbl_schedule_task` |

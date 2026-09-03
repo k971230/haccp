@@ -8,6 +8,9 @@
 
 ## 1. 지금 하는 일
 
+**2026-09-03 — 감사자료 API 삭제.**
+`/api/v1/docs/audit-export/**` · `sp_tbl_audit_export_r_000` · `previewAuditPdfs`. 화면 없음.
+
 **기본은 검수는 md 만, 코드는 보고만.** 2026-09-03 에 확정했다 —
 한쪽 세션이 검수 중 코드까지 고쳐서 작업 트리가 섞인 뒤에 갈래를 닫았다.
 정본: [`docs/8_결정_이력.md`](docs/8_결정_이력.md) · `.claude/commands/doc-audit.md`.

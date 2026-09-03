@@ -66,7 +66,6 @@ edge 는 루프백 평문만 받는다.
 /api/v1/docs/documents/{idx}/export-pdf     PDF 변환
 /api/v1/docs/documents/files/{idx}/download 첨부 내려받기
 /api/v1/docs/templates/{tmplCd}/form        양식 파일 업로드
-/api/v1/docs/audit-export/preview-pdf       감사자료 미리보기
 /api/v1/sys/users/{me|userId}/sign          서명 이미지
 ```
 

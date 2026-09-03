@@ -1,11 +1,11 @@
 /**
- * TaskService — 오늘 과제·알림·개선조치·문서관계·감사자료 업무 서비스.
+ * TaskService — 오늘 과제·알림 업무 서비스.
  *
  * 개발자: 박승우
  * 일자: 2026-08-06
  * 코멘트:
  *   1) 오늘 할 일 조회 전에 해당 회사 과제를 멱등 보정해 배치 누락에도 업무가 끊기지 않는다
- *   2) 개선조치·알림·문서 관계 변경은 JWT 테넌트·사용자만 사용한다
+ *   2) 개선조치·알림 변경은 JWT 테넌트·사용자만 사용한다
  *   3) 삭제는 validate-delete와 delete에서 같은 키 검증을 수행한다
  *
  * PIPELINE[HB94] 워크플로 작업 서비스
@@ -94,35 +94,6 @@ public class TaskService {
         mapper.readNotification(LoginUserContext.coCd(), DeleteValidation.requirePositive(idx, "알림번호가 올바르지 않습니다."), LoginUserContext.userId());
     }
 
-    /** 문서 상세 패널의 관계 목록을 반환한다. */
-    public List<Map<String, Object>> relations(Long docIdx) {
-        return mapper.selectRelations(LoginUserContext.coCd(), DeleteValidation.requirePositive(docIdx, "문서번호가 올바르지 않습니다."));
-    }
-
-    /** 고정 관계 유형과 두 문서를 연결한다. */
-    @Transactional
-    public void saveRelation(Long srcDocIdx, String relType, Long tgtDocIdx) {
-        String type = text(relType);
-        if (!List.of("PLAN_REPORT", "hwp_sys_007_LOG", "html_sys_010_LOG", "RECV_INVENTORY").contains(type)) {
-            throw new BizException("문서 관계 구분이 올바르지 않습니다.");
-        }
-        mapper.saveRelation(LoginUserContext.coCd(), DeleteValidation.requirePositive(srcDocIdx, "출발 문서번호가 올바르지 않습니다."), type, DeleteValidation.requirePositive(tgtDocIdx, "대상 문서번호가 올바르지 않습니다."), LoginUserContext.userId());
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-11
-     * 코멘트:
-     *   1) 감사 출력 문서 묶음 조회 — G-14 동결 유지(FE UI 없음)
-     *   2) snake_case → camelCase 변환으로 계약키(docIdx)를 유지한다
-     *   3) 기간·상태는 비어 있을 때(= 전체) SP 조건으로 그대로 전달한다
-     */
-    @Deprecated(since = "STEP-20-G14", forRemoval = false)
-    public List<Map<String, Object>> auditExport(String fromDt, String toDt, String status) {
-        return camelRows(mapper.selectAuditExport(
-                LoginUserContext.coCd(), text(fromDt), text(toDt), text(status)));
-    }
-
     /** Spring 정기 작업이 활성 회사 전체의 오늘 과제를 생성한다. */
     @Transactional
     public void generateAllCompanies() {
@@ -139,7 +110,7 @@ public class TaskService {
     private String today() { return LocalDate.now().format(YMD); }
     private String text(String value) { return value == null ? "" : value.trim(); }
 
-    /** 목록·관계 Map 행을 camelCase 키로 복사한다. */
+    /** 목록 Map 행을 camelCase 키로 복사한다. */
     private List<Map<String, Object>> camelRows(List<Map<String, Object>> rows) {
         List<Map<String, Object>> out = new ArrayList<>();
         if (rows == null) return out;

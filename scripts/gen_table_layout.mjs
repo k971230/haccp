@@ -58,7 +58,7 @@ const GROUPS = [
     desc: "현장이 실제로 쓰는 기록과 그 결재. 법정 서류가 여기 쌓인다",
     tables: [
       "tbl_document", "tbl_document_approval", "tbl_document_file",
-      "tbl_document_relation", "tbl_document_version",
+      "tbl_document_version",
       "tbl_hyg_process", "tbl_hyg_process_item",
       "tbl_ccp_verify_check", "tbl_ccp_verify_item",
       "tbl_ccp_generic_monitor", "tbl_ccp_generic_monitor_row", "tbl_ccp_generic_monitor_cell",

@@ -2300,32 +2300,8 @@ $$;
 COMMENT ON FUNCTION sasshaccp.sp_tbl_approval_line_r_000(p_co_cd character varying) IS '결재선·단계 조회 — 결재자명·부서명·단계 사용여부 포함';
 
 
---
--- Name: sp_tbl_audit_export_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
---
-
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_audit_export_r_000(p_co_cd character varying, p_from_dt character varying, p_to_dt character varying, p_status character varying) RETURNS TABLE(doc_idx bigint, doc_no character varying, tmpl_nm character varying, base_dt character varying, status character varying, writer_id character varying, approve_dt timestamp without time zone, file_cnt integer, relation_cnt integer, open_ca_cnt integer, doc_kind character varying, tmpl_cd character varying, category_cd character varying)
-    LANGUAGE sql STABLE
-    AS $$
-    SELECT d.idx, d.doc_no, COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm, d.tmpl_cd), d.base_dt, d.status,
-           d.writer_id, d.approve_dt,
-           (SELECT count(*)::int FROM tbl_document_file f WHERE f.co_cd=d.co_cd AND f.doc_idx=d.idx),
-           (SELECT count(*)::int FROM tbl_document_relation r
-             WHERE r.co_cd=d.co_cd AND (r.src_doc_idx=d.idx OR r.tgt_doc_idx=d.idx)),
-           (SELECT count(*)::int FROM tbl_corrective_action ca
-             WHERE ca.co_cd=d.co_cd AND ca.src_doc_idx=d.idx AND ca.status <> 'DONE'),
-           d.doc_kind, d.tmpl_cd, t.category_cd
-      FROM tbl_document d
-      -- 카탈로그는 자사 행만. 시드가 업체에 복사한다
-      LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd AND t.co_cd = d.co_cd
-      LEFT JOIN tbl_company_template ct ON ct.co_cd=d.co_cd AND ct.tmpl_cd=d.tmpl_cd
-     WHERE d.co_cd=p_co_cd AND d.del_yn='N'
-       AND COALESCE(t.category_cd, '') <> 'LAW'
-       AND (COALESCE(p_from_dt,'')='' OR d.base_dt >= p_from_dt)
-       AND (COALESCE(p_to_dt,'')='' OR d.base_dt <= p_to_dt)
-       AND (COALESCE(p_status,'')='' OR d.status=p_status)
-     ORDER BY d.base_dt, d.doc_no;
-$$;
+-- 감사자료 묶음 조회 SP — 화면이 없어 고아. 이미 도는 DB 에도 DROP
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_audit_export_r_000(character varying, character varying, character varying, character varying);
 
 
 --
@@ -3699,9 +3675,6 @@ BEGIN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 삭제할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
 
-    DELETE FROM tbl_document_relation
-     WHERE co_cd = p_co_cd
-       AND (src_doc_idx = p_doc_idx OR tgt_doc_idx = p_doc_idx);
     DELETE FROM tbl_document_approval
      WHERE co_cd = p_co_cd
        AND doc_idx = p_doc_idx;
@@ -3721,7 +3694,7 @@ END$$;
 -- Name: PROCEDURE sp_tbl_document_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying) IS '문서형 작성중·반려 문서 삭제 — 첨부·결재·버전·관계 일괄 제거';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying) IS '문서형 작성중·반려 문서 삭제 — 첨부·결재·버전 일괄 제거';
 
 
 --
@@ -4007,41 +3980,9 @@ $$;
 COMMENT ON FUNCTION sasshaccp.sp_tbl_document_r_001(p_co_cd character varying, p_doc_idx bigint) IS '문서 공통 헤더 단건 — 문서함 상세·결재 패널·결재 첨부';
 
 
---
--- Name: sp_tbl_document_relation_c_000(character varying, bigint, character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
---
-
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_relation_c_000(IN p_co_cd character varying, IN p_src_doc_idx bigint, IN p_rel_type character varying, IN p_tgt_doc_idx bigint, IN p_id character varying)
-    LANGUAGE plpgsql
-    AS $$
-DECLARE v_src varchar; v_tgt varchar;
-BEGIN
-    SELECT tmpl_cd INTO v_src FROM tbl_document WHERE idx = p_src_doc_idx AND co_cd = p_co_cd AND del_yn = 'N';
-    SELECT tmpl_cd INTO v_tgt FROM tbl_document WHERE idx = p_tgt_doc_idx AND co_cd = p_co_cd AND del_yn = 'N';
-    IF v_src IS NULL OR v_tgt IS NULL THEN RAISE EXCEPTION '연결할 문서를 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
-    IF NOT ((p_rel_type = 'PLAN_REPORT' AND v_src = 'VERIFY_PLAN' AND v_tgt = 'VERIFY_REPORT')
-         OR (p_rel_type = 'EDU_PLAN_LOG' AND v_src = 'EDU_PLAN' AND v_tgt = 'EDU_LOG')
-         OR (p_rel_type = 'CALIB_TARGET_LOG' AND v_src = 'CALIB_TARGET' AND v_tgt IN ('CALIB_LOG_TEMP','CALIB_LOG_WGT','CALIB_LOG_SCL'))
-         OR (p_rel_type = 'RECV_INVENTORY' AND v_src = 'RECV_INSP' AND v_tgt IN ('INV', 'INV_CHECK'))) THEN
-        RAISE EXCEPTION '허용되지 않은 문서 관계입니다.' USING ERRCODE = '45000';
-    END IF;
-    INSERT INTO tbl_document_relation(co_cd, src_doc_idx, rel_type, tgt_doc_idx, ins_id) VALUES(p_co_cd, p_src_doc_idx, p_rel_type, p_tgt_doc_idx, p_id) ON CONFLICT DO NOTHING;
-END$$;
-
-
---
--- Name: sp_tbl_document_relation_r_000(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
---
-
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_relation_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(idx bigint, src_doc_idx bigint, rel_type character varying, tgt_doc_idx bigint, tgt_doc_no character varying, tgt_title character varying, tgt_tmpl_cd character varying)
-    LANGUAGE sql STABLE
-    AS $$
-    SELECT r.idx, r.src_doc_idx, r.rel_type, r.tgt_doc_idx, d.doc_no, d.title, d.tmpl_cd
-      FROM tbl_document_relation r JOIN tbl_document d ON d.idx = r.tgt_doc_idx AND d.co_cd = r.co_cd
-     WHERE r.co_cd = p_co_cd AND r.src_doc_idx = p_doc_idx AND d.del_yn = 'N'
-     ORDER BY r.idx;
-$$;
-
+-- 문서 관계 SP — 화면이 안 불러 고아. 이미 도는 DB 에도 DROP
+DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_document_relation_c_000(character varying, bigint, character varying, bigint, character varying);
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_document_relation_r_000(character varying, bigint);
 
 --
 -- Name: sp_tbl_document_template_r_000(character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -

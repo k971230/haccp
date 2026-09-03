@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-TaskMapper.xml — 오늘 과제·알림·개선조치·문서관계·감사자료 SP 호출.
+TaskMapper.xml — 오늘 과제·알림 SP 호출.
 
 개발자: 박승우
 일자: 2026-08-25
@@ -33,13 +33,4 @@ PIPELINE[HB93] 워크플로 작업 매퍼
     <select id="selectNotifications" resultType="map">SELECT * FROM sp_tbl_notification_r_000(#{coCd}, #{userId})</select>
     <!-- 본인 알림 읽음 처리 -->
     <update id="readNotification" statementType="CALLABLE">CALL sp_tbl_notification_u_000(#{coCd}, #{idx}, #{userId})</update>
-    <!-- 이탈·개선조치 목록 -->
-    <!-- 개선조치 신규·수정 -->
-    <!-- 미완료 개선조치 삭제 -->
-    <!-- 출발 문서의 관련 문서 목록 -->
-    <select id="selectRelations" resultType="map">SELECT * FROM sp_tbl_document_relation_r_000(#{coCd}, #{docIdx})</select>
-    <!-- 허용 조합 관계만 저장 -->
-    <update id="saveRelation" statementType="CALLABLE">CALL sp_tbl_document_relation_c_000(#{coCd}, #{srcDocIdx}, #{relType}, #{tgtDocIdx}, #{userId})</update>
-    <!-- 감사 출력용 문서 묶음 -->
-    <select id="selectAuditExport" resultType="map">SELECT * FROM sp_tbl_audit_export_r_000(#{coCd}, #{fromDt}, #{toDt}, #{status})</select>
 </mapper>

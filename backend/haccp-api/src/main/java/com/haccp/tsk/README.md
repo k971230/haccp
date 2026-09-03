@@ -8,8 +8,6 @@
 |---|---|
 | `/api/v1/tsk/today-tasks/*` | 오늘 할 일 화면 |
 | `/api/v1/tsk/notifications/*` | 알림 — 화면이 아니라 셸 공용 |
-| `/api/v1/docs/documents/{docIdx}/relations` | 문서 관계 — FE 가 아직 안 부른다 |
-| `/api/v1/docs/audit-export/*` | 감사자료 — G-14 동결. `@Deprecated(forRemoval=false)` 로 남긴다 |
 
 ## 조회가 쓰기를 한다 — 알아 두고 만져야 한다
 
@@ -25,6 +23,7 @@
 
 ## 변경
 
+- 2026-09-03 — 감사자료 `/api/v1/docs/audit-export/*` 를 지웠다. 화면이 없었다
 - 2026-08-28 — 일일 배치 SP 에서 알림 INSERT 를 걷어냈다.
   지연분이 날마다 다시 쌓였고, 한 문장이 중복 행을 넣었고, 화면 조회가 그걸 유발했다
 - 2026-08-26 — 개선조치관리 화면 API 를 `flow/ca` 로 내보냈다.

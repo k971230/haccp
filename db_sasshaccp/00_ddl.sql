@@ -3164,91 +3164,6 @@ ALTER TABLE sasshaccp.tbl_document ALTER COLUMN idx ADD GENERATED ALWAYS AS IDEN
 
 
 --
--- Name: tbl_document_relation; Type: TABLE; Schema: sasshaccp; Owner: -
---
-
-CREATE TABLE sasshaccp.tbl_document_relation (
-    idx bigint NOT NULL,
-    co_cd character varying(10) NOT NULL,
-    src_doc_idx bigint NOT NULL,
-    rel_type character varying(20) NOT NULL,
-    tgt_doc_idx bigint NOT NULL,
-    ins_id character varying(20),
-    ins_dt timestamp without time zone DEFAULT now()
-);
-
-
---
--- Name: TABLE tbl_document_relation; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON TABLE sasshaccp.tbl_document_relation IS '문서 간 연결 — 관련 문서 바로가기와 감사자료 묶음 출력의 근거';
-
-
---
--- Name: COLUMN tbl_document_relation.idx; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_document_relation.idx IS 'PK 자동 채번 대리키';
-
-
---
--- Name: COLUMN tbl_document_relation.co_cd; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_document_relation.co_cd IS '회사코드 — 테넌트 키';
-
-
---
--- Name: COLUMN tbl_document_relation.src_doc_idx; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_document_relation.src_doc_idx IS '출발 문서 idx — tbl_document.idx';
-
-
---
--- Name: COLUMN tbl_document_relation.rel_type; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_document_relation.rel_type IS '관계 유형 — PLAN_CHECK(계획-점검), CHECK_RESULT(점검-결과), RESULT_CA(결과-개선조치), EDU_PLAN_LOG(교육계획-교육일지), CALIB_TARGET_LOG(검교정대상-일지)';
-
-
---
--- Name: COLUMN tbl_document_relation.tgt_doc_idx; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_document_relation.tgt_doc_idx IS '도착 문서 idx — tbl_document.idx';
-
-
---
--- Name: COLUMN tbl_document_relation.ins_id; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_document_relation.ins_id IS '최초입력자 ID';
-
-
---
--- Name: COLUMN tbl_document_relation.ins_dt; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_document_relation.ins_dt IS '최초입력일시';
-
-
---
--- Name: tbl_document_relation_idx_seq; Type: SEQUENCE; Schema: sasshaccp; Owner: -
---
-
-ALTER TABLE sasshaccp.tbl_document_relation ALTER COLUMN idx ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME sasshaccp.tbl_document_relation_idx_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
---
 -- Name: tbl_document_version; Type: TABLE; Schema: sasshaccp; Owner: -
 --
 
@@ -6222,13 +6137,6 @@ ALTER TABLE ONLY sasshaccp.tbl_document
     ADD CONSTRAINT tbl_document_pkey PRIMARY KEY (idx);
 
 
---
--- Name: tbl_document_relation tbl_document_relation_pkey; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
---
-
-ALTER TABLE ONLY sasshaccp.tbl_document_relation
-    ADD CONSTRAINT tbl_document_relation_pkey PRIMARY KEY (idx);
-
 
 --
 -- Name: tbl_document_version tbl_document_version_pkey; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
@@ -6630,13 +6538,6 @@ ALTER TABLE ONLY sasshaccp.tbl_document
     ADD CONSTRAINT ux_tbl_document_doc_no UNIQUE (co_cd, doc_no);
 
 
---
--- Name: tbl_document_relation ux_tbl_document_relation; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
---
-
-ALTER TABLE ONLY sasshaccp.tbl_document_relation
-    ADD CONSTRAINT ux_tbl_document_relation UNIQUE (src_doc_idx, rel_type, tgt_doc_idx);
-
 
 --
 -- Name: tbl_document_version ux_tbl_document_version; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
@@ -6954,12 +6855,6 @@ CREATE INDEX ix_tbl_document_approval_usr ON sasshaccp.tbl_document_approval USI
 CREATE INDEX ix_tbl_document_file_doc ON sasshaccp.tbl_document_file USING btree (doc_idx, file_kind);
 
 
---
--- Name: ix_tbl_document_relation_tgt; Type: INDEX; Schema: sasshaccp; Owner: -
---
-
-CREATE INDEX ix_tbl_document_relation_tgt ON sasshaccp.tbl_document_relation USING btree (tgt_doc_idx, rel_type);
-
 
 --
 -- Name: ix_tbl_document_retain; Type: INDEX; Schema: sasshaccp; Owner: -
@@ -7232,3 +7127,9 @@ DELETE FROM sasshaccp.tbl_audit_log WHERE scrn_cd = '';
 ALTER TABLE sasshaccp.tbl_document
     ADD COLUMN IF NOT EXISTS cancel_reason character varying(500);
 COMMENT ON COLUMN sasshaccp.tbl_document.cancel_reason IS '결재 취소 사유 — UNDO 시 남기고 재상신(REQUEST) 때 비운다';
+
+
+--
+-- 문서 관계 표 — 화면이 안 써서 고아. 이미 도는 DB 용
+--
+DROP TABLE IF EXISTS sasshaccp.tbl_document_relation;
