@@ -16,10 +16,10 @@ Axios HTTP 클라이언트·도메인 API 함수.
 
 | 파일 | 대상 |
 |------|------|
-| `workflowApi.ts` | 점검항목·작성주기(구)·법적서류 삭제(`company-templates`) 등 |
+| `taskWorkflowApi.ts` | 오늘 할 일 `/api/v1/tsk/today-tasks` · 알림 `/api/v1/tsk/notifications` · 이탈개선조치 `/api/v1/flow/ca/*` · 문서관계 `/api/v1/docs/documents/{idx}/relations` |
 | `sys/approvalLineApi.ts` | 결재선 `/api/v1/sys/code/approval-line-management/*` |
 | `documentApi.ts` | 문서함·결재·HWP 원본 `/api/v1/docs/documents` · `/api/v1/docs/templates` |
 
 ## 관련
 
-- 정본: `docs/7_에이전트_가이드_FE.md` · `.cursor/rules/09-haccp-frontend.mdc`
+- 정본: `.cursor/rules/09-haccp-frontend.mdc` · `.cursor/rules/09-haccp-frontend.mdc`

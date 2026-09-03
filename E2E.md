@@ -1,7 +1,7 @@
 # E2E 수행 결과
 
 > 일자: 2026-08-25 (2회차 8-26 · 3회차 8-27 · **4회차 8-27**) · 대상: 메뉴 28화면 전수 · 계정: `admin` / `e2erw`(USER) / `smoke`(VIEWER)
-> 실행: `cd frontend/haccp-web ; npx playwright test`
+> 실행: `cd frontend/haccp-web ; npm run build ; npm run preview &` 뒤에 `npx playwright test`
 > 최신 결과: **6회차(2026-08-29) 153건 전부 통과 · 실패 0 · 건너뜀 0** — 발견·수정한 결함 누적 **14건** (→ [E2E_ERRORS.md](E2E_ERRORS.md))
 >
 > 1회차(8-25) 68건·결함 7건 → 2회차(8-26, 배포 전 정본화) 105건·결함 7건 추가
@@ -279,7 +279,7 @@ E2E_BASE_URL=http://180.71.58.87/haccp/ E2E_API_BASE_URL=http://180.71.58.87 E2E
 | `tbl_code` | 86 | 18개 그룹, 전부 UPPER_SNAKE |
 | `tbl_role_screen` | 84 | 3그룹 × 28화면. 고아 0건 |
 | `tbl_template` / `tbl_company_template` | 48 / 47 | 삭제된 화면 양식 27종을 걷어냈다 |
-| 표 / SP | 53 / 152 | `db_sasshaccp/` 6본이 만드는 것과 같다 (소스가 안 쓰는 표 18개 제거) |
+| 표 / SP | 53 / 155 | `db_sasshaccp/` 7본이 만드는 것과 같다 (소스가 안 쓰는 표 18개 제거) |
 
 `tools/reset_test_documents.sql` 로 시험 문서를 비우므로 문서 표는 회차마다 초기화된다.
 기준정보(부서·사용자·양식)는 시험이 만든 것을 각 스펙의 `afterAll` 이 되돌린다.
@@ -305,6 +305,7 @@ E2E_BASE_URL=http://180.71.58.87/haccp/ E2E_API_BASE_URL=http://180.71.58.87 E2E
 
 ```sh
 cd frontend/haccp-web
+npm run build ; npm run preview &    # 4173 에 dist/ 를 띄운다 — 빼면 전부 접속 실패
 
 # 전체
 npx playwright test

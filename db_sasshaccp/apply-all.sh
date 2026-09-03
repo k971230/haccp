@@ -6,15 +6,18 @@
 #  일자: 2026-08-26
 #  코멘트:
 #    1) 7본을 순서대로 적용한다 — 구조 → SP → 플랫폼 기준 → 공통코드 → 양식 → 업체 개설 → 회사 지면
-#    2) 전 파일이 IF NOT EXISTS / ON CONFLICT / NOT EXISTS 기반이라 몇 번을 다시 돌려도 결과가 같다
+#    2) 빈 DB 전용이다. 00_ddl(CREATE SCHEMA·CREATE TABLE 에 IF NOT EXISTS 없음)과
+#       02_seed(ON CONFLICT 0건)가 재실행을 막는다 — 다시 깔려면 스키마부터 지운다.
+#       01_sp 는 CREATE OR REPLACE 라 다시 돌려도 된다
 #    3) 접속정보는 환경변수로만 받는다 — 비밀번호를 인자나 파일에 적지 않는다
 #
 #  사용:
 #    # 플랫폼 초기화 (0000 만)
 #    PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** bash apply-all.sh
 #
-#    # 새 업체 개설 — 위를 끝낸 DB 에 업체 하나를 더 얹는다
-#    CO_CD=0003 CO_NM='알엠에이' ADMIN_ID=rmasys WRITER_ID=rmausr bash apply-all.sh
+#    # 새 업체 개설 — 위를 끝낸 DB 에 업체 하나를 더 얹는다.
+#    # 이 스크립트를 다시 부르면 1단계가 00_ddl 을 돌려 42P06 으로 죽는다.
+#    # 업체분 4본(03·05·06·07)만 직접 돌린다 — 07-haccp-db.mdc 「파일 순서」의 예시
 #
 #  변경
 #    2026-08-25 — 번호 마이그레이션 133본을 5본으로 접었다. 04 는 구 DB 전용이라 여기서 안 돌린다

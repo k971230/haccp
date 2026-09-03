@@ -13,7 +13,7 @@
 | `manualUrl.ts` | `scrnCd` → `/haccp/manual/{scrnCd}.html`. 화면 라우트 아님 |
 | `ShellFooter.tsx` | 회사·사용자·도움말 새 탭 |
 | `screenRegistry.tsx` | `scrnCd` → Page |
-| `SideMenu.tsx` | `menuApi` 2단 트리 |
+| `SideMenu.tsx` | `menuApi` 대·중·소 3단 트리 (중분류는 `scrn_cd` NULL 폴더 행) |
 | `tabStore` | `stores/tabStore.ts` — 닫기 `afterRemove` |
 
 `gridRules/` — 그리드 잠금·저장 가드. MES `PIPELINE[Fn]` 잔존. 새 파일에 F 접두 금지.

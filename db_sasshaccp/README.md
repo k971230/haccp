@@ -6,7 +6,7 @@ PostgreSQL `sasshaccp` 스키마 **정본**. 여기 7본이 곧 DB 다 — 손�
 
 ```
 00_ddl        구조        표 53 · 인덱스 · 제약           회사코드 없음
-01_sp         로직        SP·함수 152                     회사코드 없음
+01_sp         로직        SP·함수 155                     회사코드 없음
 02_seed       플랫폼 기준  화면 28 · 양식 46 · 0000 업체   0000 고정
      │
      ├─ 03_code_seed    공통코드                    -v co_cd=  업체별
@@ -36,17 +36,22 @@ psql -v co_cd=0000 -f 05_form_seed.sql
 ## 새 업체를 여는 법 (0004, 0005 …)
 
 **SQL 파일을 새로 만들지 않는다.** `02_seed.sql` 에 업체를 넣지 않는다.
-바꿀 것은 아래 변수 네 개뿐이고, 나머지는 `apply-all.sh` 가 `03`→`05`→`06`→`07` 을 그 `CO_CD` 로 돌린다.
+`apply-all.sh` 가 `03`→`05`→`06`→`07` 을 그 `CO_CD` 로 돌리는 것은 **빈 DB 초기화 1회에 한정된다.**
+이미 깔린 DB 에 다시 부르면 1단계가 `00_ddl.sql` 을 돌려 `42P06 duplicate schema` 로 죽는다.
+업체를 더 얹을 때는 업체분 4본만 직접 돌린다.
 
 ```sh
-# 플랫폼이 이미 깔린 DB 에 업체 하나만 더 얹는다
-PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** PGDATABASE=sasshaccp \
-  CO_CD=0004 \
-  CO_NM='업체한글명' \
-  ADMIN_ID=팀장아이디 \
-  WRITER_ID=팀원아이디 \
-  bash apply-all.sh
+export PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** PGDATABASE=sasshaccp
+P="psql -v ON_ERROR_STOP=1"
+
+$P -v co_cd=0004 -f 03_code_seed.sql
+$P -v co_cd=0004 -f 05_form_seed.sql
+$P -v co_cd=0004 -v co_nm='업체한글명' -v admin_id=팀장아이디 -v writer_id=팀원아이디 \
+   -f 06_company_seed.sql
+$P -v co_cd=0004 -f 07_company_forms.sql
 ```
+
+`06` 의 초기 비밀번호는 `1234` 다. 첫 로그인 후 반드시 바꾼다.
 
 | 변수 | 예 (0003 알엠에이) | 규칙 |
 |---|---|---|
@@ -91,7 +96,7 @@ PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** PGDATABASE=sasshaccp \
 | 공통코드 | `main_cd`·`sub_cd` 둘 다 **UPPER_SNAKE**. `sub_cd` 는 업무 표에 저장되는 값과 같은 표기 |
 | 업무 오류 | SP 에서 `RAISE ... USING ERRCODE='45000'` → 400 + 그 문구 |
 | 삭제 | HTTP DELETE 를 쓰지 않는다. `validate-delete` → `delete` 2단계 |
-| 재실행 | 7본 모두 몇 번을 돌려도 결과가 같아야 한다 |
+| 재실행 | 7본 모두 몇 번을 돌려도 결과가 같아야 한다 — **목표다. 지금은 아니다.** `00_ddl`(`CREATE SCHEMA`·`CREATE TABLE` 에 `IF NOT EXISTS` 없음)·`02_seed`(`ON CONFLICT` 0건)는 빈 DB 전용 |
 
 ## 손대면 안 되는 것
 
@@ -123,11 +128,12 @@ PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** PGDATABASE=sasshaccp \
 ## 검증
 
 ```sh
-# 빈 DB 에 7본을 순서대로 → 표 53 / SP 152 / 메뉴 43 / 코드 86 / 사용양식 45 / 회사지면 5
+# 빈 DB 에 7본을 순서대로 → 표 53 / SP 155 / 메뉴 43 / 코드 86 / 사용양식 45 / 회사지면 5
 bash apply-all.sh
 
-# 화면까지 도는지 — 프론트 E2E 153건
-cd ../frontend/haccp-web ; npx playwright test
+# 화면까지 도는지 — 프론트 E2E. 건수는 npx playwright test --list 로 센다
+cd ../frontend/haccp-web ; npm run build ; npm run preview &
+npx playwright test
 ```
 
 ### 알림이 한 번만 쌓이는지

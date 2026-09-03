@@ -14,6 +14,15 @@
 | 1-1 | Credentials 4개가 등록돼 있는가 | Jenkins > Credentials |
 | 1-2 | Job `haccp-deploy` 가 `Jenkinsfile` 을 가리키는가 | Job > Pipeline > Script Path |
 | 1-3 | 배포 서버에 `.env.docker` 가 있고 권한이 `0600` 인가 | `/home/ubuntu/haccp/` |
+| 1-4 | external 볼륨 3개가 있는가 — `haccp-files`·`haccp-templates`·`haccp-rhwp` | 서버 `docker volume ls` |
+
+1-4 가 없으면 `compose up` 이 `volume not found` 로 즉시 멈춘다 (`docker-compose.prod.yml` 의 `external: true`).
+Jenkins 가 만들어 주지 않는다 — 서버에서 한 번 돌린다. 둘 다 멱등이다.
+
+```sh
+bash scripts/init_volumes.sh    # haccp-files · haccp-templates
+bash scripts/install_rhwp.sh    # haccp-rhwp
+```
 
 | Credential ID | 종류 | 쓰는 곳 |
 |---|---|---|
@@ -32,11 +41,19 @@
 PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 ```
 
-전부 재실행 안전하다(`IF NOT EXISTS` · `ON CONFLICT` · `CREATE OR REPLACE`).
-새 업체를 여는 경우:
+**빈 DB 전용이다.** `00_ddl.sql` 은 `CREATE SCHEMA`·`CREATE TABLE` 에 `IF NOT EXISTS` 가 없고
+`02_seed.sql` 은 `ON CONFLICT` 가 없다 — 다시 부르면 `42P06 duplicate schema` 로 죽는다.
+(`01_sp.sql` 만 `CREATE OR REPLACE` 라 재실행된다.)
+
+새 업체를 여는 경우 — `apply-all.sh` 를 다시 부르지 않고 업체분 4본만 돌린다:
 
 ```sh
-CO_CD=0001 CO_NM='업체명' ADMIN_ID=admin0001 bash db_sasshaccp/apply-all.sh
+cd db_sasshaccp
+P="psql -v ON_ERROR_STOP=1"
+$P -v co_cd=0001 -f 03_code_seed.sql
+$P -v co_cd=0001 -f 05_form_seed.sql
+$P -v co_cd=0001 -v co_nm='업체명' -v admin_id=admin0001 -f 06_company_seed.sql
+$P -v co_cd=0001 -f 07_company_forms.sql
 ```
 
 > 초기 비밀번호는 `1234` 다. **첫 로그인 후 반드시 바꾼다.**
@@ -70,7 +87,7 @@ https://180.71.58.87/haccp/          → 로그인 화면
 https://180.71.58.87/haccp/login     → 로그아웃 URL
 
 # 컨테이너
-ssh 배포서버 'cd /home/ubuntu/haccp && docker compose ps'
+ssh 배포서버 'cd /home/ubuntu/haccp && docker compose --env-file .env.docker -f docker-compose.prod.yml ps'
 ```
 
 문제가 있으면 [`운영.md`](운영.md) 의 장애 대응 절.
@@ -83,8 +100,13 @@ ssh 배포서버 'cd /home/ubuntu/haccp && docker compose ps'
 되돌릴 방법을 미리 정해 두고 배포한다.
 
 ```sh
-ssh 배포서버 'cd /home/ubuntu/haccp && TAG=1.0.<이전번호> docker compose up -d'
+ssh 배포서버 'cd /home/ubuntu/haccp && TAG=1.0.<이전번호> docker compose --env-file .env.docker -f docker-compose.prod.yml up -d'
 ```
+
+`-f` 와 `--env-file` 을 뺄 수 없다. 파일 이름이 `docker-compose.yml`·`.env` 가 아니라
+compose 기본 탐색에 안 걸리고, `${REGISTRY}`·`${HACCP_SERVER_NAME}` 치환이 빈 값이 된다.
+서버에 `docker-compose.override.yml` 이 있으면 `-f docker-compose.override.yml` 을 뒤에 하나 더 붙인다
+(`scripts/deploy_remote.sh` 와 같은 조건) — 빼면 edge 의 `127.0.0.1:17070` publish 가 사라진다.
 
 ---
 

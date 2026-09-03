@@ -18,9 +18,9 @@
 #    DRY_RUN=1    bash scripts/backup_export.sh /mnt/backup   지우지 않고 보여만 준다
 #
 #  cron 예 — 매일 03:10
-#    10 3 * * * cd /opt/haccp && \
-#      docker compose --profile backup run --rm backup && \
-#      docker compose --profile backup run --rm backup-files && \
+#    10 3 * * * cd /home/ubuntu/haccp && \
+#      docker compose --env-file .env.docker -f docker-compose.prod.yml --profile backup run --rm backup && \
+#      docker compose --env-file .env.docker -f docker-compose.prod.yml --profile backup run --rm backup-files && \
 #      bash scripts/backup_export.sh /mnt/backup >> /var/log/haccp-backup.log 2>&1
 # ============================================================
 set -euo pipefail
@@ -34,7 +34,7 @@ export MSYS_NO_PATHCONV=1
 
 docker volume inspect "$VOLUME" >/dev/null 2>&1 || {
   echo "백업 볼륨이 없다: $VOLUME"
-  echo "먼저 떠야 한다 — docker compose --profile backup run --rm backup"
+  echo "먼저 떠야 한다 — docker compose --env-file .env.docker -f docker-compose.prod.yml --profile backup run --rm backup"
   exit 1
 }
 
@@ -50,7 +50,7 @@ LATEST_FILES="$(in_vol sh -c 'ls -1t /b/haccp-files_*.tar.gz 2>/dev/null | head 
 if [ -z "$LATEST_FILES" ]; then
   # 파일 백업이 없으면 복구가 반쪽이다. 멈추지는 않되 분명히 알린다
   echo "!! 파일 tar 가 없다 — DB 만 빼면 문서 첨부는 복구되지 않는다"
-  echo "   docker compose --profile backup run --rm backup-files"
+  echo "   docker compose --env-file .env.docker -f docker-compose.prod.yml --profile backup run --rm backup-files"
 fi
 
 echo ">>> 뺄 것"

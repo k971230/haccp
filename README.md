@@ -9,7 +9,7 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 
 ---
 
-## 지금 어디까지 왔나 (2026-08-29)
+## 지금 어디까지 왔나 (2026-09-02)
 
 | 항목 | 값 |
 |---|---|
@@ -17,10 +17,11 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 | 배포 서버 | `http://180.71.58.87/haccp/` — **운영 개시 전**. `https` 로 열지 않는다(아래) |
 | 업무 고리 | 팀원이 쓰고 팀장이 결재하고 **종이에 결재자가 남는** 고리가 두 업체에서 돈다 |
 | 화면 | **28화면.** 전수 URL 은 [`docs/3_화면_지도.md`](docs/3_화면_지도.md) — 생성기가 만든다 |
-| 시험 | `vitest` **177** · `playwright` **153** · `mvnw` **108** |
-| DB | 정본 7본. 표 53 · SP 152 |
+| 시험 | `vitest` · `playwright`(스펙 23본) · `mvnw`. 건수는 문서에 박지 않는다 — 각 러너로 센다 |
+| DB | 정본 7본. 표 **53**(컬럼 769) · SP **155**. 정본 파일 = 시험 DB = 운영 DB 를 본문까지 대조했다(2026-09-02) |
 
 **남은 일 넷은 사람 손에 있다** — 서명 등록 · 매뉴얼 작성 · 알림 방향 결정 · 현장 한 달 사용.
+**#67 뒤로 프론트 배포가 밀려 있다** — 병합 10본이 들어갔다.
 자세한 것은 [`세션_인수인계.md`](세션_인수인계.md).
 
 > **배포 서버는 `http://` 로 본다.** 지금 인증서가 자체서명이라 `https` 로 열면
@@ -33,6 +34,8 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 
 **작업을 이어받는 사람은 [`세션_인수인계.md`](세션_인수인계.md) 부터 읽는다.**
 지금 무엇이 되어 있고, 무엇을 조심해야 하고, 어디를 먼저 보는지가 거기 있다.
+**작업이 진행 중이면 [`handoff.md`](handoff.md) 가 그 위에 있다** — 지금 무엇을 하는 중인지.
+무엇이 어느 폴더에 있는지는 [`INDEX.md`](INDEX.md) (생성기가 만든다).
 
 그다음은 필요한 만큼만 —
 이 파일 E2E 절 → [`docs/5_PIPELINE_색인.md`](docs/5_PIPELINE_색인.md) (태그→파일) → [`docs/1_시작하기.md`](docs/1_시작하기.md) (유형별 이야기) → 해당 도메인 README (`pages/docs/`, `pages/sys/` …) → 화면 README가 있으면 그 파일 → 소스 주석.
@@ -103,6 +106,8 @@ PIPELINE 전수 표는 이 파일이 아니라 [`docs/5_PIPELINE_색인.md`](doc
 | `nginx/` | edge TLS·리버스 프록시 conf 템플릿 |
 | `scripts/` | 볼륨 초기화·빌드·배포·스모크·감시 |
 | `.cursor/rules/` | 에이전트·운영 규약 (정본. `CLAUDE.md`·`AGENTS.md` 는 여기를 가리킨다) |
+| `.claude/` | Claude Code 서브에이전트·슬래시 명령 (규칙 아님. `.claude/README.md`) |
+| `INDEX.md` · `handoff.md` | 폴더 목차(생성기) · 진행 중인 작업 상태 |
 | `frontend/haccp-web/e2e/` | Playwright E2E — 화면·API·SP·DB 를 한 줄로 꿴다 |
 
 ## 사전 요구
@@ -119,7 +124,8 @@ PIPELINE 전수 표는 이 파일이 아니라 [`docs/5_PIPELINE_색인.md`](doc
 ```bash
 # DB — 정본은 db_sasshaccp/ 7본이다. 빈 DB 에 순서대로 깔면 끝난다
 #   PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
-#   새 업체:  CO_CD=0001 CO_NM='업체명' ADMIN_ID=admin0001 bash db_sasshaccp/apply-all.sh
+#   새 업체:  apply-all.sh 를 다시 부르지 않는다 — 00_ddl 이 42P06 으로 죽는다.
+#             업체분 4본(03·05·06·07)만 직접 돌린다 — db_sasshaccp/README.md 「새 업체를 여는 법」
 
 # API — listen 7070 (운영 컨테이너와 동일). CORS Origin = Vite 4173
 cd backend/haccp-api
@@ -145,7 +151,9 @@ MyBatis 매퍼 XML 은 컴파일에 안 잡혀서, 패키지를 옮기면 반드
 cd frontend/haccp-web
 npx tsc --noEmit ; npx eslint src e2e ; npx vitest run ; npm run build
 
-# 화면까지 실제로 도는지 — Playwright E2E 153건 (DB 대조 포함)
+# 화면까지 실제로 도는지 — Playwright E2E (DB 대조 포함). 건수는 --list 로 센다
+# E2E 는 4173 의 dist/ 를 본다. 띄우는 건 Playwright 가 아니라 우리다
+npm run preview &
 npx playwright test
 
 # 백엔드

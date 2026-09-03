@@ -23,7 +23,7 @@
 
 | 메서드 | SP | 왜 따로 두는가 |
 |---|---|---|
-| `forms()` | `sp_tbl_document_template_r_000` 을 감싸 `doc_kind='hwp'` 만 | 사용양식 관리와 같은 목록이라 SP 를 새로 만들지 않는다 |
+| `forms()` | `sp_tbl_document_template_r_000` 을 감싸 `doc_kind='HWP'` 만 | 사용양식 관리와 같은 목록이라 SP 를 새로 만들지 않는다 |
 | `list(...)` | `sp_draft_hwp_r_000` | 작성 화면 6조건 검색 계약 — 문서함 SP 는 양식명·작성자명 부분검색이 없다 |
 | `tasks(baseDt)` | `sp_draft_hwp_task_r_000` | 오늘 할일 SP 는 `tmpl_cd` 를 안 주고 개선조치(CA)까지 섞어 준다 |
 
@@ -31,7 +31,7 @@
 
 HTTP `DELETE` 를 쓰지 않는다. `POST validate-delete` → `POST delete` 두 단계다.
 두 단계 모두 `DocumentService` 가 같은 검사를 한다 (Double Check).
-`doc_kind <> 'hwp'` 문서는 SP 가 거부한다 — 이 화면으로 HTML 문서를 지울 수 없다.
+`doc_kind <> 'HWP'` 문서는 SP 가 거부한다 — 이 화면으로 HTML 문서를 지울 수 없다.
 
 ## 본문 파일
 

@@ -1,6 +1,6 @@
 # haccp-web
 
-React 18 · Vite 5 SPA. 로컬 Vite 4173 → API 7070. 가이드: `docs/7_에이전트_가이드_FE.md`.
+React 18 · Vite 5 SPA. 로컬 Vite 4173 → API 7070. 가이드: `.cursor/rules/09-haccp-frontend.mdc`.
 
 ## 하위
 - `e2e/` — Playwright E2E 스펙(스모크·작성자 시나리오)
@@ -9,4 +9,4 @@ React 18 · Vite 5 SPA. 로컬 Vite 4173 → API 7070. 가이드: `docs/7_에이
 - `src/` — SPA 소스 루트
 
 ## 관련
-- 정본: `docs/7_에이전트_가이드_FE.md` · `docs/3_운영규칙_FE.md`
+- 정본: `.cursor/rules/09-haccp-frontend.mdc` · `.cursor/rules/06-operations.mdc`

@@ -82,7 +82,8 @@ com.haccp
 화면까지 도는지는 프론트 E2E 가 본다.
 
 ```sh
-cd ../../frontend/haccp-web ; npx playwright test    # 153건
+cd ../../frontend/haccp-web ; npm run build ; npm run preview &
+npx playwright test
 ```
 
 ---
