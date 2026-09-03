@@ -38,7 +38,7 @@ Playwright E2E. **화면이 열리는가**가 아니라 **업무가 끝까지 �
 | `security-constraints` | 인증·권한·테넌트·상태전이·입력 검증 |
 | `scenario` | 통합 시나리오 A~E |
 
-**152건 전부 실제로 돈다 — 건너뛰는 시험은 없다.**
+**선언된 시험이 전부 실제로 돈다 — 건너뛰는 시험은 없다.** 건수는 `npx playwright test --list` 로 센다.
 `test.skip` 으로 조용히 넘어가면 기능이 죽어도 초록이 뜬다.
 (로컬 도구 `tools/` 가 없는 CI 에서 DB 대조가 skip 되는 것은 별개다 — 아래 참조)
 
@@ -72,7 +72,12 @@ Playwright E2E. **화면이 열리는가**가 아니라 **업무가 끝까지 �
 
 ## 실행
 
+E2E 는 4173 의 `dist/` 를 본다. 띄우는 것은 Playwright 가 아니라 우리다.
+
 ```sh
+npm run build
+npm run preview &                        # 4173 — 빼면 전부 접속 실패
+
 npx playwright test                       # 전체
 npx playwright test e2e/scenario.spec.ts  # 한 스펙
 npx playwright test --last-failed         # 실패만
@@ -108,7 +113,7 @@ Jenkins(`Jenkinsfile.e2e`)는 지금 도구 없이 돌아 DB 대조 시험이 �
 
 ## 관련
 
-- 정본: `docs/7_에이전트_가이드_FE.md` · `docs/3_운영규칙_FE.md`
+- 정본: `.cursor/rules/09-haccp-frontend.mdc` · `.cursor/rules/06-operations.mdc`
 - 결과: [`E2E.md`](../../../E2E.md) · [`E2E_ERRORS.md`](../../../E2E_ERRORS.md)
 
 ## 변경

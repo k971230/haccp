@@ -135,7 +135,8 @@ npx tsc --noEmit          # 타입
 npx eslint src e2e        # 규칙
 npx vitest run            # 단위 144건
 npm run build             # 번들
-npx playwright test       # E2E 152건 — 화면·API·SP·DB 를 한 줄로 꿴다
+npm run preview &        # 4173 에 dist/ 를 띄운다 — 빼면 전부 접속 실패
+npx playwright test       # E2E — 화면·API·SP·DB 를 한 줄로 꿴다 (건수는 --list)
 ```
 
 E2E 는 화면 문구가 아니라 **DB 를 직접 읽어** 판정한다.
@@ -146,8 +147,8 @@ E2E 는 화면 문구가 아니라 **DB 를 직접 읽어** 판정한다.
 ## 관련
 
 - 규칙: `.cursor/rules/09-frontend-conventions.mdc` · `02-frontend-ui.mdc` · `01-project-core.mdc`
-- 태그 색인: `docs/23_PIPELINE.md` (`PIPELINE[HF*]` → 파일)
-- 경로 정본: `docs/24_URL_DB_폴더_패키지_정본.md` · `shell/tabRoute.ts`
+- 태그 색인: `docs/5_PIPELINE_색인.md` (`PIPELINE[HF*]` → 파일)
+- 경로 정본: `docs/4_명명과_경로.md` · `shell/tabRoute.ts`
 - E2E: `e2e/README.md` · 결과 `E2E.md` · `E2E_ERRORS.md`
 
 ## 변경

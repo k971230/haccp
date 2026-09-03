@@ -126,4 +126,4 @@ HTTP DELETE 금지. `validate-delete` → `delete` Double Check. 회사코드는
 
 ## 7. 신규 메뉴
 
-`pages/sys/README.md` §8과 같다. 폴더는 `pages/{대}/{중}/`, 패키지는 `com.haccp.{대}.{중}`, XML은 `mapper/{대}/{중}/`. 경로 정본 `docs/24_URL_DB_폴더_패키지_정본.md`.
+`pages/sys/README.md` §8과 같다. 폴더는 `pages/{대}/{중}/`, 패키지는 `com.haccp.{대}.{중}`, XML은 `mapper/{대}/{중}/`. 경로 정본 `docs/4_명명과_경로.md`.

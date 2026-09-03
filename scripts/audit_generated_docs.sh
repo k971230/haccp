@@ -21,7 +21,7 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 fail=0
-for gen in gen_screen_map gen_pipeline_index gen_sp_index gen_table_layout; do
+for gen in gen_screen_map gen_pipeline_index gen_sp_index gen_table_layout gen_index; do
     if ! node "scripts/$gen.mjs" --check; then
         # 어느 생성기가 어긋났는지 그대로 보여 준다 — 고치는 명령이 그 안에 있다
         fail=1

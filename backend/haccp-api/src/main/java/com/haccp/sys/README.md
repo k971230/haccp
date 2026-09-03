@@ -1,7 +1,7 @@
 # com.haccp.sys — 시스템 관리 9화면
 
-정본: `docs/8_에이전트_가이드_BE.md` · `docs/4_운영규칙_BE.md` · FE 파이프라인 표는 `frontend/haccp-web/src/pages/sys/README.md`  
-경로 정본: `docs/24_URL_DB_폴더_패키지_정본.md`
+정본: `.cursor/rules/08-haccp-backend.mdc` · `.cursor/rules/06-operations.mdc` · FE 파이프라인 표는 `frontend/haccp-web/src/pages/sys/README.md`  
+경로 정본: `docs/4_명명과_경로.md`
 
 ## 구조 — 메뉴 1개 = 패키지 1개
 

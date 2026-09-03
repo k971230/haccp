@@ -2,10 +2,10 @@
 
 메뉴바에서 열리는 `sys` 도메인 9화면 정본.
 로컬 UI `http://localhost:4173` · API `http://localhost:7070`
-관련: `docs/7_에이전트_가이드_FE.md` · `docs/3_운영규칙_FE.md` · `docs/8_에이전트_가이드_BE.md` · `docs/4_운영규칙_BE.md`
+관련: `.cursor/rules/09-haccp-frontend.mdc` · `.cursor/rules/06-operations.mdc` · `.cursor/rules/08-haccp-backend.mdc` · `.cursor/rules/06-operations.mdc`
 
 라우트 규칙: `routeOf(scrnCd)` → `tabRoute.SCREEN_PATH` 계층 경로 (`shell/tabRoute.ts`). `/screen/{scrnCd}` 없음.
-경로 정본: `docs/24_URL_DB_폴더_패키지_정본.md`.
+경로 정본: `docs/4_명명과_경로.md`.
 
 ---
 

@@ -42,12 +42,13 @@ Claude Code 진입점이다. **규칙 본문은 여기 두지 않는다** — �
 # 프론트
 cd frontend/haccp-web
 npx tsc --noEmit ; npx eslint src e2e ; npx vitest run ; npm run build
+npm run preview &            # 4173 에 dist/ 를 띄운다 — 이걸 빼면 E2E 가 전부 접속 실패한다
 npx playwright test          # E2E — 화면·API·SP·DB 를 한 줄로 꿴다
 
 # 백엔드
 cd backend/haccp-api ; ./mvnw -q -o test
 
-# DB — 빈 DB 에 7본을 순서대로 (재실행 안전)
+# DB — 빈 DB 에 7본을 순서대로 (빈 DB 전용 — 재실행하면 00_ddl 이 duplicate schema 로 죽는다)
 PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 ```
 
@@ -55,7 +56,10 @@ PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 `http://localhost:4173/haccp/` — `vite preview` 가 서빙하는 `dist/` 다.
 **프론트 소스를 고쳤으면 반드시 다시 빌드하고 E2E 를 돌린다.**
 빌드를 건너뛰면 고치기 전 화면을 시험하게 되고, 통과해도 뜻이 없다.
-(`E2E_WEB_SERVER=1` 을 주면 대신 dev 서버를 띄운다.)
+`playwright.config.mjs` 의 `webServer` 는 `E2E_WEB_SERVER=1` 일 때만 붙는다 —
+**기본 경로에서는 Playwright 가 서버를 안 띄운다.** `npm run preview` 가 선행이다.
+(`E2E_WEB_SERVER=1` 은 dev 서버를 5174 에 띄우는데 `baseURL` 은 여전히 4173 이라
+`E2E_BASE_URL` 을 같이 주지 않으면 성립하지 않는다. 고치기 전까지는 preview 쪽을 쓴다.)
 
 ## 코드를 만지기 전에
 

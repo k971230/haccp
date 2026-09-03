@@ -41,7 +41,7 @@ edge 는 루프백 평문만 받는다.
 
 | 증상 | 원인 |
 |---|---|
-| 502 | api 컨테이너가 안 떴거나 이름이 다르다. `docker compose ps` |
+| 502 | api 컨테이너가 안 떴거나 이름이 다르다. `docker compose --env-file .env.docker -f docker-compose.prod.yml ps` |
 | 화면은 뜨는데 API 만 404 | Apache 의 Path 분기(`/haccp/`)가 빠졌다 |
 | CORS 오류 | `CORS_ALLOWED_ORIGINS` 가 브라우저 Origin 과 스킴·호스트까지 같아야 한다 |
 | `/actuator` 가 외부에서 열린다 | `HACCP_ACTUATOR_ALLOW` 가 넓다 |

@@ -12,7 +12,7 @@
 #  성공: 원격 compose pull·up 완료. 실패: SSH/rsync/compose non-zero
 #
 #  사용:
-#    SSH_KEY=~/.ssh/id_rsa bash scripts/deploy_remote.sh deploy 10.0.0.10 /opt/haccp 1.0.12
+#    SSH_KEY=~/.ssh/id_rsa bash scripts/deploy_remote.sh deploy 10.0.0.10 /home/ubuntu/haccp 1.0.12
 # ============================================================
 set -euo pipefail
 # Windows Git Bash 가 /home/... 인자를 로컬 경로로 치환하지 않게 한다

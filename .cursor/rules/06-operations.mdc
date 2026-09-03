@@ -1,11 +1,12 @@
 ---
-description: HACCP 운영 규약 — 삭제, 타임아웃, 전역 env (정본 docs/3_운영규칙_FE.md)
+description: HACCP 운영 규약 — 삭제, 타임아웃, 전역 env (정본은 이 파일)
 alwaysApply: true
 ---
 
 # HACCP 운영 규약
 
-정본: [`docs/7_보안과_파일.md`](../../docs/7_보안과_파일.md) · BE [`docs/7_보안과_파일.md`](../../docs/7_보안과_파일.md)  
+삭제·업로드·시크릿의 배경은 [`docs/7_보안과_파일.md`](../../docs/7_보안과_파일.md).
+타임아웃(`[OPS_TIMEOUT_TIER]`)과 전역 env(`[OPS_GLOBAL_CONFIG]`)는 **이 파일이 정본이다** — 문서 쪽에 없다.
 인수인계 주석: `05-handoff-comments.mdc`
 
 ## [OPS_DELETE] 삭제 표준
@@ -51,6 +52,9 @@ alwaysApply: true
 | `VITE_DASHBOARD_POLLING_MS` | 10000 | 대시보드 폴링 |
 | `VITE_TODAY_TASKS_RECENT_DAYS` | 7 | 오늘 할 일 최근 문서 일수 |
 | `VITE_TODAY_TASKS_PAGE_SIZE` | 20 | 오늘 할 일 최근 문서 페이지 |
+| `VITE_VIEW_LOG_FLUSH_MS` | 30000 | 화면 조회 로그 배치 전송 주기 (`useViewLog.ts`) |
+| `VITE_TOAST_DURATION_MS` | 2600 | 일반 토스트 표시 시간 (`dialog.tsx`) |
+| `VITE_TOAST_ERROR_DURATION_MS` | 5000 | 오류 토스트 표시 시간 (`dialog.tsx`) |
 
 `.env` 변경 후 Vite **재시작**. `.env.example`만 커밋.
 

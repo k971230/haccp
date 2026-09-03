@@ -2,8 +2,7 @@
 
 | 파일 | 역할 |
 |---|---|
-| `DocCycleRow.java` | 좌측 양식 목록 한 줄 |
-| `DocCycleSaveRequest.java` | 우측 주기 폼 저장 본문 — 주기·요일·실행일·시각·담당·결재선 |
+| (목록·저장 본문) | 전용 DTO 를 두지 않는다 — `DocCycleMapper` 가 `List<Map<String,Object>>` 로 받고 저장은 `@Param` 으로 넘긴다 |
 | `DocCycleDeleteItem.java` | 삭제 키 `{ tmplCd }` |
 
 주기 상세(요일·월 실행일 등)는 `tbl_schedule_rule_detail` 에 EAV(`detail_ty`/`val1`/`val2`)로 접힌다.
