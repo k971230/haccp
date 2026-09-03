@@ -72,10 +72,10 @@ HTML 5화면은 켜지 않는다 — 지면 시그널과 두 곳에 두면 값�
 
 ## 편집기 (`HwpEditorPane`)
 
-### 도구상자는 접지 않는다
+### 마운트는 `RhwpStudioHost`
 
-이 화면은 사람이 한글 문서를 **직접 고치는** 곳이다. 글꼴·표·정렬을 못 쓰면 일지를 채울 수 없다.
-`foldRhwpToolboxes` 는 **미리보기 화면(사용양식관리)에서만** 쓴다 — 거기는 고칠 일이 없다.
+rhwp `createEditor` 는 [`RhwpStudioHost`](../../../components/document/RhwpStudioHost.tsx) 가 한다.
+작성·사용양식관리가 같은 호스트를 써서 도구상자(기본·서식)가 같다. 이 파일은 문서 열기·dirty 만 맡는다.
 
 ### 늦게 온 응답이 화면을 덮지 않게 한다
 

@@ -9,7 +9,7 @@
 
 | 파일 | 책임 |
 |---|---|
-| `HwpTemplateManagementPage.tsx` | 렌더·상태·API·rhwp 미리보기. 좌 목록 50 · 우 미리보기 50 |
+| `HwpTemplateManagementPage.tsx` | 렌더·상태·API·우측 rhwp. 좌 목록 50 · 우 미리보기 50. 마운트는 `RhwpStudioHost`, 파일은 업로드만 |
 | `HwpTemplateManagementRule.ts` | `SCRN_CD` · `PERSIST_ID` · `SPLIT_KEY` · `USR_TMPL_PREFIX` · `LIST_GRID_RULES` · `buildListColumns` · `buildButtonState` |
 | `HwpTemplateFileHistModal.tsx` | 파일 이력 팝업 — 예전 버전을 골라 되돌린다 |
 
@@ -46,6 +46,9 @@
 - **`sys_yn` 은 수정 대상이 아니다.** 양식 구분은 만든 뒤 못 바꾼다. 서버가 신규를 `usr` 로 강제한다
 - **시스템 제공 양식은 못 지운다.** 화면이 버튼을 막고 SP 가 다시 막는다 (E2E 가 API 직접 호출까지 본다)
 - 파일은 덮어쓰지 않는다 — `tbl_company_template_file` 에 쌓고 `current_file_idx` 로 가리킨다
+
+우측 rhwp 는 작성 화면과 같은 `RhwpStudioHost` 를 쓴다. 도구상자(기본·서식)를 접지 않는다.
+파일 원본은 「업로드」로만 바꾼다 — 상단 「저장」은 양식명·사용여부다.
 
 ## pref 키
 

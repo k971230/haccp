@@ -15,10 +15,10 @@
  */
 // 역할 — 이벤트·상태·DOM 참조
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-// 역할 — rhwp iframe 에디터 생성·수명 관리 타입
-import { createEditor, type RhwpEditor } from "@rhwp/editor";
-// 역할 — rhwp 동일출처 studioUrl·도구상자 조기 접기
-import { foldRhwpToolboxes, installRhwpEarlyFold, resolveRhwpStudioUrl, waitForHostSize } from "@/lib/rhwpStudio";
+// 역할 — rhwp 편집기 타입 — 마운트는 RhwpStudioHost
+import type { RhwpEditor } from "@rhwp/editor";
+// 역할 — rhwp 마운트 공통 — 작성 화면과 같은 도구상자
+import { RhwpStudioHost } from "@/components/document/RhwpStudioHost";
 // 역할 — 화면별 쓰기·수정 권한
 import { useAuthStore } from "@/stores/authStore";
 // 역할 — 비동기 중복 실행 차단
@@ -127,7 +127,6 @@ export default function HwpTemplateManagementPage() {
   const [selReset, setSelReset] = useState(0);
   const clearSel = () => { setSelKeys([]); setSelReset((n) => n + 1); };
 
-  const editorHostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<RhwpEditor | null>(null);
   const [editorReady, setEditorReady] = useState(false);
   const [editorMessage, setEditorMessage] = useState("미리보기를 준비하고 있습니다.");
@@ -196,50 +195,17 @@ export default function HwpTemplateManagementPage() {
     void loadList();
   }, [loadList]);
 
-  // rhwp 에디터 마운트 — 조기 접기·언마운트 시 destroy
-  useEffect(() => {
-    const host = editorHostRef.current;
-    let disposed = false;
-    let createdEditor: RhwpEditor | null = null;
-    if (!host) return undefined;
-
-    const disposeEarlyFold = installRhwpEarlyFold(host);
-    // 호스트 높이가 0인 채로 붙이면 CanvasView 가 「페이지 0 정보가 없습니다」를 남긴다 —
-    // 작성 화면(HwpEditorPane)과 같은 가드를 쓴다
-    const sizeAbort = new AbortController();
-
-    void (async () => {
-      try {
-        await waitForHostSize(host, sizeAbort.signal);
-        createdEditor = await createEditor(host, {
-          studioUrl: resolveRhwpStudioUrl(),
-          width: "100%",
-          height: "100%",
-          renderer: "canvas2d",
-        });
-        if (disposed) {
-          createdEditor.destroy();
-          return;
-        }
-        foldRhwpToolboxes(createdEditor.element);
-        editorRef.current = createdEditor;
-        setEditorReady(true);
-        setEditorMessage("미리보기가 준비되었습니다. 왼쪽에서 양식을 선택하세요.");
-      } catch (error) {
-        // 언마운트로 끊긴 대기는 오류가 아니다 — 문구를 바꾸지 않는다
-        if (!disposed && !(error instanceof DOMException && error.name === "AbortError")) {
-          setEditorMessage(error instanceof Error ? error.message : "미리보기를 시작하지 못했습니다.");
-        }
-      }
-    })();
-
-    return () => {
-      disposed = true;
-      sizeAbort.abort();
-      disposeEarlyFold();
-      editorRef.current?.destroy();
-      editorRef.current = null;
-    };
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-09-03
+   * 코멘트:
+   *   1) RhwpStudioHost 가 편집기를 만든 뒤 선택 행을 다시 연다
+   *   2) 호스트 onReady 에서 호출한다
+   *   3) editorReady 효과가 handleSelect 를 한 번 돌린다
+   */
+  const handleHostReady = useCallback(() => {
+    setEditorReady(true);
+    setEditorMessage("미리보기가 준비되었습니다. 왼쪽에서 양식을 선택하세요.");
   }, []);
 
   /** ArrayBuffer 원본을 현재 rhwp 편집기에 적재한다 */
@@ -788,10 +754,15 @@ export default function HwpTemplateManagementPage() {
                   </MesButton>
                 </div>
               </div>
-              <div
-                // rhwp createEditor 호스트 — 패널 안에서만 스크롤되어 좌측 목록이 밀리지 않는다
-                ref={editorHostRef}
-                className="min-h-0 flex-1 overflow-hidden bg-slate-50"
+              <RhwpStudioHost
+                // 편집기 인스턴스 — loadIntoEditor 가 쓴다. destroy 는 호스트
+                editorRef={editorRef}
+                // 마운트 성공 — 선택 행 재적재
+                onReady={handleHostReady}
+                // 마운트 실패 — 미리보기 헤더 문구만
+                onError={(error) => {
+                  setEditorMessage(error instanceof Error ? error.message : "미리보기를 시작하지 못했습니다.");
+                }}
               />
             </div>
           )}

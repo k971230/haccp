@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-25
  * 코멘트:
- *   1) rhwp 편집기를 만들고, 열린 문서가 바뀔 때만 본문(또는 양식 원본)을 다시 연다
+ *   1) 마운트는 RhwpStudioHost 에 맡기고, 열린 문서가 바뀔 때만 본문(또는 양식 원본)을 다시 연다
  *   2) HwpDraftPage 의 renderDetail 이 이 컴포넌트를 그린다 — 화면 슬롯이 같아 마운트가 유지된다
  *   3) 저장된 문서에 첨부가 없으면 양식 원본을 열지 않는다. loadFile 은 한 줄 직렬
  *      CanvasView 「페이지 0 정보가 없습니다」는 @rhwp/editor 번들 로그다. 호스트 가드로 줄인다.
@@ -13,12 +13,14 @@
  *
  * PIPELINE[HF182] HWP 작성 편집기 패널
  */
-// 역할 — 편집기 수명·열기 상태
+// 역할 — 열기 상태
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
-// 역할 — rhwp iframe 편집기
-import { createEditor, type RhwpEditor } from "@rhwp/editor";
-// 역할 — 스튜디오 주소·더티 감지
-import { installRhwpDirtyListeners, resolveRhwpStudioUrl, waitForHostSize } from "@/lib/rhwpStudio";
+// 역할 — rhwp 편집기 타입
+import type { RhwpEditor } from "@rhwp/editor";
+// 역할 — rhwp 마운트 공통 — 도구상자는 호스트가 접지 않는다
+import { RhwpStudioHost } from "@/components/document/RhwpStudioHost";
+// 역할 — 더티 감지
+import { installRhwpDirtyListeners } from "@/lib/rhwpStudio";
 // 역할 — 양식 원본·문서 첨부 읽기 (기존 HWP 화면과 같은 API)
 import {
   downloadDocumentFile,
@@ -67,12 +69,11 @@ export function HwpEditorPane({
   onClean?: () => void;
   readOnly?: boolean;
 }) {
-  const hostRef = useRef<HTMLDivElement | null>(null);
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState("rhwp 편집기를 준비하고 있습니다.");
   // 마지막으로 연 대상 — 같은 문서를 다시 열지 않는다. 실패한 대상도 기록해 재시도 폭주를 막는다
   const openedRef = useRef<string | null>("");
-  // 리스너·콜백은 최신값을 본다 — createEditor 효과를 다시 돌리지 않으려고 ref 에 둔다
+  // 리스너·콜백은 최신값을 본다 — 호스트 마운트를 다시 돌리지 않으려고 ref 에 둔다
   const canEditRef = useRef(canEdit);
   canEditRef.current = canEdit;
   const onDirtyRef = useRef(onDirty);
@@ -101,61 +102,22 @@ export function HwpEditorPane({
 
   /**
    * 개발자: 박승우
-   * 일자: 2026-09-02
+   * 일자: 2026-09-03
    * 코멘트:
-   *   1) rhwp 편집기를 한 번만 만들고 화면을 떠날 때 정리한다
-   *   2) 패널이 마운트될 때 실행한다. 호스트 높이가 생긴 뒤에 createEditor 한다
-   *   3) 골드와 같은 dirty 리스너를 iframe 에 붙인다 — SDK 에 dirty API 가 없어 DOM 으로 본다
+   *   1) RhwpStudioHost 가 편집기를 만든 뒤 dirty 를 붙이고 열기 효과를 연다
+   *   2) 호스트 onReady 에서 호출한다
+   *   3) SDK 에 dirty API 가 없어 iframe DOM 으로 본다
    */
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return undefined;
-    let disposed = false;
-    const abort = new AbortController();
-    /*
-     * 도구상자를 접지 않는다.
-     *
-     * 이 화면은 사람이 한글 문서를 **직접 고치는** 곳이다. 글꼴·표·정렬을 쓸 수 없으면
-     * 일지를 채울 방법이 없다 — 「도구함이 없어 쓰기 어렵다」는 보고가 그것이다.
-     * 미리보기 화면(사용양식관리)은 고칠 일이 없어 거기서만 접는다.
-     */
-
-    void (async () => {
-      try {
-        await waitForHostSize(host, abort.signal);
-        if (disposed) return;
-        const created = await createEditor(host, {
-          // 동일출처 스튜디오 — /rhwp 프록시
-          studioUrl: resolveRhwpStudioUrl(),
-          width: "100%",
-          height: "100%",
-          // HACCP 문서는 호환 우선 Canvas2D 렌더러
-          renderer: "canvas2d",
-        });
-        if (disposed) {
-          created.destroy();
-          return;
-        }
-        attachDirty(created.element);
-        editorRef.current = created;
-        setReady(true);
-        setMessage("왼쪽에서 문서를 고르거나 「행추가」를 눌러 작성하세요.");
-      } catch (error) {
-        if (disposed) return;
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setMessage(toUserMessage(error));
-      }
-    })();
-
-    return () => {
-      disposed = true;
-      abort.abort();
-      disposeDirtyRef.current?.();
-      disposeDirtyRef.current = undefined;
-      editorRef.current?.destroy();
-      editorRef.current = null;
-    };
+  const handleHostReady = useCallback(() => {
+    attachDirty(editorRef.current?.element);
+    setReady(true);
+    setMessage("왼쪽에서 문서를 고르거나 「행추가」를 눌러 작성하세요.");
   }, [attachDirty, editorRef]);
+
+  useEffect(() => () => {
+    disposeDirtyRef.current?.();
+    disposeDirtyRef.current = undefined;
+  }, []);
 
   /**
    * 개발자: 박승우
@@ -267,10 +229,13 @@ export function HwpEditorPane({
           ? " (읽기 전용 — 이 화면에서 고친 내용은 저장되지 않습니다.)"
           : tmplCd && !canEdit ? " (저장 전이거나 전송한 문서라 편집할 수 없습니다.)" : ""}
       </p>
-      <div
-        // rhwp iframe 호스트 — 남은 높이 전부. overflow-hidden 은 부모 스크롤이 CanvasView page 0 을 깨지 않게 한다
-        ref={hostRef}
-        className="min-h-0 flex-1 overflow-hidden"
+      <RhwpStudioHost
+        // 편집기 인스턴스 — 호스트가 만들고 이 패널이 loadFile 에 쓴다
+        editorRef={editorRef}
+        // 마운트 성공 — dirty 를 붙이고 문서 열기를 연다
+        onReady={handleHostReady}
+        // 마운트 실패 — 상태 줄에 업무 문구
+        onError={(error) => setMessage(toUserMessage(error))}
       />
     </div>
   );

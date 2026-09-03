@@ -63,7 +63,7 @@ export default defineConfig({
     port: 4173,
     host: "localhost",
     strictPort: true,
-    // rhwp-studio 동일출처 프록시 — createEditor studioUrl=/rhwp/ 후 iframe contentDocument로 도구상자 접기
+    // rhwp-studio 동일출처 프록시 — createEditor studioUrl=/rhwp/ 후 iframe contentDocument 접근(dirty)
     // GitHub Pages 배포본 경로가 /rhwp/* 이므로 rewrite 없이 origin만 바꾼다
     proxy: {
       "/rhwp": {
