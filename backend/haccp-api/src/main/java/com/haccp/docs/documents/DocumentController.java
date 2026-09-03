@@ -83,36 +83,46 @@ public class DocumentController {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-06
+     * 일자: 2026-09-03
      * 코멘트:
-     *   1) 결재함 — 내 차례 대기 문서만 조회한다
-     *   2) approval-inbox에서 호출한다
+     *   1) 결재대기(sign-ready) — 내 APPROVE 단계가 대기인 REQ 문서만 조회한다
+     *   2) 결재대기 화면과 오늘 할 일 결재 건수가 호출한다
      *   3) 성공 시 목록 배열
      */
-    @GetMapping("/approval-inbox")
-    public CommonResponse<List<Map<String, Object>>> approvalInbox(
+    @GetMapping("/sign-ready")
+    public CommonResponse<List<Map<String, Object>>> signReady(
+            // 기준일 시작 YYYYMMDD — 생략하면 전체
             @RequestParam(required = false) String fromDt,
+            // 기준일 종료 YYYYMMDD — 생략하면 전체
             @RequestParam(required = false) String toDt,
-            @RequestParam(required = false) String keyword
+            // 문서번호·제목 검색어
+            @RequestParam(required = false) String keyword,
+            // 작성자 ID·이름 부분검색 — 문서함과 같은 칸
+            @RequestParam(required = false) String writerId
     ) {
-        return CommonResponse.ok(service.approvalInbox(fromDt, toDt, keyword));
+        return CommonResponse.ok(service.signReady(fromDt, toDt, keyword, writerId));
     }
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-06
+     * 일자: 2026-09-03
      * 코멘트:
-     *   1) 결재 이력 — 내가 처리한 문서를 조회한다
-     *   2) approval-history에서 호출한다
+     *   1) 결재완료(sign-ok) — 내가 승인·반려한 문서를 조회한다
+     *   2) 결재완료 화면에서 호출한다
      *   3) 성공 시 목록 배열
      */
-    @GetMapping("/approval-history")
-    public CommonResponse<List<Map<String, Object>>> approvalHistory(
+    @GetMapping("/sign-ok")
+    public CommonResponse<List<Map<String, Object>>> signOk(
+            // 기준일 시작 YYYYMMDD — 생략하면 전체
             @RequestParam(required = false) String fromDt,
+            // 기준일 종료 YYYYMMDD — 생략하면 전체
             @RequestParam(required = false) String toDt,
-            @RequestParam(required = false) String keyword
+            // 문서번호·제목 검색어
+            @RequestParam(required = false) String keyword,
+            // 작성자 ID·이름 부분검색 — 문서함과 같은 칸
+            @RequestParam(required = false) String writerId
     ) {
-        return CommonResponse.ok(service.approvalHistory(fromDt, toDt, keyword));
+        return CommonResponse.ok(service.signOk(fromDt, toDt, keyword, writerId));
     }
 
     /**
@@ -174,11 +184,11 @@ public class DocumentController {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-06
+     * 일자: 2026-09-03
      * 코멘트:
      *   1) 문서의 최신 HWP_SRC를 서버 rhwp CLI로 PDF로 변환해 file_kind=PDF로 보관한다
-     *   2) hwp-document-editor의 PDF 내보내기 버튼이 httpFile 타임아웃으로 호출한다
-     *   3) 성공 시 물리 경로를 제외한 파일 메타, 원본 없음·CLI 미설정·변환 실패는 업무 오류
+     *   2) 문서함 HWP 인쇄와 작성 화면 PDF 내보내기가 httpFile 타임아웃으로 호출한다
+     *   3) 결재 잠금이면 기존 PDF를 재사용하고, 없으면 변환 후 PDF만 등록한다
      */
     @PostMapping("/{docIdx}/export-pdf")
     public CommonResponse<Map<String, Object>> exportPdf(
@@ -288,7 +298,7 @@ public class DocumentController {
      * 개발자: 박승우
      * 일자: 2026-08-06
      * 코멘트:
-     *   1) 결재 요청·검토·승인·반려를 한 API에서 처리한다
+     *   1) 결재 요청·승인·반려·전송취소·결재취소를 한 API에서 처리한다
      *   2) 문서 상세 결재 패널 버튼에서 호출한다
      *   3) 성공 시 void, 실패 시 SP 업무 문구
      */

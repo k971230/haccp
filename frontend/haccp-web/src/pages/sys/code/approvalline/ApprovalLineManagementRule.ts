@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-25
  * 코멘트:
- *   1) Page는 렌더·상태·API만 담당하고 컬럼·초기 3단계·필터는 이 파일이 갖는다
+ *   1) Page는 렌더·상태·API만 담당하고 컬럼·초기 2단계·필터는 이 파일이 갖는다
  *   2) 결재자는 셀 버튼 룩업이다. 직위코드 컬럼은 없다
  *   3) 헤더 persistId는 승계하고, 분할 키는 좌 마스터 30% 기본이다
  *
@@ -34,13 +34,12 @@ export const DEFAULT_APPR_LINE_CD = "DEFAULT" as const;
 /** 좌우 분할 비율 키 — -30 은 좌 트리/마스터 기본. 옛 20·32% 키와 분리 */
 export const SPLIT_KEY = "haccp-split-approval-line-30" as const;
 
-/** 고정 역할 — 1작성 2검토 3승인 */
-export const ROLES: ApprovalStep["roleCd"][] = ["WRITE", "REVIEW", "APPROVE"];
+/** 고정 역할 — 1작성 2승인 */
+export const ROLES: ApprovalStep["roleCd"][] = ["WRITE", "APPROVE"];
 
 /** 역할 표시명 */
 export const ROLE_LABEL: Record<ApprovalStep["roleCd"], string> = {
   WRITE: "작성",
-  REVIEW: "검토",
   APPROVE: "승인",
 };
 
@@ -54,7 +53,7 @@ export const HEADER_RULES: ScreenGridRules = {
 
 /** 단계 — 순서·역할·부서는 직접 고치지 않는다. 결재자는 팝업 */
 export const STEP_RULES: ScreenGridRules = {
-  alwaysReadonly: ["stepNo", "roleCd", "roleNm", "deptCd", "deptNm", "approverId"],
+  alwaysReadonly: ["stepNo", "roleCd", "roleNm", "deptCd", "deptNm", "approverId", "useYn"],
   popupFields: ["approverNm"],
 };
 
@@ -70,9 +69,9 @@ export interface StepColumnHandlers {
  * 개발자: 박승우
  * 일자: 2026-08-19
  * 코멘트:
- *   1) 저장 직전 항상 작성·검토·승인 3행으로 맞춘다
+ *   1) 저장 직전 항상 작성·승인 2행으로 맞춘다
  *   2) 행추가·조회 직후 우측 그리드가 호출한다
- *   3) 검토 useYn 기본은 N, 작성과 승인은 Y
+ *   3) 작성과 승인은 항상 사용
  */
 export function emptySteps(): ApprovalStep[] {
   return ROLES.map((roleCd, index) => ({
@@ -82,11 +81,11 @@ export function emptySteps(): ApprovalStep[] {
     approverNm: "",
     deptCd: null,
     deptNm: "",
-    useYn: roleCd === "REVIEW" ? "N" : "Y",
+    useYn: "Y",
   }));
 }
 
-/** 신규 결재선 — 단계는 바로 3행 */
+/** 신규 결재선 — 단계는 바로 2행 */
 export function emptyLine(): ApprovalLine {
   return { apprLineCd: "", apprLineNm: "", useYn: DEFAULT_USE_YN, steps: emptySteps() };
 }
@@ -95,16 +94,13 @@ export function emptyLine(): ApprovalLine {
  * 개발자: 박승우
  * 일자: 2026-08-19
  * 코멘트:
- *   1) 서버 단계를 고정 3역할에 맞춰 빈 칸을 채운다
+ *   1) 서버 단계를 고정 2역할에 맞춰 빈 칸을 채운다
  *   2) 행 선택·조회 성공 뒤에 호출한다
- *   3) 검토가 없으면 사용안함으로 넣는다
+ *   3) 없는 역할은 사용으로 넣는다
  */
 export function normalizeSteps(steps: ApprovalStep[] | undefined): ApprovalStep[] {
   return ROLES.map((roleCd, index) => {
     const found = steps?.find((step) => step.roleCd === roleCd);
-    const useYn = roleCd === "REVIEW"
-      ? (String(found?.useYn ?? "N").toUpperCase() === "Y" ? "Y" : "N")
-      : "Y";
     return {
       stepNo: index + 1,
       roleCd,
@@ -112,7 +108,7 @@ export function normalizeSteps(steps: ApprovalStep[] | undefined): ApprovalStep[
       approverNm: found?.approverNm ?? "",
       deptCd: found?.deptCd ?? null,
       deptNm: found?.deptNm ?? "",
-      useYn,
+      useYn: "Y",
     };
   });
 }
@@ -124,7 +120,7 @@ export function stepsToPayload(rows: StepRow[]): ApprovalStep[] {
     roleCd: step.roleCd,
     approverId: step.approverId || null,
     deptCd: step.deptCd || null,
-    useYn: step.roleCd === "REVIEW" && String(step.useYn).toUpperCase() === "N" ? "N" : "Y",
+    useYn: "Y",
   }));
 }
 
@@ -173,7 +169,7 @@ export function buildStepColumns(
 ): GridColumn<StepRow>[] {
   return [
     {
-      // 고정 순번 1~3
+      // 고정 순번 1~2
       field: "stepNo",
       header: "순서",
       width: 60,
@@ -202,12 +198,12 @@ export function buildStepColumns(
       cellButton: editable ? { title: "결재자", onClick: handlers.onApproverLookup } : undefined,
     },
     {
-      // 검토만 사용안함이 의미 있다. 저장 시 작성·승인은 Y로 고정한다
+      // 작성과 승인은 항상 사용
       field: "useYn",
       header: "사용",
       width: 80,
       type: "code",
-      editable,
+      editable: false,
       codeOptions: ynOpts,
       codeMap: ynLabels,
     },

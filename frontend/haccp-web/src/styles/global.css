@@ -1264,6 +1264,34 @@ PIPELINE[HF49] 연관 모듈
     font-size: 11px;
     box-sizing: border-box;
   }
+  /* 잠금 지면 — disabled 기본 회색을 쓰지 않는다. 인쇄·미리보기에서 원문 농도로 남긴다 */
+  .html-form-table input:disabled,
+  .html-form-table input[readonly],
+  .html-form-table textarea:disabled,
+  .html-form-table textarea[readonly],
+  .html-form-sign-input:disabled,
+  .html-form-sign-input[readonly],
+  .html-form-foot-input:disabled,
+  .html-form-foot-input[readonly] {
+    color: #111;
+    -webkit-text-fill-color: #111;
+    opacity: 1;
+    background: transparent;
+  }
+  /* 라디오는 readonly 가 없고 disabled 는 인쇄에서 흐리다. 점은 검정, 잠금은 클릭만 막는다 */
+  .html-form-table input[type="radio"] {
+    accent-color: #111;
+    color: #111;
+    opacity: 1;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .html-form-radio-lock {
+    pointer-events: none;
+  }
+  .html-form-table label:has(.html-form-radio-lock) {
+    pointer-events: none;
+  }
   /* 시간 칸 — HTML type=time. 값은 HH:mm */
   .doc-cell-time,
   .html-form-sign-input.doc-cell-time {
@@ -1562,8 +1590,24 @@ PIPELINE[HF49] 연관 모듈
   }
 }
 
+/* 문서함 일괄 인쇄 레이어 — 화면에서는 숨기고 인쇄 시에만 보인다 */
+#doc-print-root {
+  display: none;
+}
+
 @media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
   aside, header { display: none !important; }
+  .html-form-table,
+  .html-form-table th,
+  .html-form-table input[type="radio"],
+  .doc-paper-a4 {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   body * { visibility: hidden; }
   .mes-tab-active, .mes-tab-active * { visibility: visible; }
   .doc-paper, .doc-paper *,
@@ -1578,5 +1622,30 @@ PIPELINE[HF49] 연관 모듈
   .html-form-no-print * {
     display: none !important;
     visibility: hidden !important;
+  }
+  /* 문서함 일괄 인쇄 — 미리보기 지면이 같이 나가지 않게 레이어만 남긴다 */
+  body.doc-printing * {
+    visibility: hidden !important;
+  }
+  body.doc-printing #doc-print-root,
+  body.doc-printing #doc-print-root * {
+    visibility: visible !important;
+  }
+  body.doc-printing #doc-print-root {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .doc-print-page {
+    break-after: page;
+    page-break-after: always;
+  }
+  .doc-print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
   }
 }

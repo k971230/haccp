@@ -6,8 +6,11 @@ HTML 양식 표는 화면 폴더의 Paper 가 그린다. 여기서는 서명 칸
 
 | 파일 | 역할 |
 |---|---|
-| `htmlFormPaperShared.tsx` | `HtmlFormPaperProps` · `SignSlot` · `PaperTitleCell` · 기록행·판정 헬퍼 |
+| `htmlFormPaperShared.tsx` | `HtmlFormPaperProps` · `SignSlot` · `PaperTitleCell` · 기록행·판정 헬퍼 · 잠금 라디오(`paperRadioLock`) |
+| `DocCell.tsx` | `DocCellInput` · `DocCellSelect` · `DocCellTime` · `DocMetaTable` — 지면 표 공통 입력칸 |
+| `DocDeviationFooter.tsx` | 이탈·개선조치 푸터. **밖에서 쓰는 건 타입 `DocCorrectiveValue` 뿐이다** (`api/docs/htmlFormApi.ts` 등 5곳) |
 | `docFormSearch.ts` | 문서함·첨부 검색 기간 기본값. 검색 UI 는 `SearchArea` |
+| `htmlFormCellInput.test.ts` · `htmlFormPaperEdit.test.ts` · `htmlFormJudgeDefault.test.ts` | 시험 |
 
 기준관리 5화면은 `HtmlFormTemplatePage` 50:50 프레임. 표준은 수정 불가, 자사는 행추가만.
 

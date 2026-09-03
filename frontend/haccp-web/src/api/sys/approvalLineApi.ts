@@ -20,10 +20,10 @@ const BASE = apiOf("approval-line-management");
 // 역할 — 서버 공통 응답
 import type { CommonResponse } from "@/types/common";
 
-/** 결재 단계 1건 — 작성·검토·승인 고정 3행 */
+/** 결재 단계 1건 — 작성·승인 고정 2행 */
 export interface ApprovalStep {
   stepNo: number;
-  roleCd: "WRITE" | "REVIEW" | "APPROVE";
+  roleCd: "WRITE" | "APPROVE";
   approverId?: string | null;
   approverNm?: string | null;
   deptCd?: string | null;

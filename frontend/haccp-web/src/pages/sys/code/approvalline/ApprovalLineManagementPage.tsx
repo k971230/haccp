@@ -4,8 +4,8 @@
  * 개발자: 박승우
  * 일자: 2026-08-19
  * 코멘트:
- *   1) 좌는 결재선 헤더(행추가·저장·삭제), 우는 고정 3단계(저장만)다
- *   2) 행추가·저장 시 1작성 2검토 3승인이 들어가고 검토는 사용안함이다
+ *   1) 좌는 결재선 헤더(행추가·저장·삭제), 우는 고정 2단계(저장만)다
+ *   2) 행추가·저장 시 1작성 2승인이 들어간다
  *   3) 결재자 셀 버튼은 문서주기 담당자와 같은 룩업이며 부서까지 채운다
  *
  * PIPELINE[HF87] 결재선 관리 화면
@@ -124,9 +124,9 @@ export default function ApprovalLineManagementPage() {
    * 개발자: 박승우
    * 일자: 2026-08-19
    * 코멘트:
-   *   1) 고른 결재선의 3단계를 오른쪽에 넣는다
+   *   1) 고른 결재선의 2단계를 오른쪽에 넣는다
    *   2) 좌측 행 선택·첫 로드·저장 후 유지에서 호출한다
-   *   3) 선택이 없으면 빈 템플릿 3행을 깔지 않고 그리드를 비운다
+   *   3) 선택이 없으면 빈 템플릿 2행을 깔지 않고 그리드를 비운다
    */
   const loadStepsFor = useCallback((line: HeaderRow | null) => {
     if (!line) {
@@ -306,7 +306,7 @@ export default function ApprovalLineManagementPage() {
    * 개발자: 박승우
    * 일자: 2026-08-19
    * 코멘트:
-   *   1) 활성 헤더와 우측 3단계를 한 번에 저장한다
+   *   1) 활성 헤더와 우측 2단계를 한 번에 저장한다
    *   2) GridCrudButtons·셸 Ctrl+S에서 호출한다
    *   3) 성공 후 같은 결재선(apprLineCd)을 다시 고르고 우측 단계를 그 행으로 채운다
    */
@@ -486,7 +486,7 @@ export default function ApprovalLineManagementPage() {
                 <GridCrudButtons
                   // useAsyncAction.run — busy 키 래핑
                   run={asyncAct.run}
-                  // 좌측 전용 행추가 — 우측에 3단계가 바로 생긴다
+                  // 좌측 전용 행추가 — 우측에 2단계가 바로 생긴다
                   onAdd={canWrite ? handleAdd : undefined}
                   // 헤더+단계 단건 저장
                   onSave={editable ? handleSave : undefined}
@@ -525,7 +525,7 @@ export default function ApprovalLineManagementPage() {
               <div className={gridHeadClass}>
                 <b>{stepTitle}</b>
                 <GridCrudButtons
-                  // 우측은 고정 3단계 — 저장만. 결재자·사용여부 수정 후 바로 저장
+                  // 우측은 고정 2단계 — 저장만. 결재자·사용여부 수정 후 바로 저장
                   run={asyncAct.run}
                   onSave={editable && activeKey ? handleSave : undefined}
                   // 개설 관리자가 승인자로 남아 있을 때 — 헤더에 안 깔고 저장 툴팁만
@@ -550,20 +550,16 @@ export default function ApprovalLineManagementPage() {
                   setStepActiveKey(row._key);
                 }}
                 onCellChange={(key, field, value) => {
-                  // 작성과 승인은 항상 사용 — 검토만 사용안함을 고른다
                   if (field === "useYn") {
-                    const step = sg.rows.find((row) => row._key === key);
-                    if (step && step.roleCd !== "REVIEW") {
-                      mesToast("작성과 승인은 항상 사용입니다.", "warn");
-                      return;
-                    }
+                    mesToast("작성과 승인은 항상 사용입니다.", "warn");
+                    return;
                   }
                   sg.updateCell(key, field as keyof StepRow, value);
                 }}
                 access={stepGrid.access}
                 onLockedAttempt={stepGrid.onLockedAttempt}
                 onSetActive={() => sec.setSec("d")}
-                // 좌측 미선택·목록 0건일 때 빈 3단계 템플릿 대신 빈 화면
+                // 좌측 미선택·목록 0건일 때 빈 2단계 템플릿 대신 빈 화면
                 emptyTitle={MES.noInfo}
                 // 마스터를 고르라는 안내 — 조회 조건 힌트와 구분
                 emptyHint="왼쪽에서 결재선을 선택하세요."

@@ -40,15 +40,13 @@ INSERT INTO tmp_code(main_cd, sub_cd, code_nm, sort_no, ref1) VALUES
 ('DOC_STATUS',  '*',        '문서 상태',   0, NULL),
 ('DOC_STATUS',  'WRK',      '작성중',      1, NULL),
 ('DOC_STATUS',  'REQ',      '승인요청',    2, NULL),
-('DOC_STATUS',  'REV',      '검토완료',    3, NULL),
-('DOC_STATUS',  'APV',      '승인완료',    4, NULL),
-('DOC_STATUS',  'RJT',      '반려',        5, NULL),
+('DOC_STATUS',  'APV',      '승인완료',    3, NULL),
+('DOC_STATUS',  'RJT',      '반려',        4, NULL),
 
 -- 결재 역할 — tbl_approval_line_step.role_cd
 ('APPR_ROLE',   '*',        '결재 역할',   0, NULL),
 ('APPR_ROLE',   'WRITE',    '작성',        1, NULL),
-('APPR_ROLE',   'REVIEW',   '검토',        2, NULL),
-('APPR_ROLE',   'APPROVE',  '승인',        3, NULL),
+('APPR_ROLE',   'APPROVE',  '승인',        2, NULL),
 
 -- 결재 결과 — tbl_document_approval.result_cd
 ('APPR_RESULT', '*',        '결재 결과',   0, NULL),
@@ -60,10 +58,9 @@ INSERT INTO tmp_code(main_cd, sub_cd, code_nm, sort_no, ref1) VALUES
 ('APPR_ACTION', '*',        '결재 행위',   0, NULL),
 ('APPR_ACTION', 'REQUEST',  '전송',        1, NULL),
 ('APPR_ACTION', 'CANCEL',   '전송취소',    2, NULL),
-('APPR_ACTION', 'REVIEW',   '검토완료',    3, NULL),
-('APPR_ACTION', 'APPROVE',  '승인',        4, NULL),
-('APPR_ACTION', 'REJECT',   '반려',        5, NULL),
-('APPR_ACTION', 'UNDO',     '결재취소',    6, NULL),
+('APPR_ACTION', 'APPROVE',  '승인',        3, NULL),
+('APPR_ACTION', 'REJECT',   '반려',        4, NULL),
+('APPR_ACTION', 'UNDO',     '결재취소',    5, NULL),
 
 -- 작성주기 — tbl_schedule_rule.cycle_cd
 ('CYCLE_CD',    '*',        '작성주기',    0, NULL),

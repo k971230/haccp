@@ -12,11 +12,13 @@
  * PIPELINE[HF130] E2E
  */
 import { expect, test, type APIRequestContext } from "@playwright/test";
-import { adminCreds, dbOne, login, loginCoCd, openScreen, sqlLit } from "./helpers";
+import { adminCreds, dbOne, liveHtmlChkTmpl, login, loginCoCd, openScreen, sqlLit } from "./helpers";
 
 const API = process.env.E2E_API_BASE_URL || "http://localhost:7070";
-/** 시험용 양식 — 실제 쓰는 양식을 건드리면 사람 화면이 흔들린다 */
-const TMPL = "html_ccp_chk_001";
+/** 지면 버전이 있는 CCP 검증점검 — 카탈로그만 있는 고아 코드를 박지 않는다 */
+function cycleTmpl(): string {
+  return liveHtmlChkTmpl();
+}
 
 async function tokenOf(request: APIRequestContext): Promise<string> {
   const { user, pass } = adminCreds();
@@ -38,7 +40,7 @@ function futureTasks(): number {
   return Number(
     dbOne(
       `SELECT count(*) FROM tbl_schedule_task
-        WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'
+        WHERE co_cd='${co}' AND tmpl_cd='${cycleTmpl()}'
           AND base_dt > to_char(current_date,'YYYYMMDD')`,
     ),
   );
@@ -47,7 +49,7 @@ function futureTasks(): number {
 /** 주기 저장 본문 — details 는 주기마다 모양이 다르다 */
 function body(cycleCd: string, details: unknown[]): Record<string, unknown> {
   return {
-    tmplCd: TMPL,
+    tmplCd: cycleTmpl(),
     baseDt: "20260101",
     cycleCd,
     nonworkRule: "KEEP",
@@ -90,7 +92,7 @@ test.describe.serial("문서주기 7종", () => {
     // 원래 주기를 적어 두고 마지막에 되돌린다 — 로그인 회사·이 양식만
     saved = dbOne(
       `SELECT cycle_cd FROM tbl_schedule_rule
-        WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='${TMPL}'`,
+        WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='${cycleTmpl()}'`,
     );
   });
 
@@ -106,7 +108,7 @@ test.describe.serial("문서주기 7종", () => {
       expect(
         dbOne(
           `SELECT cycle_cd FROM tbl_schedule_rule
-            WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='${TMPL}'`,
+            WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='${cycleTmpl()}'`,
         ),
       ).toBe(c.cycleCd);
       const tasks = futureTasks();
@@ -160,17 +162,17 @@ test.describe.serial("문서주기 7종", () => {
     const co = sqlLit(loginCoCd());
     dbOne(
       `DELETE FROM tbl_schedule_task
-        WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'
+        WHERE co_cd='${co}' AND tmpl_cd='${cycleTmpl()}'
           AND status IN ('TODO','LATE') AND doc_idx IS NULL`,
     );
     if (saved) {
       dbOne(
         `UPDATE tbl_schedule_rule SET cycle_cd='${sqlLit(saved)}'
-          WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'`,
+          WHERE co_cd='${co}' AND tmpl_cd='${cycleTmpl()}'`,
       );
     } else {
-      dbOne(`DELETE FROM tbl_schedule_rule_detail WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'`);
-      dbOne(`DELETE FROM tbl_schedule_rule WHERE co_cd='${co}' AND tmpl_cd='${TMPL}'`);
+      dbOne(`DELETE FROM tbl_schedule_rule_detail WHERE co_cd='${co}' AND tmpl_cd='${cycleTmpl()}'`);
+      dbOne(`DELETE FROM tbl_schedule_rule WHERE co_cd='${co}' AND tmpl_cd='${cycleTmpl()}'`);
     }
   });
 });

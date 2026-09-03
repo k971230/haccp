@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) 승인 한 건과 반려 한 건을 끝까지 돌린다 — 반려는 되돌아오는 길이라 더 잘 깨진다
  *   2) 상태 전이는 화면 문구가 아니라 tbl_document.status 로 판정한다
- *   3) 문서함은 조회 전용이다 — 승인 끝난 기록을 고칠 수 있으면 그게 결함이다
+ *   3) 문서함은 조회 전용이다 — 승인 끝난 기록을 고칠 수 있으면 그게 결함이다. 인쇄만 추가했다
  *
  * PIPELINE[HF130] E2E
  */
@@ -95,6 +95,10 @@ test.describe.serial("결재 흐름", () => {
         `문서함에 ${forbidden} 버튼이 있다 — 승인 끝난 기록은 고칠 수 없어야 한다`,
       ).toHaveCount(0);
     }
+    await expect(
+      page.getByRole("button", { name: "인쇄", exact: true }).filter({ visible: true }),
+      "문서함에 인쇄 버튼이 없다",
+    ).toBeVisible();
   });
 
   test("반려 — 사유 없이 반려하면 막고, 사유를 적으면 작성자에게 돌아간다", async ({ page }) => {
@@ -109,26 +113,25 @@ test.describe.serial("결재 흐름", () => {
   await rowOfDoc(page, dbOne("SELECT idx FROM tbl_document ORDER BY idx DESC LIMIT 1")).click();
     await expect(page.getByText("문서 미리보기")).toBeVisible({ timeout: 30_000 });
 
-    // 사유는 결재 툴바 안 입력칸이다 — 비운 채 반려하면 막혀야 한다
+    // 사유는 팝업이다 — 비운 채 확인하면 막혀야 한다
     await btn(page, "반려").click();
-    await page.waitForTimeout(2_000);
-    const ok = btn(page, "확인");
-    if (await ok.count()) await ok.click().catch(() => undefined);
-    await page.waitForTimeout(2_000);
+    const rejectDlg = page.getByRole("dialog", { name: "반려" });
+    await expect(rejectDlg).toBeVisible({ timeout: 10_000 });
+    await rejectDlg.getByRole("button", { name: "확인", exact: true }).click();
+    await page.waitForTimeout(1_000);
     expect(
       dbOne(`SELECT status FROM tbl_document WHERE idx=${idx}`),
       "사유 없이 반려가 통과했다",
     ).toBe("REQ");
 
     // 사유를 적고 다시 반려
-    await page.getByPlaceholder("반려 사유").fill("E2E 반려 사유");
-    await btn(page, "반려").click();
+    await rejectDlg.getByPlaceholder("반려 사유를 입력하세요").fill("E2E 반려 사유");
     await Promise.all([
       page.waitForResponse(
         (r) => r.url().includes("/docs/documents/approval") && r.request().method() === "PUT",
         { timeout: 30_000 },
       ),
-      btn(page, "확인").click(),
+      rejectDlg.getByRole("button", { name: "확인", exact: true }).click(),
     ]);
     expect(dbOne(`SELECT status FROM tbl_document WHERE idx=${idx}`)).toBe("RJT");
     expect(

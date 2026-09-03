@@ -7,4 +7,3 @@
 | ccppkgtemplate | CcpPkgTemplateMapper.xml |
 | ccphtgtemplate | CcpHtgTemplateMapper.xml |
 | ccpmtltemplate | CcpMtlTemplateMapper.xml |
-| hygprocess | HygProcessMapper.xml |

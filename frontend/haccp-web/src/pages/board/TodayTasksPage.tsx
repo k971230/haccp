@@ -20,7 +20,7 @@ import { ClipboardList, FileCheck2, FileClock, FileText, FileWarning, Files, typ
 // 역할 — 오늘 과제 API
 import { listTodayRecentDocs, listTodayTasks, type WorkflowRow } from "@/api/board/taskWorkflowApi";
 // 역할 — 결재대기
-import { listApprovalInbox, type DocumentListRow } from "@/api/documentApi";
+import { listSignReady, type DocumentListRow } from "@/api/documentApi";
 // 역할 — 2분 폴링 주기
 import { DASHBOARD_POLLING_MS } from "@/config/envConfig";
 // 역할 — mes-web형 그리드
@@ -137,7 +137,7 @@ export default function TodayTasksPage() {
           offset: pageOffset(1, DOC_PAGE_SIZE),
           limit: DOC_PAGE_SIZE,
         }),
-        listApprovalInbox({ fromDt, toDt }),
+        listSignReady({ fromDt, toDt }),
       ]);
       setTasks(nextTasks);
       setDocs(docPage.rows);

@@ -151,7 +151,7 @@ public interface HtmlDraftMapper {
      * 개발자: 박승우
      * 일자: 2026-09-03
      * 코멘트:
-     *   1) 삭제 차단 사유 첫 건을 받는다 — 전송(REQ·REV)·결재완료(APV)
+     *   1) 삭제 차단 사유 첫 건을 받는다 — 전송(REQ)·결재완료(APV)
      *   2) validate-delete 와 delete 가 각각 호출한다 (Double Check)
      *   3) family 를 안 받는다 — 문서 허브 공통 SP 라 계열과 무관하다
      */

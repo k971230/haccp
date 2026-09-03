@@ -86,7 +86,7 @@ public class AuditWriter {
             String tblNm,
             // 대상 행 idx — 신규 등록처럼 채번 전이면 null
             Long tgtIdx,
-            // 행위 — I/U/D/REQ/REV/APV/RJT/CANCEL/UNDO
+            // 행위 — I/U/D/REQ/APV/RJT/CANCEL/UNDO
             String actionCd,
             // 변경 전 값. 등록이면 null
             Object before,

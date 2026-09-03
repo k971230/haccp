@@ -152,7 +152,7 @@ CREATE TABLE sasshaccp.tbl_approval_line_step (
 -- Name: TABLE tbl_approval_line_step; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON TABLE sasshaccp.tbl_approval_line_step IS '결재선 단계 — 작성자·검토자·승인자 순번 정의';
+COMMENT ON TABLE sasshaccp.tbl_approval_line_step IS '결재선 단계 — 작성자·승인자 순번 정의';
 
 
 --
@@ -187,7 +187,7 @@ COMMENT ON COLUMN sasshaccp.tbl_approval_line_step.step_no IS '단계 순번 —
 -- Name: COLUMN tbl_approval_line_step.role_cd; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON COLUMN sasshaccp.tbl_approval_line_step.role_cd IS '역할 — WRITE:작성자, REVIEW:검토자, APPROVE:승인자';
+COMMENT ON COLUMN sasshaccp.tbl_approval_line_step.role_cd IS '역할 — WRITE:작성자, APPROVE:승인자';
 
 
 --
@@ -2657,12 +2657,10 @@ CREATE TABLE sasshaccp.tbl_document (
     base_dt character varying(8) NOT NULL,
     base_dt_to character varying(8),
     title character varying(300),
-    status character varying(3) DEFAULT 'TMP'::character varying NOT NULL,
+    status character varying(3) DEFAULT 'WRK'::character varying NOT NULL,
     appr_line_cd character varying(20),
     writer_id character varying(20),
     write_dt timestamp without time zone,
-    reviewer_id character varying(20),
-    review_dt timestamp without time zone,
     approver_id character varying(20),
     approve_dt timestamp without time zone,
     reject_reason character varying(500),
@@ -2747,7 +2745,7 @@ COMMENT ON COLUMN sasshaccp.tbl_document.title IS '문서 제목 — 미입력 �
 -- Name: COLUMN tbl_document.status; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON COLUMN sasshaccp.tbl_document.status IS '문서상태 — WRK:작성중, REQ:검토요청, REV:검토완료, APV:승인완료, RJT:반려';
+COMMENT ON COLUMN sasshaccp.tbl_document.status IS '문서상태 — WRK:작성중, REQ:승인요청, APV:승인완료, RJT:반려';
 
 
 --
@@ -2772,20 +2770,6 @@ COMMENT ON COLUMN sasshaccp.tbl_document.write_dt IS '작성(상신) 일시';
 
 
 --
--- Name: COLUMN tbl_document.reviewer_id; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_document.reviewer_id IS '검토자 로그인 ID';
-
-
---
--- Name: COLUMN tbl_document.review_dt; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_document.review_dt IS '검토 일시';
-
-
---
 -- Name: COLUMN tbl_document.approver_id; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
@@ -2803,14 +2787,14 @@ COMMENT ON COLUMN sasshaccp.tbl_document.approve_dt IS '승인 일시';
 -- Name: COLUMN tbl_document.reject_reason; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON COLUMN sasshaccp.tbl_document.reject_reason IS '반려 사유 — status=RJT일 때 필수';
+COMMENT ON COLUMN sasshaccp.tbl_document.reject_reason IS '반려 사유 — 줄바꿈으로 쌓는다. 최신이 맨 위. 재전송해도 유지';
 
 
 --
 -- Name: COLUMN tbl_document.cancel_reason; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON COLUMN sasshaccp.tbl_document.cancel_reason IS '결재 취소 사유 — UNDO 시 남기고 재상신(REQUEST) 때 비운다';
+COMMENT ON COLUMN sasshaccp.tbl_document.cancel_reason IS '결재 취소 사유 — 줄바꿈으로 쌓는다. 최신이 맨 위. 재전송해도 유지';
 
 
 --
@@ -2945,7 +2929,7 @@ COMMENT ON COLUMN sasshaccp.tbl_document_approval.step_no IS '단계 순번 — 
 -- Name: COLUMN tbl_document_approval.role_cd; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON COLUMN sasshaccp.tbl_document_approval.role_cd IS '역할 — WRITE:작성자, REVIEW:검토자, APPROVE:승인자';
+COMMENT ON COLUMN sasshaccp.tbl_document_approval.role_cd IS '역할 — WRITE:작성자, APPROVE:승인자';
 
 
 --
@@ -7126,7 +7110,7 @@ DELETE FROM sasshaccp.tbl_audit_log WHERE scrn_cd = '';
 --
 ALTER TABLE sasshaccp.tbl_document
     ADD COLUMN IF NOT EXISTS cancel_reason character varying(500);
-COMMENT ON COLUMN sasshaccp.tbl_document.cancel_reason IS '결재 취소 사유 — UNDO 시 남기고 재상신(REQUEST) 때 비운다';
+COMMENT ON COLUMN sasshaccp.tbl_document.cancel_reason IS '결재 취소 사유 — 줄바꿈으로 쌓는다. 최신이 맨 위. 재전송해도 유지';
 
 
 --

@@ -23,7 +23,7 @@
 
 공통: `PageCard` · `SearchArea` · `ResizableSplit` · `MesEditableGrid` · `splitPanelClass`(pageClasses). 그리드 열 pref는 `/api/v1/pref/grid` 한 벌.
 
-합치지 않음: `buildListColumns` 3종, 우측 로직·API, Paper 5종 표 구조. `hyg-process-template`(양식관리)과 `hygiene-process-check`(작성)는 다른 메뉴.
+합치지 않음: `buildListColumns` 3종, 우측 로직·API, Paper 5종 표 구조. `hyg-process-template`(양식관리)과 `hyg-process`(작성, `pages/draft/html/`)는 다른 메뉴다.
 
 ---
 
@@ -35,21 +35,20 @@
 
 ```
 pages/docs/
- ├ hwp/          사용양식 관리 (hwp-template-management) · 공용 HWP 에디터
- ├ html/HtmlFormTemplatePage.tsx · htmlFormTemplateShared.ts  HTML양식 원본 5화면 공통 프레임
- ├ html/htmltemplate HTML양식 원본 (hyg-process-template)
- ├ html/ccpverifytemplate CCP 검증점검표 양식 (ccp-verify-template)
- ├ html/ccppkgtemplate CCP-1B 포장 모니터링일지 양식 (ccp-pkg-template)
- ├ html/ccphtgtemplate CCP-2B 가열 모니터링일지 양식 (ccp-htg-template)
- ├ html/ccpmtltemplate CCP-3P 금속검출 모니터링일지 양식 (ccp-mtl-template)
- ├ html/hygprocess   일반위생관리 및 공정점검표 작성 (hygiene-process-check) — 그룹 A 16개 밖
- ├ ccp/         CCP 작성 (ccp-*-monitor)
- ├ prp/         PRP 위생·설비
- ├ logis/       물류 HWP leaf
- ├ admin/       운영·법정 HWP leaf
- ├ sch/         문서주기 (schedule-cycle-management)
+ ├ hwp/          사용양식 HWP 관리 (hwp-template-management)
+ ├ html-form/    HTML양식 원본 5화면 공통 프레임 — HtmlFormTemplatePage.tsx · htmlFormTemplateShared.ts
+ │   ├ htmltemplate       HTML양식 원본 (hyg-process-template)
+ │   ├ ccpverifytemplate  CCP 검증점검표 양식 (ccp-verify-template)
+ │   ├ ccppkgtemplate     CCP-1B 포장 모니터링일지 양식 (ccp-pkg-template)
+ │   ├ ccphtgtemplate     CCP-2B 가열 모니터링일지 양식 (ccp-htg-template)
+ │   └ ccpmtltemplate     CCP-3P 금속검출 모니터링일지 양식 (ccp-mtl-template)
+ ├ sch/          문서주기 (schedule-cycle-management)
  └ README.md
 ```
+
+**작성 화면은 여기가 아니다.** `pages/draft/` 에 있다 —
+`draft/html/`(`hyg-process`·`ccp-verify`) · `draft/ccp-monitoring/`(`ccp-pkg`·`ccp-htg`·`ccp-mtl`) ·
+`draft/hwp-doc/`(`hwp-write`). HWP 에디터도 `draft/hwp-doc/HwpEditorPane.tsx` 다.
 
 ### 0-2. Page / Rule
 
@@ -82,27 +81,25 @@ pages/docs/
 | 문서함 | `document-inbox` | `doc-document-inbox` |
 | 결재 대기 | `sign-ready` | `doc-approval-inbox` |
 | 결재 완료 | `sign-ok` | `doc-approval-history` |
-| 법적서류 | `legal-document-upload` | `legal-tmpl-list` · `legal-doc-list` |
 | 개선조치 | `corrective-action-management` | `doc-corrective-actions` |
-| HWP leaf | 각 scrnCd | `hwp-document-list-{scrnCd}` |
+| HWP 작성 | `hwp-write` | `hwp-draft-list` |
 
 ### 0-5. 백엔드 (`com.haccp.docs`)
 
 ```
 java/com/haccp/docs/
- ├ hwp/                      사용양식 — URL /api/v1/docs/hwp/hwp-template-management
- ├ ccp/                      CCP 작성
- ├ prp/                      PRP 위생·설비·이력
- ├ sch/                      문서주기 — URL /api/v1/docs/sch/schedule-cycle-management
- ├ html/htmltemplate         HTML양식 원본 Controller·Service — URL /api/v1/docs/html-form/{scrnCd} 5화면
- ├ html/ccpverifytemplate    CCP 검증점검 Mapper (Controller는 htmltemplate 공유)
- ├ html/ccppkgtemplate       CCP-1B 포장 Mapper
- ├ html/ccphtgtemplate       CCP-2B 가열 Mapper
- ├ html/ccpmtltemplate       CCP-3P 금속검출 Mapper
- ├ html/hygprocess           공정점검 작성 — URL /api/v1/docs/html-form/hyg-process-template
- ├ document/                 Document* 문서함·결재·첨부 — URL /api/v1/docs/documents (공유 허브)
- └ template/                 Template* 파일 저장 — URL /api/v1/docs/templates (공유 허브)
+ ├ hwp/                          사용양식 — URL /api/v1/docs/hwp/hwp-template-management
+ ├ sch/                          문서주기 — URL /api/v1/docs/sch/schedule-cycle-management
+ ├ htmlform/htmltemplate         HTML양식 원본 Controller·Service — URL /api/v1/docs/html-form/{scrnCd} 5화면
+ ├ htmlform/ccpverifytemplate    CCP 검증점검 Mapper (Controller는 htmltemplate 공유)
+ ├ htmlform/ccppkgtemplate       CCP-1B 포장 Mapper
+ ├ htmlform/ccphtgtemplate       CCP-2B 가열 Mapper
+ ├ htmlform/ccpmtltemplate       CCP-3P 금속검출 Mapper
+ ├ documents/                    Document* 문서함·결재·첨부 — URL /api/v1/docs/documents (공유 허브)
+ └ templates/                    Template* 파일 저장 — URL /api/v1/docs/templates (공유 허브)
 ```
+
+**패키지·XML 폴더는 `htmlform`, HTTP 경로만 `html-form` 이다.** 하이픈은 URL 에만 있다.
 
 개선조치는 `com.haccp.flow.ca`. XML `resources/mapper/{대}/{중}/`. 폴더를 옮겨도 HTTP 경로는 바꾸지 않는다.
 
@@ -118,11 +115,11 @@ HTTP DELETE 금지. `validate-delete` → `delete` Double Check. 회사코드는
 
 ## HTML양식 원본 5화면
 
-화면 README `html/` · `htmltemplate/` · `ccpverifytemplate/` · `ccppkgtemplate/` · `ccphtgtemplate/` · `ccpmtltemplate/`. 공통 프레임 `HtmlFormTemplatePage`. HTTP는 `/api/v1/docs/html-form/{scrnCd}`. 작성 `hygprocess` 는 `/api/v1/docs/html-form/hyg-process-template`.
+화면 README `html-form/` 과 그 아래 `htmltemplate/` · `ccpverifytemplate/` · `ccppkgtemplate/` · `ccphtgtemplate/` · `ccpmtltemplate/`. 공통 프레임 `HtmlFormTemplatePage`. HTTP는 `/api/v1/docs/html-form/{scrnCd}`.
 
-## 3. 문서함 · 4. HWP 작성기 · 5. 법적서류 · 6. 개선조치
+## 3. 문서함 · 4. HWP 작성 · 5. 개선조치
 
-화면 README `flow/box/` · `docs/hwp/` · `flow/box/legalupload/` · `flow/ca/corrective/`. HTTP는 `/api/v1/docs/documents` · `/api/v1/docs/templates` · `/api/v1/flow/ca/corrective-action-management`.
+화면 README `flow/box/documentbox/` · `draft/hwp-doc/` · `flow/ca/corrective/`. HTTP는 `/api/v1/docs/documents` · `/api/v1/docs/templates` · `/api/v1/flow/ca/corrective-action-management`.
 
 ## 7. 신규 메뉴
 

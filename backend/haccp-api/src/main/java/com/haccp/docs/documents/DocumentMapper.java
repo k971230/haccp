@@ -82,36 +82,89 @@ public interface DocumentMapper {
             @Param("tmplCd") String tmplCd
     );
 
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 문서함·결재첨부 목록 — 기간·양식·상태·문서번호·작성자로 필터한다
+     *   2) document-inbox(status=APV)·attach(writerId=본인)가 호출한다
+     *   3) 성공 시 DB형·HWP형 통합 목록. 빈 조건은 SP가 전체로 본다
+     */
     List<Map<String, Object>> selectDocuments(
+            // JWT 회사코드 — 테넌트 범위
             @Param("coCd") String coCd,
+            // 기준일 시작 YYYYMMDD — 공백이면 전체
             @Param("fromDt") String fromDt,
+            // 기준일 종료 YYYYMMDD — 공백이면 전체
             @Param("toDt") String toDt,
+            // 템플릿 코드 필터 — 공백이면 전체
             @Param("tmplCd") String tmplCd,
+            // 문서 상태 WRK/REQ/APV/RJT — 공백이면 전체
             @Param("status") String status,
+            // 문서번호·제목 부분검색
             @Param("keyword") String keyword,
+            // 작성자 ID·이름 부분검색
             @Param("writerId") String writerId
     );
 
-    /** 결재함 — 내 차례 대기 문서 */
-    List<Map<String, Object>> selectApprovalInbox(
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 결재대기 — 내 APPROVE 단계가 대기(W)인 REQ 문서만
+     *   2) GET /sign-ready 가 호출한다
+     *   3) writerId 는 작성자 칸. keyword 는 문서번호·제목
+     */
+    List<Map<String, Object>> selectSignReady(
+            // JWT 회사코드
             @Param("coCd") String coCd,
+            // 로그인 사용자 — 내 차례만
             @Param("userId") String userId,
+            // 기준일 시작 YYYYMMDD
             @Param("fromDt") String fromDt,
+            // 기준일 종료 YYYYMMDD
             @Param("toDt") String toDt,
-            @Param("keyword") String keyword
+            // 문서번호·제목 검색어
+            @Param("keyword") String keyword,
+            // 작성자 ID·이름 부분검색
+            @Param("writerId") String writerId
     );
 
-    /** 결재 이력 — 내가 승인·반려한 문서 */
-    List<Map<String, Object>> selectApprovalHistory(
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 결재완료 — 내가 APPROVE 단계로 승인·반려한 문서
+     *   2) GET /sign-ok 가 호출한다
+     *   3) 작성자 자동승인(WRITE)은 넣지 않는다
+     */
+    List<Map<String, Object>> selectSignOk(
+            // JWT 회사코드
             @Param("coCd") String coCd,
+            // 로그인 사용자 — 내가 처리한 건만
             @Param("userId") String userId,
+            // 기준일 시작 YYYYMMDD
             @Param("fromDt") String fromDt,
+            // 기준일 종료 YYYYMMDD
             @Param("toDt") String toDt,
-            @Param("keyword") String keyword
+            // 문서번호·제목 검색어
+            @Param("keyword") String keyword,
+            // 작성자 ID·이름 부분검색
+            @Param("writerId") String writerId
     );
 
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 문서 공통 헤더 단건 — 결재선·첨부와 따로 읽는다
+     *   2) 상세 API가 묶기 전에 호출한다
+     *   3) 없거나 다른 회사이면 null. reviewer 컬럼은 없다
+     */
     Map<String, Object> selectDocument(
+            // JWT 회사코드
             @Param("coCd") String coCd,
+            // 문서 대리키
             @Param("docIdx") Long docIdx
     );
 
@@ -201,11 +254,24 @@ public interface DocumentMapper {
             @Param("opinion") String opinion
     );
 
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 결재 전이 — REQUEST/CANCEL/APPROVE/REJECT 를 SP 한 곳에 맡긴다
+     *   2) PUT /approval 이 UNDO 가 아닐 때 호출한다
+     *   3) 상태 문자열은 Java 가 쓰지 않는다. 전제·결과는 SP 가 검사한다
+     */
     void processApproval(
+            // JWT 회사코드
             @Param("coCd") String coCd,
+            // 문서 대리키
             @Param("docIdx") Long docIdx,
+            // APPR_ACTION — REQUEST/CANCEL/APPROVE/REJECT
             @Param("actionCd") String actionCd,
+            // 반려 의견 — REJECT 만 필수
             @Param("opinion") String opinion,
+            // JWT 작업자 ID
             @Param("userId") String userId
     );
 
@@ -213,7 +279,7 @@ public interface DocumentMapper {
      * 개발자: 박승우
      * 일자: 2026-08-25
      * 코멘트:
-     *   1) 전송(REQ·REV)·결재완료(APV) 문서의 첫 건만 돌려 삭제를 막는다
+     *   1) 전송(REQ)·결재완료(APV) 문서의 첫 건만 돌려 삭제를 막는다
      *   2) validate-delete·delete Double Check 가 호출한다
      *   3) 전송대기(WRK)·반려(RJT)는 null — 보존기간은 공식 기록 보관용이라 여기 쓰지 않는다
      */

@@ -6,15 +6,15 @@
 
 | 파일 | 책임 |
 |---|---|
-| `ApprovalLineManagementPage.tsx` | 렌더·상태·API. 좌 결재선 + 우 고정 3단계 |
+| `ApprovalLineManagementPage.tsx` | 렌더·상태·API. 좌 결재선 + 우 고정 2단계 |
 | `ApprovalLineManagementRule.ts` | `SCRN_CD` · persistId · 컬럼 · `emptySteps` · `normalizeSteps` |
 
 ## 화면 규칙
 
 - 좌 결재선: 행추가·저장·삭제. 분할 기본 30%. `DEFAULT` 기본 결재선은 삭제 불가
-- 우 단계: 1작성 · 2검토 · 3승인 고정. **저장만**. 행추가·삭제 없음
+- 우 단계: 1작성 · 2승인 고정. **저장만**. 행추가·삭제 없음
 - 열 순서: 순서 · 역할 · 부서 · 결재자 · 사용
-- 검토 사용여부 기본 **사용안함**. 작성과 승인은 항상 사용
+- 작성과 승인은 항상 사용. 검토 단계는 없다
 - 결재자는 셀 버튼 룩업. 고르면 소속 부서가 따라 들어온다. 직위코드 없음
 - URL은 `/sys/code/approval-line-management` — 메뉴 중분류 `code`. `/screen/{scrnCd}` 없음
 

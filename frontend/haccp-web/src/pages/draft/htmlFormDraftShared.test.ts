@@ -55,9 +55,8 @@ describe("sendStateOf — DOC_STATUS 3단계 묶음", () => {
     expect(sendStateOf("")).toBe("wait");
   });
 
-  it("검토요청·검토완료는 전송", () => {
+  it("승인요청은 전송", () => {
     expect(sendStateOf("REQ")).toBe("sent");
-    expect(sendStateOf("REV")).toBe("sent");
   });
 
   it("승인완료는 결재완료", () => {
@@ -79,7 +78,6 @@ describe("U/D·전송·전송취소 잠금", () => {
     expect(canModifyDoc("WRK")).toBe(true);
     expect(canModifyDoc("RJT")).toBe(true);
     expect(canModifyDoc("REQ")).toBe(false);
-    expect(canModifyDoc("REV")).toBe(false);
     expect(canModifyDoc("APV")).toBe(false);
   });
 
@@ -102,9 +100,8 @@ describe("U/D·전송·전송취소 잠금", () => {
     expect(canEditDetail(10, "WRK", false)).toBe(false);
   });
 
-  it("전송취소는 REQ 만 — 검토완료·결재완료는 열지 않는다", () => {
+  it("전송취소는 REQ 만 — 결재완료는 열지 않는다", () => {
     expect(canCancelSendDoc(10, "REQ")).toBe(true);
-    expect(canCancelSendDoc(10, "REV")).toBe(false);
     expect(canCancelSendDoc(10, "APV")).toBe(false);
     expect(canCancelSendDoc(10, "WRK")).toBe(false);
     expect(canCancelSendDoc(null, "REQ")).toBe(false);
@@ -229,6 +226,18 @@ describe("detailToDraftBuf — 이탈 시그널 복원", () => {
     );
     expect(buf.specialNote).toBe("");
     expect(buf.deviationYn).toBe(true);
+  });
+
+  it("점검자가 비면 작성자명을 넣는다", () => {
+    const buf = detailToDraftBuf(
+      {
+        header: { docIdx: 1, writerNm: "홍길동", checkerNm: "", baseDt: "20260901" },
+        items: [],
+      },
+      { tmplCd: "html_hyg_prc_001", tmplNm: "위생" },
+    );
+    expect(buf.writerNm).toBe("홍길동");
+    expect(buf.checkerNm).toBe("홍길동");
   });
 });
 

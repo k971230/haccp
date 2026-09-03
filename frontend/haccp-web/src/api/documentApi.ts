@@ -39,7 +39,7 @@ export interface DocumentListRow {
 export interface DocumentApprovalRow {
   idx: number;
   stepNo: number;
-  roleCd: "WRITE" | "REVIEW" | "APPROVE";
+  roleCd: "WRITE" | "APPROVE";
   approverId?: string | null;
   approverNm?: string | null;
   resultCd: "W" | "A" | "R";
@@ -67,9 +67,6 @@ export interface DocumentDetail {
     apprLineCd?: string | null;
     // 상신 일시 — 결재 첨부 화면의 결재요청일
     writeDt?: string | null;
-    reviewerId?: string | null;
-    reviewerNm?: string | null;
-    reviewDt?: string | null;
     approverId?: string | null;
     approverNm?: string | null;
     approveDt?: string | null;
@@ -182,27 +179,29 @@ export async function listDocuments(
   return camelizeRows<DocumentListRow & Record<string, unknown>>(data.data);
 }
 
-/** 결재함 — 내 차례 대기 문서 */
-export async function listApprovalInbox(params: {
+/** 결재대기 — 내 차례 대기 문서 */
+export async function listSignReady(params: {
   fromDt?: string;
   toDt?: string;
   keyword?: string;
+  writerId?: string;
 }): Promise<DocumentListRow[]> {
   const { data } = await http.get<CommonResponse<Record<string, unknown>[]>>(
-    "/api/v1/docs/documents/approval-inbox",
+    "/api/v1/docs/documents/sign-ready",
     { params }
   );
   return camelizeRows<DocumentListRow & Record<string, unknown>>(data.data);
 }
 
-/** 결재 이력 — 내가 승인·반려한 문서 */
-export async function listApprovalHistory(params: {
+/** 결재완료 — 내가 승인·반려한 문서 */
+export async function listSignOk(params: {
   fromDt?: string;
   toDt?: string;
   keyword?: string;
+  writerId?: string;
 }): Promise<DocumentListRow[]> {
   const { data } = await http.get<CommonResponse<Record<string, unknown>[]>>(
-    "/api/v1/docs/documents/approval-history",
+    "/api/v1/docs/documents/sign-ok",
     { params }
   );
   return camelizeRows<DocumentListRow & Record<string, unknown>>(data.data);
@@ -242,7 +241,7 @@ export async function saveHwpDocument(
 
 /** 결재 상태 전이 */
 export async function processDocumentApproval(
-  // REQUEST/REVIEW/APPROVE/REJECT 처리 계약
+  // REQUEST/APPROVE/REJECT/CANCEL/UNDO 처리 계약
   body: { docIdx: number; actionCd: string; opinion?: string }
 ): Promise<void> {
   await http.put("/api/v1/docs/documents/approval", body);
@@ -315,6 +314,7 @@ export async function saveDocumentTitle(
 
 /**
  * 서버 rhwp CLI로 문서 HWP_SRC를 PDF로 변환·보관한다.
+ * 결재 잠금 문서는 기존 PDF를 재사용하고, 없으면 완료본만 새로 등록한다.
  * 변환·저장이 길어질 수 있어 httpFile(VITE_API_TIMEOUT_FILE)만 사용한다.
  */
 export async function exportDocumentPdf(

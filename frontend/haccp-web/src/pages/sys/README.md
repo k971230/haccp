@@ -286,7 +286,7 @@ React Query는 공통코드 조회(`useCommonCodes`)에만 쓰고 화면 목록 
 
 ### 6-1. 화면
 
-좌 결재선 헤더(행추가·저장·삭제, 기본 30%) · 우 고정 3단계(작성·검토·승인, 저장만). 검토 기본은 사용안함.
+좌 결재선 헤더(행추가·저장·삭제, 기본 30%) · 우 고정 2단계(작성·승인, 저장만). 검토 단계는 없다.
 단계 열은 순서 · 역할 · 부서 · 결재자 · 사용. 결재자 셀 버튼은 문서주기 담당자와 같은 `CodeLookup`이며 고르면 소속 부서가 채워진다. 직위코드 없음.
 URL은 `/sys/code/approval-line-management` — 메뉴 중분류 `code`. `/screen/{scrnCd}` 없음.
 
@@ -306,7 +306,7 @@ URL은 `/sys/code/approval-line-management` — 메뉴 중분류 `code`. `/scree
 | 버튼·이벤트 | FE 핸들러 | API | Service | SP | 테이블 |
 |---|---|---|---|---|---|
 | 조회 | `load` → `listApprovalLines` | `GET /api/v1/sys/code/approval-line-management/list` | `list` | `sp_tbl_approval_line_r_000` | `tbl_approval_line` `tbl_approval_line_step` |
-| 행추가 | `handleAdd` → `emptyLine()` | 없음(로컬, 우측에 3단계) | | | |
+| 행추가 | `handleAdd` → `emptyLine()` | 없음(로컬, 우측에 2단계) | | | |
 | 결재자 룩업 | `openApproverLookup` → `openModal("CodeLookup")` | 없음(FE 사용자 목록 재사용) | | | |
 | 저장 | `handleSave` → `saveApprovalLine` | `PUT .../save` | `save` | `sp_tbl_approval_line_c_000` | 위 |
 | 삭제 | `handleDelete` → `validateDeleteApprovalLines` → `deleteApprovalLines` | `POST .../validate-delete` → `POST .../delete` | `validateDelete`·`delete` | `sp_tbl_approval_line_delete_blocker_r_000` → `sp_tbl_approval_line_d_000` | 위 |
@@ -350,7 +350,7 @@ screenusage/ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE
 | `tbl_html_hyg_prc_ver` `tbl_html_ccp_*_ver` | `HtmlTemplateService` 복사·항목저장·적용·이름·삭제 | I·U·D |
 | `tbl_schedule_rule` | `DocCycleService` 저장·삭제 | U·D |
 | `tbl_corrective_action` | `CorrectiveActionService` 저장·삭제 | I·U·D |
-| `tbl_document` `tbl_document_file` | `DocumentService`(HWP·결재) · HTML/CCP draft `save`·`delete` | I·U·D·REQ·REV·APV·RJT·CANCEL·UNDO |
+| `tbl_document` `tbl_document_file` | `DocumentService`(HWP·결재) · HTML/CCP draft `save`·`delete` | I·U·D·REQ·APV·RJT·CANCEL·UNDO |
 
 - 행에 `scrn_cd`를 적재 시점에 넣는다. 조회는 `tbl_screen` 조인으로 표시명을 붙인다. 공통코드 `AUDIT_TARGET`은 쓰지 않는다
 - `after_json`은 화면 payload 그대로이고 `_key`·`_rowState`는 버려지며 `userPw`는 `***`로 가려진다. 시스템 관리 저장은 `before_json`을 남기지 않는다. 문서 허브는 전후를 남긴다

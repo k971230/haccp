@@ -38,7 +38,7 @@ public class DraftListRow {
     private String writerId;
     // 작성자명 — 없으면 ID
     private String writerNm;
-    // DOC_STATUS 원본 — WRK/RJT/REQ/REV/APV. 화면이 3단계로 묶는다
+    // DOC_STATUS 원본 — WRK/RJT/REQ/APV. 화면이 3단계로 묶는다
     private String status;
     // 기록·점검 행 수
     private Integer rowCnt;

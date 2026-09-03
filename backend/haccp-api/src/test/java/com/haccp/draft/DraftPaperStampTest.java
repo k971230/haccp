@@ -45,6 +45,37 @@ class DraftPaperStampTest {
     }
 
     @Test
+    void apply_fillsCheckerFromWriterWhenEmpty() {
+        ObjectNode header = new ObjectMapper().createObjectNode();
+        header.put("checkerNm", "");
+        Map<String, Object> stamp = new LinkedHashMap<>();
+        stamp.put("writer_id", "hacppt");
+        stamp.put("writer_nm", "해썹팀원");
+        stamp.put("writer_sign_yn", "N");
+        stamp.put("approver_id", "haccpm");
+        stamp.put("approver_nm", "해썹팀장");
+        stamp.put("approver_sign_yn", "N");
+
+        DraftPaperStamp.apply(header, stamp);
+
+        assertEquals("해썹팀원", header.get("checkerNm").asText());
+        assertEquals("hacppt", header.get("checkerId").asText());
+    }
+
+    @Test
+    void apply_keepsExistingChecker() {
+        ObjectNode header = new ObjectMapper().createObjectNode();
+        header.put("checkerNm", "점검담당");
+        Map<String, Object> stamp = new LinkedHashMap<>();
+        stamp.put("writer_nm", "해썹팀원");
+        stamp.put("approver_nm", "해썹팀장");
+
+        DraftPaperStamp.apply(header, stamp);
+
+        assertEquals("점검담당", header.get("checkerNm").asText());
+    }
+
+    @Test
     void apply_nullDoesNothing() {
         ObjectNode header = new ObjectMapper().createObjectNode();
         DraftPaperStamp.apply(header, null);

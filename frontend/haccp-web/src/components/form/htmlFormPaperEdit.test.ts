@@ -9,7 +9,7 @@
  *   3) 기준관리(template)는 값 표시 대상이 아니다 — 빈 양식을 보여 주는 화면이다
  */
 import { describe, expect, it } from "vitest";
-import { htmlFormPaperEdit } from "./htmlFormPaperShared";
+import { htmlFormPaperEdit, paperRadioLock } from "./htmlFormPaperShared";
 
 describe("htmlFormPaperEdit — 값 표시와 편집 가능은 다르다", () => {
   it("작성 중이면 값도 보이고 고칠 수도 있다", () => {
@@ -32,5 +32,13 @@ describe("htmlFormPaperEdit — 값 표시와 편집 가능은 다르다", () =>
 
   it("기준관리에서 표준 양식은 잠긴다", () => {
     expect(htmlFormPaperEdit("template", true, true, true).templateEdit).toBe(false);
+  });
+
+  it("잠금 라디오는 disabled 가 아니라 aria-disabled 다", () => {
+    expect(paperRadioLock(true)).toEqual({});
+    const lock = paperRadioLock(false);
+    expect(lock["aria-disabled"]).toBe(true);
+    expect(lock.className).toBe("html-form-radio-lock");
+    expect("disabled" in lock).toBe(false);
   });
 });

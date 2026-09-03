@@ -9,11 +9,11 @@ HACCP 운영·검증 스크립트. 정본 절차는 [`DEPLOY.md`](../DEPLOY.md).
 
 | 스크립트 | 역할 | 호출처 |
 |----------|------|--------|
-| `init_volumes.sh` | 파일·템플릿 볼륨 시드 (rhwp 는 `install_rhwp.sh`) | compose 선행 · 런북 §9 |
+| `init_volumes.sh` | 파일·템플릿 볼륨 시드 (rhwp 는 `install_rhwp.sh`) | compose 선행 · `DEPLOY.md` §1 의 1-4 |
 | `build_images.sh` | api·web·nginx 이미지 빌드 | `Jenkinsfile` |
 | `deploy_remote.sh` | 원격 rsync·compose up | `Jenkinsfile` |
-| `install_rhwp.sh` | rhwp CLI 주입 | PDF 사용 시 · 런북 §11 |
-| `gen_selfsigned.sh` | 로컬 TLS 인증서 | 런북 §10 |
+| `install_rhwp.sh` | rhwp CLI 주입 — Windows `tools/rhwp` · Docker 볼륨 `haccp-rhwp` | 로컬 HWP PDF · `DEPLOY.md` §1 의 1-4 |
+| `gen_selfsigned.sh` | 로컬 TLS 인증서 | `환경구축.md` §10 |
 
 ## 스모크·DB
 

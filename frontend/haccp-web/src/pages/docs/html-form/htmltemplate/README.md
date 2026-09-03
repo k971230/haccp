@@ -11,4 +11,4 @@
 
 scrnCd `hyg-process-template` · API `/api/v1/docs/html-form/hyg-process-template`
 
-지면: `HygPrcPaper.tsx` (이 폴더). 작성 화면 `hygprocess` 가 같은 파일을 쓴다.
+지면: `HygPrcPaper.tsx` (이 폴더). 작성 화면 `hyg-process`(`pages/draft/html/`)가 같은 파일을 쓴다.

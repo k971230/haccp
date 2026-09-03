@@ -2,15 +2,15 @@
  * ApprovalAttachPage — 결재 첨부 (내가 상신한 문서의 첨부·비고·진행상태).
  *
  * 개발자: 박승우
- * 일자: 2026-08-26
+ * 일자: 2026-09-03
  * 코멘트:
  *   1) 좌측은 로그인 사용자가 작성한 문서만 — 서버가 writerId 를 조건으로 걸러 준다
- *   2) 우측은 결재 진행상태 + 첨부 관리 + 비고. 문서 본문 미리보기는 두지 않는다(결재 화면 몫)
+ *   2) 우측은 진행 스테퍼 + 원본 파일(다운만) + 첨부(추가·삭제) + 비고. 스크롤은 하나다. 본문 미리보기는 두지 않는다
  *   3) 버튼은 MesButton 틴트·아이콘. 「초기화」는 검색줄에서 저장하지 않은 화면 변경만 되돌린다
  *
- * 첨부 추가·삭제는 전송대기(WRK·RJT)에서만 된다 — 상신 뒤에 기록물이 바뀌면 결재자가 본 것과 달라진다.
+ * 원본(HWP_SRC·PDF)은 시스템이 만든 파일이라 삭제하지 않는다. 사용자 첨부만 전송대기에서 고친다.
  * 비고는 메모라서 결재완료(APV) 직전까지 고칠 수 있다.
- * 「초기화」는 저장하지 않은 화면 변경(비고 입력·고른 파일)만 되돌린다. 저장된 첨부는 삭제 버튼으로만 지운다.
+ * 「초기화」는 저장하지 않은 비고만 되돌린다. 저장된 첨부는 행마다 있는 「삭제」로만 지운다.
  *
  * PIPELINE[HF185] 결재 첨부 화면
  * PIPELINE[HF82, HF83] 연관 모듈
@@ -39,7 +39,7 @@ import { MesButton } from "@/components/ui/MesButton";
 import { defaultDocFormSearch, type DocFormSearchValues } from "@/components/form/docFormSearch";
 import { fromInputDate, toInputDate } from "@/lib/docDateTime";
 // 역할 — 확인·토스트
-import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
+import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 // 역할 — 오류 업무 문구
 import { mesError } from "@/shell/errors";
 // 역할 — 공통 안내 문구
@@ -57,20 +57,26 @@ import {
   downloadDocumentFile,
   getDocumentDetail,
   listDocuments,
-  processDocumentApproval,
   saveDocumentRemark,
   uploadDocumentFile,
   type DocumentDetail,
   type DocumentListRow,
 } from "@/api/documentApi";
 // 역할 — 일자·일시 사용자 표기
-import { toDisplayDate, toDisplayDateTime } from "@/lib/docDateTime";
+import { toDisplayDate } from "@/lib/docDateTime";
+// 역할 — 문서상태 코드
+import { DOC_STATUS } from "@/lib/docStatus";
+// 역할 — 공통 결재 툴바 — 전송·전송취소
+import { DocumentApprovalToolbar } from "@/components/document/DocumentApprovalToolbar";
+// 역할 — 우측 섹션 제목·사유 칸·파일 카드 (문서함과 같다)
+import { DocSectionHead } from "@/components/document/DocSectionHead";
+import { DocReasonBox } from "@/components/document/DocReasonBox";
+import { DocFileList } from "@/components/document/DocFileList";
 // 역할 — 양식코드 → 작성 API (전송 전 필수값 검사에 쓴다)
 import { previewEntryOf } from "@/components/document/documentPreviewRegistry";
 // 역할 — 상세 → 지면 버퍼 · 전송 필수값 규칙 (작성 화면과 같은 함수)
 import { detailToDraftBuf, validateForTransfer } from "@/pages/draft/htmlFormDraftShared";
-// 역할 — 파일 크기 표기 (문서함과 같은 함수)
-import { fileSize } from "@/pages/flow/box/documentbox/DocumentBoxRule";
+// 역할 — 파일 크기 표기는 DocFileList 가 맡는다
 // 역할 — 화면 상수·컬럼·잠금 판정
 import {
   ATTACH_MAX,
@@ -79,13 +85,15 @@ import {
   PERSIST_ID,
   SCRN_CD,
   SPLIT_KEY,
+  attachStepperCaption,
+  attachStepperOf,
+  attachStepperToneClass,
   buildAttachListColumns,
-  canCancelSend,
   canEditAttach,
   canEditRemark,
-  canSend,
   countUserFiles,
   docStatusBadgeClass,
+  splitFiles,
   type AttachListRow,
 } from "./ApprovalAttachRule";
 
@@ -110,8 +118,6 @@ export default function ApprovalAttachPage() {
   const openDocIdx = useDocIdxQuery();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { codeMap: statusCodeMap, label: statusLabel } = useCommonCodes("DOC_STATUS");
-  const { label: roleLabel } = useCommonCodes("APPR_ROLE");
-  const { label: resultLabel } = useCommonCodes("APPR_RESULT");
 
   // 공통 검색 — 기간·문서번호. 작성자 칸은 쓰지 않는다(항상 본인)
   const [search, setSearch] = useState<DocFormSearchValues>(() => defaultDocFormSearch());
@@ -123,8 +129,7 @@ export default function ApprovalAttachPage() {
   const [detail, setDetail] = useState<DocumentDetail | null>(null);
   const [listLoading, setListLoading] = useState(false);
   const [listActiveKey, setListActiveKey] = useState<string | null>(null);
-  // 화면 입력 — 저장 전 값. 「초기화」가 되돌리는 대상이다
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  // 화면 입력 — 저장 전 비고. 「초기화」가 되돌리는 대상이다
   const [remark, setRemark] = useState("");
 
   const listColumns = useMemo(() => buildAttachListColumns(statusCodeMap), [statusCodeMap]);
@@ -177,7 +182,6 @@ export default function ApprovalAttachPage() {
       const next = await getDocumentDetail(row.docIdx);
       setDetail(next);
       setRemark(next.header.remark ?? "");
-      setUploadFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (e) {
       mesError(e);
@@ -198,14 +202,15 @@ export default function ApprovalAttachPage() {
   const attachEditable = canEditAttach(detail?.header.status) && (canWrite || canModify);
   const remarkEditable = canEditRemark(detail?.header.status) && (canWrite || canModify);
   const userFileCnt = countUserFiles(detail?.files ?? []);
+  const fileSplit = useMemo(() => splitFiles(detail?.files ?? []), [detail?.files]);
+  const stepper = attachStepperOf(detail?.header.status);
+  const approveRow = detail?.approvals.find((s) => s.roleCd === "APPROVE");
+  const approverNm = approveRow?.approverNm || approveRow?.approverId || detail?.header.approverNm;
 
-  /** 첨부 업로드 — 상한·잠금을 프론트에서 먼저 본다 */
-  const handleUpload = () =>
+  /** 첨부 업로드 — 파일 고르면 바로 올린다. 상한·잠금을 프론트에서 먼저 본다 */
+  const handleUpload = (file: File) =>
     asyncAct.run(async () => {
-      if (!selected || !uploadFile) {
-        mesToast("업로드할 파일을 선택하세요.", "warn");
-        return;
-      }
+      if (!selected) return;
       if (!attachEditable) {
         mesToast(MES.inApprovalLocked, "warn");
         return;
@@ -216,7 +221,7 @@ export default function ApprovalAttachPage() {
         return;
       }
       try {
-        await uploadDocumentFile(selected.docIdx, "ATTACH", uploadFile);
+        await uploadDocumentFile(selected.docIdx, "ATTACH", file);
         mesToast("파일이 첨부되었습니다.", "success");
         await loadDetail(selected);
         await loadList();
@@ -279,7 +284,7 @@ export default function ApprovalAttachPage() {
    * 일자: 2026-08-25
    * 코멘트:
    *   1) 전송(상신) 전에 지면 필수값을 본다 — 이 화면은 지면을 띄우지 않으므로 상세를 읽어 검사한다
-   *   2) 전송 버튼이 호출한다
+   *   2) 결재 툴바 REQUEST 직전(onBeforeAction)이 호출한다
    *   3) 기준은 작성 화면과 같은 validateForTransfer 한 곳이다. 여기서 규칙을 다시 쓰지 않는다
    *      지면이 없는 양식(HWP·구양식)은 검사 대상이 아니라 통과시킨다
    */
@@ -293,52 +298,8 @@ export default function ApprovalAttachPage() {
     return validateForTransfer(buf.baseKey, buf.items, buf.logRows, true, buf.passRows);
   };
 
-  /** 전송 — 결재 프로세스를 시작한다. 이후 첨부·수정이 잠긴다 */
-  const handleSend = () =>
-    asyncAct.run(async () => {
-      if (!selected || !detail) return;
-      if (!canSend(detail.header.status)) {
-        mesToast("전송대기 문서만 전송할 수 있습니다.", "warn");
-        return;
-      }
-      try {
-        const missing = await findMissingValue(selected);
-        if (missing) {
-          mesToast(missing, "warn");
-          return;
-        }
-        if (!(await mesConfirm("전송하시겠습니까?\n전송 후에는 첨부와 내용을 고칠 수 없습니다."))) return;
-        await processDocumentApproval({ docIdx: selected.docIdx, actionCd: "REQUEST" });
-        mesToast("전송했습니다.", "success");
-        await loadDetail(selected);
-        await loadList();
-      } catch (e) {
-        mesError(e);
-      }
-    }, "send");
-
-  /** 전송취소 — 전송대기로 되돌린다. 검토·승인이 시작되면 서버가 막는다 */
-  const handleCancelSend = () =>
-    asyncAct.run(async () => {
-      if (!selected || !detail) return;
-      if (!canCancelSend(detail.header.status)) {
-        mesToast("전송한 문서만 전송취소할 수 있습니다.", "warn");
-        return;
-      }
-      if (!(await mesConfirm("전송을 취소하시겠습니까?\n전송대기로 돌아가 다시 고칠 수 있습니다."))) return;
-      try {
-        await processDocumentApproval({ docIdx: selected.docIdx, actionCd: "CANCEL" });
-        mesToast("전송을 취소했습니다.", "success");
-        await loadDetail(selected);
-        await loadList();
-      } catch (e) {
-        mesError(e);
-      }
-    }, "cancelSend");
-
-  /** 초기화 — 저장하지 않은 화면 변경만 되돌린다. DB 첨부는 건드리지 않는다 */
+  /** 초기화 — 저장하지 않은 비고만 되돌린다. DB 첨부는 건드리지 않는다 */
   const handleReset = () => {
-    setUploadFile(null);
     setRemark(detail?.header.remark ?? "");
     if (fileInputRef.current) fileInputRef.current.value = "";
     mesToast("저장하지 않은 변경을 되돌렸습니다.", "success");
@@ -409,51 +370,61 @@ export default function ApprovalAttachPage() {
                 <b>내 문서 목록</b>
               </div>
               <MesEditableGrid
-                // 열 설정 저장 키
+                // 열 너비·정렬·필터를 저장할 고유 키 — 화면코드 개명과 무관. 바꾸면 사용자 설정이 날아간다
                 persistId={PERSIST_ID}
+                // 내 문서 목록 행 — 상태 라벨을 더한 camelCase
                 rows={listRows as EditableRow<AttachListRow>[]}
+                // 기준일·문서번호·양식·제목·결재상태 배지·첨부 수
                 columns={listColumns}
                 // 목록만 조회 — 편집 금지
                 editable={false}
+                // 패널 제목 — 좌측 헤더와 같다
                 title="내 문서 목록"
+                // 부모 flex 높이 채움
                 height="100%"
+                // 목록 조회 중
                 loading={listLoading || asyncAct.isBusy("search")}
+                // 선택 문서 키
                 activeKey={listActiveKey}
+                // 행 클릭 시 우측 상세 로드
                 onActivate={(row) => { void loadDetail(row); }}
                 showRowNum
                 // 반려 행은 노란색 — 작성 목록과 같은 클래스
-                rowClassName={(row) => (row.status === "RJT" ? "mes-row-rejected" : undefined)}
+                rowClassName={(row) => (row.status === DOC_STATUS.RJT ? "mes-row-rejected" : undefined)}
               />
             </div>
           )}
           secondary={(
             <div className={splitPanelClass}>
-              {/* 바깥 패널은 overflow-hidden. 상세만 스크롤한다 */}
-              <div className="min-h-0 flex-1 overflow-auto">
           {!detail ? (
             <div className="flex h-full items-center justify-center text-sm text-slate-400">
               목록에서 문서를 선택하세요.
             </div>
           ) : (
-            <div className="space-y-5">
+            <div className="min-h-0 flex-1 overflow-auto p-1">
+              <div className="space-y-5">
               <section className="border-b border-slate-100 pb-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <h2 className="text-base font-semibold text-slate-800">
-                      {detail.header.title || detail.header.tmplNm}
-                    </h2>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2
+                        // 문서 제목은 양식명 그대로. 작성 목록 title 은 언제·무엇을 썼는지 식별용이라 여기 안 넣는다
+                        className="text-base font-semibold text-slate-800"
+                      >
+                        {detail.header.tmplNm || detail.header.title}
+                      </h2>
+                      <span
+                        // 제목 옆 상태 — 좌측 목록 배지와 같은 색
+                        className={`rounded border px-2 py-1 text-xs font-medium ${docStatusBadgeClass(detail.header.status)}`}
+                      >
+                        {statusLabel(detail.header.status, detail.header.status ?? "")}
+                      </span>
+                    </div>
                     <p className="mt-1 text-xs text-slate-500">
-                      문서번호 {detail.header.docNo} · 기준일 {toDisplayDate(detail.header.baseDt)}
-                      {detail.header.writeDt ? ` · 전송일시 ${toDisplayDateTime(detail.header.writeDt)}` : ""}
+                      문서번호 {detail.header.docNo} | 기준일 {toDisplayDate(detail.header.baseDt)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span
-                      // 좌측 목록 배지와 같은 색 — 상태를 두 곳에서 다르게 보여 주지 않는다
-                      className={`rounded border px-2 py-1 text-xs font-medium ${docStatusBadgeClass(detail.header.status)}`}
-                    >
-                      {statusLabel(detail.header.status, detail.header.status ?? "")}
-                    </span>
                     <MesButton
                       // 작성화면 — 지면을 고치러 간다. 이 화면에는 지면이 없다
                       variant="add"
@@ -466,149 +437,141 @@ export default function ApprovalAttachPage() {
                     >
                       작성화면
                     </MesButton>
-                    {canSend(detail.header.status) && (canWrite || canModify) && (
-                      <MesButton
-                        // 전송 — 결재 프로세스 시작. 지면 필수값을 먼저 본다
-                        variant="excel"
-                        icon="approve"
-                        disabled={asyncAct.isBusy("send")}
-                        onClick={() => void handleSend()}
-                      >
-                        전송
-                      </MesButton>
-                    )}
-                    {canCancelSend(detail.header.status) && (canWrite || canModify) && (
-                      <MesButton
-                        // 전송취소 — 전송대기로 되돌린다
-                        variant="search"
-                        icon="reset"
-                        disabled={asyncAct.isBusy("cancelSend")}
-                        onClick={() => void handleCancelSend()}
-                      >
-                        전송취소
-                      </MesButton>
-                    )}
+                    <DocumentApprovalToolbar
+                      // 선택 문서 idx — 없으면 결재 버튼 숨김
+                      docIdx={detail.header.docIdx}
+                      // WRK/REQ/APV/RJT
+                      status={detail.header.status}
+                      // 작성자 화면 — 전송·전송취소만. 승인·반려는 결재대기
+                      writerActionsOnly
+                      // 작성·수정 권한이 있으면 전송한다
+                      canApprove={canWrite || canModify}
+                      // 헤더 배지와 같은 상태 문구를 툴바에 다시 두지 않는다
+                      showStatus={false}
+                      // 전송 전 지면 필수값 — 이 화면은 지면이 없어 상세를 읽어 검사한다
+                      onBeforeAction={async (actionCd) => {
+                        if (actionCd !== "REQUEST" || !selected) return;
+                        const missing = await findMissingValue(selected);
+                        if (missing) {
+                          mesToast(missing, "warn");
+                          return false;
+                        }
+                      }}
+                      // 전송·전송취소 후 목록·상세 재조회
+                      onApproved={() => {
+                        void loadList();
+                        if (selected) void loadDetail(selected);
+                      }}
+                    />
                   </div>
                 </div>
               </section>
 
               <section>
-                <h3 className="mb-2 text-sm font-semibold text-slate-700">결재 진행상태</h3>
-                {detail.approvals.length === 0 ? (
-                  <p className="text-xs text-slate-400">아직 상신하지 않은 문서입니다.</p>
-                ) : (
-                  <ul className="space-y-1">
-                    {detail.approvals.map((step, at) => (
-                      <li
-                        key={step.idx}
-                        className="flex items-center justify-between gap-2 rounded border border-slate-100 px-2 py-1.5 text-xs"
-                      >
-                        <span>
-                          {/*
-                            * 차수는 결재선 단계번호(stepNo)가 아니라 이 문서가 실제로 거치는 순서다.
-                            * 검토 단계를 꺼 둔 결재선은 1·3 만 만들어져서 stepNo 를 그대로 쓰면
-                            * 「1차 … 3차 …」로 건너뛰어 2차가 빠진 것처럼 읽힌다.
-                            */}
-                          {at + 1}차 {roleLabel(step.roleCd, step.roleCd)} · {step.approverNm || step.approverId || "미지정"}
-                        </span>
-                        <span className="text-slate-500">
-                          {resultLabel(step.resultCd, step.resultCd)}
-                          {step.actDt ? ` · ${toDisplayDateTime(step.actDt)}` : ""}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-
-              <section>
-                <h3 className="mb-2 text-sm font-semibold text-slate-700">
-                  첨부 파일{" "}
-                  <span className="text-xs font-normal text-slate-400">
-                    {userFileCnt}개 / 최대 {ATTACH_MAX}개
-                  </span>
-                </h3>
-                {attachEditable ? (
-                  <div className="mb-2 flex flex-wrap items-center gap-2 rounded bg-slate-50 p-2">
-                    <input
-                      // 고른 파일은 화면 상태 — 「초기화」가 되돌린다
-                      ref={fileInputRef}
-                      type="file"
-                      className="sr-only"
-                      onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
-                    />
-                    <MesButton
-                      // 숨긴 file input 을 연다
-                      variant="add"
-                      icon="upload"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      파일선택
-                    </MesButton>
-                    <span className="max-w-48 truncate text-xs text-slate-500">
-                      {uploadFile?.name ?? "선택된 파일 없음"}
-                    </span>
-                    <MesButton
-                      variant="add"
-                      icon="upload"
-                      disabled={!uploadFile || userFileCnt >= ATTACH_MAX || asyncAct.isBusy("upload")}
-                      onClick={() => void handleUpload()}
-                    >
-                      첨부
-                    </MesButton>
-                    {userFileCnt >= ATTACH_MAX && (
-                      <span className="text-xs text-amber-600">{ATTACH_MAX_MSG}</span>
-                    )}
-                  </div>
-                ) : (
-                  <p className="mb-2 text-xs text-slate-400">
-                    전송·결재완료 문서의 첨부는 고칠 수 없습니다. 전송취소 후 작성 화면에서 수정하세요.
-                  </p>
-                )}
-                {detail.files.length === 0 ? (
-                  <p className="text-xs text-slate-400">첨부 파일이 없습니다.</p>
-                ) : (
-                  <ul className="space-y-1" data-persist-id={FILE_PERSIST_ID}>
-                    {detail.files.map((file) => (
-                      <li
-                        key={file.idx}
-                        className="flex items-center justify-between gap-2 rounded border border-slate-100 px-2 py-1.5 text-xs"
-                      >
-                        <span>
-                          {file.fileNm}{" "}
-                          <span className="text-slate-400">
-                            {fileSize(file.fileSize)} · 등록 {file.insId ?? "-"} · {toDisplayDateTime(file.insDt)}
+                <DocSectionHead title="결재 진행상태" />
+                <ol className="mt-3 flex items-start">
+                  {stepper.steps.map((step, at) => {
+                    const vis = attachStepperToneClass(step.tone);
+                    // 결재 칸 아래 — 끝나면 결재자명. 작성·전송은 「완료」, 반려면 「반려」
+                    const sub = attachStepperCaption(step, approverNm);
+                    return (
+                      <li key={step.key} className={`flex min-w-0 ${at === 0 ? "flex-none" : "flex-1"}`}>
+                        {at > 0 ? (
+                          <span
+                            // 앞 칸과 잇는 선 — 이 칸의 색과 같게
+                            className={`mt-2 h-0.5 flex-1 ${vis.line}`}
+                          />
+                        ) : null}
+                        <div className="flex w-16 flex-none flex-col items-center">
+                          <span className={`h-4 w-4 rounded-full ${vis.dot}`} />
+                          <span className={`mt-1 text-xs font-medium ${vis.label}`}>{step.label}</span>
+                          <span className="mt-0.5 min-h-3 max-w-full truncate text-[10px] text-slate-400">
+                            {sub || "\u00a0"}
                           </span>
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MesButton
-                            variant="download"
-                            size="sm"
-                            icon="download"
-                            onClick={() => void handleDownload(file.idx, file.fileNm)}
-                          >
-                            다운로드
-                          </MesButton>
-                          {attachEditable && canDelete && (
-                            <MesButton
-                              variant="danger"
-                              size="sm"
-                              icon="trash"
-                              disabled={asyncAct.isBusy("delFile")}
-                              onClick={() => void handleDeleteFile(file.idx, file.fileNm)}
-                            >
-                              삭제
-                            </MesButton>
-                          )}
-                        </span>
+                        </div>
                       </li>
-                    ))}
-                  </ul>
-                )}
+                    );
+                  })}
+                </ol>
+                <p className="mt-2 min-h-4 text-xs text-slate-400">{stepper.hint ?? "\u00a0"}</p>
+              </section>
+              <section>
+                <DocSectionHead title="원본 파일" />
+                <div
+                  // 빈 안내와 카드가 바뀌어도 헤더가 안 뛰게 칸 높이를 확보한다
+                  className="min-h-10"
+                >
+                  <DocFileList
+                    // 최신 HWP_SRC 1건 + PDF — 다운로드만. 지우면 문서를 다시 열 수 없다
+                    files={fileSplit.originals}
+                    onDownload={(fileIdx, name) => void handleDownload(fileIdx, name)}
+                    emptyHint={
+                      detail.header.docKind === "HTML"
+                        ? "HTML 지면 문서 — 작성화면에서 확인"
+                        : "원본 파일이 없습니다."
+                    }
+                  />
+                </div>
               </section>
 
               <section>
-                <h3 className="mb-2 text-sm font-semibold text-slate-700">비고</h3>
+                <DocSectionHead
+                  title="첨부 파일"
+                  extra={(
+                    <span className="flex items-center gap-2">
+                      <span className="text-xs font-normal text-slate-400">
+                        {userFileCnt}개 / 최대 {ATTACH_MAX}개
+                      </span>
+                      {attachEditable ? (
+                        <>
+                          <input
+                            // 고른 파일을 바로 올린다 — 파일선택·첨부 두 버튼이 아니다
+                            ref={fileInputRef}
+                            type="file"
+                            className="sr-only"
+                            onChange={(e) => {
+                              const picked = e.target.files?.[0];
+                              e.target.value = "";
+                              if (picked) void handleUpload(picked);
+                            }}
+                          />
+                          <MesButton
+                            // 숨긴 file input 을 연다. 그리드 헤더 행추가와 같은 sm
+                            variant="add"
+                            size="sm"
+                            icon="plus"
+                            disabled={userFileCnt >= ATTACH_MAX || asyncAct.isBusy("upload")}
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            파일 추가
+                          </MesButton>
+                        </>
+                      ) : null}
+                    </span>
+                  )}
+                />
+                {!attachEditable ? (
+                  <p className="mt-2 text-xs text-slate-400">
+                    전송·결재완료 문서의 첨부는 고칠 수 없습니다. 전송취소 후 수정하세요.
+                  </p>
+                ) : userFileCnt >= ATTACH_MAX ? (
+                  <p className="mt-2 text-xs text-amber-600">{ATTACH_MAX_MSG}</p>
+                ) : null}
+                <DocFileList
+                  // 사용자 첨부(ATTACH·PHOTO) — 전송대기에서만 삭제
+                  files={fileSplit.attachments}
+                  onDownload={(fileIdx, name) => void handleDownload(fileIdx, name)}
+                  onDelete={attachEditable && canDelete
+                    ? (fileIdx, name) => void handleDeleteFile(fileIdx, name)
+                    : undefined}
+                  deleteBusy={asyncAct.isBusy("delFile")}
+                  emptyHint="첨부 파일이 없습니다."
+                  persistId={FILE_PERSIST_ID}
+                />
+              </section>
+
+              <section>
+                <DocSectionHead title="비고" />
                 <textarea
                   // 문서 단위 메모 — 결재완료 전까지 고칠 수 있다
                   value={remark}
@@ -616,14 +579,15 @@ export default function ApprovalAttachPage() {
                   disabled={!remarkEditable}
                   rows={3}
                   maxLength={REMARK_MAX}
-                  className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm disabled:bg-slate-50 disabled:text-slate-400"
+                  className="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-sm disabled:bg-slate-50 disabled:text-slate-400"
                   placeholder={remarkEditable ? "결재자에게 남길 메모" : "결재가 완료되어 고칠 수 없습니다."}
                 />
-                <div className="mt-2 flex items-center justify-end gap-2">
+                <div className="mt-2 flex items-center justify-end gap-3">
                   <span className="text-xs text-slate-400">
                     {remark.length} / {REMARK_MAX}자
                   </span>
                   <MesButton
+                    // 비고 저장 — 결재완료(APV) 전까지만. 잠금은 SP 가 다시 막는다
                     variant="save"
                     icon="save"
                     disabled={!remarkEditable || asyncAct.isBusy("remark")}
@@ -634,32 +598,29 @@ export default function ApprovalAttachPage() {
                 </div>
               </section>
 
-              {detail.header.status === "RJT" && (detail.header.rejectReason ?? "").trim() ? (
+              {(detail.header.rejectReason ?? "").trim() ? (
                 <section>
-                  <h3 className="mb-2 text-sm font-semibold text-slate-700">반려 사유</h3>
-                  <p
-                    // 결재자가 남긴 반려 사유 — 작성자는 고치지 못한다
-                    className="whitespace-pre-wrap rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-sm text-slate-800"
-                  >
-                    {detail.header.rejectReason}
-                  </p>
+                  <DocSectionHead
+                    // 반려는 예외 상태 — 파란 배지와 구분해 빨강
+                    title="반려 사유"
+                    danger
+                  />
+                  <DocReasonBox value={(detail.header.rejectReason ?? "").trim()} />
                 </section>
               ) : null}
 
               {(detail.header.cancelReason ?? "").trim() ? (
                 <section>
-                  <h3 className="mb-2 text-sm font-semibold text-slate-700">결재 취소 사유</h3>
-                  <p
-                    // 결재자가 남긴 취소 사유 — 재상신하면 비워진다
-                    className="whitespace-pre-wrap rounded border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm text-slate-800"
-                  >
-                    {detail.header.cancelReason}
-                  </p>
+                  <DocSectionHead
+                    title="결재 취소 사유"
+                    danger
+                  />
+                  <DocReasonBox value={(detail.header.cancelReason ?? "").trim()} />
                 </section>
               ) : null}
+              </div>
             </div>
           )}
-              </div>
             </div>
           )}
         />

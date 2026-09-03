@@ -35,6 +35,7 @@ import {
   htmlFormPaperEdit,
   patchHtmlFormItem,
   patchHtmlFormItemNms,
+  paperRadioLock,
   useJudgePfLabels,
   type HtmlFormLogRow,
   type HtmlFormPaperProps,
@@ -499,10 +500,10 @@ function SensRow({
             <span className="ccp-pkg-num-wrap">
               <label className="ccp-pkg-judge-opt">
                 <input
-                  // 검출 O — 전송 후에도 값은 보이게. 수정은 writeEdit 일 때만
+                  // 검출 O — 전송 후에도 값은 보이게. disabled 는 인쇄에서 흐려서 잠금만 건다
                   type="radio"
                   name={`mtl-ox-${rowKey}-${col.cd}`}
-                  disabled={!writeEdit}
+                  {...paperRadioLock(writeEdit)}
                   {...(row
                     ? { checked: (row.cells?.[col.cd] ?? "") === "O",
                         onChange: () => onPatch?.({ cells: { [col.cd]: "O" } }) }
@@ -512,10 +513,10 @@ function SensRow({
               </label>
               <label className="ccp-pkg-judge-opt">
                 <input
-                  // 불검출 X — 전송 후 disabled. 숨기지 않는다
+                  // 불검출 X — 숨기지 않는다
                   type="radio"
                   name={`mtl-ox-${rowKey}-${col.cd}`}
-                  disabled={!writeEdit}
+                  {...paperRadioLock(writeEdit)}
                   {...(row
                     ? { checked: (row.cells?.[col.cd] ?? "") === "X",
                         onChange: () => onPatch?.({ cells: { [col.cd]: "X" } }) }
@@ -529,10 +530,10 @@ function SensRow({
       ))}
       <td className="text-center ccp-pf-yn">
         <input
-          // 적합 — 헤더 문구. 칸에는 라디오만
+          // 적합 — 헤더 문구. 칸에는 라디오만. disabled 는 인쇄에서 흐려서 잠금만 건다
           type="radio"
           name={`mtl-pf-${rowKey}`}
-          disabled={!writeEdit}
+          {...paperRadioLock(writeEdit)}
           {...(row ? { checked: row.judgeCd === "P", onChange: () => onPatch?.({ judgeCd: "P" }) } : {})}
         />
       </td>
@@ -541,7 +542,7 @@ function SensRow({
           // 부적합
           type="radio"
           name={`mtl-pf-${rowKey}`}
-          disabled={!writeEdit}
+          {...paperRadioLock(writeEdit)}
           {...(row ? { checked: row.judgeCd === "F", onChange: () => onPatch?.({ judgeCd: "F" }) } : {})}
         />
       </td>

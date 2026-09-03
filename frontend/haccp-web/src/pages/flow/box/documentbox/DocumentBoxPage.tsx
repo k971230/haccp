@@ -2,14 +2,15 @@
  * DocumentBoxPage — 통합 문서함·결재 패널 (document-inbox/sign-ready/sign-ok).
  *
  * 개발자: 박승우
- * 일자: 2026-08-29
+ * 일자: 2026-09-03
  * 코멘트:
  *   1) 작성 화면과 같은 SearchArea 로 일자·문서번호·작성자를 조회하고 타입 필터를 얹는다
  *   2) 목록은 MesEditableGrid + 타입(docKind)·상태 배지. 문서함은 조회 전용이다
  *   3) 결재 모드(sign-ready·sign-ok)만 결재 툴바를 낸다. 본문 미리보기는 세 화면 공통
- *      승인 후 header.status 를 미리보기에 넘겨 같은 문서 지면 도장을 다시 읽는다
+ *      문서함은 체크한 행을 HTML A4 일괄·HWP PDF 건별로 인쇄한다
  *
  * PIPELINE[HF83] DOC 화면
+ * PIPELINE[HF187] 문서함 인쇄
  * PIPELINE[HF82, HF29, HF39, HF56, HF120] 연관 모듈
  */
 // 역할 — 상태·콜백·계산·메모
@@ -28,12 +29,18 @@ import { gridHeadClass, pageRootClass, splitPanelClass } from "@/components/layo
 import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 표준 버튼
 import { MesButton } from "@/components/ui/MesButton";
+// 역할 — 인쇄 아이콘
+import { Printer } from "lucide-react";
 // 역할 — 공통 조회 헤더
 import { defaultDocFormSearch, type DocFormSearchValues } from "@/components/form/docFormSearch";
-import { fromInputDate, toInputDate } from "@/lib/docDateTime";
+import { fromInputDate, toDisplayDateOnly, toInputDate } from "@/lib/docDateTime";
+// 역할 — 확인 토스트
+import { mesToast } from "@/shell/dialog";
 // 역할 — 오류 업무 문구
 import { mesError } from "@/shell/errors";
-// 역할 — 셸 조회 명령
+// 역할 — 공통 안내 문구
+import { MES } from "@/shell/messages";
+// 역할 — 셸 조회·인쇄 명령
 import { usePageCommands } from "@/shell/pageCommands";
 // 역할 — URL ?docIdx= 자동 선택
 import { useDocIdxQuery } from "@/hooks/useDocIdxQuery";
@@ -41,8 +48,8 @@ import type { EditableRow } from "@/types/editable";
 import {
   downloadDocumentFile,
   getDocumentDetail,
-  listApprovalHistory,
-  listApprovalInbox,
+  listSignOk,
+  listSignReady,
   listDocuments,
   type DocumentDetail,
   type DocumentListRow,
@@ -53,23 +60,32 @@ import { useCommonCodes } from "@/hooks/useCommonCodes";
 import { DocumentApprovalToolbar } from "@/components/document/DocumentApprovalToolbar";
 // 역할 — 결재 대상 문서 본문 미리보기 (HWP/HTML 분기는 이 컴포넌트가 한다)
 import { ApprovalDocumentPreview } from "@/components/document/ApprovalDocumentPreview";
+// 역할 — 미리보기 펼침·접기·높이 드래그
+import { DocumentPreviewPane } from "@/components/document/DocumentPreviewPane";
+// 역할 — 결재 단계 순서형 스테퍼 — 첨부화면과 같은 마크업
+import { ApprovalLineSteps } from "@/components/document/ApprovalLineSteps";
+// 역할 — HTML A4 일괄 인쇄 레이어
+import { DocumentPrintLayer, type HtmlPrintJob } from "@/components/document/DocumentPrintLayer";
+// 역할 — HWP PDF 건별 인쇄
+import { printHwpDocuments } from "@/components/document/printHwpDocuments";
 // 역할 — 양식 유형(HWP/HTML) 라벨·판별
 import { docKindLabel, isHwpKind } from "@/lib/docKind";
-// 역할 — 문서상태 배지 색 — 목록·상세가 같은 톤을 쓴다
-import { docStatusBadgeClass } from "@/lib/docStatus";
+// 역할 — 문서상태 배지 색·코드 — 목록·상세가 같은 톤을 쓴다
+import { DOC_STATUS, docStatusBadgeClass } from "@/lib/docStatus";
 import {
-  APPR_HIST_PERSIST_ID,
   DOC_KIND_OPTIONS,
-  buildApprColumns,
+  buildApprovalLineSteps,
   buildListColumns,
-  fileSize,
   listPersistIdOf,
   scrnCdOf,
   splitKeyOf,
-  type ApprRow,
   type DocumentBoxMode,
   type ListRow,
 } from "./DocumentBoxRule";
+// 역할 — 우측 섹션 제목·사유 칸·파일 카드 (결재첨부와 같다)
+import { DocSectionHead } from "@/components/document/DocSectionHead";
+import { DocReasonBox } from "@/components/document/DocReasonBox";
+import { DocFileList, splitFiles } from "@/components/document/DocFileList";
 
 interface DocumentBoxPageProps {
   /**
@@ -81,15 +97,15 @@ interface DocumentBoxPageProps {
 }
 
 /** 문서함에 모이는 상태 — 결재까지 끝난 문서 */
-const DONE_STATUS = "APV";
+const DONE_STATUS = DOC_STATUS.APV;
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-26
+ * 일자: 2026-09-03
  * 코멘트:
  *   1) 문서함/결재함 공통 화면을 그린다
  *   2) screenRegistry가 mode="inbox"|"approval"|"history" 로 세 화면을 구분해 마운트한다
- *   3) 조회·결재·파일 오류는 업무 문구 토스트로 처리한다
+ *   3) 조회·결재·파일·인쇄 오류는 업무 문구 토스트로 처리한다
  */
 export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps) {
   // 홈 등에서 넘긴 문서 idx — 목록 로드 후 자동 선택
@@ -97,6 +113,7 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
   const screenCd = scrnCdOf(boxMode);
   const canWrite = useAuthStore((s) => s.can(screenCd, "write"));
   const canModify = useAuthStore((s) => s.can(screenCd, "modify"));
+  const canPrint = useAuthStore((s) => s.can(screenCd, "print"));
   const asyncAct = useAsyncAction();
   const { codeMap: statusCodeMap, label: statusLabel } = useCommonCodes("DOC_STATUS");
   const { label: roleLabel } = useCommonCodes("APPR_ROLE");
@@ -117,10 +134,14 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
   const [listLoading, setListLoading] = useState(false);
   const [listActiveKey, setListActiveKey] = useState<string | null>(null);
   const [selReset, setSelReset] = useState(0);
+  // 문서함 인쇄 대상 — 체크한 행만. 행 클릭(상세)과 별개다
+  const [printSel, setPrintSel] = useState<ListRow[]>([]);
+  // HTML 일괄 인쇄 작업 — null 이면 레이어를 안 그린다
+  const [htmlPrintJobs, setHtmlPrintJobs] = useState<HtmlPrintJob[] | null>(null);
+  // HWP 인쇄 대기열 — HTML 인쇄가 끝난 뒤 이어서 찍는다
+  const hwpQueueRef = useRef<number[]>([]);
 
   const listColumns = useMemo(() => buildListColumns(statusCodeMap), [statusCodeMap]);
-
-  const apprColumns = useMemo(() => buildApprColumns(), []);
 
   const listRows = useMemo<ListRow[]>(
     () => rows.map((row) => ({
@@ -132,16 +153,17 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
     [rows],
   );
 
-  const apprRows = useMemo<ApprRow[]>(
-    () => (detail?.approvals ?? []).map((step) => ({
-      ...step,
-      _key: String(step.idx),
-      roleNm: roleLabel(step.roleCd),
-      resultNm: resultLabel(step.resultCd),
-      approverNm: step.approverNm || step.approverId || "미지정",
-    })),
+  const lineSteps = useMemo(
+    () => buildApprovalLineSteps(
+      detail?.approvals ?? [],
+      roleLabel,
+      resultLabel,
+      toDisplayDateOnly,
+    ),
     [detail?.approvals, resultLabel, roleLabel],
   );
+
+  const fileSplit = useMemo(() => splitFiles(detail?.files ?? []), [detail?.files]);
 
   /**
    * 개발자: 박승우
@@ -158,18 +180,20 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
     try {
       let list: DocumentListRow[];
       if (boxMode === "approval") {
-        // 결재함 — BE에서 내 차례만
-        list = await listApprovalInbox({
+        // 결재대기 — BE에서 내 차례만. keyword=문서번호, writerId=작성자
+        list = await listSignReady({
           fromDt: q.fromDt,
           toDt: q.toDt,
-          keyword: q.docNo.trim() || q.writer.trim() || undefined,
+          keyword: q.docNo.trim() || undefined,
+          writerId: q.writer.trim() || undefined,
         });
       } else if (boxMode === "history") {
-        // 결재 이력 — 내가 처리한 문서
-        list = await listApprovalHistory({
+        // 결재완료 — 내가 처리한 문서
+        list = await listSignOk({
           fromDt: q.fromDt,
           toDt: q.toDt,
-          keyword: q.docNo.trim() || q.writer.trim() || undefined,
+          keyword: q.docNo.trim() || undefined,
+          writerId: q.writer.trim() || undefined,
         });
       } else {
         // 문서함 — 결재까지 끝난 문서만 모아 보는 보관함이다. 진행 중 문서는 결재 화면에서 본다
@@ -185,6 +209,7 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
       if (boxMode === "inbox" && kind) next = next.filter((row) => row.docKind === kind);
       setRows(next);
       setSelReset((n) => n + 1);
+      setPrintSel([]);
     } catch (e) {
       mesError(e);
     } finally {
@@ -229,19 +254,107 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
     }
   };
 
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-09-03
+   * 코멘트:
+   *   1) 대기 중인 HWP 문서를 건별 PDF 인쇄한다
+   *   2) HTML 일괄 인쇄가 끝난 뒤, 또는 HTML 이 없을 때 바로 호출한다
+   *   3) 한 건 실패는 토스트만 하고 다음 건을 이어 간다
+   */
+  const runHwpPrintQueue = useCallback(async () => {
+    const queue = hwpQueueRef.current;
+    hwpQueueRef.current = [];
+    if (queue.length === 0) return;
+    await printHwpDocuments(queue, (error) => { mesError(error); });
+  }, []);
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-09-03
+   * 코멘트:
+   *   1) 체크한 행을 HTML 일괄 인쇄와 HWP PDF 인쇄로 나눈다
+   *   2) 문서함 인쇄 버튼·셸 print 명령이 호출한다
+   *   3) 선택이 없으면 안내만. 인쇄 중이면 useAsyncAction 이 두 번째를 막는다
+   */
+  const handlePrint = useCallback(async () => {
+    if (boxMode !== "inbox") return;
+    if (!canPrint) {
+      mesToast("인쇄 권한이 없습니다.", "warn");
+      return;
+    }
+    if (printSel.length === 0) {
+      mesToast(MES.selectRow, "warn");
+      return;
+    }
+    const htmlJobs: HtmlPrintJob[] = printSel
+      .filter((row) => !isHwpKind(row.docKind))
+      .map((row) => ({ docIdx: row.docIdx, tmplCd: row.tmplCd, tmplNm: row.tmplNm }));
+    hwpQueueRef.current = printSel.filter((row) => isHwpKind(row.docKind)).map((row) => row.docIdx);
+    if (htmlJobs.length > 0) {
+      setHtmlPrintJobs(htmlJobs);
+      return;
+    }
+    await runHwpPrintQueue();
+  }, [boxMode, canPrint, printSel, runHwpPrintQueue]);
+
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-09-03
+   * 코멘트:
+   *   1) HTML 인쇄 레이어가 끝나면 HWP 대기열을 이어 찍는다
+   *   2) DocumentPrintLayer onDone
+   *   3) 구양식을 뺀 건수는 안내만 한다
+   */
+  const handleHtmlPrintDone = useCallback((skipped: number) => {
+    setHtmlPrintJobs(null);
+    if (skipped > 0) {
+      mesToast(`미리보기가 없는 양식 ${skipped}건은 인쇄에서 뺐습니다.`, "warn");
+    }
+    void asyncAct.run(runHwpPrintQueue, "print", mesError);
+  }, [asyncAct, runHwpPrintQueue]);
+
   usePageCommands({
     // 세 화면 모두 조회 전용 — 셸 삭제 명령을 붙이지 않는다
     search: () => { void asyncAct.run(loadList, "search"); },
+    // 문서함만 인쇄 — 체크한 행. 결재 2화면은 인쇄 버튼을 내지 않는다
+    print: boxMode === "inbox" && canPrint
+      ? () => { void asyncAct.run(handlePrint, "print", mesError); }
+      : undefined,
   });
 
   return (
     <div className={pageRootClass}>
+      {htmlPrintJobs ? (
+        <DocumentPrintLayer
+          // 체크한 HTML 문서 — A4 Paper 를 쌓아 window.print()
+          jobs={htmlPrintJobs}
+          // 대화상자가 닫히면 HWP 대기열로 이어 간다
+          onDone={handleHtmlPrintDone}
+        />
+      ) : null}
       <PageCard
         search={(
           <SearchArea
             // 조회 — 검색조건으로 좌측 목록을 다시 읽는다. 이 영역은 검색 전용이다
             onSearch={() => void asyncAct.run(loadList, "search")}
-            actions={<SearchButton loading={listLoading || asyncAct.isBusy("search")} />}
+            actions={(
+              <div className="flex items-end gap-1.5">
+                {boxMode === "inbox" && canPrint ? (
+                  <MesButton
+                    // 체크한 문서 인쇄 — HTML A4 일괄, HWP 는 PDF 건별
+                    variant="excel"
+                    icon={Printer}
+                    loading={asyncAct.isBusy("print") || htmlPrintJobs != null}
+                    disabled={asyncAct.isBusy("print") || htmlPrintJobs != null}
+                    onClick={() => { void asyncAct.run(handlePrint, "print", mesError); }}
+                  >
+                    인쇄
+                  </MesButton>
+                ) : null}
+                <SearchButton loading={listLoading || asyncAct.isBusy("search")} />
+              </div>
+            )}
           >
             <SearchDateRange
               // 일자 — YYYYMMDD 상태를 input[type=date] 로 변환한 구간 검색
@@ -349,6 +462,10 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
             // 행 클릭 시 우측 상세 로드
             onActivate={(row) => { void loadDetail(row); }}
             selectionResetKey={selReset}
+            // 문서함만 체크박스 — 인쇄 대상. 결재 2화면은 단건 미리보기만
+            selectable={boxMode === "inbox"}
+            // 체크 변경 — 인쇄 대상 행. 조회 후 비운다
+            onSelectionChange={boxMode === "inbox" ? (picked) => setPrintSel(picked as ListRow[]) : undefined}
             showRowNum
           />
             </div>
@@ -364,116 +481,119 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
           ) : (
             <div className="space-y-5">
               <section className="border-b border-slate-100 pb-3">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <h2 className="text-base font-semibold text-slate-800">{detail.header.title || detail.header.tmplNm}</h2>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h2
+                        // 문서 제목은 양식명 그대로. 작성 목록 title 은 언제·무엇을 썼는지 식별용이라 여기 안 넣는다
+                        className="min-w-0 text-base font-semibold text-slate-800"
+                      >
+                        {detail.header.tmplNm || detail.header.title}
+                      </h2>
+                      <span
+                        // 제목 옆 상태 — 결재첨부와 같다. 좌측 목록 배지와 같은 색. 줄바꿈하지 않는다
+                        className={`shrink-0 rounded border px-2 py-1 text-xs font-medium ${docStatusBadgeClass(detail.header.status)}`}
+                      >
+                        {statusLabel(detail.header.status, detail.header.status ?? "")}
+                      </span>
+                    </div>
                     <p className="mt-1 text-xs text-slate-500">
                       {detail.header.docNo} · {isHwpKind(detail.header.docKind) ? "한글 문서형" : "DB 입력형"} · 작성자 {detail.header.writerNm || detail.header.writerId || "-"}
                     </p>
                   </div>
-                  <span
-                    // 좌측 목록 배지와 같은 색 — 상태를 두 곳에서 다르게 보여 주지 않는다
-                    className={`rounded border px-2 py-1 text-xs font-medium ${docStatusBadgeClass(detail.header.status)}`}
-                  >
-                    {statusLabel(detail.header.status, detail.header.status ?? "")}
-                  </span>
-                </div>
-                {boxMode !== "inbox" && (
-                  <div className="mt-3 space-y-2">
-                    <DocumentApprovalToolbar
-                      // 선택 문서 idx — 없으면 결재 버튼 숨김
-                      docIdx={detail.header.docIdx}
-                      // WRK/REQ/REV/APV/RJT
-                      status={detail.header.status}
-                      // 결재 2화면만 여기 온다 — 수정 권한이 있으면 결재한다
-                      canApprove={canWrite || canModify}
-                      // 결재완료 — 상신·취소만 / 결재대기 — 검토·승인·반려
-                      writerActionsOnly={boxMode !== "approval"}
-                      // 결재완료(sign-ok) 에서만 본인 결재를 되돌리는 「취소」를 낸다
-                      approverUndo={boxMode === "history"}
-                      // 대기 단계 역할 — 검토 단계면 「승인」이 REVIEW 를 보낸다
-                      pendingRoleCd={detail.approvals.find((step) => step.resultCd === "W")?.roleCd}
-                      // 결재 후 목록·상세 재조회
-                      onApproved={() => {
-                        void loadList();
-                        if (selected) void loadDetail(selected);
-                      }}
-                      // 헤더 배지와 같은 상태 문구를 툴바에 다시 두지 않는다
-                      showStatus={false}
-                    />
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    {boxMode !== "inbox" && (
+                      <DocumentApprovalToolbar
+                        // 선택 문서 idx — 없으면 결재 버튼 숨김
+                        docIdx={detail.header.docIdx}
+                        // WRK/REQ/APV/RJT
+                        status={detail.header.status}
+                        // 결재 2화면만 여기 온다 — 수정 권한이 있으면 결재한다
+                        canApprove={canWrite || canModify}
+                        // 이 화면은 작성자가 아니다 — 전송·전송취소는 결재첨부 몫
+                        writerActionsOnly={false}
+                        // 결재완료(sign-ok) 에서만 본인 결재를 되돌리는 「취소」를 낸다
+                        approverUndo={boxMode === "history"}
+                        // 결재 후 목록·상세 재조회
+                        onApproved={() => {
+                          void loadList();
+                          if (selected) void loadDetail(selected);
+                        }}
+                        // 헤더 배지와 같은 상태 문구를 툴바에 다시 두지 않는다
+                        showStatus={false}
+                      />
+                    )}
                   </div>
-                )}
+                </div>
               </section>
 
-              {(
-                <section className="flex min-h-0 flex-col overflow-hidden rounded border border-slate-100">
-                  <div className={gridHeadClass}>
-                    {/* 보이는 그리드명 — 본문을 확인하는 자리 */}
-                    <b>문서 미리보기</b>
-                  </div>
-                  {/* rhwp CanvasView 는 부모 overflow-auto 스크롤에 빈 페이지 0 을 그린다. 호스트 안에서만 스크롤한다 */}
-                  <div className="h-[32rem] min-h-0 overflow-hidden">
-                    <ApprovalDocumentPreview
-                      // 선택 문서 1건만 그린다 — 목록 전체를 미리 그리지 않는다
-                      docIdx={detail.header.docIdx}
-                      tmplCd={detail.header.tmplCd}
-                      tmplNm={detail.header.tmplNm}
-                      // hwp:rhwp 본문 · html:작성 지면
-                      docKind={detail.header.docKind}
-                      // HWP 본문(HWP_SRC)을 찾는 데 쓴다
-                      files={detail.files}
-                      // 문서 상태 — 승인 직후 같은 docIdx 여도 지면 도장을 다시 읽는다
-                      status={detail.header.status}
-                    />
-                  </div>
-                </section>
-              )}
+              <DocumentPreviewPane
+                // HWP 는 호스트 높이 고정, HTML 은 원본 길이만큼 펼친다
+                kind={isHwpKind(detail.header.docKind) ? "hwp" : "html"}
+              >
+                <ApprovalDocumentPreview
+                  // 선택 문서 1건만 그린다 — 목록 전체를 미리 그리지 않는다
+                  docIdx={detail.header.docIdx}
+                  tmplCd={detail.header.tmplCd}
+                  tmplNm={detail.header.tmplNm}
+                  // hwp:rhwp 본문 · html:작성 지면
+                  docKind={detail.header.docKind}
+                  // HWP 본문(HWP_SRC)을 찾는 데 쓴다
+                  files={detail.files}
+                  // 문서 상태 — 승인 직후 같은 docIdx 여도 지면 도장을 다시 읽는다
+                  status={detail.header.status}
+                />
+              </DocumentPreviewPane>
 
-              <section className="flex min-h-0 flex-col overflow-hidden rounded border border-slate-100">
-                <div className={gridHeadClass}>
-                  {/* 보이는 그리드명 — title prop과 동일 */}
-                  <b>결재 이력</b>
-                </div>
-                <div className="h-48 min-h-0 overflow-hidden">
-                  <MesEditableGrid
-                    // 결재 이력 그리드 설정 키
-                    persistId={APPR_HIST_PERSIST_ID}
-                    // 선택 문서 결재 단계 행
-                    rows={apprRows as EditableRow<ApprRow>[]}
-                    // 단계·담당자·결과·의견
-                    columns={apprColumns}
-                    // 읽기 전용
-                    editable={false}
-                    // 소형 이력 표
-                    title="결재 이력"
-                    // 고정 높이 — 상세 패널 내부
-                    height="100%"
-                    showRowNum
-                  />
-                </div>
+              <ApprovalLineSteps
+                // 실제 결재 단계 — 첨부화면과 같은 점·선 스테퍼
+                steps={lineSteps}
+              />
+
+              <section>
+                <DocSectionHead title="원본 파일" />
+                <DocFileList
+                  // 최신 HWP_SRC 1건 + PDF — 다운로드만
+                  files={fileSplit.originals}
+                  onDownload={(fileIdx, name) => void handleDownload(fileIdx, name)}
+                  emptyHint={
+                    isHwpKind(detail.header.docKind)
+                      ? "원본 파일이 없습니다."
+                      : "HTML 지면 문서 — 미리보기에서 확인"
+                  }
+                />
               </section>
 
               <section>
-                <h3 className="mb-2 text-sm font-semibold text-slate-700">첨부 파일</h3>
-                {detail.files.length === 0 ? (
-                  <p className="text-xs text-slate-400">첨부 파일이 없습니다.</p>
-                ) : (
-                  <ul className="space-y-1">
-                    {detail.files.map((file) => (
-                      <li key={file.idx} className="flex items-center justify-between gap-2 rounded border border-slate-100 px-2 py-1.5 text-xs">
-                        <span>{file.fileNm} <span className="text-slate-400">({fileSize(file.fileSize)})</span></span>
-                        <MesButton
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => void handleDownload(file.idx, file.fileNm)}
-                        >
-                          다운로드
-                        </MesButton>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <DocSectionHead title="첨부 파일" />
+                <DocFileList
+                  // 사용자 첨부(ATTACH·PHOTO)
+                  files={fileSplit.attachments}
+                  onDownload={(fileIdx, name) => void handleDownload(fileIdx, name)}
+                  emptyHint="첨부 파일이 없습니다."
+                />
               </section>
+
+              {(detail.header.rejectReason ?? "").trim() ? (
+                <section>
+                  <DocSectionHead
+                    // 반려는 예외 상태 — 파란 배지와 구분해 빨강
+                    title="반려 사유"
+                    danger
+                  />
+                  <DocReasonBox value={(detail.header.rejectReason ?? "").trim()} />
+                </section>
+              ) : null}
+
+              {(detail.header.cancelReason ?? "").trim() ? (
+                <section>
+                  <DocSectionHead
+                    title="결재 취소 사유"
+                    danger
+                  />
+                  <DocReasonBox value={(detail.header.cancelReason ?? "").trim()} />
+                </section>
+              ) : null}
             </div>
           )}
               </div>
