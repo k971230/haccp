@@ -15,22 +15,34 @@
 export type StatusBadgeTone = "blue" | "amber" | "green" | "gray" | "red" | "purple" | "dash";
 
 /**
- * 문서상태 배지 색 — WRK/REQ/REV/APV/RJT.
- * 라벨은 DOC_STATUS 공통코드(작성중·검토요청 등)가 정한다.
+ * 문서상태 코드 — tbl_code.DOC_STATUS 와 같다. 화면 비교는 이 상수를 쓴다.
+ * TMP 는 시드에 없다. 옛 행만 작성중(WRK)과 같이 본다.
+ */
+export const DOC_STATUS = {
+  WRK: "WRK",
+  REQ: "REQ",
+  APV: "APV",
+  RJT: "RJT",
+  TMP: "TMP",
+} as const;
+
+export type DocStatus = (typeof DOC_STATUS)[keyof typeof DOC_STATUS];
+
+/**
+ * 문서상태 배지 색 — WRK/REQ/APV/RJT.
+ * 라벨은 DOC_STATUS 공통코드(작성중·승인요청 등)가 정한다.
  */
 export const DOC_STATUS_BADGE: Record<string, StatusBadgeTone> = {
   // 작성중 — 아직 손댈 수 있다
-  WRK: "red",
+  [DOC_STATUS.WRK]: "red",
   // 구 임시저장 — 작성중과 같이 본다
-  TMP: "red",
+  [DOC_STATUS.TMP]: "red",
   // 승인요청 — 결재가 돌고 있다
-  REQ: "blue",
-  // 검토완료 — 다음이 승인이다
-  REV: "amber",
+  [DOC_STATUS.REQ]: "blue",
   // 승인완료 — 확정된 기록
-  APV: "green",
+  [DOC_STATUS.APV]: "green",
   // 반려 — 작성중(빨강)과 겹치지 않게 둔다
-  RJT: "purple",
+  [DOC_STATUS.RJT]: "purple",
 };
 
 /**
@@ -56,7 +68,6 @@ export const TASK_STATUS_BADGE: Record<string, StatusBadgeTone> = {
    */
   WRK: "blue",
   REQ: "amber",
-  REV: "amber",
   RJT: "red",
 };
 
@@ -82,10 +93,10 @@ export const CA_STATUS_BADGE: Record<string, StatusBadgeTone> = {
  *   3) 색 의미: 빨강 작성중 · 파랑 진행 · 노랑 중간단계 · 초록 완료 · 보라 반려
  */
 export function docStatusBadgeClass(
-  // 문서 상태 WRK/REQ/REV/APV/RJT
+  // 문서 상태 WRK/REQ/APV/RJT
   status?: string | null,
 ): string {
-  const tone = DOC_STATUS_BADGE[status ?? "WRK"] ?? "gray";
+  const tone = DOC_STATUS_BADGE[status ?? DOC_STATUS.WRK] ?? "gray";
   // 그리드 배지와 같은 색 계열 — .mes-* 가 아닌 곳이라 토큰 클래스로 맞춘다
   const byTone: Record<string, string> = {
     gray: "bg-slate-100 text-slate-700 border-slate-200",

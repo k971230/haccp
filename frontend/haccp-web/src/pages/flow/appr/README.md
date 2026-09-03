@@ -11,7 +11,7 @@ URL `/flow/appr`. 문서 흐름의 결재 구간 3화면이다.
 |---|---|---|---|
 | `attach` | `/flow/appr/attach` | 내가 작성한 문서 | 첨부 · 비고 · 진행상태 · **전송 / 전송취소** |
 | `sign-ready` | `/flow/appr/sign-ready` | 내 차례인 문서 | 본문 확인 → **승인 / 취소 / 반려** |
-| `sign-ok` | `/flow/appr/sign-ok` | 내가 처리한 문서 | 본문 확인 → **취소** (사유 선택) |
+| `sign-ok` | `/flow/appr/sign-ok` | 내가 처리한 문서 | 본문 확인 → **취소** (사유 팝업) |
 
 ## 화면마다 버튼이 다른 이유
 
@@ -19,9 +19,7 @@ URL `/flow/appr`. 문서 흐름의 결재 구간 3화면이다.
 **저장·작성화면·첨부 미리보기·관련 문서·상신취소를 두지 않는다**.
 문서를 고치는 일은 작성 화면과 `attach` 의 몫이다.
 
-검토·승인은 **버튼 하나(「승인」)** 로 합쳤다. 결재선에 검토 단계가 있으면 그 단계에서
-`REVIEW` 를, 승인 단계에서 `APPROVE` 를 보낸다(`pendingRoleCd`).
-결재자에게 「검토완료」와 「승인」을 따로 보여 주면 무엇을 눌러야 하는지 알 수 없다.
+결재 대기 화면의 「승인」은 항상 `APPROVE` 를 보낸다. 검토 단계는 없다.
 
 ## 폴더
 
@@ -36,7 +34,19 @@ DB 는 `db_sasshaccp/01_sp.sql` 이 화면·권한·메뉴를 같이 옮긴다.
 
 **그리드 pref 키(`doc-approval-inbox`·`doc-approval-history`)는 바꾸지 않았다** —
 바꾸면 사용자가 저장해 둔 열 너비가 전부 초기화된다.
-API 경로(`/api/v1/docs/documents/approval-inbox`)도 그대로다. 화면코드가 아니라 조회 종류 이름이다.
+
+## 화면 ↔ API ↔ SP (2026-09-03)
+
+| 화면 | API | SP |
+|---|---|---|
+| attach | `GET /api/v1/docs/documents/list` (writerId=본인) · `PUT /approval` REQUEST/CANCEL | `sp_tbl_document_r_000` · `sp_tbl_document_approval_c_000` |
+| sign-ready | `GET /api/v1/docs/documents/sign-ready` · `PUT /approval` APPROVE/REJECT | `sp_sign_ready_r_000` |
+| sign-ok | `GET /api/v1/docs/documents/sign-ok` · `PUT /approval` UNDO | `sp_sign_ok_r_000` |
+
+상태: WRK --REQUEST--> REQ --APPROVE--> APV / --REJECT--> RJT. REQ --CANCEL--> WRK. APV --UNDO--> REQ.
+
+전송·전송취소·승인·반려·취소 버튼은 `DocumentApprovalToolbar` 한 곳이다.
+결재첨부는 `writerActionsOnly` + 전송 전 `validateForTransfer`.
 
 ## 문서 본문 미리보기
 
@@ -45,8 +55,11 @@ API 경로(`/api/v1/docs/documents/approval-inbox`)도 그대로다. 화면코�
 ```
 ApprovalDocumentPreview
  ├─ HwpDocumentPreview  → HwpEditorPane (작성 화면과 같은 rhwp 패널)
- └─ HtmlDocumentPreview → documentPreviewRegistry → 해당 Paper (읽기전용)
+ └─ HtmlDocumentPreview → documentPreviewRegistry → 해당 Paper (읽기전용, A4 폭)
 ```
+
+세 화면(문서함·결재대기·결재완료) 공통으로 `DocumentPreviewPane` 이 기본 펼침·접기·높이 드래그를 맡는다.
+결재 단계는 그리드가 아니라 첨부화면과 같은 가로 스테퍼(`ApprovalLineSteps`)다.
 
 - 지면 값은 양식의 현재 모습이 아니라 **문서가 가진 항목 사본**이다.
   상세 SP 가 `tbl_*_item` 에서 읽으므로 나중에 양식을 고쳐도 상신 당시 지면이 유지된다.
@@ -57,13 +70,13 @@ ApprovalDocumentPreview
 
 ## 결재 상태·행위
 
-`DOC_STATUS` — `WRK` 작성중 · `REQ` 검토요청 · `REV` 검토완료 · `APV` 승인완료 · `RJT` 반려
+`DOC_STATUS` — `WRK` 작성중 · `REQ` 승인요청 · `APV` 승인완료 · `RJT` 반려
 
 | 행위 | SP | 누가 | 조건 |
 |---|---|---|---|
 | REQUEST 전송 | `sp_tbl_document_approval_c_000` | 작성자 | `WRK`·`RJT` |
-| CANCEL 전송취소 | 〃 | 작성자 | `REQ` + 검토·승인 서명 전 |
-| REVIEW·APPROVE (화면은 「승인」) | 〃 | 지정 결재자 | 본인 차례 |
+| CANCEL 전송취소 | 〃 | 작성자 | `REQ` + 승인 서명 전 |
+| APPROVE 승인 | 〃 | 지정 결재자 | 본인 차례 |
 | REJECT 반려 | 〃 | 지정 결재자 | 사유 필수 |
 | **UNDO 결재취소** | `sp_tbl_document_approval_u_000` | 결재자 본인 | 뒷 단계가 아직 미처리 |
 

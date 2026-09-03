@@ -22,6 +22,7 @@ import {
   openScreen,
   resetDocuments,
   rowOfDoc,
+  liveHtmlChkTmpl,
   loginCoCd,
   sqlLit,
   visibleRows,
@@ -64,7 +65,20 @@ async function actOnApproval(page: Page, action: "승인" | "반려", reason?: s
   // 목록 열 구성·열린 탭 수에 안 매이게 문서 idx 로 행을 집는다
   await rowOfDoc(page, dbOne("SELECT idx FROM tbl_document ORDER BY idx DESC LIMIT 1")).click();
   await expect(page.getByText("문서 미리보기")).toBeVisible({ timeout: 30_000 });
-  if (reason) await page.getByPlaceholder("반려 사유").fill(reason);
+  if (action === "반려") {
+    await btn(page, "반려").click();
+    const dlg = page.getByRole("dialog", { name: "반려" });
+    await expect(dlg).toBeVisible({ timeout: 10_000 });
+    if (reason) await dlg.getByPlaceholder("반려 사유를 입력하세요").fill(reason);
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/docs/documents/approval") && r.request().method() === "PUT",
+        { timeout: 30_000 },
+      ),
+      dlg.getByRole("button", { name: "확인", exact: true }).click(),
+    ]);
+    return;
+  }
   await btn(page, action).click();
   await Promise.all([
     page.waitForResponse(
@@ -173,13 +187,13 @@ test.describe.serial("통합 시나리오", () => {
       "반려 문서를 다시 전송했는데 상태가 안 올라갔다",
     ).toBe("REQ");
     /*
-     * 재상신하면 앞선 반려 사유는 지워져야 한다.
-     * 남아 있으면 결재자가 이번 문서에 대한 지적인 줄 알고 판단한다.
+     * 재상신해도 앞선 반려 사유는 남는다. 줄마다 한 건, 최신이 위다.
+     * 지워지면 왜 돌려보냈는지 작성자가 못 본다.
      */
     expect(
       dbOne(`SELECT COALESCE(reject_reason,'') FROM tbl_document WHERE idx=${idx}`),
-      "재상신했는데 이전 반려 사유가 남아 있다",
-    ).toBe("");
+      "재상신했는데 이전 반려 사유가 지워졌다",
+    ).toBe("시나리오 반려");
 
     await actOnApproval(page, "승인");
     expect(dbOne(`SELECT status FROM tbl_document WHERE idx=${idx}`)).toBe("APV");
@@ -231,7 +245,7 @@ test.describe.serial("통합 시나리오", () => {
   });
 
   test("E. 주기 변경 — 주기를 바꾸면 예정일이 따라 바뀐다", async ({ page, request }) => {
-    const TMPL = "html_ccp_chk_001";
+    const TMPL = liveHtmlChkTmpl();
     const token = await tokenOf(request);
     const co = sqlLit(loginCoCd());
     const saved = dbOne(

@@ -207,7 +207,7 @@ bash scripts/pre-commit-check-secrets.sh
 **배포 전 체크리스트: [`DEPLOY.md`](DEPLOY.md)** — Build Now 하나만 누르면 되는 상태인지,
 DB 는 어떻게 반영하는지가 여기 있다.
 
-- 이미지·compose·Nginx: [`DEPLOY.md`](DEPLOY.md) §8~§10 · [`운영.md`](운영.md)
+- 이미지·compose·Nginx: [`docker-compose.prod.yml`](docker-compose.prod.yml) · [`nginx/`](nginx/) · 절차는 [`DEPLOY.md`](DEPLOY.md) · [`운영.md`](운영.md)
 - Job: `haccp-deploy` (`Jenkinsfile`) · `haccp-audit` (`Jenkinsfile.audit`)
 - 트리거(현재): localhost Jenkins → **Build Now** (webhook 없음). 설치는 [`환경구축.md`](환경구축.md) §11
 - 운영 Path: `/haccp/` · 로그아웃 URL은 `/haccp/login`

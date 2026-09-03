@@ -34,6 +34,7 @@ import {
   htmlFormPaperEdit,
   patchHtmlFormItem,
   patchHtmlFormItemNms,
+  paperRadioLock,
   useJudgePfLabels,
   type HtmlFormLogRow,
   type HtmlFormPaperProps,
@@ -389,10 +390,10 @@ function LogPreviewRow({
       </td>
       <td className="text-center ccp-pf-yn">
         <input
-          // 적합 — 헤더 문구. 칸에는 라디오만
+          // 적합 — 헤더 문구. 칸에는 라디오만. disabled 는 인쇄에서 흐려서 잠금만 건다
           type="radio"
           name={`pkg-pf-${rowKey}`}
-          disabled={!writeEdit}
+          {...paperRadioLock(writeEdit)}
           {...(row ? { checked: row.judgeCd === "P", onChange: () => onPatch?.({ judgeCd: "P" }) } : {})}
         />
       </td>
@@ -401,7 +402,7 @@ function LogPreviewRow({
           // 부적합
           type="radio"
           name={`pkg-pf-${rowKey}`}
-          disabled={!writeEdit}
+          {...paperRadioLock(writeEdit)}
           {...(row ? { checked: row.judgeCd === "F", onChange: () => onPatch?.({ judgeCd: "F" }) } : {})}
         />
       </td>

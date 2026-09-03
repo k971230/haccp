@@ -4,19 +4,19 @@
 
 ```
 com/haccp/docs/
- ├ hwp/                      사용양식 관리 — URL /api/v1/docs/hwp/hwp-template-management
- ├ ccp/                      CCP 작성
- ├ prp/                      PRP 위생·설비·이력
- ├ sch/                      문서주기 — URL /api/v1/docs/sch/schedule-cycle-management
- ├ html/htmltemplate         HTML양식 원본 Controller·Service — URL /api/v1/docs/html-form/{scrnCd} 5화면
- ├ html/ccpverifytemplate    CCP 검증점검 양식 Mapper (Controller는 htmltemplate 공유)
- ├ html/ccppkgtemplate       CCP-1B 포장일지 Mapper
- ├ html/ccphtgtemplate       CCP-2B 가열일지 Mapper
- ├ html/ccpmtltemplate       CCP-3P 금속검출일지 Mapper
- ├ html/hygprocess           공정점검 작성 — URL /api/v1/docs/prp/hygiene-process-check
- ├ document/                 문서함·결재·첨부 — URL /api/v1/docs/documents
- └ template/                 양식 파일 저장 — URL /api/v1/docs/templates
+ ├ hwp/                          사용양식 관리 — URL /api/v1/docs/hwp/hwp-template-management
+ ├ sch/                          문서주기 — URL /api/v1/docs/sch/schedule-cycle-management
+ ├ htmlform/htmltemplate         HTML양식 원본 Controller·Service — URL /api/v1/docs/html-form/{scrnCd} 5화면
+ ├ htmlform/ccpverifytemplate    CCP 검증점검 양식 Mapper (Controller는 htmltemplate 공유)
+ ├ htmlform/ccppkgtemplate       CCP-1B 포장일지 Mapper
+ ├ htmlform/ccphtgtemplate       CCP-2B 가열일지 Mapper
+ ├ htmlform/ccpmtltemplate       CCP-3P 금속검출일지 Mapper
+ ├ documents/                    문서함·결재·첨부 — URL /api/v1/docs/documents
+ └ templates/                    양식 파일 저장 — URL /api/v1/docs/templates
 ```
+
+**패키지·XML 폴더는 `htmlform`, HTTP 경로만 `html-form` 이다.**
+작성 화면은 `com.haccp.draft` 다 — 여기가 아니다.
 
 XML `resources/mapper/docs/{같은 폴더명}/`. 폴더 이동만으로 HTTP 경로를 바꾸지 않는다.
 

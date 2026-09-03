@@ -51,6 +51,29 @@ export function loginCoCd(): string {
 }
 
 /**
+ * 개발자: 박승우
+ * 일자: 2026-09-03
+ * 코멘트:
+ *   1) 문서주기 E2E 가 쓸 CCP 검증점검 양식 — 지면 버전이 있는 것만
+ *   2) 시드 고아 코드(html_ccp_chk_001 같은 카탈로그만 있는 행)를 박으면 저장은 되고 양식관리에는 없다
+ *   3) 로그인 회사에 버전이 없으면 시험을 멈춘다. 없는 코드를 만들어 넣지 않는다
+ */
+export function liveHtmlChkTmpl(): string {
+  const co = sqlLit(loginCoCd());
+  const cd = dbOne(
+    `SELECT v.tmpl_cd
+       FROM tbl_html_ccp_chk_ver v
+       JOIN tbl_company_template ct
+         ON ct.co_cd = v.co_cd AND ct.tmpl_cd = v.tmpl_cd
+      WHERE v.co_cd='${co}' AND v.use_yn='Y'
+      ORDER BY v.tmpl_cd
+      LIMIT 1`,
+  );
+  if (!cd) throw new Error("로그인 회사에 버전이 있는 CCP 검증점검 양식이 없다");
+  return cd;
+}
+
+/**
  * 시드 원본 회사 — 새 업체가 복사해 오는 카탈로그.
  * E2E_SRC_CO 가 있으면 그걸 쓰고, 없으면 표에서 가장 앞 업체를 읽는다. 코드에 회사코드를 박지 않는다.
  */

@@ -15,4 +15,4 @@ URL은 `/api/v1/sys/code/approval-line-management/*` 이다.
 | POST | `/api/v1/sys/code/approval-line-management/validate-delete` | `validateDelete` | `sp_tbl_approval_line_delete_blocker_r_000` | 위 + 참조 |
 | POST | `/api/v1/sys/code/approval-line-management/delete` | `delete` | `sp_tbl_approval_line_d_000` | 위 |
 
-왼쪽 삭제 버튼이 validate-delete → delete 를 탄다. 검토(REVIEW) 기본 `use_yn=N`. 상신은 사용(Y) 단계만 스냅샷한다.
+왼쪽 삭제 버튼이 validate-delete → delete 를 탄다. 단계는 작성·승인 2단. 상신은 사용(Y) 단계만 스냅샷한다.

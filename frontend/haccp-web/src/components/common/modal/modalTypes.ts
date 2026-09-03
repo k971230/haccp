@@ -2,11 +2,11 @@
  * modalTypes — 전역 공통 모달의 종류·props 계약.
  *
  * 개발자: 박승우
- * 일자: 2026-08-12
+ * 일자: 2026-09-03
  * 코멘트:
  *   1) modalStore와 GlobalModal, 각 모달 컴포넌트가 같은 타입을 보게 해 순환 import를 막는다
  *   2) 새 공통 모달을 추가하면 ModalPropsMap에 한 줄 넣고 GlobalModal 레지스트리에 등록한다
- *   3) 여기에는 타입과 상수만 둔다 — 렌더 로직은 각 모달 파일 책임이다
+ *   3) ReasonAction 은 반려·결재취소처럼 사유가 필요한 행위가 같이 쓴다
  *
  * PIPELINE[HF99] 공통 모달 타입
  */
@@ -46,11 +46,31 @@ export interface UserSignModalProps {
 /** 비밀번호 변경 모달 — 푸터에서 연다. 대상은 JWT 본인 */
 export type PasswordChangeModalProps = Record<string, never>;
 
+/**
+ * 사유 입력 모달 — 반려·결재취소처럼 사유가 필요한 행위.
+ * 화면은 제목·확인 문구·콜백만 넘긴다. 팝업 JSX 는 공유한다.
+ */
+export interface ReasonActionModalProps {
+  /** 팝업 제목 — 「반려」·「결재 취소」 */
+  title: string;
+  /** 확인 버튼 글자 — 기본 「확인」. 헤더의 취소·반려와 겹치지 않는다 */
+  confirmLabel?: string;
+  /** 확인 버튼 색 — 반려는 danger, 취소는 search */
+  confirmVariant?: "search" | "danger" | "save" | "primary";
+  /** textarea 안내 */
+  placeholder?: string;
+  /** 글자 상한 — 문서 사유 컬럼 500 */
+  maxLength?: number;
+  /** 확인 — 사유를 넘긴다. 성공하면 팝업을 닫는다 */
+  onConfirm: (reason: string) => void | Promise<void>;
+}
+
 /** 모달 종류 → props 대응표 — 여기에 없는 종류는 열 수 없다 */
 export interface ModalPropsMap {
   CodeLookup: CodeLookupModalProps;
   UserSign: UserSignModalProps;
   PasswordChange: PasswordChangeModalProps;
+  ReasonAction: ReasonActionModalProps;
 }
 
 /** 열 수 있는 공통 모달 종류 */

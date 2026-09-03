@@ -1,6 +1,6 @@
 # com.haccp.sys.code.commoncode — 공통코드 관리
 
-화면코드 `common-code-management` · XML `resources/mapper/sys/code/commoncode/CommonCodeMapper.xml` · SP `db_sasshaccp/02_seed.sql`
+화면코드 `common-code-management` · XML `resources/mapper/sys/code/commoncode/CommonCodeMapper.xml` · SP `db_sasshaccp/01_sp.sql`
 
 ## 엔드포인트
 

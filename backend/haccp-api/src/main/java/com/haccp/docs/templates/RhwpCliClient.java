@@ -2,9 +2,9 @@
  * RhwpCliClient — 로컬 rhwp CLI로 HWP/HWPX를 PDF로 내보낸다.
  *
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-09-03
  * 코멘트:
- *   1) APP_RHWP_CLI_PATH의 Windows/Linux 바이너리를 ProcessBuilder로 호출한다
+ *   1) APP_RHWP_CLI_PATH가 파일이면 그걸 쓰고, 없거나 비면 Docker(/opt/rhwp/rhwp)·tools/rhwp 를 찾는다
  *   2) Nanum 계열 fallback·font-path는 값이 있을 때만 붙여 폰트 없는 환경에서도 안전하게 동작한다
  *   3) 타임아웃·작업 디렉터리는 env만 사용하고 소스에 초·경로 매직 넘버를 두지 않는다
  *
@@ -53,7 +53,7 @@ public class RhwpCliClient {
     private final Path workRoot;
 
     public RhwpCliClient(
-            // APP_RHWP_CLI_PATH — tools/rhwp/rhwp/rhwp.exe 또는 linux 바이너리
+            // APP_RHWP_CLI_PATH — 비우면 Docker /opt/rhwp/rhwp 또는 저장소 tools/rhwp 를 찾는다
             @Value("${app.rhwp.cli-path:}") String cliPath,
             // APP_RHWP_TIMEOUT_SECONDS — 변환 프로세스 대기 한도
             @Value("${app.rhwp.timeout-seconds}") int timeoutSeconds,
@@ -68,7 +68,15 @@ public class RhwpCliClient {
             // APP_RHWP_WORK_DIR — 비우면 java.io.tmpdir/haccp-rhwp
             @Value("${app.rhwp.work-dir:}") String workDir
     ) {
-        this.cliPath = cliPath == null ? "" : cliPath.trim();
+        // 설정된 경로가 없거나 파일이 아닐 때(= 로컬·Docker env 가 서로 다름) 잘 알려진 위치를 본다
+        this.cliPath = resolveCliPath(
+                cliPath,
+                Path.of(System.getProperty("user.dir", ".")).toAbsolutePath().normalize()
+        );
+        // 경로가 잡혔을 때(= 로컬 exe 또는 컨테이너 바이너리) 기동 로그에 절대경로를 남긴다
+        if (!this.cliPath.isBlank()) {
+            log.info("rhwp CLI: {}", this.cliPath);
+        }
         this.timeoutSeconds = timeoutSeconds;
         this.fontPath = fontPath == null ? "" : fontPath.trim();
         this.fallbackSerif = fallbackSerif == null ? "" : fallbackSerif.trim();
@@ -78,6 +86,42 @@ public class RhwpCliClient {
         this.workRoot = workDir == null || workDir.isBlank()
                 ? Path.of(System.getProperty("java.io.tmpdir"), "haccp-rhwp").toAbsolutePath().normalize()
                 : Path.of(workDir).toAbsolutePath().normalize();
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) env 경로가 실제 파일이면 그걸 우선한다 — Docker .env.docker 의 /opt/rhwp/rhwp
+     *   2) 없거나 비면 컨테이너 기본 경로와 저장소 tools/rhwp (exe·확장자 없는 리눅스 바이너리)를 본다
+     *   3) 후보가 하나도 없으면 원래 문자열을 그대로 돌려 호출 시점에 업무 오류를 낸다
+     */
+    static String resolveCliPath(
+            // APP_RHWP_CLI_PATH 원문 — 공백이면 후보만 본다
+            String configured,
+            // JVM user.dir — IntelliJ 는 backend/haccp-api, mvnw 루트 실행이면 저장소 루트
+            Path cwd
+    ) {
+        List<Path> candidates = new ArrayList<>();
+        if (configured != null && !configured.isBlank()) {
+            Path given = Path.of(configured.trim());
+            // 상대경로일 때(= .env 의 ../../tools/...) 기동 디렉터리 기준으로 붙인다
+            candidates.add(given.isAbsolute() ? given : cwd.resolve(given));
+        }
+        candidates.add(Path.of("/opt/rhwp/rhwp"));
+        Path dir = cwd.toAbsolutePath().normalize();
+        for (int i = 0; i < 6 && dir != null; i++) {
+            candidates.add(dir.resolve("tools/rhwp/rhwp.exe"));
+            candidates.add(dir.resolve("tools/rhwp/rhwp"));
+            dir = dir.getParent();
+        }
+        for (Path c : candidates) {
+            Path abs = c.toAbsolutePath().normalize();
+            if (Files.isRegularFile(abs)) {
+                return abs.toString();
+            }
+        }
+        return configured == null ? "" : configured.trim();
     }
 
     /**

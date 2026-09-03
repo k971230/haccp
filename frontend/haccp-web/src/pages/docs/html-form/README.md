@@ -1,4 +1,4 @@
-# pages/docs/html
+# pages/docs/html-form
 
 화면 1개 = 폴더 1개.
 
@@ -9,7 +9,8 @@
 | ccppkgtemplate | ccp-pkg-template | 중요관리점(CCP-1B) 모니터링일지 양식관리(`html_ccp_pkg_NNN`) |
 | ccphtgtemplate | ccp-htg-template | 중요관리점(CCP-2B) 모니터링일지 양식관리(`html_ccp_htg_NNN`) |
 | ccpmtltemplate | ccp-mtl-template | 중요관리점(CCP-3P) 모니터링일지 양식관리(`html_ccp_mtl_NNN`) |
-| hygprocess | hygiene-process-check | 공정점검표 작성 |
+
+작성 화면은 여기가 아니라 `pages/draft/html/`(`hyg-process`·`ccp-verify`) 다.
 
 공통 프레임은 `HtmlFormTemplatePage`(좌우 50:50) · `htmlFormTemplateShared.ts`.
 좌측 사용여부는 공통코드 `use-yn`(사용/미사용). 표준 `*_000`은 항상 미사용·잠금. 신규는 기본 사용, 수정 가능. 값은 `tbl_company_template.use_yn`이라 문서주기 좌측과 같다.

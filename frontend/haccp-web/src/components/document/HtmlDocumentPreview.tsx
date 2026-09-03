@@ -35,7 +35,7 @@ export interface HtmlDocumentPreviewProps {
   tmplCd: string;
   // 양식명 — 지면 제목. 없으면 Rule 기본 제목
   tmplNm?: string | null;
-  // 문서 상태 WRK/REQ/REV/APV/RJT — 같은 문서를 승인해 docIdx 가 그대로여도 지면을 다시 읽는다
+  // 문서 상태 WRK/REQ/APV/RJT — 같은 문서를 승인해 docIdx 가 그대로여도 지면을 다시 읽는다
   status?: string | null;
 }
 
@@ -93,8 +93,8 @@ export function HtmlDocumentPreview({ docIdx, tmplCd, tmplNm, status }: HtmlDocu
     <Paper
       // 실제 작성 데이터 지면 — 기준관리(template)가 아니다
       mode="write"
-      // 패널 채움 — 인쇄는 브라우저 인쇄에 맡긴다
-      variant="fill"
+      // A4 폭 원본 — 화면에서 일정한 크기. 인쇄는 DocumentPrintLayer 가 따로 찍는다
+      variant="a4"
       // 결재자는 문서를 고칠 수 없다
       locked
       editable={false}

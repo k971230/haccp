@@ -112,7 +112,7 @@ app:
     # true일 때(= 새 배포본 반영) 기존 대상 파일을 교체하고, 기본 false는 운영 원본을 보존한다
     import-overwrite: ${APP_TEMPLATE_IMPORT_OVERWRITE:false}
   rhwp:
-    # 로컬 rhwp CLI 경로 — Windows rhwp.exe 또는 Linux rhwp 바이너리. 비우면 PDF 내보내기 API가 업무 오류를 반환한다
+    # 로컬 rhwp CLI 경로 — 비우면 /opt/rhwp/rhwp 또는 tools/rhwp 를 찾는다. 둘 다 없으면 PDF API가 업무 오류를 반환한다
     cli-path: ${APP_RHWP_CLI_PATH:}
     # CLI 프로세스 최대 대기(초) — FE httpFile·Nginx Grace보다 짧게 둔다
     timeout-seconds: ${APP_RHWP_TIMEOUT_SECONDS:110}

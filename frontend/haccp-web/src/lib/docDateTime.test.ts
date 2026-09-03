@@ -9,7 +9,7 @@
  *   3) 되돌리기(fromInputDate)까지 왕복으로 확인한다
  */
 import { describe, expect, it } from "vitest";
-import { fromInputDate, joinHm, toInputDate, toDisplayDate } from "./docDateTime";
+import { fromInputDate, joinHm, toInputDate, toDisplayDate, toDisplayDateOnly } from "./docDateTime";
 
 describe("toInputDate — 저장형을 달력 입력값으로", () => {
   it("정상 날짜를 바꾼다", () => {
@@ -54,6 +54,17 @@ describe("toDisplayDate — 화면 표시", () => {
   it("읽을 수 없으면 대시 한 글자", () => {
     expect(toDisplayDate("20240082")).toBe("-");
     expect(toDisplayDate("")).toBe("-");
+  });
+});
+
+describe("toDisplayDateOnly — 타임스탬프에서 날짜만", () => {
+  it("시각을 버린다", () => {
+    expect(toDisplayDateOnly("2026-09-03T16:26:00")).toBe("2026-09-03");
+  });
+
+  it("빈 값·해석 실패는 대시", () => {
+    expect(toDisplayDateOnly("")).toBe("-");
+    expect(toDisplayDateOnly("not-a-date")).toBe("-");
   });
 });
 

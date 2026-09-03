@@ -53,6 +53,11 @@ test.describe.serial("결재 첨부 — 전송", () => {
     await openScreen(page, "/flow/appr/attach");
     await rowOfDoc(page, docIdx).click();
 
+    await expect(page.getByRole("heading", { name: "원본 파일" })).toBeVisible();
+    await expect(page.getByText("HTML 지면 문서 — 작성화면에서 확인")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /첨부 파일/ })).toBeVisible();
+    await expect(page.getByText("첨부 파일이 없습니다.")).toBeVisible();
+
     await Promise.all([
       page.waitForResponse(
         (r) => r.url().includes("/docs/documents/approval") && r.request().method() === "PUT",

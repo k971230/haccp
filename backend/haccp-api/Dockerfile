@@ -2,11 +2,12 @@
 #  haccp-api 컨테이너 이미지 — Spring Boot 3.3.4 / Java 17
 #
 #  개발자: 박승우
-#  일자: 2026-08-19
+#  일자: 2026-09-03
 #  코멘트:
 #    1) 빌드(JDK)와 실행(JRE)을 나눠 실행 이미지에 컴파일러·소스·메이븐 캐시를 남기지 않는다
 #    2) rhwp CLI 바이너리는 라이선스상 이미지에 넣지 않는다 — 실행 환경에서 볼륨으로 마운트한다
 #    3) 표준·사용자 HWP 시드는 이미지 /opt/haccp/template-src 에 구워 기동 시 파일 볼륨으로 복사한다
+#       실행 베이스는 noble — @rhwp/editor 0.8.4 와 같은 CLI(v0.8.4) 가 jammy glibc 로는 안 뜬다
 #
 #  빌드: docker build -f backend/haccp-api/Dockerfile -t haccp-api:local .
 # ============================================================
@@ -34,10 +35,8 @@ COPY backend/haccp-api/src src
 # 테스트는 CI 단계에서 따로 돌린다 — 이미지 빌드는 패키징만 책임진다
 RUN ./mvnw -B -ntp -DskipTests package
 
-# ------------------------------------------------------------
-# 스테이지 B — 실행 전용 JRE
-# ------------------------------------------------------------
-FROM eclipse-temurin:17-jre-jammy
+# 실행 전용 JRE — rhwp v0.8.4 CLI 가 glibc 2.39 를 요구해서 noble(24.04) 을 쓴다. jammy 는 변환기가 안 뜬다
+FROM eclipse-temurin:17-jre-noble
 
 # fonts-nanum: rhwp PDF 한글 렌더링(없으면 글자가 깨진다) / tzdata: Asia/Seoul 배치 기준
 # curl: HEALTHCHECK 전용 — 이것 때문에 설치하므로 다른 용도로 늘리지 않는다
@@ -53,8 +52,10 @@ RUN apt-get update \
 ENV TZ=Asia/Seoul
 
 # 실행 계정 — 파일 볼륨 소유자와 uid 를 맞춰야 마운트 후 쓰기가 된다
-RUN groupadd --gid 1000 haccp \
- && useradd --uid 1000 --gid 1000 --create-home --shell /usr/sbin/nologin haccp
+# noble 베이스는 uid 1000 이 ubuntu 다. jammy 때처럼 haccp 이름으로만 바꾼다
+RUN usermod -l haccp ubuntu \
+ && groupmod -n haccp ubuntu \
+ && usermod --home /home/haccp --move-home --shell /usr/sbin/nologin haccp
 
 # /var/haccp/files: 업로드 원본·PDF 볼륨 마운트 지점
 # /opt/haccp/template-src: 이미지에 구운 표준·사용자 HWP 시드

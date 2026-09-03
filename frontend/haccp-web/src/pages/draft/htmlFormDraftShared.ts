@@ -82,14 +82,14 @@ export function draftRejectedRowClass(
  *   3) 저장 전(status 없음)은 전송대기로 본다. 구 TMP 도 전송대기
  */
 export function sendStateOf(
-  // DOC_STATUS — WRK/RJT/REQ/REV/APV/TMP. 저장 전이면 null
+  // DOC_STATUS — WRK/RJT/REQ/APV/TMP. 저장 전이면 null
   status: string | null | undefined,
 ): SendState {
   const st = (status ?? "").trim().toUpperCase();
   // 승인완료일 때(= 결재가 끝남) 이 화면에서는 아무것도 못 한다
   if (st === "APV") return "done";
-  // 검토요청·검토완료일 때(= 이미 상신됨) 전송으로 묶는다
-  if (st === "REQ" || st === "REV") return "sent";
+  // 승인요청일 때(= 이미 상신됨) 전송으로 묶는다
+  if (st === "REQ") return "sent";
   // 그 밖(작성중·반려·임시·저장 전)은 전송대기
   return "wait";
 }
@@ -151,7 +151,7 @@ export function canSendDoc(
  * 코멘트:
  *   1) 전송취소 가능 여부를 정한다
  *   2) 전송취소 버튼 활성 판정이 호출한다
- *   3) REQ 만 true — 검토 서명이 들어간 REV 는 결재 SP 가 거부하므로 버튼을 열지 않는다
+ *   3) REQ 만 true — 승인이 들어가면 결재 SP 가 거부하므로 버튼을 열지 않는다
  */
 export function canCancelSendDoc(
   // 저장된 문서 idx
@@ -175,7 +175,7 @@ export type HtmlFormDraftRowView = {
   sendState?: SendState;
   // DOC_STATUS 원본 — 반려 행 노란 표시에 쓴다
   status?: string;
-  // 제목 — tbl_document.title. 결재 첨부 remark 가 아니다
+  // 식별 제목 — tbl_document.title. 언제·무엇을 썼는지 목록에서만 쓴다. 지면 제목이 아니다
   title?: string;
   /** 이탈여부 Y/N — 이탈 칸을 쓰는 화면(HWP)만 채운다 */
   deviationYn?: string;
@@ -196,7 +196,7 @@ export const htmlFormDraftGridRules: ScreenGridRules = {
   newOnly: ["tmplCd"],
   // 전송·결재완료 행은 통째로 잠근다. 제목만 예외
   isRowEditLocked: (row) => (row as { sendState?: SendState }).sendState !== "wait",
-  // 제목 = tbl_document.title. 결재 첨부 remark 와 다르다. 상태와 무관
+  // 식별 제목 = tbl_document.title. 지면·결재 헤더에 안 실린다. 상태와 무관
   editableWhenLocked: ["title"],
 };
 
@@ -262,7 +262,7 @@ export function buildDraftListColumns(
       editable: false,
     },
     {
-      // 제목 — tbl_document.title. 언제든 고친다. 첨부 remark 가 아니다
+      // 식별 제목 — 언제·무엇을 썼는지. 지면 제목(양식 hdr-title)과 다르다. 언제든 고친다
       field: "title",
       header: "제목",
       width: 160,
@@ -546,7 +546,7 @@ export function emptyDraftBuf(
  * 코멘트:
  *   1) 상세 API 응답을 지면 편집 버퍼로 옮긴다
  *   2) 작성 화면의 행 선택·양식 선택·저장 후 재적재, 결재 미리보기의 최초 적재가 호출한다
-   *   3) 작성자·점검자 이름이 비면 로그인 사용자로 채운다. 자동생성 이탈문구는 칸을 비우고 체크만 켠다
+ *   3) 작성자 이름이 비면 로그인 사용자, 점검자가 비면 작성자명. 자동생성 이탈문구는 칸을 비우고 체크만 켠다
  */
 export function detailToDraftBuf(
   // 상세 API 응답 — header·items
@@ -587,6 +587,8 @@ export function detailToDraftBuf(
   const rawNote = asText(header.specialNote);
   const hasCa = !!(String(ca?.deviationDesc ?? "").trim() || String(ca?.actionDesc ?? "").trim());
   const hasFailLog = logRows.some((row) => String(row.judgeCd ?? "").toUpperCase() === "F");
+  // 작성자 — 문서 헤더, 없으면 로그인 사용자(작성 화면 신규)
+  const writerNm = asText(header.writerNm) || user?.userNm || "";
   return {
     docIdx,
     docNo: asText(header.docNo),
@@ -594,10 +596,11 @@ export function detailToDraftBuf(
     tmplNm: asText(header.tmplNm) || form.tmplNm,
     status: asText(header.status) || null,
     baseKey: asText(header.baseDt) || todayYmd(),
-    writerNm: asText(header.writerNm) || user?.userNm || "",
+    writerNm,
     writerId: asText(header.writerId) || user?.userId || "",
     writerSignYn: asYn(header.writerSignYn),
-    checkerNm: asText(header.checkerNm) || user?.userNm || "",
+    // 점검자 칸이 비었을 때(= 작성자가 안 채움·CCP mngNm 없음) 작성자명을 넣는다
+    checkerNm: asText(header.checkerNm) || writerNm,
     checkerId: asText(header.checkerId),
     checkerSignYn: asYn(header.checkerSignYn),
     approverNm: asText(header.approverNm),
@@ -640,6 +643,8 @@ export function draftPaperViewProps(
   return {
     // 제목·부제·일자·결재란. 서명이 있으면 이미지, 없으면 이름
     header: {
+      // 지면 제목 fallback — 양식명. hdr-title 이 있으면 PaperTitleCell 이 그걸 쓴다.
+      // 작성 목록 title 은 식별용이라 넣지 않는다
       title: buf.tmplNm || meta.paperTitle,
       subtitle: meta.paperSubtitle,
       baseDt: toInputDate(buf.baseKey),

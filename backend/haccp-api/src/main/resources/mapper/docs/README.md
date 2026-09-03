@@ -4,18 +4,16 @@
 
 ```
 mapper/docs/
- ├ html/htmltemplate/        HtmlTemplateMapper.xml
- ├ html/ccpverifytemplate/   CcpVerifyTemplateMapper.xml
- ├ html/ccppkgtemplate/      CcpPkgTemplateMapper.xml
- ├ html/ccphtgtemplate/      CcpHtgTemplateMapper.xml
- ├ html/ccpmtltemplate/      CcpMtlTemplateMapper.xml
- ├ html/hygprocess/          HygProcessMapper.xml
- ├ hwp/         HwpTemplateMapper.xml
- ├ ccp/         CcpColdMapper.xml · CcpGenericMapper.xml · CcpFormsMapper.xml
- ├ prp/         HygieneMapper.xml · HealthCertMapper.xml · BizOpsMapper.xml · EquipmentHistMapper.xml · PestDeviceHistMapper.xml
- ├ sch/         DocCycleMapper.xml
- ├ document/    DocumentMapper.xml
- └ (개선조치는 mapper/flow/ca/DocCorrectiveMapper.xml)
+ ├ htmlform/htmltemplate/        HtmlTemplateMapper.xml
+ ├ htmlform/ccpverifytemplate/   CcpVerifyTemplateMapper.xml
+ ├ htmlform/ccppkgtemplate/      CcpPkgTemplateMapper.xml
+ ├ htmlform/ccphtgtemplate/      CcpHtgTemplateMapper.xml
+ ├ htmlform/ccpmtltemplate/      CcpMtlTemplateMapper.xml
+ ├ hwp/          HwpTemplateMapper.xml
+ ├ sch/          DocCycleMapper.xml
+ └ documents/    DocumentMapper.xml
+
+작성 매퍼는 `mapper/draft/`, 개선조치는 `mapper/flow/ca/`. 폴더는 `htmlform`, URL 만 `html-form` 이다.
 ```
 
 `namespace`는 인터페이스 FQCN과 같다. 네이티브 SQL 금지 — SP 호출만.

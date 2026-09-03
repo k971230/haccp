@@ -25,6 +25,8 @@ export type HtmlFormPaperMode = "template" | "write";
 export type HtmlFormPaperVariant = "a4" | "fill";
 
 export interface HtmlFormHeader {
+  // 지면 제목 fallback — 양식명. hdr-title 항목이 있으면 그걸 쓴다.
+  // 작성 목록 tbl_document.title(식별용)을 넣지 않는다
   title: string;
   // 제목 아래 부제 — 기본 (매일 작성)
   subtitle?: string;
@@ -112,6 +114,34 @@ export function htmlFormPaperEdit(
      * 이 둘을 한 조건으로 묶으면 잠긴 문서가 빈 예시 지면으로 보인다.
      */
     writeView: mode === "write",
+  };
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-03
+ * 코멘트:
+ *   1) HTML radio 에는 readonly 가 없다. disabled 는 인쇄·미리보기에서 흐려진다
+ *   2) 잠금이면 포커스·클릭만 막고 점은 검정으로 남긴다
+ *   3) 문서함 미리보기·인쇄가 같이 탄다
+ */
+export function paperRadioLock(
+  // 작성 중이면 true — 그때는 잠그지 않는다
+  editable: boolean,
+): {
+  tabIndex?: number;
+  "aria-disabled"?: boolean;
+  className?: string;
+  onMouseDown?: (e: { preventDefault: () => void }) => void;
+} {
+  if (editable) return {};
+  return {
+    tabIndex: -1,
+    "aria-disabled": true,
+    className: "html-form-radio-lock",
+    onMouseDown: (e) => {
+      e.preventDefault();
+    },
   };
 }
 
@@ -257,13 +287,14 @@ export function patchPaperHdr(
  * 일자: 2026-08-20
  * 코멘트:
  *   1) 결재란 왼쪽 제목·부제. 수정 모드면 입력
- *   2) 저장은 hdr-title / hdr-subtitle 항목. 없으면 화면 기본 문구
+ *   2) 저장은 hdr-title / hdr-subtitle 항목. 없으면 양식명(header.title). 작성 목록 식별 제목은 안 쓴다
  *   3) 5개 HTML 지면이 같이 쓴다
  */
 export function PaperTitleCell({
-  // 화면 기본 제목·부제
+  // 화면 기본 제목·부제 — title 은 양식명. 식별용 tbl_document.title 이 아니다
   header,
-  // 양식 항목 — 저장된 제목이 있으면 그걸 쓴다
+  // 양식 항목 — hdr-title 이 있으면 그걸 쓴다. 없으면 header.title(양식명)
+
   items,
   // 기준관리 수정 중
   templateEdit,
@@ -522,7 +553,7 @@ export function HtmlFormFootTable({
                */
               title={`${noteLabel} — 여기에 글자를 쓰면 개선조치가 자동으로 생깁니다. 이탈이 없으면 비워 둡니다`}
               value={footer.specialNote}
-              disabled={!writeEdit}
+              readOnly={!writeEdit}
               onChange={(e) => onFooterChange?.({ specialNote: e.target.value })}
             />
           </td>
@@ -532,7 +563,7 @@ export function HtmlFormFootTable({
               className="html-form-foot-input html-form-pre"
               title="개선조치 및 결과 — 이탈에 어떻게 조치했는지"
               value={footer.improveNote}
-              disabled={!writeEdit}
+              readOnly={!writeEdit}
               onChange={(e) => onFooterChange?.({ improveNote: e.target.value })}
             />
           </td>
@@ -542,7 +573,7 @@ export function HtmlFormFootTable({
               className="html-form-foot-input"
               title={`${actionLabel} — 조치한 사람`}
               value={footer.actionNm}
-              disabled={!writeEdit}
+              readOnly={!writeEdit}
               onChange={(e) => onFooterChange?.({ actionNm: e.target.value })}
             />
           </td>
@@ -1171,9 +1202,9 @@ export function patchPassRow(
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-20
+ * 일자: 2026-09-03
  * 코멘트:
- *   1) 저장 후 서명이 있으면 이미지를, 없으면 이름을 그린다
+ *   1) 저장 후 서명이 있으면 이미지를 그린다. 잠금 지면은 이름을 항상 남긴다
  *   2) 작성자·승인자·점검자·풋터 확인란이 쓴다
  *   3) Blob URL은 unmount 때 해제한다
  */
@@ -1244,9 +1275,14 @@ export function SignSlot({
           value={name}
           onChange={(e) => onChange?.(e.target.value)}
         />
-      ) : url ? null : (
-        <span className="html-form-pre">{name}</span>
-      )}
+      ) : name ? (
+        <span
+          // 잠금 지면 — 서명이 있어도 이름을 남긴다. 서명 GET 실패 때 칸이 비지 않게
+          className="html-form-pre"
+        >
+          {name}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -1352,7 +1388,6 @@ export function HtmlFormCellInput({
   const align = CELL_ALIGN[kind];
   const common = {
     className: `html-form-sign-input ${align}`,
-    disabled: !editable,
     readOnly: !editable,
     title,
   };
@@ -1361,8 +1396,8 @@ export function HtmlFormCellInput({
       <DocCellTime
         // HTML type=time — 값은 HH:mm
         className={`html-form-sign-input ${align}`}
-        // 작성 중이 아니면 고를 수 없다
-        disabled={!editable}
+        // 작성 중이 아니면 고를 수 없다. disabled 는 인쇄·미리보기에서 흐려져서 readOnly 만 쓴다
+        readOnly={!editable}
         // 칸 이름 — 시각
         title={title}
         // 지면 저장값은 HH:MM

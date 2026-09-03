@@ -118,8 +118,10 @@ export interface DocCellTimeProps {
   storage?: DocCellTimeStorage;
   // 클래스
   className?: string;
-  // 잠금 — 미리보기·전송 후
+  // 잠금 — 미리보기·전송 후. disabled 는 인쇄에서 흐려져서 readOnly 를 쓴다
   disabled?: boolean;
+  // 읽기 전용 — 값은 보이고 고치지 못한다
+  readOnly?: boolean;
   // 마우스 오버 설명
   title?: string;
 }
@@ -143,6 +145,8 @@ export function DocCellTime({
   className,
   // 잠금
   disabled,
+  // 읽기 전용 — 미리보기·인쇄. disabled 보다 글자가 흐리지 않다
+  readOnly,
   // 칸 이름
   title,
 }: DocCellTimeProps) {
@@ -152,6 +156,7 @@ export function DocCellTime({
       type="time"
       className={cn("doc-cell-time", className)}
       disabled={disabled}
+      readOnly={readOnly}
       title={title}
       // 저장값 → type=time 표시
       value={toInputTime(value)}

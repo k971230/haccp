@@ -146,7 +146,7 @@ E2E 는 화면 문구가 아니라 **DB 를 직접 읽어** 판정한다.
 
 ## 관련
 
-- 규칙: `.cursor/rules/09-frontend-conventions.mdc` · `02-frontend-ui.mdc` · `01-project-core.mdc`
+- 규칙: `.cursor/rules/09-haccp-frontend.mdc` · `02-frontend-ui.mdc` · `01-project-core.mdc`
 - 태그 색인: `docs/5_PIPELINE_색인.md` (`PIPELINE[HF*]` → 파일)
 - 경로 정본: `docs/4_명명과_경로.md` · `shell/tabRoute.ts`
 - E2E: `e2e/README.md` · 결과 `E2E.md` · `E2E_ERRORS.md`

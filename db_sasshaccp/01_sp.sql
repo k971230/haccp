@@ -28,6 +28,9 @@ SET search_path TO sasshaccp;
 DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_master_delete_blocker_r_000(character varying, character varying, bigint[]);
 DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_company_code_copy_c_000(character varying, character varying);
 DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_menu_sort_encode_u_000(character varying);
+-- 결재 대기·완료 목록 — 구 이름(appr_inbox/appr_hist)을 화면명(sign-ready/sign-ok)으로 옮긴다
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_document_appr_inbox_r_000(character varying, character varying, character varying, character varying, character varying);
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_document_appr_hist_r_000(character varying, character varying, character varying, character varying, character varying);
 
 -- Name: sp_audit_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
@@ -2030,6 +2033,34 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_schedule_cycle_management_form_r_000(p_c
         */
        AND ct.tmpl_cd NOT LIKE '%\_000'
        AND ct.tmpl_cd NOT IN ('html_sys_001', 'html_sys_006')
+       /*
+        * HTML 은 지면 버전이 있어야 양식관리·작성·삭제가 된다.
+        * 카탈로그만 있는 행은 주기 목록에 뜨고 양식관리에는 없어 지울 수도 없다.
+        * HWP 는 파일 경로가 있으면 되므로 그대로 둔다.
+        */
+       AND (
+            t.doc_kind <> 'HTML'
+            OR EXISTS (
+                 SELECT 1 FROM tbl_html_hyg_prc_ver v
+                  WHERE v.co_cd = ct.co_cd AND v.tmpl_cd = ct.tmpl_cd AND v.use_yn = 'Y'
+               )
+            OR EXISTS (
+                 SELECT 1 FROM tbl_html_ccp_chk_ver v
+                  WHERE v.co_cd = ct.co_cd AND v.tmpl_cd = ct.tmpl_cd AND v.use_yn = 'Y'
+               )
+            OR EXISTS (
+                 SELECT 1 FROM tbl_html_ccp_pkg_ver v
+                  WHERE v.co_cd = ct.co_cd AND v.tmpl_cd = ct.tmpl_cd AND v.use_yn = 'Y'
+               )
+            OR EXISTS (
+                 SELECT 1 FROM tbl_html_ccp_htg_ver v
+                  WHERE v.co_cd = ct.co_cd AND v.tmpl_cd = ct.tmpl_cd AND v.use_yn = 'Y'
+               )
+            OR EXISTS (
+                 SELECT 1 FROM tbl_html_ccp_mtl_ver v
+                  WHERE v.co_cd = ct.co_cd AND v.tmpl_cd = ct.tmpl_cd AND v.use_yn = 'Y'
+               )
+           )
        AND (
             COALESCE(NULLIF(btrim(p_use_yn), ''), '') = ''
             OR upper(COALESCE(ct.use_yn, 'N')) = upper(btrim(p_use_yn))
@@ -2044,7 +2075,7 @@ $_$;
 -- Name: FUNCTION sp_schedule_cycle_management_form_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_use_yn character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_schedule_cycle_management_form_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_use_yn character varying) IS '문서주기관리 좌측 — 자사 양식만. 복사 원본(*_000 과 옛 html_sys_001·006) 숨김 + 결재선';
+COMMENT ON FUNCTION sasshaccp.sp_schedule_cycle_management_form_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_use_yn character varying) IS '문서주기관리 좌측 — 자사 양식만. 복사 원본 숨김. HTML 은 사용 중인 지면 버전이 있는 것만';
 
 
 --
@@ -2166,14 +2197,11 @@ BEGIN
         v_step_no := NULLIF(v_step ->> 'stepNo', '')::int;
         v_role := upper(trim(COALESCE(v_step ->> 'roleCd', '')));
         IF v_step_no IS NULL OR v_step_no < 1
-           OR v_role NOT IN ('WRITE', 'REVIEW', 'APPROVE') THEN
+           OR v_role NOT IN ('WRITE', 'APPROVE') THEN
             RAISE EXCEPTION '결재 단계 순번 또는 역할이 올바르지 않습니다.' USING ERRCODE = '45000';
         END IF;
-        -- 작성·승인은 항상 사용. 검토만 사용안함을 허용한다
-        v_use := CASE
-            WHEN v_role = 'REVIEW' AND upper(COALESCE(v_step ->> 'useYn', 'N')) = 'N' THEN 'N'
-            ELSE 'Y'
-        END;
+        -- 작성·승인은 항상 사용
+        v_use := 'Y';
         /*
          * 결재자가 비어도 저장한다 — **여기서 막으면 결재선을 새로 못 만든다.**
          *
@@ -2199,7 +2227,7 @@ END$$;
 -- Name: PROCEDURE sp_tbl_approval_line_c_000(IN p_co_cd character varying, IN p_payload jsonb, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_approval_line_c_000(IN p_co_cd character varying, IN p_payload jsonb, IN p_id character varying) IS '결재선 저장 — 헤더+단계 교체. 검토만 사용안함 가능, 직위코드 미저장';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_approval_line_c_000(IN p_co_cd character varying, IN p_payload jsonb, IN p_id character varying) IS '결재선 저장 — 헤더+단계 교체. 역할은 WRITE·APPROVE, 직위코드 미저장';
 
 
 --
@@ -2614,7 +2642,7 @@ BEGIN
     ELSE
         SELECT d.idx,d.status,h.idx INTO v_doc_idx,v_status,v_hdr_idx FROM tbl_document d JOIN tbl_ccp_metal_monitor h ON h.doc_idx=d.idx AND h.co_cd=d.co_cd WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd=p_tmpl_cd AND d.del_yn='N';
         IF v_doc_idx IS NULL THEN RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE='45000'; END IF;
-        IF v_status IN ('REQ','REV','APV') THEN RAISE EXCEPTION '전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.' USING ERRCODE='45000'; END IF;
+        IF v_status IN ('REQ','APV') THEN RAISE EXCEPTION '전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.' USING ERRCODE='45000'; END IF;
         UPDATE tbl_document SET base_dt=p_base_dt,title=COALESCE(v_in, title),upd_id=p_id,upd_dt=now() WHERE idx=v_doc_idx AND co_cd=p_co_cd;
         UPDATE tbl_ccp_metal_monitor SET base_dt=p_base_dt,ccp_cd=p_ccp_cd,fe_size=p_fe_size,sts_size=p_sts_size,mng_user_id=NULLIF(p_mng_user_id,''),mng_nm=NULLIF(p_mng_nm,''),upd_id=p_id,upd_dt=now() WHERE idx=v_hdr_idx AND co_cd=p_co_cd;
         DELETE FROM tbl_ccp_metal_sens_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx;
@@ -3079,10 +3107,12 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_doc_no_gen_c_000(p_co_cd character varying,
 
 
 --
--- Name: sp_tbl_document_appr_hist_r_000(character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_sign_ok_r_000(character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
+-- 결재완료(sign-ok) 목록 — 내가 APPROVE 단계로 승인·반려한 문서.
+-- p_keyword: 문서번호·제목 부분검색. p_writer_id: 작성자 ID·이름 부분검색. 비면 전체.
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_appr_hist_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer, my_result_cd character varying, my_act_dt timestamp without time zone)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_sign_ok_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying, p_writer_id character varying) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer, my_result_cd character varying, my_act_dt timestamp without time zone)
     LANGUAGE sql STABLE
     AS $$
     SELECT DISTINCT ON (d.idx)
@@ -3090,7 +3120,7 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_appr_hist_r_000(p_co_cd cha
            COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm, d.tmpl_cd),
            d.doc_kind, d.doc_no, d.base_dt, d.title, d.status, d.appr_line_cd,
            d.writer_id, u.user_nm, d.write_dt, d.ver_no, d.retention_until,
-           (SELECT count(*)::int FROM tbl_document_file f WHERE f.co_cd = d.co_cd AND f.doc_idx = d.idx),
+           (SELECT count(*)::int FROM tbl_document_file f WHERE f.co_cd = d.co_cd AND f.doc_idx = d.idx AND f.file_kind IN ('ATTACH', 'PHOTO')),
            (SELECT count(*)::int FROM tbl_corrective_action ca
              WHERE ca.co_cd = d.co_cd AND ca.src_doc_idx = d.idx AND ca.status <> 'DONE'),
            a.result_cd, a.act_dt
@@ -3100,7 +3130,7 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_appr_hist_r_000(p_co_cd cha
        AND a.approver_id = p_user_id
        AND a.result_cd IN ('A', 'R')
        -- 작성자 단계(WRITE)는 상신 때 자동 승인된다. 이력에 넣으면 작성자가 자기 미결 문서를 본다
-       AND a.role_cd IN ('REVIEW', 'APPROVE')
+       AND a.role_cd = 'APPROVE'
       -- 카탈로그는 자사 행만. 시드가 업체에 복사한다
       LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd AND t.co_cd = d.co_cd
       LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
@@ -3109,6 +3139,11 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_appr_hist_r_000(p_co_cd cha
        AND d.del_yn = 'N'
        AND (COALESCE(p_from_dt, '') = '' OR d.base_dt >= p_from_dt)
        AND (COALESCE(p_to_dt, '') = '' OR d.base_dt <= p_to_dt)
+       AND (
+           COALESCE(p_writer_id, '') = ''
+           OR d.writer_id ILIKE '%' || p_writer_id || '%'
+           OR COALESCE(u.user_nm, '') ILIKE '%' || p_writer_id || '%'
+       )
        AND (
            COALESCE(p_keyword, '') = ''
            OR d.doc_no ILIKE '%' || p_keyword || '%'
@@ -3119,24 +3154,26 @@ $$;
 
 
 --
--- Name: FUNCTION sp_tbl_document_appr_hist_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: FUNCTION sp_sign_ok_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying, p_writer_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_document_appr_hist_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying) IS '결재 이력 — 내가 승인·반려한 문서 (작성자 자동승인 제외)';
+COMMENT ON FUNCTION sasshaccp.sp_sign_ok_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying, p_writer_id character varying) IS '결재완료(sign-ok) — 내가 승인·반려한 문서 (작성자 자동승인 제외)';
 
 
 --
--- Name: sp_tbl_document_appr_inbox_r_000(character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_sign_ready_r_000(character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
+-- 결재대기(sign-ready) 목록 — 내 APPROVE 단계가 대기(W)인 REQ 문서.
+-- p_keyword: 문서번호·제목 부분검색. p_writer_id: 작성자 ID·이름 부분검색. 비면 전체.
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_appr_inbox_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_sign_ready_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying, p_writer_id character varying) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, ver_no integer, retention_until character varying, file_cnt integer, open_ca_cnt integer)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx, d.co_cd, d.tmpl_cd,
            COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm, d.tmpl_cd),
            d.doc_kind, d.doc_no, d.base_dt, d.title, d.status, d.appr_line_cd,
            d.writer_id, u.user_nm, d.write_dt, d.ver_no, d.retention_until,
-           (SELECT count(*)::int FROM tbl_document_file f WHERE f.co_cd = d.co_cd AND f.doc_idx = d.idx),
+           (SELECT count(*)::int FROM tbl_document_file f WHERE f.co_cd = d.co_cd AND f.doc_idx = d.idx AND f.file_kind IN ('ATTACH', 'PHOTO')),
            (SELECT count(*)::int FROM tbl_corrective_action ca
              WHERE ca.co_cd = d.co_cd AND ca.src_doc_idx = d.idx AND ca.status <> 'DONE')
       FROM tbl_document d
@@ -3144,16 +3181,21 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_appr_inbox_r_000(p_co_cd ch
         ON a.co_cd = d.co_cd AND a.doc_idx = d.idx
        AND a.result_cd = 'W'
        AND a.approver_id = p_user_id
-       AND a.role_cd IN ('REVIEW', 'APPROVE')
+       AND a.role_cd = 'APPROVE'
       -- 카탈로그는 자사 행만. 시드가 업체에 복사한다
       LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd AND t.co_cd = d.co_cd
       LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd
        AND d.del_yn = 'N'
-       AND d.status IN ('REQ', 'REV')
+       AND d.status = 'REQ'
        AND (COALESCE(p_from_dt, '') = '' OR d.base_dt >= p_from_dt)
        AND (COALESCE(p_to_dt, '') = '' OR d.base_dt <= p_to_dt)
+       AND (
+           COALESCE(p_writer_id, '') = ''
+           OR d.writer_id ILIKE '%' || p_writer_id || '%'
+           OR COALESCE(u.user_nm, '') ILIKE '%' || p_writer_id || '%'
+       )
        AND (
            COALESCE(p_keyword, '') = ''
            OR d.doc_no ILIKE '%' || p_keyword || '%'
@@ -3164,10 +3206,10 @@ $$;
 
 
 --
--- Name: FUNCTION sp_tbl_document_appr_inbox_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: FUNCTION sp_sign_ready_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying, p_writer_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_document_appr_inbox_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying) IS '결재함 — 내 차례(대기) 문서만';
+COMMENT ON FUNCTION sasshaccp.sp_sign_ready_r_000(p_co_cd character varying, p_user_id character varying, p_from_dt character varying, p_to_dt character varying, p_keyword character varying, p_writer_id character varying) IS '결재대기(sign-ready) — 내 차례(대기) 문서만';
 
 
 --
@@ -3210,22 +3252,22 @@ BEGIN
     END IF;
 
     IF p_action_cd = 'CANCEL' THEN
-        -- 검토요청일 때(= 작성자가 상신취소 가능) 결재 스냅샷을 지우고 작성중으로 되돌린다
+        -- 승인요청일 때(= 작성자가 상신취소 가능) 결재 스냅샷을 지우고 작성중으로 되돌린다
         IF v_status <> 'REQ' THEN
-            RAISE EXCEPTION '검토요청 상태만 상신취소할 수 있습니다.' USING ERRCODE = '45000';
+            RAISE EXCEPTION '승인요청 상태만 상신취소할 수 있습니다.' USING ERRCODE = '45000';
         END IF;
         IF v_writer IS DISTINCT FROM p_id THEN
             RAISE EXCEPTION '작성자만 상신취소할 수 있습니다.' USING ERRCODE = '45000';
         END IF;
-        -- 검토·승인 단계에 서명이 들어갔을 때(= 이미 처리됨) 취소 차단
+        -- 승인 단계에 서명이 들어갔을 때(= 이미 처리됨) 취소 차단
         IF EXISTS (
             SELECT 1 FROM tbl_document_approval
              WHERE co_cd = p_co_cd
                AND doc_idx = p_doc_idx
-               AND role_cd IN ('REVIEW', 'APPROVE')
+               AND role_cd = 'APPROVE'
                AND result_cd <> 'W'
         ) THEN
-            RAISE EXCEPTION '검토 또는 승인이 진행된 문서는 상신취소할 수 없습니다.' USING ERRCODE = '45000';
+            RAISE EXCEPTION '승인이 진행된 문서는 상신취소할 수 없습니다.' USING ERRCODE = '45000';
         END IF;
         DELETE FROM tbl_document_approval
          WHERE co_cd = p_co_cd
@@ -3233,7 +3275,6 @@ BEGIN
         UPDATE tbl_document
            SET status = 'WRK',
                write_dt = NULL,
-               reject_reason = NULL,
                upd_id = p_id,
                upd_dt = now()
          WHERE idx = p_doc_idx
@@ -3260,7 +3301,6 @@ BEGIN
              WHERE co_cd = p_co_cd
                AND appr_line_cd = COALESCE(v_line, 'DEFAULT')
                -- 꺼 둔 단계(use_yn='N')는 결재선에 넣지 않는다.
-               -- 이 조건이 없어서 기본 결재선의 검토(REVIEW, use_yn='N')가 그대로 들어갔다
                AND COALESCE(use_yn, 'Y') = 'Y'
              ORDER BY step_no
         LOOP
@@ -3286,12 +3326,10 @@ BEGIN
             RAISE EXCEPTION '승인 단계가 없는 결재선입니다.' USING ERRCODE = '45000';
         END IF;
 
+        -- 재전송해도 reject_reason · cancel_reason 은 지우지 않는다. 줄마다 쌓인 이력을 작성자가 본다
         UPDATE tbl_document
            SET status = 'REQ',
                write_dt = now(),
-               reject_reason = NULL,
-               -- 다시 상신하면 직전 취소 사유는 더 이상 현재 건이 아니다
-               cancel_reason = NULL,
                upd_id = p_id,
                upd_dt = now()
          WHERE idx = p_doc_idx
@@ -3299,7 +3337,7 @@ BEGIN
         RETURN;
     END IF;
 
-    -- 현재 대기 단계 — WRITE는 REQUEST 시 승인되므로 REVIEW/APPROVE만 처리한다
+    -- 현재 대기 단계 — WRITE는 REQUEST 시 승인되므로 APPROVE만 처리한다
     SELECT * INTO v_pending
       FROM tbl_document_approval
      WHERE co_cd = p_co_cd
@@ -3346,7 +3384,12 @@ BEGIN
 
         UPDATE tbl_document
            SET status = 'RJT',
-               reject_reason = p_opinion,
+               -- 최신 사유를 맨 위에 쌓는다. 다시 전송해도 지우지 않는다
+               reject_reason = left(
+                   btrim(p_opinion)
+                   || COALESCE(E'\n' || NULLIF(btrim(reject_reason), ''), ''),
+                   500
+               ),
                upd_id = p_id,
                upd_dt = now()
          WHERE idx = p_doc_idx
@@ -3354,13 +3397,10 @@ BEGIN
         RETURN;
     END IF;
 
-    IF p_action_cd NOT IN ('REVIEW', 'APPROVE') THEN
+    IF p_action_cd <> 'APPROVE' THEN
         RAISE EXCEPTION '지원하지 않는 결재 처리입니다.' USING ERRCODE = '45000';
     END IF;
-    IF p_action_cd = 'REVIEW' AND v_pending.role_cd <> 'REVIEW' THEN
-        RAISE EXCEPTION '현재 단계는 검토 단계가 아닙니다.' USING ERRCODE = '45000';
-    END IF;
-    IF p_action_cd = 'APPROVE' AND v_pending.role_cd <> 'APPROVE' THEN
+    IF v_pending.role_cd <> 'APPROVE' THEN
         RAISE EXCEPTION '현재 단계는 승인 단계가 아닙니다.' USING ERRCODE = '45000';
     END IF;
 
@@ -3376,60 +3416,49 @@ BEGIN
      WHERE idx = v_pending.idx
        AND co_cd = p_co_cd;
 
-    IF p_action_cd = 'REVIEW' THEN
-        UPDATE tbl_document
-           SET status = 'REV',
-               reviewer_id = p_id,
-               review_dt = now(),
-               upd_id = p_id,
-               upd_dt = now()
-         WHERE idx = p_doc_idx
-           AND co_cd = p_co_cd;
-    ELSE
-        -- 완료되지 않은 대기 단계가 남았을 때(= 결재선 순서를 지키지 못함) 승인 차단
-        IF EXISTS (
-            SELECT 1 FROM tbl_document_approval
-             WHERE co_cd = p_co_cd
-               AND doc_idx = p_doc_idx
-               AND result_cd = 'W'
-        ) THEN
-            RAISE EXCEPTION '이전 결재 단계가 남아 있습니다.' USING ERRCODE = '45000';
-        END IF;
-
-        UPDATE tbl_document
-           SET status = 'APV',
-               approver_id = p_id,
-               approve_dt = now(),
-               upd_id = p_id,
-               upd_dt = now()
-         WHERE idx = p_doc_idx
-           AND co_cd = p_co_cd;
-
-        -- 승인 완료일 때(= 감사용 고정본 필요) 공통 헤더와 HWP 원본 경로를 버전 1회 스냅샷
-        INSERT INTO tbl_document_version(
-            co_cd, doc_idx, ver_no, snap_json, file_path, change_reason, ins_id, ins_dt
-        )
-        SELECT d.co_cd,
-               d.idx,
-               d.ver_no,
-               to_jsonb(d),
-               (
-                   SELECT f.file_path
-                     FROM tbl_document_file f
-                    WHERE f.co_cd = d.co_cd
-                      AND f.doc_idx = d.idx
-                      AND f.file_kind = 'HWP_SRC'
-                    ORDER BY f.idx DESC
-                    LIMIT 1
-               ),
-               '승인 완료본',
-               p_id,
-               now()
-          FROM tbl_document d
-         WHERE d.idx = p_doc_idx
-           AND d.co_cd = p_co_cd
-        ON CONFLICT (doc_idx, ver_no) DO NOTHING;
+    -- 완료되지 않은 대기 단계가 남았을 때(= 결재선 순서를 지키지 못함) 승인 차단
+    IF EXISTS (
+        SELECT 1 FROM tbl_document_approval
+         WHERE co_cd = p_co_cd
+           AND doc_idx = p_doc_idx
+           AND result_cd = 'W'
+    ) THEN
+        RAISE EXCEPTION '이전 결재 단계가 남아 있습니다.' USING ERRCODE = '45000';
     END IF;
+
+    UPDATE tbl_document
+       SET status = 'APV',
+           approver_id = p_id,
+           approve_dt = now(),
+           upd_id = p_id,
+           upd_dt = now()
+     WHERE idx = p_doc_idx
+       AND co_cd = p_co_cd;
+
+    -- 승인 완료일 때(= 감사용 고정본 필요) 공통 헤더와 HWP 원본 경로를 버전 1회 스냅샷
+    INSERT INTO tbl_document_version(
+        co_cd, doc_idx, ver_no, snap_json, file_path, change_reason, ins_id, ins_dt
+    )
+    SELECT d.co_cd,
+           d.idx,
+           d.ver_no,
+           to_jsonb(d),
+           (
+               SELECT f.file_path
+                 FROM tbl_document_file f
+                WHERE f.co_cd = d.co_cd
+                  AND f.doc_idx = d.idx
+                  AND f.file_kind = 'HWP_SRC'
+                ORDER BY f.idx DESC
+                LIMIT 1
+           ),
+           '승인 완료본',
+           p_id,
+           now()
+      FROM tbl_document d
+     WHERE d.idx = p_doc_idx
+       AND d.co_cd = p_co_cd
+    ON CONFLICT (doc_idx, ver_no) DO NOTHING;
 END$$;
 
 
@@ -3437,7 +3466,7 @@ END$$;
 -- Name: PROCEDURE sp_tbl_document_approval_c_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_action_cd character varying, IN p_opinion character varying, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_approval_c_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_action_cd character varying, IN p_opinion character varying, IN p_id character varying) IS '문서 결재 전이 — REQUEST/CANCEL/REVIEW/APPROVE/REJECT. 꺼 둔 결재선 단계는 제외 (128)';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_approval_c_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_action_cd character varying, IN p_opinion character varying, IN p_id character varying) IS '문서 결재 전이 — REQUEST/CANCEL/APPROVE/REJECT. REQUEST 는 reject_reason·cancel_reason 을 비우지 않는다. 꺼 둔 결재선 단계는 제외';
 
 
 --
@@ -3464,7 +3493,7 @@ $$;
 -- Name: FUNCTION sp_tbl_document_approval_r_000(p_co_cd character varying, p_doc_idx bigint); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_document_approval_r_000(p_co_cd character varying, p_doc_idx bigint) IS '문서 결재 단계 조회 — 작성·검토·승인 서명란';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_document_approval_r_000(p_co_cd character varying, p_doc_idx bigint) IS '문서 결재 단계 조회 — 작성·승인 서명란';
 
 
 --
@@ -3530,7 +3559,6 @@ DECLARE
     v_line varchar(20);
     v_ver int;
     v_step record;
-    v_reviewed boolean;
 BEGIN
     SELECT d.status, d.appr_line_cd, d.ver_no
       INTO v_status, v_line, v_ver
@@ -3544,12 +3572,12 @@ BEGIN
         RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
 
-    -- 본인이 처리한 검토·승인 단계 중 가장 마지막 한 건
+    -- 본인이 처리한 승인 단계 중 가장 마지막 한 건
     SELECT * INTO v_step
       FROM tbl_document_approval
      WHERE co_cd = p_co_cd
        AND doc_idx = p_doc_idx
-       AND role_cd IN ('REVIEW', 'APPROVE')
+       AND role_cd = 'APPROVE'
        AND result_cd <> 'W'
        AND approver_id = p_id
      ORDER BY step_no DESC
@@ -3590,49 +3618,32 @@ BEGIN
      WHERE a.idx = v_step.idx
        AND a.co_cd = p_co_cd;
 
-    -- 되돌린 뒤 검토 단계가 아직 승인 상태로 남아 있는지 — 문서 상태를 여기서 정한다
-    SELECT EXISTS (
-        SELECT 1 FROM tbl_document_approval
+    -- 승인을 되돌린다 — 승인요청(REQ)으로
+    UPDATE tbl_document
+       SET status = 'REQ',
+           approver_id = NULL,
+           approve_dt = NULL,
+           -- 최신 취소 사유를 맨 위에 쌓는다. 빈 의견이면 기존 줄을 유지한다
+           cancel_reason = CASE
+               WHEN NULLIF(btrim(COALESCE(p_opinion, '')), '') IS NULL THEN cancel_reason
+               ELSE left(
+                   btrim(p_opinion)
+                   || COALESCE(E'\n' || NULLIF(btrim(cancel_reason), ''), ''),
+                   500
+               )
+           END,
+           upd_id = p_id,
+           upd_dt = now()
+     WHERE idx = p_doc_idx
+       AND co_cd = p_co_cd;
+
+    -- 승인 시 남긴 고정본 스냅샷을 걷어낸다 — 승인이 취소됐으니 완료본이 아니다
+    IF v_status = 'APV' THEN
+        DELETE FROM tbl_document_version
          WHERE co_cd = p_co_cd
            AND doc_idx = p_doc_idx
-           AND role_cd = 'REVIEW'
-           AND result_cd = 'A'
-    ) INTO v_reviewed;
-
-    IF v_step.role_cd = 'APPROVE' THEN
-        -- 승인을 되돌린다 — 검토가 남아 있으면 검토완료, 아니면 검토요청으로
-        UPDATE tbl_document
-           SET status = CASE WHEN v_reviewed THEN 'REV' ELSE 'REQ' END,
-               approver_id = NULL,
-               approve_dt = NULL,
-               reject_reason = NULL,
-               -- 작성자가 결재 첨부에서 보게 남긴다. 재상신 때 비운다
-               cancel_reason = NULLIF(btrim(COALESCE(p_opinion, '')), ''),
-               upd_id = p_id,
-               upd_dt = now()
-         WHERE idx = p_doc_idx
-           AND co_cd = p_co_cd;
-
-        -- 승인 시 남긴 고정본 스냅샷을 걷어낸다 — 승인이 취소됐으니 완료본이 아니다
-        IF v_status = 'APV' THEN
-            DELETE FROM tbl_document_version
-             WHERE co_cd = p_co_cd
-               AND doc_idx = p_doc_idx
-               AND ver_no = v_ver
-               AND change_reason = '승인 완료본';
-        END IF;
-    ELSE
-        -- 검토를 되돌린다 — 상신 직후 상태로
-        UPDATE tbl_document
-           SET status = 'REQ',
-               reviewer_id = NULL,
-               review_dt = NULL,
-               reject_reason = NULL,
-               cancel_reason = NULLIF(btrim(COALESCE(p_opinion, '')), ''),
-               upd_id = p_id,
-               upd_dt = now()
-         WHERE idx = p_doc_idx
-           AND co_cd = p_co_cd;
+           AND ver_no = v_ver
+           AND change_reason = '승인 완료본';
     END IF;
 END$$;
 
@@ -3718,8 +3729,9 @@ BEGIN
     IF NOT FOUND THEN
         RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
-    -- 결재 진행·완료일 때(= 기록 잠금) 첨부 교체 차단
-    IF v_status IN ('REQ', 'REV', 'APV') THEN
+    -- 결재 진행·완료일 때(= 기록 잠금) 본문·사용자 첨부 교체 차단
+    -- PDF 완료본은 문서함 인쇄 변환이 남긴다. 본문(HWP_SRC)·첨부(ATTACH/PHOTO)는 그대로 막는다
+    IF v_status IN ('REQ', 'APV') AND upper(trim(p_file_kind)) <> 'PDF' THEN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서에는 파일을 추가할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     -- 사용자 첨부일 때(= 일반첨부·사진) 문서당 5개로 막는다. 화면도 같은 기준으로 먼저 막는다
@@ -3755,7 +3767,7 @@ END$$;
 -- Name: FUNCTION sp_tbl_document_file_c_000(p_co_cd character varying, p_doc_idx bigint, p_file_kind character varying, p_file_nm character varying, p_file_path character varying, p_file_size bigint, p_mime_type character varying, p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_document_file_c_000(p_co_cd character varying, p_doc_idx bigint, p_file_kind character varying, p_file_nm character varying, p_file_path character varying, p_file_size bigint, p_mime_type character varying, p_id character varying) IS '문서 파일 메타 등록 — 물리 저장 완료 후 호출. 사용자 첨부는 문서당 5개';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_document_file_c_000(p_co_cd character varying, p_doc_idx bigint, p_file_kind character varying, p_file_nm character varying, p_file_path character varying, p_file_size bigint, p_mime_type character varying, p_id character varying) IS '문서 파일 메타 등록 — 물리 저장 완료 후 호출. 사용자 첨부는 문서당 5개. PDF 완료본은 결재 잠금이어도 등록';
 
 
 --
@@ -3779,7 +3791,7 @@ BEGIN
         RAISE EXCEPTION '파일을 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     -- 결재 진행·완료일 때(= 기록 잠금) 첨부 삭제 차단
-    IF v_status IN ('REQ', 'REV', 'APV') THEN
+    IF v_status IN ('REQ', 'APV') THEN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서의 파일은 삭제할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
 
@@ -3815,7 +3827,7 @@ BEGIN
     IF NOT FOUND THEN
         RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
-    IF v_status IN ('REQ', 'REV', 'APV') THEN
+    IF v_status IN ('REQ', 'APV') THEN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서의 파일은 삭제할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
 
@@ -3891,7 +3903,7 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_r_000(p_co_cd character var
            COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm, d.tmpl_cd),
            d.doc_kind, d.doc_no, d.base_dt, d.title, d.status, d.appr_line_cd,
            d.writer_id, u.user_nm, d.write_dt, d.ver_no, d.retention_until,
-           (SELECT count(*)::int FROM tbl_document_file f WHERE f.co_cd = d.co_cd AND f.doc_idx = d.idx),
+           (SELECT count(*)::int FROM tbl_document_file f WHERE f.co_cd = d.co_cd AND f.doc_idx = d.idx AND f.file_kind IN ('ATTACH', 'PHOTO')),
            (SELECT count(*)::int FROM tbl_corrective_action ca
              WHERE ca.co_cd = d.co_cd AND ca.src_doc_idx = d.idx AND ca.status <> 'DONE')
       FROM tbl_document d
@@ -3931,7 +3943,7 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_document_r_000(p_co_cd character varying, p
 --
 
 DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_document_r_001(character varying, bigint);
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_r_001(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, base_dt_to character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, reviewer_id character varying, reviewer_nm character varying, review_dt timestamp without time zone, approver_id character varying, approver_nm character varying, approve_dt timestamp without time zone, reject_reason character varying, ver_no integer, retention_until character varying, remark character varying, cancel_reason character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_r_001(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(doc_idx bigint, co_cd character varying, tmpl_cd character varying, tmpl_nm character varying, doc_kind character varying, doc_no character varying, base_dt character varying, base_dt_to character varying, title character varying, status character varying, appr_line_cd character varying, writer_id character varying, writer_nm character varying, write_dt timestamp without time zone, approver_id character varying, approver_nm character varying, approve_dt timestamp without time zone, reject_reason character varying, ver_no integer, retention_until character varying, remark character varying, cancel_reason character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx AS doc_idx,
@@ -3948,9 +3960,6 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_r_001(p_co_cd character var
            d.writer_id,
            wu.user_nm AS writer_nm,
            d.write_dt,
-           d.reviewer_id,
-           ru.user_nm AS reviewer_nm,
-           d.review_dt,
            d.approver_id,
            au.user_nm AS approver_nm,
            d.approve_dt,
@@ -3965,7 +3974,6 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_r_001(p_co_cd character var
       LEFT JOIN tbl_company_template ct
         ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user wu ON wu.co_cd = d.co_cd AND wu.user_id = d.writer_id
-      LEFT JOIN tbl_user ru ON ru.co_cd = d.co_cd AND ru.user_id = d.reviewer_id
       LEFT JOIN tbl_user au ON au.co_cd = d.co_cd AND au.user_id = d.approver_id
      WHERE d.co_cd = p_co_cd
        AND d.idx = p_doc_idx
@@ -6390,7 +6398,8 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_today_task_doc_r_000(
            d.retention_until,
            (SELECT count(*)::int
               FROM tbl_document_file f
-             WHERE f.co_cd = d.co_cd AND f.doc_idx = d.idx),
+             WHERE f.co_cd = d.co_cd AND f.doc_idx = d.idx
+               AND f.file_kind IN ('ATTACH', 'PHOTO')),
            (SELECT count(*)::int
               FROM tbl_corrective_action ca
              WHERE ca.co_cd = d.co_cd
@@ -6880,14 +6889,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_delete_blocker_r_000(
     SELECT d.doc_no,
            CASE d.status
                WHEN 'REQ' THEN '전송'
-               WHEN 'REV' THEN '전송'
                WHEN 'APV' THEN '결재완료'
                ELSE d.status
            END
       FROM tbl_document d
      WHERE d.co_cd = p_co_cd
        AND d.del_yn = 'N'
-       AND d.status IN ('REQ', 'REV', 'APV')
+       AND d.status IN ('REQ', 'APV')
        AND d.idx = ANY(p_doc_idxs)
      ORDER BY d.doc_no
      LIMIT 1;

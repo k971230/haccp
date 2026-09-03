@@ -21,7 +21,7 @@ Jenkins 가 만들어 주지 않는다 — 서버에서 한 번 돌린다. 둘 �
 
 ```sh
 bash scripts/init_volumes.sh    # haccp-files · haccp-templates
-bash scripts/install_rhwp.sh    # haccp-rhwp
+bash scripts/install_rhwp.sh    # Docker 볼륨 haccp-rhwp. Windows 로컬은 tools/rhwp 도 같이
 ```
 
 | Credential ID | 종류 | 쓰는 곳 |
@@ -36,6 +36,8 @@ bash scripts/install_rhwp.sh    # haccp-rhwp
 ## 2. DB — 파이프라인이 안 건드린다
 
 스키마 정본은 `db_sasshaccp/` **7본**이고, 배포 담당이 **따로** 돌린다.
+Jenkins 는 DB 를 안 건드린다. SP 를 바꿨으면 `01_sp.sql` 을 운영에 따로 적용한다
+(`CREATE OR REPLACE` 라 재실행된다). 이미 깔린 운영·시험은 2026-09-03 에 맞췄다.
 
 ```sh
 PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
@@ -128,3 +130,4 @@ compose 기본 탐색에 안 걸리고, `${REGISTRY}`·`${HACCP_SERVER_NAME}` �
 ## 변경
 
 - 2026-08-26 — 신설. DB 는 파이프라인이 안 건드린다는 것과 신규 업체 개설 절차를 적었다.
+- 2026-09-03 — 운영·시험에 결재 SP 개명·REVIEW 잔재 제거를 적용하고 1회성 08·09 파일을 지웠다.

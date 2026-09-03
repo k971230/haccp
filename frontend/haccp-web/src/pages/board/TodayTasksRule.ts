@@ -503,7 +503,7 @@ export function todayTaskHref(
 export function taskStatusLabel(
   // SP task_type — CA 이면 개선조치 상태
   taskType: unknown,
-  // TASK: TODO/ING/LATE/APV 또는 문서상태 WRK/REQ/REV/APV/RJT · CA: OPEN/ING/DONE
+  // TASK: TODO/ING/LATE/APV 또는 문서상태 WRK/REQ/APV/RJT · CA: OPEN/ING/DONE
   status: unknown,
   // CA_STATUS 공통코드 subCd → 표시명. 화면이 넘긴다
   caNm: Record<string, string>,

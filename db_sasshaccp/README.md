@@ -12,8 +12,9 @@ PostgreSQL `sasshaccp` 스키마 **정본**. 여기 7본이 곧 DB 다 — 손�
      ├─ 03_code_seed    공통코드                    -v co_cd=  업체별
      ├─ 05_form_seed    HTML 표준 지면 항목         -v co_cd=  업체별
      ├─ 06_company_seed 업체·계정·결재선·사용양식   -v co_cd=  업체별
-     └─ 07_company_forms 회사 지면 5본 복사         -v co_cd=  업체별
+     ├─ 07_company_forms 회사 지면 5본 복사         -v co_cd=  업체별
 04_migrate_code_upper  구 DB 1회용 — 신규 설치에는 안 쓴다
+08·09 (검토 제거·결재 SP 개명) 는 운영·시험에 적용한 뒤 지웠다. 정본은 00_ddl·01_sp 다.
 ```
 
 **업무 로직은 SP 에 둔다.** 백엔드는 SP 를 부르고 결과를 담아 넘기는 일만 한다
@@ -65,7 +66,6 @@ $P -v co_cd=0004 -f 07_company_forms.sql
 | 단계 | 계정 | 그룹 |
 |---|---|---|
 | WRITE | `WRITER_ID` | `HACCP_TEAM` |
-| REVIEW | (꺼짐) | |
 | APPROVE | `ADMIN_ID` | `HACCP_MASTER` |
 
 초기 비밀번호는 둘 다 **1234**. Jenkins 는 DB 를 안 돌린다 — 이 스크립트를 배포와 따로 실행한다.

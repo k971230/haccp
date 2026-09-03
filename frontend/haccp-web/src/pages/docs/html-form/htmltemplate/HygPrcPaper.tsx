@@ -28,6 +28,7 @@ import {
   htmlFormPaperEdit,
   isPaperHdrItem,
   paperBodyItems,
+  paperRadioLock,
   patchHtmlFormItem,
   type HtmlFormPaperProps,
 } from "@/components/form/htmlFormPaperShared";
@@ -432,11 +433,11 @@ export function HygPrcPaper({
                       <td className="text-center html-form-yn-col">
                         {radio ? (
                           <input
-                            // 예 — 문구는 공통코드 judge-yn
+                            // 예 — 문구는 공통코드 judge-yn. disabled 는 인쇄에서 흐려서 잠금만 건다
                             type="radio"
                             name={`yn-${index}`}
                             checked={item.yn === "Y"}
-                            disabled={!writeEdit}
+                            {...paperRadioLock(writeEdit)}
                             onChange={() => patchItem(item.itemCd, { yn: "Y" })}
                           />
                         ) : null}
@@ -448,7 +449,7 @@ export function HygPrcPaper({
                             type="radio"
                             name={`yn-${index}`}
                             checked={item.yn === "N"}
-                            disabled={!writeEdit}
+                            {...paperRadioLock(writeEdit)}
                             onChange={() => patchItem(item.itemCd, { yn: "N" })}
                           />
                         ) : null}
@@ -459,7 +460,7 @@ export function HygPrcPaper({
                             // 숫자·문자 값. 값 칸이 있으면 빨간 테두리. 라디오 전용은 빈 칸
                             className="w-full border-0 bg-transparent px-0.5 html-form-pre"
                             value={item.valNm ?? ""}
-                            disabled={!writeEdit}
+                            readOnly={!writeEdit}
                             onChange={(e) => patchItem(item.itemCd, { valNm: e.target.value })}
                           />
                         ) : null}

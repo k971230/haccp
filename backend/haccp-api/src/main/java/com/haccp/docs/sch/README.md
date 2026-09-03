@@ -8,7 +8,7 @@ XML `resources/mapper/docs/sch/DocCycleMapper.xml` · SP `db_sasshaccp/01_sp.sql
 
 | Method | URL | Service | SP | 테이블 |
 |---|---|---|---|---|
-| GET | `/api/v1/docs/sch/schedule-cycle-management/forms` | `forms` | `sp_schedule_cycle_management_form_r_000` | `tbl_company_template` `tbl_template` `tbl_schedule_rule` `tbl_approval_line` |
+| GET | `/api/v1/docs/sch/schedule-cycle-management/forms` | `forms` | `sp_schedule_cycle_management_form_r_000` | `tbl_company_template` `tbl_template` `tbl_schedule_rule` `tbl_approval_line` — HTML 은 사용 중인 지면 버전이 있는 것만 |
 | GET | `/api/v1/docs/sch/schedule-cycle-management/get` | `cycle` | `sp_schedule_cycle_management_r_000` | `tbl_schedule_rule` `tbl_schedule_rule_detail` `tbl_company_template` `tbl_approval_line` |
 | PUT | `/api/v1/docs/sch/schedule-cycle-management/save` | `save` | `sp_schedule_cycle_management_c_000` · `sp_tbl_schedule_task_regen_c_000` | `tbl_schedule_rule` `tbl_schedule_rule_detail` `tbl_schedule_task` `tbl_company_template` |
 | POST | `/api/v1/docs/sch/schedule-cycle-management/validate-delete` | `validateDelete` | SP 없음 — `sp_schedule_cycle_management_r_000`으로 존재 확인 | `tbl_schedule_rule` |

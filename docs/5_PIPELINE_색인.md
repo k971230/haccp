@@ -20,7 +20,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 [`backend/haccp-api/PIPELINE.md`](../backend/haccp-api/PIPELINE.md) ·
 [`frontend/haccp-web/PIPELINE.md`](../frontend/haccp-web/PIPELINE.md).
 
-## 프론트 (HF) — 태그 89개 · 파일 269곳
+## 프론트 (HF) — 태그 90개 · 파일 280곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
@@ -104,6 +104,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/components/document/ApprovalDocumentPreview.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/components/document/DocumentApprovalToolbar.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/components/document/documentPreviewRegistry.ts` | 연관 모듈 |
+|  | `frontend/haccp-web/src/components/document/printHwpDocuments.ts` | 연관 — 문서 파일 API |
 |  | `frontend/haccp-web/src/hooks/useDocIdxQuery.ts` | 문서 deep-link |
 |  | `frontend/haccp-web/src/lib/camelKeys.ts` | 연관 모듈 |
 |  | `frontend/haccp-web/src/lib/documentNav.ts` | 문서 네비게이션 |
@@ -253,6 +254,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `HF172` | `frontend/haccp-web/src/api/draft/htmlFormDraftTypes.ts` | 양식 작성 API 계약 |
 |  | `frontend/haccp-web/src/api/draft/hygProcessDraftApi.ts` | 위생공정 작성 API |
 |  | `frontend/haccp-web/src/components/document/documentPreviewRegistry.ts` | 연관 모듈 |
+|  | `frontend/haccp-web/src/components/document/DocumentPrintLayer.tsx` | 연관 — 미리보기 레지스트리·지면 변환 |
 |  | `frontend/haccp-web/src/components/document/HtmlDocumentPreview.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/pages/draft/html/HygProcessDraftRule.ts` | 위생공정 작성 규칙 |
 |  | `frontend/haccp-web/src/pages/draft/htmlFormDraftShared.test.ts` | 양식 작성 공통 규칙 |
@@ -281,13 +283,22 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/pages/draft/hwp-doc/HwpEditorPane.tsx` | HWP 작성 편집기 패널 |
 | `HF183` | `frontend/haccp-web/src/pages/draft/HwpTaskLookupModal.tsx` | HWP 오늘 할일 팝업 |
 | `HF184` | `frontend/haccp-web/src/components/document/ApprovalDocumentPreview.tsx` | 결재 문서 미리보기 |
+|  | `frontend/haccp-web/src/components/document/DocumentPreviewPane.tsx` | 연관 — 결재 문서 미리보기 |
 |  | `frontend/haccp-web/src/components/document/documentPreviewRegistry.ts` | 결재 문서 미리보기 |
+|  | `frontend/haccp-web/src/components/document/DocumentPrintLayer.tsx` | 연관 — 미리보기 레지스트리·지면 변환 |
 |  | `frontend/haccp-web/src/components/document/HtmlDocumentPreview.tsx` | 결재 문서 미리보기 |
 |  | `frontend/haccp-web/src/components/document/HwpDocumentPreview.tsx` | 결재 문서 미리보기 |
-| `HF185` | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachPage.tsx` | 결재 첨부 화면 |
+| `HF185` | `frontend/haccp-web/src/components/document/ApprovalLineSteps.tsx` | 연관 — 결재 첨부 진행상태 마크업 |
+|  | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachPage.tsx` | 결재 첨부 화면 |
 |  | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachRule.ts` | 결재 첨부 화면 |
 | `HF186` | `frontend/haccp-web/src/pages/draft/hwp-doc/hwpOpenMode.test.ts` | HWP 열기 판정 |
 |  | `frontend/haccp-web/src/pages/draft/hwp-doc/hwpOpenMode.ts` | HWP 열기 판정 |
+| `HF187` | `frontend/haccp-web/src/components/document/ApprovalLineSteps.tsx` | 문서함 결재 스테퍼 |
+|  | `frontend/haccp-web/src/components/document/DocumentPreviewPane.tsx` | 문서 미리보기 패널 |
+|  | `frontend/haccp-web/src/components/document/DocumentPrintLayer.tsx` | HTML A4 일괄 인쇄 |
+|  | `frontend/haccp-web/src/components/document/printHwpDocuments.ts` | HWP PDF 인쇄 |
+|  | `frontend/haccp-web/src/pages/flow/box/documentbox/DocumentBoxPage.tsx` | 문서함 인쇄 |
+|  | `frontend/haccp-web/src/pages/flow/box/documentbox/DocumentBoxRule.ts` | 연관 — 문서함 인쇄·결재 스테퍼 |
 | `HF200` | `frontend/haccp-web/src/shell/gridRules/gridSave.ts` | 편집 그리드 저장 공통 |
 | `HF210` | `frontend/haccp-web/src/api/board/calendarApi.ts` | 일정 캘린더 API |
 | `HF211` | `frontend/haccp-web/src/pages/board/CalendarRule.ts` | 일정 캘린더 규칙 |

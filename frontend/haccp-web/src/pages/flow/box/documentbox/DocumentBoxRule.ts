@@ -2,22 +2,28 @@
  * DocumentBoxRule — 문서함·결재함·결재이력 그리드 규칙·컬럼.
  *
  * 개발자: 박승우
- * 일자: 2026-08-26
+ * 일자: 2026-09-03
  * 코멘트:
  *   1) Page는 렌더·상태·API만 담당하고 화면코드·persistId·컬럼은 이 파일이 갖는다
  *   2) inbox/approval/history 세 화면이 같은 Page를 mode로 나눈다. persistId는 화면마다 다르다
  *   3) 상태 열은 DOC_STATUS_BADGE 색을 쓴다. 키 값은 폴더를 옮겨도 바꾸지 않는다
+ *      결재 단계는 그리드가 아니라 첨부화면과 같은 순서형 스테퍼다
  *
  * PIPELINE[HF83] 문서함 그리드 규칙
+ * PIPELINE[HF187] 연관 — 문서함 인쇄·결재 스테퍼
  */
 // 역할 — 그리드 컬럼 타입
 import type { GridColumn } from "@/types/grid";
-// 역할 — 문서 목록·상세 타입
-import type { DocumentDetail, DocumentListRow } from "@/api/documentApi";
+// 역할 — 문서 목록·결재 단계 타입
+import type { DocumentApprovalRow, DocumentListRow } from "@/api/documentApi";
 // 역할 — 양식 유형 정본 상수
 import { DOC_KIND_HTML, DOC_KIND_HWP } from "@/lib/docKind";
 // 역할 — 문서상태 배지 색 — 오늘 할 일·결재첨부와 같다
 import { DOC_STATUS_BADGE } from "@/lib/docStatus";
+// 역할 — 결재 스테퍼 칸 타입 — 컴포넌트와 같은 계약
+import type { ApprovalLineStepView, ApprovalLineTone } from "@/components/document/ApprovalLineSteps";
+
+export type { ApprovalLineStepView, ApprovalLineTone };
 
 /** 문서함 / 결재함 / 결재이력 */
 export type DocumentBoxMode = "inbox" | "approval" | "history";
@@ -29,22 +35,12 @@ export type ListRow = DocumentListRow & {
   writerDisp?: string;
 };
 
-/** 결재 단계 행 */
-export type ApprRow = DocumentDetail["approvals"][number] & {
-  _key: string;
-  roleNm?: string;
-  resultNm?: string;
-};
-
 /** 양식 타입 필터 — value는 DB 정본 소문자 */
 export const DOC_KIND_OPTIONS = [
   { value: "", label: "전체" },
   { value: DOC_KIND_HTML, label: "DB형" },
   { value: DOC_KIND_HWP, label: "한글형" },
 ] as const;
-
-/** 상세 패널 결재 이력 그리드 키 — 세 화면 공통 */
-export const APPR_HIST_PERSIST_ID = "doc-box-approval-history" as const;
 
 /**
  * 개발자: 박승우
@@ -90,12 +86,6 @@ export function splitKeyOf(
   return `haccp-split-${scrnCdOf(mode)}-50`;
 }
 
-/** byte → 사람이 읽는 크기 */
-export function fileSize(size?: number | null): string {
-  if (size == null) return "";
-  return `${(size / 1024).toFixed(1)} KB`;
-}
-
 /**
  * 개발자: 박승우
  * 일자: 2026-08-26
@@ -113,6 +103,7 @@ export function buildListColumns(
     { field: "baseDt", header: "기준일", width: 100 },
     { field: "tmplNm", header: "양식", width: 140 },
     { field: "docNo", header: "문서번호", width: 130 },
+    // 식별 제목 — 언제·무엇을 썼는지. 우측 h2·지면 제목(양식명)과 다르다
     { field: "title", header: "제목", width: 160 },
     { field: "writerDisp", header: "작성자", width: 100 },
     {
@@ -130,17 +121,57 @@ export function buildListColumns(
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-19
+ * 일자: 2026-09-03
  * 코멘트:
- *   1) 상세 결재 이력 열
- *   2) 조회 전용
- *   3) Page가 useMemo로 호출한다
+ *   1) 결재 단계 결과코드로 스테퍼 칸 색을 고른다
+ *   2) ApprovalLineSteps 가 칸을 그릴 때 쓴다
+ *   3) 대기(W) 중 가장 앞 칸만 현재(active), 나머지는 대기. 승인(A)은 완료, 반려(R)은 rejected (빨강)
  */
-export function buildApprColumns(): GridColumn<ApprRow>[] {
-  return [
-    { field: "roleNm", header: "단계", width: 90 },
-    { field: "approverNm", header: "담당자", width: 110 },
-    { field: "resultNm", header: "결과", width: 90 },
-    { field: "opinion", header: "의견", width: 180 },
-  ];
+export function approvalLineToneOf(
+  // 단계별 결과코드 — W 대기 · A 승인 · R 반려. 화면이 넘긴 순서 그대로
+  results: Array<string | null | undefined>,
+  // 지금 칸 인덱스 — 0부터
+  index: number,
+): ApprovalLineTone {
+  const cd = String(results[index] ?? "").toUpperCase();
+  if (cd === "R") return "rejected";
+  if (cd === "A") return "done";
+  const firstWait = results.findIndex((r) => String(r ?? "").toUpperCase() === "W");
+  if (index === firstWait) return "active";
+  return "pending";
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-03
+ * 코멘트:
+ *   1) 문서 결재 단계 행을 첨부화면과 같은 순서형 스테퍼 칸으로 바꾼다
+ *   2) DocumentBoxPage 상세 패널이 호출한다
+ *   3) 역할·결과 라벨은 화면이 공통코드로 넘겨 준다 — Rule 은 코드를 모른다
+ */
+export function buildApprovalLineSteps(
+  // 문서 상세 approvals — stepNo 오름차순이라고 가정하지 않고 여기서 정렬한다
+  steps: DocumentApprovalRow[],
+  // 역할코드 → 라벨 (WRITE→작성 등)
+  roleLabel: (cd: string) => string,
+  // 결과코드 → 라벨 (A→승인 등)
+  resultLabel: (cd: string) => string,
+  // 처리일시 표시 변환 — 없으면 칸에 시각을 안 넣는다
+  formatActDt?: (value: string | null | undefined) => string,
+): ApprovalLineStepView[] {
+  const ordered = [...steps].sort((a, b) => a.stepNo - b.stepNo);
+  const results = ordered.map((s) => s.resultCd);
+  return ordered.map((step, index) => {
+    const act = formatActDt ? formatActDt(step.actDt) : "";
+    const resultNm = resultLabel(step.resultCd);
+    const detail = [resultNm, act && act !== "-" ? act : ""].filter(Boolean).join(" · ");
+    return {
+      key: String(step.idx || `${step.roleCd}-${step.stepNo}`),
+      label: roleLabel(step.roleCd),
+      tone: approvalLineToneOf(results, index),
+      caption: (step.approverNm || step.approverId || "").trim(),
+      detail,
+      opinion: (step.opinion ?? "").trim(),
+    };
+  });
 }

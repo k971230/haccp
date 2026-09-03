@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) 결재선은 문서 흐름의 상류다 — 여기가 틀리면 전송이 어느 단계에서 멈출지 정해진다
  *   2) 헤더(결재선)와 단계(1~3)가 별개 그리드다. 헤더를 고르면 단계가 열린다
- *   3) 단계는 SP 가 1~3 을 고정으로 깔아 준다 — 사람이 순번을 만들지 않는다
+ *   3) 단계는 SP 가 1~2 를 고정으로 깔아 준다 — 사람이 순번을 만들지 않는다
  *
  * PIPELINE[HF130] E2E
  */
@@ -58,23 +58,18 @@ test.describe.serial("결재선관리", () => {
     expect(dbOne(`SELECT appr_line_nm FROM tbl_approval_line WHERE appr_line_cd='${LINE}'`)).toBe(
       "E2E 시험결재선",
     );
-    // 단계는 사람이 만들지 않는다 — 등록과 함께 1~3 이 깔려야 한다
+    // 단계는 사람이 만들지 않는다 — 등록과 함께 작성·승인 2행이 깔려야 한다
     expect(
       dbOne(`SELECT count(*) FROM tbl_approval_line_step WHERE appr_line_cd='${LINE}'`),
       "결재선을 만들었는데 단계가 안 깔렸다",
-    ).toBe("3");
+    ).toBe("2");
   });
 
-  test("기본 결재선은 검토 단계가 꺼져 있다", () => {
-    /*
-     * 상태는 작성대기 → 승인요청 → 승인 4단계로 간다.
-     * 검토(REVIEW)가 켜져 있으면 전송한 문서가 결재대기에서 멈춘 채 승인으로 못 넘어간다 —
-     * 실제로 그 사고가 났었다.
-     */
+  test("기본 결재선에 검토 단계가 없다", () => {
     const rows = dbOne(
       `SELECT count(*) FROM tbl_approval_line_step
-        WHERE co_cd='${sqlLit(loginCoCd())}' AND appr_line_cd='DEFAULT' AND role_cd='REVIEW' AND use_yn='Y'`,
+        WHERE co_cd='${sqlLit(loginCoCd())}' AND appr_line_cd='DEFAULT' AND role_cd='REVIEW'`,
     );
-    expect(rows, "기본 결재선의 검토 단계가 켜져 있다").toBe("0");
+    expect(rows, "기본 결재선에 검토 단계가 남아 있다").toBe("0");
   });
 });

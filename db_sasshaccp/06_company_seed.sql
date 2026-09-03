@@ -143,8 +143,7 @@ SELECT :'writer_id', :'co_cd', :'co_nm' || '팀원', :'admin_pw', 'HACCP_TEAM', 
    AND NOT EXISTS (SELECT 1 FROM tbl_user WHERE user_id = :'writer_id');
 
 -- ------------------------------------------------------------
--- 7. 결재선 — 기본선 하나. 검토(REVIEW)는 꺼 둔다
---    켜 두면 전송한 문서가 검토 단계에서 멈춘 채 승인으로 못 넘어간다
+-- 7. 결재선 — 기본선 하나. 작성 → 승인 2단. 검토 단계는 없다
 --    writer 가 있으면 WRITE=팀원 · APPROVE=팀장 (0001 과 동일)
 -- ------------------------------------------------------------
 INSERT INTO tbl_approval_line (co_cd, appr_line_cd, appr_line_nm, use_yn, ins_id, ins_dt)
@@ -157,11 +156,10 @@ INSERT INTO tbl_approval_line_step (co_cd, appr_line_cd, step_no, role_cd, appro
 SELECT :'co_cd', 'DEFAULT', v.step_no, v.role_cd,
        CASE v.role_cd
          WHEN 'WRITE' THEN CASE WHEN length(trim(:'writer_id')) > 0 THEN :'writer_id' ELSE :'admin_id' END
-         WHEN 'APPROVE' THEN :'admin_id'
-         ELSE CASE WHEN length(trim(:'writer_id')) > 0 THEN NULL ELSE :'admin_id' END
+         ELSE :'admin_id'
        END,
        v.use_yn, 'system', now()
-  FROM (VALUES (1, 'WRITE', 'Y'), (2, 'REVIEW', 'N'), (3, 'APPROVE', 'Y'))
+  FROM (VALUES (1, 'WRITE', 'Y'), (2, 'APPROVE', 'Y'))
        AS v(step_no, role_cd, use_yn)
  WHERE NOT EXISTS (
      SELECT 1 FROM tbl_approval_line_step o

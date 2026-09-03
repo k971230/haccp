@@ -121,7 +121,7 @@ PIPELINE[HB137] 연관 모듈
     </update>
 
     <!--
-      삭제 차단 — 전송(REQ·REV)·결재완료(APV) 문서 첫 건.
+      삭제 차단 — 전송(REQ)·결재완료(APV) 문서 첫 건.
       검사와 문구는 sp_tbl_document_delete_blocker_r_000 한곳에 있다.
       문서 허브 공통이라 계열을 안 가른다.
     -->

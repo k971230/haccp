@@ -94,37 +94,57 @@ public class DocumentService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-06
+     * 일자: 2026-09-03
      * 코멘트:
-     *   1) 결재함 — 현재 사용자 차례의 REQ/REV 대기 문서만 반환한다
-     *   2) approval-inbox 화면에서 호출한다
+     *   1) 결재대기 — 현재 사용자 차례의 REQ 대기 문서만 반환한다
+     *   2) sign-ready 화면과 오늘 할 일 결재 건수가 호출한다
      *   3) 성공 시 목록 배열
      */
-    public List<Map<String, Object>> approvalInbox(String fromDt, String toDt, String keyword) {
-        return mapper.selectApprovalInbox(
+    public List<Map<String, Object>> signReady(
+            // 기준일 시작 YYYYMMDD — 공백이면 전체
+            String fromDt,
+            // 기준일 종료 YYYYMMDD — 공백이면 전체
+            String toDt,
+            // 문서번호·제목 검색어
+            String keyword,
+            // 작성자 ID·이름 부분검색 — 공백이면 전체
+            String writerId
+    ) {
+        return mapper.selectSignReady(
                 LoginUserContext.coCd(),
                 LoginUserContext.userId(),
                 text(fromDt),
                 text(toDt),
-                text(keyword)
+                text(keyword),
+                text(writerId)
         ).stream().map(this::camelMap).toList();
     }
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-06
+     * 일자: 2026-09-03
      * 코멘트:
-     *   1) 결재 이력 — 내가 승인·반려한 문서를 반환한다
-     *   2) approval-history 화면에서 호출한다
+     *   1) 결재완료 — 내가 승인·반려한 문서를 반환한다
+     *   2) sign-ok 화면에서 호출한다
      *   3) 성공 시 목록 배열
      */
-    public List<Map<String, Object>> approvalHistory(String fromDt, String toDt, String keyword) {
-        return mapper.selectApprovalHistory(
+    public List<Map<String, Object>> signOk(
+            // 기준일 시작 YYYYMMDD — 공백이면 전체
+            String fromDt,
+            // 기준일 종료 YYYYMMDD — 공백이면 전체
+            String toDt,
+            // 문서번호·제목 검색어
+            String keyword,
+            // 작성자 ID·이름 부분검색 — 공백이면 전체
+            String writerId
+    ) {
+        return mapper.selectSignOk(
                 LoginUserContext.coCd(),
                 LoginUserContext.userId(),
                 text(fromDt),
                 text(toDt),
-                text(keyword)
+                text(keyword),
+                text(writerId)
         ).stream().map(this::camelMap).toList();
     }
 
@@ -301,11 +321,12 @@ public class DocumentService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-06
+     * 일자: 2026-09-03
      * 코멘트:
      *   1) 문서의 최신 HWP_SRC를 rhwp CLI로 PDF로 변환한 뒤 file_kind=PDF로 보관한다
-     *   2) hwp-document-editor의 서버 PDF 내보내기 버튼이 호출한다
-     *   3) 성공 시 물리 경로를 제외한 파일 메타, 원본 없음·CLI 실패는 BizException
+     *   2) 문서함 인쇄와 작성 화면 PDF 내보내기가 호출한다
+     *   3) 결재 잠금(REQ/APV)이고 완료본이 있으면 변환 없이 그 PDF를 돌려준다.
+     *      없으면 변환 후 등록한다 — SP가 PDF만 잠금에서 뺀다
      */
     public Map<String, Object> exportPdf(
             // PDF로 내보낼 문서 대리키
@@ -319,10 +340,15 @@ public class DocumentService {
         if (header == null) {
             throw new BizException("문서를 찾을 수 없습니다.");
         }
-        DocumentFileRow hwpSrc = mapper.selectFiles(coCd, requiredDocIdx).stream()
-                .filter(file -> "HWP_SRC".equalsIgnoreCase(text(file.getFileKind())))
-                .max(Comparator.comparing(DocumentFileRow::getIdx, Comparator.nullsFirst(Long::compareTo)))
-                .orElse(null);
+        List<DocumentFileRow> files = mapper.selectFiles(coCd, requiredDocIdx);
+        // 결재 진행·완료일 때(= 본문 잠금) 이미 만든 완료본을 다시 쓰지 않는다
+        if (approvalLocked(headerStatus(header))) {
+            DocumentFileRow storedPdf = latestFile(files, "PDF");
+            if (storedPdf != null) {
+                return publicFile(storedPdf);
+            }
+        }
+        DocumentFileRow hwpSrc = latestFile(files, "HWP_SRC");
         if (hwpSrc == null) {
             throw new BizException("PDF로 변환할 HWP 본문이 없습니다. 먼저 HWPX 본문을 저장하세요.");
         }
@@ -397,9 +423,9 @@ public class DocumentService {
      * 개발자: 박승우
      * 일자: 2026-08-06
      * 코멘트:
-     *   1) 상신·상신취소·검토·승인·반려·결재취소 중 하나를 처리한다
+     *   1) 상신·상신취소·승인·반려·결재취소 중 하나를 처리한다
      *   2) 문서 결재 패널의 버튼이 호출한다
-     *   3) 성공 시 문서 상태를 갱신하고 상신·검토·승인·반려·취소를 감사 이력에 남긴다
+     *   3) 성공 시 문서 상태를 갱신하고 상신·승인·반려·취소를 감사 이력에 남긴다
      */
     @Transactional
     public void processApproval(
@@ -410,7 +436,7 @@ public class DocumentService {
     ) {
         Long docIdx = DeleteValidation.requirePositive(req.getDocIdx(), "문서번호가 올바르지 않습니다.");
         String action = text(req.getActionCd()).toUpperCase();
-        if (!List.of("REQUEST", "CANCEL", "REVIEW", "APPROVE", "REJECT", "UNDO").contains(action)) {
+        if (!List.of("REQUEST", "CANCEL", "APPROVE", "REJECT", "UNDO").contains(action)) {
             throw new BizException("결재 처리 구분이 올바르지 않습니다.");
         }
         String coCd = LoginUserContext.coCd();
@@ -432,7 +458,6 @@ public class DocumentService {
                     case "APPROVE" -> "APV";
                     case "REJECT" -> "RJT";
                     case "REQUEST" -> "REQ";
-                    case "REVIEW" -> "REV";
                     case "CANCEL" -> "CANCEL";
                     case "UNDO" -> "UNDO";
                     default -> "U";
@@ -635,6 +660,34 @@ public class DocumentService {
         } catch (IOException ignored) {
             // 임시 잔여는 운영 정리 대상이다
         }
+    }
+
+    /** 첨부 목록에서 종류별 최신 1건 — idx가 큰 쪽이 나중이다 */
+    private DocumentFileRow latestFile(
+            // 문서 첨부 전체
+            List<DocumentFileRow> files,
+            // HWP_SRC / PDF
+            String fileKind
+    ) {
+        return files.stream()
+                .filter(file -> fileKind.equalsIgnoreCase(text(file.getFileKind())))
+                .max(Comparator.comparing(DocumentFileRow::getIdx, Comparator.nullsFirst(Long::compareTo)))
+                .orElse(null);
+    }
+
+    /** 헤더 Map의 status — SP는 lower_snake, camelMap 전에도 status 키다 */
+    private String headerStatus(Map<String, Object> header) {
+        Object status = header.get("status");
+        if (status == null) {
+            status = header.get("STATUS");
+        }
+        return status == null ? "" : text(String.valueOf(status));
+    }
+
+    /** 결재 진행·완료일 때(= 본문·사용자첨부 잠금) */
+    private boolean approvalLocked(String status) {
+        String code = text(status).toUpperCase();
+        return "REQ".equals(code) || "APV".equals(code);
     }
 
     /** 파일 종류의 허용값 검증 */

@@ -96,7 +96,7 @@ type ListMeta = DocListMeta & {
   baseDtDisp?: string;
   writerNm?: string;
   sendState?: SendState;
-  // 제목 — tbl_document.title
+  // 식별 제목 — tbl_document.title. 지면 제목이 아니다
   title?: string;
   // 이탈여부 Y/N — 목록 칸을 쓰는 화면(HWP)만 채운다
   deviationYn?: string;
@@ -556,7 +556,7 @@ export function HtmlFormDraftPage({
           deviationYn: showDeviationColumn
             ? ((row as EditableRow<ListMeta>).deviationYn ?? "N")
             : (b.deviationYn ? "Y" : "N"),
-          // 목록 제목 — 본문 SP 가 값이 있으면 쓰고 없으면 기존/자동값을 유지한다
+          // 식별 제목 — 목록용. 본문 SP 가 값이 있으면 쓰고 없으면 기존/자동값을 유지한다. 지면 hdr-title 은 안 바뀐다
           title,
         });
         /*
@@ -1250,7 +1250,7 @@ export function HtmlFormDraftPage({
             </SearchField>
             <SearchField label="제목">
               <input
-                // 제목 부분검색 — tbl_document.title. 결재 첨부 remark 가 아니다
+                // 식별 제목 부분검색 — tbl_document.title. 지면 제목이 아니다
                 className={searchInputClass}
                 value={search.title}
                 placeholder="제목"
@@ -1371,7 +1371,7 @@ export function HtmlFormDraftPage({
                 // 반려 행은 노란색 — 배지(전송대기)로는 구분하지 못한다
                 rowClassName={(row) => draftRejectedRowClass((row as ListMeta).status)}
                 onCellChange={(key, field, cellValue) => {
-                  // 제목 — tbl_document.title. 결재 첨부 remark 가 아니다. 상태와 무관
+                  // 식별 제목 — tbl_document.title. 지면·결재 헤더에 안 실린다. 상태와 무관
                   if (field === "title") {
                     patchRow(key, { title: String(cellValue ?? "") } as Partial<ListMeta>);
                     return;

@@ -146,6 +146,21 @@ export function toDisplayDateTime(value: string | null | undefined): string {
 
 /**
  * 개발자: 박승우
+ * 일자: 2026-09-03
+ * 코멘트:
+ *   1) 서버 타임스탬프에서 날짜만 남긴다 — 시각은 문서함 결재 스테퍼에 두지 않는다
+ *   2) DocumentBoxPage 가 결재 단계 detail 을 만들 때 쓴다
+ *   3) 해석 실패는 대시. toDisplayDateTime 과 같은 파싱이다
+ */
+export function toDisplayDateOnly(value: string | null | undefined): string {
+  const dt = toDisplayDateTime(value);
+  // 파싱 실패·빈 값일 때(= "-") 그대로 돌려 원문을 노출하지 않는다
+  if (dt === "-") return "-";
+  return dt.slice(0, 10);
+}
+
+/**
+ * 개발자: 박승우
  * 일자: 2026-08-25
  * 코멘트:
  *   1) YYYYMMDD 를 사용자가 읽는 「YYYY-MM-DD」 로 바꾼다
