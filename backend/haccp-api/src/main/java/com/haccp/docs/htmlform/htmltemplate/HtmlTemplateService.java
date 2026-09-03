@@ -23,6 +23,8 @@ import com.haccp.docs.htmlform.ccpmtltemplate.CcpMtlTemplateMapper;
 import com.haccp.docs.htmlform.ccppkgtemplate.CcpPkgTemplateMapper;
 import com.haccp.docs.htmlform.ccpverifytemplate.CcpVerifyTemplateMapper;
 import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormVerDeleteItem;
+// 역할 — 양식 원본 저장·삭제 감사
+import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +57,8 @@ public class HtmlTemplateService {
     private final CcpHtgTemplateMapper htgMapper;
     private final CcpMtlTemplateMapper mtlMapper;
     private final ObjectMapper objectMapper;
+    // 양식 원본 쓰기 이력 — 형제 화면과 같은 밀도로 남긴다
+    private final AuditWriter auditWriter;
 
     /**
      * 개발자: 박승우
@@ -159,7 +163,11 @@ public class HtmlTemplateService {
         if (newCd == null || newCd.isBlank()) {
             throw new BizException("복사한 양식을 찾을 수 없습니다.");
         }
-        return Map.of("tmplCd", newCd.trim());
+        String created = newCd.trim();
+        // 사용양식 한 줄을 만드는 행추가 — 주 표는 tbl_company_template
+        auditWriter.record("tbl_company_template", null, "I",
+                Map.of("tmplCd", created, "verNm", name, "srcTmplCd", tmpl));
+        return Map.of("tmplCd", created);
     }
 
     /**
@@ -189,6 +197,9 @@ public class HtmlTemplateService {
             } else {
                 mapper.saveItems(LoginUserContext.coCd(), tmpl, verNo, json, LoginUserContext.userId());
             }
+            // 항목 본문은 안 남긴다 — 헤더만. 작성 저장과 같다
+            auditWriter.record(auditVerTbl(tmpl), null, "U",
+                    Map.of("tmplCd", tmpl, "verNo", verNo, "itemCnt", items == null ? 0 : items.size()));
         } catch (JsonProcessingException e) {
             throw new BizException("점검항목 자료를 저장 형식으로 변환하지 못했습니다.");
         }
@@ -217,6 +228,7 @@ public class HtmlTemplateService {
         } else {
             mapper.applyVersion(LoginUserContext.coCd(), tmpl, ver, LoginUserContext.userId());
         }
+        auditWriter.record(auditVerTbl(tmpl), null, "U", Map.of("tmplCd", tmpl, "verNo", ver));
     }
 
     /**
@@ -260,6 +272,8 @@ public class HtmlTemplateService {
         } else {
             mapper.updateVerNm(LoginUserContext.coCd(), tmpl, verNo, name, yn, LoginUserContext.userId());
         }
+        auditWriter.record(auditVerTbl(tmpl), null, "U",
+                Map.of("tmplCd", tmpl, "verNo", verNo, "verNm", name, "useYn", yn));
     }
 
     /**
@@ -307,8 +321,19 @@ public class HtmlTemplateService {
                         LoginUserContext.coCd(), key.getTmplCd(), key.getVerNo(), LoginUserContext.userId()
                 );
             }
+            auditWriter.record(auditVerTbl(key.getTmplCd()), null, "D",
+                    Map.of("tmplCd", key.getTmplCd(), "verNo", key.getVerNo()));
         }
         return keys.size();
+    }
+
+    /** 가족별 버전 표 — 감사 한 줄의 tbl_nm */
+    private static String auditVerTbl(String tmplCd) {
+        if (isMtl(tmplCd)) return "tbl_tml_ccp_mtl_ver";
+        if (isHtg(tmplCd)) return "tbl_tml_ccp_htg_ver";
+        if (isPkg(tmplCd)) return "tbl_tml_ccp_pkg_ver";
+        if (isCcp(tmplCd)) return "tbl_tml_ccp_chk_ver";
+        return "tbl_html_hyg_prc_ver";
     }
 
     /** 삭제 키 정규화·표준 차단 Double Check. */

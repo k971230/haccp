@@ -31,6 +31,7 @@ import com.haccp.draft.dto.DraftListRow;
 import com.haccp.draft.dto.DraftLogRow;
 import com.haccp.draft.dto.DraftSaveRequest;
 import com.haccp.flow.ca.DocCorrectiveSupport;
+import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -77,8 +78,13 @@ public class CcpLogDraftService {
     private final CcpLogDraftMapper mapper;
     private final ObjectMapper objectMapper;
     private final DocCorrectiveSupport correctiveSupport;
+    // 작성 저장·삭제 이력 — 이탈 자동생성은 같은 저장의 부수라 따로 안 남긴다
+    private final AuditWriter auditWriter;
     // 지면 작성자·승인자 칸 — 문서함 미리보기가 같은 detail 을 쓴다
     private final DraftPaperStampMapper paperStampMapper;
+
+    /** 감사 로그 대상 표 — 헤더. 기록행은 남기지 않는다 */
+    private static final String AUDIT_TBL = "tbl_document";
 
     /**
      * 개발자: 박승우
@@ -227,6 +233,9 @@ public class CcpLogDraftService {
             if (docIdx == null || docIdx <= 0) {
                 throw new BizException("저장에 실패했습니다.");
             }
+            // 기록행은 안 남긴다 — 헤더만
+            auditWriter.record(AUDIT_TBL, docIdx, req.getDocIdx() == null ? "I" : "U",
+                    Map.of("docIdx", docIdx, "tmplCd", tmpl, "baseDt", req.getBaseDt().trim()));
             saveFooter(coCd, docIdx, tmpl, req, rows);
             return docIdx;
         } catch (JsonProcessingException e) {
@@ -341,6 +350,7 @@ public class CcpLogDraftService {
         DraftSupport.assertDeletable(keys, (ids) -> mapper.selectDeleteBlocker(LoginUserContext.coCd(), ids));
         for (DraftDeleteItem key : keys) {
             mapper.delete(LoginUserContext.coCd(), key.getDocIdx(), LoginUserContext.userId());
+            auditWriter.record(AUDIT_TBL, key.getDocIdx(), "D", null);
         }
         return keys.size();
     }

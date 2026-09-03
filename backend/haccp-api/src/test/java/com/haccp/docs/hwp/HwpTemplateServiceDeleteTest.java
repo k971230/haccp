@@ -71,6 +71,16 @@ class HwpTemplateServiceDeleteTest {
     }
 
     @Test
+    void 저장해도_감사_기록을_남긴다() {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("tmplCd", "hwp_usr_001");
+        row.put("tmplNm", "자사양식");
+        row.put("useYn", "Y");
+        service.saveHwpTemplate(row);
+        verify(auditWriter, times(1)).record(eq("tbl_company_template"), any(), eq("U"), any());
+    }
+
+    @Test
     void 지운_뒤_감사_기록을_남긴다() {
         // 형제 화면과 같은 밀도로 남겨야 한다 — 안 남기면 누가 지웠는지 못 본다
         when(mapper.selectDeleteBlocker(any(), any())).thenReturn(null);

@@ -29,6 +29,7 @@ import com.haccp.docs.htmlform.ccpmtltemplate.CcpMtlTemplateMapper;
 import com.haccp.docs.htmlform.ccppkgtemplate.CcpPkgTemplateMapper;
 import com.haccp.docs.htmlform.ccpverifytemplate.CcpVerifyTemplateMapper;
 import com.haccp.common.exception.BizException;
+import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -48,9 +49,10 @@ class HtmlTemplateServiceGuardTest {
     @Mock private CcpPkgTemplateMapper pkgMapper;
     @Mock private CcpHtgTemplateMapper htgMapper;
     @Mock private CcpMtlTemplateMapper mtlMapper;
+    @Mock private AuditWriter auditWriter;
 
     private HtmlTemplateService service() {
-        return new HtmlTemplateService(mapper, ccpMapper, pkgMapper, htgMapper, mtlMapper, new ObjectMapper());
+        return new HtmlTemplateService(mapper, ccpMapper, pkgMapper, htgMapper, mtlMapper, new ObjectMapper(), auditWriter);
     }
 
     private static final List<Map<String, Object>> ITEMS = List.of(Map.of("itemNm", "온도"));

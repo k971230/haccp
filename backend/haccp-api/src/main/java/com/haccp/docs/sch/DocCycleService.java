@@ -22,6 +22,8 @@ import com.haccp.docs.sch.dto.DocCycleDeleteItem;
 // 역할 — JWT 컨텍스트·업무 예외
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
+// 역할 — 주기 저장·삭제 감사
+import com.haccp.sys.logs.auditlog.AuditWriter;
 // 역할 — 날짜 계산·컬렉션
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -45,6 +47,11 @@ public class DocCycleService {
     private final DocCycleMapper mapper;
     private final CycleScheduleGenerator generator;
     private final ObjectMapper objectMapper;
+    // 주기 쓰기 이력 — 예정일 재생성은 같은 저장의 부수라 따로 안 남긴다
+    private final AuditWriter auditWriter;
+
+    /** 감사 로그 대상 표 */
+    private static final String AUDIT_TBL = "tbl_schedule_rule";
 
     // 마감 몇 분 전에 알릴지 — 매직넘버 금지(OPS_GLOBAL_CONFIG), alarm_dt 계산에 그대로 쓴다
     @Value("${app.schedule.alarm-before-minutes:60}")
@@ -123,6 +130,11 @@ public class DocCycleService {
         // 저장 결과를 다시 읽어 SP가 보정한 값(기본 마감시각·사용유무)으로 예정일을 만든다
         List<Map<String, Object>> saved = mapper.selectCycle(coCd, tmplCd);
         if (saved != null && !saved.isEmpty()) regenerate(coCd, saved.get(0), userId);
+        // UPSERT 한 건이라 U. 반복 상세·예정일은 남기지 않는다
+        auditWriter.record(AUDIT_TBL, null, "U", Map.of(
+                "tmplCd", tmplCd,
+                "cycleCd", str(row.get("cycleCd")),
+                "useYn", str(row.get("useYn"))));
     }
 
     /**
@@ -156,7 +168,11 @@ public class DocCycleService {
         assertDeletable(keys);
         String coCd = LoginUserContext.coCd();
         String userId = LoginUserContext.userId();
-        for (DocCycleDeleteItem key : keys) mapper.deleteCycle(coCd, text(key.getTmplCd()), userId);
+        for (DocCycleDeleteItem key : keys) {
+            String tmplCd = text(key.getTmplCd());
+            mapper.deleteCycle(coCd, tmplCd, userId);
+            auditWriter.record(AUDIT_TBL, null, "D", Map.of("tmplCd", tmplCd));
+        }
     }
 
     /**

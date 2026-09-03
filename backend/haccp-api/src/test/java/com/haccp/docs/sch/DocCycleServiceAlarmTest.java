@@ -16,6 +16,7 @@ package com.haccp.docs.sch;
 
 import static org.mockito.Mockito.verify;
 
+import com.haccp.sys.logs.auditlog.AuditWriter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,6 +29,9 @@ class DocCycleServiceAlarmTest {
 
     @Mock
     private DocCycleMapper mapper;
+
+    @Mock
+    private AuditWriter auditWriter;
 
     @InjectMocks
     private DocCycleService service;
