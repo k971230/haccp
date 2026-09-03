@@ -1,6 +1,6 @@
 # 5. PIPELINE 색인 — 태그에서 파일로
 
-> 개발자: 박승우 · 일자: 2026-09-02
+> 개발자: 박승우 · 일자: 2026-09-03
 > 소스의 `PIPELINE[HFn]` / `PIPELINE[HBn]` 주석에서 뽑았다.
 
 코드에 태그를 달아 두고 여기서 파일을 찾는다.
@@ -20,7 +20,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 [`backend/haccp-api/PIPELINE.md`](../backend/haccp-api/PIPELINE.md) ·
 [`frontend/haccp-web/PIPELINE.md`](../frontend/haccp-web/PIPELINE.md).
 
-## 프론트 (HF) — 태그 86개 · 파일 267곳
+## 프론트 (HF) — 태그 85개 · 파일 264곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
@@ -99,8 +99,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/shell/mesSec.ts` | 패널 활성 — useActiveGrid 시각과 동일 emerald |
 |  | `frontend/haccp-web/src/shell/useActiveGrid.ts` | 셸 인프라 — mes-web useActiveGrid와 동일 계약 |
 | `HF76` | `frontend/haccp-web/src/shell/useSection.ts` | 셸 인프라 |
-| `HF81` | `frontend/haccp-web/src/components/form/DocFormLayout.tsx` | 연관 모듈 |
-|  | `frontend/haccp-web/src/hooks/useDocFormSession.ts` | 연관 모듈 |
+| `HF81` | `frontend/haccp-web/src/hooks/useDocFormSession.ts` | 연관 모듈 |
 | `HF82` | `frontend/haccp-web/src/api/documentApi.ts` | API 레이어 |
 |  | `frontend/haccp-web/src/components/document/ApprovalDocumentPreview.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/components/document/DocumentApprovalToolbar.tsx` | 연관 모듈 |
@@ -197,10 +196,8 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `HF113` | `frontend/haccp-web/src/components/ui/MesButton.tsx` | UI 컴포넌트 |
 | `HF114` | `frontend/haccp-web/src/main.tsx` | 연관 모듈 |
 | `HF115` | `frontend/haccp-web/src/pages/auth/LoginPage.tsx` | 로그인 화면 |
-| `HF119` | `frontend/haccp-web/src/components/form/DocFormLayout.tsx` | DB형 문서 레이아웃 |
 | `HF120` | `frontend/haccp-web/src/components/form/DocCell.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/components/form/DocDeviationFooter.tsx` | 연관 모듈 |
-|  | `frontend/haccp-web/src/components/form/DocFormLayout.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/components/form/docFormSearch.ts` | 문서 검색 기본값 |
 |  | `frontend/haccp-web/src/hooks/useDocFormSession.ts` | DB형 문서 세션 |
 |  | `frontend/haccp-web/src/pages/docs/hwp/HwpTemplateManagementPage.tsx` | 연관 모듈 |
@@ -292,7 +289,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/pages/draft/hwp-doc/hwpOpenMode.ts` | HWP 열기 판정 |
 | `HF200` | `frontend/haccp-web/src/shell/gridRules/gridSave.ts` | 편집 그리드 저장 공통 |
 
-## 백엔드 (HB) — 태그 79개 · 파일 276곳
+## 백엔드 (HB) — 태그 78개 · 파일 278곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
@@ -543,14 +540,16 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftFormRow.java` | 양식 작성 공용 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftListRow.java` | 양식 작성 공용 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftSaveRequest.java` | 양식 작성 공용 DTO |
-|  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HygProcessDraftMapper.java` | 위생공정 작성 Mapper |
-|  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HygProcessDraftService.java` | 위생공정 작성 Service |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HtmlDraftControllerBase.java` | HTML 작성 공통 Controller |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HtmlDraftMapper.java` | HTML 작성 공통 Mapper |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HtmlDraftService.java` | HTML 작성 공통 Service |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HygProcessDraftController.java` | 위생공정 작성 Controller |
 |  | `backend/haccp-api/src/main/resources/mapper/draft/DraftPaperStampMapper.xml` | 양식 작성 공용 유틸 |
-|  | `backend/haccp-api/src/main/resources/mapper/draft/html/HygProcessDraftMapper.xml` | 위생공정 작성 XML |
-| `HB136` | `backend/haccp-api/src/main/java/com/haccp/draft/html/HygProcessDraftController.java` | 위생공정 작성 Controller |
-| `HB137` | `backend/haccp-api/src/main/java/com/haccp/draft/html/CcpVerifyDraftMapper.java` | CCP 검증점검 작성 Mapper |
-|  | `backend/haccp-api/src/main/java/com/haccp/draft/html/CcpVerifyDraftService.java` | CCP 검증점검 작성 Service |
-|  | `backend/haccp-api/src/main/resources/mapper/draft/html/CcpVerifyDraftMapper.xml` | CCP 검증점검 작성 XML |
+|  | `backend/haccp-api/src/main/resources/mapper/draft/html/HtmlDraftMapper.xml` | HTML 작성 공통 XML |
+| `HB137` | `backend/haccp-api/src/main/java/com/haccp/draft/html/HtmlDraftControllerBase.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HtmlDraftMapper.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HtmlDraftService.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/resources/mapper/draft/html/HtmlDraftMapper.xml` | 연관 모듈 |
 | `HB138` | `backend/haccp-api/src/main/java/com/haccp/draft/html/CcpVerifyDraftController.java` | CCP 검증점검 작성 Controller |
 | `HB139` | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpLogDraftMapper.java` | CCP 모니터링 작성 Mapper |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpLogDraftService.java` | CCP 모니터링 작성 Service |

@@ -2,148 +2,42 @@
  * CcpVerifyDraftController — CCP 검증점검 양식 작성 REST.
  *
  * 개발자: 박승우
- * 일자: 2026-08-24
+ * 일자: 2026-09-03
  * 코멘트:
  *   1) 경로 /api/v1/draft/html/ccp-verify — FE SCREEN_PATH 와 같은 칸. 회사코드는 JWT 만
- *   2) 양식·목록·상세 GET, 저장 PUT, 삭제 POST 2단계 — HYG(hyg-process)와 같은 계약이다
- *   3) 전송·전송취소는 이 컨트롤러가 아니라 문서 허브 /api/v1/docs/documents/approval 을 쓴다
+ *   2) 엔드포인트 6개는 일반위생·공정점검과 글자까지 같아 HtmlDraftControllerBase 로 옮겼다.
+ *      여기 남는 것은 URL 과 양식군뿐이다
+ *   3) 업무는 HtmlDraftService 가 갖는다
  *
  * 중분류 슬러그는 ccp-chk 다(docs 아래 ccp 와 tbl_menu menu_cd 가 겹칠 수 없다).
  * 자바 패키지는 com.haccp.draft.html 이다 — FE SCREEN_PATH /draft/html 과 같은 칸.
+ * 전송·전송취소는 이 컨트롤러가 아니라 문서 허브 /api/v1/docs/documents/approval 을 쓴다.
  *
  * PIPELINE[HB138] CCP 검증점검 작성 Controller
  */
 package com.haccp.draft.html;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.haccp.common.response.CommonResponse;
-import com.haccp.draft.dto.DraftDeleteItem;
-import com.haccp.draft.dto.DraftFormRow;
-import com.haccp.draft.dto.DraftListRow;
-import com.haccp.draft.dto.DraftSaveRequest;
-import java.util.List;
-import java.util.Map;
+// 역할 — 생성자 주입
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+// 역할 — REST 등록·경로
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/draft/html/ccp-verify")
 @RequiredArgsConstructor
-public class CcpVerifyDraftController {
-    private final CcpVerifyDraftService service;
+public class CcpVerifyDraftController extends HtmlDraftControllerBase {
 
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-24
-     * 코멘트:
-     *   1) 작성에 쓸 수 있는 자사 양식(사용여부 예)만 조회한다
-     *   2) 화면 진입 시 한 번 호출한다
-     *   3) 성공 시 양식 배열. 없으면 빈 배열
-     */
-    @GetMapping("/forms")
-    public CommonResponse<List<DraftFormRow>> forms() {
-        return CommonResponse.ok(service.forms());
+    private final HtmlDraftService service;
+
+    /** 이 화면이 다루는 양식군 — CCP 검증점검 */
+    @Override
+    protected HtmlDraftService.Family family() {
+        return HtmlDraftService.Family.CHK;
     }
 
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-24
-     * 코멘트:
-     *   1) 일자 구간·양식코드·양식명·작성자ID·작성자명으로 작성 목록을 조회한다
-     *   2) 조회 버튼이 호출한다
-     *   3) 성공 시 목록 배열
-     */
-    @GetMapping("/list")
-    public CommonResponse<List<DraftListRow>> list(
-            // tmplCd: 양식코드 부분검색. 없으면 자사 양식 전체
-            @RequestParam(required = false) String tmplCd,
-            // tmplNm: 양식명 부분검색
-            @RequestParam(required = false) String tmplNm,
-            // fromDt: 일자 시작 YYYYMMDD
-            @RequestParam(required = false) String fromDt,
-            // toDt: 일자 종료 YYYYMMDD
-            @RequestParam(required = false) String toDt,
-            // writerId: 작성자 ID 부분검색
-            @RequestParam(required = false) String writerId,
-            // writerNm: 작성자명 부분검색
-            @RequestParam(required = false) String writerNm,
-            // title: 제목 부분검색 — tbl_document.title
-            @RequestParam(required = false) String title
-    ) {
-        return CommonResponse.ok(service.list(tmplCd, tmplNm, fromDt, toDt, writerId, writerNm, title));
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-24
-     * 코멘트:
-     *   1) 기존 상세 또는 선택 양식의 신규 기본행을 조회한다
-     *   2) 좌측 행 클릭·양식 선택이 호출한다
-     *   3) header·items·corrective JSON
-     */
-    @GetMapping("/detail")
-    public CommonResponse<JsonNode> detail(
-            // tmplCd: 신규일 때 항목을 깔 양식코드. 필수
-            @RequestParam String tmplCd,
-            // docIdx: 없으면 신규
-            @RequestParam(required = false) Long docIdx
-    ) {
-        return CommonResponse.ok(service.detail(tmplCd, docIdx));
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-24
-     * 코멘트:
-     *   1) 작성 내용 전체를 저장한다. 전송 전이라 필수값은 검사하지 않는다
-     *   2) 저장 버튼이 호출한다
-     *   3) 성공 시 문서 idx
-     */
-    @PutMapping("/save")
-    public CommonResponse<Map<String, Long>> save(
-            // req: 양식코드·일자·점검자·항목·하단 4칸
-            @RequestBody DraftSaveRequest req
-    ) {
-        return CommonResponse.ok(Map.of("docIdx", service.save(req)));
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-24
-     * 코멘트:
-     *   1) 삭제 가능 여부만 검사한다
-     *   2) 확인창 전에 호출한다
-     *   3) Body [{ docIdx }]
-     */
-    @PostMapping("/validate-delete")
-    public CommonResponse<Void> validateDelete(
-            // keys: 복합키 객체 배열. UI 단건이어도 1건 배열
-            @RequestBody List<DraftDeleteItem> keys
-    ) {
-        service.validateDelete(keys);
-        return CommonResponse.ok(null);
-    }
-
-    /**
-     * 개발자: 박승우
-     * 일자: 2026-08-24
-     * 코멘트:
-     *   1) 재검증 후 문서를 삭제한다
-     *   2) 삭제 버튼이 호출한다
-     *   3) HTTP DELETE 금지 — POST 만 쓴다
-     */
-    @PostMapping("/delete")
-    public CommonResponse<Void> delete(
-            // keys: 복합키 객체 배열
-            @RequestBody List<DraftDeleteItem> keys
-    ) {
-        service.delete(keys);
-        return CommonResponse.ok(null);
+    @Override
+    protected HtmlDraftService service() {
+        return service;
     }
 }

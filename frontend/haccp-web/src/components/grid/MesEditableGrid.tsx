@@ -410,22 +410,33 @@ function MesEditableGridInner<T extends Record<string, any>>(props: MesEditableG
       <button type="button"
         // 추가 Tailwind/CSS 클래스
         // 기본 스타일 위에 병합(cn)
-        className={cn("mes-cell-btn", c.required && "mes-cell-btn-required", !popOk && "mes-cell-btn-locked")}
+        /*
+         * 잠겼을 때는 **클릭을 통과시킨다**(pointer-events-none).
+         *
+         * disabled 버튼은 클릭을 삼키기만 한다 — 그런데 이 버튼은 행 한가운데에 있어서
+         * 저장된 행 가운데를 누르면 아무 일도 안 일어났다(행 선택이 안 되어 우측 지면이 안 열린다).
+         * 통과시키면 셀 클릭으로 내려가 평소대로 행이 열린다.
+         * 잠금 안내를 여기서 띄우지는 않는다 — 모달 backdrop 이 뒤 클릭을 먹는다.
+         */
+        className={cn(
+          "mes-cell-btn",
+          c.required && "mes-cell-btn-required",
+          !popOk && "mes-cell-btn-locked pointer-events-none",
+        )}
         // 그리드 툴바/헤더에 표시할 제목
         // 비우면 제목 영역 생략 가능
         title={btn.title}
-        // 비활성 여부
-        // true이거나 loading이면 클릭 불가
+        // 비활성 — 탭 이동·키보드 활성에서도 빠진다. 클릭은 위 pointer-events-none 이 통과시킨다
         disabled={!popOk}
-        // 클릭 핸들러
-        // 비동기면 run/useAsyncAction으로 중복 클릭 방지 권장
+        /*
+         * 클릭 핸들러 — **잠겼을 때는 여기까지 오지 않는다.**
+         * disabled + pointer-events-none 이라 이벤트가 아예 안 뜬다.
+         * 예전에는 여기에 「왜 잠겼는지」 안내를 띄우는 가지가 있었는데 닿지 않는 죽은 코드였다.
+         * 되살려 봤더니 그 모달 backdrop 이 뒤 클릭을 먹어 화면이 더 나빠졌다 —
+         * 잠금은 mes-cell-btn-locked 로 보여 주고, 셀 편집 쪽 onLockedAttempt 가 이유를 맡는다.
+         */
         onClick={(e) => {
           e.stopPropagation();
-          if (!popOk) {
-            const reason = access?.canOpenPopup(row as EditableRow<GridRow>, pf).reason;
-            if (reason) onLockedAttempt?.(reason, pf);
-            return;
-          }
           fireCellBtn(row, c, isNew, e);
         }}>
         {btn.icon
