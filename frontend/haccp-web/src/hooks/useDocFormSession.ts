@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) 신규 시 좌측 그리드에 C행을 쌓고 건별 본문 버퍼를 둔다
  *   2) 저장은 dirty 전건 검증 후 단건 save를 순차 호출한다
- *   3) CCP·위생·BizOps DocFormLayout 화면이 동일 계약을 쓴다
+ *   3) CCP·위생 작성 화면이 동일 계약을 쓴다 — 셸은 HtmlFormDraftPage 다
  *
  * PIPELINE[HF120] DB형 문서 세션
  * PIPELINE[HF81, HF83, HF85] 연관 모듈

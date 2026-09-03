@@ -18,7 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } f
 // 역할 — rhwp iframe 에디터 생성·수명 관리 타입
 import { createEditor, type RhwpEditor } from "@rhwp/editor";
 // 역할 — rhwp 동일출처 studioUrl·도구상자 조기 접기
-import { foldRhwpToolboxes, installRhwpEarlyFold, resolveRhwpStudioUrl } from "@/lib/rhwpStudio";
+import { foldRhwpToolboxes, installRhwpEarlyFold, resolveRhwpStudioUrl, waitForHostSize } from "@/lib/rhwpStudio";
 // 역할 — 화면별 쓰기·수정 권한
 import { useAuthStore } from "@/stores/authStore";
 // 역할 — 비동기 중복 실행 차단
@@ -204,9 +204,13 @@ export default function HwpTemplateManagementPage() {
     if (!host) return undefined;
 
     const disposeEarlyFold = installRhwpEarlyFold(host);
+    // 호스트 높이가 0인 채로 붙이면 CanvasView 가 「페이지 0 정보가 없습니다」를 남긴다 —
+    // 작성 화면(HwpEditorPane)과 같은 가드를 쓴다
+    const sizeAbort = new AbortController();
 
     void (async () => {
       try {
+        await waitForHostSize(host, sizeAbort.signal);
         createdEditor = await createEditor(host, {
           studioUrl: resolveRhwpStudioUrl(),
           width: "100%",
@@ -222,7 +226,8 @@ export default function HwpTemplateManagementPage() {
         setEditorReady(true);
         setEditorMessage("미리보기가 준비되었습니다. 왼쪽에서 양식을 선택하세요.");
       } catch (error) {
-        if (!disposed) {
+        // 언마운트로 끊긴 대기는 오류가 아니다 — 문구를 바꾸지 않는다
+        if (!disposed && !(error instanceof DOMException && error.name === "AbortError")) {
           setEditorMessage(error instanceof Error ? error.message : "미리보기를 시작하지 못했습니다.");
         }
       }
@@ -230,6 +235,7 @@ export default function HwpTemplateManagementPage() {
 
     return () => {
       disposed = true;
+      sizeAbort.abort();
       disposeEarlyFold();
       editorRef.current?.destroy();
       editorRef.current = null;

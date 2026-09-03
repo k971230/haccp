@@ -18,10 +18,7 @@ import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 
 // 역할 — rhwp iframe 편집기
 import { createEditor, type RhwpEditor } from "@rhwp/editor";
 // 역할 — 스튜디오 주소·더티 감지
-import {
-  installRhwpDirtyListeners,
-  resolveRhwpStudioUrl,
-} from "@/lib/rhwpStudio";
+import { installRhwpDirtyListeners, resolveRhwpStudioUrl, waitForHostSize } from "@/lib/rhwpStudio";
 // 역할 — 양식 원본·문서 첨부 읽기 (기존 HWP 화면과 같은 API)
 import {
   downloadDocumentFile,
@@ -41,49 +38,6 @@ import { hwpOpenMode } from "./hwpOpenMode";
 function latestSource(files: HtmlFormDraftFile[]): HtmlFormDraftFile | null {
   const sources = files.filter((f) => f.fileKind === HWP_SRC_KIND);
   return sources.length > 0 ? sources[sources.length - 1] : null;
-}
-
-/**
- * 개발자: 박승우
- * 일자: 2026-09-02
- * 코멘트:
- *   1) 호스트 높이가 0이면 rhwp CanvasView 가 빈 페이지 0 을 그린다
- *   2) createEditor 직전에 한 번 기다린다
- *   3) 높이가 생기면 resolve. 언마운트면 abort 로 끊는다
- */
-function waitForHostSize(
-  // rhwp iframe 을 붙일 호스트
-  host: HTMLElement,
-  // 언마운트 abort — 대기 중 화면을 떠나면 관찰을 끊는다
-  signal: AbortSignal,
-): Promise<void> {
-  if (host.clientHeight > 0) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const finish = () => {
-      ro.disconnect();
-      signal.removeEventListener("abort", onAbort);
-    };
-    const onAbort = () => {
-      finish();
-      reject(new DOMException("Aborted", "AbortError"));
-    };
-    const ro = new ResizeObserver(() => {
-      if (host.clientHeight > 0) {
-        finish();
-        resolve();
-      }
-    });
-    if (signal.aborted) {
-      onAbort();
-      return;
-    }
-    signal.addEventListener("abort", onAbort);
-    ro.observe(host);
-    if (host.clientHeight > 0) {
-      finish();
-      resolve();
-    }
-  });
 }
 
 export function HwpEditorPane({

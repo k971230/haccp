@@ -1,17 +1,20 @@
 /**
- * CcpVerifyDraftService — CCP 검증점검 양식 작성 업무.
+ * HtmlDraftService — HTML 작성 2화면(일반위생·공정점검 · CCP 검증점검) 공통 업무.
  *
  * 개발자: 박승우
- * 일자: 2026-08-24
+ * 일자: 2026-09-03
  * 코멘트:
- *   1) 양식관리(ccp-verify-template)에서 사용여부 예로 둔 자사 양식만 작성 대상이다
+ *   1) 두 화면은 업무 규칙이 같고 **양식군(Family)만** 다르다.
+ *      쪼개 두었을 때 이름을 치환하면 224줄 중 17줄만 달랐다 — 그 17줄도 주석과 상수 둘뿐이다.
+ *      복제해 두면 한 곳을 고칠 때 다른 하나가 조용히 어긋난다
+ *      (`CcpLogDraftControllerBase` 가 포장·가열에 같은 이유로 먼저 적용한 규칙이다)
  *   2) 저장은 전송 전이라 필수값을 보지 않는다. 필수값은 전송(REQUEST) 직전에 화면이 검사한다
  *   3) validate-delete 와 delete 모두 assertDeletable Double Check — 전송·결재완료는 차단
  *
- * 업무 규칙은 HYG(draft.html)와 같고 테이블·SP 만 CCP 것이다.
  * 전송·전송취소는 이 서비스가 아니라 문서 허브 결재 API(sp_tbl_document_approval_c_000)를 그대로 쓴다.
  *
- * PIPELINE[HB137] CCP 검증점검 작성 Service
+ * PIPELINE[HB135] HTML 작성 공통 Service
+ * PIPELINE[HB137] 연관 모듈
  */
 package com.haccp.draft.html;
 
@@ -36,37 +39,76 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class CcpVerifyDraftService {
-    /** 계열 예시 양식코드 — 목록 SP 가 이 값으로 tbl_tml_ccp_chk_ver 를 가른다 */
-    private static final String STD_TMPL_CD = "tml_ccp_chk_000";
-    /** 자사 양식 접두 — 이 화면이 다루는 범위 */
-    private static final String USR_TMPL_PREFIX = "tml_ccp_chk_";
+public class HtmlDraftService {
 
-    private final CcpVerifyDraftMapper mapper;
+    /**
+     * 양식군 — 화면이 하나만 고른다.
+     *
+     * key 는 XML `<choose>` 가 보는 값이고, prefix·std 는 이 계열의 자사 양식 범위다.
+     * 새 계열이 생기면 여기 한 줄과 XML 가지 하나만 늘린다.
+     */
+    public enum Family {
+        /** 일반위생·공정점검 — sp_tbl_hyg_process_* */
+        HYG("hyg", "html_hyg_prc_", "html_hyg_prc_000"),
+        /** CCP 검증점검 — sp_ccp_verify_* */
+        CHK("chk", "tml_ccp_chk_", "tml_ccp_chk_000");
+
+        private final String key;
+        private final String prefix;
+        private final String std;
+
+        Family(String key, String prefix, String std) {
+            this.key = key;
+            this.prefix = prefix;
+            this.std = std;
+        }
+
+        /** XML choose 가 보는 값 */
+        public String key() {
+            return key;
+        }
+
+        /** 자사 양식 접두 — 이 화면이 다루는 범위 */
+        public String prefix() {
+            return prefix;
+        }
+
+        /** 계열 예시 양식코드 — 목록 SP 가 이 값으로 버전 표를 가른다 */
+        public String std() {
+            return std;
+        }
+    }
+
+    private final HtmlDraftMapper mapper;
     private final ObjectMapper objectMapper;
     private final DocCorrectiveSupport correctiveSupport;
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-24
+     * 일자: 2026-09-03
      * 코멘트:
      *   1) 작성에 쓸 수 있는 자사 양식(사용여부 예)만 반환한다
      *   2) 화면 진입 시 한 번 호출한다
      *   3) 없으면 빈 목록 — 화면이 양식관리 등록을 안내한다
      */
-    public List<DraftFormRow> forms() {
-        return mapper.selectForms(LoginUserContext.coCd(), STD_TMPL_CD);
+    public List<DraftFormRow> forms(
+            // family: 이 화면이 다루는 양식군
+            Family family
+    ) {
+        return mapper.selectForms(family.key(), LoginUserContext.coCd(), family.std());
     }
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-24
+     * 일자: 2026-09-03
      * 코멘트:
-     *   1) 좌측 작성 목록을 조회한다 — 상단 검색 6개 중 서버 조건 5개
+     *   1) 좌측 작성 목록을 조회한다 — 상단 검색 6개 중 서버 조건 5개 + 제목
      *   2) 조회 버튼·초기 로드·저장/삭제/전송 후 호출한다
      *   3) 공백 조건은 SP 가 전체로 본다. 결재 여부는 파생값이라 화면이 거른다
      */
     public List<DraftListRow> list(
+            // family: 이 화면이 다루는 양식군
+            Family family,
             // tmplCd: 양식코드 부분검색. 빈값이면 자사 양식 전체
             String tmplCd,
             // tmplNm: 양식명 부분검색
@@ -83,29 +125,31 @@ public class CcpVerifyDraftService {
             String title
     ) {
         return mapper.selectList(
-                LoginUserContext.coCd(), DraftSupport.nvl(tmplCd), DraftSupport.nvl(tmplNm),
+                family.key(), LoginUserContext.coCd(), DraftSupport.nvl(tmplCd), DraftSupport.nvl(tmplNm),
                 DraftSupport.nvl(fromDt), DraftSupport.nvl(toDt), DraftSupport.nvl(writerId), DraftSupport.nvl(writerNm),
                 DraftSupport.nvl(title));
     }
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-24
+     * 일자: 2026-09-03
      * 코멘트:
      *   1) 기존 상세 또는 선택 양식의 신규 기본행 JSON 을 반환한다
      *   2) 좌측 행 클릭·양식 선택이 호출한다
      *   3) 저장 문서면 이탈 푸터를 붙인다
      */
     public JsonNode detail(
+            // family: 이 화면이 다루는 양식군
+            Family family,
             // tmplCd: 신규일 때 항목을 깔 양식코드. 필수
             String tmplCd,
             // docIdx: tbl_document.idx. null·0 이면 신규
             Long docIdx
     ) {
-        String tmpl = DraftSupport.requireUsrTmpl(tmplCd, USR_TMPL_PREFIX, STD_TMPL_CD);
+        String tmpl = DraftSupport.requireUsrTmpl(tmplCd, family.prefix(), family.std());
         try {
             ObjectNode root = (ObjectNode) objectMapper.readTree(
-                    mapper.selectDetail(LoginUserContext.coCd(), tmpl, docIdx));
+                    mapper.selectDetail(family.key(), LoginUserContext.coCd(), tmpl, docIdx));
             // 저장된 문서일 때(= docIdx 있음) 개선조치 푸터를 함께 내린다
             if (docIdx != null && docIdx > 0) {
                 root.set("corrective", objectMapper.valueToTree(
@@ -121,7 +165,7 @@ public class CcpVerifyDraftService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-24
+     * 일자: 2026-09-03
      * 코멘트:
      *   1) 헤더·항목·하단 4칸을 저장한다. 전송 전이라 필수값은 검사하지 않는다
      *   2) 저장 버튼이 호출한다
@@ -129,13 +173,15 @@ public class CcpVerifyDraftService {
      */
     @Transactional(timeout = 60)
     public Long save(
+            // family: 이 화면이 다루는 양식군
+            Family family,
             // req: 양식코드·일자·점검자·항목·하단 4칸
             DraftSaveRequest req
     ) {
         if (req == null || DraftSupport.nvl(req.getBaseDt()).length() != 8) {
             throw new BizException("일자를 입력하세요.");
         }
-        String tmpl = DraftSupport.requireUsrTmpl(req.getTmplCd(), USR_TMPL_PREFIX, STD_TMPL_CD);
+        String tmpl = DraftSupport.requireUsrTmpl(req.getTmplCd(), family.prefix(), family.std());
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("verNo", req.getVerNo() == null ? 0 : req.getVerNo());
@@ -147,6 +193,7 @@ public class CcpVerifyDraftService {
             // 목록 제목 — 빈값이면 SP 가 신규는 양식명·수정은 기존값을 쓴다
             payload.put("title", DraftSupport.nvl(req.getTitle()));
             Long docIdx = mapper.save(
+                    family.key(),
                     LoginUserContext.coCd(),
                     tmpl,
                     req.getDocIdx(),
@@ -160,6 +207,7 @@ public class CcpVerifyDraftService {
             }
             // 서명 스냅샷 — 이름=사용자면 blob 복사, 없으면 이름만
             mapper.snapshotSigns(
+                    family.key(),
                     LoginUserContext.coCd(),
                     docIdx,
                     DraftSupport.nvl(req.getCheckerNm()),
@@ -189,7 +237,7 @@ public class CcpVerifyDraftService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-24
+     * 일자: 2026-09-03
      * 코멘트:
      *   1) 삭제 가능 여부만 검사한다
      *   2) 확인창 전에 호출한다
@@ -204,7 +252,7 @@ public class CcpVerifyDraftService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-24
+     * 일자: 2026-09-03
      * 코멘트:
      *   1) 재검증 후 문서·하위를 삭제한다
      *   2) 삭제 버튼이 호출한다
@@ -212,14 +260,15 @@ public class CcpVerifyDraftService {
      */
     @Transactional(timeout = 60)
     public int delete(
+            // family: 이 화면이 다루는 양식군
+            Family family,
             // keys: [{ docIdx }] 객체 배열
             List<DraftDeleteItem> keys
     ) {
         DraftSupport.assertDeletable(keys, (ids) -> mapper.selectDeleteBlocker(LoginUserContext.coCd(), ids));
         for (DraftDeleteItem key : keys) {
-            mapper.delete(LoginUserContext.coCd(), key.getDocIdx(), LoginUserContext.userId());
+            mapper.delete(family.key(), LoginUserContext.coCd(), key.getDocIdx(), LoginUserContext.userId());
         }
         return keys.size();
     }
-
 }

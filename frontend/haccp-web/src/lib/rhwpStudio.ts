@@ -15,6 +15,52 @@
 const RHWP_FOLD_STYLE_ID = "haccp-rhwp-fold-toolboxes";
 
 /**
+ * 개발자: 박승우
+ * 일자: 2026-09-02
+ * 코멘트:
+ *   1) 호스트 높이가 0인 채로 createEditor 를 부르면 rhwp CanvasView 가
+ *      빈 페이지를 그리며 「[CanvasView] 페이지 0 정보가 없습니다」를 콘솔에 남긴다
+ *   2) rhwp 를 붙이는 **모든 화면**이 createEditor 직전에 이걸 한 번 기다린다 —
+ *      작성·결재미리보기(HwpEditorPane)와 사용양식관리가 같은 호스트 조건을 갖는다.
+ *      한쪽에만 두면 다른 하나가 조용히 어긋난다(실제로 그래서 스모크가 물었다)
+ *   3) 높이가 생기면 resolve. 언마운트면 abort 로 끊는다
+ */
+export function waitForHostSize(
+  // rhwp iframe 을 붙일 호스트
+  host: HTMLElement,
+  // 언마운트 abort — 대기 중 화면을 떠나면 관찰을 끊는다
+  signal: AbortSignal,
+): Promise<void> {
+  if (host.clientHeight > 0) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const finish = () => {
+      ro.disconnect();
+      signal.removeEventListener("abort", onAbort);
+    };
+    const onAbort = () => {
+      finish();
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    const ro = new ResizeObserver(() => {
+      if (host.clientHeight > 0) {
+        finish();
+        resolve();
+      }
+    });
+    if (signal.aborted) {
+      onAbort();
+      return;
+    }
+    signal.addEventListener("abort", onAbort);
+    ro.observe(host);
+    if (host.clientHeight > 0) {
+      finish();
+      resolve();
+    }
+  });
+}
+
+/**
  * rhwp-studio URL — 기본은 동일출처 `/rhwp/` (vite·nginx 프록시 필수).
  * VITE_RHWP_STUDIO_URL이 있으면 그 값을 쓴다.
  */

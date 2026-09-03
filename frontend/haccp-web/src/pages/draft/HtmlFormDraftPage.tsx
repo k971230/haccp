@@ -343,6 +343,16 @@ export function HtmlFormDraftPage({
    *   2) 행 클릭·양식 선택·저장·전송 후 재적재에서 호출한다
    *   3) 양식 미선택 신규 행은 서버를 부르지 않고 빈 버퍼를 준다
    */
+  /*
+   * 행을 고르는 중인가 — 상세가 와서 지면 버퍼가 붙을 때까지 참.
+   *
+   * 이 사이에 지면 입력칸이 열려 있으면 사용자가 친 값이 **아무 데도 안 남는다.**
+   * (좌측 저장 직후 행 키가 임시키에서 서버키로 바뀌며 버퍼가 갈리는 구간이다.)
+   * 실제로 시각을 치고 저장하면 check_time 이 NULL 로 들어갔다.
+   * 값을 뒤늦게 되살리는 대신 **그동안 못 치게** 잠근다 — 잃는 입력이 없다.
+   */
+  const [selecting, setSelecting] = useState(false);
+
   const handleSelect = useCallback((key: string | null) => {
     /*
      * 첨부를 먼저 비운다.
@@ -355,6 +365,7 @@ export function HtmlFormDraftPage({
     // 늦게 온 상세가 다른 문서의 첨부를 덮지 않게 한다
     const seq = detailSeq.current + 1;
     detailSeq.current = seq;
+    setSelecting(true);
     return selectKey(key, async (_k, row) => {
       // 아직 양식을 안 고른 행일 때(= 팝업 전) 상세를 부를 수 없다
       if (!row.tmplCd) return emptyDraftBuf(user);
@@ -368,6 +379,9 @@ export function HtmlFormDraftPage({
         mesError(error);
         return null;
       }
+    }).finally(() => {
+      // 내가 건 선택이 아직 최신일 때만 푼다 — 빠르게 옮겨 다니면 앞 선택이 늦게 끝난다
+      if (detailSeq.current === seq) setSelecting(false);
     });
   }, [api, selectKey, user]);
 
@@ -1142,9 +1156,9 @@ export function HtmlFormDraftPage({
                     mode="write"
                     // 패널 채움 — 인쇄는 브라우저 인쇄에 맡긴다
                     variant="fill"
-                    // 저장 전이거나 전송 이후면 잠금
-                    locked={!canEdit}
-                    editable={canEdit}
+                    // 저장 전이거나 전송 이후면 잠금. 상세 적재 중에도 잠근다(입력 유실 방지)
+                    locked={!canEdit || selecting}
+                    editable={canEdit && !selecting}
                     // 헤더·점검 행·하단 4열·기록 표 — 결재 미리보기와 같은 값을 쓴다
                     {...draftPaperViewProps(buf, { paperTitle, paperSubtitle })}
                     onHeaderChange={(patch) => patchActive((cur) => {

@@ -17,6 +17,7 @@ import {
   adminCreds,
   btn,
   dbOne,
+  fillPaperRequired,
   login,
   openScreen,
   resetDocuments,
@@ -126,10 +127,13 @@ test.describe("문서 흐름 — 작성 → 전송 → 승인 → 보관", () =>
     // 필수값 안내는 토스트라 버튼이 없다 — 떴다 사라지는 것만 확인한다
     await expect(page.getByText(/입력하세요|선택하세요/)).toBeVisible({ timeout: 20_000 });
 
-    const emptyTimes = page.locator('input[type="time"]:not([disabled])');
-    for (let i = 0; i < (await emptyTimes.count()); i += 1) {
-      if (!(await emptyTimes.nth(i).inputValue())) await emptyTimes.nth(i).fill("09:30");
-    }
+    /*
+     * 시각만 채우면 안 된다 — 2026-09-01 부터 **포장·가열은 온도(cells.temp)도 전송 필수**다
+     * (`firstInvalidLogRow`). 시각만 넣으면 전송이 계속 토스트로 막혀
+     * 아래 `waitForResponse` 가 영문 모를 타임아웃으로 터진다.
+     * 화면 필수값은 한 곳에서 채운다 — 규칙이 또 늘어도 이 시험은 안 고친다.
+     */
+    await fillPaperRequired(page);
     await Promise.all([
       page.waitForResponse((r) => r.url().includes("/draft/") && r.url().includes("/save")),
       page.getByRole("button", { name: "작성 후 저장" }).click(),

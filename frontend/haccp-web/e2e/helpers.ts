@@ -349,13 +349,30 @@ export async function createDraft(
   const before = await list.locator("tbody tr").count();
   await btn(page, /행\s*추가/).click();
 
-  // 양식코드 칸의 셀 버튼이 양식 선택 팝업을 연다 — 손으로 칠 수 없는 칸이다
-  const pick = page.getByTitle("양식 선택").filter({ visible: true }).first();
-  await pick.scrollIntoViewIfNeeded();
-  await pick.click({ force: true });
-  const popupRow = page.getByRole("row").filter({ hasText: tmplPrefix }).last();
+  /*
+   * 행추가는 **스스로** 그 행의 양식 선택 팝업을 연다 (HtmlFormDraftPage.handleAdd → setLookupKey).
+   * action.run 안에서 비동기로 도니 클릭 직후가 아니라 잠깐 기다려야 보인다.
+   *
+   * 이미 열렸으면 셀 버튼을 다시 누르면 안 된다 — force 로 누르면 오버레이 뒤
+   * **첫 행**(앞 시험이 만든 저장된 행)의 버튼이 눌려 팝업 대상이 그 행으로 바뀐다.
+   */
+  const dialog = page.getByRole("dialog").filter({ hasText: "양식 선택" }).first();
+  await dialog.waitFor({ state: "visible", timeout: 10_000 }).catch(() => undefined);
+  if (!(await dialog.isVisible().catch(() => false))) {
+    // 양식코드 칸의 셀 버튼이 양식 선택 팝업을 연다 — 손으로 칠 수 없는 칸이다
+    const pick = page.getByTitle("양식 선택").filter({ visible: true }).first();
+    await pick.scrollIntoViewIfNeeded();
+    await pick.click({ force: true });
+  }
+  // 팝업 안에서만 고른다 — 좌측 목록에도 같은 양식코드 글자가 있어 옛 행이 잡힌다
+  const popupRow = dialog.getByRole("row").filter({ hasText: tmplPrefix }).last();
   await expect(popupRow).toBeVisible({ timeout: 20_000 });
-  await popupRow.dblclick();
+  /*
+   * **한 번만** 누른다. 이 팝업은 onRowClick 으로 확정하고 곧바로 닫힌다
+   * (HtmlFormLookupModal.pick → onSelect + onClose).
+   * dblclick 이면 두 번째 클릭이 닫힌 팝업 아래 좌측 목록으로 떨어져 엉뚱한 행을 건드린다.
+   */
+  await popupRow.click();
 
   // 좌측 저장 — 여기서 docIdx 가 생긴다. 그 전까지 우측 지면은 읽기 전용이다
   const [saveRes] = await Promise.all([
@@ -395,6 +412,19 @@ export async function createDraft(
  * 기록 표는 줄마다 라디오 그룹이 따로다. 한 그룹만 찍으면 다음 줄에서 다시 막힌다.
  */
 export async function fillPaperRequired(page: Page): Promise<void> {
+  /*
+   * 지면은 **상세 적재가 끝날 때까지 잠겨 있다** (HtmlFormDraftPage 의 selecting).
+   * 그 사이에 치면 값이 아무 데도 안 남기 때문에 아예 못 치게 막아 둔 것이다.
+   *
+   * 그러니 여기서 먼저 열리기를 기다린다. 안 기다리면 `:not([disabled])` 가 한 칸도 못 잡아
+   * **조용히 아무것도 안 채우고** 지나가고, 전송이 필수값에서 막혀 엉뚱한 곳에서 터진다.
+   */
+  await page
+    .locator('input[type="time"]:not([disabled]), input[type="radio"]:not([disabled])')
+    .first()
+    .waitFor({ state: "visible", timeout: 30_000 })
+    .catch(() => undefined);
+
   const groups = [
     ...new Set(
       await page
@@ -409,9 +439,17 @@ export async function fillPaperRequired(page: Page): Promise<void> {
   for (let i = 0; i < (await times.count()); i += 1) {
     if (!(await times.nth(i).inputValue())) await times.nth(i).fill("09:30");
   }
-  const nums = page.locator('input[type="number"]:not([disabled])');
-  for (let i = 0; i < (await nums.count()); i += 1) {
-    if (!(await nums.nth(i).inputValue())) await nums.nth(i).fill("1");
+  /*
+   * 숫자 칸은 `type="number"` 가 **아니다.**
+   *
+   * 한글 IME 로 치면 화면에는 글자가 남고 value 는 빈 문자열이 되어 값이 조용히 사라진다 —
+   * 그래서 지면은 `type="text"` 로 받고 허용 문자만 통과시킨다
+   * (`HtmlFormCellInput` 머리 주석). `input[type=number]` 로 찾으면 **한 칸도 안 잡힌다.**
+   * 그러면 온도·시간이 빈 채로 남아 전송이 필수값에서 막히고, 시험은 엉뚱한 곳에서 터진다.
+   */
+  const texts = page.locator('input.html-form-sign-input[type="text"]:not([disabled])');
+  for (let i = 0; i < (await texts.count()); i += 1) {
+    if (!(await texts.nth(i).inputValue())) await texts.nth(i).fill("1");
   }
 }
 

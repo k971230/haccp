@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+HtmlDraftMapper.xml — HTML 작성 2화면(일반위생·공정점검 · CCP 검증점검) 공통 SP.
+
+개발자: 박승우
+일자: 2026-09-03
+코멘트:
+  1) 두 화면은 문장 구조가 같고 **SP 이름만** 다르다. family 로 고른다
+     - hyg: sp_tbl_hyg_process_* · 버전 sp_tbl_html_hyg_prc_ver_r_000
+     - chk: sp_ccp_verify_*      · 버전 sp_tbl_tml_ccp_chk_ver_r_000
+  2) **목록만 인자 형태가 다르다** — hyg 는 10개(문서번호·통합작성자 자리에 빈값을 넘긴다),
+     chk 는 8개다. 그 차이는 여기 choose 안에만 둔다
+  3) 삭제 차단은 계열과 무관한 문서 허브 공통 SP 라 choose 가 없다
+
+파일을 둘로 두었더니 제목(title) 인자를 넣을 때 같은 수정을 두 번 해야 했다.
+한 곳에서 갈라 두면 한쪽만 고쳐 어긋나는 일이 없다 — CcpLogDraftMapper.xml 과 같은 방식이다.
+
+PIPELINE[HB135] HTML 작성 공통 XML
+PIPELINE[HB137] 연관 모듈
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.draft.html.HtmlDraftMapper">
+
+    <!--
+      작성 가능 양식 — 양식관리 좌측과 같은 SP.
+      use_yn 은 tbl_company_template.use_yn 이라 「사용여부 = 예」와 같은 값이다.
+      표준 예시(*_000)는 항상 미사용이지만 가상행이라 코드로 한 번 더 뺀다.
+    -->
+    <select id="selectForms" resultType="com.haccp.draft.dto.DraftFormRow">
+        SELECT v.tmpl_cd, v.ver_nm, v.ver_no, v.use_yn,
+               <!-- 양식 등록일자 — 팝업 첫 컬럼. SP 가 YYYY-MM-DD 문자열로 준다 -->
+               v.ins_dt
+          FROM
+        <choose>
+            <when test="family == 'chk'">
+                sp_tbl_tml_ccp_chk_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v
+            </when>
+            <otherwise>
+                sp_tbl_html_hyg_prc_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v
+            </otherwise>
+        </choose>
+         WHERE upper(v.use_yn) = 'Y'
+           AND v.ver_no &gt; 0
+           AND v.tmpl_cd &lt;&gt; #{stdTmplCd}
+         ORDER BY v.tmpl_cd
+    </select>
+
+    <!--
+      좌측 작성 목록 — 결재 여부·일자·양식코드·양식명·작성자·제목.
+      상단 검색 6개 중 결재 여부는 DOC_STATUS 파생이라 화면이 거른다.
+      hyg 의 5·6번 인자(문서번호·통합작성자)는 이 화면 검색조건이 아니라 빈값을 넘긴다.
+    -->
+    <select id="selectList" resultType="com.haccp.draft.dto.DraftListRow">
+        <choose>
+            <when test="family == 'chk'">
+                SELECT * FROM sp_ccp_verify_r_000(
+                    #{coCd}, #{tmplCd}, #{tmplNm}, #{fromDt}, #{toDt}, #{writerId}, #{writerNm}, #{title}
+                )
+            </when>
+            <otherwise>
+                SELECT * FROM sp_tbl_hyg_process_r_000(
+                    #{coCd}, #{tmplCd}, #{fromDt}, #{toDt}, '', '',
+                    #{tmplNm}, #{writerId}, #{writerNm}, #{title}
+                )
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 상세/신규 기본행 — JSON 문자열. 신규 항목은 그 계열의 자사 양식에서 온다 -->
+    <select id="selectDetail" resultType="string">
+        <choose>
+            <when test="family == 'chk'">
+                SELECT sp_ccp_verify_r_001(#{coCd}, #{tmplCd}, #{docIdx})::text
+            </when>
+            <otherwise>
+                SELECT sp_tbl_hyg_process_r_001(#{coCd}, #{tmplCd}, #{docIdx})::text
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 저장 — 문서·헤더·항목 전체 교체. 신규는 SP 가 사용여부 Y·채번 규칙을 확인한다 -->
+    <select id="save" resultType="long">
+        <choose>
+            <when test="family == 'chk'">
+                SELECT sp_ccp_verify_c_000(
+                    #{coCd}, #{tmplCd}, #{docIdx}, #{baseDt}, #{checkerNm},
+                    CAST(#{payload} AS jsonb), #{userId}
+                )
+            </when>
+            <otherwise>
+                SELECT sp_tbl_hyg_process_c_000(
+                    #{coCd}, #{tmplCd}, #{docIdx}, #{baseDt}, #{checkerNm},
+                    CAST(#{payload} AS jsonb), #{userId}
+                )
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 점검자·승인자·확인 서명 스냅샷 — 이름 매칭. 저장 직후 -->
+    <update id="snapshotSigns" statementType="CALLABLE">
+        <choose>
+            <when test="family == 'chk'">
+                CALL sp_ccp_verify_sign_u_000(
+                    #{coCd, jdbcType=VARCHAR},
+                    #{docIdx, jdbcType=BIGINT},
+                    #{checkerNm, jdbcType=VARCHAR},
+                    #{approverNm, jdbcType=VARCHAR},
+                    #{confirmNm, jdbcType=VARCHAR}
+                )
+            </when>
+            <otherwise>
+                CALL sp_tbl_hyg_process_sign_u_000(
+                    #{coCd, jdbcType=VARCHAR},
+                    #{docIdx, jdbcType=BIGINT},
+                    #{checkerNm, jdbcType=VARCHAR},
+                    #{approverNm, jdbcType=VARCHAR},
+                    #{confirmNm, jdbcType=VARCHAR}
+                )
+            </otherwise>
+        </choose>
+    </update>
+
+    <!--
+      삭제 차단 — 전송(REQ·REV)·결재완료(APV) 문서 첫 건.
+      검사와 문구는 sp_tbl_document_delete_blocker_r_000 한곳에 있다.
+      문서 허브 공통이라 계열을 안 가른다.
+    -->
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
+        SELECT * FROM sp_tbl_document_delete_blocker_r_000(
+            #{coCd, mode=IN, jdbcType=VARCHAR},
+            <foreach collection="docIdxs" item="id" open="ARRAY[" separator="," close="]::bigint[]">#{id}</foreach>
+        )
+    </select>
+
+    <!-- 삭제 — 하위 항목·결재·첨부·문서 허브 -->
+    <update id="delete" statementType="CALLABLE">
+        <choose>
+            <when test="family == 'chk'">
+                CALL sp_ccp_verify_d_000(
+                    #{coCd, jdbcType=VARCHAR},
+                    #{docIdx, jdbcType=BIGINT},
+                    #{userId, jdbcType=VARCHAR}
+                )
+            </when>
+            <otherwise>
+                CALL sp_tbl_hyg_process_d_000(
+                    #{coCd, jdbcType=VARCHAR},
+                    #{docIdx, jdbcType=BIGINT},
+                    #{userId, jdbcType=VARCHAR}
+                )
+            </otherwise>
+        </choose>
+    </update>
+</mapper>
