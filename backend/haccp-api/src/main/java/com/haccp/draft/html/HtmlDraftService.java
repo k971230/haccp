@@ -52,7 +52,7 @@ public class HtmlDraftService {
         /** 일반위생·공정점검 — sp_tbl_hyg_process_* */
         HYG("hyg", "html_hyg_prc_", "html_hyg_prc_000"),
         /** CCP 검증점검 — sp_ccp_verify_* */
-        CHK("chk", "tml_ccp_chk_", "tml_ccp_chk_000");
+        CHK("chk", "html_ccp_chk_", "html_ccp_chk_000");
 
         private final String key;
         private final String prefix;

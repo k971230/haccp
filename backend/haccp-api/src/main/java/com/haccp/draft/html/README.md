@@ -3,7 +3,7 @@
 | 화면 | scrnCd | URL | 자사 양식 |
 |---|---|---|---|
 | 일반위생·공정점검 작성 | `hyg-process` | `/api/v1/draft/html/hyg-process/*` | `html_hyg_prc_001` 이상 |
-| CCP 검증점검표 작성 | `ccp-verify` | `/api/v1/draft/html/ccp-verify/*` | `tml_ccp_chk_001` 이상 |
+| CCP 검증점검표 작성 | `ccp-verify` | `/api/v1/draft/html/ccp-verify/*` | `html_ccp_chk_001` 이상 |
 
 둘 다 **사용여부 Y 인 자사 양식만** 작성 대상이다. 표준 예시(`*_000`)는 가상행이라 목록에서 뺀다.
 
@@ -29,7 +29,7 @@
 
 | | 일반위생·공정점검 (`hyg`) | CCP 검증점검 (`chk`) |
 |---|---|---|
-| 양식 버전 | `sp_tbl_html_hyg_prc_ver_r_000` | `sp_tbl_tml_ccp_chk_ver_r_000` |
+| 양식 버전 | `sp_tbl_html_hyg_prc_ver_r_000` | `sp_tbl_html_ccp_chk_ver_r_000` |
 | 목록·상세·저장·삭제·서명 | `sp_tbl_hyg_process_*` | `sp_ccp_verify_*` |
 | 표 | `tbl_html_hyg_prc_*` | `tbl_ccp_verify_check` / `_item` |
 

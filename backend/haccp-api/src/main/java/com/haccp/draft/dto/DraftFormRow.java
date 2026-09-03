@@ -19,7 +19,7 @@ import lombok.Data;
 
 @Data
 public class DraftFormRow {
-    // 양식코드 — html_hyg_prc_001 / tml_ccp_chk_001 / tml_ccp_pkg_001 …
+    // 양식코드 — html_hyg_prc_001 / html_ccp_chk_001 / html_ccp_pkg_001 …
     private String tmplCd;
     // 양식명 — 자사 양식명(tmpl_nm_ovr) 우선
     private String verNm;

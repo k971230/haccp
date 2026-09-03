@@ -25,7 +25,7 @@ import {
 
 /** 작성 → 필수값 → 전송까지. 결재 시험의 공통 전제다 */
 async function sendOne(page: import("@playwright/test").Page): Promise<string> {
-  await createDraft(page, "/draft/ccp-monitoring/ccp-htg", "tml_ccp_htg_");
+  await createDraft(page, "/draft/ccp-monitoring/ccp-htg", "html_ccp_htg_");
   await fillPaperRequired(page);
   await Promise.all([
     page.waitForResponse((r) => r.url().includes("/save") && r.request().method() !== "GET"),

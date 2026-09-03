@@ -5,10 +5,10 @@
 | 폴더 | scrnCd | 역할 |
 |---|---|---|
 | htmltemplate | hyg-process-template | 일반위생·공정점검 양식관리(`html_hyg_prc_NNN`) |
-| ccpverifytemplate | ccp-verify-template | 중요관리점(CCP) 검증점검표 양식관리(`tml_ccp_chk_NNN`) |
-| ccppkgtemplate | ccp-pkg-template | 중요관리점(CCP-1B) 모니터링일지 양식관리(`tml_ccp_pkg_NNN`) |
-| ccphtgtemplate | ccp-htg-template | 중요관리점(CCP-2B) 모니터링일지 양식관리(`tml_ccp_htg_NNN`) |
-| ccpmtltemplate | ccp-mtl-template | 중요관리점(CCP-3P) 모니터링일지 양식관리(`tml_ccp_mtl_NNN`) |
+| ccpverifytemplate | ccp-verify-template | 중요관리점(CCP) 검증점검표 양식관리(`html_ccp_chk_NNN`) |
+| ccppkgtemplate | ccp-pkg-template | 중요관리점(CCP-1B) 모니터링일지 양식관리(`html_ccp_pkg_NNN`) |
+| ccphtgtemplate | ccp-htg-template | 중요관리점(CCP-2B) 모니터링일지 양식관리(`html_ccp_htg_NNN`) |
+| ccpmtltemplate | ccp-mtl-template | 중요관리점(CCP-3P) 모니터링일지 양식관리(`html_ccp_mtl_NNN`) |
 | hygprocess | hygiene-process-check | 공정점검표 작성 |
 
 공통 프레임은 `HtmlFormTemplatePage`(좌우 50:50) · `htmlFormTemplateShared.ts`.

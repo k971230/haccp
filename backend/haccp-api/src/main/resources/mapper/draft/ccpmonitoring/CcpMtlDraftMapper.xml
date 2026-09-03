@@ -17,7 +17,7 @@ PIPELINE[HB140] CCP 금속검출 작성 XML
     <!-- 작성 가능 양식 — 양식관리(ccp-mtl-template) 좌측과 같은 SP. 사용여부 Y·예시 제외 -->
     <select id="selectForms" resultType="com.haccp.draft.dto.DraftFormRow">
         SELECT v.tmpl_cd, v.ver_nm, v.ver_no, v.use_yn, v.ins_dt
-          FROM sp_tbl_tml_ccp_mtl_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v
+          FROM sp_tbl_html_ccp_mtl_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v
          WHERE upper(v.use_yn) = 'Y'
            AND v.ver_no &gt; 0
            AND v.tmpl_cd &lt;&gt; #{stdTmplCd}
@@ -26,10 +26,10 @@ PIPELINE[HB140] CCP 금속검출 작성 XML
 
     <!-- 양식 항목 — 한계기준·주기·방법·감도열·개선조치. 지면 상단이 쓴다 -->
     <select id="selectFormItems" resultType="map">
-        SELECT * FROM sp_tbl_tml_ccp_mtl_ver_item_r_000(#{coCd}, #{tmplCd}, #{verNo})
+        SELECT * FROM sp_tbl_html_ccp_mtl_ver_item_r_000(#{coCd}, #{tmplCd}, #{verNo})
     </select>
 
-    <!-- 좌측 작성 목록 — 자사 양식(tml_ccp_mtl_NNN)만 -->
+    <!-- 좌측 작성 목록 — 자사 양식(html_ccp_mtl_NNN)만 -->
     <select id="selectList" resultType="com.haccp.draft.dto.DraftListRow">
         SELECT * FROM sp_ccp_mtl_r_000(
             #{coCd}, #{tmplCd}, #{tmplNm}, #{fromDt}, #{toDt}, #{writerId}, #{writerNm}, #{title}

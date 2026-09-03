@@ -2,4 +2,4 @@
 
 `CcpVerifyTemplateMapper.xml` — `com.haccp.docs.htmlform.ccpverifytemplate.CcpVerifyTemplateMapper`
 
-`tbl_tml_ccp_chk_ver` · SP `sp_tbl_tml_ccp_chk_ver_*`
+`tbl_html_ccp_chk_ver` · SP `sp_tbl_html_ccp_chk_ver_*`

@@ -25,10 +25,10 @@ import {
 
 const SCREENS = [
   { name: "일반위생·공정점검", path: "/draft/html/hyg-process", tmpl: "html_hyg_prc_" },
-  { name: "CCP 검증점검표", path: "/draft/html/ccp-verify", tmpl: "tml_ccp_chk_" },
-  { name: "CCP 포장공정", path: "/draft/ccp-monitoring/ccp-pkg", tmpl: "tml_ccp_pkg_" },
-  { name: "CCP 가열공정", path: "/draft/ccp-monitoring/ccp-htg", tmpl: "tml_ccp_htg_" },
-  { name: "CCP 금속검출", path: "/draft/ccp-monitoring/ccp-mtl", tmpl: "tml_ccp_mtl_" },
+  { name: "CCP 검증점검표", path: "/draft/html/ccp-verify", tmpl: "html_ccp_chk_" },
+  { name: "CCP 포장공정", path: "/draft/ccp-monitoring/ccp-pkg", tmpl: "html_ccp_pkg_" },
+  { name: "CCP 가열공정", path: "/draft/ccp-monitoring/ccp-htg", tmpl: "html_ccp_htg_" },
+  { name: "CCP 금속검출", path: "/draft/ccp-monitoring/ccp-mtl", tmpl: "html_ccp_mtl_" },
   { name: "HWP 양식", path: "/draft/hwp-doc/hwp-write", tmpl: "hwp_sys_" },
 ];
 
@@ -66,7 +66,7 @@ test.describe.serial("작성 6화면", () => {
     resetDocuments();
     const { user, pass } = adminCreds();
     await login(page, user, pass);
-    await createDraft(page, "/draft/ccp-monitoring/ccp-pkg", "tml_ccp_pkg_");
+    await createDraft(page, "/draft/ccp-monitoring/ccp-pkg", "html_ccp_pkg_");
 
     const time = page.locator('input[type="time"]:not([disabled])').first();
     await expect(time).toBeVisible({ timeout: 30_000 });
@@ -88,7 +88,7 @@ test.describe.serial("작성 6화면", () => {
     ).toBe("14:20");
 
     await page.reload();
-    await visibleRows(page).filter({ hasText: "tml_ccp_pkg_" }).first().click();
+    await visibleRows(page).filter({ hasText: "html_ccp_pkg_" }).first().click();
     await expect(
       page.locator('input[type="time"]').first(),
       "저장한 값이 새로고침 뒤 사라졌다",

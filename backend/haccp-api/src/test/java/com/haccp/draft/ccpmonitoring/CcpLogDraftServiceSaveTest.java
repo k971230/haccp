@@ -73,7 +73,7 @@ class CcpLogDraftServiceSaveTest {
     private static DraftSaveRequest req(List<DraftLogRow> rows) {
         DraftSaveRequest q = new DraftSaveRequest();
         q.setBaseDt("20260827");
-        q.setTmplCd("tml_ccp_pkg_007");
+        q.setTmplCd("html_ccp_pkg_007");
         q.setLogRows(rows);
         return q;
     }
@@ -197,7 +197,7 @@ class CcpLogDraftServiceSaveTest {
     void 예시_양식으로는_작성하지_못한다() {
         // 000 은 표준 예시다 — 여기에 쓰면 전 회사가 보는 자리에 실기록이 남는다
         DraftSaveRequest q = req(List.of(row("P")));
-        q.setTmplCd("tml_ccp_pkg_000");
+        q.setTmplCd("html_ccp_pkg_000");
 
         assertThrows(BizException.class, () -> service().save(CcpLogDraftService.Family.PKG, q));
         verify(mapper, never()).save(any(), any(), any(), any(), any(), any(), any(), any());
@@ -207,7 +207,7 @@ class CcpLogDraftServiceSaveTest {
     void 다른_양식군_코드는_막는다() {
         // 포장 화면에서 가열 양식을 저장하면 조회가 영영 어긋난다
         DraftSaveRequest q = req(List.of(row("P")));
-        q.setTmplCd("tml_ccp_htg_007");
+        q.setTmplCd("html_ccp_htg_007");
 
         assertThrows(BizException.class, () -> service().save(CcpLogDraftService.Family.PKG, q));
         verify(mapper, never()).save(any(), any(), any(), any(), any(), any(), any(), any());
@@ -232,13 +232,13 @@ class CcpLogDraftServiceSaveTest {
     void 가열_양식군은_가열_접두만_받는다() {
         service().save(CcpLogDraftService.Family.HTG, htgReq());
 
-        verify(mapper).save(any(), any(), eq("20260827"), eq("tml_ccp_htg_007"), any(), any(), any(), any());
+        verify(mapper).save(any(), any(), eq("20260827"), eq("html_ccp_htg_007"), any(), any(), any(), any());
     }
 
     private static DraftSaveRequest htgReq() {
         DraftSaveRequest q = new DraftSaveRequest();
         q.setBaseDt("20260827");
-        q.setTmplCd("tml_ccp_htg_007");
+        q.setTmplCd("html_ccp_htg_007");
         q.setLogRows(List.of(row("P")));
         return q;
     }

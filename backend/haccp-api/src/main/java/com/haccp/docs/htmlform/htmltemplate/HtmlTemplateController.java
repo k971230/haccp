@@ -47,7 +47,7 @@ public class HtmlTemplateController {
      */
     @GetMapping("/versions")
     public CommonResponse<List<Map<String, Object>>> versions(
-            // tmplCd: 가족 — html_hyg_prc_000 / tml_ccp_chk_000 / tml_ccp_pkg_000 / tml_ccp_htg_000 / tml_ccp_mtl_000
+            // tmplCd: 가족 — html_hyg_prc_000 / html_ccp_chk_000 / html_ccp_pkg_000 / html_ccp_htg_000 / html_ccp_mtl_000
             @RequestParam(required = false) String tmplCd,
             // verCd: 양식코드 부분검색
             @RequestParam(required = false) String verCd,
@@ -63,7 +63,7 @@ public class HtmlTemplateController {
      * 코멘트:
      *   1) 양식 항목을 반환한다
      *   2) 우측 A4가 호출한다
-     *   3) html_hyg_prc_000·tml_ccp_chk_000·tml_ccp_pkg_000·tml_ccp_htg_000·tml_ccp_mtl_000 이면 시드 표준
+     *   3) html_hyg_prc_000·html_ccp_chk_000·html_ccp_pkg_000·html_ccp_htg_000·html_ccp_mtl_000 이면 시드 표준
      */
     @GetMapping("/items")
     public CommonResponse<List<Map<String, Object>>> items(
@@ -78,7 +78,7 @@ public class HtmlTemplateController {
      * 개발자: 박승우
      * 일자: 2026-08-19
      * 코멘트:
-     *   1) 표준 시드를 복사해 자사 양식(html_hyg_prc_NNN / tml_ccp_chk_NNN / tml_ccp_pkg_NNN / tml_ccp_htg_NNN / tml_ccp_mtl_NNN)을 INSERT한다
+     *   1) 표준 시드를 복사해 자사 양식(html_hyg_prc_NNN / html_ccp_chk_NNN / html_ccp_pkg_NNN / html_ccp_htg_NNN / html_ccp_mtl_NNN)을 INSERT한다
      *   2) 좌 저장이 pending을 커밋할 때 호출한다
      *   3) Body: verNm. data.tmplCd 반환
      */

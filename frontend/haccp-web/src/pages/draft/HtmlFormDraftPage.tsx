@@ -452,7 +452,7 @@ export function HtmlFormDraftPage({
      * searchParams 는 라우터 전역인데 셸은 탭을 mount 한 채 숨긴다.
      * 그래서 열려 있는 작성 화면 **전부**가 add=1·tmplCd 를 자기 것으로 읽고
      * 남의 양식코드로 자기 API 를 불렀다 —
-     * ccp-pkg 가 tml_ccp_mtl_002 로 detail 을 쳐서 400 이 났다.
+     * ccp-pkg 가 html_ccp_mtl_002 로 detail 을 쳐서 400 이 났다.
      * 안 보이는 탭에 행이 하나씩 붙는 것도 같은 원인이다.
      */
     if (activeTabCd !== scrnCd) return;

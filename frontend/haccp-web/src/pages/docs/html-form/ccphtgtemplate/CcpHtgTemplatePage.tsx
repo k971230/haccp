@@ -5,7 +5,7 @@
  * 일자: 2026-08-20
  * 코멘트:
  *   1) 공통 HtmlFormTemplatePage에 가열일지 상수와 CcpHtgPaper만 넘긴다
- *   2) 저장본은 tml_ccp_htg_001부터 채번되어 문서주기 좌측에 오른다
+ *   2) 저장본은 html_ccp_htg_001부터 채번되어 문서주기 좌측에 오른다
  *   3) 표준·pending은 지면 수정 불가. 작성 화면은 후속
  *
  * PIPELINE[HF133] CCP-2B 가열일지 양식 화면
@@ -39,13 +39,13 @@ export default function CcpHtgTemplatePage() {
       persistId={PERSIST_ID}
       // 좌우 분할 비율 저장 키
       splitKey={SPLIT_KEY}
-      // 예시 양식코드 — tml_ccp_htg_000. 목록 SP 가족 분기
+      // 예시 양식코드 — html_ccp_htg_000. 목록 SP 가족 분기
       stdTmplCd={STD_TMPL_CD}
       // 지면 제목
       paperTitle={PAPER_TITLE}
       // 지면 부제 — 기본 주기 매일
       paperSubtitle={PAPER_SUBTITLE}
-      // pending 양식코드 제안 — tml_ccp_htg_001…
+      // pending 양식코드 제안 — html_ccp_htg_001…
       nextTmplCd={nextCcpHtgTmplCd}
       // 우측 지면 — 가열 모니터링일지 레이아웃
       PaperComponent={CcpHtgPaper}

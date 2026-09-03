@@ -72,7 +72,7 @@ export interface HtmlFormTemplatePageProps {
   persistId: string;
   // 분할 비율 저장 키
   splitKey: string;
-  // 예시 양식코드 — html_hyg_prc_000 / tml_ccp_chk_000 / tml_ccp_pkg_000 / tml_ccp_htg_000 / tml_ccp_mtl_000
+  // 예시 양식코드 — html_hyg_prc_000 / html_ccp_chk_000 / html_ccp_pkg_000 / html_ccp_htg_000 / html_ccp_mtl_000
   stdTmplCd: string;
   // 지면 제목
   paperTitle: string;

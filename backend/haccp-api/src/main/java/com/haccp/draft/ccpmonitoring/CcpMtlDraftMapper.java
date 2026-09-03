@@ -34,7 +34,7 @@ public interface CcpMtlDraftMapper {
     List<DraftFormRow> selectForms(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
-            // stdTmplCd: 계열 예시코드 tml_ccp_mtl_000
+            // stdTmplCd: 계열 예시코드 html_ccp_mtl_000
             @Param("stdTmplCd") String stdTmplCd
     );
 
@@ -61,7 +61,7 @@ public interface CcpMtlDraftMapper {
      * 코멘트:
      *   1) 상단 검색 6개 중 서버 조건 5개로 작성 목록을 조회한다
      *   2) 좌측 그리드가 호출한다
-     *   3) 자사 양식(tml_ccp_mtl_NNN)만 — 기존 금속검출 일지는 대상이 아니다
+     *   3) 자사 양식(html_ccp_mtl_NNN)만 — 기존 금속검출 일지는 대상이 아니다
      */
     List<DraftListRow> selectList(
             // coCd: JWT 회사코드

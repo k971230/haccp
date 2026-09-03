@@ -5,7 +5,7 @@
  * 일자: 2026-08-24
  * 코멘트:
  *   1) 베이스는 apiOf("ccp-verify") — SCREEN_PATH /draft/html/ccp-verify 와 같은 칸
- *   2) 양식관리 ccp-verify-template 에서 사용여부 예로 둔 자사 양식(tml_ccp_chk_NNN)만 온다
+ *   2) 양식관리 ccp-verify-template 에서 사용여부 예로 둔 자사 양식(html_ccp_chk_NNN)만 온다
  *   3) 계약·응답 모양은 HYG 와 같다(htmlFormDraftTypes). 서버 테이블·SP 만 CCP 것이다
  *
  * 전송·전송취소는 여기 없다. 문서 허브 processDocumentApproval(REQUEST/CANCEL) 을 그대로 쓴다.

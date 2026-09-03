@@ -153,8 +153,8 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying,
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd AND d.del_yn = 'N'
        -- 자사 금속검출 양식만. 기존 tmpl_ccp-metal-log 문서는 이 화면 대상이 아니다
-       AND d.tmpl_cd ~ '^tml_ccp_mtl_[0-9]{3}$'
-       AND d.tmpl_cd <> 'tml_ccp_mtl_000'
+       AND d.tmpl_cd ~ '^html_ccp_mtl_[0-9]{3}$'
+       AND d.tmpl_cd <> 'html_ccp_mtl_000'
        AND (COALESCE(NULLIF(btrim(p_tmpl_cd), ''), '') = '' OR d.tmpl_cd ILIKE '%' || btrim(p_tmpl_cd) || '%')
        AND (COALESCE(NULLIF(btrim(p_tmpl_nm), ''), '') = ''
             OR COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm, '') ILIKE '%' || btrim(p_tmpl_nm) || '%')
@@ -171,7 +171,7 @@ $_$;
 -- Name: FUNCTION sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying) IS 'CCP 금속검출 작성 목록 — tml_ccp_mtl_NNN 자사 양식만. 제목은 tbl_document.title 부분검색';
+COMMENT ON FUNCTION sasshaccp.sp_ccp_mtl_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying) IS 'CCP 금속검출 작성 목록 — html_ccp_mtl_NNN 자사 양식만. 제목은 tbl_document.title 부분검색';
 
 
 --
@@ -192,7 +192,7 @@ BEGIN
         RAISE EXCEPTION '일자는 YYYYMMDD 8자리로 입력하세요.' USING ERRCODE = '45000';
     END IF;
     -- 이 화면은 자사 검증점검 양식만 다룬다
-    IF v_tmpl !~ '^tml_ccp_chk_[0-9]{3}$' OR v_tmpl = 'tml_ccp_chk_000' THEN
+    IF v_tmpl !~ '^html_ccp_chk_[0-9]{3}$' OR v_tmpl = 'html_ccp_chk_000' THEN
         RAISE EXCEPTION '작성할 양식을 선택하세요.' USING ERRCODE = '45000';
     END IF;
     IF p_payload IS NULL OR jsonb_typeof(COALESCE(p_payload->'items', 'null'::jsonb)) <> 'array' THEN
@@ -323,7 +323,7 @@ BEGIN
       FROM tbl_document d
       JOIN tbl_ccp_verify_check h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
      WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.del_yn = 'N'
-       AND d.tmpl_cd ~ '^tml_ccp_chk_[0-9]{3}$';
+       AND d.tmpl_cd ~ '^html_ccp_chk_[0-9]{3}$';
     IF v_hdr IS NULL THEN
         RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
@@ -374,8 +374,8 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varyi
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd AND d.del_yn = 'N'
        -- 이 화면은 자사 양식만 다룬다. 예시 000 과 옛 html_sys_006 문서는 제외한다
-       AND d.tmpl_cd ~ '^tml_ccp_chk_[0-9]{3}$'
-       AND d.tmpl_cd <> 'tml_ccp_chk_000'
+       AND d.tmpl_cd ~ '^html_ccp_chk_[0-9]{3}$'
+       AND d.tmpl_cd <> 'html_ccp_chk_000'
        AND (
             COALESCE(NULLIF(btrim(p_tmpl_cd), ''), '') = ''
             OR d.tmpl_cd ILIKE '%' || btrim(p_tmpl_cd) || '%'
@@ -403,7 +403,7 @@ $_$;
 -- Name: FUNCTION sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying) IS 'CCP 검증점검 작성 목록 — tml_ccp_chk_NNN 자사 양식만. 제목은 tbl_document.title 부분검색. 결재 여부는 화면이 DOC_STATUS 로 묶어 거른다';
+COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying) IS 'CCP 검증점검 작성 목록 — html_ccp_chk_NNN 자사 양식만. 제목은 tbl_document.title 부분검색. 결재 여부는 화면이 DOC_STATUS 로 묶어 거른다';
 
 
 --
@@ -511,7 +511,7 @@ BEGIN
 
     -- 신규 — 사용 중인 자사 양식 버전의 항목을 빈칸으로 깐다
     SELECT MAX(ver_no) INTO v_apply
-      FROM tbl_tml_ccp_chk_ver
+      FROM tbl_html_ccp_chk_ver
      WHERE co_cd = p_co_cd AND tmpl_cd = v_tmpl AND use_yn = 'Y';
     IF COALESCE(v_apply, 0) <= 0 THEN
         RAISE EXCEPTION '양식 항목이 없습니다. 양식관리에서 먼저 등록하세요.' USING ERRCODE = '45000';
@@ -548,7 +548,7 @@ BEGIN
                 'yn', '',
                 'valNm', ''
             ) ORDER BY i.sort_no)
-            FROM tbl_tml_ccp_chk_ver_item i
+            FROM tbl_html_ccp_chk_ver_item i
            WHERE i.co_cd = p_co_cd AND i.tmpl_cd = v_tmpl AND i.ver_no = v_apply
         ), '[]'::jsonb)
     ) INTO v_out;
@@ -560,7 +560,7 @@ END$$;
 -- Name: FUNCTION sp_ccp_verify_r_001(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_r_001(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint) IS 'CCP 검증점검 상세/신규 — 신규 항목은 tbl_tml_ccp_chk_ver_item. 지면 계약은 HYG 와 같다';
+COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_r_001(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint) IS 'CCP 검증점검 상세/신규 — 신규 항목은 tbl_html_ccp_chk_ver_item. 지면 계약은 HYG 와 같다';
 
 
 --
@@ -2023,7 +2023,7 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_schedule_cycle_management_form_r_000(p_c
         * 지금 원본은 `*_000` 으로 이름이 통일돼 있어 규칙 하나로 걸린다.
         * 다만 이름 규칙이 생기기 전에 만든 원본이 둘 있다 —
         *   html_sys_001 → 일반위생·공정점검 (sp_tbl_html_hyg_prc_ver_copy_c_000 이 읽는다)
-        *   html_sys_006 → CCP 검증점검표     (sp_tbl_tml_ccp_chk_ver_copy_c_000 이 읽는다)
+        *   html_sys_006 → CCP 검증점검표     (sp_tbl_html_ccp_chk_ver_copy_c_000 이 읽는다)
         * 이 둘은 지우면 복사가 죽어서 남겨 두는데, 목록에는 나오면 안 된다.
         * 새 양식이 이 이름으로 생기지 않으므로 닫힌 집합이다 —
         * 「양식코드를 나열하지 않는다」가 막으려는 「늘어나는 목록」이 아니다.
@@ -5337,17 +5337,17 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_schedule_task_regen_c_000(IN p_co_cd chara
 
 
 --
--- Name: sp_tbl_tml_ccp_chk_ver_apply_u_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_chk_ver_apply_u_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_chk_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_chk_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    UPDATE tbl_tml_ccp_chk_ver SET apply_yn = 'N', upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_chk_ver SET apply_yn = 'N', upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND apply_yn = 'Y';
     IF COALESCE(p_ver_no, 0) > 0 THEN
-        UPDATE tbl_tml_ccp_chk_ver SET apply_yn = 'Y', upd_id = p_id, upd_dt = now()
+        UPDATE tbl_html_ccp_chk_ver SET apply_yn = 'Y', upd_id = p_id, upd_dt = now()
          WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
         IF NOT FOUND THEN RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
     END IF;
@@ -5355,10 +5355,10 @@ END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_chk_ver_copy_c_000(character varying, character varying, integer, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_chk_ver_copy_c_000(character varying, character varying, integer, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_chk_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_chk_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $_$
 DECLARE v_nm varchar; v_n int; v_cd varchar; v_src tbl_template%ROWTYPE; v_try int := 0; v_cycle varchar;
@@ -5374,14 +5374,14 @@ BEGIN
     -- 다음 번호는 이 회사 카탈로그 MAX+1
     SELECT COALESCE(MAX(substring(t.tmpl_cd from '[0-9]{3}$')::int), 0) INTO v_n
       FROM tbl_template t
-     WHERE t.co_cd = p_co_cd AND t.tmpl_cd ~ '^tml_ccp_chk_[0-9]{3}$' AND t.tmpl_cd <> 'tml_ccp_chk_000';
+     WHERE t.co_cd = p_co_cd AND t.tmpl_cd ~ '^html_ccp_chk_[0-9]{3}$' AND t.tmpl_cd <> 'html_ccp_chk_000';
     LOOP
         v_try := v_try + 1; v_n := v_n + 1;
         IF v_n > 999 OR v_try > 50 THEN
             RAISE EXCEPTION '양식코드를 더 부여할 수 없습니다.' USING ERRCODE = '45000';
         END IF;
-        v_cd := 'tml_ccp_chk_' || lpad(v_n::text, 3, '0');
-        IF v_cd = 'tml_ccp_chk_000' THEN CONTINUE; END IF;
+        v_cd := 'html_ccp_chk_' || lpad(v_n::text, 3, '0');
+        IF v_cd = 'html_ccp_chk_000' THEN CONTINUE; END IF;
         EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd AND co_cd = p_co_cd);
     END LOOP;
     INSERT INTO tbl_template (
@@ -5397,31 +5397,31 @@ BEGIN
     ) VALUES (
         p_co_cd, v_cd, v_nm, v_cycle, COALESCE(v_src.default_retention_month, 24), 'Y', 'usr', p_id, now()
     );
-    INSERT INTO tbl_tml_ccp_chk_ver (co_cd, tmpl_cd, ver_no, ver_cd, ver_nm, apply_yn, use_yn, ins_id, ins_dt)
+    INSERT INTO tbl_html_ccp_chk_ver (co_cd, tmpl_cd, ver_no, ver_cd, ver_nm, apply_yn, use_yn, ins_id, ins_dt)
     VALUES (p_co_cd, v_cd, 1, v_cd, v_nm, 'N', 'Y', p_id, now());
-    INSERT INTO tbl_tml_ccp_chk_ver_item (
+    INSERT INTO tbl_html_ccp_chk_ver_item (
         co_cd, tmpl_cd, ver_no, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, ins_id
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
-      FROM tbl_check_item c WHERE c.tmpl_cd = 'tml_ccp_chk_000' AND c.use_yn = 'Y';
+      FROM tbl_check_item c WHERE c.tmpl_cd = 'html_ccp_chk_000' AND c.use_yn = 'Y';
     -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
 
 
 --
--- Name: sp_tbl_tml_ccp_chk_ver_d_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_chk_ver_d_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_chk_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_chk_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') IN ('tml_ccp_chk_000', 'html_sys_006') OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') IN ('html_ccp_chk_000', 'html_sys_006') OR COALESCE(p_ver_no, 0) <= 0 THEN
         RAISE EXCEPTION '표준 양식은 삭제할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     IF NOT EXISTS (
-        SELECT 1 FROM tbl_tml_ccp_chk_ver
+        SELECT 1 FROM tbl_html_ccp_chk_ver
          WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y'
     ) THEN
         RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
@@ -5434,25 +5434,25 @@ BEGIN
     DELETE FROM tbl_schedule_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_doc_no_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_company_template WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
-    UPDATE tbl_tml_ccp_chk_ver SET use_yn = 'N', apply_yn = 'N', upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_chk_ver SET use_yn = 'N', apply_yn = 'N', upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
 END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_chk_ver_delete_blocker_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_chk_ver_delete_blocker_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_chk_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_chk_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 DECLARE v_nm varchar; v_use varchar; v_key varchar;
 BEGIN
     v_key := COALESCE(NULLIF(btrim(p_tmpl_cd), ''), COALESCE(p_ver_no::varchar, ''));
-    IF COALESCE(p_tmpl_cd, '') IN ('tml_ccp_chk_000', 'html_sys_006') OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') IN ('html_ccp_chk_000', 'html_sys_006') OR COALESCE(p_ver_no, 0) <= 0 THEN
         RETURN QUERY SELECT '표준'::varchar, '시스템 표준 항목'::varchar; RETURN;
     END IF;
-    SELECT ver_nm, use_yn INTO v_nm, v_use FROM tbl_tml_ccp_chk_ver
+    SELECT ver_nm, use_yn INTO v_nm, v_use FROM tbl_html_ccp_chk_ver
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
     IF v_nm IS NULL OR v_use = 'N' THEN
         RETURN QUERY SELECT v_key, '없는 양식'::varchar; RETURN;
@@ -5464,43 +5464,43 @@ END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_chk_ver_item_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_chk_ver_item_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_chk_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_chk_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') IN ('tml_ccp_chk_000', 'html_sys_006') THEN
+    IF COALESCE(p_tmpl_cd, '') IN ('html_ccp_chk_000', 'html_sys_006') THEN
         RETURN QUERY
         SELECT c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm
           FROM tbl_check_item c
-         WHERE c.tmpl_cd = 'tml_ccp_chk_000' AND c.use_yn = 'Y'
+         WHERE c.tmpl_cd = 'html_ccp_chk_000' AND c.use_yn = 'Y'
          ORDER BY c.sort_no, c.item_cd;
         RETURN;
     END IF;
     RETURN QUERY
     SELECT i.item_cd, i.sort_no, i.cycle_nm, i.grp_nm, i.item_nm, i.input_type, i.unit_nm
-      FROM tbl_tml_ccp_chk_ver_item i
+      FROM tbl_html_ccp_chk_ver_item i
      WHERE i.co_cd = p_co_cd AND i.tmpl_cd = p_tmpl_cd AND i.ver_no = p_ver_no
      ORDER BY i.sort_no, i.item_cd;
 END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_chk_ver_item_u_000(character varying, character varying, integer, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_chk_ver_item_u_000(character varying, character varying, integer, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_chk_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_chk_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE e jsonb; v_cnt int := 0;
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') IN ('tml_ccp_chk_000', 'html_sys_006') OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') IN ('html_ccp_chk_000', 'html_sys_006') OR COALESCE(p_ver_no, 0) <= 0 THEN
         RAISE EXCEPTION '표준 항목은 수정할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     IF NOT EXISTS (
-        SELECT 1 FROM tbl_tml_ccp_chk_ver
+        SELECT 1 FROM tbl_html_ccp_chk_ver
          WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y'
     ) THEN
         RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
@@ -5518,10 +5518,10 @@ BEGIN
     IF jsonb_array_length(p_items) = 0 THEN
         RAISE EXCEPTION '점검항목을 한 줄 이상 넣으세요.' USING ERRCODE = '45000';
     END IF;
-    DELETE FROM tbl_tml_ccp_chk_ver_item WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
+    DELETE FROM tbl_html_ccp_chk_ver_item WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
     FOR e IN SELECT * FROM jsonb_array_elements(p_items) LOOP
         v_cnt := v_cnt + 1;
-        INSERT INTO tbl_tml_ccp_chk_ver_item (
+        INSERT INTO tbl_html_ccp_chk_ver_item (
             co_cd, tmpl_cd, ver_no, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, ins_id, upd_id, upd_dt
         ) VALUES (
             p_co_cd, p_tmpl_cd, p_ver_no,
@@ -5532,27 +5532,27 @@ BEGIN
             p_id, p_id, now()
         );
     END LOOP;
-    UPDATE tbl_tml_ccp_chk_ver SET upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_chk_ver SET upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
 END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_chk_ver_nm_u_000(character varying, character varying, integer, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_chk_ver_nm_u_000(character varying, character varying, integer, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_chk_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_chk_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_nm varchar; v_use varchar;
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') IN ('tml_ccp_chk_000', 'html_sys_006') OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') IN ('html_ccp_chk_000', 'html_sys_006') OR COALESCE(p_ver_no, 0) <= 0 THEN
         RAISE EXCEPTION '표준 양식명은 수정할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     v_nm := btrim(COALESCE(p_ver_nm, ''));
     IF v_nm = '' THEN RAISE EXCEPTION '양식명은 필수입니다.' USING ERRCODE = '45000'; END IF;
     v_use := CASE WHEN upper(left(btrim(COALESCE(p_use_yn, 'Y')), 1)) = 'N' THEN 'N' ELSE 'Y' END;
-    UPDATE tbl_tml_ccp_chk_ver SET ver_nm = v_nm, upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_chk_ver SET ver_nm = v_nm, upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
     IF NOT FOUND THEN RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
     UPDATE tbl_template SET tmpl_nm = v_nm, upd_id = p_id, upd_dt = now() WHERE tmpl_cd = p_tmpl_cd AND co_cd = p_co_cd;
@@ -5563,15 +5563,15 @@ END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_chk_ver_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_chk_ver_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_chk_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_chk_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT x.idx, x.tmpl_cd, x.ver_no, x.ver_cd, x.ver_nm, x.sys_yn, x.apply_yn, x.locked_yn, x.ins_nm, x.ins_dt, x.use_yn
       FROM (
-            SELECT NULL::bigint, 'tml_ccp_chk_000'::varchar, 0, 'tml_ccp_chk_000'::varchar,
+            SELECT NULL::bigint, 'html_ccp_chk_000'::varchar, 0, 'html_ccp_chk_000'::varchar,
                    '표준'::varchar, 'sys'::varchar, 'N'::varchar, 'Y'::varchar, ''::varchar, ''::varchar, 'N'::varchar
             UNION ALL
             SELECT v.idx, v.tmpl_cd, v.ver_no,
@@ -5581,11 +5581,11 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_chk_ver_r_000(p_co_cd charac
                    COALESCE(u.user_nm, v.ins_id, '')::varchar,
                    COALESCE(to_char(v.ins_dt, 'YYYY-MM-DD'), '')::varchar,
                    CASE WHEN upper(COALESCE(ct.use_yn, 'Y')) = 'N' THEN 'N' ELSE 'Y' END
-              FROM tbl_tml_ccp_chk_ver v
+              FROM tbl_html_ccp_chk_ver v
               JOIN tbl_company_template ct ON ct.co_cd = v.co_cd AND ct.tmpl_cd = v.tmpl_cd
               LEFT JOIN tbl_user u ON u.co_cd = v.co_cd AND u.user_id = v.ins_id
              WHERE v.co_cd = p_co_cd AND v.use_yn = 'Y'
-               AND v.tmpl_cd ~ '^tml_ccp_chk_[0-9]{3}$' AND v.tmpl_cd <> 'tml_ccp_chk_000'
+               AND v.tmpl_cd ~ '^html_ccp_chk_[0-9]{3}$' AND v.tmpl_cd <> 'html_ccp_chk_000'
            ) x(idx, tmpl_cd, ver_no, ver_cd, ver_nm, sys_yn, apply_yn, locked_yn, ins_nm, ins_dt, use_yn)
      WHERE (COALESCE(btrim(p_ver_cd), '') = '' OR x.tmpl_cd ILIKE '%' || btrim(p_ver_cd) || '%')
        AND (COALESCE(btrim(p_ver_nm), '') = '' OR x.ver_nm ILIKE '%' || btrim(p_ver_nm) || '%')
@@ -5594,17 +5594,17 @@ $_$;
 
 
 --
--- Name: sp_tbl_tml_ccp_htg_ver_apply_u_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_htg_ver_apply_u_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_htg_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_htg_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    UPDATE tbl_tml_ccp_htg_ver SET apply_yn = 'N', upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_htg_ver SET apply_yn = 'N', upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND apply_yn = 'Y';
     IF COALESCE(p_ver_no, 0) > 0 THEN
-        UPDATE tbl_tml_ccp_htg_ver SET apply_yn = 'Y', upd_id = p_id, upd_dt = now()
+        UPDATE tbl_html_ccp_htg_ver SET apply_yn = 'Y', upd_id = p_id, upd_dt = now()
          WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
         IF NOT FOUND THEN RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
     END IF;
@@ -5612,10 +5612,10 @@ END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_htg_ver_copy_c_000(character varying, character varying, integer, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_htg_ver_copy_c_000(character varying, character varying, integer, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_htg_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_htg_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $_$
 DECLARE v_nm varchar; v_n int; v_cd varchar; v_try int := 0;
@@ -5628,14 +5628,14 @@ BEGIN
     -- 다음 번호는 이 회사 카탈로그 MAX+1
     SELECT COALESCE(MAX(substring(t.tmpl_cd from '[0-9]{3}$')::int), 0) INTO v_n
       FROM tbl_template t
-     WHERE t.co_cd = p_co_cd AND t.tmpl_cd ~ '^tml_ccp_htg_[0-9]{3}$' AND t.tmpl_cd <> 'tml_ccp_htg_000';
+     WHERE t.co_cd = p_co_cd AND t.tmpl_cd ~ '^html_ccp_htg_[0-9]{3}$' AND t.tmpl_cd <> 'html_ccp_htg_000';
     LOOP
         v_try := v_try + 1; v_n := v_n + 1;
         IF v_n > 999 OR v_try > 50 THEN
             RAISE EXCEPTION '양식코드를 더 부여할 수 없습니다.' USING ERRCODE = '45000';
         END IF;
-        v_cd := 'tml_ccp_htg_' || lpad(v_n::text, 3, '0');
-        IF v_cd = 'tml_ccp_htg_000' THEN CONTINUE; END IF;
+        v_cd := 'html_ccp_htg_' || lpad(v_n::text, 3, '0');
+        IF v_cd = 'html_ccp_htg_000' THEN CONTINUE; END IF;
         EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd AND co_cd = p_co_cd);
     END LOOP;
     -- 카탈로그 html_sys 없이 usr 행. 작성 화면 scrn_cd 는 후속
@@ -5651,31 +5651,31 @@ BEGIN
     ) VALUES (
         p_co_cd, v_cd, v_nm, 'D', 24, 'Y', 'usr', p_id, now()
     );
-    INSERT INTO tbl_tml_ccp_htg_ver (co_cd, tmpl_cd, ver_no, ver_cd, ver_nm, apply_yn, use_yn, ins_id, ins_dt)
+    INSERT INTO tbl_html_ccp_htg_ver (co_cd, tmpl_cd, ver_no, ver_cd, ver_nm, apply_yn, use_yn, ins_id, ins_dt)
     VALUES (p_co_cd, v_cd, 1, v_cd, v_nm, 'N', 'Y', p_id, now());
-    INSERT INTO tbl_tml_ccp_htg_ver_item (
+    INSERT INTO tbl_html_ccp_htg_ver_item (
         co_cd, tmpl_cd, ver_no, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, ins_id
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
-      FROM tbl_check_item c WHERE c.tmpl_cd = 'tml_ccp_htg_000' AND c.use_yn = 'Y';
+      FROM tbl_check_item c WHERE c.tmpl_cd = 'html_ccp_htg_000' AND c.use_yn = 'Y';
     -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
 
 
 --
--- Name: sp_tbl_tml_ccp_htg_ver_d_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_htg_ver_d_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_htg_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_htg_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_htg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_htg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
         RAISE EXCEPTION '표준 양식은 삭제할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     IF NOT EXISTS (
-        SELECT 1 FROM tbl_tml_ccp_htg_ver
+        SELECT 1 FROM tbl_html_ccp_htg_ver
          WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y'
     ) THEN
         RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
@@ -5688,25 +5688,25 @@ BEGIN
     DELETE FROM tbl_schedule_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_doc_no_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_company_template WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
-    UPDATE tbl_tml_ccp_htg_ver SET use_yn = 'N', apply_yn = 'N', upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_htg_ver SET use_yn = 'N', apply_yn = 'N', upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
 END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_htg_ver_delete_blocker_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_htg_ver_delete_blocker_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_htg_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_htg_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 DECLARE v_nm varchar; v_use varchar; v_key varchar;
 BEGIN
     v_key := COALESCE(NULLIF(btrim(p_tmpl_cd), ''), COALESCE(p_ver_no::varchar, ''));
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_htg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_htg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
         RETURN QUERY SELECT '표준'::varchar, '시스템 표준 항목'::varchar; RETURN;
     END IF;
-    SELECT ver_nm, use_yn INTO v_nm, v_use FROM tbl_tml_ccp_htg_ver
+    SELECT ver_nm, use_yn INTO v_nm, v_use FROM tbl_html_ccp_htg_ver
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
     IF v_nm IS NULL OR v_use = 'N' THEN
         RETURN QUERY SELECT v_key, '없는 양식'::varchar; RETURN;
@@ -5718,43 +5718,43 @@ END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_htg_ver_item_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_htg_ver_item_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_htg_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_htg_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_htg_000' THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_htg_000' THEN
         RETURN QUERY
         SELECT c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm
           FROM tbl_check_item c
-         WHERE c.tmpl_cd = 'tml_ccp_htg_000' AND c.use_yn = 'Y'
+         WHERE c.tmpl_cd = 'html_ccp_htg_000' AND c.use_yn = 'Y'
          ORDER BY c.sort_no, c.item_cd;
         RETURN;
     END IF;
     RETURN QUERY
     SELECT i.item_cd, i.sort_no, i.cycle_nm, i.grp_nm, i.item_nm, i.input_type, i.unit_nm
-      FROM tbl_tml_ccp_htg_ver_item i
+      FROM tbl_html_ccp_htg_ver_item i
      WHERE i.co_cd = p_co_cd AND i.tmpl_cd = p_tmpl_cd AND i.ver_no = p_ver_no
      ORDER BY i.sort_no, i.item_cd;
 END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_htg_ver_item_u_000(character varying, character varying, integer, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_htg_ver_item_u_000(character varying, character varying, integer, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_htg_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_htg_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE e jsonb; v_cnt int := 0;
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_htg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_htg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
         RAISE EXCEPTION '표준 항목은 수정할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     IF NOT EXISTS (
-        SELECT 1 FROM tbl_tml_ccp_htg_ver
+        SELECT 1 FROM tbl_html_ccp_htg_ver
          WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y'
     ) THEN
         RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
@@ -5772,10 +5772,10 @@ BEGIN
     IF jsonb_array_length(p_items) = 0 THEN
         RAISE EXCEPTION '점검항목을 한 줄 이상 넣으세요.' USING ERRCODE = '45000';
     END IF;
-    DELETE FROM tbl_tml_ccp_htg_ver_item WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
+    DELETE FROM tbl_html_ccp_htg_ver_item WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
     FOR e IN SELECT * FROM jsonb_array_elements(p_items) LOOP
         v_cnt := v_cnt + 1;
-        INSERT INTO tbl_tml_ccp_htg_ver_item (
+        INSERT INTO tbl_html_ccp_htg_ver_item (
             co_cd, tmpl_cd, ver_no, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, ins_id, upd_id, upd_dt
         ) VALUES (
             p_co_cd, p_tmpl_cd, p_ver_no,
@@ -5786,27 +5786,27 @@ BEGIN
             p_id, p_id, now()
         );
     END LOOP;
-    UPDATE tbl_tml_ccp_htg_ver SET upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_htg_ver SET upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
 END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_htg_ver_nm_u_000(character varying, character varying, integer, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_htg_ver_nm_u_000(character varying, character varying, integer, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_htg_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_htg_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_nm varchar; v_use varchar;
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_htg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_htg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
         RAISE EXCEPTION '표준 양식명은 수정할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     v_nm := btrim(COALESCE(p_ver_nm, ''));
     IF v_nm = '' THEN RAISE EXCEPTION '양식명은 필수입니다.' USING ERRCODE = '45000'; END IF;
     v_use := CASE WHEN upper(left(btrim(COALESCE(p_use_yn, 'Y')), 1)) = 'N' THEN 'N' ELSE 'Y' END;
-    UPDATE tbl_tml_ccp_htg_ver SET ver_nm = v_nm, upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_htg_ver SET ver_nm = v_nm, upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
     IF NOT FOUND THEN RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
     UPDATE tbl_template SET tmpl_nm = v_nm, upd_id = p_id, upd_dt = now() WHERE tmpl_cd = p_tmpl_cd AND co_cd = p_co_cd;
@@ -5817,15 +5817,15 @@ END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_htg_ver_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_htg_ver_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_htg_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_htg_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT x.idx, x.tmpl_cd, x.ver_no, x.ver_cd, x.ver_nm, x.sys_yn, x.apply_yn, x.locked_yn, x.ins_nm, x.ins_dt, x.use_yn
       FROM (
-            SELECT NULL::bigint, 'tml_ccp_htg_000'::varchar, 0, 'tml_ccp_htg_000'::varchar,
+            SELECT NULL::bigint, 'html_ccp_htg_000'::varchar, 0, 'html_ccp_htg_000'::varchar,
                    '표준'::varchar, 'sys'::varchar, 'N'::varchar, 'Y'::varchar, ''::varchar, ''::varchar, 'N'::varchar
             UNION ALL
             SELECT v.idx, v.tmpl_cd, v.ver_no,
@@ -5835,11 +5835,11 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_htg_ver_r_000(p_co_cd charac
                    COALESCE(u.user_nm, v.ins_id, '')::varchar,
                    COALESCE(to_char(v.ins_dt, 'YYYY-MM-DD'), '')::varchar,
                    CASE WHEN upper(COALESCE(ct.use_yn, 'Y')) = 'N' THEN 'N' ELSE 'Y' END
-              FROM tbl_tml_ccp_htg_ver v
+              FROM tbl_html_ccp_htg_ver v
               JOIN tbl_company_template ct ON ct.co_cd = v.co_cd AND ct.tmpl_cd = v.tmpl_cd
               LEFT JOIN tbl_user u ON u.co_cd = v.co_cd AND u.user_id = v.ins_id
              WHERE v.co_cd = p_co_cd AND v.use_yn = 'Y'
-               AND v.tmpl_cd ~ '^tml_ccp_htg_[0-9]{3}$' AND v.tmpl_cd <> 'tml_ccp_htg_000'
+               AND v.tmpl_cd ~ '^html_ccp_htg_[0-9]{3}$' AND v.tmpl_cd <> 'html_ccp_htg_000'
            ) x(idx, tmpl_cd, ver_no, ver_cd, ver_nm, sys_yn, apply_yn, locked_yn, ins_nm, ins_dt, use_yn)
      WHERE (COALESCE(btrim(p_ver_cd), '') = '' OR x.tmpl_cd ILIKE '%' || btrim(p_ver_cd) || '%')
        AND (COALESCE(btrim(p_ver_nm), '') = '' OR x.ver_nm ILIKE '%' || btrim(p_ver_nm) || '%')
@@ -5848,17 +5848,17 @@ $_$;
 
 
 --
--- Name: sp_tbl_tml_ccp_mtl_ver_apply_u_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_mtl_ver_apply_u_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_mtl_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_mtl_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    UPDATE tbl_tml_ccp_mtl_ver SET apply_yn = 'N', upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_mtl_ver SET apply_yn = 'N', upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND apply_yn = 'Y';
     IF COALESCE(p_ver_no, 0) > 0 THEN
-        UPDATE tbl_tml_ccp_mtl_ver SET apply_yn = 'Y', upd_id = p_id, upd_dt = now()
+        UPDATE tbl_html_ccp_mtl_ver SET apply_yn = 'Y', upd_id = p_id, upd_dt = now()
          WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
         IF NOT FOUND THEN RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
     END IF;
@@ -5866,10 +5866,10 @@ END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_mtl_ver_copy_c_000(character varying, character varying, integer, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_mtl_ver_copy_c_000(character varying, character varying, integer, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_mtl_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_mtl_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $_$
 DECLARE v_nm varchar; v_n int; v_cd varchar; v_try int := 0;
@@ -5882,14 +5882,14 @@ BEGIN
     -- 다음 번호는 이 회사 카탈로그 MAX+1
     SELECT COALESCE(MAX(substring(t.tmpl_cd from '[0-9]{3}$')::int), 0) INTO v_n
       FROM tbl_template t
-     WHERE t.co_cd = p_co_cd AND t.tmpl_cd ~ '^tml_ccp_mtl_[0-9]{3}$' AND t.tmpl_cd <> 'tml_ccp_mtl_000';
+     WHERE t.co_cd = p_co_cd AND t.tmpl_cd ~ '^html_ccp_mtl_[0-9]{3}$' AND t.tmpl_cd <> 'html_ccp_mtl_000';
     LOOP
         v_try := v_try + 1; v_n := v_n + 1;
         IF v_n > 999 OR v_try > 50 THEN
             RAISE EXCEPTION '양식코드를 더 부여할 수 없습니다.' USING ERRCODE = '45000';
         END IF;
-        v_cd := 'tml_ccp_mtl_' || lpad(v_n::text, 3, '0');
-        IF v_cd = 'tml_ccp_mtl_000' THEN CONTINUE; END IF;
+        v_cd := 'html_ccp_mtl_' || lpad(v_n::text, 3, '0');
+        IF v_cd = 'html_ccp_mtl_000' THEN CONTINUE; END IF;
         EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd AND co_cd = p_co_cd);
     END LOOP;
     -- 카탈로그 html_sys 없이 usr 행. 작성 화면 scrn_cd 는 후속
@@ -5905,31 +5905,31 @@ BEGIN
     ) VALUES (
         p_co_cd, v_cd, v_nm, 'D', 24, 'Y', 'usr', p_id, now()
     );
-    INSERT INTO tbl_tml_ccp_mtl_ver (co_cd, tmpl_cd, ver_no, ver_cd, ver_nm, apply_yn, use_yn, ins_id, ins_dt)
+    INSERT INTO tbl_html_ccp_mtl_ver (co_cd, tmpl_cd, ver_no, ver_cd, ver_nm, apply_yn, use_yn, ins_id, ins_dt)
     VALUES (p_co_cd, v_cd, 1, v_cd, v_nm, 'N', 'Y', p_id, now());
-    INSERT INTO tbl_tml_ccp_mtl_ver_item (
+    INSERT INTO tbl_html_ccp_mtl_ver_item (
         co_cd, tmpl_cd, ver_no, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, ins_id
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
-      FROM tbl_check_item c WHERE c.tmpl_cd = 'tml_ccp_mtl_000' AND c.use_yn = 'Y';
+      FROM tbl_check_item c WHERE c.tmpl_cd = 'html_ccp_mtl_000' AND c.use_yn = 'Y';
     -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
 
 
 --
--- Name: sp_tbl_tml_ccp_mtl_ver_d_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_mtl_ver_d_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_mtl_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_mtl_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_mtl_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_mtl_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
         RAISE EXCEPTION '표준 양식은 삭제할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     IF NOT EXISTS (
-        SELECT 1 FROM tbl_tml_ccp_mtl_ver
+        SELECT 1 FROM tbl_html_ccp_mtl_ver
          WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y'
     ) THEN
         RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
@@ -5942,25 +5942,25 @@ BEGIN
     DELETE FROM tbl_schedule_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_doc_no_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_company_template WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
-    UPDATE tbl_tml_ccp_mtl_ver SET use_yn = 'N', apply_yn = 'N', upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_mtl_ver SET use_yn = 'N', apply_yn = 'N', upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
 END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_mtl_ver_delete_blocker_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_mtl_ver_delete_blocker_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_mtl_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_mtl_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 DECLARE v_nm varchar; v_use varchar; v_key varchar;
 BEGIN
     v_key := COALESCE(NULLIF(btrim(p_tmpl_cd), ''), COALESCE(p_ver_no::varchar, ''));
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_mtl_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_mtl_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
         RETURN QUERY SELECT '표준'::varchar, '시스템 표준 항목'::varchar; RETURN;
     END IF;
-    SELECT ver_nm, use_yn INTO v_nm, v_use FROM tbl_tml_ccp_mtl_ver
+    SELECT ver_nm, use_yn INTO v_nm, v_use FROM tbl_html_ccp_mtl_ver
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
     IF v_nm IS NULL OR v_use = 'N' THEN
         RETURN QUERY SELECT v_key, '없는 양식'::varchar; RETURN;
@@ -5972,43 +5972,43 @@ END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_mtl_ver_item_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_mtl_ver_item_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_mtl_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_mtl_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_mtl_000' THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_mtl_000' THEN
         RETURN QUERY
         SELECT c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm
           FROM tbl_check_item c
-         WHERE c.tmpl_cd = 'tml_ccp_mtl_000' AND c.use_yn = 'Y'
+         WHERE c.tmpl_cd = 'html_ccp_mtl_000' AND c.use_yn = 'Y'
          ORDER BY c.sort_no, c.item_cd;
         RETURN;
     END IF;
     RETURN QUERY
     SELECT i.item_cd, i.sort_no, i.cycle_nm, i.grp_nm, i.item_nm, i.input_type, i.unit_nm
-      FROM tbl_tml_ccp_mtl_ver_item i
+      FROM tbl_html_ccp_mtl_ver_item i
      WHERE i.co_cd = p_co_cd AND i.tmpl_cd = p_tmpl_cd AND i.ver_no = p_ver_no
      ORDER BY i.sort_no, i.item_cd;
 END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_mtl_ver_item_u_000(character varying, character varying, integer, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_mtl_ver_item_u_000(character varying, character varying, integer, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_mtl_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_mtl_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE e jsonb; v_cnt int := 0;
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_mtl_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_mtl_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
         RAISE EXCEPTION '표준 항목은 수정할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     IF NOT EXISTS (
-        SELECT 1 FROM tbl_tml_ccp_mtl_ver
+        SELECT 1 FROM tbl_html_ccp_mtl_ver
          WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y'
     ) THEN
         RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
@@ -6026,10 +6026,10 @@ BEGIN
     IF jsonb_array_length(p_items) = 0 THEN
         RAISE EXCEPTION '점검항목을 한 줄 이상 넣으세요.' USING ERRCODE = '45000';
     END IF;
-    DELETE FROM tbl_tml_ccp_mtl_ver_item WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
+    DELETE FROM tbl_html_ccp_mtl_ver_item WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
     FOR e IN SELECT * FROM jsonb_array_elements(p_items) LOOP
         v_cnt := v_cnt + 1;
-        INSERT INTO tbl_tml_ccp_mtl_ver_item (
+        INSERT INTO tbl_html_ccp_mtl_ver_item (
             co_cd, tmpl_cd, ver_no, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, ins_id, upd_id, upd_dt
         ) VALUES (
             p_co_cd, p_tmpl_cd, p_ver_no,
@@ -6040,27 +6040,27 @@ BEGIN
             p_id, p_id, now()
         );
     END LOOP;
-    UPDATE tbl_tml_ccp_mtl_ver SET upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_mtl_ver SET upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
 END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_mtl_ver_nm_u_000(character varying, character varying, integer, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_mtl_ver_nm_u_000(character varying, character varying, integer, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_mtl_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_mtl_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_nm varchar; v_use varchar;
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_mtl_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_mtl_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
         RAISE EXCEPTION '표준 양식명은 수정할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     v_nm := btrim(COALESCE(p_ver_nm, ''));
     IF v_nm = '' THEN RAISE EXCEPTION '양식명은 필수입니다.' USING ERRCODE = '45000'; END IF;
     v_use := CASE WHEN upper(left(btrim(COALESCE(p_use_yn, 'Y')), 1)) = 'N' THEN 'N' ELSE 'Y' END;
-    UPDATE tbl_tml_ccp_mtl_ver SET ver_nm = v_nm, upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_mtl_ver SET ver_nm = v_nm, upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
     IF NOT FOUND THEN RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
     UPDATE tbl_template SET tmpl_nm = v_nm, upd_id = p_id, upd_dt = now() WHERE tmpl_cd = p_tmpl_cd AND co_cd = p_co_cd;
@@ -6071,15 +6071,15 @@ END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_mtl_ver_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_mtl_ver_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_mtl_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_mtl_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT x.idx, x.tmpl_cd, x.ver_no, x.ver_cd, x.ver_nm, x.sys_yn, x.apply_yn, x.locked_yn, x.ins_nm, x.ins_dt, x.use_yn
       FROM (
-            SELECT NULL::bigint, 'tml_ccp_mtl_000'::varchar, 0, 'tml_ccp_mtl_000'::varchar,
+            SELECT NULL::bigint, 'html_ccp_mtl_000'::varchar, 0, 'html_ccp_mtl_000'::varchar,
                    '표준'::varchar, 'sys'::varchar, 'N'::varchar, 'Y'::varchar, ''::varchar, ''::varchar, 'N'::varchar
             UNION ALL
             SELECT v.idx, v.tmpl_cd, v.ver_no,
@@ -6089,11 +6089,11 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_mtl_ver_r_000(p_co_cd charac
                    COALESCE(u.user_nm, v.ins_id, '')::varchar,
                    COALESCE(to_char(v.ins_dt, 'YYYY-MM-DD'), '')::varchar,
                    CASE WHEN upper(COALESCE(ct.use_yn, 'Y')) = 'N' THEN 'N' ELSE 'Y' END
-              FROM tbl_tml_ccp_mtl_ver v
+              FROM tbl_html_ccp_mtl_ver v
               JOIN tbl_company_template ct ON ct.co_cd = v.co_cd AND ct.tmpl_cd = v.tmpl_cd
               LEFT JOIN tbl_user u ON u.co_cd = v.co_cd AND u.user_id = v.ins_id
              WHERE v.co_cd = p_co_cd AND v.use_yn = 'Y'
-               AND v.tmpl_cd ~ '^tml_ccp_mtl_[0-9]{3}$' AND v.tmpl_cd <> 'tml_ccp_mtl_000'
+               AND v.tmpl_cd ~ '^html_ccp_mtl_[0-9]{3}$' AND v.tmpl_cd <> 'html_ccp_mtl_000'
            ) x(idx, tmpl_cd, ver_no, ver_cd, ver_nm, sys_yn, apply_yn, locked_yn, ins_nm, ins_dt, use_yn)
      WHERE (COALESCE(btrim(p_ver_cd), '') = '' OR x.tmpl_cd ILIKE '%' || btrim(p_ver_cd) || '%')
        AND (COALESCE(btrim(p_ver_nm), '') = '' OR x.ver_nm ILIKE '%' || btrim(p_ver_nm) || '%')
@@ -6102,17 +6102,17 @@ $_$;
 
 
 --
--- Name: sp_tbl_tml_ccp_pkg_ver_apply_u_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_pkg_ver_apply_u_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_pkg_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_pkg_ver_apply_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    UPDATE tbl_tml_ccp_pkg_ver SET apply_yn = 'N', upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_pkg_ver SET apply_yn = 'N', upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND apply_yn = 'Y';
     IF COALESCE(p_ver_no, 0) > 0 THEN
-        UPDATE tbl_tml_ccp_pkg_ver SET apply_yn = 'Y', upd_id = p_id, upd_dt = now()
+        UPDATE tbl_html_ccp_pkg_ver SET apply_yn = 'Y', upd_id = p_id, upd_dt = now()
          WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
         IF NOT FOUND THEN RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
     END IF;
@@ -6120,10 +6120,10 @@ END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_pkg_ver_copy_c_000(character varying, character varying, integer, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_pkg_ver_copy_c_000(character varying, character varying, integer, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_pkg_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_pkg_ver_copy_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_src_ver_no integer, p_ver_cd character varying, p_ver_nm character varying, p_id character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $_$
 DECLARE v_nm varchar; v_n int; v_cd varchar; v_try int := 0;
@@ -6136,14 +6136,14 @@ BEGIN
     -- 다음 번호는 이 회사 카탈로그 MAX+1
     SELECT COALESCE(MAX(substring(t.tmpl_cd from '[0-9]{3}$')::int), 0) INTO v_n
       FROM tbl_template t
-     WHERE t.co_cd = p_co_cd AND t.tmpl_cd ~ '^tml_ccp_pkg_[0-9]{3}$' AND t.tmpl_cd <> 'tml_ccp_pkg_000';
+     WHERE t.co_cd = p_co_cd AND t.tmpl_cd ~ '^html_ccp_pkg_[0-9]{3}$' AND t.tmpl_cd <> 'html_ccp_pkg_000';
     LOOP
         v_try := v_try + 1; v_n := v_n + 1;
         IF v_n > 999 OR v_try > 50 THEN
             RAISE EXCEPTION '양식코드를 더 부여할 수 없습니다.' USING ERRCODE = '45000';
         END IF;
-        v_cd := 'tml_ccp_pkg_' || lpad(v_n::text, 3, '0');
-        IF v_cd = 'tml_ccp_pkg_000' THEN CONTINUE; END IF;
+        v_cd := 'html_ccp_pkg_' || lpad(v_n::text, 3, '0');
+        IF v_cd = 'html_ccp_pkg_000' THEN CONTINUE; END IF;
         EXIT WHEN NOT EXISTS (SELECT 1 FROM tbl_template WHERE tmpl_cd = v_cd AND co_cd = p_co_cd);
     END LOOP;
     -- 카탈로그 html_sys 없이 usr 행. 작성 화면 scrn_cd 는 후속
@@ -6159,31 +6159,31 @@ BEGIN
     ) VALUES (
         p_co_cd, v_cd, v_nm, 'D', 24, 'Y', 'usr', p_id, now()
     );
-    INSERT INTO tbl_tml_ccp_pkg_ver (co_cd, tmpl_cd, ver_no, ver_cd, ver_nm, apply_yn, use_yn, ins_id, ins_dt)
+    INSERT INTO tbl_html_ccp_pkg_ver (co_cd, tmpl_cd, ver_no, ver_cd, ver_nm, apply_yn, use_yn, ins_id, ins_dt)
     VALUES (p_co_cd, v_cd, 1, v_cd, v_nm, 'N', 'Y', p_id, now());
-    INSERT INTO tbl_tml_ccp_pkg_ver_item (
+    INSERT INTO tbl_html_ccp_pkg_ver_item (
         co_cd, tmpl_cd, ver_no, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, ins_id
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
-      FROM tbl_check_item c WHERE c.tmpl_cd = 'tml_ccp_pkg_000' AND c.use_yn = 'Y';
+      FROM tbl_check_item c WHERE c.tmpl_cd = 'html_ccp_pkg_000' AND c.use_yn = 'Y';
     -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
 
 
 --
--- Name: sp_tbl_tml_ccp_pkg_ver_d_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_pkg_ver_d_000(character varying, character varying, integer, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_pkg_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_pkg_ver_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_pkg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_pkg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
         RAISE EXCEPTION '표준 양식은 삭제할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     IF NOT EXISTS (
-        SELECT 1 FROM tbl_tml_ccp_pkg_ver
+        SELECT 1 FROM tbl_html_ccp_pkg_ver
          WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y'
     ) THEN
         RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
@@ -6196,25 +6196,25 @@ BEGIN
     DELETE FROM tbl_schedule_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_doc_no_rule WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
     DELETE FROM tbl_company_template WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
-    UPDATE tbl_tml_ccp_pkg_ver SET use_yn = 'N', apply_yn = 'N', upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_pkg_ver SET use_yn = 'N', apply_yn = 'N', upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
 END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_pkg_ver_delete_blocker_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_pkg_ver_delete_blocker_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_pkg_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_pkg_ver_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 DECLARE v_nm varchar; v_use varchar; v_key varchar;
 BEGIN
     v_key := COALESCE(NULLIF(btrim(p_tmpl_cd), ''), COALESCE(p_ver_no::varchar, ''));
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_pkg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_pkg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
         RETURN QUERY SELECT '표준'::varchar, '시스템 표준 항목'::varchar; RETURN;
     END IF;
-    SELECT ver_nm, use_yn INTO v_nm, v_use FROM tbl_tml_ccp_pkg_ver
+    SELECT ver_nm, use_yn INTO v_nm, v_use FROM tbl_html_ccp_pkg_ver
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
     IF v_nm IS NULL OR v_use = 'N' THEN
         RETURN QUERY SELECT v_key, '없는 양식'::varchar; RETURN;
@@ -6226,43 +6226,43 @@ END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_pkg_ver_item_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_pkg_ver_item_r_000(character varying, character varying, integer); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_pkg_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_pkg_ver_item_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_no integer) RETURNS TABLE(item_cd character varying, sort_no integer, cycle_nm character varying, grp_nm character varying, item_nm text, input_type character varying, unit_nm character varying)
     LANGUAGE plpgsql STABLE
     AS $$
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_pkg_000' THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_pkg_000' THEN
         RETURN QUERY
         SELECT c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm
           FROM tbl_check_item c
-         WHERE c.tmpl_cd = 'tml_ccp_pkg_000' AND c.use_yn = 'Y'
+         WHERE c.tmpl_cd = 'html_ccp_pkg_000' AND c.use_yn = 'Y'
          ORDER BY c.sort_no, c.item_cd;
         RETURN;
     END IF;
     RETURN QUERY
     SELECT i.item_cd, i.sort_no, i.cycle_nm, i.grp_nm, i.item_nm, i.input_type, i.unit_nm
-      FROM tbl_tml_ccp_pkg_ver_item i
+      FROM tbl_html_ccp_pkg_ver_item i
      WHERE i.co_cd = p_co_cd AND i.tmpl_cd = p_tmpl_cd AND i.ver_no = p_ver_no
      ORDER BY i.sort_no, i.item_cd;
 END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_pkg_ver_item_u_000(character varying, character varying, integer, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_pkg_ver_item_u_000(character varying, character varying, integer, jsonb, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_pkg_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_pkg_ver_item_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_items jsonb, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE e jsonb; v_cnt int := 0;
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_pkg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_pkg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
         RAISE EXCEPTION '표준 항목은 수정할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     IF NOT EXISTS (
-        SELECT 1 FROM tbl_tml_ccp_pkg_ver
+        SELECT 1 FROM tbl_html_ccp_pkg_ver
          WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y'
     ) THEN
         RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
@@ -6280,10 +6280,10 @@ BEGIN
     IF jsonb_array_length(p_items) = 0 THEN
         RAISE EXCEPTION '점검항목을 한 줄 이상 넣으세요.' USING ERRCODE = '45000';
     END IF;
-    DELETE FROM tbl_tml_ccp_pkg_ver_item WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
+    DELETE FROM tbl_html_ccp_pkg_ver_item WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
     FOR e IN SELECT * FROM jsonb_array_elements(p_items) LOOP
         v_cnt := v_cnt + 1;
-        INSERT INTO tbl_tml_ccp_pkg_ver_item (
+        INSERT INTO tbl_html_ccp_pkg_ver_item (
             co_cd, tmpl_cd, ver_no, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, ins_id, upd_id, upd_dt
         ) VALUES (
             p_co_cd, p_tmpl_cd, p_ver_no,
@@ -6294,27 +6294,27 @@ BEGIN
             p_id, p_id, now()
         );
     END LOOP;
-    UPDATE tbl_tml_ccp_pkg_ver SET upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_pkg_ver SET upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no;
 END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_pkg_ver_nm_u_000(character varying, character varying, integer, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_pkg_ver_nm_u_000(character varying, character varying, integer, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_tml_ccp_pkg_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_html_ccp_pkg_ver_nm_u_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_ver_no integer, IN p_ver_nm character varying, IN p_use_yn character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_nm varchar; v_use varchar;
 BEGIN
-    IF COALESCE(p_tmpl_cd, '') = 'tml_ccp_pkg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
+    IF COALESCE(p_tmpl_cd, '') = 'html_ccp_pkg_000' OR COALESCE(p_ver_no, 0) <= 0 THEN
         RAISE EXCEPTION '표준 양식명은 수정할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
     v_nm := btrim(COALESCE(p_ver_nm, ''));
     IF v_nm = '' THEN RAISE EXCEPTION '양식명은 필수입니다.' USING ERRCODE = '45000'; END IF;
     v_use := CASE WHEN upper(left(btrim(COALESCE(p_use_yn, 'Y')), 1)) = 'N' THEN 'N' ELSE 'Y' END;
-    UPDATE tbl_tml_ccp_pkg_ver SET ver_nm = v_nm, upd_id = p_id, upd_dt = now()
+    UPDATE tbl_html_ccp_pkg_ver SET ver_nm = v_nm, upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND ver_no = p_ver_no AND use_yn = 'Y';
     IF NOT FOUND THEN RAISE EXCEPTION '양식을 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
     UPDATE tbl_template SET tmpl_nm = v_nm, upd_id = p_id, upd_dt = now() WHERE tmpl_cd = p_tmpl_cd AND co_cd = p_co_cd;
@@ -6325,15 +6325,15 @@ END$$;
 
 
 --
--- Name: sp_tbl_tml_ccp_pkg_ver_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_html_ccp_pkg_ver_r_000(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_pkg_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_html_ccp_pkg_ver_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_ver_cd character varying DEFAULT NULL::character varying, p_ver_nm character varying DEFAULT NULL::character varying) RETURNS TABLE(idx bigint, tmpl_cd character varying, ver_no integer, ver_cd character varying, ver_nm character varying, sys_yn character varying, apply_yn character varying, locked_yn character varying, ins_nm character varying, ins_dt character varying, use_yn character varying)
     LANGUAGE sql STABLE
     AS $_$
     SELECT x.idx, x.tmpl_cd, x.ver_no, x.ver_cd, x.ver_nm, x.sys_yn, x.apply_yn, x.locked_yn, x.ins_nm, x.ins_dt, x.use_yn
       FROM (
-            SELECT NULL::bigint, 'tml_ccp_pkg_000'::varchar, 0, 'tml_ccp_pkg_000'::varchar,
+            SELECT NULL::bigint, 'html_ccp_pkg_000'::varchar, 0, 'html_ccp_pkg_000'::varchar,
                    '표준'::varchar, 'sys'::varchar, 'N'::varchar, 'Y'::varchar, ''::varchar, ''::varchar, 'N'::varchar
             UNION ALL
             SELECT v.idx, v.tmpl_cd, v.ver_no,
@@ -6343,11 +6343,11 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_tml_ccp_pkg_ver_r_000(p_co_cd charac
                    COALESCE(u.user_nm, v.ins_id, '')::varchar,
                    COALESCE(to_char(v.ins_dt, 'YYYY-MM-DD'), '')::varchar,
                    CASE WHEN upper(COALESCE(ct.use_yn, 'Y')) = 'N' THEN 'N' ELSE 'Y' END
-              FROM tbl_tml_ccp_pkg_ver v
+              FROM tbl_html_ccp_pkg_ver v
               JOIN tbl_company_template ct ON ct.co_cd = v.co_cd AND ct.tmpl_cd = v.tmpl_cd
               LEFT JOIN tbl_user u ON u.co_cd = v.co_cd AND u.user_id = v.ins_id
              WHERE v.co_cd = p_co_cd AND v.use_yn = 'Y'
-               AND v.tmpl_cd ~ '^tml_ccp_pkg_[0-9]{3}$' AND v.tmpl_cd <> 'tml_ccp_pkg_000'
+               AND v.tmpl_cd ~ '^html_ccp_pkg_[0-9]{3}$' AND v.tmpl_cd <> 'html_ccp_pkg_000'
            ) x(idx, tmpl_cd, ver_no, ver_cd, ver_nm, sys_yn, apply_yn, locked_yn, ins_nm, ins_dt, use_yn)
      WHERE (COALESCE(btrim(p_ver_cd), '') = '' OR x.tmpl_cd ILIKE '%' || btrim(p_ver_cd) || '%')
        AND (COALESCE(btrim(p_ver_nm), '') = '' OR x.ver_nm ILIKE '%' || btrim(p_ver_nm) || '%')

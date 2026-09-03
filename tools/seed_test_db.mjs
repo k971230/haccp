@@ -124,7 +124,7 @@ const { rows } = await client.query(`
            WHERE n.nspname='sasshaccp' AND p.proname LIKE 'sp\\_%') AS sp,
          (SELECT count(*) FROM sasshaccp.tbl_menu WHERE co_cd='0000') AS 메뉴,
          (SELECT count(*) FROM sasshaccp.tbl_code WHERE co_cd='0000') AS 코드,
-         (SELECT count(*) FROM sasshaccp.tbl_tml_ccp_htg_ver WHERE co_cd='0000') AS 지면버전`);
+         (SELECT count(*) FROM sasshaccp.tbl_html_ccp_htg_ver WHERE co_cd='0000') AS 지면버전`);
 const r = rows[0];
 console.log(
   `>>> 표 ${r["표"]} · SP ${r.sp} · 메뉴 ${r["메뉴"]} · 코드 ${r["코드"]} · 지면버전 ${r["지면버전"]}`,

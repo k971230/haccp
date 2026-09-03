@@ -21,16 +21,16 @@ import { adminCreds, createDraft, login } from "./helpers";
 /** 판정을 화면이 적합으로 깔아 주는 네 화면 */
 const SEEDED = [
   { name: "일반위생·공정점검", path: "/draft/html/hyg-process", tmpl: "html_hyg_prc_" },
-  { name: "CCP 검증점검표", path: "/draft/html/ccp-verify", tmpl: "tml_ccp_chk_" },
-  { name: "CCP 포장공정", path: "/draft/ccp-monitoring/ccp-pkg", tmpl: "tml_ccp_pkg_" },
-  { name: "CCP 가열공정", path: "/draft/ccp-monitoring/ccp-htg", tmpl: "tml_ccp_htg_" },
+  { name: "CCP 검증점검표", path: "/draft/html/ccp-verify", tmpl: "html_ccp_chk_" },
+  { name: "CCP 포장공정", path: "/draft/ccp-monitoring/ccp-pkg", tmpl: "html_ccp_pkg_" },
+  { name: "CCP 가열공정", path: "/draft/ccp-monitoring/ccp-htg", tmpl: "html_ccp_htg_" },
 ] as const;
 
 /** 서버가 판정을 계산하는 화면 — 화면이 미리 칠하면 안 된다 */
 const AUTO_JUDGED = {
   name: "CCP 금속검출",
   path: "/draft/ccp-monitoring/ccp-mtl",
-  tmpl: "tml_ccp_mtl_",
+  tmpl: "html_ccp_mtl_",
 } as const;
 
 const ALL = [...SEEDED, AUTO_JUDGED];

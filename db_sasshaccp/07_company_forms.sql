@@ -33,24 +33,24 @@ SELECT sp_tbl_html_hyg_prc_ver_copy_c_000(:'co_cd', 'html_hyg_prc_000', 0, NULL,
  WHERE NOT EXISTS (SELECT 1 FROM tbl_html_hyg_prc_ver WHERE co_cd = :'co_cd');
 
 -- CCP 검증점검표
-SELECT sp_tbl_tml_ccp_chk_ver_copy_c_000(:'co_cd', 'tml_ccp_chk_000', 0, NULL, '표준 복사', 'system')
- WHERE NOT EXISTS (SELECT 1 FROM tbl_tml_ccp_chk_ver WHERE co_cd = :'co_cd');
+SELECT sp_tbl_html_ccp_chk_ver_copy_c_000(:'co_cd', 'html_ccp_chk_000', 0, NULL, '표준 복사', 'system')
+ WHERE NOT EXISTS (SELECT 1 FROM tbl_html_ccp_chk_ver WHERE co_cd = :'co_cd');
 
 -- CCP 포장공정
-SELECT sp_tbl_tml_ccp_pkg_ver_copy_c_000(:'co_cd', 'tml_ccp_pkg_000', 0, NULL, '표준 복사', 'system')
- WHERE NOT EXISTS (SELECT 1 FROM tbl_tml_ccp_pkg_ver WHERE co_cd = :'co_cd');
+SELECT sp_tbl_html_ccp_pkg_ver_copy_c_000(:'co_cd', 'html_ccp_pkg_000', 0, NULL, '표준 복사', 'system')
+ WHERE NOT EXISTS (SELECT 1 FROM tbl_html_ccp_pkg_ver WHERE co_cd = :'co_cd');
 
 -- CCP 가열공정
-SELECT sp_tbl_tml_ccp_htg_ver_copy_c_000(:'co_cd', 'tml_ccp_htg_000', 0, NULL, '표준 복사', 'system')
- WHERE NOT EXISTS (SELECT 1 FROM tbl_tml_ccp_htg_ver WHERE co_cd = :'co_cd');
+SELECT sp_tbl_html_ccp_htg_ver_copy_c_000(:'co_cd', 'html_ccp_htg_000', 0, NULL, '표준 복사', 'system')
+ WHERE NOT EXISTS (SELECT 1 FROM tbl_html_ccp_htg_ver WHERE co_cd = :'co_cd');
 
 -- CCP 금속검출공정
-SELECT sp_tbl_tml_ccp_mtl_ver_copy_c_000(:'co_cd', 'tml_ccp_mtl_000', 0, NULL, '표준 복사', 'system')
- WHERE NOT EXISTS (SELECT 1 FROM tbl_tml_ccp_mtl_ver WHERE co_cd = :'co_cd');
+SELECT sp_tbl_html_ccp_mtl_ver_copy_c_000(:'co_cd', 'html_ccp_mtl_000', 0, NULL, '표준 복사', 'system')
+ WHERE NOT EXISTS (SELECT 1 FROM tbl_html_ccp_mtl_ver WHERE co_cd = :'co_cd');
 
 -- 다섯 화면이 모두 1 이어야 작성이 된다
 SELECT (SELECT count(*) FROM tbl_html_hyg_prc_ver WHERE co_cd = :'co_cd') AS hyg,
-       (SELECT count(*) FROM tbl_tml_ccp_chk_ver  WHERE co_cd = :'co_cd') AS chk,
-       (SELECT count(*) FROM tbl_tml_ccp_pkg_ver  WHERE co_cd = :'co_cd') AS pkg,
-       (SELECT count(*) FROM tbl_tml_ccp_htg_ver  WHERE co_cd = :'co_cd') AS htg,
-       (SELECT count(*) FROM tbl_tml_ccp_mtl_ver  WHERE co_cd = :'co_cd') AS mtl;
+       (SELECT count(*) FROM tbl_html_ccp_chk_ver  WHERE co_cd = :'co_cd') AS chk,
+       (SELECT count(*) FROM tbl_html_ccp_pkg_ver  WHERE co_cd = :'co_cd') AS pkg,
+       (SELECT count(*) FROM tbl_html_ccp_htg_ver  WHERE co_cd = :'co_cd') AS htg,
+       (SELECT count(*) FROM tbl_html_ccp_mtl_ver  WHERE co_cd = :'co_cd') AS mtl;

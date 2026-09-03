@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-08-31
  * 코멘트:
- *   1) 공정점검은 tbl_html_hyg_prc_ver, 검증점검은 tbl_tml_ccp_chk_ver, 포장·가열·금속검출일지는 tbl_tml_ccp_pkg_ver · tbl_tml_ccp_htg_ver · tbl_tml_ccp_mtl_ver
+ *   1) 공정점검은 tbl_html_hyg_prc_ver, 검증점검은 tbl_html_ccp_chk_ver, 포장·가열·금속검출일지는 tbl_html_ccp_pkg_ver · tbl_html_ccp_htg_ver · tbl_html_ccp_mtl_ver
  *   2) 복사 시 사용양식만 만든다. 주기 행은 문서주기 화면에서 시작일과 함께 저장한다
  *   3) validate-delete와 delete 모두 assertDeletable Double Check
  *
@@ -41,15 +41,15 @@ public class HtmlTemplateService {
     // 공정점검 점검항목 시드 — 작성 화면이 아직 이 코드를 쓴다
     public static final String SEED_TMPL_CD = "html_sys_001";
     // CCP 검증점검 화면 예시 — 시드 항목 18건
-    public static final String CCP_STD_TMPL_CD = "tml_ccp_chk_000";
+    public static final String CCP_STD_TMPL_CD = "html_ccp_chk_000";
     // CCP 검증점검 카탈로그 — 작성 화면이 아직 이 코드를 쓴다
     public static final String CCP_SEED_TMPL_CD = "html_sys_006";
     // CCP-1B 포장 모니터링일지 화면 예시 — 시드 항목 5건
-    public static final String PKG_STD_TMPL_CD = "tml_ccp_pkg_000";
+    public static final String PKG_STD_TMPL_CD = "html_ccp_pkg_000";
     // CCP-2B 가열 모니터링일지 화면 예시 — 시드 항목 5건
-    public static final String HTG_STD_TMPL_CD = "tml_ccp_htg_000";
+    public static final String HTG_STD_TMPL_CD = "html_ccp_htg_000";
     // CCP-3P 금속검출 모니터링일지 화면 예시 — 시드 항목 10건
-    public static final String MTL_STD_TMPL_CD = "tml_ccp_mtl_000";
+    public static final String MTL_STD_TMPL_CD = "html_ccp_mtl_000";
 
     private final HtmlTemplateMapper mapper;
     private final CcpVerifyTemplateMapper ccpMapper;
@@ -69,7 +69,7 @@ public class HtmlTemplateService {
      *   3) tmplCd로 공정점검/검증점검/포장·가열·금속검출일지 테이블을 가른다
      */
     public List<Map<String, Object>> listVersions(
-            // tmplCd: 가족. html_hyg_prc_000 / tml_ccp_chk_000 / tml_ccp_pkg_000 / tml_ccp_htg_000 / tml_ccp_mtl_000
+            // tmplCd: 가족. html_hyg_prc_000 / html_ccp_chk_000 / html_ccp_pkg_000 / html_ccp_htg_000 / html_ccp_mtl_000
             String tmplCd,
             // verCd: 양식코드 부분검색. 빈값이면 전체
             String verCd,
@@ -329,10 +329,10 @@ public class HtmlTemplateService {
 
     /** 가족별 버전 표 — 감사 한 줄의 tbl_nm */
     private static String auditVerTbl(String tmplCd) {
-        if (isMtl(tmplCd)) return "tbl_tml_ccp_mtl_ver";
-        if (isHtg(tmplCd)) return "tbl_tml_ccp_htg_ver";
-        if (isPkg(tmplCd)) return "tbl_tml_ccp_pkg_ver";
-        if (isCcp(tmplCd)) return "tbl_tml_ccp_chk_ver";
+        if (isMtl(tmplCd)) return "tbl_html_ccp_mtl_ver";
+        if (isHtg(tmplCd)) return "tbl_html_ccp_htg_ver";
+        if (isPkg(tmplCd)) return "tbl_html_ccp_pkg_ver";
+        if (isCcp(tmplCd)) return "tbl_html_ccp_chk_ver";
         return "tbl_html_hyg_prc_ver";
     }
 
@@ -357,28 +357,28 @@ public class HtmlTemplateService {
         }
     }
 
-    /** CCP-3P 금속검출일지 가족이면 true — 저장 테이블 tbl_tml_ccp_mtl_ver */
+    /** CCP-3P 금속검출일지 가족이면 true — 저장 테이블 tbl_html_ccp_mtl_ver */
     private static boolean isMtl(String tmplCd) {
         String t = tmplCd == null ? "" : tmplCd.trim();
-        return t.startsWith("tml_ccp_mtl");
+        return t.startsWith("html_ccp_mtl");
     }
 
-    /** CCP-2B 가열일지 가족이면 true — 저장 테이블 tbl_tml_ccp_htg_ver */
+    /** CCP-2B 가열일지 가족이면 true — 저장 테이블 tbl_html_ccp_htg_ver */
     private static boolean isHtg(String tmplCd) {
         String t = tmplCd == null ? "" : tmplCd.trim();
-        return t.startsWith("tml_ccp_htg");
+        return t.startsWith("html_ccp_htg");
     }
 
-    /** CCP-1B 포장일지 가족이면 true — 저장 테이블 tbl_tml_ccp_pkg_ver */
+    /** CCP-1B 포장일지 가족이면 true — 저장 테이블 tbl_html_ccp_pkg_ver */
     private static boolean isPkg(String tmplCd) {
         String t = tmplCd == null ? "" : tmplCd.trim();
-        return t.startsWith("tml_ccp_pkg");
+        return t.startsWith("html_ccp_pkg");
     }
 
-    /** CCP 검증점검 가족이면 true — 저장 테이블 tbl_tml_ccp_chk_ver */
+    /** CCP 검증점검 가족이면 true — 저장 테이블 tbl_html_ccp_chk_ver */
     private static boolean isCcp(String tmplCd) {
         String t = tmplCd == null ? "" : tmplCd.trim();
-        return t.startsWith("tml_ccp_chk") || CCP_SEED_TMPL_CD.equals(t);
+        return t.startsWith("html_ccp_chk") || CCP_SEED_TMPL_CD.equals(t);
     }
 
     private static boolean isStdTmpl(String tmplCd) {

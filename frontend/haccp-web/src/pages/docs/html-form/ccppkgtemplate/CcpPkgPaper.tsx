@@ -44,7 +44,7 @@ import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
 // 역할 — 영역별 행 추가·행 삭제 버튼
 import { MesButton } from "@/components/ui/MesButton";
 
-/** 시드 item_cd — tbl_check_item tml_ccp_pkg_000 */
+/** 시드 item_cd — tbl_check_item html_ccp_pkg_000 */
 export const PKG_ITEM = {
   LIMIT_TEMP: "limit-temp",
   LIMIT_TIME: "limit-time",

@@ -34,7 +34,7 @@ export interface HtmlFormDraftFile {
 
 /** 작성 가능 양식 1건 — 양식관리에서 사용여부 예로 둔 자사 양식 */
 export interface HtmlFormDraftForm {
-  // 양식코드 — html_hyg_prc_NNN / tml_ccp_chk_NNN
+  // 양식코드 — html_hyg_prc_NNN / html_ccp_chk_NNN
   tmplCd: string;
   // 양식명
   verNm: string;

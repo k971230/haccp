@@ -64,8 +64,8 @@ class HtmlTemplateServiceGuardTest {
         // 하나라도 빠지면 그 코드로 표준이 덮인다
         for (String std : List.of(
                 "html_hyg_prc_000", "html_hyg_000", "html_sys_001",
-                "tml_ccp_chk_000", "html_sys_006",
-                "tml_ccp_pkg_000", "tml_ccp_htg_000", "tml_ccp_mtl_000")) {
+                "html_ccp_chk_000", "html_sys_006",
+                "html_ccp_pkg_000", "html_ccp_htg_000", "html_ccp_mtl_000")) {
             BizException e = assertThrows(
                     BizException.class, () -> service().saveItems(std, 1, ITEMS), std);
             assertEquals("표준 항목은 수정할 수 없습니다.", e.getMessage(), std);
@@ -77,21 +77,21 @@ class HtmlTemplateServiceGuardTest {
     @Test
     void 표준_양식은_이름도_못_고친다() {
         BizException e = assertThrows(
-                BizException.class, () -> service().updateVerNm("tml_ccp_htg_000", 1, "내 양식", "Y"));
+                BizException.class, () -> service().updateVerNm("html_ccp_htg_000", 1, "내 양식", "Y"));
         assertEquals("표준 양식명은 수정할 수 없습니다.", e.getMessage());
     }
 
     @Test
     void 회사순번_0은_표준이라_막는다() {
         // 0번은 표준 자리다 — 여기를 열면 회사 양식이 표준을 밀어낸다
-        assertThrows(BizException.class, () -> service().saveItems("tml_ccp_htg_007", 0, ITEMS));
-        assertThrows(BizException.class, () -> service().updateVerNm("tml_ccp_htg_007", 0, "이름", "Y"));
+        assertThrows(BizException.class, () -> service().saveItems("html_ccp_htg_007", 0, ITEMS));
+        assertThrows(BizException.class, () -> service().updateVerNm("html_ccp_htg_007", 0, "이름", "Y"));
     }
 
     @Test
     void 회사순번이_없거나_음수면_막는다() {
-        assertThrows(BizException.class, () -> service().saveItems("tml_ccp_htg_007", null, ITEMS));
-        assertThrows(BizException.class, () -> service().saveItems("tml_ccp_htg_007", -1, ITEMS));
+        assertThrows(BizException.class, () -> service().saveItems("html_ccp_htg_007", null, ITEMS));
+        assertThrows(BizException.class, () -> service().saveItems("html_ccp_htg_007", -1, ITEMS));
     }
 
     @Test
@@ -105,17 +105,17 @@ class HtmlTemplateServiceGuardTest {
 
     @Test
     void 양식코드_머리글자가_저장할_표를_고른다() {
-        service().saveItems("tml_ccp_mtl_007", 1, ITEMS);
-        verify(mtlMapper, times(1)).saveItems(any(), eq("tml_ccp_mtl_007"), anyInt(), any(), any());
+        service().saveItems("html_ccp_mtl_007", 1, ITEMS);
+        verify(mtlMapper, times(1)).saveItems(any(), eq("html_ccp_mtl_007"), anyInt(), any(), any());
 
-        service().saveItems("tml_ccp_htg_007", 1, ITEMS);
-        verify(htgMapper, times(1)).saveItems(any(), eq("tml_ccp_htg_007"), anyInt(), any(), any());
+        service().saveItems("html_ccp_htg_007", 1, ITEMS);
+        verify(htgMapper, times(1)).saveItems(any(), eq("html_ccp_htg_007"), anyInt(), any(), any());
 
-        service().saveItems("tml_ccp_pkg_007", 1, ITEMS);
-        verify(pkgMapper, times(1)).saveItems(any(), eq("tml_ccp_pkg_007"), anyInt(), any(), any());
+        service().saveItems("html_ccp_pkg_007", 1, ITEMS);
+        verify(pkgMapper, times(1)).saveItems(any(), eq("html_ccp_pkg_007"), anyInt(), any(), any());
 
-        service().saveItems("tml_ccp_chk_007", 1, ITEMS);
-        verify(ccpMapper, times(1)).saveItems(any(), eq("tml_ccp_chk_007"), anyInt(), any(), any());
+        service().saveItems("html_ccp_chk_007", 1, ITEMS);
+        verify(ccpMapper, times(1)).saveItems(any(), eq("html_ccp_chk_007"), anyInt(), any(), any());
 
         // 어느 가족도 아니면 공정점검(html_hyg_prc) 표로 간다
         service().saveItems("html_hyg_prc_007", 1, ITEMS);
@@ -125,7 +125,7 @@ class HtmlTemplateServiceGuardTest {
     @Test
     void 한_번_저장하면_한_표에만_쌓인다() {
         // 조건이 겹쳐 두 표에 같이 들어가면 조회가 둘로 갈린다
-        service().saveItems("tml_ccp_mtl_007", 1, ITEMS);
+        service().saveItems("html_ccp_mtl_007", 1, ITEMS);
 
         verify(mtlMapper, times(1)).saveItems(any(), any(), anyInt(), any(), any());
         verify(htgMapper, never()).saveItems(any(), any(), anyInt(), any(), any());
@@ -168,7 +168,7 @@ class HtmlTemplateServiceGuardTest {
 
     @Test
     void 양식명이_공백뿐이면_막는다() {
-        assertThrows(BizException.class, () -> service().updateVerNm("tml_ccp_htg_007", 1, "   ", "Y"));
+        assertThrows(BizException.class, () -> service().updateVerNm("html_ccp_htg_007", 1, "   ", "Y"));
         verify(htgMapper, never()).updateVerNm(any(), any(), anyInt(), any(), any(), any());
     }
 
@@ -177,22 +177,22 @@ class HtmlTemplateServiceGuardTest {
         // 문서주기가 이 값을 본다 — 소문자나 빈 값이 들어가면 예정일이 안 생긴다
         ArgumentCaptor<String> yn = ArgumentCaptor.forClass(String.class);
 
-        service().updateVerNm("tml_ccp_htg_007", 1, "내 양식", "n");
-        verify(htgMapper).updateVerNm(any(), eq("tml_ccp_htg_007"), anyInt(), any(), yn.capture(), any());
+        service().updateVerNm("html_ccp_htg_007", 1, "내 양식", "n");
+        verify(htgMapper).updateVerNm(any(), eq("html_ccp_htg_007"), anyInt(), any(), yn.capture(), any());
         assertEquals("N", yn.getValue());
 
-        service().updateVerNm("tml_ccp_htg_008", 1, "내 양식", "");
-        verify(htgMapper).updateVerNm(any(), eq("tml_ccp_htg_008"), anyInt(), any(), yn.capture(), any());
+        service().updateVerNm("html_ccp_htg_008", 1, "내 양식", "");
+        verify(htgMapper).updateVerNm(any(), eq("html_ccp_htg_008"), anyInt(), any(), yn.capture(), any());
         assertEquals("Y", yn.getValue());
 
-        service().updateVerNm("tml_ccp_htg_009", 1, "내 양식", null);
-        verify(htgMapper).updateVerNm(any(), eq("tml_ccp_htg_009"), anyInt(), any(), yn.capture(), any());
+        service().updateVerNm("html_ccp_htg_009", 1, "내 양식", null);
+        verify(htgMapper).updateVerNm(any(), eq("html_ccp_htg_009"), anyInt(), any(), yn.capture(), any());
         assertEquals("Y", yn.getValue());
     }
 
     @Test
     void 양식명_앞뒤_공백은_떼고_저장한다() {
-        service().updateVerNm("tml_ccp_htg_007", 1, "  내 양식  ", "Y");
+        service().updateVerNm("html_ccp_htg_007", 1, "  내 양식  ", "Y");
 
         ArgumentCaptor<String> nm = ArgumentCaptor.forClass(String.class);
         verify(htgMapper).updateVerNm(any(), any(), anyInt(), nm.capture(), any(), any());

@@ -1,7 +1,7 @@
 # CCP 모니터링일지 작성 (`ccp-pkg` · `ccp-htg` · `ccp-mtl`)
 
 양식관리 `ccp-pkg-template` · `ccp-htg-template` · `ccp-mtl-template` 에서 **사용여부 = 예**로 둔
-자사 양식(`tml_ccp_pkg_001` · `tml_ccp_htg_001` · `tml_ccp_mtl_001` 이상)만 작성한다.
+자사 양식(`html_ccp_pkg_001` · `html_ccp_htg_001` · `html_ccp_mtl_001` 이상)만 작성한다.
 
 좌측 업무(검색·체크박스·행 추가·양식 팝업·저장·전송·모두 전송·삭제·전송취소·결재 여부)는
 전부 공통 `../HtmlFormDraftPage` + `../htmlFormDraftShared` 다. HYG·CCP검증과 같은 화면이다.

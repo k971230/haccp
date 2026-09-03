@@ -47,7 +47,7 @@ import type { HtmlFormItem } from "@/api/docs/htmlFormApi";
 import { MesButton } from "@/components/ui/MesButton";
 
 
-/** 시드 item_cd — tbl_check_item tml_ccp_mtl_000 */
+/** 시드 item_cd — tbl_check_item html_ccp_mtl_000 */
 export const MTL_ITEM = {
   LIMIT_METAL: "limit-metal",
   CYCLE: "cycle",

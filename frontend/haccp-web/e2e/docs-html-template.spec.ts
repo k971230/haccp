@@ -30,10 +30,10 @@ import {
 /** 화면 · 표준 양식코드 · 복사본 지면 항목이 들어가는 표 */
 const SCREENS = [
   { path: "hyg-process-template", std: "html_hyg_prc_000", itemTbl: "tbl_html_hyg_prc_ver_item", verTbl: "tbl_html_hyg_prc_ver" },
-  { path: "ccp-verify-template", std: "tml_ccp_chk_000", itemTbl: "tbl_tml_ccp_chk_ver_item", verTbl: "tbl_tml_ccp_chk_ver" },
-  { path: "ccp-pkg-template", std: "tml_ccp_pkg_000", itemTbl: "tbl_tml_ccp_pkg_ver_item", verTbl: "tbl_tml_ccp_pkg_ver" },
-  { path: "ccp-htg-template", std: "tml_ccp_htg_000", itemTbl: "tbl_tml_ccp_htg_ver_item", verTbl: "tbl_tml_ccp_htg_ver" },
-  { path: "ccp-mtl-template", std: "tml_ccp_mtl_000", itemTbl: "tbl_tml_ccp_mtl_ver_item", verTbl: "tbl_tml_ccp_mtl_ver" },
+  { path: "ccp-verify-template", std: "html_ccp_chk_000", itemTbl: "tbl_html_ccp_chk_ver_item", verTbl: "tbl_html_ccp_chk_ver" },
+  { path: "ccp-pkg-template", std: "html_ccp_pkg_000", itemTbl: "tbl_html_ccp_pkg_ver_item", verTbl: "tbl_html_ccp_pkg_ver" },
+  { path: "ccp-htg-template", std: "html_ccp_htg_000", itemTbl: "tbl_html_ccp_htg_ver_item", verTbl: "tbl_html_ccp_htg_ver" },
+  { path: "ccp-mtl-template", std: "html_ccp_mtl_000", itemTbl: "tbl_html_ccp_mtl_ver_item", verTbl: "tbl_html_ccp_mtl_ver" },
 ];
 
 const NAME = "E2E 복사양식";
@@ -55,10 +55,10 @@ function purge(): void {
    * `syntax error at or near ".."` 로 터진다. 실제로 배포 서버에서 10건이 그렇게 났다.
    */
   const codeSql = `SELECT tmpl_cd FROM tbl_template WHERE tmpl_nm='${NAME}'
-       UNION SELECT tmpl_cd FROM tbl_tml_ccp_htg_ver WHERE ver_nm='${NAME}'
-       UNION SELECT tmpl_cd FROM tbl_tml_ccp_pkg_ver WHERE ver_nm='${NAME}'
-       UNION SELECT tmpl_cd FROM tbl_tml_ccp_mtl_ver WHERE ver_nm='${NAME}'
-       UNION SELECT tmpl_cd FROM tbl_tml_ccp_chk_ver WHERE ver_nm='${NAME}'
+       UNION SELECT tmpl_cd FROM tbl_html_ccp_htg_ver WHERE ver_nm='${NAME}'
+       UNION SELECT tmpl_cd FROM tbl_html_ccp_pkg_ver WHERE ver_nm='${NAME}'
+       UNION SELECT tmpl_cd FROM tbl_html_ccp_mtl_ver WHERE ver_nm='${NAME}'
+       UNION SELECT tmpl_cd FROM tbl_html_ccp_chk_ver WHERE ver_nm='${NAME}'
        UNION SELECT tmpl_cd FROM tbl_html_hyg_prc_ver WHERE ver_nm='${NAME}'`;
 
   const tables = dbRows(

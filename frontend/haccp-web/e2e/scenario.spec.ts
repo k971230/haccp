@@ -39,7 +39,7 @@ async function tokenOf(request: APIRequestContext): Promise<string> {
 
 /** 작성 → 필수값 → 저장 → 전송. 결재가 필요한 시나리오의 공통 앞부분이다 */
 async function draftAndSend(page: Page): Promise<string> {
-  await createDraft(page, "/draft/ccp-monitoring/ccp-htg", "tml_ccp_htg_");
+  await createDraft(page, "/draft/ccp-monitoring/ccp-htg", "html_ccp_htg_");
   await fillPaperRequired(page);
   await Promise.all([
     page.waitForResponse((r) => r.url().includes("/save") && r.request().method() !== "GET"),
@@ -231,7 +231,7 @@ test.describe.serial("통합 시나리오", () => {
   });
 
   test("E. 주기 변경 — 주기를 바꾸면 예정일이 따라 바뀐다", async ({ page, request }) => {
-    const TMPL = "tml_ccp_chk_001";
+    const TMPL = "html_ccp_chk_001";
     const token = await tokenOf(request);
     const co = sqlLit(loginCoCd());
     const saved = dbOne(

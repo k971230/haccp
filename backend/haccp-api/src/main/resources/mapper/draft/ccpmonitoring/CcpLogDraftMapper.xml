@@ -6,7 +6,7 @@ CcpLogDraftMapper.xml — CCP 포장·가열 작성 SP.
 일자: 2026-08-24
 코멘트:
   1) 데이터는 기존 tbl_ccp_generic_monitor(+_row·_cell). 저장·상세는 기존 SP 를 그대로 쓴다
-  2) 목록은 화면 전용 sp_ccp_log_r_000 — 양식군 접두(tml_ccp_pkg_ · tml_ccp_htg_)로 가른다
+  2) 목록은 화면 전용 sp_ccp_log_r_000 — 양식군 접두(html_ccp_pkg_ · html_ccp_htg_)로 가른다
   3) 양식 목록·항목만 계열 SP 가 달라 choose 로 가른다
 
 PIPELINE[HB139] CCP 모니터링 작성 XML
@@ -24,10 +24,10 @@ PIPELINE[HB139] CCP 모니터링 작성 XML
           FROM
         <choose>
             <when test="family == 'htg'">
-                sp_tbl_tml_ccp_htg_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v
+                sp_tbl_html_ccp_htg_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v
             </when>
             <otherwise>
-                sp_tbl_tml_ccp_pkg_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v
+                sp_tbl_html_ccp_pkg_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v
             </otherwise>
         </choose>
          WHERE upper(v.use_yn) = 'Y'
@@ -41,10 +41,10 @@ PIPELINE[HB139] CCP 모니터링 작성 XML
         SELECT * FROM
         <choose>
             <when test="family == 'htg'">
-                sp_tbl_tml_ccp_htg_ver_item_r_000(#{coCd}, #{tmplCd}, #{verNo})
+                sp_tbl_html_ccp_htg_ver_item_r_000(#{coCd}, #{tmplCd}, #{verNo})
             </when>
             <otherwise>
-                sp_tbl_tml_ccp_pkg_ver_item_r_000(#{coCd}, #{tmplCd}, #{verNo})
+                sp_tbl_html_ccp_pkg_ver_item_r_000(#{coCd}, #{tmplCd}, #{verNo})
             </otherwise>
         </choose>
     </select>
