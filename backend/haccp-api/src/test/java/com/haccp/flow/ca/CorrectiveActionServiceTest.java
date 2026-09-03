@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haccp.common.exception.BizException;
+import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,6 +48,9 @@ class CorrectiveActionServiceTest {
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Mock
+    private AuditWriter auditWriter;
 
     @InjectMocks
     private CorrectiveActionService service;

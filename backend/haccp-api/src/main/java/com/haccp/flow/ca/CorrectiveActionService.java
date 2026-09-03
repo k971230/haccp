@@ -20,6 +20,8 @@ import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 // 역할 — 삭제 대상 검증 공통
 import com.haccp.common.validation.DeleteValidation;
+// 역할 — 개선조치 저장·삭제 감사
+import com.haccp.sys.logs.auditlog.AuditWriter;
 // 역할 — 목록·맵
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -36,6 +38,11 @@ public class CorrectiveActionService {
 
     private final CorrectiveActionMapper mapper;
     private final ObjectMapper objectMapper;
+    // 개선조치 쓰기 이력 — 문서에 딸린 자동 생성분은 DocCorrectiveSupport 라 여기 없다
+    private final AuditWriter auditWriter;
+
+    /** 감사 로그 대상 표 */
+    private static final String AUDIT_TBL = "tbl_corrective_action";
 
     /**
      * 개발자: 박승우
@@ -79,6 +86,8 @@ public class CorrectiveActionService {
             mapper.saveCorrectiveAction(
                     LoginUserContext.coCd(), idx,
                     objectMapper.writeValueAsString(payload), LoginUserContext.userId());
+            // idx가 null일 때(= 신규) I, 값이 있을 때(= 수정) U
+            auditWriter.record(AUDIT_TBL, idx, idx == null ? "I" : "U", payload);
         } catch (JsonProcessingException e) {
             throw new BizException("개선조치 저장 자료 형식이 올바르지 않습니다.");
         }
@@ -115,7 +124,11 @@ public class CorrectiveActionService {
         normalizeKeys(keys);
         String coCd = LoginUserContext.coCd();
         String userId = LoginUserContext.userId();
-        for (Map<String, Long> key : keys) mapper.deleteCorrectiveAction(coCd, key.get("idx"), userId);
+        for (Map<String, Long> key : keys) {
+            Long idx = key.get("idx");
+            mapper.deleteCorrectiveAction(coCd, idx, userId);
+            auditWriter.record(AUDIT_TBL, idx, "D", null);
+        }
     }
 
     /** 삭제 키를 검사한다 — 비었거나 idx 가 없으면 여기서 막는다 */

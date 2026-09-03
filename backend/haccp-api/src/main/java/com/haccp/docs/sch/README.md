@@ -21,9 +21,13 @@ XML `resources/mapper/docs/sch/DocCycleMapper.xml` · SP `db_sasshaccp/01_sp.sql
 | `DocCycleService` | 주기 업서트 + 저장 직후 예정일 재생성. 삭제는 Double Check(Java 존재 확인) |
 | `DocCycleMapper` | 위 SP |
 | `CycleScheduleGenerator` | 규칙 → 예정일 순수 계산. 검증 `src/test/.../docs/sch/CycleScheduleGeneratorTest` |
+| `KoreanHolidayDates` | holidays-kr JSON → 날짜 Set. 공휴일 규칙은 직접 계산하지 않는다 |
 | `DocumentAlarmScheduler` | 마감 임박 알림 — `app.schedule.alarm-cron` |
 
 일일 배치: `tsk/DailyTaskGenerationJob` → `DocCycleService.regenerateAllCompanies()` → `TaskService.generateAllCompanies()`.
+
+비영업일은 토·일 + classpath `holidays/holidays-kr.json`([hyunbinseo/holidays-kr](https://github.com/hyunbinseo/holidays-kr) `basic.json`, npm `5.2027.1`).
+월력요항이 새 연도에 실리면 JSON만 덮어쓴다. 절차는 `src/main/resources/holidays/README.md`. JSON에 없는 연도는 주말만 본다.
 
 ## 알림은 여기 한 곳에서만 만든다
 

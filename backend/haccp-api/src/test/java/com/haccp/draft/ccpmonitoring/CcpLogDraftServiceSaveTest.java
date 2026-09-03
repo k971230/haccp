@@ -32,6 +32,7 @@ import com.haccp.draft.DraftPaperStampMapper;
 import com.haccp.draft.dto.DraftLogRow;
 import com.haccp.draft.dto.DraftSaveRequest;
 import com.haccp.flow.ca.DocCorrectiveSupport;
+import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,12 +51,13 @@ class CcpLogDraftServiceSaveTest {
     @Mock private CcpLogDraftMapper mapper;
     @Mock private DocCorrectiveSupport correctiveSupport;
     @Mock private DraftPaperStampMapper paperStampMapper;
+    @Mock private AuditWriter auditWriter;
 
     private CcpLogDraftService service;
 
     private CcpLogDraftService service() {
         if (service == null) {
-            service = new CcpLogDraftService(mapper, new ObjectMapper(), correctiveSupport, paperStampMapper);
+            service = new CcpLogDraftService(mapper, new ObjectMapper(), correctiveSupport, auditWriter, paperStampMapper);
             when(mapper.save(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(448L);
         }
         return service;

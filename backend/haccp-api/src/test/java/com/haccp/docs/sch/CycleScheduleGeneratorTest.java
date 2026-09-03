@@ -2,9 +2,9 @@
  * CycleScheduleGeneratorTest — 문서주기 예정일 계산 검증.
  *
  * 개발자: 박승우
- * 일자: 2026-08-19
+ * 일자: 2026-09-03
  * 코멘트:
- *   1) 말일·31일 보정, 비영업일 이동(prev/next), 관리 시작일 경계를 값으로 고정한다
+ *   1) 말일·31일 보정, 비영업일 이동(prev/next·공휴일 JSON), 관리 시작일 경계를 값으로 고정한다
  *   2) 규칙 해석이 깨지면 이 테스트가 먼저 실패한다 — DB·Spring 컨텍스트 없이 순수 계산만 본다
  *   3) 실행: ./mvnw -Dtest=CycleScheduleGeneratorTest test
  */
@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.util.List;
 // 역할 — 단정
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
@@ -45,14 +46,36 @@ class CycleScheduleGeneratorTest {
         assertEquals(List.of(LocalDate.of(2026, 4, 30), LocalDate.of(2026, 5, 31)), dates);
     }
 
-    /** 비영업일 처리 — 2026-08-15는 토요일. prev는 14일(금), next는 17일(월). */
+    /** 비영업일 처리 — 2026-08-15는 토(광복절). prev는 14일(금), next는 17일 대체공휴일을 건너 18일(화). */
     @Test
     void nonWorkingDayShiftsToWeekday() {
         Rule prev = new Rule("M", "prev", LocalDate.of(2026, 8, 1), List.of(new Detail("month-day", 15, null)));
         Rule next = new Rule("M", "next", LocalDate.of(2026, 8, 1), List.of(new Detail("month-day", 15, null)));
 
         assertEquals(LocalDate.of(2026, 8, 14), generator.generate(prev, LocalDate.of(2026, 8, 1), 1).get(0));
-        assertEquals(LocalDate.of(2026, 8, 17), generator.generate(next, LocalDate.of(2026, 8, 1), 1).get(0));
+        assertEquals(LocalDate.of(2026, 8, 18), generator.generate(next, LocalDate.of(2026, 8, 1), 1).get(0));
+    }
+
+    /** holidays-kr JSON — 2026-03-01은 일(3·1절), 3/2는 대체. NEXT는 3/3(화). */
+    @Test
+    void nextSkipsHolidayAndSubstitute() {
+        Rule next = new Rule("M", "next", LocalDate.of(2026, 3, 1), List.of(new Detail("month-day", 1, null)));
+        assertEquals(LocalDate.of(2026, 3, 3), generator.generate(next, LocalDate.of(2026, 3, 1), 1).get(0));
+    }
+
+    /** holidays-kr JSON — 2026-05-05는 화(어린이날). NEXT는 5/6. */
+    @Test
+    void nextSkipsWeekdayHoliday() {
+        Rule next = new Rule("M", "next", LocalDate.of(2026, 5, 1), List.of(new Detail("month-day", 5, null)));
+        assertEquals(LocalDate.of(2026, 5, 6), generator.generate(next, LocalDate.of(2026, 5, 1), 1).get(0));
+    }
+
+    /** JSON에 없는 연도 — 주말만 비영업일. 2030-01-01은 화요일이라 KEEP·NEXT 모두 그대로. */
+    @Test
+    void yearMissingFromJsonUsesWeekendOnly() {
+        assertTrue(generator.isNonWorkingDay(LocalDate.of(2026, 3, 2)), "2026-03-02 대체공휴일");
+        assertFalse(generator.isNonWorkingDay(LocalDate.of(2030, 1, 1)), "2030 JSON 없음·화");
+        assertTrue(generator.isNonWorkingDay(LocalDate.of(2030, 1, 5)), "2030-01-05 토");
     }
 
     /** 관리 시작일 경계 — 시작일 이전 예정일은 만들지 않는다. */

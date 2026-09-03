@@ -345,8 +345,12 @@ screenusage/ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE
 
 | 대상 테이블 | 남기는 곳 | 행위 |
 |---|---|---|
-| `tbl_code` `tbl_menu` `tbl_role` `tbl_role_screen` `tbl_dept` `tbl_user` `tbl_approval_line` `tbl_company_template` | 시스템 관리 Service의 `save`·`delete` | I·U·D |
-| `tbl_document` `tbl_document_file` | `docs.documents.DocumentService` | I·U·D·REQ·REV·APV·RJT·CANCEL·UNDO |
+| `tbl_code` `tbl_menu` `tbl_role` `tbl_role_screen` `tbl_dept` `tbl_user` `tbl_approval_line` | 시스템 관리 Service의 `save`·`delete` | I·U·D |
+| `tbl_company_template` `tbl_company_template_file` | `HwpTemplateService` 저장·적용·삭제, `TemplateService.saveForm` | I·U·D |
+| `tbl_html_hyg_prc_ver` `tbl_tml_ccp_*_ver` | `HtmlTemplateService` 복사·항목저장·적용·이름·삭제 | I·U·D |
+| `tbl_schedule_rule` | `DocCycleService` 저장·삭제 | U·D |
+| `tbl_corrective_action` | `CorrectiveActionService` 저장·삭제 | I·U·D |
+| `tbl_document` `tbl_document_file` | `DocumentService`(HWP·결재) · HTML/CCP draft `save`·`delete` | I·U·D·REQ·REV·APV·RJT·CANCEL·UNDO |
 
 - 행에 `scrn_cd`를 적재 시점에 넣는다. 조회는 `tbl_screen` 조인으로 표시명을 붙인다. 공통코드 `AUDIT_TARGET`은 쓰지 않는다
 - `after_json`은 화면 payload 그대로이고 `_key`·`_rowState`는 버려지며 `userPw`는 `***`로 가려진다. 시스템 관리 저장은 `before_json`을 남기지 않는다. 문서 허브는 전후를 남긴다

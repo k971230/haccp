@@ -21,4 +21,4 @@
 | 좌측 메뉴 트리 | `menuApi.listAdminMenus` | `sp_menu_management_r_000` | `tbl_menu` `tbl_screen` |
 | 적재 (화면 아님) | `AuditWriter.record` | `sp_tbl_audit_log_c_000` | `tbl_audit_log` |
 
-행위 라벨은 공통코드 `AUDIT_RESULT`. 대상 메뉴는 행의 `scrn_cd` → `tbl_screen.scrn_nm`. 시스템 관리 저장·삭제와 문서 허브 결재가 `AuditWriter.record(...)`를 부른다.
+행위 라벨은 공통코드 `AUDIT_RESULT`. 대상 메뉴는 행의 `scrn_cd` → `tbl_screen.scrn_nm`. 조회를 뺀 메뉴 쓰기(기준정보·양식·주기·개선조치·작성 저장/삭제·결재)가 `AuditWriter.record(...)`를 부른다.

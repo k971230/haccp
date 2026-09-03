@@ -80,6 +80,9 @@ public class HwpTemplateService {
         mapper.saveHwpTemplate(
                 LoginUserContext.coCd(), tmplCd, tmplNm, defaultYn(row.get("useYn")), LoginUserContext.userId()
         );
+        // UPSERT 한 건이라 등록·수정을 못 갈라 U 로 통일한다 — 결재선 저장과 같다
+        auditWriter.record(AUDIT_TBL, null, "U", Map.of(
+                "tmplCd", tmplCd, "tmplNm", tmplNm, "useYn", defaultYn(row.get("useYn"))));
     }
 
     /**
@@ -110,9 +113,12 @@ public class HwpTemplateService {
     @Transactional(timeout = 60)
     public void applyHwpTemplateFile(Map<String, Object> row) {
         String tmplCd = requireText(row, "tmplCd", "양식을 선택하세요.");
+        Long fileIdx = longValue(row.get("fileIdx"));
         mapper.applyHwpTemplateFile(
-                LoginUserContext.coCd(), tmplCd, longValue(row.get("fileIdx")), LoginUserContext.userId()
+                LoginUserContext.coCd(), tmplCd, fileIdx, LoginUserContext.userId()
         );
+        // fileIdx 가 없을 때(= 초기화) 기본 제공본으로 되돌린다
+        auditWriter.record(AUDIT_TBL, fileIdx, "U", Map.of("tmplCd", tmplCd, "fileIdx", fileIdx == null ? "" : fileIdx));
     }
 
     private String requireText(Map<String, Object> row, String key, String message) {

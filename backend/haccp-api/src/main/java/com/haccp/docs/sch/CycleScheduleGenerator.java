@@ -2,14 +2,14 @@
  * CycleScheduleGenerator — 문서주기 규칙을 실제 예정일 목록으로 바꾸는 순수 계산기.
  *
  * 개발자: 박승우
- * 일자: 2026-08-14
+ * 일자: 2026-09-03
  * 코멘트:
  *   1) 규칙 해석(말일 보정·31일·비영업일 이동·관리 시작일 경계)을 이 한 곳에만 둔다 — SQL/SP는 날짜 배열만 받는다
  *   2) 문서주기관리 저장 직후와 일일 배치(DailyTaskGenerationJob)가 같은 메서드를 호출해 결과가 어긋나지 않는다
- *   3) DB·JWT를 보지 않는 계산 전용 클래스라 CycleScheduleGeneratorTest로 값 검증이 가능하다
+ *   3) 비영업일은 토·일 + holidays-kr JSON 날짜다. DB·JWT를 보지 않아 CycleScheduleGeneratorTest로 값 검증이 가능하다
  *
  * PIPELINE[HB98] 문서주기 예정일 생성기
- * PIPELINE[HB94, HB99] 연관 모듈
+ * PIPELINE[HB94, HB97, HB99] 연관 모듈
  */
 package com.haccp.docs.sch;
 
@@ -42,7 +42,7 @@ public class CycleScheduleGenerator {
     public record Rule(
             // cycle_cd: D 매일 / W 매주 / M 매월 / Q 분기 / H 반기 / Y 매년 / E 비정기(예정일 없음)
             String cycleCd,
-            // nonwork_rule: keep 그대로 / prev 이전 평일 / next 다음 평일
+            // nonwork_rule: keep 그대로 / prev 이전 영업일 / next 다음 영업일 — 주말·공휴일 이동
             String nonworkRule,
             // base_dt: 관리 시작일 — 이 날짜 이전 예정일은 만들지 않는다
             LocalDate startDt,
@@ -83,13 +83,22 @@ public class CycleScheduleGenerator {
         return new ArrayList<>(out);
     }
 
-    /** 토·일만 비영업일로 본다. 공휴일 반영이 필요해지면 이 메서드만 확장한다. */
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-03
+     * 코멘트:
+     *   1) 토·일이거나 holidays-kr JSON에 있는 날짜면 비영업일이다
+     *   2) PREV·NEXT 이동과 매일 주기 생성이 이 판정을 같이 쓴다
+     *   3) JSON에 없는 연도일 때(= 월력요항 미반영) 주말만 true
+     */
     public boolean isNonWorkingDay(
-            // date: 판정 대상 날짜
+            // date: 판정 대상 날짜 — null이면 비영업일이 아니다
             LocalDate date
     ) {
+        if (date == null) return false;
         DayOfWeek dow = date.getDayOfWeek();
-        return dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY;
+        // 토·일일 때(= 주말) 또는 JSON 공휴일일 때
+        return dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY || KoreanHolidayDates.ALL.contains(date);
     }
 
     /** 비영업일 처리 규칙에 따라 날짜를 옮긴다. KEEP이거나 영업일이면 그대로 둔다. */
@@ -98,8 +107,8 @@ public class CycleScheduleGenerator {
         String rule = nonworkRule == null ? "KEEP" : nonworkRule.trim().toUpperCase(java.util.Locale.ROOT);
         if (!isNonWorkingDay(date)) return date;
         LocalDate moved = date;
-        // 토·일 연속 최대 2일이라 3회 이내에 끝난다 — 무한 루프 방지용 상한
-        for (int i = 0; i < 7 && isNonWorkingDay(moved); i++) {
+        // 추석 연휴+주말+대체 연속을 넘기기 위한 상한 — 무한 루프 방지
+        for (int i = 0; i < 14 && isNonWorkingDay(moved); i++) {
             if ("PREV".equals(rule)) moved = moved.minusDays(1);
             else if ("NEXT".equals(rule)) moved = moved.plusDays(1);
             else return date;

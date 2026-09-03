@@ -682,7 +682,7 @@ export default function ScheduleCycleManagementPage() {
                       </select>
                     </label>
                     <label className={formLabelClass}>
-                      {/* 비영업일 처리 — 토·일에 걸린 예정일 이동 방식 */}
+                      {/* 비영업일 처리 — 토·일·공휴일에 걸린 예정일 이동 방식 */}
                       비영업일 처리
                       <select
                         className={formFieldClass}
@@ -784,7 +784,7 @@ export default function ScheduleCycleManagementPage() {
 
                     {form.cycleCd === "D" ? (
                       <p className="break-words rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-                        매일 반복합니다. 비영업일 처리 설정에 따라 주말 예정일이 이동합니다.
+                        매일 반복합니다. 비영업일 처리 설정에 따라 주말·공휴일 예정일이 이동합니다.
                       </p>
                     ) : null}
 

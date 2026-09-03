@@ -30,6 +30,7 @@ import com.haccp.draft.dto.DraftFormRow;
 import com.haccp.draft.dto.DraftListRow;
 import com.haccp.draft.dto.DraftSaveRequest;
 import com.haccp.flow.ca.DocCorrectiveSupport;
+import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +83,11 @@ public class HtmlDraftService {
     private final HtmlDraftMapper mapper;
     private final ObjectMapper objectMapper;
     private final DocCorrectiveSupport correctiveSupport;
+    // 작성 저장·삭제 이력 — 이탈 자동생성·서명 스냅샷은 같은 저장의 부수라 따로 안 남긴다
+    private final AuditWriter auditWriter;
+
+    /** 감사 로그 대상 표 — 헤더. 본문 표는 남기지 않는다 */
+    private static final String AUDIT_TBL = "tbl_document";
 
     /**
      * 개발자: 박승우
@@ -205,6 +211,9 @@ public class HtmlDraftService {
             if (docIdx == null || docIdx <= 0) {
                 throw new BizException("저장에 실패했습니다.");
             }
+            // 점검행은 안 남긴다 — 헤더만. HWP DocumentService 와 같다
+            auditWriter.record(AUDIT_TBL, docIdx, req.getDocIdx() == null ? "I" : "U",
+                    Map.of("docIdx", docIdx, "tmplCd", tmpl, "baseDt", req.getBaseDt().trim()));
             // 서명 스냅샷 — 이름=사용자면 blob 복사, 없으면 이름만
             mapper.snapshotSigns(
                     family.key(),
@@ -268,6 +277,7 @@ public class HtmlDraftService {
         DraftSupport.assertDeletable(keys, (ids) -> mapper.selectDeleteBlocker(LoginUserContext.coCd(), ids));
         for (DraftDeleteItem key : keys) {
             mapper.delete(family.key(), LoginUserContext.coCd(), key.getDocIdx(), LoginUserContext.userId());
+            auditWriter.record(AUDIT_TBL, key.getDocIdx(), "D", null);
         }
         return keys.size();
     }

@@ -13,6 +13,6 @@
 
 ## AuditWriter
 
-시스템 관리 화면과 문서 허브가 같은 규칙으로 이력을 남긴다. 화면코드는 요청 컨텍스트(`X-Haccp-Scrn` · URL 맵). 호출부는 각 Service의 save·delete·결재.
+조회를 뺀 메뉴 쓰기(기준정보·양식·주기·개선조치·작성 저장/삭제·결재)가 같은 규칙으로 이력을 남긴다. 화면코드는 요청 컨텍스트(`X-Haccp-Scrn` · URL 맵). 호출부는 각 Service의 save·delete·결재.
 
 FE: `pages/sys/logs/auditlog/` · 공용 셸 `components/layout/LogPageShell.tsx`

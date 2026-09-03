@@ -24,6 +24,10 @@ import com.haccp.docs.documents.dto.DocumentTemplateResponse;
 import com.haccp.docs.documents.dto.DocumentTemplateRow;
 // 역할 — 템플릿 목록 SP
 import com.haccp.docs.documents.DocumentMapper;
+// 역할 — 양식 파일 업로드 감사
+import com.haccp.sys.logs.auditlog.AuditWriter;
+// 역할 — 감사 after 한 줄
+import java.util.Map;
 // 역할 — 파일 경로
 import java.nio.file.Path;
 // 역할 — 업로드 버전 파일명 시각 접미
@@ -53,6 +57,8 @@ public class TemplateService {
     private final DocumentMapper mapper;
     // APP_FILE_ROOT 의 표준·자사 양식 루트 밖 접근을 차단하는 원본 파일 저장소
     private final TemplateFileStorage storage;
+    // 양식 파일 업로드 이력 — 형제 화면과 같은 밀도로 남긴다
+    private final AuditWriter auditWriter;
 
     /**
      * 개발자: 박승우
@@ -142,6 +148,9 @@ public class TemplateService {
         mapper.insertCompanyTemplateFile(
                 coCd, template.getTmplCd(), safeName, formPath, file.getSize(), LoginUserContext.userId()
         );
+        // 새 버전 파일이라 I. 경로는 감사에 안 남긴다 — DocumentService.publicFile 과 같다
+        auditWriter.record("tbl_company_template_file", null, "I",
+                Map.of("tmplCd", template.getTmplCd(), "fileNm", safeName, "fileSize", file.getSize()));
         log.info(
                 "Template form version saved — coCd={}, tmplCd={}, formPath={}",
                 coCd, template.getTmplCd(), formPath
