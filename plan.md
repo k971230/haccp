@@ -363,7 +363,7 @@ HACCP 은 조치 기록이 초안 삭제로 사라지면 안 되므로 이게 �
 
 **시험:** WRK 문서에 이탈 → 개선조치 완료 → 문서 삭제 → `tbl_corrective_action` 행이 남는지 DB 로.
 
-### K17. 반려 사유가 500자를 넘으면 반려가 `22001` 로 죽는다
+### K17. 반려 사유가 500자를 넘으면 반려가 `22001` 로 죽는다 — **9절에서 정정됨**
 
 **층: SP + FE.**
 
@@ -519,8 +519,30 @@ HACCP 은 조치 기록이 초안 삭제로 사라지면 안 되므로 이게 �
 `00_ddl.sql` 의 `COMMENT ON COLUMN` 에 **「미사용 — 예정」**을 달고
 `gen_table_layout.mjs` 를 다시 돌린다. 그러면 `docs/10_테이블_레이아웃.md` 가 스스로 알린다.
 
-**검증 참조집계 8칸만 다르다.** 이건 예정이 아니라 **반쯤 만든 기능**이다.
-채울지 뺄지는 업무 결정이라 여기서 정하지 않는다 — `handoff.md` 에 물음으로 남긴다.
+**검증 참조집계 8칸만 다르다 — 사용자가 「빼라」로 정했다 (2026-09-04).**
+예정 필드가 아니라 반쯤 만든 기능이라 「미사용 예정」으로 남기지 않는다. 표에서 뺀다.
+
+| 파일 | 무엇 |
+|---|---|
+| `00_ddl.sql` `tbl_ccp_verify_item` | `proc_cd`·`ref_tmpl_cd`·`ref_from_dt`·`ref_to_dt`·`ref_total_cnt`·`ref_ok_cnt`·`ref_ng_cnt` 칸 삭제 |
+| `00_ddl.sql` `tbl_ccp_verify_check` | `monitor_chk_rmk` 칸 삭제 |
+| `10_*.sql` | `ALTER TABLE … DROP COLUMN IF EXISTS …` 여덟 줄 |
+| 그 뒤 | `node scripts/gen_table_layout.mjs` 재생성 |
+
+**이 여덟 칸만 지운다.** 나머지 죽은 칸(회사 마스터 17개 등)은 예정 필드라 주석만 단다.
+지우기 전에 라이브에 값이 들어간 행이 없는지 한 번 센다 — SP·BE·FE 가 안 쓰니 전부 NULL 이어야 한다.
+
+```sql
+SELECT count(*) FROM tbl_ccp_verify_item
+ WHERE proc_cd IS NOT NULL OR ref_tmpl_cd IS NOT NULL OR ref_total_cnt IS NOT NULL;
+SELECT count(*) FROM tbl_ccp_verify_check WHERE monitor_chk_rmk IS NOT NULL;
+```
+
+**0 이 아니면 멈춘다.** 그때는 누가 쓰고 있다는 뜻이고, 찾기 전에는 안 지운다.
+
+**되돌리기가 비싸다.** `DROP COLUMN` 은 자료를 되돌릴 수 없다 —
+이 여덟 줄만 `10_*.sql` 이 아니라 **`11_drop_verify_ref_cols.sql` 로 따로 뺀다.**
+`10_` 은 프로시저 재정의만 담아 되돌림이 깨끗해야 한다.
 
 ### K19. 매퍼 XML 직접 SQL 이 K2 말고 다섯 곳 더 있다
 
@@ -573,14 +595,16 @@ C8 은 지금 `audit_generated_docs` 를 빨갛게 만들고 있다 — **두 �
 1) C8            생성기 두 줄 — 야간 감시부터 초록으로
 2) K5 + K8       FE 계약(boolean) + SP 가드 — P0. **한 커밋**. K5 만 넣으면 결함이 옮겨간다
 3) K9            FE 전송 검사 — P0
-4) K5-b·K6·K10·K16·K17  SP — 10_*.sql 한 본에 같이. 라이브·시험 적용
+4) K5-b·K6·K10·K16·K17-b·K21  SP — 10_*.sql 한 본에 같이. 라이브·시험 적용
    K5-b 와 K16 은 같은 가드라 **한 번에 여섯 곳**을 맞춘다
-5) K11·K12       FE — P1
+5) K11·K12·K26·K27·K28  FE 경합·재적재 — P1. K12·K26·K27 은 같은 순번 가드다
 6) C7            DDL 주석 + 생성기 재생성
-7) K7            BE 순서 교정
+7) K7·K23        BE 실물 삭제 시점 — 세 자리가 한 뿌리다
+7b) K22·K25     BE 권한 대조·트랜잭션
 8) K1            DB+BE 한 커밋
-9) K3·C4·K13·K14·K15·K17(FE maxLength)  FE
-10) K18·K19·K20 + P3 다섯 건
+9) K17-a  그리드 maxLength — Rule 25본
+9b) K3·C4·K13·K14·K15·K29·K30·K31  FE
+10) K18·K19·K20·K24 + P3 다섯 건
 ```
 
 ### 배포와 DB 의 간격 — 깨지는 곳은 8번이다
@@ -668,3 +692,238 @@ K12 의 「항상 한 박자 늦는다」가 스테이징 구버전인지 · HWP
 - 업무 로직의 옳고 그름(계산식·판정 기준)은 축에 없다 — 그건 현장 검증의 몫이다
 - BE 149본·FE 233본은 이 라운드 밖이다. 이번은 **SP·스키마**다
 
+---
+
+## 9. BE·FE 전수 라운드 (2026-09-04)
+
+8절이 SP·스키마였다면 이 절은 **BE 149본 · FE 233본**이다.
+같은 축(경합·트랜잭션 경계·거짓 성공·길이·권한)으로 훑었고 확인한 것만 올린다.
+
+### K17 정정 — 반려 사유 쪽은 이미 닫혀 있다
+
+**8절에서 「팝업에 `maxLength` 가 없다」고 적은 것은 틀렸다.**
+`ReasonActionModal.tsx`:22·42·116·121 이 `REASON_MAX = 500` 으로 이미 막고 잔여 글자수까지 보여 준다.
+내가 `components/document/` 와 `shell/dialog` 만 봤고 팝업은 `components/common/modal/` 에 있었다.
+
+**그래서 K17 은 둘로 갈라진다.**
+
+| | 무엇 | 등급 |
+|---|---|---|
+| **K17-a** | **그리드 입력칸에 `maxLength` 가 없다** — 진짜 구멍은 이쪽이다 | **P1** |
+| K17-b | SP `opinion`·`audit_log.reason` 무절단 | P2 — 팝업이 500 으로 막아 화면으로는 도달 불가. 마지막 문으로만 |
+
+### K17-a. 그리드 칸에 `maxLength` 가 걸린 자리가 하나뿐이다 — P1
+
+**층: FE (+ SP 는 마지막 문).**
+
+장치는 이미 있다 — `types/grid.ts`:77 이 `maxLength` 를 받고
+`MesEditableGrid.tsx`:762·804 가 `slice` 로 자른다. **쓰는 곳이 없을 뿐이다.**
+`*Rule.ts` 25본을 통틀어 건 자리는 `htmlFormDraftShared.ts`:271(제목 300) **하나**다.
+
+뒤에도 문이 없다 — BE 전체에 `@Size`·`@Length` **0건**, `01_sp.sql` 156본에 `left(` 는 12곳뿐.
+
+| 넘치는 상대 | 폭 |
+|---|---|
+| `tbl_code.sub_cd` | `varchar(20)` |
+| `tbl_code.code_nm`·`ref1`·`ref2` | `varchar(100)` |
+| `tbl_user.user_nm` `varchar(50)` · `mobile` | `varchar(20)` |
+| `tbl_corrective_action.occur_place` | `varchar(200)` |
+
+공통코드 `sub_cd` 에 21자를 넣고 저장하면 브라우저·BE·SP 어디도 안 자르고 **`22001` 이 그대로 뜬다.**
+
+| 파일 | 무엇 |
+|---|---|
+| `*Rule.ts` 25본 `buildColumns` | 문자 칸마다 `maxLength` — **DDL 폭과 같은 수**로 |
+| 그 뒤 | 폭을 바꿀 때 둘이 같이 움직인다는 것을 `docs/4_명명과_경로.md` 10절에 한 줄 |
+
+**한 번에 다 걸지 않아도 된다.** 저장이 실제로 도달하는 칸(편집 가능한 문자 칸)만 건다.
+읽기 전용 열은 사용자가 못 치므로 뺀다.
+
+### K22. 양식관리 5화면이 권한은 URL 로, 대상은 body 로 정한다 — P1
+
+**층: BE.**
+
+`HtmlTemplateController.java`:29-35 가 URL 다섯을 **한 핸들러**에 묶는데
+`ScreenAuthResolver.java`:143-147 은 **URL 접두**로만 `scrnCd` 를 고르고,
+`HtmlTemplateService.java`:83-95·110-123·152-157 은 **인자 `tmplCd`** 로 대상 표를 고른다.
+둘을 대조하는 자리가 없다.
+
+**권한이 실제로 갈라져 있다** — `02_seed.sql`:437·439 처럼 `tbl_role_screen` 행이 화면마다 따로다.
+금속검출 양식관리 삭제 권한만 준 계정이
+`POST /api/v1/docs/html-form/ccp-mtl-template/delete` 에 `tmplCd:"html_hyg_prc_003"` 을 실으면
+**권한 없는 공정점검 양식이 지워진다.** `/items` PUT 도 같다.
+
+| 파일 | 무엇 |
+|---|---|
+| `HtmlTemplateService.java` | `tmplCd` 접두와 요청 URL 의 화면이 맞는지 대조하는 가드 하나. 어긋나면 `BizException` |
+| 또는 `ScreenAuthResolver` | 이 다섯 경로만 body 의 `tmplCd` 로 `scrnCd` 를 다시 고른다 |
+
+**서비스 쪽을 권한다.** Resolver 가 body 를 읽기 시작하면 다른 경로까지 규칙이 흐려진다.
+`isMtl`·`isHtg`·`isPkg`·`isCcp` 가 이미 접두를 안다 — 그 옆에 URL 대조 한 줄이면 된다.
+
+**화면에서는 도달 못 한다.** API 를 직접 부르는 경로다. 그래서 P0 가 아니라 P1 이다.
+
+### K23. 문서 삭제가 트랜잭션 안에서 실물 파일을 지운다 — K7 이 안 덮은 두 자리 — P1
+
+**층: BE.** K7 과 **같은 계열**이라 같이 고친다.
+
+| 파일 | 무엇 |
+|---|---|
+| `DocumentService.java`:549-571 `delete()` | 키 루프 안에서 `storage.delete`. 다음 키가 던지면 앞 키 메타는 롤백으로 되살아나고 **실물만 사라진다** |
+| 같은 파일 :404-420 `deleteFile()` | `storage.delete` 뒤에 `audit` 가 있어 감사 적재가 실패하면 같은 상태다 |
+
+**고치는 법은 K7 과 같다** — 경로를 모아 두고 `afterCommit` 에 등록한다.
+`Files.deleteIfExists` 는 트랜잭션이 안 되돌린다. 되돌림 단위가 다른 둘을 섞은 것이 뿌리다.
+
+**K7 을 「HWP 덮어쓰기 한 자리」로 좁게 잡은 것이 이 라운드에서 드러났다.** 세 자리가 한 뿌리다.
+
+### K24. `validate-delete` 는 통과하고 `delete` 만 막는 검사가 있다 — P2
+
+**층: BE (+DB 선택).** K1 과 같은 계열이다.
+
+`DocumentService.java`:561-563 의 `docKind != HWP` 차단이 **`delete()` 본문에만** 있다.
+`assertDeletable`(:574-583)도 `sp_tbl_document_delete_blocker_r_000`(`01_sp.sql`:6906-6924)도
+`doc_kind` 를 안 본다 — blocker 는 `status IN ('REQ','APV')` 만 본다.
+
+문서함에서 HTML형 임시문서를 고르면 `validate-delete` 가 200 → 확인창 → **확인을 누른 뒤에야** 실패한다.
+「`assertDeletable` 이 골드」라고 이 계획에 적어 둔 그 검사가 자기 자리에서 반쪽이다.
+
+| 파일 | 무엇 |
+|---|---|
+| `DocumentService.assertDeletable` | `docKind != HWP` 차단을 여기로 올린다. `delete()` 는 그대로 둔다(Double Check) |
+
+### K25. HWP 작성 저장에 트랜잭션이 없다 — 형제 4본은 다 걸려 있다 — P2
+
+**층: BE.**
+
+`HwpDraftService.java`:147 `public Long save(` — 어노테이션이 없다.
+안에서 `documentService.saveHwpDocument`(165, 자기 `@Transactional`)와 `applyDeviation`(166)을 **따로 커밋**한다.
+
+형제는 전부 걸려 있다 — `HtmlDraftService.java`:180 · `CcpLogDraftService.java`:206 ·
+`CcpMtlDraftService.java`:214 모두 `@Transactional(timeout = 60)` 이고 같은 자리에서 `saveAutoIfNg` 를 부른다.
+
+이탈을 켜고 저장했는데 `upsertByDoc` 이 실패하면 문서(와 채번된 `doc_no`)는 남고 개선조치만 안 붙는다.
+
+| 파일 | 무엇 |
+|---|---|
+| `HwpDraftService.java`:147 | `@Transactional(timeout = 60)` — 형제와 같은 값 |
+
+**본문 업로드는 이 트랜잭션 밖이다** — 별도 요청(`uploadDocumentFile`)이라 영향이 없다.
+
+### K26. 문서주기 화면이 응답 역순이면 A 의 주기를 B 에 저장한다 — P1
+
+**층: FE.** K12 와 같은 경합이고 결과가 더 나쁘다.
+
+`ScheduleCycleManagementPage.tsx`:192-231 `loadCycle` 이 `await` 뒤 `setForm(next)` 를 하는데
+`alive`·순번 가드가 없고 잠금도 없다(:237-239·:283-287).
+저장(:422-433)은 `{ tmplCd: activeTmplCd, ...form }` 이라 **키는 B, 값은 A** 가 될 수 있다.
+
+양식 A 를 누르고 응답 전에 B 를 누른 뒤 저장하면 **B 의 주기·담당자·결재선이 A 값으로 덮인다** —
+문서 자동생성 일정이 통째로 바뀐다.
+
+| 파일 | 무엇 |
+|---|---|
+| `ScheduleCycleManagementPage.tsx` `loadCycle` | 호출 순번 `useRef` — 최신 응답만 `setForm` |
+
+**K12 와 한 커밋으로 본다.** 같은 결함이 두 화면에 있다.
+
+### K27. `useAsyncAction` 이 같은 key 두 번째 호출을 버린다 — P1
+
+**층: FE.**
+
+`useAsyncAction.ts`:60 `if (locks.current.has(key)) return undefined;` — 큐가 아니라 **폐기**다.
+중복 클릭을 막으려던 장치인데, 선택이 바뀌는 적재에 쓰면 **새 선택의 적재가 조용히 사라진다.**
+
+| 쓰는 곳 | 결과 |
+|---|---|
+| `RoleManagementPage.tsx`:190-204 (`"tree"`) | 권한그룹 A 적재 중 B 를 누르면 트리는 A 인데 좌측은 B. 그 상태로 저장하면 **사람이 본 것과 다른 근거로 B 에 권한이 붙는다**(:248-266) |
+| `CommonCodePage.tsx`:173-183 (`"detail"`) | 그룹 B 밑에 A 의 상세 |
+| `CalendarPage.tsx`:122-124 (`"search"`) | 다음달을 두 번 누르면 헤더와 자료가 갈린다 |
+
+**`useAsyncAction` 자체는 안 바꾼다.** 중복 제출 방지라는 원래 목적에는 폐기가 맞다.
+바꾸는 것은 **쓰는 쪽**이다 — 선택 적재에는 잠금 대신 **순번 가드**를 쓴다 (K12·K26 과 같은 형태).
+장치 하나를 두 용도로 쓴 것이 뿌리다.
+
+### K28. 검색어를 한 글자 칠 때마다 목록을 다시 읽고 미저장 편집을 지운다 — P1
+
+**층: FE.**
+
+`UserManagementPage.tsx`:118-137 `load` 의 deps 가 `[qUserId, qUserNm, qUseYn]` 인데
+:235 가 `useEffect(() => { void load(); }, [load])` 이고 :343-353 의 input `onChange` 가 그 state 를 바로 친다.
+`useEditableRows.ts`:111-126 `load` 는 `setRows(mapServerRows(...))` 로 **통째 치환**한다.
+
+사용자 두 명을 새로 추가하고(저장 전) 「사용자명」에 한 글자 치면 **그 두 행이 사라진다.**
+`ApprovalLineManagementPage.tsx`:151-179·446·455 도 같고, 그쪽은 단계 편집까지 날아간다.
+
+**막는 법이 이미 저장소에 있다** — `DepartmentManagementPage.tsx`:199-208 ·
+`HwpTemplateManagementPage.tsx`:165-196 · `DocumentBoxPage.tsx`:176-218 은
+`searchRef` 또는 deps `[]` 로 같은 사고를 닫아 뒀다. **그 형태로 맞춘다.**
+
+### K29. deep-link `?docIdx=` 효과가 목록이 갱신될 때마다 다시 터진다 — P2
+
+**층: FE.**
+
+`DocumentBoxPage.tsx`:236-240 의 deps 가 `[openDocIdx, rows, loadDetail]` 인데
+**한 번 쓰고 끄는 표식이 없다.** `useDocIdxQuery.ts`:25-33 의 `openDocIdx` 는 URL 이 살아 있는 한 같은 값이다.
+
+문서 123 으로 들어간 뒤 목록에서 456 을 고르고 조회·인쇄·첨부를 하면
+(`ApprovalAttachPage.tsx`:226-227·244-245 · `DocumentBoxPage.tsx`:518-521 이 `loadList()` 를 부른다)
+우측이 **말없이 123 으로 되돌아간다.** 결재첨부는 입력 중이던 비고까지 서버 값으로 덮인다.
+
+| 파일 | 무엇 |
+|---|---|
+| 두 화면 | `consumedRef` — 한 번 연 `openDocIdx` 는 다시 열지 않는다 |
+
+### K30. 문서 상세가 내려주는 값 넷을 어느 화면도 안 그린다 — K15 확장 — P2
+
+**층: FE.**
+
+`documentApi.ts`:68-69 `writeDt`(주석은 「결재요청일」) · :75 `retentionUntil` ·
+:80-86·226 `versions[]` — `camelizeRows` 로 정규화까지 해 놓고 어느 화면도 `detail.versions` 를 안 읽는다.
+`shell/messages.ts`:62-63 의 `retentionLocked` 문구도 부르는 곳이 없다.
+
+**K15(`openCaCnt`)와 한 덩이로 본다.** 결재자가 상신일·판 번호·보존기한·미조치 건수를 못 본다.
+
+### K21. 가열·포장 저장만 일자 검증이 없다 — P2
+
+**층: SP.** 8절의 축 훑기에서 빠져 선형 읽기로 나왔다.
+
+형제 셋은 다 있다 — `sp_ccp_verify_c_000`:194 · `sp_tbl_ccp_metal_monitor_c_000`:2625 ·
+`sp_tbl_hyg_process_c_000`:4619 가 `length(p_base_dt) <> 8` 을 막는다.
+`sp_tbl_ccp_generic_monitor_c_000`(2366)만 **없다.** 그러고서 :2410 이 `to_date(p_base_dt,'YYYYMMDD')` 를 쓰고
+`base_dt varchar(8)` 에 넣고 채번까지 태운다.
+
+화면이 8자리를 막고 있어 오늘은 도달 불가다. **형제 셋이 세운 기준에 맞추는 것**이다.
+
+### K31. 개선조치 `action_user_id` 는 저장·조회되는데 화면에 열이 없다 — P2
+
+**층: FE.** **K10 과 한 커밋**이다.
+
+`CorrectiveActionManagementPage.tsx`:160 이 `actionUserId: row.actionUserId` 를 보내는데
+`CorrectiveActionManagementRule.ts`:28-43 `Row` 타입에 그 이름이 없고 `buildColumns`(:69-92)에도 열이 없다.
+타입 검사가 안 잡는 이유는 `WorkflowRow = Record<string, unknown> & {…}` 의 인덱스 시그니처다.
+
+DB 는 살아 있다 — `01_sp.sql`:2866 UPDATE · :2899 SELECT ·
+**:6520 `AND (ca.action_user_id IS NULL OR ca.action_user_id = p_user_id)`** 가 오늘 할 일을 그 값으로 거른다.
+
+**보이는 「조치자」(`actionUserNm`)는 저장이 안 되고(K10), 저장되는 `action_user_id` 는 채울 자리가 없다.**
+그래서 담당자 필터가 사실상 죽어 있다.
+
+### 훑었지만 깨끗한 축 — 0건도 결과다
+
+| 축 | 결과 |
+|---|---|
+| BE 테넌트 격리 | 서비스 24본 전부 `LoginUserContext` 만 쓴다. body·param 의 `coCd` 를 읽는 자리 **0건** |
+| 매퍼 계약 | XML 31본의 `namespace`·`resultType` 이 실물과 일치. SP 인자 개수 불일치 **0건** |
+| 파일 경로 경계 | `resolve` 가 root 이탈을 막고 다운로드는 `attachment()`. **0건** |
+| 화면 등록 | `tabRoute`(29) · `screenRegistry`(29) · `tbl_screen`(29) 가 문자 그대로 일치. **0건** |
+| rhwp 마운트 수명 | `RhwpStudioHost` 가 `disposed`+`AbortController`+ref 콜백을 다 갖췄다. **0건** |
+| 작성 6화면 잠김 표시 | 버튼과 지면이 같은 판정(`canModifyDoc` 계열)을 본다. **0건** |
+| 저장 성공 토스트 순서 | HWP 본문(K8) 말고 전부 `await` 뒤에 뜬다. **0건** |
+| 결재 사유 팝업 길이 | `ReasonActionModal` 이 500 으로 이미 막는다. **0건** (K17 정정) |
+
+### 이 라운드도 안 본 것
+
+- **E2E 2건이 이미 빨갛다.** `schedule-cycle-management.spec.ts:65`(삭제 2단계) ·
+  `today-tasks.spec.ts:101`(더블클릭). **변경 전 기준선에서도 같은 둘이 실패한다** — 원인은 안 팠다
+- 업무 계산식의 옳고 그름(한계기준 판정·주기 날짜 생성 규칙)은 여전히 축 밖이다
