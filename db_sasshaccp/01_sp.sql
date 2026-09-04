@@ -334,7 +334,9 @@ BEGIN
     IF v_status NOT IN ('WRK', 'RJT') THEN
         RAISE EXCEPTION '전송한 문서는 삭제할 수 없습니다. 전송취소 후 삭제하세요.' USING ERRCODE = '45000';
     END IF;
-    DELETE FROM tbl_corrective_action WHERE co_cd = p_co_cd AND src_doc_idx = p_doc_idx;
+    -- 완료(DONE)된 개선조치는 원문서를 지워도 남긴다. 조치 기록이 초안 삭제로 사라지면 안 된다.
+    -- 개선조치 목록은 LEFT JOIN tbl_document 이라 원문서가 없어도 문서 칸만 빈 채로 보인다
+    DELETE FROM tbl_corrective_action WHERE co_cd = p_co_cd AND src_doc_idx = p_doc_idx AND status <> 'DONE';
     DELETE FROM tbl_ccp_verify_item WHERE co_cd = p_co_cd AND hdr_idx = v_hdr;
     DELETE FROM tbl_ccp_verify_check WHERE co_cd = p_co_cd AND idx = v_hdr;
     DELETE FROM tbl_document_approval WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
@@ -2347,7 +2349,9 @@ BEGIN
                               before_json, after_json, reason, ip_addr, ins_dt)
     VALUES (p_co_cd, p_user_id, COALESCE(NULLIF(p_scrn_cd, ''), ''), p_tbl_nm, p_tgt_idx, p_action_cd,
             NULLIF(p_before_json, '')::jsonb, NULLIF(p_after_json, '')::jsonb,
-            NULLIF(p_reason, ''), p_ip_addr, now());
+            -- reason 은 varchar(500). 감사 적재는 호출자 트랜잭션 안이라
+            -- 여기서 22001 이 나면 업무 자체가 롤백된다
+            left(NULLIF(p_reason, ''), 500), p_ip_addr, now());
 END$$;
 
 
@@ -2377,6 +2381,11 @@ DECLARE
     v_cell jsonb;
     v_row_idx bigint;
 BEGIN
+    -- 형제 저장 SP 셋(sp_ccp_verify_c_000·sp_tbl_ccp_metal_monitor_c_000·sp_tbl_hyg_process_c_000)은
+    -- 다 막는데 여기만 없었다. 아래에서 to_date·채번·varchar(8) 로 그대로 흘러간다
+    IF COALESCE(p_base_dt, '') = '' OR p_base_dt !~ '^[0-9]{8}$' THEN
+        RAISE EXCEPTION '작성일은 YYYYMMDD 8자리로 입력하세요.' USING ERRCODE = '45000';
+    END IF;
     IF jsonb_typeof(p_rows) <> 'array' OR jsonb_array_length(p_rows) = 0 THEN
         RAISE EXCEPTION '점검 행이 없습니다.' USING ERRCODE = '45000';
     END IF;
@@ -2516,8 +2525,10 @@ BEGIN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 삭제할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
 
+    -- 완료(DONE)된 개선조치는 원문서를 지워도 남긴다 (형제 _d_000 셋과 같은 기준)
     DELETE FROM tbl_corrective_action
-     WHERE co_cd = p_co_cd AND src_doc_idx = p_doc_idx;
+     WHERE co_cd = p_co_cd AND src_doc_idx = p_doc_idx
+       AND status <> 'DONE';
 
     DELETE FROM tbl_ccp_generic_monitor_cell c
      USING tbl_ccp_generic_monitor_row r
@@ -2701,7 +2712,9 @@ BEGIN
     IF v_status NOT IN ('WRK', 'RJT') THEN
         RAISE EXCEPTION '전송한 문서는 삭제할 수 없습니다. 전송취소 후 삭제하세요.' USING ERRCODE = '45000';
     END IF;
-    DELETE FROM tbl_corrective_action WHERE co_cd = p_co_cd AND src_doc_idx = p_doc_idx;
+    -- 완료(DONE)된 개선조치는 원문서를 지워도 남긴다. 조치 기록이 초안 삭제로 사라지면 안 된다.
+    -- 개선조치 목록은 LEFT JOIN tbl_document 이라 원문서가 없어도 문서 칸만 빈 채로 보인다
+    DELETE FROM tbl_corrective_action WHERE co_cd = p_co_cd AND src_doc_idx = p_doc_idx AND status <> 'DONE';
     DELETE FROM tbl_ccp_metal_sens_row WHERE co_cd = p_co_cd AND hdr_idx = v_hdr_idx;
     DELETE FROM tbl_ccp_metal_pass_row WHERE co_cd = p_co_cd AND hdr_idx = v_hdr_idx;
     DELETE FROM tbl_ccp_metal_monitor WHERE co_cd = p_co_cd AND idx = v_hdr_idx;
@@ -2859,11 +2872,27 @@ BEGIN
         RAISE EXCEPTION '발생일자와 이탈내용을 입력하세요.' USING ERRCODE = '45000';
     END IF;
     IF v_idx = 0 THEN
-        v_no := 'CA-' || to_char(current_date, 'YYYYMMDD') || '-' || lpad((SELECT (count(*) + 1)::text FROM tbl_corrective_action WHERE co_cd = p_co_cd AND occur_dt = p_payload->>'occurDt'), 3, '0');
-        INSERT INTO tbl_corrective_action(co_cd, ca_no, src_tmpl_cd, src_doc_idx, occur_dt, occur_place, deviation_desc, action_desc, action_user_id, action_dt, due_dt, status, ins_id)
-        VALUES(p_co_cd, v_no, NULLIF(p_payload->>'srcTmplCd',''), NULLIF(p_payload->>'srcDocIdx','')::bigint, p_payload->>'occurDt', NULLIF(p_payload->>'occurPlace',''), p_payload->>'deviationDesc', NULLIF(p_payload->>'actionDesc',''), NULLIF(p_payload->>'actionUserId',''), NULLIF(p_payload->>'actionDt',''), NULLIF(p_payload->>'dueDt',''), COALESCE(NULLIF(p_payload->>'status',''),'OPEN'), p_id);
+        /*
+         * 접두는 current_date 가 아니라 **발생일(occurDt)** 이다.
+         * 세는 기준이 occur_dt 인데 접두만 오늘이면, 지난 날짜로 등록할 때
+         * 이미 쓴 번호를 다시 집어 ca_no UNIQUE 에 걸린다. 형제 _u_000 도 발생일 기준이다.
+         *
+         * 연번은 최대+1. count(*)+1 은 행이 지워지면 번호가 되돌아온다.
+         * 형식 정규식은 옛 행의 substring(...)::int 가 22P02 를 내는 것을 막는다.
+         */
+        v_no := 'CA-' || (p_payload->>'occurDt') || '-' || lpad((
+                    SELECT (COALESCE(MAX(substring(ca_no FROM 13)::int), 0) + 1)::text
+                      FROM tbl_corrective_action
+                     WHERE co_cd = p_co_cd
+                       AND occur_dt = p_payload->>'occurDt'
+                       AND ca_no ~ '^CA-[0-9]{8}-[0-9]{3}$'
+                ), 3, '0');
+        INSERT INTO tbl_corrective_action(co_cd, ca_no, src_tmpl_cd, src_doc_idx, occur_dt, occur_place, deviation_desc, action_desc, action_user_id, action_user_nm, action_dt, due_dt, status, ins_id)
+        VALUES(p_co_cd, v_no, NULLIF(p_payload->>'srcTmplCd',''), NULLIF(p_payload->>'srcDocIdx','')::bigint, p_payload->>'occurDt', NULLIF(p_payload->>'occurPlace',''), p_payload->>'deviationDesc', NULLIF(p_payload->>'actionDesc',''), NULLIF(p_payload->>'actionUserId',''), NULLIF(p_payload->>'actionUserNm',''), NULLIF(p_payload->>'actionDt',''), NULLIF(p_payload->>'dueDt',''), COALESCE(NULLIF(p_payload->>'status',''),'OPEN'), p_id);
     ELSE
-        UPDATE tbl_corrective_action SET occur_place = NULLIF(p_payload->>'occurPlace',''), deviation_desc = p_payload->>'deviationDesc', action_desc = NULLIF(p_payload->>'actionDesc',''), action_user_id = NULLIF(p_payload->>'actionUserId',''), action_dt = NULLIF(p_payload->>'actionDt',''), due_dt = NULLIF(p_payload->>'dueDt',''), status = COALESCE(NULLIF(p_payload->>'status',''), status), upd_id = p_id, upd_dt = now()
+        -- action_user_nm 은 표에도 있고 읽기 SP 도 내려주고 화면 열도 편집 가능인데 여기서 안 썼다.
+        -- 그래서 개선조치 화면에서 조치자를 고치면 저장 성공 토스트만 뜨고 값이 사라졌다
+        UPDATE tbl_corrective_action SET occur_place = NULLIF(p_payload->>'occurPlace',''), deviation_desc = p_payload->>'deviationDesc', action_desc = NULLIF(p_payload->>'actionDesc',''), action_user_id = NULLIF(p_payload->>'actionUserId',''), action_user_nm = NULLIF(p_payload->>'actionUserNm',''), action_dt = NULLIF(p_payload->>'actionDt',''), due_dt = NULLIF(p_payload->>'dueDt',''), status = COALESCE(NULLIF(p_payload->>'status',''), status), upd_id = p_id, upd_dt = now()
          WHERE idx = v_idx AND co_cd = p_co_cd;
         IF NOT FOUND THEN RAISE EXCEPTION '개선조치를 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
     END IF;
@@ -2989,8 +3018,19 @@ BEGIN
     v_empty := (TRIM(v_dev) = '' AND TRIM(v_act) = '' AND v_anm IS NULL AND v_cnm IS NULL);
 
     IF v_empty THEN
+        /*
+         * 완료(DONE)된 개선조치는 원문서 저장으로 지우지 않는다.
+         *
+         * 이 프로시저는 삭제 버튼이 아니라 **문서 저장 트랜잭션 안**에서 불린다
+         * (HtmlDraftService.save → saveAutoIfNg). 그래서 여기서 RAISE 하면
+         * 문서 헤더·항목·서명 저장까지 통째로 롤백돼, 완료된 개선조치가 달린 문서는
+         * 본문 수정이 영영 안 된다. 막지 않고 **보존만** 한다.
+         *
+         * 기준은 형제 sp_tbl_corrective_action_d_000 과 같다 — 거기도 DONE 은 안 지운다.
+         */
         DELETE FROM tbl_corrective_action
-         WHERE co_cd = p_co_cd AND src_doc_idx = p_doc_idx;
+         WHERE co_cd = p_co_cd AND src_doc_idx = p_doc_idx
+           AND status <> 'DONE';
         RETURN;
     END IF;
 
@@ -3001,12 +3041,21 @@ BEGIN
      LIMIT 1;
 
     IF v_idx IS NULL THEN
+        /*
+         * 연번은 count(*)+1 이 아니라 **최대 연번+1** 이다.
+         * 행이 하나라도 지워지면 count 는 되돌아와 이미 쓴 번호를 다시 집는다 (ca_no UNIQUE 충돌).
+         *
+         * ca_no 는 'CA-YYYYMMDD-NNN' 15자라 연번이 13번째부터 세 자리다.
+         * 형식이 다른 옛 행이 하나라도 있으면 substring(...)::int 가 22P02 로 저장을 통째로 죽인다 —
+         * 그래서 형식 정규식을 같이 건다.
+         */
         v_no := 'CA-' || COALESCE(NULLIF(p_base_dt, ''), to_char(current_date, 'YYYYMMDD'))
                 || '-' || lpad((
-                    SELECT (count(*) + 1)::text
+                    SELECT (COALESCE(MAX(substring(ca_no FROM 13)::int), 0) + 1)::text
                       FROM tbl_corrective_action
                      WHERE co_cd = p_co_cd
                        AND occur_dt = COALESCE(NULLIF(p_base_dt, ''), to_char(current_date, 'YYYYMMDD'))
+                       AND ca_no ~ '^CA-[0-9]{8}-[0-9]{3}$'
                 ), 3, '0');
         INSERT INTO tbl_corrective_action(
             co_cd, ca_no, src_tmpl_cd, src_doc_idx, occur_dt,
@@ -3020,14 +3069,30 @@ BEGIN
             p_id, now()
         );
     ELSE
+        /*
+         * 완료(DONE)된 행은 **완료 상태와 이미 적힌 조치를 지킨다.**
+         *
+         * 예전에는 status 를 조건 없이 CASE 로 덮어, 푸터를 비우지 않고 원문서를 다시 저장만 해도
+         * DONE 이 풀렸다. 그렇다고 UPDATE 를 통째로 막으면 사용자가 친 글이 말없이 사라진다 —
+         * 그래서 **되돌리는 것만** 막고 더하는 것은 통과시킨다.
+         *
+         * 완료 해제는 개선조치 화면(sp_tbl_corrective_action_c_000)이 하는 일이지
+         * 원문서 저장이 하는 일이 아니다.
+         */
         UPDATE tbl_corrective_action SET
             src_tmpl_cd     = COALESCE(NULLIF(p_tmpl_cd, ''), src_tmpl_cd),
             occur_dt        = COALESCE(NULLIF(p_base_dt, ''), occur_dt),
             deviation_desc  = v_dev,
-            action_desc     = NULLIF(v_act, ''),
-            action_user_nm  = v_anm,
-            confirm_user_nm = v_cnm,
-            status          = CASE WHEN TRIM(v_act) = '' THEN 'OPEN' ELSE 'ING' END,
+            -- 완료 건이면 빈 값으로 지우지 않는다. 상태만 DONE 이고 내용이 빈 행이 생기면 안 된다
+            action_desc     = CASE WHEN status = 'DONE'
+                                   THEN COALESCE(NULLIF(v_act, ''), action_desc)
+                                   ELSE NULLIF(v_act, '') END,
+            action_user_nm  = CASE WHEN status = 'DONE'
+                                   THEN COALESCE(v_anm, action_user_nm) ELSE v_anm END,
+            confirm_user_nm = CASE WHEN status = 'DONE'
+                                   THEN COALESCE(v_cnm, confirm_user_nm) ELSE v_cnm END,
+            status          = CASE WHEN status = 'DONE' THEN 'DONE'
+                                   WHEN TRIM(v_act) = '' THEN 'OPEN' ELSE 'ING' END,
             upd_id          = p_id,
             upd_dt          = now()
          WHERE idx = v_idx AND co_cd = p_co_cd;
@@ -3397,7 +3462,9 @@ BEGIN
            SET approver_id = p_id,
                approver_nm = v_user_nm,
                result_cd = 'R',
-               opinion = p_opinion,
+               -- opinion 은 varchar(500). 같은 값이 reject_reason 에서는 left 로 잘리는데
+               -- 여기서 안 자르면 긴 사유가 22001 로 반려 자체를 죽인다. 기준을 맞춘다
+               opinion = left(p_opinion, 500),
                act_dt = now(),
                sign_img = v_sign_img,
                upd_id = p_id,
@@ -3431,7 +3498,8 @@ BEGIN
        SET approver_id = p_id,
            approver_nm = v_user_nm,
            result_cd = 'A',
-           opinion = NULLIF(p_opinion, ''),
+           -- 승인 의견도 varchar(500). 반려와 같은 기준으로 자른다
+           opinion = left(NULLIF(p_opinion, ''), 500),
            act_dt = now(),
            sign_img = v_sign_img,
            upd_id = p_id,
@@ -4749,7 +4817,9 @@ BEGIN
     IF v_status NOT IN ('WRK', 'RJT') THEN
         RAISE EXCEPTION '전송한 문서는 삭제할 수 없습니다. 전송취소 후 삭제하세요.' USING ERRCODE = '45000';
     END IF;
-    DELETE FROM tbl_corrective_action WHERE co_cd = p_co_cd AND src_doc_idx = p_doc_idx;
+    -- 완료(DONE)된 개선조치는 원문서를 지워도 남긴다. 조치 기록이 초안 삭제로 사라지면 안 된다.
+    -- 개선조치 목록은 LEFT JOIN tbl_document 이라 원문서가 없어도 문서 칸만 빈 채로 보인다
+    DELETE FROM tbl_corrective_action WHERE co_cd = p_co_cd AND src_doc_idx = p_doc_idx AND status <> 'DONE';
     DELETE FROM tbl_hyg_process_item WHERE co_cd = p_co_cd AND hdr_idx = v_hdr;
     DELETE FROM tbl_hyg_process WHERE co_cd = p_co_cd AND idx = v_hdr;
     DELETE FROM tbl_document_approval WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;

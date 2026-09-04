@@ -32,7 +32,14 @@ export type Row = WorkflowRow & {
   occurPlace?: string;
   deviationDesc?: string;
   actionDesc?: string;
+  // 조치자 표시명 — 지면·목록에 찍힌다
   actionUserNm?: string;
+  /*
+   * 조치자 ID — 화면에 열은 없지만 저장·조회되고, 오늘 할 일이 이 값으로 담당을 거른다
+   * (`sp_tbl_today_task_doc_r_000`). WorkflowRow 의 인덱스 시그니처 때문에
+   * 타입에 없어도 컴파일이 통과해 왔다. 여기 적어 두고 쓰는 곳을 드러낸다.
+   */
+  actionUserId?: string;
   actionDt?: string;
   dueDt?: string;
   srcDocNo?: string;

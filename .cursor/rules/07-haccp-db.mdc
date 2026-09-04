@@ -73,6 +73,17 @@ grep -cE "CREATE OR REPLACE (FUNCTION|PROCEDURE) sasshaccp\." db_sasshaccp/01_sp
 **순서가 곧 의존이다.** 표 → SP → 플랫폼 시드 → 업체 시드.
 새 파일은 뒤 번호로 붙이고 기존 번호를 재사용하지 않는다.
 
+**1회성 본(`1*_*.sql`)을 뽑았으면 그 뒤에 `01_sp.sql` 을 또 고치지 않는다.**
+고쳤으면 본을 **다시 뽑는다.** 배포 담당이 실제로 돌리는 것은 1회성 본이라,
+둘이 갈라지면 고친 줄이 라이브에 안 간다. 감시가 잡는다:
+
+```sh
+bash scripts/audit_sp_migration.sh
+```
+
+**아직 어느 DB 에도 안 올린 본은 합치거나 이름을 바꿔도 된다.**
+한 번이라도 돌렸으면 그 번호는 끝난 것이고 다음은 새 번호다.
+
 ```sh
 # 플랫폼 초기화 (0000 만)
 PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
