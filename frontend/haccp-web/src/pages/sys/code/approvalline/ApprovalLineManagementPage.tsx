@@ -347,6 +347,14 @@ export default function ApprovalLineManagementPage() {
         apprLineCd: savedCd,
         apprLineNm: String(target.apprLineNm).trim(),
         useYn: (target.useYn as "Y" | "N") ?? "Y",
+        /*
+         * 신규 행인지 알려 준다 — 저장 SP 가 이걸로 업무키 중복을 막는다.
+         *
+         * 이 화면은 형제들과 달리 idx 를 안 주고받아서, 서버가 payload 만으로는
+         * 「새 줄을 만드는 중」과 「기존 줄을 고치는 중」을 못 가른다. 그래서 UPSERT 가
+         * 신규 행에 친 남의 코드까지 받아 그 결재선의 단계를 통째로 갈아 끼웠다.
+         */
+        newYn: target._rowState === "C" ? "Y" : "N",
         steps: stepsToPayload(stepSource),
       });
       mesToast(MES.saveDone, "success");

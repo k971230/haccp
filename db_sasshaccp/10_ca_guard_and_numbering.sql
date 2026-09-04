@@ -22,6 +22,7 @@
 --   K21   sp_tbl_ccp_generic_monitor_c_000 일자 8자리 검증 (형제 셋과 같은 기준)
 --   C7    COMMENT ON 세 줄                  doc_kind 주석을 저장값(HTML)에 맞춘다
 --   K1    sp_tbl_corrective_action_delete_blocker_r_000  **신설** — 삭제 사전 차단
+--   K32   sp_tbl_approval_line_c_000        신규 행의 결재선코드 중복 차단
 --
 -- 적용 전에 세어 둔다 — 이 문서들은 K8 가드 뒤로 전송이 막힌다.
 --
@@ -751,3 +752,84 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_corrective_action_delete_blocker_r_0
        AND ca.status = 'DONE'
      LIMIT 1;
 $$;
+
+-- ── sp_tbl_approval_line_c_000
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_approval_line_c_000(IN p_co_cd character varying, IN p_payload jsonb, IN p_id character varying)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_cd varchar(20) := trim(COALESCE(p_payload ->> 'apprLineCd', ''));
+    v_nm varchar(100) := trim(COALESCE(p_payload ->> 'apprLineNm', ''));
+    -- 신규 행인가 — 화면이 알려 준다. 형제 SP 의 p_idx 자리와 같은 뜻이다
+    v_new boolean := upper(COALESCE(p_payload ->> 'newYn', 'N')) = 'Y';
+    v_step jsonb;
+    v_step_no int;
+    v_role varchar(20);
+    v_use varchar(1);
+BEGIN
+    IF v_cd = '' OR v_nm = '' THEN
+        RAISE EXCEPTION '결재선 코드와 결재선명은 필수입니다.' USING ERRCODE = '45000';
+    END IF;
+    IF jsonb_typeof(COALESCE(p_payload -> 'steps', '[]'::jsonb)) <> 'array'
+       OR jsonb_array_length(COALESCE(p_payload -> 'steps', '[]'::jsonb)) = 0 THEN
+        RAISE EXCEPTION '결재 단계는 한 건 이상 입력하세요.' USING ERRCODE = '45000';
+    END IF;
+
+    /*
+     * 신규 행일 때(= 화면에서 행추가로 만든 줄) 업무키 중복을 막는다.
+     *
+     * 아래 UPSERT 는 기존 결재선 **수정**을 위한 것인데, 신규 행에 이미 있는 코드를 치면
+     * 그 결재선의 이름을 덮고 **바로 아래에서 단계를 통째로 지운 뒤** 새 줄의 단계로 갈아 끼웠다.
+     * 그 결재선을 쓰는 모든 양식의 결재가 누구에게 가는지가 바뀌고 되돌릴 자료가 없다.
+     *
+     * 형제 셋(sp_common_code_management_c_000·sp_department_management_c_000·
+     * sp_role_management_c_000)은 신규일 때 같은 검사를 한다. 기준을 맞춘다.
+     * 그쪽은 p_idx 유무로 신규를 갈랐는데 이 화면은 idx 를 안 받아 payload 의 newYn 으로 받는다.
+     */
+    IF v_new AND EXISTS (
+        SELECT 1 FROM tbl_approval_line
+         WHERE co_cd = p_co_cd AND appr_line_cd = v_cd
+    ) THEN
+        RAISE EXCEPTION '이미 등록된 결재선 코드입니다: %', v_cd USING ERRCODE = '45000';
+    END IF;
+
+    INSERT INTO tbl_approval_line(co_cd, appr_line_cd, appr_line_nm, use_yn, ins_id, ins_dt)
+    VALUES (p_co_cd, v_cd, v_nm, COALESCE(NULLIF(p_payload ->> 'useYn', ''), 'Y'), p_id, now())
+    ON CONFLICT (co_cd, appr_line_cd) DO UPDATE SET
+        appr_line_nm = EXCLUDED.appr_line_nm,
+        use_yn = EXCLUDED.use_yn,
+        upd_id = p_id,
+        upd_dt = now();
+
+    DELETE FROM tbl_approval_line_step
+     WHERE co_cd = p_co_cd AND appr_line_cd = v_cd;
+
+    FOR v_step IN SELECT value FROM jsonb_array_elements(p_payload -> 'steps')
+    LOOP
+        v_step_no := NULLIF(v_step ->> 'stepNo', '')::int;
+        v_role := upper(trim(COALESCE(v_step ->> 'roleCd', '')));
+        IF v_step_no IS NULL OR v_step_no < 1
+           OR v_role NOT IN ('WRITE', 'APPROVE') THEN
+            RAISE EXCEPTION '결재 단계 순번 또는 역할이 올바르지 않습니다.' USING ERRCODE = '45000';
+        END IF;
+        -- 작성·승인은 항상 사용
+        v_use := 'Y';
+        /*
+         * 결재자가 비어도 저장한다 — **여기서 막으면 결재선을 새로 못 만든다.**
+         *
+         * 화면이 두 걸음으로 만든다. 먼저 왼쪽에서 코드·결재선명만 저장해 줄을 만들고
+         * (그때 단계 1~3 이 결재자 없이 깔린다), 그 줄을 골라 오른쪽에서 결재자를 넣는다.
+         * 첫 걸음에서 막으면 두 번째 걸음으로 갈 방법이 없다.
+         *
+         * 「결재자 없는 결재선」이 해를 끼치는 자리는 **그 결재선을 문서주기에 걸 때**다.
+         * 거기서 막는다 (ScheduleCycleManagementPage.handleSave).
+         */
+        INSERT INTO tbl_approval_line_step(
+            co_cd, appr_line_cd, step_no, role_cd, approver_id, dept_cd, pos_cd, use_yn, ins_id, ins_dt
+        ) VALUES (
+            p_co_cd, v_cd, v_step_no, v_role,
+            NULLIF(v_step ->> 'approverId', ''), NULLIF(v_step ->> 'deptCd', ''),
+            NULL, v_use, p_id, now()
+        );
+    END LOOP;
+END$$;

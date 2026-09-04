@@ -1040,6 +1040,19 @@ DB 는 살아 있다 — `01_sp.sql`:2866 UPDATE · :2899 SELECT ·
 
 ### 이 라운드도 안 본 것
 
-- **E2E 2건이 이미 빨갛다.** `schedule-cycle-management.spec.ts:65`(삭제 2단계) ·
-  `today-tasks.spec.ts:101`(더블클릭). **변경 전 기준선에서도 같은 둘이 실패한다** — 원인은 안 팠다
+- **E2E 가 실행마다 다른 곳에서 흔들린다.** 네 번 돌린 결과:
+
+  | 실행 | 실패 |
+  |---|---|
+  | 1·2 | `schedule-cycle-management:65` · `today-tasks:101` |
+  | 3 | 위 둘 + `company-provisioning:76` |
+  | 4 | `sys-common-code:42` · `today-tasks:101` |
+
+  **`today-tasks.spec.ts:101` 만 네 번 다 실패한다** — 나머지는 그 실행에서만 났고
+  **단독으로 돌리면 전부 통과한다**(company-provisioning 6/6 · sys-common-code 3/3).
+  `playwright.config.mjs` 는 `workers: 1`·`fullyParallel: false` 라 병렬 경합이 아니고,
+  같은 라이브 DB 를 사양들이 나눠 쓰는 것이 원인으로 보인다.
+  `retries` 는 로컬에서 0 이라 한 번 흔들리면 그대로 빨갛다.
+  **`today-tasks:101` 하나만 진짜 상수다** — 이것부터 판다. 나머지는 사양 간 상태 격리 문제다.
+  변경 전 기준선에서도 같으므로 이번 수정들 탓은 아니다
 - 업무 계산식의 옳고 그름(한계기준 판정·주기 날짜 생성 규칙)은 여전히 축 밖이다

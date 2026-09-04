@@ -78,10 +78,11 @@ public class ApprovalLineService {
         requireText(row, "apprLineNm", "결재선명을 입력하세요.");
         mapper.saveApprovalLine(LoginUserContext.coCd(), writeJson(row), LoginUserContext.userId());
         /*
-         * 결재선은 UPSERT 한 건이라 등록·수정을 여기서 못 가른다.
-         * 형제 화면은 idx 유무로 갈랐지만 이 화면은 idx 를 안 받는다 — U 로 통일한다.
+         * 화면이 신규 여부를 실어 보낸다(newYn) — 형제 화면의 idx 자리와 같은 뜻이다.
+         * 그 값으로 감사 행위를 가른다. 예전에는 UPSERT 한 건이라 못 가르고 U 로 통일했다.
          */
-        auditWriter.record(AUDIT_TBL, null, "U", row);
+        boolean isNew = "Y".equalsIgnoreCase(String.valueOf(row.get("newYn")));
+        auditWriter.record(AUDIT_TBL, null, isNew ? "I" : "U", row);
     }
 
     /**

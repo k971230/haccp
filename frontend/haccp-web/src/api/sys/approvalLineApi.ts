@@ -36,6 +36,15 @@ export interface ApprovalLine {
   apprLineCd: string;
   apprLineNm: string;
   useYn: "Y" | "N";
+  /*
+   * 신규 행인가 — 저장에만 싣는다. 조회 응답에는 없다.
+   *
+   * 이 화면은 형제 마스터들과 달리 `idx` 를 안 주고받아서, 서버가 payload 만으로는
+   * 「새 줄을 만드는 중」과 「기존 줄을 고치는 중」을 못 가른다. 저장 SP 의 UPSERT 가
+   * 신규 행에 친 남의 코드까지 받아 그 결재선의 단계를 통째로 갈아 끼웠다.
+   * 형제 SP 의 `p_idx` 자리와 같은 뜻이다.
+   */
+  newYn?: "Y" | "N";
   steps: ApprovalStep[];
 }
 

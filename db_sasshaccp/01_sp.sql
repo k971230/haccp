@@ -2170,6 +2170,8 @@ CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_approval_line_c_000(IN p_co_cd char
 DECLARE
     v_cd varchar(20) := trim(COALESCE(p_payload ->> 'apprLineCd', ''));
     v_nm varchar(100) := trim(COALESCE(p_payload ->> 'apprLineNm', ''));
+    -- 신규 행인가 — 화면이 알려 준다. 형제 SP 의 p_idx 자리와 같은 뜻이다
+    v_new boolean := upper(COALESCE(p_payload ->> 'newYn', 'N')) = 'Y';
     v_step jsonb;
     v_step_no int;
     v_role varchar(20);
@@ -2181,6 +2183,24 @@ BEGIN
     IF jsonb_typeof(COALESCE(p_payload -> 'steps', '[]'::jsonb)) <> 'array'
        OR jsonb_array_length(COALESCE(p_payload -> 'steps', '[]'::jsonb)) = 0 THEN
         RAISE EXCEPTION '결재 단계는 한 건 이상 입력하세요.' USING ERRCODE = '45000';
+    END IF;
+
+    /*
+     * 신규 행일 때(= 화면에서 행추가로 만든 줄) 업무키 중복을 막는다.
+     *
+     * 아래 UPSERT 는 기존 결재선 **수정**을 위한 것인데, 신규 행에 이미 있는 코드를 치면
+     * 그 결재선의 이름을 덮고 **바로 아래에서 단계를 통째로 지운 뒤** 새 줄의 단계로 갈아 끼웠다.
+     * 그 결재선을 쓰는 모든 양식의 결재가 누구에게 가는지가 바뀌고 되돌릴 자료가 없다.
+     *
+     * 형제 셋(sp_common_code_management_c_000·sp_department_management_c_000·
+     * sp_role_management_c_000)은 신규일 때 같은 검사를 한다. 기준을 맞춘다.
+     * 그쪽은 p_idx 유무로 신규를 갈랐는데 이 화면은 idx 를 안 받아 payload 의 newYn 으로 받는다.
+     */
+    IF v_new AND EXISTS (
+        SELECT 1 FROM tbl_approval_line
+         WHERE co_cd = p_co_cd AND appr_line_cd = v_cd
+    ) THEN
+        RAISE EXCEPTION '이미 등록된 결재선 코드입니다: %', v_cd USING ERRCODE = '45000';
     END IF;
 
     INSERT INTO tbl_approval_line(co_cd, appr_line_cd, appr_line_nm, use_yn, ins_id, ins_dt)

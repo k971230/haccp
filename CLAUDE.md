@@ -27,7 +27,9 @@ Claude Code 진입점이다. **규칙 본문은 여기 두지 않는다** — �
 - **저장형과 표시형이 다르다.** 날짜는 DB `varchar(8)` `20260827` · 화면 `2026-08-27`.
   컬럼 폭을 화면이 보낼 값보다 좁게 잡으면 `22001` 로 저장이 막힌다 —
   실제로 네 번 났다 ([`docs/4_명명과_경로.md`](docs/4_명명과_경로.md) 10절).
-  **그리드 문자 칸의 `maxLength` 는 DDL 폭과 같은 수다** — `bash scripts/audit_grid_maxlength.sh` 가 대조한다
+  **문자 입력칸의 `maxLength` 는 DDL 폭과 같은 수다** — 그리드(`MesEditableGrid`)와
+  작성 지면(`HtmlFormCellInput`) 둘 다. `bash scripts/audit_grid_maxlength.sh` 가 대조하는데
+  **짝을 적어 둔 칸만 본다** — 새 문자칸을 만들면 `scripts/_grid_maxlength_diff.py` 에 한 줄 더한다
 - **MyBatis 는 컴파일로 안 잡힌다.** 패키지를 옮기면 매퍼 XML `resultType` 도 같이 옮기고
   **반드시 기동해서** 확인한다 (`mvn compile` 통과가 기동 성공을 뜻하지 않는다)
 - **이모지 금지** · **한국어** · git commit/push 는 사용자가 말할 때만
