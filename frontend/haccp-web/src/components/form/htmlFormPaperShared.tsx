@@ -1358,6 +1358,28 @@ export function cellValueAccepted(
 
 /**
  * 개발자: 박승우
+ * 일자: 2026-09-04
+ * 코멘트:
+ *   1) 상한이 있으면 초과분을 자른다. 없으면 그대로 돌려준다
+ *   2) 지면 입력칸이 값을 올리기 직전에 부른다
+ *   3) 순수 함수라 시험이 이것만 태운다
+ *
+ * `maxLength` 속성만으로는 **붙여넣기가 안 잘린다.** 넘겨서 저장하면
+ * 브라우저·BE·SP 어디도 안 자르고 `22001` SQL 오류가 그대로 뜬다 —
+ * 이 계열이 이 저장소에서 네 번 났다 (`docs/4_명명과_경로.md` 10절).
+ */
+export function clampCellValue(
+  // next: 입력기가 올린 값
+  next: string,
+  // maxLength: 저장될 컬럼의 varchar 폭. 없으면 안 자른다
+  maxLength?: number,
+): string {
+  if (maxLength == null || next.length <= maxLength) return next;
+  return next.slice(0, maxLength);
+}
+
+/**
+ * 개발자: 박승우
  * 일자: 2026-08-25
  * 코멘트:
  *   1) 지면 입력칸 하나를 종류에 맞는 입력기·정렬·검증으로 그린다
@@ -1430,12 +1452,11 @@ export function HtmlFormCellInput({
         ? {
             value: value ?? "",
             onChange: (e) => {
-              let next = e.target.value;
+              const next = e.target.value;
               // 숫자칸에 숫자·부호·소수점 외의 글자가 들어올 때(= 한글 IME 등) 이전 값을 지킨다
               if (!cellValueAccepted(kind, next)) return;
-              // 상한이 있을 때 초과분을 자른다 — 붙여넣기는 maxLength 속성만으로 안 막힌다
-              if (maxLength != null && next.length > maxLength) next = next.slice(0, maxLength);
-              onChange?.(next);
+              // 붙여넣기는 maxLength 속성만으로 안 막힌다
+              onChange?.(clampCellValue(next, maxLength));
             },
           }
         : {})}

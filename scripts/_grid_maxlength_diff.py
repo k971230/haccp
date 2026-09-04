@@ -81,7 +81,10 @@ MAP = {
     },
 }
 
-BLOCK = re.compile(r'\{[^{}]*?field:\s*"[a-zA-Z0-9_]+"[^{}]*?\}', re.S)
+# 컬럼 한 덩이. cellButton 처럼 **중첩 객체가 든 컬럼**도 잡아야 한다 —
+# 중첩을 못 보면 값이 있는데 「maxLength 가 없다」고 거짓 경보를 낸다.
+_INNER = r'(?:[^{}]|\{[^{}]*\})'
+BLOCK = re.compile(r'\{' + _INNER + r'*?field:\s*"[a-zA-Z0-9_]+"' + _INNER + r'*?\}', re.S)
 
 
 def ddl_widths():

@@ -42,6 +42,10 @@ import { treePanelHeadClass } from "@/components/layout/TreePanelSearch";
 import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 권한·비동기·편집행·셸 명령
 import { useAuthStore } from "@/stores/authStore";
+// 역할 — 조치자 룩업 팝업
+import { useModalStore } from "@/stores/modalStore";
+// 역할 — 조치자 후보
+import { listUsers } from "@/api/sys/userApi";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useEditableRows } from "@/hooks/useEditableRows";
 import { usePageCommands } from "@/shell/pageCommands";
@@ -74,6 +78,9 @@ export default function CorrectiveActionManagementPage() {
   const canDelete = useAuthStore((s) => s.can(SCRN_CD, "delete"));
   const asyncAct = useAsyncAction();
   const g = useEditableRows<Row>("idx");
+  const openModal = useModalStore((s) => s.openModal);
+  // 조치자 후보 — 화면 진입 시 한 번만 읽는다
+  const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
 
   // 검색 조건 — 일자 구간·양식·작성자. 다른 작성 화면과 같은 순서다
   const [search, setSearch] = useState({ fromDt: "", toDt: "", tmplCd: "", writer: "" });
@@ -94,9 +101,57 @@ export default function CorrectiveActionManagementPage() {
     () => caStatusCodes.map((row) => ({ value: row.subCd, label: row.codeNm })),
     [caStatusCodes],
   );
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-09-04
+   * 코멘트:
+   *   1) 조치자를 사용자 목록에서 고르고 ID·이름을 같이 채운다
+   *   2) 조치자 칸의 룩업 버튼이 호출한다
+   *   3) 사용자관리 권한그룹·부서 룩업과 같은 형태다
+   *
+   * 자유입력이면 action_user_id 가 영영 비어 있고, 그러면
+   * `sp_tbl_today_task_r_000` 의 `action_user_id IS NULL OR = p_user_id` 가 늘 참이라
+   * **미완료 개선조치가 회사 전원의 오늘 할 일에 뜬다.** 담당 지정이 통째로 죽어 있었다.
+   */
+  const openActionUserLookup = useCallback((row: Row) => {
+    if (!row._key) return;
+    const rowKey = row._key;
+    // 이 화면은 활성행 상태를 따로 안 든다 — 그리드가 클릭한 행을 이미 잡고 있다
+    openModal("CodeLookup", {
+      title: "조치자 선택",
+      scrnCd: SCRN_CD,
+      options: userOptions,
+      value: String(row.actionUserId ?? ""),
+      // 담당을 비우면 전원에게 보이는 것이 정본 동작이라 (없음)을 남긴다
+      allowEmpty: true,
+      onSelect: (code, label) => {
+        g.updateCell(rowKey, "actionUserId", code);
+        g.updateCell(rowKey, "actionUserNm", label);
+      },
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- g.updateCell 안정 참조
+  }, [openModal, userOptions]);
+
+  useEffect(() => {
+    // 조치자 후보 — 진입 시 한 번. 사용 중인 계정만 고를 수 있게 한다
+    void (async () => {
+      try {
+        const users = await listUsers();
+        setUserOptions(
+          users
+            .filter((u) => String(u.useYn ?? "Y").toUpperCase() === "Y")
+            .map((u) => ({ value: String(u.userId ?? ""), label: String(u.userNm ?? u.userId ?? "") }))
+            .filter((o) => o.value),
+        );
+      } catch (error) {
+        mesError(error);
+      }
+    })();
+  }, []);
+
   const columns = useMemo(
-    () => buildColumns(statusOptions, caStatusNm),
-    [statusOptions, caStatusNm],
+    () => buildColumns(statusOptions, caStatusNm, canWrite || canModify ? openActionUserLookup : undefined),
+    [statusOptions, caStatusNm, canWrite, canModify, openActionUserLookup],
   );
 
   /**

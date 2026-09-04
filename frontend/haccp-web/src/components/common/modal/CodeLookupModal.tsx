@@ -148,7 +148,14 @@ export function CodeLookupModal({
                   runSearch();
                 }
               }}
-              autoFocus
+              /*
+               * autoFocus 를 켜지 않는다.
+               *
+               * 켜면 팝업이 뜬 직후 첫 행 클릭이 **포커스 이동에만** 쓰이고 선택이 안 붙어
+               * 사용자가 두 번 눌러야 한다. 형제 팝업(HtmlFormLookupModal)에서 같은 증상이 나
+               * 현장 검증에 「양식 선택 팝업 첫 클릭이 안 먹는다」로 올라왔고 거기서 뺐다.
+               * 이 팝업은 onRowClick 이 곧 확정(pick)이라 같은 자리다.
+               */
             />
             <input
               // 코드명 부분검색

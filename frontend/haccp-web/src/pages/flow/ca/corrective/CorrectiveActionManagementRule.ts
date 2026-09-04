@@ -72,6 +72,8 @@ export function buildColumns(
   statusOptions: { value: string; label: string }[],
   // 상태 코드 → 표시명 — 같은 공통코드에서 나온 맵
   statusNm: Record<string, string>,
+  // 조치자 룩업 — 권한이 없으면 undefined 라 버튼이 안 뜬다
+  onActionUserLookup?: (row: Row) => void,
 ): GridColumn<Row>[] {
   return [
     { field: "baseDt", header: "일자", width: 100, type: "date", editable: false },
@@ -82,7 +84,19 @@ export function buildColumns(
     { field: "deviationDesc", header: "이탈내용", width: 220, editable: true },
     { field: "occurPlace", header: "발생장소", width: 120, maxLength: 200, editable: true },
     { field: "actionDesc", header: "조치내용", width: 240, editable: true },
-    { field: "actionUserNm", header: "조치자", width: 90, maxLength: 50, editable: true },
+    {
+      /*
+       * 조치자 — 룩업으로만 고른다. 자유입력이면 짝인 actionUserId 가 안 채워지고,
+       * 그러면 sp_tbl_today_task_r_000 의 담당 필터가 늘 참이라
+       * 미완료 개선조치가 회사 전원의 오늘 할 일에 뜬다.
+       */
+      field: "actionUserNm",
+      header: "조치자",
+      width: 90,
+      maxLength: 50,
+      editable: false,
+      cellButton: onActionUserLookup ? { title: "조치자", onClick: onActionUserLookup } : undefined,
+    },
     { field: "actionDt", header: "조치일", width: 110, type: "date", editable: true },
     { field: "dueDt", header: "기한", width: 110, type: "date", editable: true },
     {

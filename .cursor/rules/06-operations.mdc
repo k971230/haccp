@@ -47,7 +47,6 @@ alwaysApply: true
 |-----|------|------|
 | `VITE_GRID_DEFAULT_PAGE_SIZE` | 50 | 그리드 페이징(예약) |
 | `VITE_GRID_VIRTUAL_THRESHOLD` | 100 | 가상화 임계 |
-| `VITE_SEARCH_DEBOUNCE_MS` | 300 | 검색 디바운스 |
 | `VITE_API_RETRY_COUNT` | 2 | GET 재시도 |
 | `VITE_DASHBOARD_POLLING_MS` | 120000 | 오늘 할 일·일정 캘린더 폴링 |
 | `VITE_TODAY_TASKS_RECENT_DAYS` | 7 | 오늘 할 일 최근 문서 일수 |
