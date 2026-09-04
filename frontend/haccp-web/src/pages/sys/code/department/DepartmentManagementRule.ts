@@ -73,11 +73,11 @@ export function buildDeptColumns(
       // 부서코드 — 업무키. 저장 뒤에는 잠긴다(DEPT_RULES.newOnly)
       field: "deptCd",
       header: "부서코드",
-      width: 100,
+      width: 100, maxLength: 20,
       required: true,
       editableOnNew: true,
     },
-    { field: "deptNm", header: "부서명", width: 140, editable, required: true },
+    { field: "deptNm", header: "부서명", width: 140, maxLength: 100, editable, required: true },
     {
       // 상위부서코드 — 기본 숨김, 「열」메뉴로 표시·pref 저장 가능
       field: "hDeptCd",

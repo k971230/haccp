@@ -77,7 +77,7 @@ export function buildListColumns(
       // 양식명 — 시스템제공도 회사 표시명을 바꿀 수 있다
       field: "tmplNm",
       header: "양식명",
-      width: 200,
+      width: 200, maxLength: 200,
       required: true,
       editable: canEdit,
     },

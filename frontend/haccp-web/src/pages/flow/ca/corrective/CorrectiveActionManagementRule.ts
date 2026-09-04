@@ -80,9 +80,9 @@ export function buildColumns(
     { field: "writerNm", header: "작성자", width: 90, editable: false },
     { field: "caNo", header: "이탈번호", width: 130, editable: false },
     { field: "deviationDesc", header: "이탈내용", width: 220, editable: true },
-    { field: "occurPlace", header: "발생장소", width: 120, editable: true },
+    { field: "occurPlace", header: "발생장소", width: 120, maxLength: 200, editable: true },
     { field: "actionDesc", header: "조치내용", width: 240, editable: true },
-    { field: "actionUserNm", header: "조치자", width: 90, editable: true },
+    { field: "actionUserNm", header: "조치자", width: 90, maxLength: 50, editable: true },
     { field: "actionDt", header: "조치일", width: 110, type: "date", editable: true },
     { field: "dueDt", header: "기한", width: 110, type: "date", editable: true },
     {

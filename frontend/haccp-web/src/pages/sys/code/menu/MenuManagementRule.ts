@@ -76,7 +76,7 @@ export function buildMenuColumns(
     { field: "grpBNm", header: "중분류", width: 120, editable: false },
     { field: "grpCNm", header: "소분류", width: 140, editable: false },
     { field: "menuCd", header: "메뉴코드", width: 140, editable: false, required: true },
-    { field: "menuNm", header: "메뉴명", width: 160, editable, required: true },
+    { field: "menuNm", header: "메뉴명", width: 160, maxLength: 100, editable, required: true },
     { field: "hMenuCd", header: "상위메뉴", width: 120, editable: false },
     { field: "scrnCd", header: "화면코드", width: 160, editable: false },
     { field: "sortNo", header: "정렬코드", width: 80, type: "number", editable: false },

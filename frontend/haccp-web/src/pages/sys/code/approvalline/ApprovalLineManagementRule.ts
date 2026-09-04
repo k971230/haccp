@@ -135,7 +135,7 @@ export function buildHeaderColumns(
       // 결재선 업무키 — 신규 행에서만 입력
       field: "apprLineCd",
       header: "결재선코드",
-      width: 120,
+      width: 120, maxLength: 20,
       required: true,
       editableOnNew: true,
     },
@@ -143,7 +143,7 @@ export function buildHeaderColumns(
       // 결재선 표시명
       field: "apprLineNm",
       header: "결재선명",
-      width: 160,
+      width: 160, maxLength: 100,
       required: true,
       editable,
     },

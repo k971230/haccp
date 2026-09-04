@@ -66,12 +66,12 @@ export function buildRoleColumns(
       // 그룹코드 — 업무키. 저장 뒤에는 잠긴다(ROLE_RULES.newOnly)
       field: "usrgrpCd",
       header: "그룹코드",
-      width: 110,
+      width: 110, maxLength: 20,
       required: true,
       editableOnNew: true,
     },
-    { field: "usrgrpNm", header: "그룹명", width: 140, editable, required: true },
-    { field: "descRmk", header: "설명", width: 180, editable },
+    { field: "usrgrpNm", header: "그룹명", width: 140, maxLength: 100, editable, required: true },
+    { field: "descRmk", header: "설명", width: 180, maxLength: 300, editable },
     {
       field: "useYn",
       header: "사용여부",
