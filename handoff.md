@@ -176,9 +176,9 @@ PR #95 머지됨 (`6362c68`). 08 은 지운 채. Jenkins 는 안 눌렀다 — �
 |---|---|---|---|
 | 0 | 세팅 — `INDEX.md`·`gen_index.mjs`·메모리 | 만든다 | 끝 |
 | 1 | `.cursor/rules/` 체인 검수 | md 고친다 | 끝 (R1~R11 · 41건) |
-| 2 | 지정 md 전부 검수 (라운드 최대 30) | **md 만 고친다** | **진행 중 — R1·R2 끝, R3 도는 중** |
-| 3 | 프론트·백엔드 코드 검토 | **안 고친다.** 수정대상·크리티컬만 지정해 한 번에 보고 | 대기 |
-| 4 | 소스 주석 계획을 여기 적는다 → 다른 에이전트가 수정 | 계획만 | 대기 |
+| 2 | 지정 md 전부 검수 (라운드 최대 30) | **md 만 고친다** | **끝** — R1~R10 · 38건 판정(결함 37·기각 1) · md 55본 반영 |
+| 3 | 프론트·백엔드 코드 검토 | **안 고친다.** 수정대상·크리티컬만 지정해 한 번에 보고 | **끝** — R1·R2 · 11건 지정(P0 2 · P1 3 · P2 3 · P3 3) |
+| 4 | 소스 주석 계획을 여기 적는다 → 다른 에이전트가 수정 | 계획만 | **끝** — 아래 「4단계」 절 |
 
 **md 만 고친다.** `docs/8_결정_이력.md` 「문서 검수는 md 만 고친다」가 정본이다.
 소스·생성기·SQL 은 이 루프에서 안 만진다.
@@ -202,6 +202,14 @@ Critic·Defender 는 `Read`·`Grep`·`Glob` 만 쓴다. 고치는 손은 메인 
 | 2 | `docs/` 11본 | 5건 | 5건 전부 결함 | 5건 |
 | 3 | 루트 나머지 9본 (`README`·`CLAUDE`·`AGENTS`·`DEPLOY`·`E2E`·`E2E_ERRORS`·`환경구축`·`운영`·`세션_인수인계`) | 5건 | 5건 결함 (4번은 `:8` 만) | 5건 |
 | 4 | `frontend/` README 67본 + `PIPELINE.md` | 5건 | 5건 전부 결함 | 5건 + 파생 6본 |
+| 5 | `backend/` README 101본 + `PIPELINE.md` | 5건 | 5건 전부 결함 (3번은 「표 누락」으로 좁힘) | 5건 |
+| 6 | 미검수 층 — `pages/draft`·`board`·`flow`·`sys` · `com/haccp/{board,draft,flow}` · 루트 폴더 README 4본 | 5건 | 5건 전부 결함 | 5건 |
+| 7 | 수렴 확인 — R1~R6 상호 모순 + 미검수 잔여 층 | 4건 | 4건 전부 결함 (메인이 직접 대조) | 4건 |
+| 8 | 종결 확인 | 1건 | 결함 | 2본 |
+| 9 | 최종 확인 | 3건 | 2건 결함 · 1건 결함 아님(과거 회차 표) | 4곳 |
+| 10 | 종결 | **결함 없음** | — | — |
+
+**2단계 종료 — 종료조건 ① (Critic 이 `결함 없음`).**
 
 ### R1 반영 내역
 
@@ -256,6 +264,57 @@ Critic·Defender 는 `Read`·`Grep`·`Glob` 만 쓴다. 고치는 손은 메인 
 
 `api/docs/README.md`:24 의 `hygiene-process-check` 는 "삭제된 화면" 이라는 **과거 기록이라 뒀다**.
 
+### R5 반영 내역 (백엔드 README)
+
+| # | 무엇 | 어떻게 |
+|---|---|---|
+| 1 | `sys/code/menu`·`commoncode` README 가 **SP 정본을 `02_seed.sql` 로 지목** (실제 9본 전부 `01_sp.sql`) | 두 곳 `01_sp.sql` 로. 형제 6본은 원래 맞았다 |
+| 2 | `mapper/docs/sch/README.md`:7 SP 이름이 `sp_schedule_cycle_management_` 로 잘리고 호출 SP 4본 누락 | XML 이 실제로 부르는 8본 전부로 교체 |
+| 3 | `backend/PIPELINE.md` 에 `board` 층 누락 — `@Scheduled` 3개 중 `DailyTaskGenerationJob` 빠짐, URL 표에 `/api/v1/board/**` 없음 | 두 표에 행 추가. **명명 규칙 위반은 아니다** — 중분류 아래 화면이 하나뿐이면 그 단을 생략한다는 규칙에 맞는다. 그 근거도 한 줄 적음 |
+| 4 | `common/auth/README.md` 예외 목록에 `/board/notifications` 누락 (전용 화면 없이 `today-tasks` 권한으로 대체 판정) | 행 추가. 같은 파일 권한 칸이 4종이라 적힌 것도 실제 6종(`READ·WRITE·MODIFY·SAVE·DELETE·PRINT`)으로 |
+| 5 | `mapper/sys/README.md` 매퍼 스캔 경로가 `classpath*:mapper/**` (실제 `classpath:/mapper/**`), 예시가 `sasshaccp.sp_…` 로 스키마를 붙임 (실제 XML 0건), `{ CALL }` 중괄호 (실제 0건) | 넷 다 실물로. "스키마는 안 붙인다 — `currentSchema`·`search_path` 가 잡는다" 한 줄 추가 |
+
+### R6 반영 내역 (미검수 층)
+
+| # | 무엇 | 어떻게 |
+|---|---|---|
+| 1 | **P0** `db_sasshaccp/README.md` 수동 설치 절차가 `05` 에서 끝난다 — `07_company_forms.sql` 누락 | 추가. `apply-all.sh` 4단계는 `0000` 에도 07 을 무조건 돌린다 (`02_seed` 가 `tbl_html_*_ver` 를 안 만든다). **그대로 깔면 작성 화면 양식이 0건.** `06` 은 `0000` 에 안 돌린다는 것도 명시 |
+| 2 | `com/haccp/draft/README.md` 트리가 없는 `draft/hyg/`·`draft/ccp/`, 중분류를 `hyg`·`ccp-chk` 로 (저장소 전체 0건) | 실물 `html`·`ccpmonitoring`·`hwpdoc`·`dto` 로 교체. CCP 3화면·HWP 1화면을 표에 추가. `draft/html/README.md`:10 중분류도 `html` 로 |
+| 3 | `pages/flow/appr/README.md` 첨부 경로가 `{회사}/{연}/{월}/{파일idx}_{원본명}` — 하위 README·코드와 다름 | 실물 `…/HaccpLogBooks/{회사}/{양식}/{일자}/{일자}_{원본명}_{연번}.{확장자}` 로. 하위 `attach/README.md` 꼬리 `…` 도 채움 |
+| 4 | 삭제된 검토(`REV`) 단계가 4곳에 남고 서로 반대로 말함 — `flow/README.md` 는 "켜면 동작", `appr/README.md` 는 "없다" | **켤 스위치가 없다**는 근거(`sp_tbl_approval_line_c_000` 이 `WRITE`·`APPROVE` 밖을 `45000` 거부)로 통일. 상태표 `REQ`·`REV` → `REQ` |
+| 5 | `scripts/README.md` 에 8본 누락 (백업·복구·생성기 전부) | 22본 전수 등재. 「생성 문서」 절 신설 — 어느 생성기가 `docs/3`·`5`·`9`·`10`·`INDEX.md` 를 만드는지 |
+
+5번은 Defender 가 **내 수정 뒤의 파일**을 읽어 「결함 아님」을 냈다. 실제로는 결함이었고 반영 완료다.
+`ops_path_gateway_cutover.sh` 를 유령으로 본 내 지적은 취소 — 6줄이 "제거됨" 이라 적은 과거 기록이다.
+
+### R7 반영 내역 (수렴 확인)
+
+| # | 무엇 | 어떻게 |
+|---|---|---|
+| 1 | 작성 문서 저장 경로 세그먼트가 **뒤집혀** 있다 — `{co_cd}/{일자}/{tmpl_cd}` vs 실제 `{co_cd}/{tmpl_cd}/{일자}` | md 2곳(`07-haccp-db.mdc`:123 · `templates/README.md`:7) 정정. `application.yml`:101 · `.env.example`:74 는 코드라 보고만 (C5) |
+| 2 | `08-haccp-backend.mdc`:25 가 없는 패키지 `docs.ccp` 를 규칙 예시로 듦 | `draft.ccpmonitoring` 으로 |
+| 3 | DDL COMMENT 가 `doc_kind` 를 `DB` 라 적어 **생성 문서로 새어 나감** (`docs/10` 3줄) | SQL 이라 안 고침 — C7 로 보고 |
+| 4 | 폐기된 옛 문서번호(`docs/9`·`10`·`15`·`17`·`23`·`24`)가 FE README 4본에 링크 라벨로 남음 | 실제 파일명으로. `docs/9`·`docs/10` 은 지금 SP 색인·테이블 레이아웃이라 **반대로 읽히던** 자리다 |
+
+Critic 이 확인한 나머지 층(`lib`·`hooks`·`routes`·`config`·`stores`·`types`·`utils`·`styles` 스텁,
+`shell/README.md`, `components/document/README.md`)은 깨끗하다.
+
+### R8·R9 반영 내역 — 검토(REVIEW) 단계 잔재
+
+2026-09-03 에 시드·SP·화면에서 지운 검토 단계가 **사용자 매뉴얼에 현재형으로 살아 있었다.**
+같은 문서 안에서 앞뒤가 어긋나던 자리다.
+
+| 파일 | 전 | 후 |
+|---|---|---|
+| `사용자_매뉴얼.md`:245 | 결재선이 「1 작성 · 2 검토 · 3 승인」 세 줄 | 「1 작성 · 2 승인」 두 줄 |
+| `사용자_매뉴얼.md`:250 | 「**3 승인** 줄의 결재자」 | 「**2 승인** 줄의 결재자」 |
+| `사용자_매뉴얼.md`:267-268 | "검토(2단계)는 기본이 사용안함. 두 단계 결재를 원하면 사용으로 바꾼다" | "검토 단계는 없다. 작성 → 승인 둘로만 흐른다" |
+| `사용자_매뉴얼.md`:614 | 결재 진행상태 「1차 작성 · 2차 검토 · 3차 승인」 | 「작성 · 전송 · 결재」 |
+| `사용자_매뉴얼.md`:667 | "결재선에 검토 단계가 있으면 그 승인이 검토 처리로 나간다" | "검토 단계는 없다" |
+| `.cursor/rules/07-haccp-db.mdc`:114 | "**꺼 둔** 검토 단계는 넣지 않는다" (아직 있는 것처럼 읽힘) | "2026-09-03 에 지웠다" + `45000` 거부 근거 |
+
+`E2E.md`:85·89 는 「3. 스펙별 결과 **(1회차 68건 기준)**」 절 안이라 과거 회차 기록 — **결함 아님**.
+
 ### 채번 규칙 `tml_` → `html_` — 문서 쪽 마감 (2026-09-03)
 
 DB·시드(`tbl_doc_no_rule` 의 `tmpl_cd`·`prefix`)·`E2E.md`:237 은 이미 `html_` 로 맞았다.
@@ -308,7 +367,100 @@ DB·시드(`tbl_doc_no_rule` 의 `tmpl_cd`·`prefix`)·`E2E.md`:237 은 이미 `
 
 | C6 | `Jenkinsfile`:174 · `scripts/{audit_docs_links,audit_file_size_alignment,audit_ops_delete,gen_selfsigned,init_volumes,install_rhwp,prod_smoke}.sh` 머리주석 | **삭제된 런북(`docs/20_배포_런북.md`)의 절 번호 `§9·§10·§11·§15·§19`** 를 8곳이 아직 호출처로 적는다. 문서 쪽은 전부 재지정했다 | 보고만 |
 
-3단계에서 C4·C5·C6 를 포함해 한 번에 낸다.
+| C7 | `db_sasshaccp/00_ddl.sql`:2713·4901·4915 | `COMMENT ON COLUMN` 이 `doc_kind` 를 **`DB`** 라 적는다 (정본은 `HTML`·`HWP`). 생성기가 그대로 옮겨 `docs/10_테이블_레이아웃.md` 3줄이 없는 값을 말한다 — **문서만 고치면 `--check` 가 깨진다** | 보고만 |
+| C8 | `docs/3_화면_지도.md` · `docs/5_PIPELINE_색인.md` | 소스와 어긋나 있다 (`audit_generated_docs` 실패). 다른 세션의 결재 4화면 통일·`board` 변경 뒤로 안 뽑았다. **생성기는 이 루프에서 안 돌린다** — `node scripts/gen_screen_map.mjs` · `gen_pipeline_index.mjs` | 보고만 |
+
+
+### 코드검토 R1 — 규칙 위반 (2026-09-03)
+
+Critic 5건 → Defender 가 등급 3건 하향·1건 프레이밍 기각·2건 병합.
+**추가 P0 훑기 결과 없음** — `@DeleteMapping` 0건, 컨트롤러가 본문 `coCd` 를 안 받는다(전부 `LoginUserContext`).
+
+| # | 무엇 | 등급 | 고칠 자리 |
+|---|---|---|---|
+| K1 | **개선조치 `validate-delete` 가 차단 조건을 안 본다** — Double Check 가 아니라 Single Check. 완료(`DONE`) 건도 위험 확인창까지 뜬 뒤 `delete` 에서 `45000`. 여러 건 동시 삭제면 정상 건까지 롤백 | P2 | 3층 동시 — `01_sp.sql` 에 `sp_tbl_corrective_action_delete_blocker_r_000` 신설 · `flow/ca` Mapper.java·XML(`HtmlDraftMapper.xml`:128-133 의 `foreach` 복제) · `CorrectiveActionService.java`:104·124 양쪽에서 `DeleteValidation.throwIfBlocked`. 골드는 `DocumentService.assertDeletable` |
+| K2 | `mapper/board/TaskMapper.xml`:17 이 `SELECT co_cd FROM tbl_company` — **매퍼 33본 중 유일한 직접 테이블 접근**. 배치(`DailyTaskGenerationJob`)가 쓴다 | P3 | `sp_tbl_company_r_000` 신설 후 호출로 교체. 파라미터 없는 상수 SQL 이라 실행 위험은 0 |
+| K3 | **죽은 env knob 2개** — `envConfig` 의 `SEARCH_DEBOUNCE_MS`·`API_RETRY_COUNT` 가 소비처 0건인데 `.env.example`:18-19 가 운영 knob 처럼 광고한다. 실제 재시도는 `main.tsx`:35 의 `retry: 1` 고정 | P2 | `main.tsx`:35 를 `API_RETRY_COUNT` 로 연결(한 줄). `SEARCH_DEBOUNCE_MS` 는 소비자가 없으니 `GRID_DEFAULT_PAGE_SIZE` 처럼 「예약」 명시하거나 `.env.example` 과 같이 삭제 |
+| K4 | 인쇄 대기 `180_000` 이 `printHwpDocuments.ts`:66 · `DocumentPrintLayer.tsx`:132 에 각각 하드코딩 | P3 | `components/document/` 에 공유 상수 하나. **`API_TIMEOUT_FILE_MS` 로 통합하면 안 된다** — 그건 axios 네트워크 타임아웃이고 이건 인쇄 대화상자 상한이다 |
+
+**기각:** `GridChrome.tsx`:33 의 `FILTER_DEBOUNCE_MS = 250` 을 `SEARCH_DEBOUNCE_MS`(300)로 바꾸라는 지적.
+250 은 **클라이언트 메모리 필터** debounce 고 300 은 서버 호출용이라 같은 knob 이 아니다.
+
+### 코드검토 R2 — 크리티컬 (2026-09-03)
+
+Critic 이 P0 세 건을 냈고 Defender 가 재현 경로를 끝까지 따라가 **P0 하나만 유지**했다.
+그 과정에서 **지적에 없던 자료 삭제 경로**를 새로 찾았다 (K5-b).
+
+| # | 무엇 | 등급 | 고칠 자리 |
+|---|---|---|---|
+| K5 | **HWP 저장이 편집기에 떠 있는 내용을 그대로 올린다.** `uploadBody(docIdx)` 가 편집기가 어느 문서를 들고 있는지 확인하지 않는다. 좌측 일괄 저장으로 만든 비활성 행은 본문 파일이 없어 열어도 `wait` 분기가 `loadFile` 없이 return → **앞 문서 본문이 그대로 남고**, 저장하면 그게 새 문서의 `HWP_SRC` 가 된다. `selecting` 잠금은 HTML 지면에만 걸려 HWP 경로에 안 닿는다 | **P0** | `HwpEditorPane` 이 연 문서 키를 부모에 올리고(`onOpened(docIdx)`), `HwpDraftPage.uploadBody`:98 에 `if (openedDocIdxRef.current !== docIdx) return;` **한 줄**. 이 한 줄이 `:183-186`·`:136-140` 두 분기를 같이 막는다 |
+| K5-b | **완료된 개선조치가 저장 한 번에 물리 삭제된다.** `sp_tbl_doc_corrective_u_000`:2992 의 DELETE 가 상태를 안 본다 — `sp_tbl_corrective_action_d_000`:2881 은 `status <> 'DONE'` 으로 막는데 이쪽은 없다. 원문서 이탈 푸터를 비우고 저장하면 완료 건도 사라진다. HWP 화면만 `HwpDraftService.applyDeviation`:193-199 가 막고 **HTML 지면 5화면은 막는 곳이 없다** | **P0** | `01_sp.sql`:2992 DELETE 에 `AND status <> 'DONE'` |
+| K6 | 개선조치 번호를 `count(*)+1` 로 채번한다 (`01_sp.sql`:3006). 행을 지우면 번호가 되돌아온다 — 같은 기준일에 다른 이탈 건이 남아 있으면 재입력이 `23505` 로 **저장 통째 실패**(점검 행까지 롤백). `_c_000`:2862 는 접두 `current_date` · 카운트 `occur_dt` 라 삭제 없이도 충돌하지만 **화면에 행추가가 없어 도달 불가** | P1 | `:3006` 을 `max(연번)+1` 또는 시퀀스로. 골드는 같은 파일 `sp_tbl_doc_no_gen_c_000`:3049-3099 (채번 표 + `pg_advisory_xact_lock`) |
+| K7 | HWP 본문 덮어쓸 때 **옛 실물을 먼저 지운다**. 메타 DELETE 는 트랜잭션 안, `Files.deleteIfExists` 는 즉시. 이후 `storage.save`·`insertFile` 이 던지면 메타만 롤백돼 살아나고 **DB 에는 있는데 파일이 없는 상태**가 된다 | P1 | `DocumentService.java`:244-246 의 `replaceExistingHwpSrc` 를 insert 성공 뒤로 옮기고, 실물 삭제는 `afterCommit` 으로 미룬다 |
+
+**기각:** `sp_tbl_ccp_generic_monitor_c_000`:2451 의 `row_seq` — 가드 차이는 사실이나
+UNIQUE 가 막고 저장마다 전체 DELETE 후 재INSERT 라 누적이 없다. 화면도 `max+1` 이다.
+남는 차이는 오류 문구뿐(업무 메시지 vs 원시 `23505`) — 맞추려면 `:2451` 에 `<= 0` 가드 한 줄.
+
+**등급이 내려간 이유 (기록):** K6·K7 은 Critic 이 P0 이라 했으나
+K6 은 UNIQUE 가 잘못된 값의 **저장을 막아** 「오염」이 아니라 「실패」이고,
+K7 은 결재 잠금 경로가 `d_001`:3830 에서 먼저 막혀 **사용자 조작만으로는 안 난다**(IO 장애 필요).
+
+3단계 보고 대상: C4~C8 · K1~K7.
+
+---
+
+## 5단계 — 수정 계획 → [`plan.md`](plan.md)
+
+**코드는 안 고쳤다.** 계획만 짰고 루트 `plan.md` 에 있다.
+Critic·Defender 를 세 번 걸어 **초안의 P0 둘을 걸러냈고**, 3차에서 P0 둘이 **더 나왔다**
+(`plan.md` 7절에 이력).
+
+## 6단계 — 라스트 현장 라운드 판정 (2026-09-04)
+
+현장 원자료 `grokbot/test/부하LAST.md` · `따까리RE.md` ·
+`따까리_메뉴얼검증/08`·`09`·`10`·`11` 의 결함 주장을 소스로 판정했다.
+**판정 정본: `grokbot/test/따까리_메뉴얼검증/12_라스트판정.md`** — `.gitignore:82` 로 **저장소 밖이다.**
+새로 받은 사람에게는 없다. 실행에 필요한 것은 `plan.md` 에 다 옮겨 놨다.
+(`03_판정.md` 는 뒤집지 않았다. 같은 줄기는 재현·종결만 적었다.)
+
+확정 7건을 `plan.md` 에 접었다 — **K8·K9 는 P0 로 맨 앞**이다.
+
+| 새 항목 | 무엇 | 층 |
+|---|---|---|
+| **K8** | 본문 없는 HWP 문서가 전송·승인된다. **K5 와 한 커밋** | FE + SP |
+| **K9** | 부적합인데 이탈내용이 자동문구·공란인 채 승인된다 | FE |
+| K10 | 개선조치 「조치자」가 저장 안 되는데 성공 토스트 | FE + SP |
+| K11 | 잠긴 계정을 화면에서 못 푼다 (DB·SP·BE 는 열려 있다) | FE |
+| K12 | 결재 상세 경합 → 오승인 창 | FE |
+| K13 | HWP 결재 미리보기 도장 미갱신 (HTML 은 `8497736` 에서 닫힘) | FE |
+| K14 | `CodeLookupModal` autoFocus — 03_판정 A 의 형제 호출부 | FE |
+| K15 | `openCaCnt` 를 화면이 버린다 | FE |
+
+**결함 아님으로 닫은 것:** 기간 빈칸(코드가 그 결과를 못 만든다·재확인 대기) ·
+KPI 16 vs 19(모수가 다르다) · 시스템 메뉴 미노출(정본 시드에 다 있다·라이브 데이터) ·
+`/settings/password`(매뉴얼이 이미 맞다) · CA 날짜 `mm/dd/yyyy`(브라우저 로캘 표기).
+
+**Defender 가 세션 한도로 죽어 방어를 메인이 소스로 대신했다.** 6건 전부 `파일:줄` 로 확인했고
+주장 하나(off-by-one)는 깎았다. 재개되면 `12_라스트판정.md` 의 **단정 불가 3건**부터 돌린다.
+
+## 4단계 — 소스 주석 계획 (다른 에이전트가 읽고 수정)
+
+`05-handoff-comments.mdc` 의 FE·BE 동일 밀도 규약을 따른다.
+**아래는 코드를 고칠 때 같이 적을 주석이다.** 주석만 따로 넣지 않는다 — 고치는 커밋에 함께 넣는다.
+
+| 대상 | 적을 것 |
+|---|---|
+| `HwpDraftPage.uploadBody` | **왜 문서 키를 대조하는가** — 편집기는 앞 문서를 들고 있을 수 있다. 양식 원본이 없거나 아직 여는 중이면 `loadFile` 없이 return 하므로 화면에는 남는다. 대조 없이 올리면 남의 본문이 저장된다 |
+| `HwpEditorPane`「원본 없음」·`wait` 분기 | **여기서 편집기를 비우지 않으면** 위 사고가 난다는 것. `openedRef` 를 이미 올려 재시도가 없다는 것도 |
+| `01_sp.sql` `sp_tbl_doc_corrective_u_000` DELETE | **왜 `status <> 'DONE'` 인가** — 완료된 개선조치는 원문서 저장으로 지워지면 안 된다. `_d_000` 과 같은 기준이라는 것 |
+| `01_sp.sql` `ca_no` 채번 | **왜 `count(*)` 가 아닌가** — 행이 지워지면 번호가 되돌아와 UNIQUE 에 걸린다. `doc_no` 채번(`sp_tbl_doc_no_gen_c_000`)과 같은 방식이라는 것 |
+| `DocumentService.upload` | **왜 옛 실물 삭제가 맨 뒤인가** — 트랜잭션이 롤백돼도 파일은 안 돌아온다. 메타와 실물의 되돌림 단위가 다르다는 것 |
+| `CorrectiveActionService.validateDelete`·`delete` | **왜 양쪽에서 같은 검사를 부르는가** (Double Check). 지금 주석 3줄(`:9`·`:102`·`:115`)이 이미 Double Check 라 적고 있으나 **코드가 그렇지 않다** — 코드를 고치면 주석이 비로소 참이 된다 |
+| `mapper/board/TaskMapper.xml` | SP 로 바꾼 뒤, **왜 매퍼가 테이블을 직접 안 읽는가** (SP 색인 생성기가 못 잡는다) |
+| `main.tsx` `retry` | `envConfig` 를 거치는 이유 — `.env` 로 조정 가능해야 한다 |
+
+**주석에 적지 않을 것:** 무엇을 했는지(diff 에 있다) · 날짜 나열 · 이모지.
 
 ## 6. 보고했고 아직 안 고친 것
 
