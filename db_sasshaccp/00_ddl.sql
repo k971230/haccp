@@ -2710,7 +2710,7 @@ COMMENT ON COLUMN sasshaccp.tbl_document.tmpl_cd IS '템플릿 코드 — tbl_te
 -- Name: COLUMN tbl_document.doc_kind; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON COLUMN sasshaccp.tbl_document.doc_kind IS '문서 유형 — DB:전용 화면, HWP:rhwp 문서작성형';
+COMMENT ON COLUMN sasshaccp.tbl_document.doc_kind IS '문서 유형 — HTML:전용 화면 + DB 저장, HWP:rhwp 문서작성형. 저장값은 대문자다';
 
 
 --
@@ -4898,7 +4898,7 @@ COMMENT ON COLUMN sasshaccp.tbl_template.mng_no IS '표준기준서 관리번호
 -- Name: COLUMN tbl_template.doc_kind; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON COLUMN sasshaccp.tbl_template.doc_kind IS '문서 유형 — DB:전용 HTML 화면 + DB 저장, HWP:rhwp 문서작성형';
+COMMENT ON COLUMN sasshaccp.tbl_template.doc_kind IS '문서 유형 — HTML:전용 화면 + DB 저장, HWP:rhwp 문서작성형. 저장값은 대문자다';
 
 
 --
@@ -4912,7 +4912,7 @@ COMMENT ON COLUMN sasshaccp.tbl_template.category_cd IS '분류 — CCP, HYG, FA
 -- Name: COLUMN tbl_template.scrn_cd; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON COLUMN sasshaccp.tbl_template.scrn_cd IS '연결 화면코드 — doc_kind=DB일 때(= 전용 화면 보유) tbl_screen.scrn_cd';
+COMMENT ON COLUMN sasshaccp.tbl_template.scrn_cd IS '연결 화면코드 — doc_kind=HTML일 때(= 전용 화면 보유) tbl_screen.scrn_cd';
 
 
 --

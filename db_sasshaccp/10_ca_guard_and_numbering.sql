@@ -20,6 +20,7 @@
 --   K16   _d_000 네 본                      문서를 지워도 완료된 개선조치는 남긴다
 --   K17-b sp_tbl_audit_log_c_000           reason 을 left(...,500) 로 자른다
 --   K21   sp_tbl_ccp_generic_monitor_c_000 일자 8자리 검증 (형제 셋과 같은 기준)
+--   C7    COMMENT ON 세 줄                  doc_kind 주석을 저장값(HTML)에 맞춘다
 --
 -- 적용 전에 세어 둔다 — 이 문서들은 K8 가드 뒤로 전송이 막힌다.
 --
@@ -37,6 +38,12 @@
 --    WHERE ca_no !~ '^CA-[0-9]{8}-[0-9]{3}$';
 
 SET search_path TO sasshaccp;
+
+-- ── C7  doc_kind 주석을 저장값에 맞춘다 (동작과 무관 — \d+ 로 표를 보는 사람을 위한 것)
+--    저장값은 'HTML'·'HWP' 인데 주석만 'DB' 라고 적혀 있었다.
+COMMENT ON COLUMN tbl_document.doc_kind IS '문서 유형 — HTML:전용 화면 + DB 저장, HWP:rhwp 문서작성형. 저장값은 대문자다';
+COMMENT ON COLUMN tbl_template.doc_kind IS '문서 유형 — HTML:전용 화면 + DB 저장, HWP:rhwp 문서작성형. 저장값은 대문자다';
+COMMENT ON COLUMN tbl_template.scrn_cd  IS '연결 화면코드 — doc_kind=HTML일 때(= 전용 화면 보유) tbl_screen.scrn_cd';
 
 
 -- ── sp_tbl_document_approval_c_000
