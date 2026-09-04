@@ -362,7 +362,7 @@ screenusage/ScreenUsageStatisticsPage  →  <LogPageShell key rule={SCREEN_USAGE
 
 1. DB: `db_sasshaccp/`에 `sp_tbl_{화면}_r_000`·`_c_000`·`_delete_blocker_r_000`·`_d_000` migrate 작성 (DROP은 회귀 통과 후 별도 파일)
 2. BE: `com.haccp.{대}.{중}` 아래 Controller·Service·Mapper + `resources/mapper/{대}/{중}/*.xml`(SP 호출 전용)
-3. FE: `api/{대}/` → `pages/{대}/{중}/{화면}Page.tsx` + `{화면}Rule.ts`. 경로 `docs/24`
+3. FE: `api/{대}/` → `pages/{대}/{중}/{화면}Page.tsx` + `{화면}Rule.ts`. 경로 정본 `docs/4_명명과_경로.md`
 4. 팝업이 필요하면 `components/common/modal/`에 추가하고 `modalTypes.ModalPropsMap`·`GlobalModal` 분기를 늘린다
 5. `shell/screenRegistry.tsx`에 화면코드 엔트리 등록, `tbl_menu`·`tbl_screen` 시드 추가
 6. 폴더 README 작성 + 이 문서의 표 갱신. 변경 추적이 필요한 화면이면 Service에 `AuditWriter.record(...)`를 넣는다. 화면코드는 요청 컨텍스트가 채운다

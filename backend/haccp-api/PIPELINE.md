@@ -31,6 +31,7 @@
 | 1-7 | `docs/sch/DocumentAlarmScheduler.java` | `@Scheduled` — 예정일 알림 |
 | 1-8 | `log/ViewStatDailyJob.java` | 화면조회 로그 일별 집계 |
 | 1-9 | `docs/templates/TemplateImportService.java` | `app.template.import-root` 가 있으면 기동 시 HWP 양식을 읽어 들인다 |
+| 1-10 | `board/DailyTaskGenerationJob.java` | `@Scheduled` — 매일 00:05 예정일 생성 (`app.task-generation.cron` · `regenerateAllCompanies`) |
 
 ---
 
@@ -111,8 +112,10 @@ DB  tbl_screen · tbl_role_screen · tbl_menu
 | `/api/v1/draft/hwp-doc/hwp-write` | `com.haccp.draft.hwpdoc` | `mapper/draft/hwpdoc/` |
 | `/api/v1/sys/code/{화면}` | `com.haccp.sys.code.{화면}` | `mapper/sys/code/{화면}/` |
 | `/api/v1/sys/logs/{화면}` | `com.haccp.sys.logs.{화면}` | `mapper/sys/logs/{화면}/` |
+| `/api/v1/board/**` | `com.haccp.board` (중분류 없음) | `mapper/board/` |
 
 자바 패키지는 하이픈을 못 써 **중분류의 하이픈만 지운다**(`html-form` → `htmlform`).
+**중분류 아래 화면이 하나뿐이면 중분류 단을 생략한다** — `board` 가 그 경우다 (`docs/4_명명과_경로.md`).
 그 밖의 차이는 규칙 위반이다 — 2026-08-26 에 `draft.hwp`→`draft.hwpdoc`,
 `docs.document`→`docs.documents`, `docs.template`→`docs.templates` 로 맞췄다.
 

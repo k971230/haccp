@@ -1,6 +1,6 @@
 # src
 
-SPA 소스 루트. 이야기 [`docs/15`](../../../docs/1_시작하기.md) · 태그 [`docs/23`](../../../docs/5_PIPELINE_색인.md) · 경로 [`docs/24`](../../../docs/4_명명과_경로.md) · 찾는 법 [`docs/17`](../../../docs/3_화면_지도.md).
+SPA 소스 루트. 이야기 [`docs/1_시작하기.md`](../../../docs/1_시작하기.md) · 태그 [`docs/5_PIPELINE_색인.md`](../../../docs/5_PIPELINE_색인.md) · 경로 [`docs/4_명명과_경로.md`](../../../docs/4_명명과_경로.md) · 찾는 법 [`docs/3_화면_지도.md`](../../../docs/3_화면_지도.md).
 
 ## 하위
 - `api/` — Axios HTTP 클라이언트·도메인 API 함수

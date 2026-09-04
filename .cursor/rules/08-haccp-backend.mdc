@@ -22,7 +22,7 @@ DB 규약: [`07-haccp-db.mdc`](07-haccp-db.mdc) · 운영: [`06-operations.mdc`]
 ## 패키지
 
 셸: `auth`, `menu`, `code`, `pref`, `log`, `common`.  
-업무: `com.haccp.{대}.{중}` — URL `SCREEN_PATH` 칸과 동일 (`docs.ccp`, `docs.hwp`, `sys.code`). 공유 허브 `docs.documents` · `docs.templates` · `docs.htmlform` 은 화면 경로와 별개.
+업무: `com.haccp.{대}.{중}` — URL `SCREEN_PATH` 칸과 동일 (`docs.hwp`, `draft.ccpmonitoring`, `sys.code`). 공유 허브 `docs.documents` · `docs.templates` · `docs.htmlform` 은 화면 경로와 별개.
 
 ## 화면 패키지 분할 (sys 골드)
 

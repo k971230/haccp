@@ -7,7 +7,7 @@
 
 둘 다 **사용여부 Y 인 자사 양식만** 작성 대상이다. 표준 예시(`*_000`)는 가상행이라 목록에서 뺀다.
 
-중분류 슬러그는 `ccp-chk` 다 — `tbl_menu UNIQUE (co_cd, menu_cd)` 때문에 `docs` 아래 `ccp` 와 겹칠 수 없다.
+중분류 슬러그는 `html` 이다 — 두 화면 모두 `tbl_menu.h_menu_cd='html'`. `docs` 쪽은 `html-form` 이라 겹치지 않는다.
 자바 패키지는 `com.haccp.draft.html` — FE SCREEN_PATH `/draft/html` 과 같은 칸이다.
 
 ## 파일
@@ -40,7 +40,7 @@ CCP 쪽 `sp_tbl_ccp_form_*` 은 `html_sys_006`·`hwp_sys_003` 전용이라 여�
 ## 여기 없는 것
 
 전송(REQUEST)·전송취소(CANCEL)는 이 패키지에 없다. 문서 허브 `PUT /api/v1/docs/documents/approval` 을 그대로 쓴다.
-상태 3단계: 전송대기 `WRK`·`RJT` / 전송 `REQ`·`REV` / 결재완료 `APV`.
+상태 3단계: 전송대기 `WRK`·`RJT` / 전송 `REQ` / 결재완료 `APV`.
 
 저장은 전송 전이라 **필수값을 보지 않는다.** 필수값은 전송 직전에 화면이 검사한다
 (FE `htmlFormDraftShared.validateForTransfer` 한 곳).

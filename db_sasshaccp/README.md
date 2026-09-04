@@ -32,7 +32,12 @@ psql -f 01_sp.sql
 psql -f 02_seed.sql
 psql -v co_cd=0000 -f 03_code_seed.sql
 psql -v co_cd=0000 -f 05_form_seed.sql
+psql -v co_cd=0000 -f 07_company_forms.sql
 ```
+
+**`07` 을 빼면 작성 화면에 고를 양식이 0건이다.** 시드는 표준 지면까지만 깔고
+회사 지면 버전은 안 만든다 — `0000` 에도 필요하다 (`apply-all.sh` 4단계).
+`06_company_seed.sql` 은 `0000` 에 안 돌린다. `02_seed.sql` 이 이미 만들어 뒀다.
 
 ## 새 업체를 여는 법 (0004, 0005 …)
 
