@@ -136,6 +136,15 @@ export function buildHeaderColumns(
       field: "apprLineCd",
       header: "결재선코드",
       width: 120, maxLength: 20,
+      /*
+       * 상한은 tbl_approval_line.appr_line_cd varchar(20) 이다.
+       *
+       * 이 칸만 특히 조심한다 — 저장 SP 가 형제들과 달리 업무키로 **업서트**한다
+       * (sp_tbl_approval_line_c_000: ON CONFLICT (co_cd, appr_line_cd) DO UPDATE).
+       * 공통코드·부서·권한그룹은 신규 행에 기존 코드를 치면 「이미 등록된…」으로 막는데
+       * 여기는 그 결재선의 이름을 덮고 단계까지 지운 뒤 새로 깐다.
+       * 잘려서 남의 코드와 겹치면 그 결재선이 통째로 갈린다 — plan.md K32 에 적었다.
+       */
       required: true,
       editableOnNew: true,
     },
