@@ -176,7 +176,15 @@ export default function ApprovalLineManagementPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- hg.loadReturn 안정 참조
   }, [fetchHeaderRows, loadStepsFor]);
 
-  useEffect(() => { void load(); }, [load]);
+  /*
+   * 최초 한 번만 읽는다.
+   *
+   * load 의 의존에 검색 상태가 걸려 있어, 검색어를 한 글자 칠 때마다 목록을 다시 읽고
+   * 저장 전 단계 편집까지 날아갔다. 선택도 첫 행으로 떨어졌다.
+   * 조회는 조회 버튼이 한다.
+   */
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 최초 1회. 이후는 조회 버튼
+  useEffect(() => { void load(); }, []);
 
   useEffect(() => {
     void (async () => {

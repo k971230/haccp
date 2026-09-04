@@ -33,6 +33,8 @@ import { MesButton } from "@/components/ui/MesButton";
 import { Printer } from "lucide-react";
 // 역할 — 공통 조회 헤더
 import { defaultDocFormSearch, type DocFormSearchValues } from "@/components/form/docFormSearch";
+// 역할 — 늦게 온 상세가 최신 선택을 덮지 않게 한다
+import { useLatestOnly } from "@/hooks/useLatestOnly";
 import { fromInputDate, toDisplayDateOnly, toInputDate } from "@/lib/docDateTime";
 // 역할 — 확인 토스트
 import { mesToast } from "@/shell/dialog";
@@ -217,16 +219,31 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
     }
   }, [boxMode]);
 
-  /** 문서 상세·결재·첨부를 갱신 */
+  const beginDetail = useLatestOnly();
+
+  /**
+   * 문서 상세·결재·첨부를 갱신.
+   *
+   * 강조와 상세를 **따로** 바꾼다 — 강조는 동기, 상세는 응답이 와야 바뀐다.
+   * 그 사이 다른 행을 누르면 좌측은 새 행인데 우측 지면과 결재 툴바는 옛 문서다.
+   * 툴바가 `detail.header.docIdx` 로 승인을 걸기 때문에 그 창에서 승인하면
+   * **보고 있던 문서가 아니라 옛 문서가 승인된다.** 그래서 최신 적재만 상세를 쓴다.
+   *
+   * 적재 중에는 우측을 비운다. 옛 문서를 띄워 둔 채 기다리면 그게 곧 오승인의 미끼다.
+   */
   const loadDetail = useCallback(async (row: DocumentListRow) => {
+    const isLatest = beginDetail();
+    setSelected(row);
+    setListActiveKey(String(row.docIdx));
+    setDetail(null);
     try {
-      setSelected(row);
-      setListActiveKey(String(row.docIdx));
-      setDetail(await getDocumentDetail(row.docIdx));
+      const next = await getDocumentDetail(row.docIdx);
+      if (!isLatest()) return;
+      setDetail(next);
     } catch (e) {
-      mesError(e);
+      if (isLatest()) mesError(e);
     }
-  }, []);
+  }, [beginDetail]);
 
   useEffect(() => {
     void loadList();

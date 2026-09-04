@@ -20,6 +20,8 @@ import { CalendarCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 // 역할 — 중복 클릭 차단
 import { useAsyncAction } from "@/hooks/useAsyncAction";
+// 역할 — 늦게 온 달 자료가 최신 달을 덮지 않게 한다
+import { useLatestOnly } from "@/hooks/useLatestOnly";
 // 역할 — 2분 폴링 주기
 import { DASHBOARD_POLLING_MS } from "@/config/envConfig";
 // 역할 — 표준 버튼
@@ -109,19 +111,32 @@ export function CalendarPage() {
   const dirty = useMemo(() => workdayDiff(savedWorkdays, workdays).length > 0, [savedWorkdays, workdays]);
   dirtyRef.current = dirty;
 
+  const beginLoad = useLatestOnly();
+
+  /*
+   * 가드를 load 안에 둔다 — 부르는 곳이 둘(달 이동·2분 폴링)이라
+   * 호출부마다 걸면 한쪽을 빠뜨린다. 폴링 응답이 방금 바꾼 달을 덮는 것도 여기서 막힌다.
+   */
   const load = useCallback(async (ym: string) => {
+    const isLatest = beginLoad();
     const data = await listCalendar(ym);
+    if (!isLatest()) return;
     setTasks(data.tasks);
     setHolidays(data.holidays);
     const next = new Set(data.workdays);
     setSavedWorkdays(next);
     setWorkdays(new Set(next));
     setNowTick(new Date());
-  }, []);
+  }, [beginLoad]);
 
   useEffect(() => {
-    void run(() => load(month), "search", mesError);
-  }, [month, load, run]);
+    /*
+     * 잠금(asyncAct "search")을 걸지 않는다. 다음달을 두 번 빨리 누르면
+     * 두 번째 적재가 **버려져서** 헤더는 11월인데 자료는 10월이 됐다.
+     * isBusy("search") 를 보는 자리도 없어 잠금이 주는 것이 없었다.
+     */
+    void load(month).catch(mesError);
+  }, [month, load]);
 
   // 2분 무소음 폴링 — 영업일 변경분이 있으면 건너뛴다
   useEffect(() => {

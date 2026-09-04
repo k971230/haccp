@@ -232,7 +232,18 @@ export default function UserManagementPage() {
     })();
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  /*
+   * 최초 한 번만 읽는다.
+   *
+   * 예전에는 `[load]` 였는데 load 의 의존이 [qUserId, qUserNm, qUseYn] 이라
+   * **검색어를 한 글자 칠 때마다** 이 효과가 다시 돌았다. load 는 g.load 로 행을
+   * 통째 치환하므로, 사용자를 새로 추가해 두고(저장 전) 이름 칸에 한 글자만 쳐도
+   * 그 행이 사라졌다. 덤으로 글자 수만큼 전건 조회가 나갔다.
+   *
+   * 조회는 조회 버튼(runSearch)이 한다 — 부서관리와 같은 형태다.
+   */
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 최초 1회. 이후는 조회 버튼
+  useEffect(() => { void load(); }, []);
 
   const handleAdd = () => {
     if (!canWrite) return mesToast("등록 권한이 없습니다.", "warn");
@@ -269,7 +280,8 @@ export default function UserManagementPage() {
         }
         return null;
       },
-      // 서명 표시열과 비밀번호·사번·직위·잠금은 이 화면이 다루지 않는다
+      // 서명 표시열과 비밀번호·사번·직위는 이 화면이 다루지 않는다.
+      // 잠금(lockYn)은 다룬다 — 잠긴 계정을 푸는 유일한 화면이다
       save: (rows) =>
         saveUsers(rows.map((row) => stripRowMeta<SysRow>(row as never, ["_hasSign", ...NON_EDITABLE_FIELDS]))),
       reload: load,

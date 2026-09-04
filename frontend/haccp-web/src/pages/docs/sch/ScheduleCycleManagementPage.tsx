@@ -20,6 +20,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 // 역할 — 비동기 중복 실행 차단
 import { useAsyncAction } from "@/hooks/useAsyncAction";
+// 역할 — 늦게 온 주기 응답이 최신 선택을 덮지 않게 한다
+import { useLatestOnly } from "@/hooks/useLatestOnly";
 // 역할 — 공통코드 CYCLE_CD·nonwork-rule·sys-yn 콤보
 import { SYS_YN_MAIN_CD, useCommonCodes } from "@/hooks/useCommonCodes";
 // 역할 — 조회 전용 그리드
@@ -189,7 +191,15 @@ export default function ScheduleCycleManagementPage() {
    *   2) 좌측 행 선택·저장·삭제 후 호출한다
    *   3) 주기가 없으면 빈 폼(신규 등록)이고 결재선은 목록 행(사용양식)에서 채운다
    */
+  const beginCycle = useLatestOnly();
+
   const loadCycle = useCallback(async (tmplCd: string | null) => {
+    /*
+     * 늦게 온 응답이 최신 선택을 덮으면 **키는 B, 값은 A** 인 폼이 된다.
+     * 저장은 { tmplCd: activeTmplCd, ...form } 이라 그대로 누르면
+     * B 양식의 주기·담당자·결재선이 A 값으로 덮인다 — 문서 자동생성 일정이 통째로 바뀐다.
+     */
+    const isLatest = beginCycle();
     if (!tmplCd) {
       const blank = emptyForm();
       setForm(blank);
@@ -222,13 +232,14 @@ export default function ScheduleCycleManagementPage() {
           useYn: String(rule.useYn ?? "Y").toUpperCase() === "N" ? "N" : "Y",
         }, rule.details)
         : base;
+      if (!isLatest()) return;
       setForm(next);
       setSnapshot(JSON.stringify(next));
       setHasRule(!!rule);
     } catch (error) {
-      mesError(error);
+      if (isLatest()) mesError(error);
     }
-  }, []);
+  }, [beginCycle]);
 
   useEffect(() => {
     void loadForms();

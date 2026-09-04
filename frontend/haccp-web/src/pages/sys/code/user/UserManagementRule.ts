@@ -37,8 +37,17 @@ export type UserRow = SysRow & {
 /** 사용자 그리드 — 아이디는 신규 행에서만 입력 */
 export const USER_RULES: ScreenGridRules = { newOnly: ["userId"] };
 
-/** 저장 payload에서 제외할 항목 — 화면에서 다루지 않는 계정 속성 */
-export const NON_EDITABLE_FIELDS = ["userPw", "empCd", "posCd", "lockYn"] as const;
+/*
+ * 저장 payload 에서 제외할 항목 — 화면에서 다루지 않는 계정 속성.
+ *
+ * lockYn 은 뺐다. 실패 임계를 넘기면 SP 가 lock_yn='Y' 로 잠그고
+ * (`01_sp.sql` sp_tbl_user_login_u_000) AuthService 가 로그인을 거절하는데,
+ * 푸는 길이 화면에 없어 **DB 를 직접 고치는 것 말고는 방법이 없었다.**
+ * 푸는 경로는 이미 다 열려 있다 — sp_user_management_c_000 은 p_lock_yn='N' 이면
+ * login_fail_cnt 까지 0 으로 되돌리고, UserService 도 값을 그대로 넘긴다.
+ * 막고 있던 것은 이 배열 한 줄이었다.
+ */
+export const NON_EDITABLE_FIELDS = ["userPw", "empCd", "posCd"] as const;
 
 /** 저장 필수 항목 — 순서대로 검사해 첫 미입력 행으로 포커스를 옮긴다 */
 export const REQUIRED_FIELDS: Array<{ field: string; label: string }> = [
@@ -134,6 +143,26 @@ export function buildUserColumns(
       field: "useYn",
       header: "사용여부",
       width: 80,
+      type: "code",
+      editable,
+      codeOptions: ynOpts,
+      codeMap: ynLabels,
+    },
+    {
+      /*
+       * 계정 잠금 — 연속 로그인 실패가 임계를 넘으면 **서버가** Y 로 바꾼다.
+       * 관리자가 N 으로 저장하면 SP 가 실패횟수까지 0 으로 되돌린다
+       * (`sp_user_management_c_000`: UPDATE 는 빈 값이면 기존 유지, INSERT 는 기본 'N').
+       * 잠그는 방향도 열어 둔다 — 해제가 관리자 몫이면 설정도 관리자 몫이다.
+       *
+       * 이 칸만 서버가 스스로 바꾸는 값이다. 목록을 띄워 둔 사이에 누가 잠기면
+       * 화면의 값은 낡은 'N' 이고, 그 행을 **다른 이유로** 고쳐 저장하면 잠금이 같이 풀린다.
+       * 행이 통째로 가는 화면이라 useYn 도 같은 성질이지만, 그쪽은 사람만 바꾼다.
+       * 창이 좁아 지금은 받아들인다 — 칸별 변경 추적이 생기면 그때 좁힌다.
+       */
+      field: "lockYn",
+      header: "잠금",
+      width: 70,
       type: "code",
       editable,
       codeOptions: ynOpts,

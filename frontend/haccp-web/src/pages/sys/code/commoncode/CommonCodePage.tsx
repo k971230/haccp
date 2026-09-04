@@ -13,6 +13,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
+// 역할 — 늦게 온 상세가 최신 대분류를 덮지 않게 한다
+import { useLatestOnly } from "@/hooks/useLatestOnly";
 import { useGridAccess } from "@/hooks/useGridAccess";
 import { useEditableRows } from "@/hooks/useEditableRows";
 import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
@@ -140,16 +142,34 @@ export default function CommonCodePage() {
     applyGroupFilter();
   }, [applyGroupFilter]);
 
+  const beginDetails = useLatestOnly();
+  // 상세 적재 중 표시. "detail" 잠금을 뺐으므로 isBusy 로는 안 잡힌다 —
+  // 그대로 두면 느린 응답이 「항목 없음」으로 보인다. 최신 적재일 때만 내린다
+  const [detailLoading, setDetailLoading] = useState(false);
+
   const loadDetails = useCallback(async (cd: string) => {
+    // 대분류 A 적재 중에 B 를 누르면 예전에는 "detail" 잠금이 B 를 버려서
+    // 그룹 B 밑에 A 의 상세가 남았다. 나중 것이 이기게 한다
+    const isLatest = beginDetails();
     if (!cd) {
       sysG.load([]);
       usrG.load([]);
+      // 위에서 번호를 올려 진행 중이던 적재는 낡았다. 낡은 응답은 표시를 못 끄므로 여기서 끈다
+      setDetailLoading(false);
       return;
     }
-    const [sysRows, usrRows] = await Promise.all([
-      listCodeDetails(cd, "Y"),
-      listCodeDetails(cd, "N"),
-    ]);
+    setDetailLoading(true);
+    let sysRows;
+    let usrRows;
+    try {
+      [sysRows, usrRows] = await Promise.all([
+        listCodeDetails(cd, "Y"),
+        listCodeDetails(cd, "N"),
+      ]);
+    } finally {
+      if (isLatest()) setDetailLoading(false);
+    }
+    if (!isLatest()) return;
     sysG.load(sysRows.map((r) => ({ ...r })) as CodeRow[]);
     usrG.load(usrRows.map((r) => ({ ...r })) as CodeRow[]);
     setSysKey(null);
@@ -172,13 +192,14 @@ export default function CommonCodePage() {
 
   useEffect(() => {
     if (!mainCd) return;
-    void asyncAct.run(async () => {
+    // 잠금을 걸지 않는다 — 걸면 새 대분류의 적재가 버려진다. 순번이 정리한다
+    void (async () => {
       try {
         await loadDetails(mainCd);
       } catch (e) {
         mesError(e);
       }
-    }, "detail");
+    })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mainCd]);
 
@@ -352,7 +373,7 @@ export default function CommonCodePage() {
                   // 시스템 코드 CUD 불가
                   editable={false}
                   height="100%"
-                  loading={asyncAct.isBusy("detail")}
+                  loading={detailLoading}
                   activeKey={sysKey}
                   onActivate={(row) => setSysKey(row._key)}
                   onCellChange={() => undefined}
@@ -385,7 +406,7 @@ export default function CommonCodePage() {
                   columns={usrCols}
                   editable={canWrite || canModify}
                   height="100%"
-                  loading={asyncAct.isBusy("detail") || asyncAct.isBusy("save") || asyncAct.isBusy("del")}
+                  loading={detailLoading || asyncAct.isBusy("save") || asyncAct.isBusy("del")}
                   activeKey={usrKey}
                   onActivate={(row) => setUsrKey(row._key)}
                   onCellChange={(key, field, value) => usrG.updateCell(key, field as keyof CodeRow, value)}

@@ -13,6 +13,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
+// 역할 — 늦게 온 트리가 최신 권한그룹을 덮지 않게 한다
+import { useLatestOnly } from "@/hooks/useLatestOnly";
 import { useGridAccess } from "@/hooks/useGridAccess";
 import { useEditableRows } from "@/hooks/useEditableRows";
 import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
@@ -155,13 +157,40 @@ export default function RoleManagementPage() {
     applyRoleFilter();
   }, [applyRoleFilter]);
 
+  const beginTree = useLatestOnly();
+  /*
+   * 트리 적재 중 표시. 예전에는 asyncAct.isBusy("tree") 로 봤는데
+   * 그 잠금을 빼면서 그대로 두면 **영영 false** 라 「불러오는 중…」이 안 뜨고
+   * 빈 트리가 곧장 그려진다 — 로딩인지 권한이 없는 건지 사람이 못 가른다.
+   * 최신 적재일 때만 내린다. 낡은 응답이 새 적재의 표시를 끄면 안 된다.
+   */
+  const [treeLoading, setTreeLoading] = useState(false);
+
   const loadTreeAuth = useCallback(async (grp: string) => {
+    /*
+     * 권한그룹 A 를 적재하는 중에 B 를 누르면, 예전에는 asyncAct 의 "tree" 잠금이
+     * **B 의 적재를 통째로 버렸다.** 좌측은 B 인데 트리는 A 의 체크 상태가 남고,
+     * 그 화면에서 저장하면 사람이 본 것과 다른 근거로 B 에 권한이 붙는다.
+     * 잠금은 중복 제출을 막는 장치지 선택 적재에 쓸 것이 아니다 — 나중 것이 이겨야 한다.
+     */
+    const isLatest = beginTree();
     if (!grp) {
       setReadMap({});
       setDirtyScrn(new Set());
+      // 진행 중이던 적재가 있으면 그 표시도 끈다. 위에서 번호를 올려 그 응답은 이미 낡았고,
+      // 낡은 응답은 finally 에서 표시를 못 끄기 때문에 여기서 안 끄면 영영 「불러오는 중」이다
+      setTreeLoading(false);
       return;
     }
-    const [menuRows, screens] = await Promise.all([listAdminMenus(), listRoleScreens(grp)]);
+    setTreeLoading(true);
+    let menuRows;
+    let screens;
+    try {
+      [menuRows, screens] = await Promise.all([listAdminMenus(), listRoleScreens(grp)]);
+    } finally {
+      if (isLatest()) setTreeLoading(false);
+    }
+    if (!isLatest()) return;
     setMenus(menuRows);
     const map: Record<string, string> = {};
     for (const s of screens) {
@@ -174,7 +203,7 @@ export default function RoleManagementPage() {
         .filter((m) => String(m.useYn ?? "").toUpperCase() === "Y" && !m.hMenuCd)
         .map((m) => m.menuCd),
     ));
-  }, []);
+  }, [beginTree]);
 
   useEffect(() => {
     void asyncAct.run(async () => {
@@ -193,13 +222,14 @@ export default function RoleManagementPage() {
       setReadMap({});
       return;
     }
-    void asyncAct.run(async () => {
+    // 잠금(asyncAct)을 걸지 않는다 — 걸면 새 선택의 적재가 버려진다. 순번이 정리한다
+    void (async () => {
       try {
         await loadTreeAuth(usrgrpCd);
       } catch (e) {
         mesError(e);
       }
-    }, "tree");
+    })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usrgrpCd, activeRole?._rowState]);
 
@@ -431,7 +461,7 @@ export default function RoleManagementPage() {
               <div className="min-h-0 flex-1 overflow-y-auto rounded border border-slate-100 bg-white px-2 py-1">
                 {!usrgrpCd || activeRole?._rowState === "C" ? (
                   <p className="p-3 text-xs text-slate-500">저장된 권한그룹을 선택하세요.</p>
-                ) : asyncAct.isBusy("tree") ? (
+                ) : treeLoading ? (
                   <p className="p-3 text-xs text-slate-500">불러오는 중…</p>
                 ) : (
                   tree.nodes.map((n) => renderNode(n, 0))
