@@ -18,7 +18,7 @@ mapper/sys/
 ```
 
 `namespace`는 인터페이스 FQCN과 정확히 같다 (`com.haccp.sys.code.commoncode.CommonCodeMapper`).
-스캔 경로는 `application.yml`의 `mybatis.mapper-locations` (`classpath*:mapper/**/*.xml`).
+스캔 경로는 `application.yml`의 `mybatis.mapper-locations` (`classpath:/mapper/**/*.xml`).
 
 ## 절대 규약 — 네이티브 SQL 금지
 
@@ -27,14 +27,16 @@ mapper/sys/
 ```xml
 <!-- 조회: 테이블 SELECT 금지, SP 결과셋만 -->
 <select id="selectRows" resultType="map">
-  SELECT * FROM sasshaccp.sp_department_management_r_000(#{coCd}, #{deptCd}, #{deptNm})
+  SELECT * FROM sp_department_management_r_000(#{coCd}, #{deptCd}, #{deptNm})
 </select>
 
 <!-- CUD: CALL -->
 <update id="save" statementType="CALLABLE">
-  { CALL sasshaccp.sp_department_management_c_000(...) }
+  CALL sp_department_management_c_000(...)
 </update>
 ```
+
+**스키마는 안 붙인다** — 접속 URL 의 `currentSchema=sasshaccp` 와 DB `search_path` 가 잡는다.
 
 - `SELECT ... FROM tbl_*` · `INSERT`/`UPDATE`/`DELETE` 직접 작성 금지
 - 조인·집계·정렬도 SP 안에서 끝낸다. XML은 파라미터 바인딩만 담당
@@ -68,7 +70,7 @@ mapper/sys/
 - Two-Tier: SP 파라미터·컬럼은 lower_snake, 앱 DTO/JSON은 camelCase. XML의 `#{}` 키는 **camelCase**로 받는다
 - `co_cd`는 항상 `LoginUserContext.coCd()`에서 온 값을 서비스가 넘긴다. 요청 본문의 회사코드를 믿지 않는다
 - 조회 `resultType="map"`은 lower_snake 키로 돌아오며 FE `camelizeRows`가 변환한다
-- CUD는 `statementType="CALLABLE"` + `{ CALL ... }`, 서비스가 `@Transactional`로 감싼다. SP 내부 자율 COMMIT 금지
+- CUD는 `statementType="CALLABLE"` + `CALL sp_...(...)`, 서비스가 `@Transactional`로 감싼다. SP 내부 자율 COMMIT 금지
 - 서명 이미지는 `tbl_user.sign_img bytea`다. `#{signImg, jdbcType=BINARY}`로 넘기고 조회는 `resultType="map"`으로 `byte[]`를 받는다
 - 서명 유무만 필요한 statement는 `_sign_info_r_000`을 부른다. `bytea`를 SELECT 목록에 넣으면 16KB급 이미지가 매 확인마다 왕복한다
 

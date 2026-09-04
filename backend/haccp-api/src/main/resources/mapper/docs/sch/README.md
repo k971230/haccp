@@ -4,4 +4,4 @@
 
 | 파일 | SP |
 |---|---|
-| `DocCycleMapper.xml` | `sp_schedule_cycle_management_ sp_schedule_cycle_management_c_000 sp_schedule_cycle_management_d_000 sp_schedule_cycle_management_form_r_000` |
+| `DocCycleMapper.xml` | `sp_schedule_cycle_management_r_000` `sp_schedule_cycle_management_c_000` `sp_schedule_cycle_management_d_000` `sp_schedule_cycle_management_form_r_000` `sp_tbl_schedule_task_regen_c_000` `sp_tbl_schedule_rule_active_r_000` `sp_calendar_workday_r_000` `sp_tbl_notification_task_c_000` |

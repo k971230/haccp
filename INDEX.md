@@ -11,8 +11,8 @@
 
 | | |
 |---|---|
-| 목차에 오른 폴더 | 192 |
-| README 있는 폴더 | 178 |
+| 목차에 오른 폴더 | 193 |
+| README 있는 폴더 | 179 |
 | **README 없는데 소스가 있는 폴더** | **14** |
 
 ## 트리
@@ -71,7 +71,7 @@ backend/
               docs/
                   정본: FE frontend/haccp-web/src/pages/docs/README.md
                 documents/
-                    화면 1개 = 패키지 1개. 파이프라인 표는 FE pages/docs/README.md.
+                    화면 경로(/flow/appr/ · /flow/box/document-inbox)와 패키지가 다르다.
                   dto/
                       doc 요청·응답 DTO (JSON camelCase).
                 htmlform/
@@ -137,7 +137,7 @@ backend/
                   department/
                       화면코드 department-management · XML resources/mapper/sys/code/department/DepartmentMapper.xml · SP db_sasshaccp…
                   menu/
-                      화면코드 menu-management · XML resources/mapper/sys/code/menu/MenuMgmtMapper.xml · SP db_sasshaccp/02_seed.sql
+                      화면코드 menu-management · XML resources/mapper/sys/code/menu/MenuMgmtMapper.xml · SP db_sasshaccp/01_sp.sql
                   role/
                       화면코드 role-management · XML resources/mapper/sys/code/role/RoleMgmtMapper.xml · SP db_sasshaccp/01_sp.sql
                   user/
@@ -190,7 +190,7 @@ backend/
               hwpdoc/
                   화면 hwp-write. 문서 본문은 첨부(HWP_SRC)로 붙고 여기는 목록·상세만 본다.
             flow/
-                결재에 딸린 부수 도메인. 결재 자체는 mapper/docs/document 다.
+                결재에 딸린 부수 도메인. 결재 자체(상신·승인·반려·취소)는 mapper/docs/documents 다.
               ca/
                   문서 1건에 개선조치 0..1 건. 빈 payload 는 삭제다.
             log/
@@ -234,12 +234,12 @@ backend/
                   htmltemplate/  ← README 없음
                 hwp/  ← README 없음
                 sch/  ← README 없음
+                templates/  ← README 없음
               draft/  ← README 없음
                 ccpmonitoring/  ← README 없음
                 hwpdoc/  ← README 없음
                 ca/  ← README 없음
                   user/  ← README 없음
-db_migration/  ← README 없음
 db_sasshaccp/
     PostgreSQL sasshaccp 스키마 정본. 여기 7본이 곧 DB 다 — 손으로 친 DDL·데이터는 남기지 않는다.
 docs/
@@ -261,7 +261,7 @@ frontend/
     scripts/
         FE 로컬 유틸 스크립트.
     src/
-        SPA 소스 루트. 이야기 docs/15 · 태그 docs/23 · 경로 docs/24 · 찾는 법 docs/17.
+        SPA 소스 루트. 이야기 docs/1_시작하기.md · 태그 docs/5_PIPELINE_색인.md · 경로 docs/4_명명과_경로.md · 찾는 법 docs/3_화면_지도.md.
       api/
           Axios HTTP 클라이언트·도메인 API 함수.
         board/
@@ -279,7 +279,7 @@ frontend/
           modal/
               업무를 모르는 모달 껍데기. 제목·본문·버튼 슬롯만 갖는다.
         document/
-            문서·HWP/서명 관련 컴포넌트.
+            문서·HWP/서명·결재 미리보기·인쇄 관련 컴포넌트.
         form/
             폼·입력 공용 컴포넌트.
         grid/
@@ -331,7 +331,7 @@ frontend/
           appr/
               URL /flow/appr. 문서 흐름의 결재 구간 3화면이다.
             attach/
-                URL /flow/appr/attach. 내가 작성한 문서의 첨부·비고를 관리하고 결재 진행상태를 본다.
+                URL /flow/appr/attach. 내가 작성한 문서의 원본·첨부·비고를 관리하고 결재 진행상태를 본다.
           box/
               URL /flow/box. 결재까지 끝난 문서를 모아 보는 보관함이다.
             documentbox/
@@ -387,6 +387,8 @@ nginx/
 scripts/
     HACCP 운영·검증 스크립트. 정본 절차는 DEPLOY.md.
 tools/  ← README 없음
+  rhwp/
+      <p align="center">
 ```
 
 ## README 없는 폴더 (14)
@@ -396,16 +398,16 @@ tools/  ← README 없음
 - `backend/haccp-api/src/test/java/com/haccp/auth` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/common/auth` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/common/validation` — 소스 1본
-- `backend/haccp-api/src/test/java/com/haccp/docs/documents` — 소스 1본
+- `backend/haccp-api/src/test/java/com/haccp/docs/documents` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/docs/htmlform/htmltemplate` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/docs/hwp` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/docs/sch` — 소스 2본
+- `backend/haccp-api/src/test/java/com/haccp/docs/templates` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/draft` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/draft/ccpmonitoring` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/draft/hwpdoc` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/flow/ca` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/sys/code/user` — 소스 1본
-- `db_migration` — 소스 2본
 - `tools` — 소스 8본
 
 ## 관련

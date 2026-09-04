@@ -7,7 +7,7 @@ JWT 다음 단계다. **로그인했는지**는 `JwtFilter` 가, **그 화면을
 | `ScreenAuthInterceptor.java` | `/api/**` 전 요청을 가로채 권한행과 대조한다. `WebConfig` 가 등록 |
 | `ScreenAuthResolver.java` | 요청 경로 → 화면코드·권한 칸. FE `SCREEN_PATH` 와 같은 칸을 쓴다 |
 | `ScreenAuthMatch.java` | 판정 결과 — 화면코드 + 권한 칸 |
-| `ScreenAuthAction.java` | 권한 칸 — READ·SAVE·DELETE·PRINT |
+| `ScreenAuthAction.java` | 권한 칸 — READ·WRITE·MODIFY·SAVE·DELETE·PRINT. SAVE 는 `write_yn` 또는 `modify_yn` |
 
 ## 왜 필요한가
 
@@ -22,6 +22,7 @@ JWT 다음 단계다. **로그인했는지**는 `JwtFilter` 가, **그 화면을
 ## 예외 (경로가 화면과 1:1 이 아닌 것)
 
 - `/api/v1/docs/documents/**` — 문서 허브. 삭제·HWP 저장은 `HWP_HUB_SCREENS`, 나머지는 `DOC_HUB_SCREENS`
+- `/api/v1/board/notifications/**` — 알림은 셸 공용이라 전용 화면코드가 없다. `today-tasks` 권한 칸으로 판정한다 (`ScreenAuthResolver.java`)
 - `/auth/**` · 셸 공용 · `/sys/users/me` — 화이트리스트
 - `/api/v1/docs/templates/list` · GET `/{tmplCd}/form` — **공용 조회**. 업로드 POST 만 `hwp-template-management`
 - GET `/api/v1/sys/users/{userId}/sign` — 지면 도장. 업로드·삭제는 `user-management`

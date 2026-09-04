@@ -5,17 +5,23 @@ HYG·CCP 는 형제 화면이며 업무 규칙·상태·버튼이 같다.
 
 ```
 draft/
- ├ hyg/    HYG 양식 — hyg-process  (html_hyg_prc_NNN · tbl_hyg_process)
- └ ccp/    CCP 양식 — ccp-verify   (html_ccp_chk_NNN · tbl_ccp_verify_check)
+ ├ html/           HTML 작성 2화면   — URL 중분류 html
+ ├ ccpmonitoring/  CCP 모니터링 3화면 — URL 중분류 ccp-monitoring
+ ├ hwpdoc/         HWP 작성 1화면    — URL 중분류 hwp-doc
+ └ dto/            6화면 공용 DTO — 여기에 컨트롤러를 두지 않는다
 ```
 
-| 화면 | URL 중분류 | 자바 패키지 | 기준 양식관리 |
+| 화면(`scrnCd`) | URL 중분류 (`menu_cd`) | 자바 패키지 | 기준 양식관리 |
 |---|---|---|---|
 | `hyg-process` | `html` | `com.haccp.draft.html` | `hyg-process-template` |
 | `ccp-verify` | `html` | `com.haccp.draft.html` | `ccp-verify-template` |
+| `ccp-pkg` | `ccp-monitoring` | `com.haccp.draft.ccpmonitoring` | `ccp-pkg-template` |
+| `ccp-htg` | `ccp-monitoring` | `com.haccp.draft.ccpmonitoring` | `ccp-htg-template` |
+| `ccp-mtl` | `ccp-monitoring` | `com.haccp.draft.ccpmonitoring` | `ccp-mtl-template` |
+| `hwp-write` | `hwp-doc` | `com.haccp.draft.hwpdoc` | `hwp-template-management` |
 
 중분류 `menu_cd` 는 `tbl_menu UNIQUE (co_cd, menu_cd)` 때문에 전 트리에서 유일해야 한다.
-`docs` 아래 `html`·`ccp` 가 이미 있어 이 대분류는 `hyg`·`ccp-chk` 를 쓴다.
-자바 패키지는 하이픈을 못 쓰므로 `ccp-chk` → `ccp` 로 둔다.
+2026-08-25 에 `docs` 쪽을 `html-form` 으로 개명해 **이 대분류가 `html` 을 가져갔다**.
+자바 패키지는 하이픈을 못 쓰므로 `ccp-monitoring` → `ccpmonitoring`, `hwp-doc` → `hwpdoc` 으로 둔다.
 
 두 화면은 UI 를 공유하지만(`FE pages/draft/HtmlFormDraftPage`) 테이블·SP 는 각자 것을 쓴다.

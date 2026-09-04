@@ -111,7 +111,9 @@ node scripts/gen_table_layout.mjs --check
 **분류에 안 적힌 표는 「미분류」로 뒤에 붙는다.** 표를 새로 만들면 생성기 `GROUPS` 에 넣는다.
 
 **결재 SP 정본은 `01_sp.sql` 한 곳이다.** `sp_tbl_document_approval_c_000` —
-상신(REQUEST) 때 `use_yn='Y'` 단계만 스냅샷하고, 꺼 둔 검토 단계는 넣지 않는다.
+상신(REQUEST) 때 `use_yn='Y'` 단계만 스냅샷한다.
+**검토(REVIEW) 단계는 2026-09-03 에 지웠다** — 결재 역할은 `WRITE`·`APPROVE` 둘뿐이고
+`sp_tbl_approval_line_c_000` 이 그 밖의 값을 `45000` 으로 거부한다.
 `WRITE` 단계의 결재자는 결재선 값을 무시하고 **실제 상신자**로 덮는다.
 그래서 결재선에서 실제로 쓰이는 값은 `APPROVE` 단계의 `approver_id` 하나뿐이다.
 
@@ -120,7 +122,7 @@ node scripts/gen_table_layout.mjs --check
 - `tbl_template.doc_kind` = `HTML`(HTML 입력 양식) / `HWP`(rhwp 문서작성 양식) — **대문자 정본** —
   공통코드 `TMPL_TY`·시드·SP·BE·FE 가 전부 대문자다. 소문자를 넣으면 목록이 0건이 된다
   (`02_seed.sql` 의 소문자 `html`·`hwp` 는 `tbl_menu.menu_cd` — kebab 경로값이라 다른 컬럼이다)
-- 양식 파일 경로 = `HaccpTemplates/{tmpl_cd}/{파일}` · 자사 `CustomTemplates/{co_cd}/{tmpl_cd}/{파일}` · 작성 문서 `HaccpLogBooks/{co_cd}/{일자}/{tmpl_cd}/{파일}`. `html` 양식은 `form_path` NULL
+- 양식 파일 경로 = `HaccpTemplates/{tmpl_cd}/{파일}` · 자사 `CustomTemplates/{co_cd}/{tmpl_cd}/{파일}` · 작성 문서 `HaccpLogBooks/{co_cd}/{tmpl_cd}/{일자}/{일자}_{원본명}_{연번}.{확장자}`. `html` 양식은 `form_path` NULL
 - `02_seed.sql` 의 표준 `tbl_template` 은 37행이고 `impl_yn` 은 **전부 `'Y'`** 다
   (`HWP`/`DOC` 27 · `HTML`/`CCP` 6 · `HTML`/`HYG` 4). `'N'` 은 `00_ddl.sql` 컬럼 DEFAULT 에만 남아 있다 —
   "미구현 N종" 을 전제로 카탈로그를 거르지 않는다

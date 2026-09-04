@@ -9,4 +9,4 @@
 | `PasswordChangeModal` | 푸터 키. 화면 아님. 빈칸만 아니면 됨 |
 | BE `AuthController` · `AuthService` · `AuthMapper.xml` | `sp_tbl_user_login_r_000`. `@Transactional` 금지(실패 이력) |
 
-셸 세션: `shell/authSession.ts` · `authCrossTab.ts` · `authPaths.ts`. 이야기 [`docs/9`](../../../../../docs/7_보안과_파일.md) · [`docs/10`](../../../../../docs/7_보안과_파일.md).
+셸 세션: `shell/authSession.ts` · `authCrossTab.ts` · `authPaths.ts`. 이야기 [`docs/7_보안과_파일.md`](../../../../../docs/7_보안과_파일.md).

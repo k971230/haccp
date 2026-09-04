@@ -2,7 +2,7 @@
 
 Axios HTTP 클라이언트·도메인 API 함수.
 
-손대는 메뉴의 화면 전용 API는 `api/{대}/` 로 나눈다. 공용 파일 I/O(`documentApi`)는 그대로 둔다. 경로 `docs/24`.
+손대는 메뉴의 화면 전용 API는 `api/{대}/` 로 나눈다. 공용 파일 I/O(`documentApi`)는 그대로 둔다. 경로 정본 `docs/4_명명과_경로.md`.
 
 ## docs
 
