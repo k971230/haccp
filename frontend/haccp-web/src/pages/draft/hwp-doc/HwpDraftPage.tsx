@@ -29,7 +29,7 @@ import { HwpTaskLookupModal } from "../HwpTaskLookupModal";
 // 역할 — 우측 rhwp 편집기 패널
 import { HwpEditorPane } from "./HwpEditorPane";
 // 역할 — 편집기가 무엇을 들고 있는지 (저장 가드 기준)
-import { canUploadBody, type HwpOpenedRef } from "./hwpOpenMode";
+import { canUploadBody, nextOpenedRef, type HwpOpenedRef } from "./hwpOpenMode";
 // 역할 — 업무 오류·안내
 import { mesError } from "@/shell/errors";
 import { mesToast } from "@/shell/dialog";
@@ -217,7 +217,10 @@ export function HwpDraftPage() {
               // 파일을 연 뒤 깨끗 — 로드가 본문 변경으로 안 보이게
               onClean={clearBodyDirty}
               // 편집기가 무엇을 들고 있는지 — uploadBody 가 이걸 보고 올릴지 정한다
-              onOpened={(mode, idx) => { openedRef.current = { mode, docIdx: idx }; }}
+              // 같은 문서를 다시 읽는 중이면 잠그지 않는다 — 저장 직후 재조회가 그 재로드를 스스로 부른다
+              onOpened={(mode, idx) => {
+                openedRef.current = nextOpenedRef(openedRef.current, mode, idx);
+              }}
             />
           );
         }}

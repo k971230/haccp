@@ -26,6 +26,7 @@ import {
   htmlFormDraftGridRules,
   sendStateOf,
   draftRejectedRowClass,
+  firstMissingDeviationNote,
   validateForTransfer,
   firstInvalidTarget,
 } from "./htmlFormDraftShared";
@@ -389,5 +390,56 @@ describe("validateForTransfer — 기록 표가 있는 화면(CCP 모니터링)"
     const msg = validateForTransfer("20260825", [], [log()], true, pass);
     expect(msg).toContain("2번째");
     expect(msg).toContain("품명");
+  });
+});
+
+describe("firstMissingDeviationNote — 부적합인데 이탈내용이 비면 막는다", () => {
+  const ngItem = { itemCd: "a", itemNm: "항목", inputType: "radio", yn: "N" } as HtmlFormItem;
+  const okItem = { itemCd: "a", itemNm: "항목", inputType: "radio", yn: "Y" } as HtmlFormItem;
+
+  it("판정이 다 적합이고 이탈도 안 켰으면 통과한다", () => {
+    expect(firstMissingDeviationNote([okItem], undefined, { note: "", on: false })).toBeNull();
+  });
+
+  it("항목 판정이 아니오면 이탈내용을 요구한다", () => {
+    // BE saveAutoIfNg 가 yn='N' 하나로 자동문구를 넣는다. 같은 술어여야 한다
+    const block = firstMissingDeviationNote([ngItem], undefined, { note: "", on: false });
+    expect(block?.message).toContain("부적합");
+    expect(block?.deviationNote).toBe(true);
+  });
+
+  it("기록 표 판정이 F 면 이탈내용을 요구한다", () => {
+    const rows = [{ rowSeq: 1, judgeCd: "F" }] as unknown as HtmlFormLogRow[];
+    expect(firstMissingDeviationNote([], rows, { note: "", on: false })?.deviationNote).toBe(true);
+  });
+
+  it("이탈내용을 쓰면 통과한다", () => {
+    expect(firstMissingDeviationNote([ngItem], undefined, { note: "온도 초과", on: false })).toBeNull();
+  });
+
+  it("공백만 쓴 것은 안 쓴 것으로 본다", () => {
+    expect(firstMissingDeviationNote([ngItem], undefined, { note: "   ", on: false })).not.toBeNull();
+  });
+
+  it("판정은 적합인데 사용자가 이탈을 켰으면 요구한다 — BE keepCa 와 같다", () => {
+    const block = firstMissingDeviationNote([okItem], undefined, { note: "", on: true });
+    expect(block?.message).toContain("이탈로 표시");
+  });
+});
+
+describe("validateForTransfer — 이탈 검사가 행 검사 뒤에 온다", () => {
+  it("빈 칸이 남아 있으면 이탈보다 그 칸을 먼저 말한다", () => {
+    const rows = [{ itemCd: "a", itemNm: "테스트 항목", inputType: "radio", yn: "" }] as HtmlFormItem[];
+    const msg = validateForTransfer("20260904", rows, undefined, true, undefined, { note: "", on: true });
+    expect(msg).toContain("테스트 항목");
+  });
+
+  it("HWP 문서형은 이탈 검사를 타지 않는다 — 이탈내용을 칠 자리가 없다", () => {
+    expect(validateForTransfer("20260904", [], undefined, false, undefined, { note: "", on: true })).toBeNull();
+  });
+
+  it("이탈 정보를 안 넘기면 예전과 같이 돈다", () => {
+    const ok = [{ itemCd: "a", itemNm: "항목", inputType: "radio", yn: "N" }] as HtmlFormItem[];
+    expect(validateForTransfer("20260904", ok)).toBeNull();
   });
 });

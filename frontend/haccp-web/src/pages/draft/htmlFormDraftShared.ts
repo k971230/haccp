@@ -305,8 +305,10 @@ export function validateForTransfer(
   itemPaper = true,
   // 금속 제품통과표 — 있으면 품명을 본다
   passRows?: HtmlFormPassRow[],
+  // 이탈내용·이탈여부 — 안 넘기면 이탈 검사를 건너뛴다. 지면이 있는 화면은 반드시 넘긴다
+  deviation?: DeviationInput,
 ): string | null {
-  return firstInvalidTarget(baseKey, items, logRows, itemPaper, passRows)?.message ?? null;
+  return firstInvalidTarget(baseKey, items, logRows, itemPaper, passRows, deviation)?.message ?? null;
 }
 
 /** 전송을 막은 첫 자리 — 문구와 그 자리를 함께 준다 */
@@ -319,6 +321,54 @@ export interface TransferBlock {
   logRowSeq?: number;
   // 금속 제품통과표에서 막힌 행의 rowSeq — data-pass-seq 와 짝
   passRowSeq?: number;
+  // 이탈내용 칸에서 막혔다 — 푸터라 행 좌표가 없다. data-deviation-note 와 짝
+  deviationNote?: true;
+}
+
+/** 전송 검사에 필요한 이탈 정보 — 지면 푸터의 이탈내용과 목록의 이탈여부 체크 */
+export interface DeviationInput {
+  // 지면 푸터 「이탈내용」. 자동문구는 detailToDraftBuf 가 이미 빈칸으로 만든다(paperNote)
+  note: string;
+  // 사용자가 켠 이탈여부. 부적합 판정이 있으면 화면이 자동으로 켠다
+  on: boolean;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-04
+ * 코멘트:
+ *   1) 부적합인데 이탈내용이 비었으면 전송을 막는다
+ *   2) firstInvalidTarget 이 행 검사를 다 통과한 뒤에 부른다
+ *   3) 부적합 판정 기준은 BE saveAutoIfNg 를 부르는 자리와 **같은 술어**여야 한다
+ *
+ * BE 는 이 조건에서 이탈내용에 자동문구를 넣는다
+ * (`DocCorrectiveSupport.saveAutoIfNg` — 항목형 `yn='N'`, 기록표 `judgeCd='F'`,
+ *  그리고 사용자가 켠 `deviationYn='Y'`).
+ * 그 자동문구는 지면에 빈칸으로 그려지므로(`paperNote`) 작성자도 결재자도 못 본다 —
+ * 승인된 HACCP 기록의 이탈내용이 시스템 문구인 채로 남는다. 그래서 여기서 막는다.
+ *
+ * BE 에는 안 건다. 자동문구는 BE 가 일부러 넣는 것이라 거기서 막으면 자기 값을 자기가 거절한다.
+ * 막을 자리는 사람이 채울 수 있는 화면이다.
+ */
+export function firstMissingDeviationNote(
+  // 지면 항목 — 항목형 판정 yn
+  items: HtmlFormItem[],
+  // 기록 표 행 — CCP 모니터링 판정 judgeCd
+  logRows: HtmlFormLogRow[] | undefined,
+  // 지면 푸터 이탈내용·이탈여부
+  deviation: DeviationInput,
+): TransferBlock | null {
+  const ng = items.some((i) => String(i.yn ?? "").trim().toUpperCase() === "N")
+    || (logRows ?? []).some((r) => String(r.judgeCd ?? "").trim().toUpperCase() === "F");
+  // 판정이 부적합이거나 사용자가 이탈을 켰으면 BE 가 개선조치를 남긴다 — 그 내용을 사람이 써야 한다
+  if (!ng && !deviation.on) return null;
+  if (String(deviation.note ?? "").trim()) return null;
+  return {
+    message: ng
+      ? "부적합이 있습니다. 이탈내용을 입력하세요."
+      : "이탈로 표시했습니다. 이탈내용을 입력하세요.",
+    deviationNote: true,
+  };
 }
 
 /**
@@ -350,6 +400,14 @@ export function firstInvalidTarget(
   itemPaper = true,
   // 금속 제품통과표 — 감도 검사가 끝난 뒤 품명을 본다
   passRows?: HtmlFormPassRow[],
+  /*
+   * 이탈내용·이탈여부. 안 넘기면 이탈 검사를 **건너뛴다.**
+   *
+   * HWP 문서형은 우측이 편집기라 지면 푸터가 없다 — 이탈내용을 칠 자리가 없어서
+   * 검사를 걸면 영영 전송이 막힌다. 그래서 itemPaper=false 는 위에서 이미 빠진다.
+   * 지면이 있는 화면(작성 5화면·결재첨부)은 **반드시 넘긴다.**
+   */
+  deviation?: DeviationInput,
 ): TransferBlock | null {
   if (!/^\d{8}$/.test(baseKey)) return { message: MES.required("일자") };
   // 문서형일 때(= HWP) 볼 항목이 없다. 일자만 맞으면 전송한다
@@ -358,7 +416,10 @@ export function firstInvalidTarget(
   // 사용자가 채우는 곳은 기록 표뿐이므로 그 행만 본다
   if (logRows && logRows.length > 0) {
     // 금속은 통과표가 있다. 포장·가열만 온도(cells.temp)를 본다
-    return firstInvalidLogRow(logRows, !passRows?.length) ?? firstInvalidPassRow(passRows);
+    const rowBlock = firstInvalidLogRow(logRows, !passRows?.length) ?? firstInvalidPassRow(passRows);
+    // 행이 먼저다 — 빈 칸을 다 채운 뒤에 푸터를 묻는다
+    if (rowBlock) return rowBlock;
+    return deviation ? firstMissingDeviationNote(items, logRows, deviation) : null;
   }
   const body = paperBodyItems(items);
   if (body.length === 0) return { message: "점검 행이 없습니다." };
@@ -374,7 +435,7 @@ export function firstInvalidTarget(
       return { message: MES.required(label), itemCd: item.itemCd };
     }
   }
-  return null;
+  return deviation ? firstMissingDeviationNote(items, logRows, deviation) : null;
 }
 
 /**

@@ -904,7 +904,9 @@ export function HtmlFormDraftPage({
     const sel = block.itemCd
       ? `[data-item-cd="${CSS.escape(block.itemCd)}"]`
       : block.logRowSeq != null ? `[data-log-seq="${block.logRowSeq}"]`
-        : block.passRowSeq != null ? `[data-pass-seq="${block.passRowSeq}"]` : "";
+        : block.passRowSeq != null ? `[data-pass-seq="${block.passRowSeq}"]`
+          // 이탈내용은 푸터라 행 좌표가 없다. 칸 자체를 잡는다
+          : block.deviationNote ? "[data-deviation-note]" : "";
     if (!sel) return;
     const row = document.querySelector<HTMLElement>(sel);
     if (!row) return;
@@ -938,7 +940,11 @@ export function HtmlFormDraftPage({
      * renderDetail 을 넘긴 화면(= HWP 문서형)은 본문이 rhwp 파일이라 점검 항목이 없다.
      * 항목형 규칙을 그대로 태우면 「점검 행이 없습니다」로 영영 전송이 막힌다.
      */
-    const block = firstInvalidTarget(cur.baseKey, cur.items, cur.logRows, !renderDetail, cur.passRows);
+    const block = firstInvalidTarget(
+      cur.baseKey, cur.items, cur.logRows, !renderDetail, cur.passRows,
+      // 부적합인데 이탈내용이 비면 막는다. 자동문구는 지면에 빈칸으로 그려져 아무도 못 본다
+      { note: cur.specialNote, on: cur.deviationYn },
+    );
     if (block) {
       mesToast(block.message, "warn");
       // 문구만 띄우면 항목이 수십 개인 지면에서 어느 칸인지 사람이 찾아야 한다.
@@ -998,7 +1004,10 @@ export function HtmlFormDraftPage({
           user,
         );
         // 필수값이 빈 건은 전송 가능 건이 아니다
-        if (validateForTransfer(cur.baseKey, cur.items, cur.logRows, !renderDetail, cur.passRows)) {
+        if (validateForTransfer(
+          cur.baseKey, cur.items, cur.logRows, !renderDetail, cur.passRows,
+          { note: cur.specialNote, on: cur.deviationYn },
+        )) {
           skipped += 1;
           continue;
         }
