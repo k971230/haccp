@@ -34,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 // 역할 — 컬렉션
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,6 +44,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 // 역할 — Multipart 업로드 파일
 import org.springframework.web.multipart.MultipartFile;
@@ -240,10 +243,10 @@ public class DocumentService {
         String kind = requireFileKind(fileKind);
         String coCd = LoginUserContext.coCd();
         String userId = LoginUserContext.userId();
-        // HWP 본원본일 때(= 문서당 1건) 기존 HWP_SRC를 먼저 제거
-        if ("HWP_SRC".equals(kind)) {
-            replaceExistingHwpSrc(coCd, requiredDocIdx, userId);
-        }
+        // HWP 본원본일 때(= 문서당 1건) 기존 HWP_SRC 메타를 먼저 제거. 실물은 커밋 뒤에 지운다
+        List<String> oldPaths = "HWP_SRC".equals(kind)
+                ? replaceExistingHwpSrc(coCd, requiredDocIdx, userId)
+                : List.of();
         String path = storage.save(coCd, documentTmplCd(coCd, requiredDocIdx), file);
         try {
             Long fileIdx = mapper.insertFile(
@@ -265,6 +268,15 @@ public class DocumentService {
                     null
             );
             DocumentFileRow saved = mapper.selectFile(coCd, fileIdx);
+            /*
+             * 새 경로와 같은 것은 **빼고** 등록한다.
+             *
+             * storeWithSeq 는 REPLACE_EXISTING 없이 복사하고 충돌하면 연번을 올리므로
+             * 옛 파일이 디스크에 남아 있으면 새 저장이 _002 로 밀려 경로가 안 겹친다.
+             * 그런데 **메타는 있는데 실물이 이미 없는 행**(앞선 실패·운영 정리의 잔재)이면
+             * 새 저장이 같은 _001 을 집는다 — 그때 이 삭제가 방금 올린 본문을 지운다.
+             */
+            deleteAfterCommit(oldPaths.stream().filter(old -> !old.equals(path)).toList());
             return publicFile(saved);
         } catch (RuntimeException e) {
             // DB 메타 등록이 실패했을 때(= 결재 잠금·SQL 오류) 물리 파일 롤백
@@ -281,11 +293,14 @@ public class DocumentService {
      * 개발자: 박승우
      * 일자: 2026-08-06
      * 코멘트:
-     *   1) 문서에 남은 HWP_SRC 물리 경로를 모은 뒤 메타를 종류별 일괄 삭제한다
+     *   1) 문서에 남은 HWP_SRC 메타를 종류별로 지우고 **옛 물리 경로를 돌려준다**
      *   2) upload(HWP_SRC) 직전에 호출해 원본 1건만 남긴다 — 재저장 시 목록이 쌓이지 않는다
      *   3) ATTACH/PDF는 건드리지 않는다
+     *
+     * 실물은 여기서 안 지운다. 지우는 시점은 호출측이 정한다 — 새 파일 저장까지 성공한 뒤,
+     * 그리고 **커밋 뒤**여야 한다. 여기서 지우면 뒤에서 터졌을 때 메타만 되살아난다.
      */
-    private void replaceExistingHwpSrc(
+    private List<String> replaceExistingHwpSrc(
             // JWT 회사코드
             String coCd,
             // 대상 문서 idx
@@ -298,7 +313,7 @@ public class DocumentService {
                 .toList();
         // 기존 원본이 없을 때(= 첫 저장)
         if (oldSrc.isEmpty()) {
-            return;
+            return List.of();
         }
         // 물리 파일 경로 — 메타 삭제 전에 모아 둔다
         List<String> paths = oldSrc.stream()
@@ -310,13 +325,7 @@ public class DocumentService {
         }
         // 종류별 일괄 삭제 — 결재 잠금이면 SP가 BizException
         mapper.deleteFilesByKind(coCd, docIdx, "HWP_SRC", userId);
-        for (String path : paths) {
-            try {
-                storage.delete(path);
-            } catch (RuntimeException ignored) {
-                // 메타는 지웠고 물리만 남으면 운영 정리 대상 — 업로드는 계속
-            }
-        }
+        return paths;
     }
 
     /**
@@ -415,7 +424,8 @@ public class DocumentService {
             throw new BizException("파일을 찾을 수 없습니다.");
         }
         mapper.deleteFile(coCd, requiredFileIdx, LoginUserContext.userId());
-        storage.delete(file.getFilePath());
+        // 실물은 커밋 뒤에. 아래 감사 적재가 실패하면 메타는 되살아나는데 실물은 안 돌아온다
+        deleteAfterCommit(List.of(text(file.getFilePath())));
         audit("tbl_document_file", requiredFileIdx, "D", publicFile(file), null, null);
     }
 
@@ -555,6 +565,9 @@ public class DocumentService {
     ) {
         String coCd = LoginUserContext.coCd();
         assertDeletable(coCd, keys);
+        // 여러 건을 지울 때 뒤 건이 터지면 앞 건의 메타는 롤백으로 되살아난다.
+        // 실물까지 그때 지워 버리면 되살아난 메타가 없는 파일을 가리킨다 — 커밋 뒤에 모아 지운다
+        List<String> removed = new ArrayList<>();
         for (DocumentDeleteItem key : keys) {
             Map<String, Object> header = camelMap(mapper.selectDocument(coCd, key.getDocIdx()));
             // docKind 정본은 HWP/HTML. HWP 만 이 경로에서 지운다
@@ -564,10 +577,11 @@ public class DocumentService {
             List<DocumentFileRow> files = mapper.selectFiles(coCd, key.getDocIdx());
             mapper.deleteDocument(coCd, key.getDocIdx(), LoginUserContext.userId());
             for (DocumentFileRow file : files) {
-                storage.delete(file.getFilePath());
+                removed.add(text(file.getFilePath()));
             }
             audit("tbl_document", key.getDocIdx(), "D", header, null, null);
         }
+        deleteAfterCommit(removed);
     }
 
     /** 삭제 대상 정규화·전송·결재완료 차단 — 보존기간은 초안 삭제 자물쇠가 아니다 */
@@ -630,6 +644,56 @@ public class DocumentService {
                 // 원래 업무 오류를 우선한다
             }
             throw e;
+        }
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-04
+     * 코멘트:
+     *   1) 실물 파일 삭제를 **커밋 뒤로** 미룬다
+     *   2) 메타를 지우는 트랜잭션 안에서 부른다
+     *   3) 트랜잭션 밖이면 지금 지운다 — 미룰 커밋이 없다
+     *
+     * 왜 미루나: 메타는 트랜잭션이 되돌리는데 `Files.deleteIfExists` 는 안 되돌린다.
+     * 되돌림 단위가 다른 둘을 한 트랜잭션에 섞으면, 뒤에서 무엇이 하나 터졌을 때
+     * **메타는 롤백으로 되살아나고 실물만 사라진다.** 그 문서를 열면 「파일을 찾을 수 없습니다」다.
+     * 실제로 문서 여러 건을 골라 지울 때 둘째에서 실패하면 첫 건이 그 꼴이 됐다.
+     */
+    private void deleteAfterCommit(
+            // 지울 물리 경로 — null·공백은 걸러진다
+            Collection<String> paths
+    ) {
+        List<String> targets = paths.stream()
+                .filter(path -> path != null && !path.isBlank())
+                .distinct()
+                .toList();
+        if (targets.isEmpty()) {
+            return;
+        }
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            targets.forEach(this::deleteQuietly);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                targets.forEach(DocumentService.this::deleteQuietly);
+            }
+        });
+    }
+
+    /**
+     * 실물 삭제 실패를 삼킨다 — 메타는 이미 지워졌고 남은 파일은 운영 정리 대상이다.
+     *
+     * afterCommit 에서는 **더더욱** 삼켜야 한다. 거기서 던지면 이미 커밋이 끝난 작업이
+     * 사용자에게는 HTTP 오류로 보인다.
+     */
+    private void deleteQuietly(String path) {
+        try {
+            storage.delete(path);
+        } catch (RuntimeException ignored) {
+            // 남은 파일은 운영 정리 대상. 업무는 이미 끝났다
         }
     }
 
