@@ -21,6 +21,7 @@
 --   K17-b sp_tbl_audit_log_c_000           reason 을 left(...,500) 로 자른다
 --   K21   sp_tbl_ccp_generic_monitor_c_000 일자 8자리 검증 (형제 셋과 같은 기준)
 --   C7    COMMENT ON 세 줄                  doc_kind 주석을 저장값(HTML)에 맞춘다
+--   K1    sp_tbl_corrective_action_delete_blocker_r_000  **신설** — 삭제 사전 차단
 --
 -- 적용 전에 세어 둔다 — 이 문서들은 K8 가드 뒤로 전송이 막힌다.
 --
@@ -30,6 +31,11 @@
 --      AND NOT EXISTS (SELECT 1 FROM tbl_document_file f
 --                       WHERE f.co_cd = d.co_cd AND f.doc_idx = d.idx
 --                         AND upper(f.file_kind) = 'HWP_SRC');
+--
+-- ★ 순서 — K1 의 신설 함수 때문에 **DB 가 앱보다 먼저**여야 한다.
+--    앱만 먼저 올라가면 매퍼가 없는 함수를 불러 42883 로 개선조치 삭제가 확인창 전에 전부 죽는다.
+--    되돌릴 때는 반대다 — 앱을 이전 TAG 로 내린 뒤에 함수를 지운다:
+--      DROP FUNCTION sasshaccp.sp_tbl_corrective_action_delete_blocker_r_000(varchar, bigint[]);
 --
 -- 적용 후 확인 — 형식이 어긋난 ca_no 가 있으면 K6 의 정규식이 그 행을 건너뛴다.
 -- 0 이 아니면 채번 기준이 그 회사·일자에서 어긋날 수 있으니 눈으로 본다.
@@ -729,3 +735,19 @@ BEGIN
     END LOOP;
     RETURN v_doc_idx;
 END$$;
+
+-- ── sp_tbl_corrective_action_delete_blocker_r_000  (신설)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_corrective_action_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
+    LANGUAGE sql STABLE
+    AS $$
+    -- 완료(DONE)된 개선조치는 지우지 않는다 — sp_tbl_corrective_action_d_000 과 **같은 판정**이어야 한다.
+    -- 예전에는 이 검사가 삭제 SP 에만 있어서, 확인창을 누른 뒤에야 실패했고
+    -- 여러 건을 고르면 정상 건까지 함께 롤백됐다. 어느 건이 왜 막히는지도 안 나왔다.
+    SELECT ca.ca_no::varchar AS ref_key,
+           '완료된 개선조치'::varchar AS target
+      FROM tbl_corrective_action ca
+     WHERE ca.co_cd = p_co_cd
+       AND ca.idx = ANY(p_idxs)
+       AND ca.status = 'DONE'
+     LIMIT 1;
+$$;

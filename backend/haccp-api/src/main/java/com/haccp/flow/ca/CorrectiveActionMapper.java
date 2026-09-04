@@ -12,6 +12,8 @@
  */
 package com.haccp.flow.ca;
 
+// 역할 — 삭제 차단 첫 행
+import com.haccp.common.validation.DeleteBlocker;
 // 역할 — 목록 타입
 import java.util.List;
 import java.util.Map;
@@ -46,6 +48,19 @@ public interface CorrectiveActionMapper {
             @Param("payloadJson") String payloadJson,
             // JWT 작업자
             @Param("userId") String userId
+    );
+
+    /**
+     * 삭제 사전 차단 검사 — 완료(DONE) 건의 첫 하나만 돌아온다. 없으면 null 이라 삭제를 진행한다.
+     *
+     * 삭제 SP 와 같은 기준이다. 검사 자리가 하나면 확인창을 누른 뒤에야 실패하고,
+     * 여러 건을 고르면 정상 건까지 함께 롤백된다.
+     */
+    DeleteBlocker selectDeleteBlocker(
+            // JWT 회사코드
+            @Param("coCd") String coCd,
+            // 삭제 대상 대리키 배열
+            @Param("idxs") List<Long> idxs
     );
 
     /** 미완료 개선조치 1건 삭제 — SP 가 완료 상태를 다시 막는다 */

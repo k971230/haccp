@@ -24,6 +24,19 @@ PIPELINE[HB94] 개선조치관리 MyBatis XML
         CALL sp_tbl_corrective_action_c_000(#{coCd}, #{idx}, CAST(#{payloadJson} AS jsonb), #{userId})
     </update>
 
+    <!--
+      삭제 차단 검사 — 완료(DONE)된 개선조치는 지울 수 없다.
+      위반 첫 건만 돌아온다. 없으면 null 이라 삭제를 진행한다.
+    -->
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
+        SELECT * FROM sp_tbl_corrective_action_delete_blocker_r_000(
+            #{coCd, jdbcType=VARCHAR},
+            <foreach collection="idxs" item="idx" open="ARRAY[" separator="," close="]::bigint[]">
+                #{idx, jdbcType=BIGINT}
+            </foreach>
+        )
+    </select>
+
     <!-- 삭제. 완료된 건은 SP 가 막는다 -->
     <update id="deleteCorrectiveAction" statementType="CALLABLE">
         CALL sp_tbl_corrective_action_d_000(#{coCd}, #{idx}, #{userId})

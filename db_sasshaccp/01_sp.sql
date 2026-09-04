@@ -2900,6 +2900,33 @@ END$_$;
 
 
 --
+-- Name: sp_tbl_corrective_action_delete_blocker_r_000(character varying, bigint[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_corrective_action_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
+    LANGUAGE sql STABLE
+    AS $$
+    -- 완료(DONE)된 개선조치는 지우지 않는다 — sp_tbl_corrective_action_d_000 과 **같은 판정**이어야 한다.
+    -- 예전에는 이 검사가 삭제 SP 에만 있어서, 확인창을 누른 뒤에야 실패했고
+    -- 여러 건을 고르면 정상 건까지 함께 롤백됐다. 어느 건이 왜 막히는지도 안 나왔다.
+    SELECT ca.ca_no::varchar AS ref_key,
+           '완료된 개선조치'::varchar AS target
+      FROM tbl_corrective_action ca
+     WHERE ca.co_cd = p_co_cd
+       AND ca.idx = ANY(p_idxs)
+       AND ca.status = 'DONE'
+     LIMIT 1;
+$$;
+
+
+--
+-- Name: FUNCTION sp_tbl_corrective_action_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]); Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON FUNCTION sasshaccp.sp_tbl_corrective_action_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) IS '개선조치 삭제 사전 차단 — 완료(DONE) 건의 첫 하나만 반환. 삭제 SP 와 같은 기준';
+
+
+--
 -- Name: sp_tbl_corrective_action_d_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 

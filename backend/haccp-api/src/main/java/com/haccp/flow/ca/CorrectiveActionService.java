@@ -105,7 +105,7 @@ public class CorrectiveActionService {
             // 삭제 키 객체 배열 — 단건도 [{ idx }]
             List<Map<String, Long>> keys
     ) {
-        normalizeKeys(keys);
+        assertDeletable(keys);
     }
 
     /**
@@ -121,7 +121,7 @@ public class CorrectiveActionService {
             // 삭제 키 객체 배열 — 단건도 [{ idx }]
             List<Map<String, Long>> keys
     ) {
-        normalizeKeys(keys);
+        assertDeletable(keys);
         String coCd = LoginUserContext.coCd();
         String userId = LoginUserContext.userId();
         for (Map<String, Long> key : keys) {
@@ -131,13 +131,27 @@ public class CorrectiveActionService {
         }
     }
 
-    /** 삭제 키를 검사한다 — 비었거나 idx 가 없으면 여기서 막는다 */
-    private void normalizeKeys(List<Map<String, Long>> keys) {
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-04
+     * 코멘트:
+     *   1) 키를 검사하고 완료된 건이 섞였는지 본다
+     *   2) validate-delete 와 delete **양쪽**에서 부른다 (Double Check)
+     *   3) 막히면 어느 개선조치가 왜 막히는지 문구에 실린다
+     *
+     * 예전에는 키 모양만 봤다. 그래서 완료 건을 고르면 **확인창을 누른 뒤에야** 실패했고,
+     * 여러 건을 골랐으면 정상 건까지 같은 트랜잭션에서 롤백됐다.
+     * 검사 자리를 둘로 나누는 것이 [OPS_DELETE] 규약이고, 골드는 DocumentService.assertDeletable 이다.
+     */
+    private void assertDeletable(List<Map<String, Long>> keys) {
         DeleteValidation.requireItems(keys, "삭제할 개선조치를 선택하세요.");
+        List<Long> idxs = new ArrayList<>();
         for (Map<String, Long> key : keys) {
-            DeleteValidation.requirePositive(
-                    key == null ? null : key.get("idx"), "삭제할 개선조치를 선택하세요.");
+            idxs.add(DeleteValidation.requirePositive(
+                    key == null ? null : key.get("idx"), "삭제할 개선조치를 선택하세요."));
         }
+        DeleteValidation.throwIfBlocked(
+                mapper.selectDeleteBlocker(LoginUserContext.coCd(), idxs), "개선조치");
     }
 
     /** SP snake_case 결과를 화면 계약(camelCase)으로 바꾼다 */
