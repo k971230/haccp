@@ -139,9 +139,13 @@ export interface HtmlFormDraftPageProps {
   pickBeforeAdd?: () => Promise<HtmlFormDraftPick | null>;
   /**
    * 저장이 끝난 뒤 화면이 더 할 일 — HWP 본문 파일 업로드가 여기 붙는다.
-   * 던지면 저장 자체가 실패로 처리된다
+   * 던지면 저장 자체가 실패로 처리된다.
+   *
+   * **false 를 돌려주면 「아무것도 안 올렸다」는 뜻이다.** 던지지는 않았지만 본문은 안 갔다 —
+   * 편집기가 그 문서를 안 들고 있는 경우다. Promise<void> 였을 때는 이걸 구분할 수 없어
+   * runSaveDetail 이 무조건 true 를 돌려줬고, 본문 없는 문서가 그대로 전송·승인됐다.
    */
-  afterSave?: (docIdx: number) => Promise<void>;
+  afterSave?: (docIdx: number) => Promise<boolean>;
   /**
    * HWP 본문 dirty — 목록 _rowState 와 다른 축. HTML 5화면은 넘기지 않는다.
    * 목록이 깨끗한 채 칸만 고쳤을 때 덮어쓰기 저장을 타게 한다
@@ -567,6 +571,11 @@ export function HtmlFormDraftPage({
          * 「왼쪽만 저장했는데 오른쪽이 엮인다」가 이것이고, 같은 본문을 연달아 올리다
          * 충돌(409)까지 났다. 열지 않은 행은 본문이 없는 게 맞다.
          */
+        /*
+         * 반환값을 여기서는 안 본다. 이 시점에 api.save 는 이미 서버에 커밋됐다 —
+         * 본문을 못 올렸다고 기본정보 저장까지 실패로 만들 수는 없다.
+         * 「안 올렸다」는 uploadBody 가 띄우는 안내가 사용자에게 전한다.
+         */
         if (afterSave && isOpenRow) await afterSave(saved);
         savedIdxs.push(saved);
         if (isOpenRow) savedActiveIdx = saved;
@@ -686,7 +695,13 @@ export function HtmlFormDraftPage({
         mesToast("전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.", "warn");
         return false;
       }
-      if (afterSave) await afterSave(b.docIdx);
+      /*
+       * 본문만 저장하는 길이다. afterSave 가 이 경로의 **전부**라
+       * 그것이 아무것도 안 올렸으면 저장은 일어나지 않은 것이다.
+       * true 를 돌려주면 전송이 그 말을 믿고 빈 문서를 상신한다.
+       */
+      const uploaded = afterSave ? await afterSave(b.docIdx) : true;
+      if (!uploaded) return false;
       clearBodyDirty?.();
       return true;
     }

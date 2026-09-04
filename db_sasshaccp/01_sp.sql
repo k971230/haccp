@@ -3223,14 +3223,16 @@ DECLARE
     v_status varchar(3);
     v_writer varchar(20);
     v_line varchar(20);
+    -- 본문이 파일로 오는 유형인지 — HWP 만 상신 전에 본문 존재를 확인한다
+    v_kind varchar(10);
     v_step record;
     v_pending record;
     v_user_nm varchar(50);
     -- 서명은 파일 경로가 아니라 바이너리다 — tbl_user.sign_img 를 결재 시점에 스냅샷한다
     v_sign_img bytea;
 BEGIN
-    SELECT d.status, d.writer_id, d.appr_line_cd
-      INTO v_status, v_writer, v_line
+    SELECT d.status, d.writer_id, d.appr_line_cd, d.doc_kind
+      INTO v_status, v_writer, v_line, v_kind
       FROM tbl_document d
      WHERE d.idx = p_doc_idx
        AND d.co_cd = p_co_cd
@@ -3289,6 +3291,27 @@ BEGIN
         END IF;
         IF v_writer IS DISTINCT FROM p_id THEN
             RAISE EXCEPTION '작성자만 결재 요청할 수 있습니다.' USING ERRCODE = '45000';
+        END IF;
+
+        /*
+         * HWP 문서형은 본문이 첨부 파일(HWP_SRC)이다. 항목형과 달리 화면이 볼 점검 행이 없어
+         * 전송 필수값 검사가 일자만 본다 — 그래서 본문이 아예 없는 문서도 상신·승인됐다.
+         * 실제로 빈 문서가 결재완료까지 갔다.
+         *
+         * 상신은 작성 6화면과 결재첨부가 모두 이 프로시저로 모이므로 마지막 문은 여기다.
+         * 화면마다 걸면 새 화면이 또 샌다.
+         *
+         * 여기서 던져도 안전하다 — processApproval 은 자기 트랜잭션이고 문서 저장 안이 아니다.
+         * (같은 이유로 sp_tbl_doc_corrective_u_000 에서는 던지지 않는다. 그쪽은 저장 트랜잭션 안이다.)
+         */
+        IF v_kind = 'HWP' AND NOT EXISTS (
+            SELECT 1 FROM tbl_document_file
+             WHERE co_cd = p_co_cd
+               AND doc_idx = p_doc_idx
+               AND upper(file_kind) = 'HWP_SRC'
+        ) THEN
+            RAISE EXCEPTION '본문이 저장되지 않았습니다. 편집기에서 문서를 열고 저장한 뒤 전송하세요.'
+                USING ERRCODE = '45000';
         END IF;
 
         DELETE FROM tbl_document_approval

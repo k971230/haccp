@@ -34,7 +34,7 @@ import { toUserMessage } from "@/shell/errors";
 // 역할 — 본문 파일 종류
 import { HWP_SRC_KIND } from "./HwpDraftRule";
 // 역할 — 저장 문서에 첨부가 없을 때 양식 원본 금지
-import { hwpOpenMode } from "./hwpOpenMode";
+import { hwpOpenMode, type HwpOpenMode } from "./hwpOpenMode";
 
 /** 첨부 중 가장 나중에 올린 본문 — 여러 번 저장하면 첨부가 쌓인다 */
 function latestSource(files: HtmlFormDraftFile[]): HtmlFormDraftFile | null {
@@ -57,6 +57,8 @@ export function HwpEditorPane({
   onDirty,
   // onClean: loadFile 성공 뒤 dirty 해제 — 로드 키입력이 본문 변경으로 안 보이게
   onClean,
+  // onOpened: 편집기가 지금 무엇을 들고 있는지 부모에게 알린다. 저장 가드가 이걸 본다
+  onOpened,
   // readOnly: 결재 미리보기 — 저장 경로가 없는 화면. 상태 줄 문구만 바뀐다
   readOnly = false,
 }: {
@@ -67,6 +69,7 @@ export function HwpEditorPane({
   files: HtmlFormDraftFile[];
   onDirty?: () => void;
   onClean?: () => void;
+  onOpened?: (mode: HwpOpenMode, docIdx: number | null) => void;
   readOnly?: boolean;
 }) {
   const [ready, setReady] = useState(false);
@@ -80,6 +83,12 @@ export function HwpEditorPane({
   onDirtyRef.current = onDirty;
   const onCleanRef = useRef(onClean);
   onCleanRef.current = onClean;
+  /*
+   * onOpened 도 ref 에 둔다. 아래 열기 효과의 의존에 넣으면 부모가 리렌더할 때마다
+   * 효과가 다시 돌아 파일을 다시 열고 — 사용자가 쓰던 내용을 날린다.
+   */
+  const onOpenedRef = useRef(onOpened);
+  onOpenedRef.current = onOpened;
   // dirty 리스너 해제 — 파일을 다시 열면 iframe 문서가 바뀌어 다시 붙인다
   const disposeDirtyRef = useRef<(() => void) | undefined>(undefined);
   // loadFile 은 취소가 없다. 한 줄로 직렬화한다
@@ -135,6 +144,8 @@ export function HwpEditorPane({
     // 저장된 문서인데 본문이 아직 없으면 빈 양식을 열지 않는다
     if (mode === "wait") {
       openedRef.current = `${docIdx}:${tmplCd}:wait`;
+      // 저장된 문서인데 본문이 아직 없다 — 편집기 내용은 이 문서 것이 아니다
+      onOpenedRef.current?.("wait", docIdx);
       setMessage("문서를 여는 중입니다…");
       return undefined;
     }
@@ -144,6 +155,15 @@ export function HwpEditorPane({
     openedRef.current = token;
 
     let alive = true;
+    /*
+     * 읽기 전에 먼저 잠근다. 성공했을 때만 푼다.
+     *
+     * 여기서 안 잠그면 「로드 중」 창이 남는다 — 행 A 를 열어 둔 채 행 B 를 누르면
+     * 로드가 끝날 때까지 편집기에는 A 가 있고, 그때 저장하면 A 의 본문이 B 로 올라간다.
+     * 토큰이 같아 위에서 이미 돌아간 경우(= 같은 문서 재렌더)는 여기 오지 않으므로
+     * 열려 있던 상태를 잘못 되돌리지 않는다.
+     */
+    onOpenedRef.current?.("wait", docIdx);
     setMessage("문서를 여는 중입니다…");
 
     const loadToken = async (want: string) => {
@@ -175,6 +195,8 @@ export function HwpEditorPane({
           }
           attachDirty(editor.element);
           onCleanRef.current?.();
+          // 이 자리라야 한다. 위 재귀 로드 분기보다 앞에서 알리면 방금 버린 문서를 「열렸다」고 올린다
+          onOpenedRef.current?.("source", currentDoc);
           setMessage(`${currentSrc.fileNm} 을(를) 열었습니다.`);
           return;
         }
@@ -197,6 +219,7 @@ export function HwpEditorPane({
         }
         attachDirty(editor.element);
         onCleanRef.current?.();
+        onOpenedRef.current?.("template", currentDoc);
         setMessage(`${tmpl.tmplNm} 양식을 열었습니다.`);
       } catch (error) {
         if (alive && openedRef.current === want) setMessage(toUserMessage(error));
