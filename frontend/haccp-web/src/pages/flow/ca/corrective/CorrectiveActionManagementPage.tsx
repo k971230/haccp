@@ -158,6 +158,9 @@ export default function CorrectiveActionManagementPage() {
             deviationDesc: row.deviationDesc,
             actionDesc: row.actionDesc,
             actionUserId: row.actionUserId,
+            // 조치자 표시명 — 이걸 안 실어 보내서 「저장했습니다」만 뜨고 값이 사라졌다.
+            // 표에도 있고 읽기 SP 도 내려주는데 쓰기 두 층이 같이 빠져 있었다
+            actionUserNm: row.actionUserNm,
             actionDt: row.actionDt,
             dueDt: row.dueDt,
             status: row.status,

@@ -1,6 +1,6 @@
 # 5. PIPELINE 색인 — 태그에서 파일로
 
-> 개발자: 박승우 · 일자: 2026-09-03
+> 개발자: 박승우 · 일자: 2026-09-04
 > 소스의 `PIPELINE[HFn]` / `PIPELINE[HBn]` 주석에서 뽑았다.
 
 코드에 태그를 달아 두고 여기서 파일을 찾는다.
@@ -20,7 +20,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 [`backend/haccp-api/PIPELINE.md`](../backend/haccp-api/PIPELINE.md) ·
 [`frontend/haccp-web/PIPELINE.md`](../frontend/haccp-web/PIPELINE.md).
 
-## 프론트 (HF) — 태그 90개 · 파일 280곳
+## 프론트 (HF) — 태그 90개 · 파일 289곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
@@ -111,7 +111,10 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/pages/docs/hwp/HwpTemplateManagementPage.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachPage.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/pages/flow/box/documentbox/DocumentBoxPage.tsx` | 연관 모듈 |
-| `HF83` | `frontend/haccp-web/src/hooks/useDocFormSession.ts` | 연관 모듈 |
+| `HF83` | `frontend/haccp-web/src/components/document/DocFileList.tsx` | 문서함 화면 |
+|  | `frontend/haccp-web/src/components/document/DocReasonBox.tsx` | 문서함 화면 |
+|  | `frontend/haccp-web/src/components/document/DocSectionHead.tsx` | 문서함 화면 |
+|  | `frontend/haccp-web/src/hooks/useDocFormSession.ts` | 연관 모듈 |
 |  | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachPage.tsx` | 연관 모듈 |
 |  | `frontend/haccp-web/src/pages/flow/box/documentbox/DocumentBoxPage.tsx` | DOC 화면 |
 |  | `frontend/haccp-web/src/pages/flow/box/documentbox/DocumentBoxRule.ts` | 문서함 그리드 규칙 |
@@ -176,6 +179,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `HF99` | `frontend/haccp-web/src/components/common/modal/CodeLookupModal.tsx` | 코드 조회 팝업 |
 |  | `frontend/haccp-web/src/components/common/modal/GlobalModal.tsx` | 전역 모달 호스트 |
 |  | `frontend/haccp-web/src/components/common/modal/modalTypes.ts` | 공통 모달 타입 |
+|  | `frontend/haccp-web/src/components/common/modal/ReasonActionModal.tsx` | 공통 모달 |
 |  | `frontend/haccp-web/src/components/common/modal/UserSignModal.tsx` | 사용자 서명 팝업 |
 |  | `frontend/haccp-web/src/components/layout/LogPageShell.tsx` | 로그 화면 공통 셸 |
 |  | `frontend/haccp-web/src/lib/yn.ts` | YN 공통 |
@@ -289,6 +293,10 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/components/document/HtmlDocumentPreview.tsx` | 결재 문서 미리보기 |
 |  | `frontend/haccp-web/src/components/document/HwpDocumentPreview.tsx` | 결재 문서 미리보기 |
 | `HF185` | `frontend/haccp-web/src/components/document/ApprovalLineSteps.tsx` | 연관 — 결재 첨부 진행상태 마크업 |
+|  | `frontend/haccp-web/src/components/document/DocFileList.tsx` | 결재 첨부 화면 |
+|  | `frontend/haccp-web/src/components/document/DocReasonBox.tsx` | 결재 첨부 화면 |
+|  | `frontend/haccp-web/src/components/document/DocSectionHead.tsx` | 결재 첨부 화면 |
+|  | `frontend/haccp-web/src/components/document/stepperTone.ts` | 결재 첨부 스테퍼 |
 |  | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachPage.tsx` | 결재 첨부 화면 |
 |  | `frontend/haccp-web/src/pages/flow/appr/attach/ApprovalAttachRule.ts` | 결재 첨부 화면 |
 | `HF186` | `frontend/haccp-web/src/pages/draft/hwp-doc/hwpOpenMode.test.ts` | HWP 열기 판정 |
@@ -297,6 +305,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/components/document/DocumentPreviewPane.tsx` | 문서 미리보기 패널 |
 |  | `frontend/haccp-web/src/components/document/DocumentPrintLayer.tsx` | HTML A4 일괄 인쇄 |
 |  | `frontend/haccp-web/src/components/document/printHwpDocuments.ts` | HWP PDF 인쇄 |
+|  | `frontend/haccp-web/src/components/document/stepperTone.ts` | 문서함 결재 스테퍼 |
 |  | `frontend/haccp-web/src/pages/flow/box/documentbox/DocumentBoxPage.tsx` | 문서함 인쇄 |
 |  | `frontend/haccp-web/src/pages/flow/box/documentbox/DocumentBoxRule.ts` | 연관 — 문서함 인쇄·결재 스테퍼 |
 | `HF200` | `frontend/haccp-web/src/shell/gridRules/gridSave.ts` | 편집 그리드 저장 공통 |

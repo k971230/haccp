@@ -552,6 +552,8 @@ export function HtmlFormFootTable({
                * 실제로 그렇게 생긴 개선조치가 둘 있었다. 그 규칙을 칸에 적어 둔다.
                */
               title={`${noteLabel} — 여기에 글자를 쓰면 개선조치가 자동으로 생깁니다. 이탈이 없으면 비워 둡니다`}
+              // 전송이 이탈내용에서 막히면 여기로 커서를 옮긴다 — focusBlockedCell 선택자와 짝
+              data-deviation-note
               value={footer.specialNote}
               readOnly={!writeEdit}
               onChange={(e) => onFooterChange?.({ specialNote: e.target.value })}

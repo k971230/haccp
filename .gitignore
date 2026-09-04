@@ -80,3 +80,6 @@ docker-compose.e2e-local.yml
 
 # 실무 검증 봇 작업 폴더 — 보고서만 쌓인다. 저장소에 안 올린다
 grokbot/
+
+# 파이썬 캐시 — scripts/_sp_migration_diff.py 가 남긴다
+__pycache__/

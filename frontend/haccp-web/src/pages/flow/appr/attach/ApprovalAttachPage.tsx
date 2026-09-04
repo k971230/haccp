@@ -295,7 +295,11 @@ export default function ApprovalAttachPage() {
       await entry.api.detail(row.tmplCd, row.docIdx),
       { tmplCd: row.tmplCd, tmplNm: row.tmplNm },
     );
-    return validateForTransfer(buf.baseKey, buf.items, buf.logRows, true, buf.passRows);
+    return validateForTransfer(
+      buf.baseKey, buf.items, buf.logRows, true, buf.passRows,
+      // 작성 화면과 같은 기준 — 부적합인데 이탈내용이 비면 여기서도 막는다
+      { note: buf.specialNote, on: buf.deviationYn },
+    );
   };
 
   /** 초기화 — 저장하지 않은 비고만 되돌린다. DB 첨부는 건드리지 않는다 */

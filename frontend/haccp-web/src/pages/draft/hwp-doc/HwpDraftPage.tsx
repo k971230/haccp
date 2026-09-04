@@ -28,6 +28,8 @@ import { HtmlFormDraftPage, type HtmlFormDraftPick } from "../HtmlFormDraftPage"
 import { HwpTaskLookupModal } from "../HwpTaskLookupModal";
 // 역할 — 우측 rhwp 편집기 패널
 import { HwpEditorPane } from "./HwpEditorPane";
+// 역할 — 편집기가 무엇을 들고 있는지 (저장 가드 기준)
+import { canUploadBody, nextOpenedRef, type HwpOpenedRef } from "./hwpOpenMode";
 // 역할 — 업무 오류·안내
 import { mesError } from "@/shell/errors";
 import { mesToast } from "@/shell/dialog";
@@ -72,6 +74,13 @@ export function HwpDraftPage() {
   // 오늘 할일 팝업 — 행 추가가 열고, 고르거나 취소하면 약속을 이행한다
   const [tasks, setTasks] = useState<HwpDraftTask[] | null>(null);
   const pickResolveRef = useRef<((pick: HtmlFormDraftPick | null) => void) | null>(null);
+  /*
+   * 편집기가 지금 무엇을 들고 있는지. 패널이 알려 준다.
+   *
+   * 초기값이 wait 인 것이 중요하다 — 패널이 준비되기 전(ready·editor·tmplCd 미충족)에는
+   * 통지가 아예 없다. template 로 시작하면 그 사이 저장이 **빈 파일**을 올린다.
+   */
+  const openedRef = useRef<HwpOpenedRef>({ mode: "wait", docIdx: null });
   // 본문 dirty — rhwp 칸 입력. 목록 행 _rowState 와 다른 축이다
   const editorDirtyRef = useRef(false);
   const isBodyDirty = useCallback(() => editorDirtyRef.current, []);
@@ -88,14 +97,31 @@ export function HwpDraftPage() {
    * 코멘트:
    *   1) 저장이 끝나면 편집기 내용을 본문 파일로 올린다 — 첫 저장이면 생성, 이후면 덮어쓰기
    *   2) 공통 화면이 좌측 저장·본문만 dirty 인 우측 저장 뒤에 호출한다
-   *   3) 편집기가 아직 없으면 아무것도 올리지 않는다 — 좌측 저장만 한 경우다
+   *   3) 편집기가 **이 문서를 읽어 둔** 경우에만 올린다. 아니면 false 로 알린다
+   *
+   * 올렸으면 true. 편집기가 이 문서를 안 들고 있어 아무것도 안 올렸으면 false 다.
+   * 호출측(runSaveDetail)이 이 값을 그대로 사용자에게 전한다 —
+   * 안 올렸는데 「저장했습니다」가 뜨면 사람은 본문이 들어간 줄 안다.
    */
   const uploadBody = useCallback(async (
     // docIdx: 방금 저장된 문서 idx
     docIdx: number,
-  ) => {
+  ): Promise<boolean> => {
     const editor = editorRef.current;
-    if (!editor) return;
+    if (!editor) return false;
+    /*
+     * 대조하는 것은 docIdx 가 아니라 mode 다.
+     *
+     * 신규 행은 hwpOpenMode(null, false) → template 로 열려 편집기가 아는 docIdx 가 null 인데,
+     * 저장은 서버가 방금 발급한 새 idx 로 부른다. docIdx 만 대조하면 **모든 첫 저장**이 막힌다.
+     *
+     * wait 는 「이 문서는 idx 가 있는데 본문 파일이 없고, 편집기가 이 문서를 위해 아무것도 안 읽었다」다.
+     * 그 상태의 편집기 내용은 정의상 남의 것이다. source(기존 덮어쓰기)만 idx 를 대조한다.
+     */
+    if (!canUploadBody(openedRef.current, docIdx)) {
+      mesToast("이 문서는 편집기에 열려 있지 않습니다. 문서를 다시 연 뒤 저장하세요.", "warn");
+      return false;
+    }
     const bytes = await editor.exportHwpx();
     const { baseKey, tmplNm } = nameRef.current;
     const fileNm = hwpFileName(baseKey, tmplNm, ".hwpx");
@@ -108,6 +134,9 @@ export function HwpDraftPage() {
     } catch {
       // 저장 통지는 편집기 표시용이라 실패해도 업무를 막지 않는다
     }
+    // 올린 뒤에는 편집기가 이 문서를 들고 있는 것이 확정이다 — 연달아 저장해도 막히지 않게 한다
+    openedRef.current = { mode: "source", docIdx };
+    return true;
   }, []);
 
   /**
@@ -187,6 +216,11 @@ export function HwpDraftPage() {
               onDirty={markBodyDirty}
               // 파일을 연 뒤 깨끗 — 로드가 본문 변경으로 안 보이게
               onClean={clearBodyDirty}
+              // 편집기가 무엇을 들고 있는지 — uploadBody 가 이걸 보고 올릴지 정한다
+              // 같은 문서를 다시 읽는 중이면 잠그지 않는다 — 저장 직후 재조회가 그 재로드를 스스로 부른다
+              onOpened={(mode, idx) => {
+                openedRef.current = nextOpenedRef(openedRef.current, mode, idx);
+              }}
             />
           );
         }}
