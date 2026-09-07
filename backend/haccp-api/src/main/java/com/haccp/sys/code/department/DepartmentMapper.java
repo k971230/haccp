@@ -34,7 +34,7 @@ public interface DepartmentMapper {
      *   2) 화면 진입·조회와 사용자 관리 부서 룩업·트리에서 호출한다
      *   3) 조건에 맞는 부서가 없으면 빈 목록
      */
-    List<Map<String, Object>> selectRows(
+    List<com.haccp.sys.code.department.dto.DeptRow> selectRows(
             // JWT 회사코드 — 테넌트 범위. 필수 등가 조건
             @Param("coCd") String coCd,
             // 헤더 부서코드 검색어. 공백이면 전체

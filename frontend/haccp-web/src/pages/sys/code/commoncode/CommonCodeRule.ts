@@ -116,13 +116,21 @@ export function buildUsrColumns(
       field: "subCd",
       header: "세부코드",
       width: 100,
+      /*
+       * 상한은 DDL 폭이다 (tbl_code.sub_cd varchar(20)).
+       *
+       * 넘겨서 저장하면 브라우저·BE·SP 어디도 안 자르고 22001 SQL 오류가 그대로 뜬다.
+       * 이 계열이 이 저장소에서 네 번 났다 (docs/4_명명과_경로.md 10절).
+       * 폭을 바꾸면 이 숫자도 같이 바꾼다 — scripts/audit_grid_maxlength.sh 가 대조한다.
+       */
+      maxLength: 20,
       required: true,
       editableOnNew: true,
     },
-    { field: "codeNm", header: "코드명", width: 160, editable, required: true },
+    { field: "codeNm", header: "코드명", width: 160, maxLength: 100, editable, required: true },
     { field: "sortNo", header: "정렬", width: 70, type: "number", editable },
-    { field: "ref1", header: "참조1", width: 100, editable },
-    { field: "ref2", header: "참조2", width: 100, editable },
+    { field: "ref1", header: "참조1", width: 100, maxLength: 100, editable },
+    { field: "ref2", header: "참조2", width: 100, maxLength: 100, editable },
     {
       field: "useYn",
       header: "사용여부",

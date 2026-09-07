@@ -1,6 +1,6 @@
 # 5. PIPELINE 색인 — 태그에서 파일로
 
-> 개발자: 박승우 · 일자: 2026-09-04
+> 개발자: 박승우 · 일자: 2026-09-07
 > 소스의 `PIPELINE[HFn]` / `PIPELINE[HBn]` 주석에서 뽑았다.
 
 코드에 태그를 달아 두고 여기서 파일을 찾는다.
@@ -20,7 +20,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 [`backend/haccp-api/PIPELINE.md`](../backend/haccp-api/PIPELINE.md) ·
 [`frontend/haccp-web/PIPELINE.md`](../frontend/haccp-web/PIPELINE.md).
 
-## 프론트 (HF) — 태그 90개 · 파일 289곳
+## 프론트 (HF) — 태그 90개 · 파일 290곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
@@ -305,6 +305,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `frontend/haccp-web/src/components/document/DocumentPreviewPane.tsx` | 문서 미리보기 패널 |
 |  | `frontend/haccp-web/src/components/document/DocumentPrintLayer.tsx` | HTML A4 일괄 인쇄 |
 |  | `frontend/haccp-web/src/components/document/printHwpDocuments.ts` | HWP PDF 인쇄 |
+|  | `frontend/haccp-web/src/components/document/printWaitMs.ts` | 인쇄 대기 |
 |  | `frontend/haccp-web/src/components/document/stepperTone.ts` | 문서함 결재 스테퍼 |
 |  | `frontend/haccp-web/src/pages/flow/box/documentbox/DocumentBoxPage.tsx` | 문서함 인쇄 |
 |  | `frontend/haccp-web/src/pages/flow/box/documentbox/DocumentBoxRule.ts` | 연관 — 문서함 인쇄·결재 스테퍼 |
@@ -314,7 +315,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `HF212` | `frontend/haccp-web/src/pages/board/CalendarPage.tsx` | 일정 캘린더 화면 |
 | `HF213` | `frontend/haccp-web/src/components/common/modal/PasswordChangeModal.tsx` | 비밀번호 변경 팝업 |
 
-## 백엔드 (HB) — 태그 83개 · 파일 286곳
+## 백엔드 (HB) — 태그 84개 · 파일 370곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
@@ -381,6 +382,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `HB41` | `backend/haccp-api/src/main/java/com/haccp/pref/PrefController.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/resources/mapper/pref/PrefMapper.xml` | MyBatis XML |
 | `HB42` | `backend/haccp-api/src/main/java/com/haccp/pref/PrefController.java` | REST Controller |
+|  | `backend/haccp-api/src/main/java/com/haccp/pref/PrefService.java` | 그리드 설정 저장 |
 | `HB43` | `backend/haccp-api/src/main/java/com/haccp/log/dto/ViewLogItem.java` | log DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/log/ViewStatDailyJob.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/log/ViewStatService.java` | 연관 모듈 |
@@ -419,6 +421,10 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto/DocumentTemplateRow.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/templates/TemplateService.java` | 연관 모듈 |
 | `HB84` | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentMapper.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto/DocumentApprovalRow.java` | 문서 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto/DocumentHeaderRow.java` | 문서 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto/DocumentListRow.java` | 문서 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto/DocumentVersionRow.java` | 문서 DTO |
 |  | `backend/haccp-api/src/main/resources/mapper/docs/documents/DocumentMapper.xml` | MyBatis XML |
 | `HB85` | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentFileStorage.java` | doc 파일 저장 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentService.java` | 연관 모듈 |
@@ -427,6 +433,9 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentController.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentFileStorage.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentService.java` | Service |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto/DocumentDetailResponse.java` | 문서 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto/DocumentRemarkRequest.java` | 문서 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto/DocumentTitleRequest.java` | 문서 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto/HwpDocumentSaveRequest.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/templates/RhwpCliClient.java` | 연관 모듈 |
 | `HB87` | `backend/haccp-api/src/main/java/com/haccp/docs/documents/DocumentController.java` | REST Controller |
@@ -475,7 +484,10 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/user/UserMapper.java` | 사용자 관리 MyBatis 매퍼 |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/auditlog/AuditLogMapper.java` | 감사 이력 MyBatis 매퍼 |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/auditlog/AuditWriter.java` | 변경 감사 적재 |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/auditlog/dto/AuditLogRow.java` | 감사 이력 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/loginhistory/dto/LoginHistoryRow.java` | 로그인 이력 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/loginhistory/LoginHistoryMapper.java` | 로그인 이력 MyBatis 매퍼 |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/screenusage/dto/ScreenUsageRow.java` | 화면 이용 통계 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/screenusage/ScreenUsageMapper.java` | 화면 이용 통계 MyBatis 매퍼 |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/SysPayload.java` | 시스템 관리 공용 유틸 |
 |  | `backend/haccp-api/src/main/resources/mapper/docs/hwp/HwpTemplateMapper.xml` | 연관 모듈 |
@@ -491,10 +503,36 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/board/TaskMapper.java` | 워크플로 작업 매퍼 |
 |  | `backend/haccp-api/src/main/java/com/haccp/board/TaskService.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/templates/RhwpCliClient.java` | rhwp CLI PDF 변환 |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/dto/CcpMonitorDetailRow.java` | Map API DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/flow/ca/dto/CorrectiveRow.java` | Map API DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/approvalline/dto/ApprovalLineRow.java` | 결재선 관리 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/approvalline/dto/ApprovalLineStepRow.java` | 결재선 관리 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/commoncode/CommonCodeController.java` | 공통코드 REST Controller |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/commoncode/dto/CommonCodeDeleteItem.java` | 공통코드 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/commoncode/dto/CommonCodeDetailRow.java` | 공통코드 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/commoncode/dto/CommonCodeGroupRow.java` | 공통코드 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/commoncode/dto/CommonCodeSaveRow.java` | 공통코드 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/department/DepartmentController.java` | 부서 관리 REST Controller |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/department/dto/DeptDeleteItem.java` | 부서 관리 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/department/dto/DeptRow.java` | 부서 관리 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/department/dto/DeptSaveRow.java` | 부서 관리 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/menu/dto/MenuDeleteItem.java` | 메뉴 관리 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/menu/dto/MenuMgmtRow.java` | 메뉴 관리 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/menu/dto/MenuSaveRow.java` | 메뉴 관리 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/menu/MenuMgmtController.java` | 메뉴 관리 REST Controller |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/role/dto/RoleDeleteItem.java` | 권한그룹 관리 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/role/dto/RoleRow.java` | 권한그룹 관리 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/role/dto/RoleSaveRow.java` | 권한그룹 관리 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/role/dto/RoleScreenRow.java` | 권한그룹 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/role/dto/RoleScreenSaveRequest.java` | Map API DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/role/dto/RoleScreenSaveRow.java` | 권한그룹 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/role/dto/RoleScreensSaveRequest.java` | 권한그룹 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/role/RoleMgmtController.java` | 권한그룹 관리 REST Controller |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/user/dto/UserDeleteItem.java` | 사용자 관리 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/user/dto/UserRow.java` | 사용자 관리 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/user/dto/UserSaveRow.java` | 사용자 관리 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/user/dto/UserSignBlobRow.java` | 사용자 관리 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/sys/code/user/dto/UserSignInfoRow.java` | 사용자 관리 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/user/UserController.java` | 사용자 관리 REST Controller |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/user/UserSignController.java` | 사용자 서명 REST Controller |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/auditlog/AuditLogController.java` | 감사 이력 REST Controller |
@@ -502,6 +540,10 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/logs/screenusage/ScreenUsageController.java` | 화면 이용 통계 REST Controller |
 |  | `backend/haccp-api/src/main/resources/mapper/board/TaskMapper.xml` | 워크플로 작업 매퍼 |
 | `HB94` | `backend/haccp-api/src/main/java/com/haccp/board/DailyTaskGenerationJob.java` | 연관 모듈 |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/dto/NotificationRow.java` | 알림 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/dto/TodayTaskDocRow.java` | 오늘 할 일 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/dto/TodayTaskDocsResponse.java` | 오늘 할 일 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/dto/TodayTaskRow.java` | 오늘 할 일 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/board/TaskController.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/board/TaskService.java` | 워크플로 작업 서비스 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/CycleScheduleGenerator.java` | 연관 모듈 |
@@ -513,6 +555,8 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/flow/ca/CorrectiveActionController.java` | 개선조치관리 REST Controller |
 |  | `backend/haccp-api/src/main/java/com/haccp/flow/ca/CorrectiveActionMapper.java` | 개선조치관리 MyBatis 매퍼 |
 |  | `backend/haccp-api/src/main/java/com/haccp/flow/ca/CorrectiveActionService.java` | 개선조치관리 업무 서비스 |
+|  | `backend/haccp-api/src/main/java/com/haccp/flow/ca/dto/CaDeleteItem.java` | 개선조치 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/flow/ca/dto/CorrectiveSaveRow.java` | 개선조치 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/commoncode/CommonCodeService.java` | 공통코드 Service |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/department/DepartmentService.java` | 부서 관리 Service |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/code/menu/MenuMgmtService.java` | 메뉴 관리 Service |
@@ -543,12 +587,30 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/DocCycleService.java` | 문서주기 업무 서비스 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/DocumentAlarmScheduler.java` | 문서 마감 알림 스케줄러 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/dto/DocCycleDeleteItem.java` | 문서주기 삭제 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/dto/DocCycleDetailRow.java` | 문서주기 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/dto/DocCycleFormRow.java` | 문서주기 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/dto/DocCycleRow.java` | 문서주기 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/sch/dto/DocCycleSaveRequest.java` | 문서주기 DTO |
 |  | `backend/haccp-api/src/main/resources/mapper/docs/sch/DocCycleMapper.xml` | 문서주기 MyBatis XML |
-| `HB123` | `backend/haccp-api/src/main/java/com/haccp/docs/hwp/HwpTemplateController.java` | 사용양식 REST Controller |
+| `HB123` | `backend/haccp-api/src/main/java/com/haccp/docs/hwp/dto/HwpTemplateApplyRequest.java` | 사용양식 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/hwp/dto/HwpTemplateDeleteItem.java` | 사용양식 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/hwp/dto/HwpTemplateFileRow.java` | 사용양식 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/hwp/dto/HwpTemplateRow.java` | 사용양식 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/hwp/dto/HwpTemplateSaveRow.java` | 사용양식 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/hwp/HwpTemplateController.java` | 사용양식 REST Controller |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/hwp/HwpTemplateMapper.java` | 사용양식 MyBatis 매퍼 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/hwp/HwpTemplateService.java` | 사용양식 업무 서비스 |
 |  | `backend/haccp-api/src/main/resources/mapper/docs/hwp/HwpTemplateMapper.xml` | 사용양식 MyBatis XML |
-| `HB130` | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/dto/HtmlFormVerDeleteItem.java` | HTML양식 원본 DTO |
+| `HB130` | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/dto/HtmlFormApplyRequest.java` | HTML양식 원본 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/dto/HtmlFormCopyRequest.java` | HTML양식 원본 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/dto/HtmlFormCopyResult.java` | HTML양식 원본 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/dto/HtmlFormItemRow.java` | HTML양식 원본 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/dto/HtmlFormItemsSaveRequest.java` | HTML양식 원본 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/dto/HtmlFormNameRequest.java` | HTML양식 원본 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/dto/HtmlFormVerDeleteItem.java` | HTML양식 원본 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/dto/HtmlFormVersionRow.java` | HTML양식 원본 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/HtmlFormFamilyStore.java` | HTML양식 가족 포트 |
+|  | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/HtmlFormFamilyStores.java` | HTML양식 가족 레지스트리 |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/HtmlTemplateController.java` | HTML양식 원본 Controller |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/HtmlTemplateMapper.java` | HTML양식 원본 Mapper |
 |  | `backend/haccp-api/src/main/java/com/haccp/docs/htmlform/htmltemplate/HtmlTemplateService.java` | HTML양식 원본 Service |
@@ -563,31 +625,50 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/resources/mapper/docs/htmlform/ccpmtltemplate/CcpMtlTemplateMapper.xml` | CCP-3P 금속검출일지 양식 XML |
 | `HB135` | `backend/haccp-api/src/main/java/com/haccp/draft/DraftPaperStamp.java` | 양식 작성 공용 유틸 |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/DraftPaperStampMapper.java` | 양식 작성 공용 유틸 |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/DraftSeenGuard.java` | 양식 작성 공용 유틸 |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/DraftSeenMapper.java` | 양식 작성 공용 유틸 |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/DraftSupport.java` | 양식 작성 공용 유틸 |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftDeleteItem.java` | 양식 작성 공용 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftFormRow.java` | 양식 작성 공용 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftItemRow.java` | 양식 작성 공용 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftListRow.java` | 양식 작성 공용 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftSaveRequest.java` | 양식 작성 공용 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/HtmlFormDraftDetail.java` | 양식 작성 공용 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/HtmlFormDraftHeader.java` | 양식 작성 공용 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/PaperStampRow.java` | 양식 작성 공용 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HtmlDraftControllerBase.java` | HTML 작성 공통 Controller |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HtmlDraftMapper.java` | HTML 작성 공통 Mapper |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HtmlDraftService.java` | HTML 작성 공통 Service |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HygProcessDraftController.java` | 위생공정 작성 Controller |
 |  | `backend/haccp-api/src/main/resources/mapper/draft/DraftPaperStampMapper.xml` | 양식 작성 공용 유틸 |
+|  | `backend/haccp-api/src/main/resources/mapper/draft/DraftSeenMapper.xml` | 양식 작성 공용 XML |
 |  | `backend/haccp-api/src/main/resources/mapper/draft/html/HtmlDraftMapper.xml` | HTML 작성 공통 XML |
 | `HB137` | `backend/haccp-api/src/main/java/com/haccp/draft/html/HtmlDraftControllerBase.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HtmlDraftMapper.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/html/HtmlDraftService.java` | 연관 모듈 |
 |  | `backend/haccp-api/src/main/resources/mapper/draft/html/HtmlDraftMapper.xml` | 연관 모듈 |
 | `HB138` | `backend/haccp-api/src/main/java/com/haccp/draft/html/CcpVerifyDraftController.java` | CCP 검증점검 작성 Controller |
-| `HB139` | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpLogDraftMapper.java` | CCP 모니터링 작성 Mapper |
-|  | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpLogDraftService.java` | CCP 모니터링 작성 Service |
+| `HB139` | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpMonitorDraftSupport.java` | CCP 모니터링 작성 Support |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpMonitorStore.java` | CCP 모니터링 작성 Mapper |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpPkgDraftMapper.java` | CCP 포장 작성 Mapper |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpPkgDraftService.java` | CCP 포장 작성 Service |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/CcpMonitorDraftDetail.java` | CCP 모니터링 작성 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftLogRow.java` | CCP 모니터링 작성 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftPassRow.java` | CCP 모니터링 작성 DTO |
-|  | `backend/haccp-api/src/main/resources/mapper/draft/ccpmonitoring/CcpLogDraftMapper.xml` | CCP 모니터링 작성 XML |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/PkgLogCells.java` | CCP 포장 작성 DTO |
+|  | `backend/haccp-api/src/main/resources/mapper/draft/ccpmonitoring/CcpPkgDraftMapper.xml` | CCP 포장 작성 XML |
 | `HB140` | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpLogDraftControllerBase.java` | CCP 모니터링 작성 공통 Controller |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpMonitorDraftFacade.java` | CCP 모니터링 작성 Controller |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpMtlDraftMapper.java` | CCP 금속검출 작성 Mapper |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpMtlDraftService.java` | CCP 금속검출 작성 Service |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/dto/CcpMtlHeaderRow.java` | CCP 금속검출 작성 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/dto/CcpMtlPassRow.java` | CCP 금속검출 작성 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/dto/CcpMtlSensRow.java` | CCP 금속검출 작성 DTO |
 |  | `backend/haccp-api/src/main/resources/mapper/draft/ccpmonitoring/CcpMtlDraftMapper.xml` | CCP 금속검출 작성 XML |
+| `HB142` | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpHtgDraftMapper.java` | CCP 가열 작성 Mapper |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpHtgDraftService.java` | CCP 가열 작성 Service |
+|  | `backend/haccp-api/src/main/java/com/haccp/draft/dto/HtgLogCells.java` | CCP 가열 작성 DTO |
+|  | `backend/haccp-api/src/main/resources/mapper/draft/ccpmonitoring/CcpHtgDraftMapper.xml` | CCP 가열 작성 XML |
 | `HB143` | `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/CcpMtlDraftController.java` | CCP 금속검출 작성 Controller |
 | `HB144` | `backend/haccp-api/src/main/java/com/haccp/draft/dto/DraftTaskRow.java` | HWP 작성 DTO |
 |  | `backend/haccp-api/src/main/java/com/haccp/draft/hwpdoc/HwpDraftController.java` | HWP 작성 Controller |
@@ -603,4 +684,8 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/resources/mapper/board/CalendarMapper.xml` | 일정 캘린더 매퍼 |
 | `HB211` | `backend/haccp-api/src/main/java/com/haccp/board/CalendarService.java` | 일정 캘린더 서비스 |
 | `HB212` | `backend/haccp-api/src/main/java/com/haccp/board/CalendarController.java` | 일정 캘린더 Controller |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/dto/CalendarHolidayRow.java` | 일정 캘린더 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/dto/CalendarMonthResponse.java` | 일정 캘린더 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/dto/CalendarSaveItem.java` | 일정 캘린더 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/board/dto/CalendarTaskRow.java` | 일정 캘린더 DTO |
 | `HB213` | `backend/haccp-api/src/main/java/com/haccp/auth/dto/PasswordChangeRequest.java` | auth DTO |

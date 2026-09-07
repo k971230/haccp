@@ -8,7 +8,7 @@
 #    1) 루트 docs/1_~n_ · docs/README.md 링크를 본다
 #    2) mes-web·분리 잔존 md 로의 링크는 경고만
 #    3) 존재하지 않는 저장소 내 링크만 FAIL
-#  호출처: Jenkinsfile.audit · 런북 §19
+#  호출처: Jenkinsfile.audit · DEPLOY.md §6
 #  성공: 깨진 상대링크 0. 실패: 누락 경로 나열 + exit 1
 # ============================================================
 set -euo pipefail

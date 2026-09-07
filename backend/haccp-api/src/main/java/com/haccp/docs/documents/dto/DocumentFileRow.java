@@ -15,6 +15,8 @@ package com.haccp.docs.documents.dto;
 
 // 역할 — 날짜 시각 타입
 import java.time.LocalDateTime;
+// 역할 — API 응답에서 물리 경로를 숨긴다
+import com.fasterxml.jackson.annotation.JsonIgnore;
 // 역할 — Lombok getter/setter
 import lombok.Data;
 
@@ -29,7 +31,8 @@ public class DocumentFileRow {
     private String fileKind;
     // 사용자 표시·다운로드 파일명
     private String fileNm;
-    // 서버 저장 상대 경로 — 내부 전용
+    // 서버 저장 상대 경로 — 내부 전용. API 응답에는 안 실는다
+    @JsonIgnore
     private String filePath;
     // 파일 크기 byte
     private Long fileSize;

@@ -97,6 +97,45 @@ class ScreenAuthInterceptorTest {
     }
 
     @Test
+    void 맵에_없는_API는_USER가_403이다() throws Exception {
+        loginUser("USER");
+        MockHttpServletResponse res = new MockHttpServletResponse();
+        boolean ok = interceptor.preHandle(
+                request("POST", "/api/v1/unknown/secret/save"),
+                res,
+                new Object()
+        );
+        assertFalse(ok);
+        assertEquals(403, res.getStatus());
+    }
+
+    @Test
+    void 화이트리스트_auth는_맵이_없어도_통과한다() throws Exception {
+        loginUser("USER");
+        MockHttpServletResponse res = new MockHttpServletResponse();
+        boolean ok = interceptor.preHandle(
+                request("GET", "/api/v1/auth/me"),
+                res,
+                new Object()
+        );
+        assertTrue(ok);
+        assertEquals(200, res.getStatus());
+    }
+
+    @Test
+    void 맵에_없는_API는_ADMIN도_403이다() throws Exception {
+        loginUser("ADMIN");
+        MockHttpServletResponse res = new MockHttpServletResponse();
+        boolean ok = interceptor.preHandle(
+                request("POST", "/api/v1/unknown/secret/save"),
+                res,
+                new Object()
+        );
+        assertFalse(ok);
+        assertEquals(403, res.getStatus());
+    }
+
+    @Test
     void ADMIN_은_권한행이_없어도_통과한다() throws Exception {
         loginUser("ADMIN");
         MockHttpServletResponse res = new MockHttpServletResponse();

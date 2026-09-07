@@ -5,8 +5,10 @@
 ```
 mapper/draft/
  ├ DraftPaperStampMapper.xml           (sp_tbl_document_paper_stamp_*)
- ├ hyg/    HygProcessDraftMapper.xml   (sp_tbl_hyg_process_*)
- └ ccp/    CcpVerifyDraftMapper.xml    (sp_ccp_verify_*)
+ ├ DraftSeenMapper.xml                 (sp_tbl_document_seen_* · assert_seen)
+ ├ html/   HtmlDraftMapper.xml
+ ├ ccpmonitoring/
+ └ hwpdoc/
 ```
 
 `namespace` 는 인터페이스 FQCN 과 같다. 네이티브 SQL 금지 — SP 호출만.

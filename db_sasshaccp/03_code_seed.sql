@@ -155,7 +155,7 @@ INSERT INTO tmp_code(main_cd, sub_cd, code_nm, sort_no, ref1) VALUES
 ('AUDIT_RESULT', 'APV',        '승인',      6, NULL),
 ('AUDIT_RESULT', 'RJT',        '반려',      7, NULL),
 ('AUDIT_RESULT', 'CANCEL',     '상신취소',  8, NULL),
-('AUDIT_RESULT', 'UNDO',       '결재취소',  9, NULL),
+('AUDIT_RESULT', 'UNDO',       '결재취소',  9, NULL);
 
 -- 없으면 넣고, 있으면 이름·정렬·사용여부를 시드에 맞춘다
 INSERT INTO tbl_code(co_cd, main_cd, sub_cd, code_nm, sort_no, ref1, sys_yn, use_yn, ins_id, ins_dt)

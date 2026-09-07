@@ -13,7 +13,7 @@ HtmlDraftMapper.xml — HTML 작성 2화면(일반위생·공정점검 · CCP �
   3) 삭제 차단은 계열과 무관한 문서 허브 공통 SP 라 choose 가 없다
 
 파일을 둘로 두었더니 제목(title) 인자를 넣을 때 같은 수정을 두 번 해야 했다.
-한 곳에서 갈라 두면 한쪽만 고쳐 어긋나는 일이 없다 — CcpLogDraftMapper.xml 과 같은 방식이다.
+한 곳에서 갈라 두면 한쪽만 고쳐 어긋나는 일이 없다 — CcpPkgDraftMapper.xml 과 같은 방식이다.
 
 PIPELINE[HB135] HTML 작성 공통 XML
 PIPELINE[HB137] 연관 모듈

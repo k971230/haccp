@@ -91,6 +91,8 @@ export async function getCcpVerifyDraftDetail(
     header,
     items: itemsRaw.map((row, i) => asItem(row as Record<string, unknown>, i)),
     corrective: (raw.corrective as DocCorrectiveValue | null) ?? null,
+    // 문서 스탬프 — 저장 때 seenUpdDt 로 되돌린다
+    updDt: typeof raw.updDt === "string" ? raw.updDt : null,
   };
 }
 

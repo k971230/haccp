@@ -2,15 +2,16 @@
 //  HACCP main 배포 파이프라인
 //
 //  개발자: 박승우
-//  일자: 2026-08-26
+//  일자: 2026-09-07
 //  코멘트:
 //    1) 빌드·이미지 push·배포·스모크까지 한 줄로 돌린다. 누를 것은 Build Now 하나다
 //    2) 시크릿은 credentials() 만 사용한다 — 이 파일에 실값을 적지 않는다
 //    3) disableConcurrentBuilds 로 compose up 충돌을 막는다
 //
 //  ** DB 는 이 파이프라인이 건드리지 않는다 **
-//    스키마 정본은 db_sasshaccp/ 6본이다(00_ddl → 01_sp → 02_seed →
-//    03_code_seed → 05_form_seed → 06_company_seed). 전부 재실행 안전하다.
+//    스키마 정본은 db_sasshaccp/ 7본이다(00_ddl → 01_sp → 02_seed →
+//    03_code_seed → 05_form_seed → 06_company_seed → 07_company_forms).
+//    스키마가 있으면 apply-all 이 00_ddl·02_seed 를 건너뛴다. 01_sp 는 항상 돈다.
 //    운영 반영은 배포 담당이 따로 돌린다:
 //      PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 //    자동 적용을 넣지 않는 이유 — 스키마 변경은 되돌리기 어렵고,
@@ -171,7 +172,7 @@ pipeline {
 
   post {
     success { echo "배포 성공: TAG=$TAG" }
-    failure { echo "배포 실패: TAG=$TAG — 로그 확인 후 롤백은 런북 §12 절차" }
+    failure { echo "배포 실패: TAG=$TAG — 로그 확인 후 롤백은 DEPLOY.md §5 되돌리기" }
     always  { sh 'docker logout ghcr.io || true' }
   }
 }

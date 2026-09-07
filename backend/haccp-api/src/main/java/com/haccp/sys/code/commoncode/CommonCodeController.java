@@ -14,6 +14,11 @@ package com.haccp.sys.code.commoncode;
 
 // 역할 — API 성공 응답 래퍼
 import com.haccp.common.response.CommonResponse;
+// 역할 — 저장 행·삭제 키 DTO
+import com.haccp.sys.code.commoncode.dto.CommonCodeDeleteItem;
+import com.haccp.sys.code.commoncode.dto.CommonCodeDetailRow;
+import com.haccp.sys.code.commoncode.dto.CommonCodeGroupRow;
+import com.haccp.sys.code.commoncode.dto.CommonCodeSaveRow;
 // 역할 — 생성자 주입
 import lombok.RequiredArgsConstructor;
 // 역할 — REST 매핑
@@ -47,7 +52,7 @@ public class CommonCodeController {
      *   3) 조건에 맞는 대분류가 없으면 빈 배열
      */
     @GetMapping("/groups")
-    public CommonResponse<List<Map<String, Object>>> groups(
+    public CommonResponse<List<CommonCodeGroupRow>> groups(
             // 대분류코드 부분검색어 — 미입력이면 전체
             @RequestParam(required = false, defaultValue = "") String mainCd,
             // 대분류명 부분검색어 — 미입력이면 전체
@@ -65,7 +70,7 @@ public class CommonCodeController {
      *   3) 대분류가 비면 업무 오류
      */
     @GetMapping("/details")
-    public CommonResponse<List<Map<String, Object>>> details(
+    public CommonResponse<List<CommonCodeDetailRow>> details(
             // 좌측에서 고른 대분류코드 — 필수
             @RequestParam String mainCd,
             // 시스템/사용자 구분 Y|N|sys|usr — 미입력이면 둘 다
@@ -85,7 +90,7 @@ public class CommonCodeController {
     @PutMapping("/save")
     public CommonResponse<Void> save(
             // 변경 행 목록 — idx가 없으면 신규
-            @RequestBody List<Map<String, Object>> rows
+            @RequestBody List<CommonCodeSaveRow> rows
     ) {
         commonCodeService.save(rows);
         return CommonResponse.ok(null);
@@ -102,7 +107,7 @@ public class CommonCodeController {
     @PostMapping("/validate-delete")
     public CommonResponse<Void> validateDelete(
             // 삭제 대상 복합키 배열 — 단건이어도 [{ idx }]
-            @RequestBody List<Map<String, Long>> keys
+            @RequestBody List<CommonCodeDeleteItem> keys
     ) {
         commonCodeService.validateDelete(keys);
         return CommonResponse.ok(null);
@@ -119,7 +124,7 @@ public class CommonCodeController {
     @PostMapping("/delete")
     public CommonResponse<Void> delete(
             // 삭제 대상 복합키 배열 — 단건이어도 [{ idx }]
-            @RequestBody List<Map<String, Long>> keys
+            @RequestBody List<CommonCodeDeleteItem> keys
     ) {
         commonCodeService.delete(keys);
         return CommonResponse.ok(null);

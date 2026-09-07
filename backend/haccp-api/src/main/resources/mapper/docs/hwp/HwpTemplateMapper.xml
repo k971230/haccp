@@ -6,7 +6,7 @@ HwpTemplateMapper.xml — 사용양식관리 sp_hwp_template_management_* 호출
 일자: 2026-08-14
 코멘트:
   1) 조회는 TABLE FUNCTION, 저장·적용은 PostgreSQL PROCEDURE를 호출한다
-  2) Map 결과는 snake_case 키로 돌아오며 Service toCamelMaps가 API 계약으로 바꾼다
+  2) 조회 resultType 은 DTO. map-underscore-to-camel-case 가 snake 컬럼을 맞춘다
   3) 삭제는 차단 검사(blocker)를 먼저 부르고 sp_tbl_company_template_d_000 으로 지운다
 
 PIPELINE[HB123] 사용양식 MyBatis XML
@@ -22,7 +22,7 @@ PIPELINE[HB92, HB88] 연관 모듈
       sysYn(sys|usr)·useYn(Y|N)도 SP 안에서 거르고, 공백이면 전체다 —
       이 화면은 미사용 양식도 다뤄야 해서 기본이 「전체」다.
     -->
-    <select id="selectHwpTemplates" resultType="map">
+    <select id="selectHwpTemplates" resultType="com.haccp.docs.hwp.dto.HwpTemplateRow">
         SELECT * FROM sp_hwp_template_management_r_000(
             #{coCd, jdbcType=VARCHAR},
             #{tmplCd, jdbcType=VARCHAR},
@@ -49,7 +49,7 @@ PIPELINE[HB92, HB88] 연관 모듈
     <!--
       양식 파일 이력 — 불러오기 목록. 삭제(del_yn=Y) 이력은 제외한다.
     -->
-    <select id="selectHwpTemplateFiles" resultType="map">
+    <select id="selectHwpTemplateFiles" resultType="com.haccp.docs.hwp.dto.HwpTemplateFileRow">
         SELECT * FROM sp_hwp_template_management_file_r_000(
             #{coCd, jdbcType=VARCHAR},
             #{tmplCd, jdbcType=VARCHAR}

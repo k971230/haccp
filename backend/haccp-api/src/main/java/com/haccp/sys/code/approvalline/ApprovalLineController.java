@@ -15,9 +15,9 @@ package com.haccp.sys.code.approvalline;
 // 역할 — API 성공 응답
 import com.haccp.common.response.CommonResponse;
 import com.haccp.sys.code.approvalline.dto.ApprovalLineDeleteItem;
+import com.haccp.sys.code.approvalline.dto.ApprovalLineRow;
 // 역할 — 목록
 import java.util.List;
-import java.util.Map;
 // 역할 — 생성자 DI · REST
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,7 +43,7 @@ public class ApprovalLineController {
      *   3) 없으면 빈 배열
      */
     @GetMapping("/list")
-    public CommonResponse<List<Map<String, Object>>> list() {
+    public CommonResponse<List<ApprovalLineRow>> list() {
         return CommonResponse.ok(service.list());
     }
 
@@ -58,7 +58,7 @@ public class ApprovalLineController {
     @PutMapping("/save")
     public CommonResponse<Void> save(
             // row: 화면 폼 1건
-            @RequestBody Map<String, Object> row
+            @RequestBody ApprovalLineRow row
     ) {
         service.save(row);
         return CommonResponse.ok(null);

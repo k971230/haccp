@@ -20,8 +20,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 // 역할 — 통계 행 목록
+import com.haccp.sys.logs.screenusage.dto.ScreenUsageRow;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +38,7 @@ public class ScreenUsageService {
      *   2) 화면 진입·조회와 좌측 메뉴 트리 선택 시 호출한다
      *   3) 집계가 아직 없으면 빈 목록
      */
-    public List<Map<String, Object>> list(
+    public List<ScreenUsageRow> list(
             // 집계 시작일 YYYYMMDD — Controller가 정규화한 값
             String fromDt,
             // 집계 종료일 YYYYMMDD

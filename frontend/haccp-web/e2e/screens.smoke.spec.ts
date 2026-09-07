@@ -1,50 +1,66 @@
 /**
- * screens.smoke — 메뉴 28화면 전수 스모크.
+ * screens.smoke — 메뉴 화면 전수 스모크.
  *
  * 개발자: 박승우
  * 일자: 2026-08-25
  * 코멘트:
  *   1) 화면마다 라우트 진입·콘솔 error 0·4xx/5xx 0·뼈대 노출만 본다. 업무 시나리오는 다른 스펙이다
  *   2) 라우팅·권한·SP 오류가 한 번에 잡힌다 — 메뉴 개편 회귀 방어선이다
- *   3) 메뉴에 남은 화면과 같다. 메뉴를 늘리면 여기도 늘린다
+ *   3) 대상은 SCREEN_PATH 에서 뽑는다 — 화면을 늘려도 여기는 손댈 것이 없다
  *
  * PIPELINE[HF130] E2E
  */
 import { expect, test } from "@playwright/test";
 import { adminCreds, login, openScreen } from "./helpers";
+// 역할 — 화면 목록 정본. 손으로 적은 배열이 뒤처지지 않게 여기서 뽑는다
+import { SCREEN_PATH } from "../src/shell/tabRoute";
 
-/** 메뉴 화면 — SCREEN_PATH 그대로 */
-const SCREENS: Array<{ path: string; name: string }> = [
-  { path: "/board/today-tasks", name: "오늘 할 일" },
-  { path: "/board/calendar", name: "일정 캘린더" },
-  { path: "/docs/sch/schedule-cycle-management", name: "문서주기관리" },
-  { path: "/docs/hwp/hwp-template-management", name: "사용양식 관리" },
-  { path: "/docs/html-form/hyg-process-template", name: "일반위생·공정점검 양식관리" },
-  { path: "/docs/html-form/ccp-verify-template", name: "CCP 검증점검표 양식관리" },
-  { path: "/docs/html-form/ccp-pkg-template", name: "CCP 포장공정 일지관리" },
-  { path: "/docs/html-form/ccp-htg-template", name: "CCP 가열공정 일지관리" },
-  { path: "/docs/html-form/ccp-mtl-template", name: "CCP 금속검출공정 일지관리" },
-  { path: "/flow/appr/attach", name: "결재 첨부" },
-  { path: "/flow/appr/sign-ready", name: "결재 대기" },
-  { path: "/flow/appr/sign-ok", name: "결재 완료" },
-  { path: "/flow/box/document-inbox", name: "문서함" },
-  { path: "/flow/ca/corrective-action-management", name: "이탈·개선조치" },
-  { path: "/draft/html/hyg-process", name: "일반위생·공정점검 작성" },
-  { path: "/draft/html/ccp-verify", name: "CCP 검증점검표 작성" },
-  { path: "/draft/ccp-monitoring/ccp-pkg", name: "CCP 포장공정 작성" },
-  { path: "/draft/ccp-monitoring/ccp-htg", name: "CCP 가열공정 작성" },
-  { path: "/draft/ccp-monitoring/ccp-mtl", name: "CCP 금속검출공정 작성" },
-  { path: "/draft/hwp-doc/hwp-write", name: "HWP 작성" },
-  { path: "/sys/code/common-code-management", name: "공통코드 관리" },
-  { path: "/sys/code/menu-management", name: "메뉴 관리" },
-  { path: "/sys/code/role-management", name: "권한그룹 관리" },
-  { path: "/sys/code/department-management", name: "부서 관리" },
-  { path: "/sys/code/user-management", name: "사용자 관리" },
-  { path: "/sys/code/approval-line-management", name: "결재선 관리" },
-  { path: "/sys/logs/login-history", name: "로그인 이력" },
-  { path: "/sys/logs/screen-usage-statistics", name: "화면 이용 통계" },
-  { path: "/sys/logs/audit-log", name: "변경 감사 로그" },
-];
+/*
+ * 메뉴 화면 — **SCREEN_PATH 에서 뽑는다.**
+ *
+ * 예전에는 여기에 손으로 적은 배열이 있었다. 옮길 당시 29개로 SCREEN_PATH 와 맞았지만
+ * (머리주석만 「28화면」으로 낡아 있었다), 화면을 늘릴 때 여기를 같이 늘리는 것은
+ * **절차에 맡긴 약속**이었다. 그런 약속은 지켜지다 한 번 안 지켜지는 순간
+ * 새 화면이 스모크를 통째로 건너뛰고, 그 사실이 초록불에 가려 안 보인다.
+ *
+ * 이름은 보기 좋으라고 붙이는 것뿐이라 없으면 화면코드를 쓴다.
+ * 화면을 늘리면 여기는 아무것도 안 해도 된다.
+ */
+const SCREEN_NAME: Record<string, string> = {
+  "today-tasks": "오늘 할 일",
+  "calendar": "일정 캘린더",
+  "schedule-cycle-management": "문서주기관리",
+  "hwp-template-management": "사용양식 관리",
+  "hyg-process-template": "일반위생·공정점검 양식관리",
+  "ccp-verify-template": "CCP 검증점검표 양식관리",
+  "ccp-pkg-template": "CCP 포장공정 일지관리",
+  "ccp-htg-template": "CCP 가열공정 일지관리",
+  "ccp-mtl-template": "CCP 금속검출공정 일지관리",
+  "attach": "결재 첨부",
+  "sign-ready": "결재 대기",
+  "sign-ok": "결재 완료",
+  "document-inbox": "문서함",
+  "corrective-action-management": "이탈·개선조치",
+  "hyg-process": "일반위생·공정점검 작성",
+  "ccp-verify": "CCP 검증점검표 작성",
+  "ccp-pkg": "CCP 포장공정 작성",
+  "ccp-htg": "CCP 가열공정 작성",
+  "ccp-mtl": "CCP 금속검출공정 작성",
+  "hwp-write": "HWP 작성",
+  "common-code-management": "공통코드 관리",
+  "menu-management": "메뉴 관리",
+  "role-management": "권한그룹 관리",
+  "department-management": "부서 관리",
+  "user-management": "사용자 관리",
+  "approval-line-management": "결재선 관리",
+  "login-history": "로그인 이력",
+  "screen-usage-statistics": "화면 이용 통계",
+  "audit-log": "변경 감사 로그",
+};
+
+const SCREENS: Array<{ path: string; name: string }> = Object.entries(SCREEN_PATH)
+  .map(([scrnCd, path]) => ({ path, name: SCREEN_NAME[scrnCd] ?? scrnCd }));
+
 
 /**
  * 우리 코드가 아닌 콘솔 문구 — 이것만 넘긴다.

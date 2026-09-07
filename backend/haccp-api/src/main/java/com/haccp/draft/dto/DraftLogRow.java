@@ -7,8 +7,8 @@
  *   1) CCP 포장·가열·금속검출 작성 3화면이 같은 DTO 를 쓴다. 화면마다 복제하지 않는다
  *   2) phaseCd 로 작업 전/작업 종료를 가른다 — 화면 DOM 위치가 아니라 이 값이 정본이다.
  *      재조회 때도 이 값으로 같은 영역에 복원된다
- *   3) 양식마다 다른 칸은 cells(item_cd → 값) 한 곳에 담는다. 서비스가 계열별 컬럼으로 편다
- *      PKG temp·min·sec / HTG temp·time / MTL hdr-fe·hdr-sus·hdr-prod·hdr-fe-prod·hdr-sus-prod
+ *   3) 양식마다 다른 칸은 cells 한 곳에 담는다. 포장·가열은 계열 DTO 로 받고 금속은 Map
+ *      PKG PkgLogCells / HTG HtgLogCells / MTL hdr-fe·hdr-sus·hdr-prod·hdr-fe-prod·hdr-sus-prod
  *
  * FE 대응 타입은 components/form/htmlFormPaperShared.tsx 의 HtmlFormLogRow 다.
  *

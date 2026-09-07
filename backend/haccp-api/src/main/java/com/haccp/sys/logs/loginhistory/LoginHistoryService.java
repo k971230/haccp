@@ -20,8 +20,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 // 역할 — 이력 행 목록
+import com.haccp.sys.logs.loginhistory.dto.LoginHistoryRow;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +38,7 @@ public class LoginHistoryService {
      *   2) 화면 진입·조회와 좌측 사용자 트리 선택 시 호출한다
      *   3) 해당 기간에 이력이 없으면 빈 목록
      */
-    public List<Map<String, Object>> list(
+    public List<LoginHistoryRow> list(
             // 조회 시작일 YYYYMMDD — Controller가 정규화한 값
             String fromDt,
             // 조회 종료일 YYYYMMDD

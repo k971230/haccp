@@ -5,8 +5,8 @@
  * 일자: 2026-08-25
  * 코멘트:
  *   1) JwtFilter 다음에 돈다. 로그인은 됐고 화면 권한이 N 인 호출만 본다
- *   2) ADMIN 은 프론트와 같이 전권. enforce=false 면 거부 로그만 남기고 통과(shadow)
- *   3) 계정·URL·부족한 권한 칸·시각을 warn 으로 남긴다 — 프론트 설정 오류와 오남용을 가른다
+ *   2) ADMIN 은 맵에 있는 API 만 전권. 맵에 없고 화이트리스트도 아니면 403 (등록 누락)
+ *   3) enforce=false 면 거부 로그만 남기고 통과(shadow). 계정·URL·권한 칸을 warn 으로 남긴다
  *
  * PIPELINE[HB145] 화면 권한 인터셉터
  */
@@ -74,10 +74,20 @@ public class ScreenAuthInterceptor implements HandlerInterceptor {
         );
         // 감사 로그 화면코드 — ADMIN 전권이어도 적재기는 어느 화면인지 알아야 한다
         ScreenAuthResolver.bindRequestScreen(request, match);
-        if (user.isAdmin()) {
-            return true;
-        }
         if (match.isEmpty()) {
+            if (ScreenAuthResolver.skipScreenAuth(request.getMethod(), request.getRequestURI())) {
+                return true;
+            }
+            log.warn(
+                    "screen-auth unmapped userId={} usrgrpCd={} url={} enforce={}",
+                    user.getUserId(),
+                    user.getUsrgrpCd(),
+                    request.getRequestURI(),
+                    enforce
+            );
+            return denyUnmapped(response);
+        }
+        if (user.isAdmin()) {
             return true;
         }
         List<ScreenAuthRow> rows = authMapper.selectScreenAuths(user.getCoCd(), user.getUsrgrpCd());
@@ -111,6 +121,21 @@ public class ScreenAuthInterceptor implements HandlerInterceptor {
                 perm,
                 enforce
         );
+        return denyUnmapped(response);
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-07
+     * 코멘트:
+     *   1) 미등록·권한 부족을 같은 403 본문으로 끊는다
+     *   2) 인터셉터가 거부할 때 호출한다
+     *   3) enforce=false 면 통과(shadow)
+     */
+    private boolean denyUnmapped(
+            // 403 JSON 을 쓸 응답
+            HttpServletResponse response
+    ) throws IOException {
         if (!enforce) {
             return true;
         }

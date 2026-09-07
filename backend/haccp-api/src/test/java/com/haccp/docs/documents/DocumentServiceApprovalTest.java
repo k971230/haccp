@@ -24,9 +24,8 @@ import static org.mockito.Mockito.when;
 
 import com.haccp.common.exception.BizException;
 import com.haccp.docs.documents.dto.DocumentApprovalRequest;
+import com.haccp.docs.documents.dto.DocumentHeaderRow;
 import com.haccp.sys.logs.auditlog.AuditWriter;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -57,11 +56,11 @@ class DocumentServiceApprovalTest {
     }
 
     /** SP 가 돌려주는 문서 한 건 */
-    private static Map<String, Object> doc(String status) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("doc_idx", 448L);
-        m.put("status", status);
-        return m;
+    private static DocumentHeaderRow doc(String status) {
+        DocumentHeaderRow row = new DocumentHeaderRow();
+        row.setDocIdx(448L);
+        row.setStatus(status);
+        return row;
     }
 
     /** 문서가 있는 상태로 세운다 */

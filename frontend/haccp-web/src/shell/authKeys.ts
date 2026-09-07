@@ -28,5 +28,8 @@ export const LOGIN_PREFS_KEY = "haccp-login-prefs";
 /** 401·보호 라우트 리다이렉트 전 복귀 경로 (sessionStorage — 탭을 닫으면 사라져야 한다) */
 export const RETURN_URL_KEY = "haccp-return-url";
 
+/** 401 구분 — UNAUTHENTICATED · SESSION_EXPIRED · UNAUTHORIZED. 로그인 화면이 읽고 지운다 */
+export const AUTH_FAIL_CODE_KEY = "haccp-auth-fail-code";
+
 /** 반려 문서 안내 토스트 — 세션당 1회. 로그아웃 때 지운다 */
 export const REJECT_TOAST_KEY = "haccp-reject-toast";

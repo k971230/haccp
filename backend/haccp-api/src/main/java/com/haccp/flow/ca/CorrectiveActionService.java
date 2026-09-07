@@ -21,10 +21,12 @@ import com.haccp.common.exception.BizException;
 // 역할 — 삭제 대상 검증 공통
 import com.haccp.common.validation.DeleteValidation;
 // 역할 — 개선조치 저장·삭제 감사
+import com.haccp.flow.ca.dto.CaDeleteItem;
+import com.haccp.flow.ca.dto.CorrectiveRow;
+import com.haccp.flow.ca.dto.CorrectiveSaveRow;
 import com.haccp.sys.logs.auditlog.AuditWriter;
-// 역할 — 목록·맵
+// 역할 — 목록
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 // 역할 — Spring 서비스·트랜잭션
@@ -49,10 +51,10 @@ public class CorrectiveActionService {
      * 일자: 2026-08-26
      * 코멘트:
      *   1) 기간·양식·작성자 조건으로 개선조치 목록을 조회한다
-     *   2) SP Map snake_case 를 camelCase 로 바꿔 그리드 field 가 비지 않게 한다
+     *   2) DTO 필드가 그리드 field 와 같다
      *   3) 공백 조건은 SP 가 전체로 본다
      */
-    public List<Map<String, Object>> correctiveActions(
+    public List<CorrectiveRow> correctiveActions(
             // 시작일 YYYYMMDD — 공백이면 전체
             String fromDt,
             // 종료일 YYYYMMDD — 공백이면 전체
@@ -62,8 +64,9 @@ public class CorrectiveActionService {
             // 작성자 — 공백이면 전체
             String writer
     ) {
-        return camelRows(mapper.selectCorrectiveActions(
-                LoginUserContext.coCd(), text(fromDt), text(toDt), text(tmplCd), text(writer)));
+        List<CorrectiveRow> rows = mapper.selectCorrectiveActions(
+                LoginUserContext.coCd(), text(fromDt), text(toDt), text(tmplCd), text(writer));
+        return rows == null ? List.of() : rows;
     }
 
     /**
@@ -76,12 +79,11 @@ public class CorrectiveActionService {
      */
     @Transactional
     public void saveCorrectiveAction(
-            // 대리키 — null 이면 신규
-            Long idx,
-            // 화면 행
-            Map<String, Object> payload
+            // 화면 행 — idx 없으면 신규
+            CorrectiveSaveRow payload
     ) {
         if (payload == null) throw new BizException("저장할 개선조치 자료가 없습니다.");
+        Long idx = payload.getIdx();
         try {
             mapper.saveCorrectiveAction(
                     LoginUserContext.coCd(), idx,
@@ -103,9 +105,9 @@ public class CorrectiveActionService {
      */
     public void validateCorrectiveActionDelete(
             // 삭제 키 객체 배열 — 단건도 [{ idx }]
-            List<Map<String, Long>> keys
+            List<CaDeleteItem> keys
     ) {
-        normalizeKeys(keys);
+        assertDeletable(keys);
     }
 
     /**
@@ -119,53 +121,39 @@ public class CorrectiveActionService {
     @Transactional
     public void deleteCorrectiveActions(
             // 삭제 키 객체 배열 — 단건도 [{ idx }]
-            List<Map<String, Long>> keys
+            List<CaDeleteItem> keys
     ) {
-        normalizeKeys(keys);
+        assertDeletable(keys);
         String coCd = LoginUserContext.coCd();
         String userId = LoginUserContext.userId();
-        for (Map<String, Long> key : keys) {
-            Long idx = key.get("idx");
+        for (CaDeleteItem key : keys) {
+            Long idx = key.getIdx();
             mapper.deleteCorrectiveAction(coCd, idx, userId);
             auditWriter.record(AUDIT_TBL, idx, "D", null);
         }
     }
 
-    /** 삭제 키를 검사한다 — 비었거나 idx 가 없으면 여기서 막는다 */
-    private void normalizeKeys(List<Map<String, Long>> keys) {
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-04
+     * 코멘트:
+     *   1) 키를 검사하고 완료된 건이 섞였는지 본다
+     *   2) validate-delete 와 delete **양쪽**에서 부른다 (Double Check)
+     *   3) 막히면 어느 개선조치가 왜 막히는지 문구에 실린다
+     *
+     * 예전에는 키 모양만 봤다. 그래서 완료 건을 고르면 **확인창을 누른 뒤에야** 실패했고,
+     * 여러 건을 골랐으면 정상 건까지 같은 트랜잭션에서 롤백됐다.
+     * 검사 자리를 둘로 나누는 것이 [OPS_DELETE] 규약이고, 골드는 DocumentService.assertDeletable 이다.
+     */
+    private void assertDeletable(List<CaDeleteItem> keys) {
         DeleteValidation.requireItems(keys, "삭제할 개선조치를 선택하세요.");
-        for (Map<String, Long> key : keys) {
-            DeleteValidation.requirePositive(
-                    key == null ? null : key.get("idx"), "삭제할 개선조치를 선택하세요.");
+        List<Long> idxs = new ArrayList<>();
+        for (CaDeleteItem key : keys) {
+            idxs.add(DeleteValidation.requirePositive(
+                    key == null ? null : key.getIdx(), "삭제할 개선조치를 선택하세요."));
         }
-    }
-
-    /** SP snake_case 결과를 화면 계약(camelCase)으로 바꾼다 */
-    private List<Map<String, Object>> camelRows(List<Map<String, Object>> rows) {
-        List<Map<String, Object>> out = new ArrayList<>();
-        if (rows == null) return out;
-        for (Map<String, Object> row : rows) {
-            Map<String, Object> camel = new LinkedHashMap<>();
-            if (row != null) {
-                for (Map.Entry<String, Object> e : row.entrySet()) camel.put(toCamelKey(e.getKey()), e.getValue());
-            }
-            out.add(camel);
-        }
-        return out;
-    }
-
-    /** action_desc -> actionDesc */
-    private String toCamelKey(String key) {
-        if (key == null || key.isBlank() || !key.contains("_")) return key;
-        StringBuilder sb = new StringBuilder();
-        boolean upper = false;
-        for (int i = 0; i < key.length(); i++) {
-            char ch = key.charAt(i);
-            if (ch == '_') { upper = true; continue; }
-            sb.append(upper ? Character.toUpperCase(ch) : ch);
-            upper = false;
-        }
-        return sb.toString();
+        DeleteValidation.throwIfBlocked(
+                mapper.selectDeleteBlocker(LoginUserContext.coCd(), idxs), "개선조치");
     }
 
     private String text(String value) {

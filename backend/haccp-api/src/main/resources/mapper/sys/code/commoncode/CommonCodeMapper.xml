@@ -19,7 +19,7 @@ PIPELINE[HB92] 공통코드 MyBatis XML
       SP는 로그인 회사 범위만 읽는다(표준코드 '0000' 병합 없음) — 표준분은 업체 생성 시 복제된 자기 행이다
       mainCd·codeNm은 헤더 부분검색어라 공백이면 전체가 나온다
     -->
-    <select id="selectGroups" resultType="map">
+    <select id="selectGroups" resultType="com.haccp.sys.code.commoncode.dto.CommonCodeGroupRow">
         SELECT * FROM sp_common_code_management_r_000(
             #{coCd,   jdbcType=VARCHAR},
             #{mainCd, jdbcType=VARCHAR},
@@ -31,7 +31,7 @@ PIPELINE[HB92] 공통코드 MyBatis XML
       세부코드 목록 — sp_common_code_management_r_001
       mainCd는 정확 일치, sysYn은 시스템(Y·sys)/사용자(N·usr) 구분, useYn 공백이면 사용중지 코드까지 본다
     -->
-    <select id="selectDetails" resultType="map">
+    <select id="selectDetails" resultType="com.haccp.sys.code.commoncode.dto.CommonCodeDetailRow">
         SELECT * FROM sp_common_code_management_r_001(
             #{coCd,   jdbcType=VARCHAR},
             #{mainCd, jdbcType=VARCHAR},

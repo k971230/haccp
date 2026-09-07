@@ -459,6 +459,8 @@ function SensRow({
             // 빈 행·작성 중간 품명 — 문자. 해당 없음과 무관
             kind={CELL_KIND.TEXT}
             title="품명"
+            // 상한은 tbl_ccp_metal_sens_row.product_nm varchar(200)
+            maxLength={200}
             editable={writeEdit}
             value={row ? row?.productNm ?? "" : undefined}
             onChange={row ? (v) => onPatch?.({ productNm: v }) : undefined}
@@ -604,6 +606,8 @@ function PassRow({
           // 품명 — 문자
           kind={CELL_KIND.TEXT}
           title="품명"
+          // 상한은 tbl_ccp_metal_pass_row.product_nm varchar(200)
+          maxLength={200}
           editable={writeEdit}
           value={row ? row?.productNm ?? "" : undefined}
           onChange={row ? (v) => onPatch?.({ productNm: v }) : undefined}
@@ -635,6 +639,8 @@ function PassRow({
             // 특이사항
             kind={CELL_KIND.TEXT}
             title="특이사항"
+            // 상한은 tbl_ccp_metal_pass_row.remark varchar(500)
+            maxLength={500}
             editable={writeEdit}
             value={row ? row?.remark ?? "" : undefined}
             onChange={row ? (v) => onPatch?.({ remark: v }) : undefined}

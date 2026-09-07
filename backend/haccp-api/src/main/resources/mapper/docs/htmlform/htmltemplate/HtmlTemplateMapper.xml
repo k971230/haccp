@@ -15,7 +15,7 @@ PIPELINE[HB130] HTML양식 원본 XML
 <mapper namespace="com.haccp.docs.htmlform.htmltemplate.HtmlTemplateMapper">
 
     <!-- 좌측 양식 목록 — 예시 html_hyg_prc_000 + 자사 html_hyg_prc_NNN -->
-    <select id="selectVersions" resultType="map">
+    <select id="selectVersions" resultType="com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormVersionRow">
         SELECT * FROM sp_tbl_html_hyg_prc_ver_r_000(
             #{coCd, jdbcType=VARCHAR},
             #{tmplCd, jdbcType=VARCHAR},
@@ -25,7 +25,7 @@ PIPELINE[HB130] HTML양식 원본 XML
     </select>
 
     <!-- 우측 지면 항목 — 예시·시드이면 tbl_check_item -->
-    <select id="selectItems" resultType="map">
+    <select id="selectItems" resultType="com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormItemRow">
         SELECT * FROM sp_tbl_html_hyg_prc_ver_item_r_000(#{coCd}, #{tmplCd}, #{verNo})
     </select>
 

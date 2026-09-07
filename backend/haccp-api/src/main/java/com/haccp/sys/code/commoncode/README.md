@@ -14,6 +14,8 @@
 
 대분류는 `tbl_code` 에서 `sub_cd='*'` 행이다.
 
+저장·삭제는 `dto/CommonCodeSaveRow` · `CommonCodeDeleteItem` 이다. JSON 키는 그대로다.
+
 ## 규칙
 
 - `listDetails`는 `mainCd`가 비면 `BizException`. FE `useCommonCodes`도 `enabled` 가드로 빈 호출을 막는다

@@ -23,6 +23,8 @@ import {
 } from "@/pages/draft/htmlFormDraftShared";
 // 역할 — 양식코드 → 지면·API
 import { previewEntryOf, type DocumentPreviewEntry } from "./documentPreviewRegistry";
+// 역할 — 인쇄 대화상자 상한. axios 타임아웃과 다르다
+import { PRINT_DIALOG_WAIT_MS } from "./printWaitMs";
 
 /** 인쇄할 HTML 문서 1건 — 목록에서 체크한 행 */
 export interface HtmlPrintJob {
@@ -129,7 +131,7 @@ export function DocumentPrintLayer({
     const start = window.setTimeout(() => {
       window.print();
     }, 80);
-    const fallback = window.setTimeout(finish, 180_000);
+    const fallback = window.setTimeout(finish, PRINT_DIALOG_WAIT_MS);
     return () => {
       window.clearTimeout(start);
       window.clearTimeout(fallback);

@@ -19,6 +19,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 // 역할 — 삭제 키 DTO
 import com.haccp.docs.sch.dto.DocCycleDeleteItem;
+import com.haccp.docs.sch.dto.DocCycleDetailRow;
+import com.haccp.docs.sch.dto.DocCycleFormRow;
+import com.haccp.docs.sch.dto.DocCycleRow;
+import com.haccp.docs.sch.dto.DocCycleSaveRequest;
 // 역할 — JWT 컨텍스트·업무 예외
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
@@ -73,7 +77,7 @@ public class DocCycleService {
      *   2) 화면 진입·조회 버튼에서 호출한다
      *   3) 성공 시 camelCase 행 배열, 조건이 비면 회사 전체(사용여부 기본은 화면이 Y)
      */
-    public List<Map<String, Object>> forms(
+    public List<DocCycleFormRow> forms(
             // 양식코드 검색어 — null·공백이면 전체
             String tmplCd,
             // 양식명 검색어 — null·공백이면 전체
@@ -92,16 +96,16 @@ public class DocCycleService {
      *   2) 좌측 행 선택 시 우측 폼을 채우기 위해 호출한다
      *   3) 주기 미설정일 때(= 신규 등록 대상) null을 돌려 화면이 빈 폼·목록 결재선을 띄운다
      */
-    public Map<String, Object> cycle(
+    public DocCycleRow cycle(
             // 좌측에서 선택한 양식코드 — 필수
             String tmplCd
     ) {
         String code = requireTmplCd(tmplCd);
-        List<Map<String, Object>> rows = mapper.selectCycle(LoginUserContext.coCd(), code);
+        List<DocCycleRow> rows = mapper.selectCycle(LoginUserContext.coCd(), code);
         if (rows == null || rows.isEmpty()) return null;
-        Map<String, Object> row = rows.get(0);
+        DocCycleRow row = rows.get(0);
         // details는 jsonb::text로 내려오므로 화면 계약(배열)으로 바꿔 준다
-        row.put("details", parseDetails(row.get("details")));
+        row.setDetails(parseDetails(row.getDetails()));
         return row;
     }
 
@@ -116,11 +120,11 @@ public class DocCycleService {
     @Transactional(timeout = 60)
     public void save(
             // 화면 폼 1건 — tmplCd·baseDt·cycleCd·nonworkRule·dueTime·deptCd·userId·useYn·apprLineCd·details[]
-            Map<String, Object> row
+            DocCycleSaveRequest row
     ) {
         if (row == null) throw new BizException("저장할 문서주기 자료가 없습니다.");
         String coCd = LoginUserContext.coCd();
-        String tmplCd = requireTmplCd(str(row.get("tmplCd")));
+        String tmplCd = requireTmplCd(row.getTmplCd());
         String userId = LoginUserContext.userId();
         try {
             mapper.saveCycle(coCd, objectMapper.writeValueAsString(row), userId);
@@ -128,13 +132,13 @@ public class DocCycleService {
             throw new BizException("문서주기 저장 자료 형식이 올바르지 않습니다.");
         }
         // 저장 결과를 다시 읽어 SP가 보정한 값(기본 마감시각·사용유무)으로 예정일을 만든다
-        List<Map<String, Object>> saved = mapper.selectCycle(coCd, tmplCd);
+        List<DocCycleRow> saved = mapper.selectCycle(coCd, tmplCd);
         if (saved != null && !saved.isEmpty()) regenerate(coCd, saved.get(0), userId);
         // UPSERT 한 건이라 U. 반복 상세·예정일은 남기지 않는다
         auditWriter.record(AUDIT_TBL, null, "U", Map.of(
                 "tmplCd", tmplCd,
-                "cycleCd", str(row.get("cycleCd")),
-                "useYn", str(row.get("useYn"))));
+                "cycleCd", str(row.getCycleCd()),
+                "useYn", str(row.getUseYn())));
     }
 
     /**
@@ -185,10 +189,10 @@ public class DocCycleService {
      */
     @Transactional(timeout = 60)
     public void regenerateAllCompanies() {
-        List<Map<String, Object>> rules = mapper.selectActiveCycles();
+        List<DocCycleRow> rules = mapper.selectActiveCycles();
         if (rules == null) return;
-        for (Map<String, Object> rule : rules) {
-            regenerate(str(rule.get("coCd")), rule, "system");
+        for (DocCycleRow rule : rules) {
+            regenerate(str(rule.getCoCd()), rule, "system");
         }
     }
 
@@ -208,10 +212,10 @@ public class DocCycleService {
         if (coCd == null || coCd.isBlank()) return;
         String userId = LoginUserContext.userId();
         if (userId == null || userId.isBlank()) userId = "system";
-        List<Map<String, Object>> rules = mapper.selectActiveCycles();
+        List<DocCycleRow> rules = mapper.selectActiveCycles();
         if (rules == null) return;
-        for (Map<String, Object> rule : rules) {
-            if (coCd.equals(str(rule.get("coCd")))) regenerate(coCd, rule, userId);
+        for (DocCycleRow rule : rules) {
+            if (coCd.equals(str(rule.getCoCd()))) regenerate(coCd, rule, userId);
         }
     }
 
@@ -229,16 +233,16 @@ public class DocCycleService {
     }
 
     /** 규칙을 예정일 배열로 바꿔 tbl_schedule_task에 반영한다. */
-    private void regenerate(String coCd, Map<String, Object> rule, String userId) {
-        String tmplCd = str(rule.get("tmplCd"));
+    private void regenerate(String coCd, DocCycleRow rule, String userId) {
+        String tmplCd = str(rule.getTmplCd());
         // 사용유무 N일 때(= 주기 중지) 빈 배열을 넘겨 미래 미작성 예정일을 정리한다
-        boolean active = !"N".equalsIgnoreCase(str(rule.get("useYn")));
+        boolean active = !"N".equalsIgnoreCase(str(rule.getUseYn()));
         List<String> dates = active ? generateDates(coCd, rule) : List.of();
         try {
             mapper.regenerateTasks(
                     coCd, tmplCd, objectMapper.writeValueAsString(dates),
-                    str(rule.get("dueTime")), nullIfBlank(str(rule.get("deptCd"))),
-                    nullIfBlank(str(rule.get("userId"))), alarmBeforeMinutes, userId
+                    str(rule.getDueTime()), nullIfBlank(str(rule.getDeptCd())),
+                    nullIfBlank(str(rule.getUserId())), alarmBeforeMinutes, userId
             );
         } catch (JsonProcessingException e) {
             throw new BizException("문서주기 예정일 생성 자료 형식이 올바르지 않습니다.");
@@ -246,16 +250,16 @@ public class DocCycleService {
     }
 
     /** 규칙 1건의 예정일을 yyyyMMdd 문자열 배열로 만든다. */
-    private List<String> generateDates(String coCd, Map<String, Object> rule) {
-        LocalDate startDt = parseYmd(str(rule.get("baseDt")));
+    private List<String> generateDates(String coCd, DocCycleRow rule) {
+        LocalDate startDt = parseYmd(str(rule.getBaseDt()));
         if (startDt == null) throw new BizException("관리 시작일을 입력하세요.");
         List<CycleScheduleGenerator.Detail> details = new ArrayList<>();
-        for (Map<String, Object> detail : parseDetails(rule.get("details"))) {
+        for (DocCycleDetailRow detail : parseDetails(rule.getDetails())) {
             details.add(new CycleScheduleGenerator.Detail(
-                    str(detail.get("detailTy")), intOrNull(detail.get("val1")), intOrNull(detail.get("val2"))));
+                    str(detail.getDetailTy()), detail.getVal1(), detail.getVal2()));
         }
         CycleScheduleGenerator.Rule spec = new CycleScheduleGenerator.Rule(
-                str(rule.get("cycleCd")), str(rule.get("nonworkRule")), startDt, details);
+                str(rule.getCycleCd()), str(rule.getNonworkRule()), startDt, details);
         Set<LocalDate> workdays = loadWorkdays(coCd);
         // LinkedHashSet — 생성기가 정렬해 주지만 문자열 변환 후에도 중복이 없음을 보장한다
         Set<String> out = new LinkedHashSet<>();
@@ -279,14 +283,23 @@ public class DocCycleService {
     }
 
     /** jsonb::text 또는 화면 배열을 상세 Map 목록으로 통일한다. */
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> parseDetails(Object value) {
+    private List<DocCycleDetailRow> parseDetails(Object value) {
         if (value == null) return List.of();
-        if (value instanceof List<?> list) return (List<Map<String, Object>>) list;
+        if (value instanceof List<?> list) {
+            List<DocCycleDetailRow> out = new ArrayList<>();
+            for (Object one : list) {
+                if (one instanceof DocCycleDetailRow row) {
+                    out.add(row);
+                } else {
+                    out.add(objectMapper.convertValue(one, DocCycleDetailRow.class));
+                }
+            }
+            return out;
+        }
         String json = value.toString().trim();
         if (json.isEmpty()) return List.of();
         try {
-            return objectMapper.readValue(json, new TypeReference<List<Map<String, Object>>>() {});
+            return objectMapper.readValue(json, new TypeReference<List<DocCycleDetailRow>>() {});
         } catch (JsonProcessingException e) {
             throw new BizException("문서주기 반복 설정 형식이 올바르지 않습니다.");
         }
@@ -299,7 +312,7 @@ public class DocCycleService {
         for (DocCycleDeleteItem key : keys) {
             if (key == null) throw new BizException("삭제할 문서주기 키가 올바르지 않습니다.");
             String tmplCd = requireTmplCd(key.getTmplCd());
-            List<Map<String, Object>> rows = mapper.selectCycle(coCd, tmplCd);
+            List<DocCycleRow> rows = mapper.selectCycle(coCd, tmplCd);
             if (rows == null || rows.isEmpty()) {
                 throw new BizException("삭제할 문서주기가 없습니다. 양식코드 '" + tmplCd + "'");
             }

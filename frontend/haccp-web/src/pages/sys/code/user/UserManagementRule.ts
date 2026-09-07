@@ -85,11 +85,11 @@ export function buildUserColumns(
       // 사용자 ID — 업무키. 저장 뒤에는 잠긴다(USER_RULES.newOnly)
       field: "userId",
       header: "사용자 ID",
-      width: 110,
+      width: 110, maxLength: 20,
       required: true,
       editableOnNew: true,
     },
-    { field: "userNm", header: "사용자명", width: 110, editable, required: true },
+    { field: "userNm", header: "사용자명", width: 110, maxLength: 50, editable, required: true },
     {
       // 권한그룹코드 — 기본 숨김, 「열」메뉴로 표시·pref 저장
       field: "usrgrpCd",
@@ -123,8 +123,8 @@ export function buildUserColumns(
       editable: false,
       cellButton: editable ? { title: "부서", onClick: handlers.onDeptLookup } : undefined,
     },
-    { field: "email", header: "이메일", width: 160, editable, inputMode: "email" },
-    { field: "mobile", header: "휴대폰", width: 120, editable, inputMode: "tel" },
+    { field: "email", header: "이메일", width: 160, maxLength: 100, editable, inputMode: "email" },
+    { field: "mobile", header: "휴대폰", width: 120, maxLength: 20, editable, inputMode: "tel" },
     {
       // 서명 등록 여부 + 셀 버튼으로 서명 모달
       field: "_hasSign",

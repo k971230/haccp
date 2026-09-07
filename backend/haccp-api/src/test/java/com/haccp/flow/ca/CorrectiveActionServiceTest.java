@@ -25,6 +25,9 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haccp.common.exception.BizException;
+import com.haccp.flow.ca.dto.CaDeleteItem;
+import com.haccp.flow.ca.dto.CorrectiveRow;
+import com.haccp.flow.ca.dto.CorrectiveSaveRow;
 import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -55,13 +58,13 @@ class CorrectiveActionServiceTest {
     @InjectMocks
     private CorrectiveActionService service;
 
-    /** SP 가 돌려주는 모양 — snake_case 키의 Map */
-    private static Map<String, Object> snakeRow() {
-        Map<String, Object> row = new LinkedHashMap<>();
-        row.put("ca_no", "CA-20260826-001");
-        row.put("action_desc", "세척 후 재검사");
-        row.put("src_doc_idx", 448L);
-        row.put("occur_dt", "20260826");
+    /** 매퍼가 돌려주는 DTO — camel 필드 */
+    private static CorrectiveRow dtoRow() {
+        CorrectiveRow row = new CorrectiveRow();
+        row.setCaNo("CA-20260826-001");
+        row.setActionDesc("세척 후 재검사");
+        row.setSrcDocIdx(448L);
+        row.setOccurDt("20260826");
         return row;
     }
 
@@ -78,23 +81,27 @@ class CorrectiveActionServiceTest {
     @Test
     void idx_가_없는_키는_막는다() {
         // {} 를 통과시키면 SP 가 idx=null 로 0건을 지우고 성공을 돌려준다
-        List<Map<String, Long>> keys = new ArrayList<>();
-        keys.add(new LinkedHashMap<>());
+        List<CaDeleteItem> keys = new ArrayList<>();
+        keys.add(new CaDeleteItem());
         assertThrows(BizException.class, () -> service.validateCorrectiveActionDelete(keys));
     }
 
     @Test
     void idx_가_0_이하인_키도_막는다() {
-        List<Map<String, Long>> keys = List.of(Map.of("idx", 0L));
+        CaDeleteItem zero = new CaDeleteItem();
+        zero.setIdx(0L);
+        List<CaDeleteItem> keys = List.of(zero);
         assertThrows(BizException.class, () -> service.validateCorrectiveActionDelete(keys));
     }
 
     @Test
     void 목록_중_하나라도_틀리면_전부_막는다() {
         // 앞 건이 멀쩡해도 뒤가 틀리면 아무것도 지우면 안 된다 — 반쯤 지워지는 게 제일 나쁘다
-        List<Map<String, Long>> keys = new ArrayList<>();
-        keys.add(Map.of("idx", 448L));
-        keys.add(new LinkedHashMap<>());
+        CaDeleteItem ok = new CaDeleteItem();
+        ok.setIdx(448L);
+        List<CaDeleteItem> keys = new ArrayList<>();
+        keys.add(ok);
+        keys.add(new CaDeleteItem());
         assertThrows(BizException.class, () -> service.deleteCorrectiveActions(keys));
         verify(mapper, never()).deleteCorrectiveAction(any(), any(), any());
     }
@@ -104,27 +111,23 @@ class CorrectiveActionServiceTest {
     @Test
     void 저장할_자료가_없으면_막는다() {
         BizException e = assertThrows(
-                BizException.class, () -> service.saveCorrectiveAction(1L, null));
+                BizException.class, () -> service.saveCorrectiveAction(null));
         assertEquals("저장할 개선조치 자료가 없습니다.", e.getMessage());
     }
 
     // ---------------------------------------------------------------- 키 변환
 
     @Test
-    void snake_case_를_화면_계약인_camelCase_로_바꾼다() {
+    void 목록_DTO_필드가_화면_계약과_같다() {
         when(mapper.selectCorrectiveActions(any(), any(), any(), any(), any()))
-                .thenReturn(List.of(snakeRow()));
+                .thenReturn(List.of(dtoRow()));
 
-        Map<String, Object> row = service.correctiveActions("", "", "", "").get(0);
+        CorrectiveRow row = service.correctiveActions("", "", "", "").get(0);
 
-        // 변환이 틀리면 그리드 field 와 안 맞아 칸이 통째로 빈다
-        assertTrue(row.containsKey("caNo"), row.keySet().toString());
-        assertTrue(row.containsKey("actionDesc"), row.keySet().toString());
-        assertTrue(row.containsKey("srcDocIdx"), row.keySet().toString());
-        assertTrue(row.containsKey("occurDt"), row.keySet().toString());
-        // 원래 키는 남기지 않는다 — 남으면 화면이 어느 쪽을 읽는지 알 수 없다
-        assertTrue(!row.containsKey("ca_no"), row.keySet().toString());
-        assertEquals("세척 후 재검사", row.get("actionDesc"));
+        assertEquals("CA-20260826-001", row.getCaNo());
+        assertEquals("세척 후 재검사", row.getActionDesc());
+        assertEquals(448L, row.getSrcDocIdx());
+        assertEquals("20260826", row.getOccurDt());
     }
 
     @Test

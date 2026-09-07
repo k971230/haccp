@@ -18,7 +18,6 @@ package com.haccp.draft.dto;
 
 import com.haccp.flow.ca.dto.DocCorrectiveDto;
 import java.util.List;
-import java.util.Map;
 import lombok.Data;
 
 @Data
@@ -36,7 +35,7 @@ public class DraftSaveRequest {
     // 적용 버전 — 자사 양식은 1
     private Integer verNo;
     // 점검 항목 행 — HYG·CCP검증만
-    private List<Map<String, Object>> items;
+    private List<DraftItemRow> items;
     // 기록 표 행 — CCP 모니터링일지만. phaseCd 로 작업 전/작업 종료를 가른다
     private List<DraftLogRow> logRows;
     // 통과량 표 행 — CCP 금속검출만
@@ -59,4 +58,9 @@ public class DraftSaveRequest {
     private String deviationYn;
     // 목록 제목 — tbl_document.title. 빈값이면 SP 가 신규는 양식명·수정은 기존값을 쓴다
     private String title;
+    /**
+     * 화면이 상세에서 받은 문서 스탬프 — 수정 저장 때 서버가 대조한다.
+     * 신규·빈 값은 통과. 어긋나면 「다른 사용자가 먼저 저장했습니다」
+     */
+    private String seenUpdDt;
 }

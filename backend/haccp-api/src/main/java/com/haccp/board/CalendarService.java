@@ -19,6 +19,10 @@ import com.haccp.common.exception.BizException;
 // 역할 — 공휴일 명칭
 import com.haccp.docs.sch.KoreanHolidayDates;
 // 역할 — 예정일 재생성
+import com.haccp.board.dto.CalendarHolidayRow;
+import com.haccp.board.dto.CalendarMonthResponse;
+import com.haccp.board.dto.CalendarSaveItem;
+import com.haccp.board.dto.CalendarTaskRow;
 import com.haccp.docs.sch.DocCycleService;
 // 역할 — 날짜
 import java.time.LocalDate;
@@ -26,9 +30,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 // 역할 — Spring
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -51,7 +53,7 @@ public class CalendarService {
      *   2) 캘린더 화면 진입·월 이동에서 호출한다
      *   3) 각 과제에 mine 을 붙인다 — 담당자 일치 또는 담당자 없고 부서 일치
      */
-    public Map<String, Object> list(
+    public CalendarMonthResponse list(
             // YYYYMM — 비면 이번 달
             String month
     ) {
@@ -64,32 +66,31 @@ public class CalendarService {
         String userId = text(LoginUserContext.userId());
         String deptCd = text(LoginUserContext.deptCd());
 
-        List<Map<String, Object>> tasks = new ArrayList<>();
-        List<Map<String, Object>> rows = mapper.selectTasks(coCd, fromYmd, toYmd);
+        List<CalendarTaskRow> tasks = new ArrayList<>();
+        List<CalendarTaskRow> rows = mapper.selectTasks(coCd, fromYmd, toYmd);
         if (rows != null) {
-            for (Map<String, Object> row : rows) {
-                if (row == null) continue;
-                Map<String, Object> task = camelRow(row);
-                task.put("mine", isMine(task, userId, deptCd));
+            for (CalendarTaskRow task : rows) {
+                if (task == null) continue;
+                task.setMine(isMine(task, userId, deptCd));
                 tasks.add(task);
             }
         }
 
-        List<Map<String, String>> holidays = new ArrayList<>();
+        List<CalendarHolidayRow> holidays = new ArrayList<>();
         for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
             if (!KoreanHolidayDates.ALL.contains(d)) continue;
-            Map<String, String> h = new LinkedHashMap<>();
-            h.put("ymd", d.format(YMD));
-            h.put("name", KoreanHolidayDates.nameOf(d));
+            CalendarHolidayRow h = new CalendarHolidayRow();
+            h.setYmd(d.format(YMD));
+            h.setName(KoreanHolidayDates.nameOf(d));
             holidays.add(h);
         }
 
         List<String> workdays = mapper.selectWorkdays(coCd, fromYmd, toYmd);
-        Map<String, Object> out = new LinkedHashMap<>();
-        out.put("month", ym.toString().replace("-", ""));
-        out.put("tasks", tasks);
-        out.put("holidays", holidays);
-        out.put("workdays", workdays == null ? List.of() : workdays);
+        CalendarMonthResponse out = new CalendarMonthResponse();
+        out.setMonth(ym.toString().replace("-", ""));
+        out.setTasks(tasks);
+        out.setHolidays(holidays);
+        out.setWorkdays(workdays == null ? List.of() : workdays);
         return out;
     }
 
@@ -104,16 +105,16 @@ public class CalendarService {
     @Transactional(timeout = 60)
     public void save(
             // { ymd, workYn } 배열 — 변경분만
-            List<Map<String, String>> items
+            List<CalendarSaveItem> items
     ) {
         if (items == null || items.isEmpty()) throw new BizException("저장할 영업일 전환이 없습니다.");
         String coCd = LoginUserContext.coCd();
         String userId = LoginUserContext.userId();
-        for (Map<String, String> item : items) {
+        for (CalendarSaveItem item : items) {
             if (item == null) throw new BizException("저장할 영업일 전환이 올바르지 않습니다.");
-            String ymd = digits(item.get("ymd"));
+            String ymd = digits(item.getYmd());
             if (ymd.length() != 8) throw new BizException("전환할 일자가 올바르지 않습니다.");
-            String workYn = text(item.get("workYn")).toUpperCase();
+            String workYn = text(item.getWorkYn()).toUpperCase();
             if (!"Y".equals(workYn) && !"N".equals(workYn)) {
                 throw new BizException("영업일 여부가 올바르지 않습니다.");
             }
@@ -146,38 +147,14 @@ public class CalendarService {
     }
 
     /** 담당자 지정 시 본인, 없으면 같은 부서 */
-    private boolean isMine(Map<String, Object> task, String userId, String deptCd) {
-        String assignUser = text(str(task.get("userId")));
-        String assignDept = text(str(task.get("deptCd")));
+    private boolean isMine(CalendarTaskRow task, String userId, String deptCd) {
+        String assignUser = text(task.getUserId());
+        String assignDept = text(task.getDeptCd());
         if (!assignUser.isEmpty()) return assignUser.equals(userId);
         if (!assignDept.isEmpty() && !deptCd.isEmpty()) return assignDept.equals(deptCd);
         return false;
     }
 
-    private Map<String, Object> camelRow(Map<String, Object> row) {
-        Map<String, Object> camel = new LinkedHashMap<>();
-        for (Map.Entry<String, Object> e : row.entrySet()) {
-            camel.put(toCamelKey(e.getKey()), e.getValue());
-        }
-        return camel;
-    }
-
-    private String toCamelKey(String key) {
-        if (key == null || key.isBlank() || !key.contains("_")) return key;
-        String lower = key.toLowerCase(java.util.Locale.ROOT);
-        StringBuilder out = new StringBuilder();
-        boolean upper = false;
-        for (char ch : lower.toCharArray()) {
-            if (ch == '_') upper = true;
-            else {
-                out.append(upper ? Character.toUpperCase(ch) : ch);
-                upper = false;
-            }
-        }
-        return out.toString();
-    }
-
     private String digits(String value) { return text(value).replaceAll("[^0-9]", ""); }
     private String text(String value) { return value == null ? "" : value.trim(); }
-    private String str(Object value) { return value == null ? "" : value.toString(); }
 }

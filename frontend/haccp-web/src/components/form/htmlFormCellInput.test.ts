@@ -9,7 +9,7 @@
  *   3) 실행: npx vitest run src/components/form/htmlFormCellInput.test.ts
  */
 // 역할 — 검증 대상
-import { CELL_KIND, cellValueAccepted } from "./htmlFormPaperShared";
+import { CELL_KIND, cellValueAccepted, clampCellValue } from "./htmlFormPaperShared";
 // 역할 — 단정
 import { describe, expect, it } from "vitest";
 
@@ -38,5 +38,25 @@ describe("cellValueAccepted", () => {
     expect(cellValueAccepted(CELL_KIND.TEXT, "고등어살 500g")).toBe(true);
     expect(cellValueAccepted(CELL_KIND.TIME, "09:30")).toBe(true);
     expect(cellValueAccepted(CELL_KIND.DURATION, "00:18:30")).toBe(true);
+  });
+});
+
+describe("clampCellValue — 지면 문자칸 상한", () => {
+  it("상한이 없으면 그대로 둔다", () => {
+    expect(clampCellValue("한참 긴 품명", undefined)).toBe("한참 긴 품명");
+  });
+
+  it("상한 이하면 그대로 둔다", () => {
+    expect(clampCellValue("돼지고기", 100)).toBe("돼지고기");
+  });
+
+  it("넘치면 자른다 — 붙여넣기가 maxLength 속성을 지나쳐 온다", () => {
+    // 자르지 않으면 저장에서 22001 이 그대로 사용자에게 뜬다
+    expect(clampCellValue("가".repeat(150), 100)).toHaveLength(100);
+  });
+
+  it("딱 맞으면 안 건드린다", () => {
+    const v = "나".repeat(100);
+    expect(clampCellValue(v, 100)).toBe(v);
   });
 });

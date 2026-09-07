@@ -7,7 +7,7 @@ HYG·CCP검증·CCP 모니터링 **5화면이 같은 모양**을 쓴다. 화면�
 |---|---|---|
 | `DraftFormRow` | 양식 선택 팝업 목록 (사용여부 예) | `HtmlFormDraftForm` |
 | `DraftListRow` | 좌측 작성 목록 | `HtmlFormDraftListRow` |
-| `DraftSaveRequest` | 저장 본문 | `HtmlFormDraftSaveRequest` |
+| `DraftSaveRequest` | 저장 본문 (`seenUpdDt` 포함) | `HtmlFormDraftSaveRequest` |
 | `DraftDeleteItem` | 삭제 키 `[{ docIdx }]` | — |
 | `DraftLogRow` | 기록 표 1행 (`phaseCd`·`cells`) | `HtmlFormLogRow` |
 | `DraftPassRow` | 금속 통과량 표 1행 | `HtmlFormPassRow` |

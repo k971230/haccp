@@ -2,11 +2,11 @@
  * HtmlTemplateService — HTML 양식 원본(자사 양식) 업무.
  *
  * 개발자: 박승우
- * 일자: 2026-08-31
+ * 일자: 2026-09-07
  * 코멘트:
  *   1) 공정점검은 tbl_html_hyg_prc_ver, 검증점검은 tbl_html_ccp_chk_ver, 포장·가열·금속검출일지는 tbl_html_ccp_pkg_ver · tbl_html_ccp_htg_ver · tbl_html_ccp_mtl_ver
- *   2) 복사 시 사용양식만 만든다. 주기 행은 문서주기 화면에서 시작일과 함께 저장한다
- *   3) validate-delete와 delete 모두 assertDeletable Double Check
+ *   2) 표 호출은 storeFor(tmpl). 검증(이름 필수·표준 수정 금지·화면 일치·Double Check)은 여기 한 곳
+ *   3) validate-delete와 delete 모두 assertDeletable Double Check. 화면별 Service 는 만들지 않는다
  *
  * PIPELINE[HB130] HTML양식 원본 Service
  */
@@ -14,15 +14,15 @@ package com.haccp.docs.htmlform.htmltemplate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.haccp.common.auth.ScreenAuthResolver;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteBlocker;
 import com.haccp.common.validation.DeleteValidation;
-import com.haccp.docs.htmlform.ccphtgtemplate.CcpHtgTemplateMapper;
-import com.haccp.docs.htmlform.ccpmtltemplate.CcpMtlTemplateMapper;
-import com.haccp.docs.htmlform.ccppkgtemplate.CcpPkgTemplateMapper;
-import com.haccp.docs.htmlform.ccpverifytemplate.CcpVerifyTemplateMapper;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormCopyResult;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormItemRow;
 import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormVerDeleteItem;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormVersionRow;
 // 역할 — 양식 원본 저장·삭제 감사
 import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.List;
@@ -30,6 +30,8 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Service
 @RequiredArgsConstructor
@@ -51,24 +53,21 @@ public class HtmlTemplateService {
     // CCP-3P 금속검출 모니터링일지 화면 예시 — 시드 항목 10건
     public static final String MTL_STD_TMPL_CD = "html_ccp_mtl_000";
 
-    private final HtmlTemplateMapper mapper;
-    private final CcpVerifyTemplateMapper ccpMapper;
-    private final CcpPkgTemplateMapper pkgMapper;
-    private final CcpHtgTemplateMapper htgMapper;
-    private final CcpMtlTemplateMapper mtlMapper;
+    // tmplCd 접두 → 가족 포트. if 사다리는 HtmlFormFamilyStores 한 곳
+    private final HtmlFormFamilyStores familyStores;
     private final ObjectMapper objectMapper;
     // 양식 원본 쓰기 이력 — 형제 화면과 같은 밀도로 남긴다
     private final AuditWriter auditWriter;
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-20
+     * 일자: 2026-09-07
      * 코멘트:
      *   1) 예시+자사 양식 목록을 반환한다
      *   2) 화면 진입·좌 저장·조회 후 호출한다
      *   3) tmplCd로 공정점검/검증점검/포장·가열·금속검출일지 테이블을 가른다
      */
-    public List<Map<String, Object>> listVersions(
+    public List<HtmlFormVersionRow> listVersions(
             // tmplCd: 가족. html_hyg_prc_000 / html_ccp_chk_000 / html_ccp_pkg_000 / html_ccp_htg_000 / html_ccp_mtl_000
             String tmplCd,
             // verCd: 양식코드 부분검색. 빈값이면 전체
@@ -76,62 +75,39 @@ public class HtmlTemplateService {
             // verNm: 양식명 부분검색. 빈값이면 전체
             String verNm
     ) {
-        String tmpl = tmplCd == null ? "" : tmplCd.trim();
+        // 빈 tmplCd 는 공정점검 기본값 — listItems 와 같다. 안 채우면 isHyg("") 가 false 라 공정점검 URL 도 막힌다
+        String tmpl = tmplOf(tmplCd);
+        assertTmplMatchesScreen(tmpl);
         String cd = verCd == null ? "" : verCd.trim();
         String nm = verNm == null ? "" : verNm.trim();
-        String co = LoginUserContext.coCd();
-        if (isMtl(tmpl)) {
-            return mtlMapper.selectVersions(co, tmpl, cd, nm);
-        }
-        if (isHtg(tmpl)) {
-            return htgMapper.selectVersions(co, tmpl, cd, nm);
-        }
-        if (isPkg(tmpl)) {
-            return pkgMapper.selectVersions(co, tmpl, cd, nm);
-        }
-        if (isCcp(tmpl)) {
-            return ccpMapper.selectVersions(co, tmpl, cd, nm);
-        }
-        return mapper.selectVersions(co, tmpl, cd, nm);
+        return familyStores.storeFor(tmpl).selectVersions(LoginUserContext.coCd(), tmpl, cd, nm);
     }
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-20
+     * 일자: 2026-09-07
      * 코멘트:
      *   1) 우측 A4 항목을 반환한다
      *   2) 양식 선택 시 호출한다
      *   3) *_000 이면 시드
      */
-    public List<Map<String, Object>> listItems(String tmplCd, Integer verNo) {
+    public List<HtmlFormItemRow> listItems(String tmplCd, Integer verNo) {
         String tmpl = tmplOf(tmplCd);
+        assertTmplMatchesScreen(tmpl);
         int ver = isStdTmpl(tmpl) ? 0 : (verNo == null ? 1 : verNo);
-        String co = LoginUserContext.coCd();
-        if (isMtl(tmpl)) {
-            return mtlMapper.selectItems(co, tmpl, ver);
-        }
-        if (isHtg(tmpl)) {
-            return htgMapper.selectItems(co, tmpl, ver);
-        }
-        if (isPkg(tmpl)) {
-            return pkgMapper.selectItems(co, tmpl, ver);
-        }
-        if (isCcp(tmpl)) {
-            return ccpMapper.selectItems(co, tmpl, ver);
-        }
-        return mapper.selectItems(co, tmpl, ver);
+        return familyStores.storeFor(tmpl).selectItems(LoginUserContext.coCd(), tmpl, ver);
     }
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-31
+     * 일자: 2026-09-07
      * 코멘트:
      *   1) 표준 시드를 복사해 자사 양식·사용양식만 INSERT한다. 주기는 문서주기 화면에서 만든다
      *   2) 좌 저장이 pending 행을 커밋할 때 호출한다
      *   3) 새 tmplCd를 돌려 화면이 그 행을 유지한다
      */
     @Transactional(timeout = 60)
-    public Map<String, Object> copy(
+    public HtmlFormCopyResult copy(
             // tmplCd: 가족. SP가 시드·채번 접두를 고른다
             String tmplCd,
             // srcVerNo: 호환. 행추가는 표준만
@@ -146,20 +122,11 @@ public class HtmlTemplateService {
             throw new BizException("양식명은 필수입니다.");
         }
         String tmpl = tmplCd == null ? "" : tmplCd.trim();
+        assertTmplMatchesScreen(tmpl);
         int src = srcVerNo == null ? 0 : srcVerNo;
         String code = verCd == null ? "" : verCd.trim();
-        String newCd;
-        if (isMtl(tmpl)) {
-            newCd = mtlMapper.copyVersion(LoginUserContext.coCd(), tmpl, src, code, name, LoginUserContext.userId());
-        } else if (isHtg(tmpl)) {
-            newCd = htgMapper.copyVersion(LoginUserContext.coCd(), tmpl, src, code, name, LoginUserContext.userId());
-        } else if (isPkg(tmpl)) {
-            newCd = pkgMapper.copyVersion(LoginUserContext.coCd(), tmpl, src, code, name, LoginUserContext.userId());
-        } else if (isCcp(tmpl)) {
-            newCd = ccpMapper.copyVersion(LoginUserContext.coCd(), tmpl, src, code, name, LoginUserContext.userId());
-        } else {
-            newCd = mapper.copyVersion(LoginUserContext.coCd(), tmpl, src, code, name, LoginUserContext.userId());
-        }
+        String newCd = familyStores.storeFor(tmpl)
+                .copyVersion(LoginUserContext.coCd(), tmpl, src, code, name, LoginUserContext.userId());
         if (newCd == null || newCd.isBlank()) {
             throw new BizException("복사한 양식을 찾을 수 없습니다.");
         }
@@ -167,38 +134,32 @@ public class HtmlTemplateService {
         // 사용양식 한 줄을 만드는 행추가 — 주 표는 tbl_company_template
         auditWriter.record("tbl_company_template", null, "I",
                 Map.of("tmplCd", created, "verNm", name, "srcTmplCd", tmpl));
-        return Map.of("tmplCd", created);
+        HtmlFormCopyResult out = new HtmlFormCopyResult();
+        out.setTmplCd(created);
+        return out;
     }
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-20
+     * 일자: 2026-09-07
      * 코멘트:
      *   1) 자사 양식 항목만 저장한다. 테이블은 가족별
      *   2) 저장 버튼이 호출한다
      *   3) 표준이면 SP가 거부한다
      */
     @Transactional(timeout = 60)
-    public void saveItems(String tmplCd, Integer verNo, List<Map<String, Object>> items) {
+    public void saveItems(String tmplCd, Integer verNo, List<HtmlFormItemRow> items) {
         String tmpl = tmplOf(tmplCd);
+        assertTmplMatchesScreen(tmpl);
         if (isStdTmpl(tmpl) || verNo == null || verNo <= 0) {
             throw new BizException("표준 항목은 수정할 수 없습니다.");
         }
         try {
             String json = objectMapper.writeValueAsString(items == null ? List.of() : items);
-            if (isMtl(tmpl)) {
-                mtlMapper.saveItems(LoginUserContext.coCd(), tmpl, verNo, json, LoginUserContext.userId());
-            } else if (isHtg(tmpl)) {
-                htgMapper.saveItems(LoginUserContext.coCd(), tmpl, verNo, json, LoginUserContext.userId());
-            } else if (isPkg(tmpl)) {
-                pkgMapper.saveItems(LoginUserContext.coCd(), tmpl, verNo, json, LoginUserContext.userId());
-            } else if (isCcp(tmpl)) {
-                ccpMapper.saveItems(LoginUserContext.coCd(), tmpl, verNo, json, LoginUserContext.userId());
-            } else {
-                mapper.saveItems(LoginUserContext.coCd(), tmpl, verNo, json, LoginUserContext.userId());
-            }
+            HtmlFormFamilyStore store = familyStores.storeFor(tmpl);
+            store.saveItems(LoginUserContext.coCd(), tmpl, verNo, json, LoginUserContext.userId());
             // 항목 본문은 안 남긴다 — 헤더만. 작성 저장과 같다
-            auditWriter.record(auditVerTbl(tmpl), null, "U",
+            auditWriter.record(store.auditVerTbl(), null, "U",
                     Map.of("tmplCd", tmpl, "verNo", verNo, "itemCnt", items == null ? 0 : items.size()));
         } catch (JsonProcessingException e) {
             throw new BizException("점검항목 자료를 저장 형식으로 변환하지 못했습니다.");
@@ -207,7 +168,7 @@ public class HtmlTemplateService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-20
+     * 일자: 2026-09-07
      * 코멘트:
      *   1) 작성 신규 적용은 후속. 호환용으로 남긴다
      *   2) 기준관리 좌 저장은 호출하지 않는다
@@ -216,24 +177,16 @@ public class HtmlTemplateService {
     @Transactional(timeout = 60)
     public void apply(String tmplCd, Integer verNo) {
         String tmpl = tmplOf(tmplCd);
+        assertTmplMatchesScreen(tmpl);
         int ver = verNo == null ? 0 : verNo;
-        if (isMtl(tmpl)) {
-            mtlMapper.applyVersion(LoginUserContext.coCd(), tmpl, ver, LoginUserContext.userId());
-        } else if (isHtg(tmpl)) {
-            htgMapper.applyVersion(LoginUserContext.coCd(), tmpl, ver, LoginUserContext.userId());
-        } else if (isPkg(tmpl)) {
-            pkgMapper.applyVersion(LoginUserContext.coCd(), tmpl, ver, LoginUserContext.userId());
-        } else if (isCcp(tmpl)) {
-            ccpMapper.applyVersion(LoginUserContext.coCd(), tmpl, ver, LoginUserContext.userId());
-        } else {
-            mapper.applyVersion(LoginUserContext.coCd(), tmpl, ver, LoginUserContext.userId());
-        }
-        auditWriter.record(auditVerTbl(tmpl), null, "U", Map.of("tmplCd", tmpl, "verNo", ver));
+        HtmlFormFamilyStore store = familyStores.storeFor(tmpl);
+        store.applyVersion(LoginUserContext.coCd(), tmpl, ver, LoginUserContext.userId());
+        auditWriter.record(store.auditVerTbl(), null, "U", Map.of("tmplCd", tmpl, "verNo", ver));
     }
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-20
+     * 일자: 2026-09-07
      * 코멘트:
      *   1) 자사 양식명·회사 양식 사용여부를 고친다. 카탈로그 이름은 SP가 맞춘다
      *   2) 좌 저장이 이름·사용여부가 바뀐 저장행을 커밋할 때 호출한다
@@ -251,6 +204,7 @@ public class HtmlTemplateService {
             String useYn
     ) {
         String tmpl = tmplOf(tmplCd);
+        assertTmplMatchesScreen(tmpl);
         if (isStdTmpl(tmpl) || verNo == null || verNo <= 0) {
             throw new BizException("표준 양식명은 수정할 수 없습니다.");
         }
@@ -261,18 +215,9 @@ public class HtmlTemplateService {
         // 공통코드 use-yn(y/n) 또는 그리드 Y/N → 저장은 Y/N
         String yn = (useYn == null || useYn.isBlank() || !useYn.trim().toUpperCase().startsWith("N"))
                 ? "Y" : "N";
-        if (isMtl(tmpl)) {
-            mtlMapper.updateVerNm(LoginUserContext.coCd(), tmpl, verNo, name, yn, LoginUserContext.userId());
-        } else if (isHtg(tmpl)) {
-            htgMapper.updateVerNm(LoginUserContext.coCd(), tmpl, verNo, name, yn, LoginUserContext.userId());
-        } else if (isPkg(tmpl)) {
-            pkgMapper.updateVerNm(LoginUserContext.coCd(), tmpl, verNo, name, yn, LoginUserContext.userId());
-        } else if (isCcp(tmpl)) {
-            ccpMapper.updateVerNm(LoginUserContext.coCd(), tmpl, verNo, name, yn, LoginUserContext.userId());
-        } else {
-            mapper.updateVerNm(LoginUserContext.coCd(), tmpl, verNo, name, yn, LoginUserContext.userId());
-        }
-        auditWriter.record(auditVerTbl(tmpl), null, "U",
+        HtmlFormFamilyStore store = familyStores.storeFor(tmpl);
+        store.updateVerNm(LoginUserContext.coCd(), tmpl, verNo, name, yn, LoginUserContext.userId());
+        auditWriter.record(store.auditVerTbl(), null, "U",
                 Map.of("tmplCd", tmpl, "verNo", verNo, "verNm", name, "useYn", yn));
     }
 
@@ -290,7 +235,7 @@ public class HtmlTemplateService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-20
+     * 일자: 2026-09-07
      * 코멘트:
      *   1) 재검증 후 자사 양식을 소프트 삭제하고 주기 행을 지운다
      *   2) 삭제 버튼이 호출한다
@@ -300,40 +245,14 @@ public class HtmlTemplateService {
     public int delete(List<HtmlFormVerDeleteItem> keys) {
         assertDeletable(keys);
         for (HtmlFormVerDeleteItem key : keys) {
-            if (isMtl(key.getTmplCd())) {
-                mtlMapper.deleteVersion(
-                        LoginUserContext.coCd(), key.getTmplCd(), key.getVerNo(), LoginUserContext.userId()
-                );
-            } else if (isHtg(key.getTmplCd())) {
-                htgMapper.deleteVersion(
-                        LoginUserContext.coCd(), key.getTmplCd(), key.getVerNo(), LoginUserContext.userId()
-                );
-            } else if (isPkg(key.getTmplCd())) {
-                pkgMapper.deleteVersion(
-                        LoginUserContext.coCd(), key.getTmplCd(), key.getVerNo(), LoginUserContext.userId()
-                );
-            } else if (isCcp(key.getTmplCd())) {
-                ccpMapper.deleteVersion(
-                        LoginUserContext.coCd(), key.getTmplCd(), key.getVerNo(), LoginUserContext.userId()
-                );
-            } else {
-                mapper.deleteVersion(
-                        LoginUserContext.coCd(), key.getTmplCd(), key.getVerNo(), LoginUserContext.userId()
-                );
-            }
-            auditWriter.record(auditVerTbl(key.getTmplCd()), null, "D",
+            HtmlFormFamilyStore store = familyStores.storeFor(key.getTmplCd());
+            store.deleteVersion(
+                    LoginUserContext.coCd(), key.getTmplCd(), key.getVerNo(), LoginUserContext.userId()
+            );
+            auditWriter.record(store.auditVerTbl(), null, "D",
                     Map.of("tmplCd", key.getTmplCd(), "verNo", key.getVerNo()));
         }
         return keys.size();
-    }
-
-    /** 가족별 버전 표 — 감사 한 줄의 tbl_nm */
-    private static String auditVerTbl(String tmplCd) {
-        if (isMtl(tmplCd)) return "tbl_html_ccp_mtl_ver";
-        if (isHtg(tmplCd)) return "tbl_html_ccp_htg_ver";
-        if (isPkg(tmplCd)) return "tbl_html_ccp_pkg_ver";
-        if (isCcp(tmplCd)) return "tbl_html_ccp_chk_ver";
-        return "tbl_html_hyg_prc_ver";
     }
 
     /** 삭제 키 정규화·표준 차단 Double Check. */
@@ -342,43 +261,64 @@ public class HtmlTemplateService {
         for (HtmlFormVerDeleteItem key : keys) {
             String tmplCd = tmplOf(key.getTmplCd());
             key.setTmplCd(tmplCd);
+            assertTmplMatchesScreen(tmplCd);
             int verNo = key.getVerNo() == null ? 0 : key.getVerNo();
             key.setVerNo(verNo);
-            DeleteBlocker blocker = isMtl(tmplCd)
-                    ? mtlMapper.selectDeleteBlocker(LoginUserContext.coCd(), tmplCd, verNo)
-                    : isHtg(tmplCd)
-                    ? htgMapper.selectDeleteBlocker(LoginUserContext.coCd(), tmplCd, verNo)
-                    : isPkg(tmplCd)
-                    ? pkgMapper.selectDeleteBlocker(LoginUserContext.coCd(), tmplCd, verNo)
-                    : isCcp(tmplCd)
-                    ? ccpMapper.selectDeleteBlocker(LoginUserContext.coCd(), tmplCd, verNo)
-                    : mapper.selectDeleteBlocker(LoginUserContext.coCd(), tmplCd, verNo);
+            DeleteBlocker blocker = familyStores.storeFor(tmplCd)
+                    .selectDeleteBlocker(LoginUserContext.coCd(), tmplCd, verNo);
             DeleteValidation.throwIfBlocked(blocker, "양식");
         }
     }
 
-    /** CCP-3P 금속검출일지 가족이면 true — 저장 테이블 tbl_html_ccp_mtl_ver */
-    private static boolean isMtl(String tmplCd) {
-        String t = tmplCd == null ? "" : tmplCd.trim();
-        return t.startsWith("html_ccp_mtl");
+    /**
+     * URL 화면과 tmplCd 가족이 같은지.
+     *
+     * 권한은 URL 로, 대상 표는 body 의 tmplCd 로 고른다. 안 맞으면
+     * 금속검출 삭제 권한만 있는 계정이 공정점검 양식을 지운다.
+     * 요청이 없을 때(= 단위시험) 화면코드가 비어 대조할 것이 없다 — 그때는 건너뛴다.
+     */
+    private void assertTmplMatchesScreen(String tmplCd) {
+        String scrn = currentRequestScrnCd();
+        if (scrn.isEmpty()) {
+            return;
+        }
+        if (!tmplMatchesScreen(scrn, tmplCd)) {
+            throw new BizException("이 화면에서 다룰 수 없는 양식입니다.");
+        }
     }
 
-    /** CCP-2B 가열일지 가족이면 true — 저장 테이블 tbl_html_ccp_htg_ver */
-    private static boolean isHtg(String tmplCd) {
-        String t = tmplCd == null ? "" : tmplCd.trim();
-        return t.startsWith("html_ccp_htg");
+    /** 인터셉터가 붙인 화면코드. 요청 밖이면 빈 문자열 */
+    private static String currentRequestScrnCd() {
+        var attrs = RequestContextHolder.getRequestAttributes();
+        return attrs instanceof ServletRequestAttributes servlet
+                ? ScreenAuthResolver.requestScreen(servlet.getRequest())
+                : "";
     }
 
-    /** CCP-1B 포장일지 가족이면 true — 저장 테이블 tbl_html_ccp_pkg_ver */
-    private static boolean isPkg(String tmplCd) {
-        String t = tmplCd == null ? "" : tmplCd.trim();
-        return t.startsWith("html_ccp_pkg");
-    }
-
-    /** CCP 검증점검 가족이면 true — 저장 테이블 tbl_html_ccp_chk_ver */
-    private static boolean isCcp(String tmplCd) {
-        String t = tmplCd == null ? "" : tmplCd.trim();
-        return t.startsWith("html_ccp_chk") || CCP_SEED_TMPL_CD.equals(t);
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-07
+     * 코멘트:
+     *   1) 화면코드와 양식코드 접두가 같은 가족인지 본다
+     *   2) 쓰기·삭제 가드와 단위시험이 부른다
+     *   3) 모르면 false — 열린 문으로 두지 않는다
+     */
+    static boolean tmplMatchesScreen(
+            // 요청 URL 에서 고른 화면코드 — hyg-process-template 등
+            String scrnCd,
+            // 대상 양식코드 — html_ccp_mtl_007 등
+            String tmplCd
+    ) {
+        String scrn = scrnCd == null ? "" : scrnCd.trim();
+        String tmpl = tmplCd == null ? "" : tmplCd.trim();
+        return switch (scrn) {
+            case "ccp-mtl-template" -> HtmlFormFamilyStores.isMtl(tmpl);
+            case "ccp-htg-template" -> HtmlFormFamilyStores.isHtg(tmpl);
+            case "ccp-pkg-template" -> HtmlFormFamilyStores.isPkg(tmpl);
+            case "ccp-verify-template" -> HtmlFormFamilyStores.isCcp(tmpl);
+            case "hyg-process-template" -> HtmlFormFamilyStores.isHyg(tmpl);
+            default -> false;
+        };
     }
 
     private static boolean isStdTmpl(String tmplCd) {

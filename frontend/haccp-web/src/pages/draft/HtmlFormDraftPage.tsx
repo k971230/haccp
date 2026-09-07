@@ -562,6 +562,8 @@ export function HtmlFormDraftPage({
             : (b.deviationYn ? "Y" : "N"),
           // 식별 제목 — 목록용. 본문 SP 가 값이 있으면 쓰고 없으면 기존/자동값을 유지한다. 지면 hdr-title 은 안 바뀐다
           title,
+          // 상세에서 받은 스탬프 — 다른 탭이 먼저 저장했으면 서버가 막는다
+          seenUpdDt: b.seenUpdDt,
         });
         /*
          * 저장 뒤 화면이 더 할 일 — HWP 는 여기서 본문 파일을 올린다.

@@ -34,7 +34,7 @@ public interface CommonCodeMapper {
      *   2) 화면 진입·조회 버튼에서 호출한다
      *   3) 조건에 맞는 행이 없으면 빈 목록
      */
-    List<Map<String, Object>> selectGroups(
+    List<com.haccp.sys.code.commoncode.dto.CommonCodeGroupRow> selectGroups(
             // JWT 회사코드 — 테넌트 범위. SP의 필수 등가 조건
             @Param("coCd") String coCd,
             // 페이지 헤더 대분류코드 검색어. 공백이면 전체
@@ -51,7 +51,7 @@ public interface CommonCodeMapper {
      *   2) 대분류 행을 고를 때마다 sysYn을 바꿔 두 번 호출한다
      *   3) 조건에 맞는 행이 없으면 빈 목록
      */
-    List<Map<String, Object>> selectDetails(
+    List<com.haccp.sys.code.commoncode.dto.CommonCodeDetailRow> selectDetails(
             // JWT 회사코드 — 테넌트 범위
             @Param("coCd") String coCd,
             // 대분류코드 — 정확 일치. 공백이면 전체 그룹

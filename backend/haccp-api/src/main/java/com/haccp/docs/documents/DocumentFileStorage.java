@@ -67,7 +67,7 @@ public class DocumentFileStorage {
      * 개발자: 박승우
      * 일자: 2026-08-13
      * 코멘트:
-     *   1) {logbookDirectory}/{coCd}/{yyyy-MM-dd}/{tmplCd}/{uuid}_{원본명} 상대 경로를 만든다
+     *   1) {logbookDirectory}/{coCd}/{tmplCd}/{yyyy-MM-dd} 상대 경로를 만든다
      *   2) 문서 첨부·PDF 저장 직전에 쓴다 — DB에는 이 상대 경로만 남는다
      *   3) tmplCd가 공백일 때(= 양식과 무관한 첨부, 설비 사진 등) 타입 폴더를 생략한다
      */
@@ -138,7 +138,7 @@ public class DocumentFileStorage {
      * 개발자: 박승우
      * 일자: 2026-08-06
      * 코멘트:
-     *   1) 업로드 파일을 {logbookDirectory}/{coCd}/{일자}/{tmplCd} 아래에 저장한다
+     *   1) 업로드 파일을 {logbookDirectory}/{coCd}/{tmplCd}/{일자} 아래에 저장한다
      *   2) DocumentService가 DB 메타 행을 만들기 직전에 호출한다
      *   3) 성공 시 DB에 저장할 상대 경로를 반환하고, 실패 시 BizException
      */

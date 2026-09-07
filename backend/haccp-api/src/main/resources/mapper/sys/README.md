@@ -26,7 +26,7 @@ mapper/sys/
 
 ```xml
 <!-- 조회: 테이블 SELECT 금지, SP 결과셋만 -->
-<select id="selectRows" resultType="map">
+<select id="selectRows" resultType="com.haccp.sys.code.department.dto.DeptRow">
   SELECT * FROM sp_department_management_r_000(#{coCd}, #{deptCd}, #{deptNm})
 </select>
 
@@ -69,9 +69,9 @@ mapper/sys/
 
 - Two-Tier: SP 파라미터·컬럼은 lower_snake, 앱 DTO/JSON은 camelCase. XML의 `#{}` 키는 **camelCase**로 받는다
 - `co_cd`는 항상 `LoginUserContext.coCd()`에서 온 값을 서비스가 넘긴다. 요청 본문의 회사코드를 믿지 않는다
-- 조회 `resultType="map"`은 lower_snake 키로 돌아오며 FE `camelizeRows`가 변환한다
+- 조회 `resultType` 은 행 DTO 다. MyBatis `mapUnderscoreToCamelCase` 가 컬럼을 필드에 맞춘다
 - CUD는 `statementType="CALLABLE"` + `CALL sp_...(...)`, 서비스가 `@Transactional`로 감싼다. SP 내부 자율 COMMIT 금지
-- 서명 이미지는 `tbl_user.sign_img bytea`다. `#{signImg, jdbcType=BINARY}`로 넘기고 조회는 `resultType="map"`으로 `byte[]`를 받는다
+- 서명 이미지는 `tbl_user.sign_img bytea`다. `#{signImg, jdbcType=BINARY}`로 넘기고 조회는 `UserSignBlobRow` 로 `byte[]`를 받는다
 - 서명 유무만 필요한 statement는 `_sign_info_r_000`을 부른다. `bytea`를 SELECT 목록에 넣으면 16KB급 이미지가 매 확인마다 왕복한다
 
 ## 오류 전파

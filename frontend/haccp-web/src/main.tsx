@@ -27,12 +27,22 @@ import { handleUnauthorized, registerQueryCacheClear } from "@/shell/authSession
 import { subscribeAuthCrossTab } from "@/shell/authCrossTab";
 // 역할 — Path basename 포함 로그인 경로 판정
 import { isLoginBrowserPath } from "@/shell/authPaths";
+// 역할 — GET 재시도 횟수. .env 로 조절한다
+import { API_RETRY_COUNT } from "@/config/envConfig";
 // 역할 — 전역 스타일
 import "@/styles/global.css";
 
-// 조회 캐시 기본값 — 창을 다시 눌렀다고 재조회하지 않는다(기록 입력 중 값이 튀는 것을 막는다)
+/*
+ * 조회 캐시 기본값 — 창을 다시 눌렀다고 재조회하지 않는다(기록 입력 중 값이 튀는 것을 막는다).
+ *
+ * 재시도 횟수는 여기 박지 않는다. 예전에는 1 이 박혀 있었는데
+ * `.env.example` 과 `06-operations.mdc` 표는 2 라고 적고 있어 **문서가 거짓말을 했다.**
+ * `VITE_API_RETRY_COUNT` 로 조절되는 것이 정본이다.
+ */
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 30_000 } },
+  defaultOptions: {
+    queries: { retry: API_RETRY_COUNT, refetchOnWindowFocus: false, staleTime: 30_000 },
+  },
 });
 
 // 세션이 끊길 때 이전 사용자 조회 결과가 남지 않도록 캐시 비우기 방법을 알려 둔다

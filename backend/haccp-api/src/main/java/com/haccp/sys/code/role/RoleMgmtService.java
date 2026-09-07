@@ -18,8 +18,11 @@ import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 // 역할 — 삭제 표준 검증
 import com.haccp.common.validation.DeleteValidation;
-// 역할 — 행·삭제키 정규화 공용 유틸
-import com.haccp.sys.SysPayload;
+import com.haccp.sys.code.role.dto.RoleDeleteItem;
+import com.haccp.sys.code.role.dto.RoleRow;
+import com.haccp.sys.code.role.dto.RoleSaveRow;
+import com.haccp.sys.code.role.dto.RoleScreenRow;
+import com.haccp.sys.code.role.dto.RoleScreenSaveRow;
 // 역할 — 변경 감사 이력 적재
 import com.haccp.sys.logs.auditlog.AuditWriter;
 // 역할 — 생성자 주입
@@ -30,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 // 역할 — 화면 행·삭제키 목록
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -57,7 +61,7 @@ public class RoleMgmtService {
      *   2) 화면 진입·조회와 사용자 관리 권한그룹 룩업에서 호출한다
      *   3) 조건에 맞는 그룹이 없으면 빈 목록
      */
-    public List<Map<String, Object>> list(
+    public List<RoleRow> list(
             // 헤더 권한그룹코드 검색어. 공백이면 전체
             String usrgrpCd,
             // 헤더 권한그룹명 검색어. 공백이면 전체
@@ -80,23 +84,26 @@ public class RoleMgmtService {
     @Transactional
     public void save(
             // 화면이 보낸 변경 행 목록 — idx가 없으면 신규
-            List<Map<String, Object>> rows
+            List<RoleSaveRow> rows
     ) {
-        SysPayload.requireRows(rows, LABEL);
+        DeleteValidation.requireItems(rows, "저장할 " + LABEL + " 행이 없습니다.");
         String coCd = LoginUserContext.coCd();
         String actor = LoginUserContext.userId();
-        for (Map<String, Object> row : rows) {
-            Long idx = SysPayload.idxOrNull(row);
+        for (RoleSaveRow row : rows) {
+            if (row == null) {
+                throw new BizException("저장할 " + LABEL + " 행이 올바르지 않습니다.");
+            }
+            Long idx = idxOrNull(row.getIdx());
             roleMgmtMapper.save(
                     coCd,
                     idx,
-                    SysPayload.text(row, "usrgrpCd"),
-                    SysPayload.text(row, "usrgrpNm"),
-                    SysPayload.text(row, "descRmk"),
-                    SysPayload.text(row, "useYn"),
+                    text(row.getUsrgrpCd()),
+                    text(row.getUsrgrpNm()),
+                    text(row.getDescRmk()),
+                    text(row.getUseYn()),
                     actor);
             // idx가 null일 때(= 신규 등록) I, 값이 있을 때(= 기존 행 수정) U
-            auditWriter.record(AUDIT_TBL, idx, idx == null ? "I" : "U", row);
+            auditWriter.record(AUDIT_TBL, idx, idx == null ? "I" : "U", auditRow(row, idx));
         }
     }
 
@@ -110,7 +117,7 @@ public class RoleMgmtService {
      */
     public void validateDelete(
             // 삭제 대상 복합키 배열 — [{ idx }]
-            List<Map<String, Long>> keys
+            List<RoleDeleteItem> keys
     ) {
         assertDeletable(keys);
     }
@@ -126,7 +133,7 @@ public class RoleMgmtService {
     @Transactional
     public void delete(
             // 삭제 대상 복합키 배열 — [{ idx }]
-            List<Map<String, Long>> keys
+            List<RoleDeleteItem> keys
     ) {
         List<Long> idxs = assertDeletable(keys);
         String coCd = LoginUserContext.coCd();
@@ -145,7 +152,7 @@ public class RoleMgmtService {
      *   2) 권한 관리 우측 트리를 그릴 때 호출한다
      *   3) 그룹코드가 비면 업무 오류, 미설정 화면은 N으로 채워진다
      */
-    public List<Map<String, Object>> listScreens(
+    public List<RoleScreenRow> listScreens(
             // 좌측에서 고른 권한그룹코드 — 필수
             String usrgrpCd
     ) {
@@ -168,7 +175,7 @@ public class RoleMgmtService {
             // 대상 권한그룹코드 — 필수
             String usrgrpCd,
             // 변경 행 목록 — [{ scrnCd, readYn }]
-            List<Map<String, Object>> rows
+            List<RoleScreenSaveRow> rows
     ) {
         String grp = text(usrgrpCd);
         if (grp.isEmpty()) throw new BizException("권한그룹코드를 선택하세요.");
@@ -177,12 +184,12 @@ public class RoleMgmtService {
         String actor = LoginUserContext.userId();
         // 감사 이력에 남길 화면·권한 요약 — 저장한 순서 그대로 담는다
         List<Map<String, Object>> changed = new ArrayList<>();
-        for (Map<String, Object> row : rows) {
+        for (RoleScreenSaveRow row : rows) {
             if (row == null) throw new BizException("화면 권한 행이 올바르지 않습니다.");
-            String scrn = SysPayload.text(row, "scrnCd");
+            String scrn = row.getScrnCd() == null ? "" : row.getScrnCd().trim();
             if (scrn.isEmpty()) throw new BizException("화면코드가 없습니다.");
             // 조회권한이 Y가 아니면 전부 닫는다 — 트리 체크 하나로 5권한을 함께 움직인다
-            String yn = SysPayload.text(row, "readYn").equalsIgnoreCase("Y") ? "Y" : "N";
+            String yn = "Y".equalsIgnoreCase(text(row.getReadYn())) ? "Y" : "N";
             roleMgmtMapper.upsertScreen(coCd, grp, scrn, yn, yn, yn, yn, yn, actor);
             changed.add(Map.of("scrnCd", scrn, "readYn", yn));
         }
@@ -191,11 +198,33 @@ public class RoleMgmtService {
     }
 
     /** 삭제 대상 idx 정규화 + 사용자 참조 검사 — validate·delete가 공유한다 */
-    private List<Long> assertDeletable(List<Map<String, Long>> keys) {
-        List<Long> idxs = SysPayload.idxList(keys, LABEL);
+    private List<Long> assertDeletable(List<RoleDeleteItem> keys) {
+        DeleteValidation.requireItems(keys, "삭제할 " + LABEL + " 행을 선택하세요.");
+        List<Long> idxs = new ArrayList<>();
+        for (RoleDeleteItem key : keys) {
+            if (key == null) {
+                throw new BizException("삭제할 " + LABEL + " 키가 올바르지 않습니다.");
+            }
+            idxs.add(DeleteValidation.requirePositive(
+                    key.getIdx(), "삭제할 " + LABEL + " 키가 올바르지 않습니다."));
+        }
         DeleteValidation.throwIfBlocked(
                 roleMgmtMapper.selectDeleteBlocker(LoginUserContext.coCd(), idxs), LABEL);
         return idxs;
+    }
+
+    private static Long idxOrNull(Long idx) {
+        return idx != null && idx > 0 ? idx : null;
+    }
+
+    private static Map<String, Object> auditRow(RoleSaveRow row, Long idx) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("idx", idx);
+        out.put("usrgrpCd", row.getUsrgrpCd());
+        out.put("usrgrpNm", row.getUsrgrpNm());
+        out.put("descRmk", row.getDescRmk());
+        out.put("useYn", row.getUseYn());
+        return out;
     }
 
     private static String text(String value) {

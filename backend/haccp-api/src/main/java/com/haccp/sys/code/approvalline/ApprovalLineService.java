@@ -14,17 +14,18 @@ package com.haccp.sys.code.approvalline;
 
 // 역할 — JSON 변환
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 // 역할 — JWT · 업무 예외 · 삭제 표준
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteValidation;
 import com.haccp.sys.code.approvalline.dto.ApprovalLineDeleteItem;
+import com.haccp.sys.code.approvalline.dto.ApprovalLineRow;
 // 역할 — 변경 감사 이력 적재
 import com.haccp.sys.logs.auditlog.AuditWriter;
 // 역할 — 목록
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 // 역할 — 생성자 DI · 트랜잭션
@@ -36,6 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ApprovalLineService {
 
+    /** 삭제 차단 문구에 쓰는 업무명 */
+    private static final String LABEL = "결재선";
     /** 감사 이력 대상 테이블명 — 형제 5화면과 같은 규칙(tbl_ 접두 포함) */
     private static final String AUDIT_TBL = "tbl_approval_line";
 
@@ -52,9 +55,9 @@ public class ApprovalLineService {
      *   2) 화면 조회·점검항목 결재선 콤보가 호출한다
      *   3) payload가 깨지면 업무 오류
      */
-    public List<Map<String, Object>> list() {
+    public List<ApprovalLineRow> list() {
         // coCd: JWT 회사코드 — SP 테넌트 범위
-        List<Map<String, Object>> rows = new ArrayList<>();
+        List<ApprovalLineRow> rows = new ArrayList<>();
         for (String payload : mapper.selectApprovalLines(LoginUserContext.coCd())) {
             rows.add(readJson(payload));
         }
@@ -72,16 +75,24 @@ public class ApprovalLineService {
     @Transactional(timeout = 60)
     public void save(
             // row: 화면 폼 1건 — apprLineCd·apprLineNm·useYn·steps[]
-            Map<String, Object> row
+            ApprovalLineRow row
     ) {
-        requireText(row, "apprLineCd", "결재선 코드를 입력하세요.");
-        requireText(row, "apprLineNm", "결재선명을 입력하세요.");
+        if (row == null) {
+            throw new BizException("저장할 " + LABEL + " 행이 올바르지 않습니다.");
+        }
+        if (text(row.getApprLineCd()).isBlank()) {
+            throw new BizException("결재선 코드를 입력하세요.");
+        }
+        if (text(row.getApprLineNm()).isBlank()) {
+            throw new BizException("결재선명을 입력하세요.");
+        }
         mapper.saveApprovalLine(LoginUserContext.coCd(), writeJson(row), LoginUserContext.userId());
         /*
-         * 결재선은 UPSERT 한 건이라 등록·수정을 여기서 못 가른다.
-         * 형제 화면은 idx 유무로 갈랐지만 이 화면은 idx 를 안 받는다 — U 로 통일한다.
+         * 화면이 신규 여부를 실어 보낸다(newYn) — 형제 화면의 idx 자리와 같은 뜻이다.
+         * 그 값으로 감사 행위를 가른다. 예전에는 UPSERT 한 건이라 못 가르고 U 로 통일했다.
          */
-        auditWriter.record(AUDIT_TBL, null, "U", row);
+        boolean isNew = "Y".equalsIgnoreCase(text(row.getNewYn()));
+        auditWriter.record(AUDIT_TBL, null, isNew ? "I" : "U", auditRow(row));
     }
 
     /**
@@ -144,34 +155,33 @@ public class ApprovalLineService {
             if (apprLineCd.equalsIgnoreCase("DEFAULT")) {
                 throw new BizException("기본 결재선 'DEFAULT'은(는) 시스템 기본 설정이므로 삭제할 수 없습니다.");
             }
-            Map<String, Object> blocker = mapper.selectApprovalLineBlocker(coCd, apprLineCd);
-            if (blocker != null) {
-                throw new BizException(
-                        "선택한 결재선 '" + apprLineCd
-                                + "'이(가) 사용양식 또는 문서에서 참조 중이므로 삭제할 수 없습니다.");
-            }
+            DeleteValidation.throwIfBlocked(
+                    mapper.selectApprovalLineBlocker(coCd, apprLineCd), LABEL);
         }
     }
 
-    private static String text(Object value) {
-        return value == null ? "" : String.valueOf(value).trim();
+    private static String text(String value) {
+        return value == null ? "" : value.trim();
     }
 
-    private static void requireText(Map<String, Object> row, String field, String message) {
-        if (text(row.get(field)).isBlank()) {
-            throw new BizException(message);
-        }
+    private static Map<String, Object> auditRow(ApprovalLineRow row) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("apprLineCd", row.getApprLineCd());
+        out.put("apprLineNm", row.getApprLineNm());
+        out.put("useYn", row.getUseYn());
+        out.put("newYn", row.getNewYn());
+        return out;
     }
 
-    private Map<String, Object> readJson(String payload) {
+    private ApprovalLineRow readJson(String payload) {
         try {
-            return objectMapper.readValue(payload, new TypeReference<Map<String, Object>>() { });
+            return objectMapper.readValue(payload, ApprovalLineRow.class);
         } catch (JsonProcessingException ex) {
             throw new BizException("결재선 자료를 읽지 못했습니다.");
         }
     }
 
-    private String writeJson(Map<String, Object> row) {
+    private String writeJson(ApprovalLineRow row) {
         try {
             return objectMapper.writeValueAsString(row);
         } catch (JsonProcessingException ex) {

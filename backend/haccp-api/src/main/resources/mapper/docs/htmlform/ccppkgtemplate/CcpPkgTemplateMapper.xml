@@ -15,7 +15,7 @@ PIPELINE[HB132] CCP-1B 포장일지 양식 XML
 <mapper namespace="com.haccp.docs.htmlform.ccppkgtemplate.CcpPkgTemplateMapper">
 
     <!-- 좌측 양식 목록 — 예시 html_ccp_pkg_000 + 자사 html_ccp_pkg_NNN -->
-    <select id="selectVersions" resultType="map">
+    <select id="selectVersions" resultType="com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormVersionRow">
         SELECT * FROM sp_tbl_html_ccp_pkg_ver_r_000(
             #{coCd, jdbcType=VARCHAR},
             #{tmplCd, jdbcType=VARCHAR},
@@ -25,7 +25,7 @@ PIPELINE[HB132] CCP-1B 포장일지 양식 XML
     </select>
 
     <!-- 우측 지면 항목 — 예시이면 tbl_check_item html_ccp_pkg_000 -->
-    <select id="selectItems" resultType="map">
+    <select id="selectItems" resultType="com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormItemRow">
         SELECT * FROM sp_tbl_html_ccp_pkg_ver_item_r_000(#{coCd}, #{tmplCd}, #{verNo})
     </select>
 

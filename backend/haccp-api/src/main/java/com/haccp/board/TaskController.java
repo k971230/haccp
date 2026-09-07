@@ -32,7 +32,7 @@ public class TaskController {
     private final TaskService service;
 
     @GetMapping("/api/v1/board/today-tasks/list")
-    public CommonResponse<List<Map<String, Object>>> todayTasks() { return CommonResponse.ok(service.todayTasks()); }
+    public CommonResponse<List<com.haccp.board.dto.TodayTaskRow>> todayTasks() { return CommonResponse.ok(service.todayTasks()); }
 
     /**
      * 개발자: 박승우
@@ -43,7 +43,7 @@ public class TaskController {
      *   3) 성공 시 { rows, total }. total 은 기간 전체 건수
      */
     @GetMapping("/api/v1/board/today-tasks/recent-docs")
-    public CommonResponse<Map<String, Object>> todayTaskDocs(
+    public CommonResponse<com.haccp.board.dto.TodayTaskDocsResponse> todayTaskDocs(
             // 기준일 시작 YYYYMMDD
             @RequestParam(required = false) String fromDt,
             // 기준일 종료 YYYYMMDD
@@ -58,7 +58,7 @@ public class TaskController {
 
     /** 안 읽은 알림 목록 — 셸 종 아이콘이 호출한다 */
     @GetMapping("/api/v1/board/notifications/list")
-    public CommonResponse<List<Map<String, Object>>> notifications() { return CommonResponse.ok(service.notifications()); }
+    public CommonResponse<List<com.haccp.board.dto.NotificationRow>> notifications() { return CommonResponse.ok(service.notifications()); }
 
     /** 알림 1건을 읽음 처리한다 */
     @PutMapping("/api/v1/board/notifications/{idx}/read")

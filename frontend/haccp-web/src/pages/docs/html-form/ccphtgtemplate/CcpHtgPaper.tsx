@@ -338,6 +338,8 @@ function HeatLogRow({
             // 빈 행·작성 중간 품명 — 문자
             kind={CELL_KIND.TEXT}
             title="품명"
+            // 상한은 tbl_ccp_htg_monitor_row.product_nm varchar(100)
+            maxLength={100}
             editable={writeEdit}
             value={row ? row?.productNm ?? "" : undefined}
             onChange={row ? (v) => onPatch?.({ productNm: v }) : undefined}

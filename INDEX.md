@@ -1,6 +1,6 @@
 # INDEX — 무엇이 어디 있나
 
-> 개발자: 박승우 · 일자: 2026-09-03
+> 개발자: 박승우 · 일자: 2026-09-07
 > **생성기가 만든다** — `node scripts/gen_index.mjs`. 손으로 고치지 않는다.
 
 폴더와 그 폴더 README 의 첫 줄을 실물에서 뽑았다.
@@ -11,9 +11,9 @@
 
 | | |
 |---|---|
-| 목차에 오른 폴더 | 193 |
-| README 있는 폴더 | 179 |
-| **README 없는데 소스가 있는 폴더** | **14** |
+| 목차에 오른 폴더 | 204 |
+| README 있는 폴더 | 180 |
+| **README 없는데 소스가 있는 폴더** | **24** |
 
 ## 트리
 
@@ -50,6 +50,7 @@ backend/
                     auth 요청·응답 DTO (JSON camelCase).
               board/
                   정본: FE pages/board/README.md. TaskController · CalendarController · DailyTaskGenerationJob. XML mapper/board/.
+                dto/  ← README 없음
               code/
                   도메인 code — 공통코드. Controller·Service·Mapper 인터페이스.
                 dto/
@@ -90,6 +91,7 @@ backend/
                         버전 삭제 키 HtmlFormVerDeleteItem. 복사·이름·적용은 Controller body — 전용 DTO 없음.
                 hwp/
                     화면 1개 = 패키지 1개. 파이프라인 표는 FE pages/docs/README.md 1장 · 이 패키지 상위 com.haccp.docs/README.md.
+                  dto/  ← README 없음
                 sch/
                     화면 1개 = 패키지 1개. 파이프라인 표는 FE pages/docs/README.md 2장 · 이 패키지 상위 com.haccp.docs/README.md.
                   dto/
@@ -100,6 +102,7 @@ backend/
                   URL /draft. 사용 중인 양식을 골라 일자별 작성 문서를 만드는 화면 묶음이다.
                 ccpmonitoring/
                     화면 3개 = 컨트롤러 3개. FE pages/draft/ccp-monitoring/.
+                  dto/  ← README 없음
                 dto/
                     HYG·CCP검증·CCP 모니터링 5화면이 같은 모양을 쓴다. 화면별 dto 로 복제하지 않는다
                 html/
@@ -121,7 +124,7 @@ backend/
                 dto/
                     menu 요청·응답 DTO (JSON camelCase).
               pref/
-                  도메인 pref — 사용자 환경설정. Controller·Service·Mapper 인터페이스.
+                  도메인 pref — 사용자 환경설정. 조회(list)는 Controller → Mapper 직행. 저장(save)만 PrefService (@Transactional).
                 dto/
                     pref 요청·응답 DTO (JSON camelCase).
               sys/
@@ -134,22 +137,31 @@ backend/
                         상신(REQUEST)이 결재선 단계를 문서에 스냅샷한다. 이때 use_yn='Y' 인 단계만 넣는다.
                   commoncode/
                       화면코드 common-code-management · XML resources/mapper/sys/code/commoncode/CommonCodeMapper.xml · SP db_sasshacc…
+                    dto/
+                        저장·삭제만 DTO 다. 조회 목록은 SP 결과 Map 을 그대로 내린다.
                   department/
                       화면코드 department-management · XML resources/mapper/sys/code/department/DepartmentMapper.xml · SP db_sasshaccp…
+                    dto/  ← README 없음
                   menu/
                       화면코드 menu-management · XML resources/mapper/sys/code/menu/MenuMgmtMapper.xml · SP db_sasshaccp/01_sp.sql
+                    dto/  ← README 없음
                   role/
                       화면코드 role-management · XML resources/mapper/sys/code/role/RoleMgmtMapper.xml · SP db_sasshaccp/01_sp.sql
+                    dto/  ← README 없음
                   user/
                       화면코드 user-management · XML resources/mapper/sys/code/user/UserMapper.xml · SP db_sasshaccp/01_sp.sql
+                    dto/  ← README 없음
                 logs/
                     조회 전용 3화면. 쓰기 API 가 없다 — 이력은 다른 경로가 쌓는다.
                   auditlog/
                       화면코드 audit-log · XML resources/mapper/sys/logs/auditlog/AuditLogMapper.xml · SP db_sasshaccp/01_sp.sql
+                    dto/  ← README 없음
                   loginhistory/
                       화면코드 login-history · XML resources/mapper/sys/logs/loginhistory/LoginHistoryMapper.xml · SP db_sasshaccp/01_…
+                    dto/  ← README 없음
                   screenusage/
                       화면코드 screen-usage-statistics · XML resources/mapper/sys/logs/screenusage/ScreenUsageMapper.xml · SP db_sassh…
+                    dto/  ← README 없음
         resources/
             application.yml·MyBatis mapper·템플릿 매니페스트.
           holidays/
@@ -184,7 +196,7 @@ backend/
             draft/
                 com.haccp.draft. Mapper 인터페이스. 화면(메뉴) 1개 = 폴더 1개.
               ccpmonitoring/
-                  양식 목록·항목만 계열 SP 가 달라 CcpLogDraftMapper.xml 이 choose 로 pkg/htg 를 가른다.
+                  namespace 는 인터페이스 FQCN 과 같다. 네이티브 SQL 은 삭제 차단 래핑 SELECT 뿐이다.
               html/
                   CcpVerifyDraftMapper.xml — com.haccp.draft.html.CcpVerifyDraftMapper
               hwpdoc/
@@ -391,14 +403,24 @@ tools/  ← README 없음
       <p align="center">
 ```
 
-## README 없는 폴더 (14)
+## README 없는 폴더 (24)
 
 `CLAUDE.md` 는 폴더를 새로 만들면 README 를 같이 만들라고 한다. 아래가 그 규칙 밖이다.
 
+- `backend/haccp-api/src/main/java/com/haccp/board/dto` — 소스 8본
+- `backend/haccp-api/src/main/java/com/haccp/docs/hwp/dto` — 소스 5본
+- `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/dto` — 소스 4본
+- `backend/haccp-api/src/main/java/com/haccp/sys/code/department/dto` — 소스 3본
+- `backend/haccp-api/src/main/java/com/haccp/sys/code/menu/dto` — 소스 3본
+- `backend/haccp-api/src/main/java/com/haccp/sys/code/role/dto` — 소스 7본
+- `backend/haccp-api/src/main/java/com/haccp/sys/code/user/dto` — 소스 5본
+- `backend/haccp-api/src/main/java/com/haccp/sys/logs/auditlog/dto` — 소스 1본
+- `backend/haccp-api/src/main/java/com/haccp/sys/logs/loginhistory/dto` — 소스 1본
+- `backend/haccp-api/src/main/java/com/haccp/sys/logs/screenusage/dto` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/auth` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/common/auth` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/common/validation` — 소스 1본
-- `backend/haccp-api/src/test/java/com/haccp/docs/documents` — 소스 2본
+- `backend/haccp-api/src/test/java/com/haccp/docs/documents` — 소스 3본
 - `backend/haccp-api/src/test/java/com/haccp/docs/htmlform/htmltemplate` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/docs/hwp` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/docs/sch` — 소스 2본
@@ -406,7 +428,7 @@ tools/  ← README 없음
 - `backend/haccp-api/src/test/java/com/haccp/draft` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/draft/ccpmonitoring` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/draft/hwpdoc` — 소스 1본
-- `backend/haccp-api/src/test/java/com/haccp/flow/ca` — 소스 1본
+- `backend/haccp-api/src/test/java/com/haccp/flow/ca` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/sys/code/user` — 소스 1본
 - `tools` — 소스 8본
 

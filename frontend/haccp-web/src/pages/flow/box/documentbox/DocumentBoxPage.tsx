@@ -249,11 +249,22 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
     void loadList();
   }, [loadList]);
 
-  // deep-link ?docIdx= — 목록에 있으면 상세를 연다
+  /*
+   * deep-link ?docIdx= — 목록에 있으면 상세를 **한 번만** 연다.
+   *
+   * openDocIdx 는 URL 이 살아 있는 동안 계속 같은 값이라, 표식이 없으면
+   * 목록이 다시 읽힐 때마다(조회·인쇄·첨부·결재 뒤 loadList) 이 효과가 또 터져
+   * 사용자가 고른 다른 문서를 말없이 처음 그 문서로 되돌린다.
+   * 결재첨부에서는 입력 중이던 비고까지 서버 값으로 덮였다.
+   */
+  const openedDeepLink = useRef<number | null>(null);
   useEffect(() => {
     if (openDocIdx == null || rows.length === 0) return;
+    if (openedDeepLink.current === openDocIdx) return;
     const row = rows.find((r) => r.docIdx === openDocIdx);
-    if (row) void loadDetail(row);
+    if (!row) return;
+    openedDeepLink.current = openDocIdx;
+    void loadDetail(row);
   }, [openDocIdx, rows, loadDetail]);
 
   /** 첨부 다운로드 */
@@ -513,9 +524,28 @@ export default function DocumentBoxPage({ mode: boxMode }: DocumentBoxPageProps)
                       >
                         {statusLabel(detail.header.status, detail.header.status ?? "")}
                       </span>
+                      {/*
+                        * 미조치 개선조치 건수 — sp_sign_ready_r_000 가 세어 보내는데
+                        * 어느 화면도 안 그려서 결재자가 「이 문서에 안 끝난 조치가 있는지」를 몰랐다.
+                        * 막지는 않는다 — 조치는 문서보다 늦게 끝나는 것이 정상이다. 보이기만 한다.
+                        */}
+                      {(selected?.openCaCnt ?? 0) > 0 ? (
+                        <span
+                          className="shrink-0 rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700"
+                          title="이 문서에서 나온 개선조치 중 아직 끝나지 않은 건수입니다"
+                        >
+                          미조치 {selected?.openCaCnt}
+                        </span>
+                      ) : null}
                     </div>
                     <p className="mt-1 text-xs text-slate-500">
                       {detail.header.docNo} · {isHwpKind(detail.header.docKind) ? "한글 문서형" : "DB 입력형"} · 작성자 {detail.header.writerNm || detail.header.writerId || "-"}
+                      {/*
+                        * 상신일·보존기한은 서버가 상세에 늘 실어 보내는데 그리는 자리가 없었다.
+                        * 결재자가 「언제 올라온 것인지」를 목록으로 돌아가서 봐야 했다.
+                        */}
+                      {detail.header.writeDt ? ` · 상신 ${toDisplayDateOnly(detail.header.writeDt)}` : ""}
+                      {detail.header.retentionUntil ? ` · 보존 ~${toDisplayDateOnly(detail.header.retentionUntil)}` : ""}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">

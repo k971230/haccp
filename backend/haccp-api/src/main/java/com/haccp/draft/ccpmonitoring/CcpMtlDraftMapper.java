@@ -13,10 +13,13 @@
 package com.haccp.draft.ccpmonitoring;
 
 import com.haccp.common.validation.DeleteBlocker;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormItemRow;
+import com.haccp.draft.ccpmonitoring.dto.CcpMtlHeaderRow;
+import com.haccp.draft.ccpmonitoring.dto.CcpMtlPassRow;
+import com.haccp.draft.ccpmonitoring.dto.CcpMtlSensRow;
 import com.haccp.draft.dto.DraftFormRow;
 import com.haccp.draft.dto.DraftListRow;
 import java.util.List;
-import java.util.Map;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -46,7 +49,7 @@ public interface CcpMtlDraftMapper {
      *   2) 상세 조회가 헤더·기록행과 함께 조립한다
      *   3) verNo 0 이면 표준 시드
      */
-    List<Map<String, Object>> selectFormItems(
+    List<HtmlFormItemRow> selectFormItems(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // tmplCd: 양식코드
@@ -90,7 +93,7 @@ public interface CcpMtlDraftMapper {
      *   2) 상세 조회가 감도행·통과량행 앞에 호출한다
      *   3) 없으면 null
      */
-    Map<String, Object> selectHeader(
+    CcpMtlHeaderRow selectHeader(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // docIdx: tbl_document.idx
@@ -107,7 +110,7 @@ public interface CcpMtlDraftMapper {
      *   2) 상세 조회가 호출한다
      *   3) phase_cd 로 작업 전/작업 후가 갈린다 — 화면이 그 값으로 영역을 나눈다
      */
-    List<Map<String, Object>> selectSensRows(
+    List<CcpMtlSensRow> selectSensRows(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // hdrIdx: tbl_ccp_metal_monitor.idx
@@ -122,7 +125,7 @@ public interface CcpMtlDraftMapper {
      *   2) 상세 조회가 호출한다
      *   3) 없으면 빈 목록
      */
-    List<Map<String, Object>> selectPassRows(
+    List<CcpMtlPassRow> selectPassRows(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // hdrIdx: tbl_ccp_metal_monitor.idx

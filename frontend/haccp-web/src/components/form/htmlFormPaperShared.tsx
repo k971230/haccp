@@ -1358,6 +1358,28 @@ export function cellValueAccepted(
 
 /**
  * 개발자: 박승우
+ * 일자: 2026-09-04
+ * 코멘트:
+ *   1) 상한이 있으면 초과분을 자른다. 없으면 그대로 돌려준다
+ *   2) 지면 입력칸이 값을 올리기 직전에 부른다
+ *   3) 순수 함수라 시험이 이것만 태운다
+ *
+ * `maxLength` 속성만으로는 **붙여넣기가 안 잘린다.** 넘겨서 저장하면
+ * 브라우저·BE·SP 어디도 안 자르고 `22001` SQL 오류가 그대로 뜬다 —
+ * 이 계열이 이 저장소에서 네 번 났다 (`docs/4_명명과_경로.md` 10절).
+ */
+export function clampCellValue(
+  // next: 입력기가 올린 값
+  next: string,
+  // maxLength: 저장될 컬럼의 varchar 폭. 없으면 안 자른다
+  maxLength?: number,
+): string {
+  if (maxLength == null || next.length <= maxLength) return next;
+  return next.slice(0, maxLength);
+}
+
+/**
+ * 개발자: 박승우
  * 일자: 2026-08-25
  * 코멘트:
  *   1) 지면 입력칸 하나를 종류에 맞는 입력기·정렬·검증으로 그린다
@@ -1378,12 +1400,20 @@ export function HtmlFormCellInput({
   editable,
   // title: 마우스 오버 설명 — 칸 이름
   title,
+  // maxLength: 저장될 컬럼의 varchar 폭. 문자칸에 준다
+  maxLength,
 }: {
   kind: CellKind;
   value?: string;
   onChange?: (next: string) => void;
   editable: boolean;
   title?: string;
+  /*
+   * 넘겨서 저장하면 브라우저·BE·SP 어디도 안 자르고 22001 SQL 오류가 그대로 뜬다.
+   * 그리드 칸은 MesEditableGrid 가 같은 일을 하는데(types/grid.ts maxLength) 지면은 여기가 유일한 자리다.
+   * 숫자·시각·판정 칸은 형식이 이미 좁아 안 준다.
+   */
+  maxLength?: number;
 }) {
   // 미리보기 행일 때(= value 를 주지 않음) 비제어로 두어 기존 화면 모양을 유지한다
   const controlled = value !== undefined && !!onChange;
@@ -1392,6 +1422,7 @@ export function HtmlFormCellInput({
     className: `html-form-sign-input ${align}`,
     readOnly: !editable,
     title,
+    maxLength,
   };
   if (kind === CELL_KIND.TIME) {
     return (
@@ -1424,7 +1455,8 @@ export function HtmlFormCellInput({
               const next = e.target.value;
               // 숫자칸에 숫자·부호·소수점 외의 글자가 들어올 때(= 한글 IME 등) 이전 값을 지킨다
               if (!cellValueAccepted(kind, next)) return;
-              onChange?.(next);
+              // 붙여넣기는 maxLength 속성만으로 안 막힌다
+              onChange?.(clampCellValue(next, maxLength));
             },
           }
         : {})}

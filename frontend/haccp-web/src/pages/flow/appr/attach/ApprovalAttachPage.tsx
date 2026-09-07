@@ -192,11 +192,22 @@ export default function ApprovalAttachPage() {
     void loadList();
   }, [loadList]);
 
-  // deep-link ?docIdx= — 목록에 있으면 상세를 연다
+  /*
+   * deep-link ?docIdx= — 목록에 있으면 상세를 **한 번만** 연다.
+   *
+   * openDocIdx 는 URL 이 살아 있는 동안 계속 같은 값이라, 표식이 없으면
+   * 목록이 다시 읽힐 때마다(조회·인쇄·첨부·결재 뒤 loadList) 이 효과가 또 터져
+   * 사용자가 고른 다른 문서를 말없이 처음 그 문서로 되돌린다.
+   * 결재첨부에서는 입력 중이던 비고까지 서버 값으로 덮였다.
+   */
+  const openedDeepLink = useRef<number | null>(null);
   useEffect(() => {
     if (openDocIdx == null || rows.length === 0) return;
+    if (openedDeepLink.current === openDocIdx) return;
     const row = rows.find((r) => r.docIdx === openDocIdx);
-    if (row) void loadDetail(row);
+    if (!row) return;
+    openedDeepLink.current = openDocIdx;
+    void loadDetail(row);
   }, [openDocIdx, rows, loadDetail]);
 
   const attachEditable = canEditAttach(detail?.header.status) && (canWrite || canModify);

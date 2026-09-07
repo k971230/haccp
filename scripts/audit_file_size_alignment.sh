@@ -8,7 +8,7 @@
 #    1) .env.example 값을 파싱해 byte·MB·request≥file 을 검사한다
 #    2) application.yml multipart 기본값과 같은지 본다
 #    3) 불일치 시 exit 1 — 소스는 수정하지 않는다
-#  호출처: Jenkinsfile.audit · 런북 §19
+#  호출처: Jenkinsfile.audit · DEPLOY.md §6
 #  성공: 3키 정합. 실패: 불일치 메시지 + exit 1
 # ============================================================
 set -euo pipefail

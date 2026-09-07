@@ -8,7 +8,7 @@
 #    1) FE 에서 http.delete / method DELETE 를 쓰면 실패한다
 #    2) BE 에 @DeleteMapping 이 있으면 실패한다
 #    3) validate-delete URL 이 있으면 같은 파일에 /delete URL 이 있어야 한다
-#  호출처: Jenkinsfile.audit · 런북 §19
+#  호출처: Jenkinsfile.audit · DEPLOY.md §6
 #  성공: 위반 0건. 실패: 히트 목록 + exit 1 (소스 미수정)
 # ============================================================
 set -euo pipefail

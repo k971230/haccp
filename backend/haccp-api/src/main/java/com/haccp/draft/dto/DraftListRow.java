@@ -10,7 +10,7 @@
  *      — DOC_STATUS 를 그대로 내리고 새 코드 도메인을 만들지 않는다
  *
  * 계열마다 hdrIdx 가 가리키는 테이블이 다르다(tbl_hyg_process · tbl_ccp_verify_check ·
- * tbl_ccp_generic_monitor · tbl_ccp_metal_monitor). 목록 SP 가 자기 헤더 idx 를 넣는다.
+ * tbl_ccp_pkg_monitor · tbl_ccp_htg_monitor · tbl_ccp_metal_monitor). 목록 SP 가 자기 헤더 idx 를 넣는다.
  *
  * PIPELINE[HB135] 양식 작성 공용 DTO
  */

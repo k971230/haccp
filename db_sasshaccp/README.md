@@ -14,7 +14,7 @@ PostgreSQL `sasshaccp` 스키마 **정본**. 여기 7본이 곧 DB 다 — 손�
      ├─ 06_company_seed 업체·계정·결재선·사용양식   -v co_cd=  업체별
      ├─ 07_company_forms 회사 지면 5본 복사         -v co_cd=  업체별
 04_migrate_code_upper  구 DB 1회용 — 신규 설치에는 안 쓴다
-08·09 (검토 제거·결재 SP 개명) 는 운영·시험에 적용한 뒤 지웠다. 정본은 00_ddl·01_sp 다.
+08·09·10·11·12 는 운영·시험에 적용한 뒤 지웠다. 정본은 7본이다.
 ```
 
 **업무 로직은 SP 에 둔다.** 백엔드는 SP 를 부르고 결과를 담아 넘기는 일만 한다
@@ -42,9 +42,8 @@ psql -v co_cd=0000 -f 07_company_forms.sql
 ## 새 업체를 여는 법 (0004, 0005 …)
 
 **SQL 파일을 새로 만들지 않는다.** `02_seed.sql` 에 업체를 넣지 않는다.
-`apply-all.sh` 가 `03`→`05`→`06`→`07` 을 그 `CO_CD` 로 돌리는 것은 **빈 DB 초기화 1회에 한정된다.**
-이미 깔린 DB 에 다시 부르면 1단계가 `00_ddl.sql` 을 돌려 `42P06 duplicate schema` 로 죽는다.
-업체를 더 얹을 때는 업체분 4본만 직접 돌린다.
+이미 깔린 DB 에 `apply-all.sh` 를 다시 불러도 된다. 스키마가 있으면 `00_ddl` 과
+`02_seed` 를 건너뛰고 `01_sp` 부터 돈다. 업체만 더 얹을 때는 업체분 4본만 직접 돌려도 된다.
 
 ```sh
 export PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** PGDATABASE=sasshaccp
@@ -101,7 +100,7 @@ $P -v co_cd=0004 -f 07_company_forms.sql
 | 공통코드 | `main_cd`·`sub_cd` 둘 다 **UPPER_SNAKE**. `sub_cd` 는 업무 표에 저장되는 값과 같은 표기 |
 | 업무 오류 | SP 에서 `RAISE ... USING ERRCODE='45000'` → 400 + 그 문구 |
 | 삭제 | HTTP DELETE 를 쓰지 않는다. `validate-delete` → `delete` 2단계 |
-| 재실행 | 7본 모두 몇 번을 돌려도 결과가 같아야 한다 — **목표다. 지금은 아니다.** `00_ddl`(`CREATE SCHEMA`·`CREATE TABLE` 에 `IF NOT EXISTS` 없음)·`02_seed`(`ON CONFLICT` 0건)는 빈 DB 전용 |
+| 재실행 | `apply-all.sh` 는 스키마가 있으면 `00_ddl`·`02_seed` 를 건너뛴다. `01_sp` 는 OR REPLACE, `03`·`05` 는 upsert, `06`·`07` 은 이미 있는 행을 안 건드린다 |
 
 ## 손대면 안 되는 것
 
@@ -176,6 +175,7 @@ node ../tools/q.mjs "INSERT INTO tbl_notification(co_cd,noti_type_cd,user_id,tit
 
 ## 변경
 
+- 2026-09-07 — `10`·`11`·`12` 1회성 본을 시험·운영에 적용한 뒤 지웠다. apply-all 은 7본만 돈다.
 - 2026-09-01 — 새 업체 개설은 변수 네 개(`CO_CD`·`CO_NM`·`ADMIN_ID`·`WRITER_ID`)만 바꾼다.
   `WRITER_ID` 가 있으면 팀원·팀장과 기본 결재선(WRITE/APPROVE)까지 시드가 넣는다.
   `02_seed.sql` 에 업체를 덤프하지 않는다. HTML 지면은 `07_company_forms.sql` 이 복사한다.

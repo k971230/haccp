@@ -7,7 +7,8 @@
  *   1) 요청당 1회 토큰을 검증하고 LoginUserContext에 주입한 뒤, 종료 시 반드시 제거한다
  *   2) mes-api와 다른 점 — 회사 선택이 없어 공개 경로가 /api/v1/auth/login 하나뿐이다
  *   3) 필터 단계 401은 MVC CORS 적용 전이라 CORS 헤더를 직접 붙인다. 없으면 브라우저가 응답을 읽지 못해
- *      프론트의 401 인터셉터(로그인 화면 이동)가 동작하지 않는다
+ *      프론트의 401 인터셉터(로그인 화면 이동)가 동작하지 않는다.
+ *      코드는 UNAUTHENTICATED(없음)·SESSION_EXPIRED(만료)·UNAUTHORIZED(위조) 로 가른다
  *
  * PIPELINE[HB3] Spring 설정
  * PIPELINE[HB4, HB5, HB11, HB12] 연관 모듈
@@ -91,7 +92,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String header = req.getHeader("Authorization");
         // 헤더가 없거나 Bearer 접두사가 아닐 때(= 토큰 미전송) 401로 끊는다
         if (header == null || !header.startsWith("Bearer ")) {
-            unauthorized(req, res, "로그인이 필요합니다.");
+            unauthorized(req, res, "UNAUTHENTICATED", "로그인이 필요합니다.");
             return;
         }
 
@@ -100,8 +101,12 @@ public class JwtFilter extends OncePerRequestFilter {
             // "Bearer " 7자를 제거한 순수 토큰을 검증한다
             user = jwtProvider.parse(header.substring(7));
         } catch (Exception e) {
-            // 서명 위조·만료·형식 오류를 구분하지 않고 같은 문구로 응답한다(공격자에게 단서를 주지 않음)
-            unauthorized(req, res, "인증이 만료되었거나 올바르지 않습니다. 다시 로그인하세요.");
+            // 만료와 위조를 가른다 — 현장은 「세션이 종료되었습니다」와 「다시 로그인」을 다르게 묻는다
+            if (e instanceof io.jsonwebtoken.ExpiredJwtException) {
+                unauthorized(req, res, "SESSION_EXPIRED", "세션이 종료되었습니다.");
+            } else {
+                unauthorized(req, res, "UNAUTHORIZED", "인증이 올바르지 않습니다. 다시 로그인하세요.");
+            }
             return;
         }
 
@@ -150,6 +155,8 @@ public class JwtFilter extends OncePerRequestFilter {
             HttpServletRequest req,
             // 응답 객체 — 상태·헤더·본문을 직접 기록한다
             HttpServletResponse res,
+            // 실패 구분 — UNAUTHENTICATED(없음) · SESSION_EXPIRED(만료) · UNAUTHORIZED(위조)
+            String code,
             // 사용자에게 보일 업무 문구 — 기술 상세를 담지 않는다
             String msg
     ) throws IOException {
@@ -163,6 +170,6 @@ public class JwtFilter extends OncePerRequestFilter {
         res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         res.setContentType("application/json;charset=UTF-8");
         // ErrorResponse와 같은 형태의 JSON을 직접 기록한다(MVC 컨버터를 타지 않는 단계이므로)
-        res.getWriter().write("{\"success\":false,\"code\":\"UNAUTHORIZED\",\"message\":\"" + msg + "\"}");
+        res.getWriter().write("{\"success\":false,\"code\":\"" + code + "\",\"message\":\"" + msg + "\"}");
     }
 }

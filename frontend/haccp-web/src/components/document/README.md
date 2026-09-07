@@ -16,6 +16,7 @@
 | `DocFileList.tsx` | 원본·첨부 카드 목록. `splitFiles`·뱃지 |
 | `DocumentPrintLayer.tsx` | HTML A4 일괄 인쇄 포털 |
 | `printHwpDocuments.ts` | HWP export-pdf 후 건별 iframe 인쇄 |
+| `printWaitMs.ts` | 인쇄 대화상자 상한. `API_TIMEOUT_FILE_MS` 와 다름 |
 | `DocumentApprovalToolbar.tsx` | 전송·전송취소·승인·반려·취소. 사유는 `ReasonAction` 팝업 |
 
 이 폴더는 문서 본문을 그리거나 찍는다. 목록 조회·결재 API 호출은 `pages/flow` 가 맡는다.

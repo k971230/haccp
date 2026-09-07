@@ -26,6 +26,8 @@ import static org.mockito.Mockito.when;
 
 import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteBlocker;
+import com.haccp.docs.hwp.dto.HwpTemplateDeleteItem;
+import com.haccp.docs.hwp.dto.HwpTemplateSaveRow;
 import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -52,9 +54,9 @@ class HwpTemplateServiceDeleteTest {
     @InjectMocks
     private HwpTemplateService service;
 
-    private static List<Map<String, Object>> key(String tmplCd) {
-        Map<String, Object> k = new LinkedHashMap<>();
-        k.put("tmplCd", tmplCd);
+    private static List<HwpTemplateDeleteItem> key(String tmplCd) {
+        HwpTemplateDeleteItem k = new HwpTemplateDeleteItem();
+        k.setTmplCd(tmplCd);
         return List.of(k);
     }
 
@@ -72,10 +74,10 @@ class HwpTemplateServiceDeleteTest {
 
     @Test
     void 저장해도_감사_기록을_남긴다() {
-        Map<String, Object> row = new LinkedHashMap<>();
-        row.put("tmplCd", "hwp_usr_001");
-        row.put("tmplNm", "자사양식");
-        row.put("useYn", "Y");
+        HwpTemplateSaveRow row = new HwpTemplateSaveRow();
+        row.setTmplCd("hwp_usr_001");
+        row.setTmplNm("자사양식");
+        row.setUseYn("Y");
         service.saveHwpTemplate(row);
         verify(auditWriter, times(1)).record(eq("tbl_company_template"), any(), eq("U"), any());
     }
@@ -94,9 +96,9 @@ class HwpTemplateServiceDeleteTest {
     void 같은_양식을_두_번_보내도_한_번만_지운다() {
         when(mapper.selectDeleteBlocker(any(), any())).thenReturn(null);
 
-        List<Map<String, Object>> keys = new ArrayList<>();
-        keys.add(Map.of("tmplCd", "hwp_usr_001"));
-        keys.add(Map.of("tmplCd", "hwp_usr_001"));
+        List<HwpTemplateDeleteItem> keys = new ArrayList<>();
+        keys.add(key("hwp_usr_001").get(0));
+        keys.add(key("hwp_usr_001").get(0));
         service.delete(keys);
 
         verify(mapper, times(1)).deleteHwpTemplate(any(), eq("hwp_usr_001"), any());

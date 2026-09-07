@@ -14,7 +14,6 @@ interface ImportMetaEnv {
   readonly VITE_RHWP_STUDIO_URL?: string;
   readonly VITE_GRID_DEFAULT_PAGE_SIZE?: string;
   readonly VITE_GRID_VIRTUAL_THRESHOLD?: string;
-  readonly VITE_SEARCH_DEBOUNCE_MS?: string;
   readonly VITE_API_RETRY_COUNT?: string;
   readonly VITE_DASHBOARD_POLLING_MS?: string;
   readonly VITE_TODAY_TASKS_RECENT_DAYS?: string;

@@ -51,7 +51,7 @@ PIPELINE[HB84] MyBatis XML
       문서함·결재첨부 목록 — sp_tbl_document_r_000.
       keyword=문서번호·제목, writerId=작성자 ID·이름. 빈 값은 SP가 전체로 본다.
     -->
-    <select id="selectDocuments" resultType="map">
+    <select id="selectDocuments" resultType="com.haccp.docs.documents.dto.DocumentListRow">
         SELECT * FROM sp_tbl_document_r_000(
             #{coCd,     mode=IN, jdbcType=VARCHAR},
             #{fromDt,   mode=IN, jdbcType=VARCHAR},
@@ -67,7 +67,7 @@ PIPELINE[HB84] MyBatis XML
       결재대기(sign-ready) — sp_sign_ready_r_000.
       내 APPROVE 단계가 대기(W)인 REQ 문서. writerId는 작성자 칸.
     -->
-    <select id="selectSignReady" resultType="map">
+    <select id="selectSignReady" resultType="com.haccp.docs.documents.dto.DocumentListRow">
         SELECT * FROM sp_sign_ready_r_000(
             #{coCd,     mode=IN, jdbcType=VARCHAR},
             #{userId,   mode=IN, jdbcType=VARCHAR},
@@ -82,7 +82,7 @@ PIPELINE[HB84] MyBatis XML
       결재완료(sign-ok) — sp_sign_ok_r_000.
       내가 APPROVE 단계로 승인·반려한 문서. 작성자 자동승인은 빼 둔다.
     -->
-    <select id="selectSignOk" resultType="map">
+    <select id="selectSignOk" resultType="com.haccp.docs.documents.dto.DocumentListRow">
         SELECT * FROM sp_sign_ok_r_000(
             #{coCd,     mode=IN, jdbcType=VARCHAR},
             #{userId,   mode=IN, jdbcType=VARCHAR},
@@ -94,7 +94,7 @@ PIPELINE[HB84] MyBatis XML
     </select>
 
     <!-- 문서 공통 헤더 단건 — 테넌트 조건은 SP가 강제 -->
-    <select id="selectDocument" resultType="map">
+    <select id="selectDocument" resultType="com.haccp.docs.documents.dto.DocumentHeaderRow">
         SELECT * FROM sp_tbl_document_r_001(
             #{coCd,   mode=IN, jdbcType=VARCHAR},
             #{docIdx, mode=IN, jdbcType=BIGINT}
@@ -102,7 +102,7 @@ PIPELINE[HB84] MyBatis XML
     </select>
 
     <!-- 결재 단계 목록 — WRITE·APPROVE 순. 검토 단계는 없다 -->
-    <select id="selectApprovals" resultType="map">
+    <select id="selectApprovals" resultType="com.haccp.docs.documents.dto.DocumentApprovalRow">
         SELECT * FROM sp_tbl_document_approval_r_000(
             #{coCd,   mode=IN, jdbcType=VARCHAR},
             #{docIdx, mode=IN, jdbcType=BIGINT}
@@ -126,7 +126,7 @@ PIPELINE[HB84] MyBatis XML
     </select>
 
     <!-- 버전 목록 — 파일 경로는 내부 다운로드에서만 사용 -->
-    <select id="selectVersions" resultType="map">
+    <select id="selectVersions" resultType="com.haccp.docs.documents.dto.DocumentVersionRow">
         SELECT * FROM sp_tbl_document_version_r_000(
             #{coCd,   mode=IN, jdbcType=VARCHAR},
             #{docIdx, mode=IN, jdbcType=BIGINT}

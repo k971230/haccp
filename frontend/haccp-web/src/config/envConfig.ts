@@ -70,12 +70,6 @@ export const GRID_VIRTUAL_THRESHOLD = parsePositiveInt(
   100
 );
 
-/** 검색 입력 debounce(ms) — 조회 픽커에서 타이핑 중 과다 호출을 막는다 */
-export const SEARCH_DEBOUNCE_MS = parsePositiveInt(
-  import.meta.env.VITE_SEARCH_DEBOUNCE_MS,
-  300
-);
-
 /** GET 재시도 횟수 — 일시적 네트워크 단절 방어 */
 export const API_RETRY_COUNT = parsePositiveInt(
   import.meta.env.VITE_API_RETRY_COUNT,

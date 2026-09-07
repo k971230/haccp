@@ -25,7 +25,7 @@ PIPELINE[HB140] CCP 금속검출 작성 XML
     </select>
 
     <!-- 양식 항목 — 한계기준·주기·방법·감도열·개선조치. 지면 상단이 쓴다 -->
-    <select id="selectFormItems" resultType="map">
+    <select id="selectFormItems" resultType="com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormItemRow">
         SELECT * FROM sp_tbl_html_ccp_mtl_ver_item_r_000(#{coCd}, #{tmplCd}, #{verNo})
     </select>
 
@@ -37,17 +37,17 @@ PIPELINE[HB140] CCP 금속검출 작성 XML
     </select>
 
     <!-- 헤더 — 124에서 3번째 p_tmpl_cd 인자를 열었다 -->
-    <select id="selectHeader" resultType="map">
+    <select id="selectHeader" resultType="com.haccp.draft.ccpmonitoring.dto.CcpMtlHeaderRow">
         SELECT * FROM sp_tbl_ccp_metal_monitor_r_001(#{coCd}, #{docIdx}, #{tmplCd})
     </select>
 
     <!-- 감도 표 행 — phase_cd 로 작업 전/작업 후가 갈린다 -->
-    <select id="selectSensRows" resultType="map">
+    <select id="selectSensRows" resultType="com.haccp.draft.ccpmonitoring.dto.CcpMtlSensRow">
         SELECT * FROM sp_tbl_ccp_metal_monitor_r_002(#{coCd}, #{hdrIdx})
     </select>
 
     <!-- 통과량 표 행 — 품명·통과량·검출량·특이사항 -->
-    <select id="selectPassRows" resultType="map">
+    <select id="selectPassRows" resultType="com.haccp.draft.ccpmonitoring.dto.CcpMtlPassRow">
         SELECT * FROM sp_tbl_ccp_metal_monitor_r_003(#{coCd}, #{hdrIdx})
     </select>
 

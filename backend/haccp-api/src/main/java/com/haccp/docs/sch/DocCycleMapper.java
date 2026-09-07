@@ -14,8 +14,9 @@
 package com.haccp.docs.sch;
 
 // 역할 — 목록·행 타입
+import com.haccp.docs.sch.dto.DocCycleFormRow;
+import com.haccp.docs.sch.dto.DocCycleRow;
 import java.util.List;
-import java.util.Map;
 // 역할 — MyBatis 매퍼 표식·이름 바인딩
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -31,7 +32,7 @@ public interface DocCycleMapper {
      *   2) 화면 진입·조회 버튼에서 호출한다
      *   3) 성공 시 tmpl_cd·tmpl_nm·form_ty·doc_kind·cycle_cd·rule_yn·use_yn·apprLineCd·apprLineNm 행 목록
      */
-    List<Map<String, Object>> selectForms(
+    List<DocCycleFormRow> selectForms(
             // JWT 회사코드 — 자사 사용양식 범위
             @Param("coCd") String coCd,
             // 양식코드 검색어 — 공백이면 전체
@@ -50,7 +51,7 @@ public interface DocCycleMapper {
      *   2) 좌측 행 선택 시 우측 폼을 채우기 위해 호출한다
      *   3) 성공 시 1행, 주기 미설정이면 빈 목록(결재선은 목록 행에서 채운다)
      */
-    List<Map<String, Object>> selectCycle(
+    List<DocCycleRow> selectCycle(
             // JWT 회사코드
             @Param("coCd") String coCd,
             // 좌측에서 선택한 양식코드
@@ -126,7 +127,7 @@ public interface DocCycleMapper {
      *   2) 화면 조회와 달리 회사 전체가 대상이라 별도 쿼리를 둔다
      *   3) 성공 시 사용 중(use_yn=Y) 주기 행 + details jsonb 목록
      */
-    List<Map<String, Object>> selectActiveCycles();
+    List<DocCycleRow> selectActiveCycles();
 
     /**
      * 개발자: 박승우

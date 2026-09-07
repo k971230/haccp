@@ -18,8 +18,11 @@ import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 // 역할 — 삭제 표준 검증
 import com.haccp.common.validation.DeleteValidation;
-// 역할 — 행·삭제키 정규화 공용 유틸
-import com.haccp.sys.SysPayload;
+import com.haccp.sys.code.user.dto.UserDeleteItem;
+import com.haccp.sys.code.user.dto.UserRow;
+import com.haccp.sys.code.user.dto.UserSaveRow;
+import com.haccp.sys.code.user.dto.UserSignBlobRow;
+import com.haccp.sys.code.user.dto.UserSignInfoRow;
 // 역할 — 변경 감사 이력 적재
 import com.haccp.sys.logs.auditlog.AuditWriter;
 // 역할 — 생성자 주입
@@ -34,7 +37,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 // 역할 — 업로드 바이너리 읽기 실패 처리
 import java.io.IOException;
-// 역할 — 화면 행·삭제키 목록
+// 역할 — 화면 행·삭제키·감사 요약
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -64,7 +69,7 @@ public class UserService {
      *   2) 화면 진입·조회와 로그인 이력 화면의 사용자 트리에서 호출한다
      *   3) 조건에 맞는 사용자가 없으면 빈 목록
      */
-    public List<Map<String, Object>> list(
+    public List<UserRow> list(
             // 헤더 아이디 검색어. 공백이면 전체
             String userId,
             // 헤더 이름 검색어. 공백이면 전체
@@ -90,29 +95,32 @@ public class UserService {
     @Transactional
     public void save(
             // 화면이 보낸 변경 행 목록 — idx가 없으면 신규
-            List<Map<String, Object>> rows
+            List<UserSaveRow> rows
     ) {
-        SysPayload.requireRows(rows, LABEL);
+        DeleteValidation.requireItems(rows, "저장할 " + LABEL + " 행이 없습니다.");
         String coCd = LoginUserContext.coCd();
         String actor = LoginUserContext.userId();
-        for (Map<String, Object> row : rows) {
-            Long idx = SysPayload.idxOrNull(row);
+        for (UserSaveRow row : rows) {
+            if (row == null) {
+                throw new BizException("저장할 " + LABEL + " 행이 올바르지 않습니다.");
+            }
+            Long idx = idxOrNull(row.getIdx());
             userMapper.save(
                     coCd,
                     idx,
-                    SysPayload.text(row, "userId"),
-                    SysPayload.text(row, "empCd"),
-                    SysPayload.text(row, "userNm"),
-                    hashPassword(idx, SysPayload.text(row, "userPw")),
-                    SysPayload.text(row, "usrgrpCd"),
-                    SysPayload.text(row, "deptCd"),
-                    SysPayload.text(row, "email"),
-                    SysPayload.text(row, "mobile"),
-                    SysPayload.text(row, "lockYn"),
-                    SysPayload.text(row, "useYn"),
+                    text(row.getUserId()),
+                    text(row.getEmpCd()),
+                    text(row.getUserNm()),
+                    hashPassword(idx, text(row.getUserPw())),
+                    text(row.getUsrgrpCd()),
+                    text(row.getDeptCd()),
+                    text(row.getEmail()),
+                    text(row.getMobile()),
+                    text(row.getLockYn()),
+                    text(row.getUseYn()),
                     actor);
             // idx가 null일 때(= 신규 등록) I, 값이 있을 때(= 기존 행 수정) U
-            auditWriter.record(AUDIT_TBL, idx, idx == null ? "I" : "U", row);
+            auditWriter.record(AUDIT_TBL, idx, idx == null ? "I" : "U", auditRow(row, idx));
         }
     }
 
@@ -126,7 +134,7 @@ public class UserService {
      */
     public void validateDelete(
             // 삭제 대상 복합키 배열 — [{ idx }]
-            List<Map<String, Long>> keys
+            List<UserDeleteItem> keys
     ) {
         assertDeletable(keys);
     }
@@ -142,7 +150,7 @@ public class UserService {
     @Transactional
     public void delete(
             // 삭제 대상 복합키 배열 — [{ idx }]
-            List<Map<String, Long>> keys
+            List<UserDeleteItem> keys
     ) {
         List<Long> idxs = assertDeletable(keys);
         String coCd = LoginUserContext.coCd();
@@ -173,16 +181,16 @@ public class UserService {
      *   2) CCP 행 서명처럼 "등록돼 있는지"만 알면 되는 화면이 호출한다
      *   3) 미등록·타 테넌트면 signYn='N', 파일명은 빈 문자열 (예외를 던지지 않는다)
      */
-    public Map<String, Object> mySignInfo() {
-        Map<String, Object> row = userMapper.selectSignInfo(
+    public UserSignInfoRow mySignInfo() {
+        UserSignInfoRow row = userMapper.selectSignInfo(
                 LoginUserContext.coCd(), LoginUserContext.userId());
+        UserSignInfoRow out = new UserSignInfoRow();
         // row가 null일 때(= 없는 아이디) 도 화면은 미등록과 똑같이 다루면 되므로 기본값으로 채운다
-        String signYn = row == null ? "N" : text((String) row.get("sign_yn"));
-        return Map.of(
-                "signYn", "Y".equals(signYn) ? "Y" : "N",
-                "signNm", row == null ? "" : text((String) row.get("sign_nm")),
-                "signMime", row == null ? "" : text((String) row.get("sign_mime"))
-        );
+        String signYn = row == null ? "N" : text(row.getSignYn());
+        out.setSignYn("Y".equals(signYn) ? "Y" : "N");
+        out.setSignNm(row == null ? "" : text(row.getSignNm()));
+        out.setSignMime(row == null ? "" : text(row.getSignMime()));
+        return out;
     }
 
     /**
@@ -199,15 +207,15 @@ public class UserService {
     ) {
         String target = text(userId);
         if (target.isEmpty()) throw new BizException("사용자 ID가 올바르지 않습니다.");
-        Map<String, Object> row = userMapper.selectSign(LoginUserContext.coCd(), target);
-        // row가 null일 때(= 타 테넌트·없는 아이디) 와 sign_img가 null일 때(= 미등록)를 같은 문구로 처리한다
-        byte[] content = row == null ? null : (byte[]) row.get("sign_img");
+        UserSignBlobRow row = userMapper.selectSign(LoginUserContext.coCd(), target);
+        // row가 null일 때(= 타 테넌트·없는 아이디) 와 signImg가 null일 때(= 미등록)를 같은 문구로 처리한다
+        byte[] content = row == null ? null : row.getSignImg();
         if (content == null || content.length == 0) {
             throw new BizException("등록된 서명이 없습니다. 시스템관리에서 서명 이미지를 업로드하세요.");
         }
-        String name = text((String) row.get("sign_nm"));
+        String name = text(row.getSignNm());
         if (name.isEmpty()) name = "sign.png";
-        String mime = text((String) row.get("sign_mime"));
+        String mime = text(row.getSignMime());
         if (mime.isEmpty()) mime = guessImageMime(name);
         return new SignFile(name, mime, content);
     }
@@ -268,8 +276,8 @@ public class UserService {
         if (target.isEmpty()) throw new BizException("사용자 ID가 올바르지 않습니다.");
         String coCd = LoginUserContext.coCd();
         // 유무만 보면 되므로 메타데이터로 확인한다 — 지우려는 이미지를 굳이 읽어 올리지 않는다
-        Map<String, Object> row = userMapper.selectSignInfo(coCd, target);
-        if (row == null || !"Y".equals(text((String) row.get("sign_yn")))) {
+        UserSignInfoRow row = userMapper.selectSignInfo(coCd, target);
+        if (row == null || !"Y".equals(text(row.getSignYn()))) {
             throw new BizException("등록된 서명이 없습니다.");
         }
         userMapper.updateSign(coCd, target, null, null, null, LoginUserContext.userId());
@@ -278,11 +286,38 @@ public class UserService {
     }
 
     /** 삭제 대상 idx 정규화 + 참조 검사 — validate·delete가 공유한다 */
-    private List<Long> assertDeletable(List<Map<String, Long>> keys) {
-        List<Long> idxs = SysPayload.idxList(keys, LABEL);
+    private List<Long> assertDeletable(List<UserDeleteItem> keys) {
+        DeleteValidation.requireItems(keys, "삭제할 " + LABEL + " 행을 선택하세요.");
+        List<Long> idxs = new ArrayList<>();
+        for (UserDeleteItem key : keys) {
+            if (key == null) {
+                throw new BizException("삭제할 " + LABEL + " 키가 올바르지 않습니다.");
+            }
+            idxs.add(DeleteValidation.requirePositive(
+                    key.getIdx(), "삭제할 " + LABEL + " 키가 올바르지 않습니다."));
+        }
         DeleteValidation.throwIfBlocked(
                 userMapper.selectDeleteBlocker(LoginUserContext.coCd(), idxs), LABEL);
         return idxs;
+    }
+
+    private static Long idxOrNull(Long idx) {
+        return idx != null && idx > 0 ? idx : null;
+    }
+
+    private static Map<String, Object> auditRow(UserSaveRow row, Long idx) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("idx", idx);
+        out.put("userId", row.getUserId());
+        out.put("empCd", row.getEmpCd());
+        out.put("userNm", row.getUserNm());
+        out.put("usrgrpCd", row.getUsrgrpCd());
+        out.put("deptCd", row.getDeptCd());
+        out.put("email", row.getEmail());
+        out.put("mobile", row.getMobile());
+        out.put("lockYn", row.getLockYn());
+        out.put("useYn", row.getUseYn());
+        return out;
     }
 
     /**

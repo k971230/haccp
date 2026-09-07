@@ -39,14 +39,17 @@ alwaysApply: false
 - 파라미터 접두 `p_` — 첫 인자는 **항상 `p_co_cd`** (조회·쓰기 무관)
 - **테넌트 격리는 SP 책임이다.** PK가 전역 유일한 `idx`라서 `WHERE idx = p_idx`만 쓰면 타사 데이터가 열린다.
   삭제·수정은 반드시 `WHERE idx = p_idx AND co_cd = p_co_cd`
+  검사는 `node scripts/audit_sp_cocd.mjs`
+- 삭제 의미는 표마다 다르다 (`del_yn` · `use_yn` · 물리 DELETE). 정본 표는 [`docs/10_테이블_레이아웃.md`](../../docs/10_테이블_레이아웃.md) 「삭제 의미」.
+  전면 소프트 삭제로 바꾸지 않는다. 새 표는 그 표에 한 줄 없이 못 넣는다
 - 업무 오류는 `RAISE EXCEPTION '...' USING ERRCODE = '45000'` — 백엔드 `SqlUserMessage`가 사용자 문구로 변환
 - SP 내부 자율 COMMIT 금지 — 트랜잭션 경계는 Spring `@Transactional`
 - 본문의 테이블 참조는 스키마를 생략한다. 대신 `ALTER DATABASE sasshaccp SET search_path TO sasshaccp, public`
   (`db_sasshaccp/00_ddl.sql`)로 세션 기본값을 고정해 둔다 — JDBC `currentSchema`에만 의존하지 않는다
-- 재실행 가능해야 한다: `CREATE OR REPLACE`, DDL은 `IF NOT EXISTS`, 시드는 `ON CONFLICT DO UPDATE`
-  — **앞으로의 규칙이고 지금 상태가 아니다.** `00_ddl.sql`:19 는 `CREATE SCHEMA sasshaccp;`(`IF NOT EXISTS` 없음),
-  `CREATE TABLE` 53개도 전부 없다. `02_seed.sql` 은 평문 `INSERT` 474건에 `ON CONFLICT` 0건.
-  **`apply-all.sh` 는 빈 DB 전용이다.** 다시 돌리려면 스키마를 지우고 시작한다
+- 재실행: `01_sp` 는 `CREATE OR REPLACE`. `03`·`05` 시드는 `ON CONFLICT`. `06`·`07` 은 이미 있는 행을 안 건드린다
+  — `00_ddl` 53표를 `IF NOT EXISTS` 로 개작하지 않는다. `02_seed` 도 ON CONFLICT 를 안 붙인다
+  **`apply-all.sh` 는 스키마 `sasshaccp` 가 있으면 `00_ddl` 을 건너뛰고 `01_sp` 부터 돌린다.**
+  `02_seed` 는 `tbl_screen` 이 있으면 건너뛴다. 빈 DB 에는 7본을 그대로 깐다
 
 ## 파일 순서 (apply-all.sh)
 
@@ -56,7 +59,7 @@ alwaysApply: false
 | # | 파일 | 무엇 | 회사코드 |
 |---|---|---|---|
 | 1 | `00_ddl.sql` | 표 · 인덱스 · 제약 · 주석 · `search_path` · 자리 넓힘 `ALTER` | — |
-| 2 | `01_sp.sql` | SP 156 (`CREATE OR REPLACE` · 이름 전건 유일) — 화면이 늘면 같이 는다. 세는 법은 아래 | — |
+| 2 | `01_sp.sql` | SP (`CREATE OR REPLACE` · 이름 전건 유일) — 화면이 늘면 같이 는다. 세는 법은 아래 | — |
 | 3 | `02_seed.sql` | 표준양식 · 화면 · 메뉴 · 공통코드 · 표준 점검항목 | — |
 | 4 | `03_code_seed.sql` | 업체 공통코드 | `-v co_cd` |
 | 5 | `05_form_seed.sql` | 업체 표준양식 · 점검항목 | `-v co_cd` |
@@ -64,6 +67,7 @@ alwaysApply: false
 | 7 | `07_company_forms.sql` | **회사 지면 5본** — 표준에서 복사. 없으면 작성 화면에 고를 양식이 0건이다 | `-v co_cd` |
 
 `04_migrate_code_upper.sql` 은 **구 DB 전용**이라 `apply-all.sh` 가 안 돌린다.
+`08`~`12` 1회성 본은 시험·운영에 적용한 뒤 지웠다. **정본은 위 7본이다.**
 
 ```sh
 # SP 수를 세는 법 — 문서에 박힌 숫자보다 이게 정본이다
@@ -88,8 +92,8 @@ bash scripts/audit_sp_migration.sh
 # 플랫폼 초기화 (0000 만)
 PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 # 새 업체 — 위를 끝낸 DB 에 하나 더 얹는다.
-# apply-all.sh 를 다시 부르지 않는다 — 1단계가 00_ddl 을 무조건 돌려 duplicate schema(42P06)로 죽는다.
-# 업체분 4본만 직접 돌린다 (apply-all.sh 2~4단계와 같은 인자)
+# 이미 깐 DB 에 업체를 더 얹을 때 — apply-all.sh 를 CO_CD=0001 로 다시 불러도 된다
+# (00_ddl·02_seed 는 건너뛴다). 업체분 4본만 직접 돌려도 같다
 P="psql -v ON_ERROR_STOP=1"
 $P -v co_cd=0001 -f db_sasshaccp/03_code_seed.sql
 $P -v co_cd=0001 -f db_sasshaccp/05_form_seed.sql

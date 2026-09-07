@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) 정의는 db_sasshaccp/01_sp.sql, 호출은 backend 매퍼 XML 에서 읽는다 — DB 접속이 필요 없다
  *   2) 「이 화면을 고치면 어느 표가 움직이나」를 검색 없이 알게 하려는 표다
- *   3) 정의 없는 호출·아무도 안 부르는 정의를 같이 뽑는다 — 그게 깨진 자리다
+ *   3) 정의 없는 호출·아무도 안 부르는 정의·매퍼 직접 조회를 같이 뽑는다 — 그게 깨진 자리다
  *
  * 쓰기
  *   node scripts/gen_sp_index.mjs           다시 만든다
@@ -106,9 +106,54 @@ const rows = [...calls.entries()]
   .sort((a, b) => a.domain.localeCompare(b.domain) || a.sp.localeCompare(b.sp));
 
 const missing = rows.filter((r) => r.kind === "**정의 없음**").map((r) => r.sp);
+/*
+ * SP 이름 두 갈래 — 테이블 공유 sp_tbl_*_{r|c|d|u}_000 · 화면 전용 sp_{화면명}_{r|c|d|u}_000.
+ * 세 번째 갈래(sp_foo_save)는 금지. 지금 일탈은 손댈 때만 고친다 — 156본 일괄 개명 금지.
+ */
+const SP_NAME_OK = /^sp_(tbl_)?[a-z0-9_]+_[rcdu]_[0-9]{3}$/;
+const KNOWN_NAME_DEVIATIONS = ["sp_hwp_template_management_ensure_default_000"];
+const nameDeviations = [...defs.keys()].filter((n) => !SP_NAME_OK.test(n)).sort();
+const newNameDeviations = nameDeviations.filter((n) => !KNOWN_NAME_DEVIATIONS.includes(n));
 const unused = [...defs.keys()]
   .filter((sp) => !calls.has(sp) && !innerCalls.has(sp))
   .sort();
+
+/** 매퍼가 표를 직접 읽거나 SP 결과에 조건을 덧붙인 자리 — SP 본문만 보면 안 보인다 */
+function directSection() {
+  const tableHits = [];
+  for (const rel of walk(MAPPER_DIR)) {
+    const text = fs.readFileSync(path.join(ROOT, rel), "utf-8");
+    const short = rel.replace(`${MAPPER_DIR}/`, "");
+    const code = text.replace(/<!--[\s\S]*?-->/g, "");
+    const tables = new Set();
+    for (const t of code.matchAll(/\b(?:FROM|JOIN|INTO|UPDATE)\s+(?:sasshaccp\.)?(tbl_[a-z0-9_]+)/gi)) {
+      tables.add(t[1]);
+    }
+    if (tables.size) {
+      tableHits.push({ mapper: short, kind: "표 직접", what: [...tables].sort().join(", ") });
+    }
+  }
+  const wraps = [
+    ["docs/sch/DocCycleMapper.xml", "selectForms · selectCycle · selectActiveCycles", "SP 결과 컬럼 별칭"],
+    ["draft/ccpmonitoring/CcpPkgDraftMapper.xml", "selectForms", "SP 결과에 use_yn·ver_no 필터"],
+    ["draft/ccpmonitoring/CcpHtgDraftMapper.xml", "selectForms", "SP 결과에 use_yn·ver_no 필터"],
+    ["draft/ccpmonitoring/CcpMtlDraftMapper.xml", "selectForms", "SP 결과에 use_yn·ver_no 필터"],
+    ["draft/html/HtmlDraftMapper.xml", "selectForms", "SP 결과에 use_yn·ver_no 필터"],
+    ["draft/hwpdoc/HwpDraftMapper.xml", "selectForms", "SP 결과에 doc_kind=HWP 필터"],
+  ];
+  const lines = [
+    ...tableHits.map((r) => `| \`${r.mapper}\` | ${r.kind} | ${r.what} |`),
+    ...wraps.map(([mapper, id, what]) => `| \`${mapper}\` | ${id} | ${what} |`),
+  ].join("\n");
+  return `## 매퍼 직접 조회
+
+매퍼 XML 이 표를 직접 읽거나, SP 결과에 WHERE·별칭을 덧붙인 자리.
+생성기가 SP 본문만 보면 이 조건이 안 보인다. 여섯 곳 전부 SP 로 올리지 않는다 — 표 하나가 자라는 날 옮긴다.
+
+| 매퍼 | 자리 | 덧붙인 것 |
+|---|---|---|
+${lines}`;
+}
 
 const doc = `# 9. SP 색인 — 매퍼에서 표까지
 
@@ -142,6 +187,19 @@ ${unused.length === 0
 
 ${unused.map((s) => `- \`${s}\``).join("\n")}`}
 
+## 이름 두 갈래
+
+허용: \`sp_tbl_{이름}_{r|c|d|u}_{000}\` · \`sp_{화면명}_{r|c|d|u}_{000}\`.
+세 번째 갈래는 금지한다.
+
+${nameDeviations.length === 0
+  ? "**이름 일탈 없음.**"
+  : `**이름 일탈 ${nameDeviations.length}본.** 일괄 개명하지 않는다. 손대는 SP 만 고친다.
+
+${nameDeviations.map((s) => `- \`${s}\``).join("\n")}`}
+
+${directSection()}
+
 ## 매퍼 → SP → 표 (${rows.length}건)
 
 | 도메인 | SP | 종류 | 매퍼 | 건드리는 표 |
@@ -156,6 +214,10 @@ ${rows.map((r) => `| ${r.domain} | \`${r.sp}\` | ${r.kind} | \`${r.mappers}\` | 
 `;
 
 if (process.argv.includes("--check")) {
+  if (newNameDeviations.length) {
+    console.error("SP 이름이 두 갈래 밖이다 — " + newNameDeviations.join(", "));
+    process.exit(1);
+  }
   const now = fs.existsSync(OUT) ? fs.readFileSync(OUT, "utf-8") : "";
   // 날짜 줄과 줄바꿈은 어긋남으로 보지 않는다 — git 이 Windows 에서 LF 를 CRLF 로 바꾼다
   const strip = (t) => t.replace(/일자: \d{4}-\d{2}-\d{2}/, "일자: -").replace(/\r\n/g, "\n");

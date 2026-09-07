@@ -347,6 +347,20 @@ export default function ApprovalLineManagementPage() {
         apprLineCd: savedCd,
         apprLineNm: String(target.apprLineNm).trim(),
         useYn: (target.useYn as "Y" | "N") ?? "Y",
+        /*
+         * 신규 행인지 알려 준다 — 저장 SP 가 이걸로 업무키 중복을 막는다.
+         *
+         * 이 화면은 형제들과 달리 idx 를 안 주고받아서, 서버가 payload 만으로는
+         * 「새 줄을 만드는 중」과 「기존 줄을 고치는 중」을 못 가른다. 그래서 UPSERT 가
+         * 신규 행에 친 남의 코드까지 받아 그 결재선의 단계를 통째로 갈아 끼웠다.
+         *
+         * 저장이 끝나면 바로 아래 reloadKeepSelection 이 서버 값으로 갈아 끼워
+         * _rowState 가 지워지므로, 같은 줄을 다시 고쳐 저장하면 "N" 으로 간다.
+         * 그 재조회가 실패하면 _rowState 가 "C" 로 남아 다시 저장할 때
+         * 「이미 등록된 결재선 코드입니다」가 뜬다 — 방금 만든 줄이 실제로 있으니 맞는 말이고,
+         * 조회를 다시 하면 풀린다. 자료가 상하지는 않는다.
+         */
+        newYn: target._rowState === "C" ? "Y" : "N",
         steps: stepsToPayload(stepSource),
       });
       mesToast(MES.saveDone, "success");

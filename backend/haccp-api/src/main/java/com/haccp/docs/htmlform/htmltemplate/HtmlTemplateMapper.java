@@ -13,8 +13,9 @@
 package com.haccp.docs.htmlform.htmltemplate;
 
 import com.haccp.common.validation.DeleteBlocker;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormItemRow;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormVersionRow;
 import java.util.List;
-import java.util.Map;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -29,7 +30,7 @@ public interface HtmlTemplateMapper {
      *   2) 기준관리 좌측이 호출한다
      *   3) verCd·verNm 빈값이면 전체. 저장 테이블 tbl_html_hyg_prc_ver
      */
-    List<Map<String, Object>> selectVersions(
+    List<HtmlFormVersionRow> selectVersions(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // tmplCd: 양식코드
@@ -48,7 +49,7 @@ public interface HtmlTemplateMapper {
      *   2) 우측 A4가 호출한다
      *   3) 없으면 빈 목록
      */
-    List<Map<String, Object>> selectItems(
+    List<HtmlFormItemRow> selectItems(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // tmplCd: 양식코드

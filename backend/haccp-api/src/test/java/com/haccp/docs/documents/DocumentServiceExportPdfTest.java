@@ -21,10 +21,10 @@ import static org.mockito.Mockito.when;
 import com.haccp.common.context.LoginUser;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.docs.documents.dto.DocumentFileRow;
+import com.haccp.docs.documents.dto.DocumentHeaderRow;
 import com.haccp.docs.templates.RhwpCliClient;
 import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,7 +70,9 @@ class DocumentServiceExportPdfTest {
 
     @Test
     void 결재완료에_PDF가_있으면_변환하지_않는다() {
-        when(mapper.selectDocument("0000", 1L)).thenReturn(Map.of("status", "APV"));
+        DocumentHeaderRow header = new DocumentHeaderRow();
+        header.setStatus("APV");
+        when(mapper.selectDocument("0000", 1L)).thenReturn(header);
         DocumentFileRow pdf = new DocumentFileRow();
         pdf.setIdx(9L);
         pdf.setDocIdx(1L);
@@ -78,10 +80,10 @@ class DocumentServiceExportPdfTest {
         pdf.setFileNm("done.pdf");
         when(mapper.selectFiles("0000", 1L)).thenReturn(List.of(pdf));
 
-        Map<String, Object> out = service.exportPdf(1L, null);
+        DocumentFileRow out = service.exportPdf(1L, null);
 
-        assertEquals(9L, out.get("idx"));
-        assertEquals("PDF", out.get("fileKind"));
+        assertEquals(9L, out.getIdx());
+        assertEquals("PDF", out.getFileKind());
         verify(rhwpCliClient, never()).exportPdf(any());
     }
 }

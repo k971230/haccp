@@ -14,6 +14,11 @@ package com.haccp.sys.code.role;
 
 // 역할 — API 성공 응답 래퍼
 import com.haccp.common.response.CommonResponse;
+import com.haccp.sys.code.role.dto.RoleDeleteItem;
+import com.haccp.sys.code.role.dto.RoleRow;
+import com.haccp.sys.code.role.dto.RoleSaveRow;
+import com.haccp.sys.code.role.dto.RoleScreenRow;
+import com.haccp.sys.code.role.dto.RoleScreenSaveRequest;
 // 역할 — 생성자 주입
 import lombok.RequiredArgsConstructor;
 // 역할 — REST 매핑
@@ -27,7 +32,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 // 역할 — 화면 행·삭제키 목록
 import java.util.List;
-import java.util.Map;
 
 /** 권한그룹 관리 화면 → /api/v1/sys/code/role-management/* */
 @RestController
@@ -47,7 +51,7 @@ public class RoleMgmtController {
      *   3) 조건에 맞는 그룹이 없으면 빈 배열
      */
     @GetMapping("/list")
-    public CommonResponse<List<Map<String, Object>>> list(
+    public CommonResponse<List<RoleRow>> list(
             // 권한그룹코드 부분검색어 — 미입력이면 전체
             @RequestParam(required = false, defaultValue = "") String usrgrpCd,
             // 권한그룹명 부분검색어 — 미입력이면 전체
@@ -69,7 +73,7 @@ public class RoleMgmtController {
     @PutMapping("/save")
     public CommonResponse<Void> save(
             // 변경 행 목록 — idx가 없으면 신규
-            @RequestBody List<Map<String, Object>> rows
+            @RequestBody List<RoleSaveRow> rows
     ) {
         roleMgmtService.save(rows);
         return CommonResponse.ok(null);
@@ -86,7 +90,7 @@ public class RoleMgmtController {
     @PostMapping("/validate-delete")
     public CommonResponse<Void> validateDelete(
             // 삭제 대상 복합키 배열 — 단건이어도 [{ idx }]
-            @RequestBody List<Map<String, Long>> keys
+            @RequestBody List<RoleDeleteItem> keys
     ) {
         roleMgmtService.validateDelete(keys);
         return CommonResponse.ok(null);
@@ -103,7 +107,7 @@ public class RoleMgmtController {
     @PostMapping("/delete")
     public CommonResponse<Void> delete(
             // 삭제 대상 복합키 배열 — 단건이어도 [{ idx }]
-            @RequestBody List<Map<String, Long>> keys
+            @RequestBody List<RoleDeleteItem> keys
     ) {
         roleMgmtService.delete(keys);
         return CommonResponse.ok(null);
@@ -118,7 +122,7 @@ public class RoleMgmtController {
      *   3) usrgrpCd 필수, 미설정 화면도 N으로 내려온다
      */
     @GetMapping("/screens")
-    public CommonResponse<List<Map<String, Object>>> screens(
+    public CommonResponse<List<RoleScreenRow>> screens(
             // 좌측에서 고른 권한그룹코드 — 필수
             @RequestParam String usrgrpCd
     ) {
@@ -136,13 +140,10 @@ public class RoleMgmtController {
     @PutMapping("/screens")
     public CommonResponse<Void> saveScreens(
             // 요청 본문 — usrgrpCd(문자열) + rows(화면권한 배열)
-            @RequestBody Map<String, Object> body
+            @RequestBody RoleScreenSaveRequest body
     ) {
-        Object grp = body == null ? null : body.get("usrgrpCd");
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> rows =
-                body == null ? null : (List<Map<String, Object>>) body.get("rows");
-        roleMgmtService.saveScreens(grp == null ? "" : String.valueOf(grp), rows);
+        RoleScreenSaveRequest req = body == null ? new RoleScreenSaveRequest() : body;
+        roleMgmtService.saveScreens(req.getUsrgrpCd() == null ? "" : req.getUsrgrpCd(), req.getRows());
         return CommonResponse.ok(null);
     }
 }

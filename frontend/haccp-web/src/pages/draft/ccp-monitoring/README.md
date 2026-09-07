@@ -9,8 +9,8 @@
 
 | 화면 | 지면 | 기록 표 | 데이터 |
 |---|---|---|---|
-| `ccp-pkg` | `CcpPkgPaper` | 1개 — 작업 전 / 작업 종료 | `tbl_ccp_generic_monitor` + `_row` + `_cell` |
-| `ccp-htg` | `CcpHtgPaper` | 1개 — 작업 전 / 작업 종료 | 위와 같음 |
+| `ccp-pkg` | `CcpPkgPaper` | 1개 — 작업 전 / 작업 종료 | `tbl_ccp_pkg_monitor` + `_row` + `_cell` |
+| `ccp-htg` | `CcpHtgPaper` | 1개 — 작업 전 / 작업 종료 | `tbl_ccp_htg_monitor` + `_row` + `_cell` |
 | `ccp-mtl` | `CcpMtlPaper` | 2개 — 감도(작업 전/후) + 통과량 | `tbl_ccp_metal_monitor` + `_sens_row` + `_pass_row` |
 
 ## 지면 mode 분리

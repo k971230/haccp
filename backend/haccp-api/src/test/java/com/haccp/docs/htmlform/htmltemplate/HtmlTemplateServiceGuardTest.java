@@ -2,7 +2,7 @@
  * HtmlTemplateServiceGuardTest — 지면 양식의 표준 보호와 표 배정.
  *
  * 개발자: 박승우
- * 일자: 2026-08-27
+ * 일자: 2026-09-07
  * 코멘트:
  *   1) 표준 양식은 못 고친다 — 여기가 무르면 한 회사가 고친 표준이
  *      그 코드를 쓰는 전 회사 지면에 번진다. 되돌릴 방법이 없다
@@ -24,14 +24,23 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.haccp.common.auth.ScreenAuthAction;
+import com.haccp.common.auth.ScreenAuthMatch;
+import com.haccp.common.auth.ScreenAuthResolver;
+import com.haccp.common.context.LoginUser;
+import com.haccp.common.context.LoginUserContext;
 import com.haccp.docs.htmlform.ccphtgtemplate.CcpHtgTemplateMapper;
 import com.haccp.docs.htmlform.ccpmtltemplate.CcpMtlTemplateMapper;
 import com.haccp.docs.htmlform.ccppkgtemplate.CcpPkgTemplateMapper;
 import com.haccp.docs.htmlform.ccpverifytemplate.CcpVerifyTemplateMapper;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormItemRow;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormVerDeleteItem;
 import com.haccp.common.exception.BizException;
 import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +48,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -52,10 +64,33 @@ class HtmlTemplateServiceGuardTest {
     @Mock private AuditWriter auditWriter;
 
     private HtmlTemplateService service() {
-        return new HtmlTemplateService(mapper, ccpMapper, pkgMapper, htgMapper, mtlMapper, new ObjectMapper(), auditWriter);
+        return new HtmlTemplateService(
+                new HtmlFormFamilyStores(mapper, ccpMapper, pkgMapper, htgMapper, mtlMapper),
+                new ObjectMapper(),
+                auditWriter);
     }
 
-    private static final List<Map<String, Object>> ITEMS = List.of(Map.of("itemNm", "온도"));
+    private static final List<HtmlFormItemRow> ITEMS = List.of(item("온도"));
+
+    private static HtmlFormItemRow item(String itemNm) {
+        HtmlFormItemRow row = new HtmlFormItemRow();
+        row.setItemNm(itemNm);
+        return row;
+    }
+
+    @AfterEach
+    void clearRequestAndUser() {
+        RequestContextHolder.resetRequestAttributes();
+        LoginUserContext.clear();
+    }
+
+    /** 인터셉터가 붙인 화면코드를 요청에 심는다 — 가드가 currentRequestScrnCd 를 읽는다 */
+    private static void bindScrn(String method, String uri, String scrnCd) {
+        MockHttpServletRequest req = new MockHttpServletRequest(method, uri);
+        req.setRequestURI(uri);
+        ScreenAuthResolver.bindRequestScreen(req, Optional.of(ScreenAuthMatch.screen(scrnCd, ScreenAuthAction.READ)));
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(req));
+    }
 
     // ---------------------------------------------------------------- 표준 보호
 
@@ -188,6 +223,36 @@ class HtmlTemplateServiceGuardTest {
         service().updateVerNm("html_ccp_htg_009", 1, "내 양식", null);
         verify(htgMapper).updateVerNm(any(), eq("html_ccp_htg_009"), anyInt(), any(), yn.capture(), any());
         assertEquals("Y", yn.getValue());
+    }
+
+    @Test
+    void 화면과_양식가족이_다르면_가드가_막는다() {
+        // 금속검출 URL 로 공정점검 코드를 보내면 권한 없는 표가 열린다
+        assertEquals(false, HtmlTemplateService.tmplMatchesScreen("ccp-mtl-template", "html_hyg_prc_003"));
+        assertEquals(true, HtmlTemplateService.tmplMatchesScreen("ccp-mtl-template", "html_ccp_mtl_007"));
+        assertEquals(true, HtmlTemplateService.tmplMatchesScreen("hyg-process-template", "html_sys_001"));
+        assertEquals(false, HtmlTemplateService.tmplMatchesScreen("hyg-process-template", "html_ccp_chk_007"));
+        assertEquals(false, HtmlTemplateService.tmplMatchesScreen("", "html_ccp_mtl_007"));
+
+        bindScrn("GET", "/api/v1/docs/html-form/ccp-mtl-template/versions", "ccp-mtl-template");
+        BizException list = assertThrows(
+                BizException.class, () -> service().listVersions("html_hyg_prc_003", "", ""));
+        assertEquals("이 화면에서 다룰 수 없는 양식입니다.", list.getMessage());
+
+        HtmlFormVerDeleteItem key = new HtmlFormVerDeleteItem();
+        key.setTmplCd("html_hyg_prc_003");
+        key.setVerNo(1);
+        BizException del = assertThrows(BizException.class, () -> service().delete(List.of(key)));
+        assertEquals("이 화면에서 다룰 수 없는 양식입니다.", del.getMessage());
+    }
+
+    @Test
+    void 빈_tmplCd_는_공정점검_화면에서_기본값으로_통과한다() {
+        // 가드 전에 tmplOf 가 html_hyg_prc_000 을 채운다 — 안 채우면 공정점검 URL 도 막힌다
+        LoginUserContext.set(LoginUser.builder().coCd("0000").userId("admin").build());
+        bindScrn("GET", "/api/v1/docs/html-form/hyg-process-template/versions", "hyg-process-template");
+        service().listVersions("", "", "");
+        verify(mapper, times(1)).selectVersions(eq("0000"), eq("html_hyg_prc_000"), eq(""), eq(""));
     }
 
     @Test

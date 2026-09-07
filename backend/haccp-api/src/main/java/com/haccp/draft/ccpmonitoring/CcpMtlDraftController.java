@@ -14,8 +14,8 @@
  */
 package com.haccp.draft.ccpmonitoring;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.haccp.common.response.CommonResponse;
+import com.haccp.draft.dto.CcpMonitorDraftDetail;
 import com.haccp.draft.dto.DraftDeleteItem;
 import com.haccp.draft.dto.DraftFormRow;
 import com.haccp.draft.dto.DraftListRow;
@@ -87,7 +87,7 @@ public class CcpMtlDraftController {
      *   3) 성공 시 header·items·logRows(감도)·passRows(통과량)·corrective
      */
     @GetMapping("/detail")
-    public CommonResponse<JsonNode> detail(
+    public CommonResponse<CcpMonitorDraftDetail> detail(
             // tmplCd: 조회할 양식코드 — 이 화면 자사 양식만 통과한다
             @RequestParam String tmplCd,
             // docIdx: 조회할 문서 idx. 없으면 신규 기본행을 만든다

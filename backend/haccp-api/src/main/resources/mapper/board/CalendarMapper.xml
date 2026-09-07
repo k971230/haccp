@@ -14,7 +14,7 @@ PIPELINE[HB210] 일정 캘린더 매퍼
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.haccp.board.CalendarMapper">
     <!-- 회사 전체 작성과제 — 월 칸에 뿌릴 행 -->
-    <select id="selectTasks" resultType="map">
+    <select id="selectTasks" resultType="com.haccp.board.dto.CalendarTaskRow">
         SELECT * FROM sp_calendar_r_000(
             #{coCd,    jdbcType=VARCHAR},
             #{fromYmd, jdbcType=VARCHAR},

@@ -61,7 +61,8 @@ const GROUPS = [
       "tbl_document_version",
       "tbl_hyg_process", "tbl_hyg_process_item",
       "tbl_ccp_verify_check", "tbl_ccp_verify_item",
-      "tbl_ccp_generic_monitor", "tbl_ccp_generic_monitor_row", "tbl_ccp_generic_monitor_cell",
+      "tbl_ccp_pkg_monitor", "tbl_ccp_pkg_monitor_row", "tbl_ccp_pkg_monitor_cell",
+      "tbl_ccp_htg_monitor", "tbl_ccp_htg_monitor_row", "tbl_ccp_htg_monitor_cell",
       "tbl_ccp_metal_monitor", "tbl_ccp_metal_sens_row", "tbl_ccp_metal_pass_row",
       "tbl_corrective_action", "tbl_schedule_task", "tbl_workday_override",
     ],
@@ -77,7 +78,7 @@ const GROUPS = [
 // 표 이름 → { cols, comment, pk, uniques, indexes }
 const tables = new Map();
 
-for (const m of sql.matchAll(/CREATE TABLE sasshaccp\.([a-z0-9_]+) \(\n([\s\S]*?)\n\);/g)) {
+for (const m of sql.matchAll(/CREATE TABLE sasshaccp\.([a-z0-9_]+) \(\r?\n([\s\S]*?)\r?\n\);/g)) {
   const cols = [];
   for (const raw of m[2].split("\n")) {
     const line = raw.trim().replace(/,$/, "");
@@ -149,6 +150,41 @@ const today = new Date().toISOString().slice(0, 10);
 const colCount = ordered.reduce((a, t) => a + t.cols.length, 0);
 const GROUP_KEYS = [...GROUPS.map((x) => x.key), "미분류"];
 
+/** 표의 삭제 의미 — del_yn / use_yn / 물리 DELETE */
+function deleteSemanticsOf(t) {
+  const names = t.cols.map((c) => c.name);
+  if (names.includes("del_yn")) return { kind: "del_yn", recover: "가능 — del_yn=N" };
+  if (names.includes("use_yn")) return { kind: "use_yn", recover: "가능 — use_yn=Y" };
+  return { kind: "물리 DELETE", recover: "불가 — 백업·감사 로그" };
+}
+
+/**
+ * 삭제 차단 SP → 대상 표.
+ * 본문에 나온 참조 표가 아니라 이름에서 고른다 — 부서 차단이 tbl_user 에 붙으면 틀린다.
+ */
+function loadDeleteBlockers() {
+  const spSql = fs.readFileSync(path.join(ROOT, "db_sasshaccp/01_sp.sql"), "utf-8");
+  const screenToTable = {
+    common_code_management: "tbl_code",
+    department_management: "tbl_dept",
+    menu_management: "tbl_menu",
+    role_management: "tbl_role",
+    user_management: "tbl_user",
+  };
+  const map = new Map();
+  for (const m of spSql.matchAll(/\b(sp_[a-z0-9_]*delete_blocker[a-z0-9_]*)\b/g)) {
+    const name = m[1];
+    const tbl = name.match(/^sp_(tbl_[a-z0-9_]+)_delete_blocker/);
+    if (tbl) {
+      map.set(tbl[1], name);
+      continue;
+    }
+    const scr = name.match(/^sp_([a-z0-9_]+)_delete_blocker/);
+    if (scr && screenToTable[scr[1]]) map.set(screenToTable[scr[1]], name);
+  }
+  return map;
+}
+
 // 설명 — 컬럼이 기본키·유일키에 들어가는지
 function markOf(t, col) {
   const m = [];
@@ -194,6 +230,21 @@ for (const g of GROUP_KEYS) {
   });
   md.push("");
 }
+md.push("---");
+md.push("");
+md.push("## 삭제 의미");
+md.push("");
+md.push("전면 `del_yn` 전환은 하지 않는다. 새 표는 이 표에 한 줄 없이 못 넣는다.");
+md.push("");
+md.push("| 표 | 삭제 의미 | 차단 SP | 복구 |");
+md.push("|---|---|---|---|");
+const blockerByTable = loadDeleteBlockers();
+for (const t of ordered) {
+  const del = deleteSemanticsOf(t);
+  const blocker = blockerByTable.get(t.name) || "-";
+  md.push("| `" + t.name + "` | " + del.kind + " | " + (blocker === "-" ? "-" : "`" + blocker + "`") + " | " + del.recover + " |");
+}
+md.push("");
 md.push("---");
 md.push("");
 for (const t of ordered) {

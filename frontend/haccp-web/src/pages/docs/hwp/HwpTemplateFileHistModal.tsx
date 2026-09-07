@@ -155,7 +155,11 @@ export function HwpTemplateFileHistModal({
                   runSearch();
                 }
               }}
-              autoFocus
+              /*
+               * autoFocus 금지 — 아래 onRowClick 이 곧 확정(onSelect)이라
+               * 켜면 첫 행 클릭이 포커스 이동에만 쓰이고 선택이 안 붙는다.
+               * HtmlFormLookupModal·CodeLookupModal 과 같은 자리다.
+               */
             />
             <select
               // 양식구분 — src-ty. 빈 값=전체

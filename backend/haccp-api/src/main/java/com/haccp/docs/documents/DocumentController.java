@@ -20,6 +20,8 @@ import com.haccp.common.response.CommonResponse;
 // 역할 — 결재·삭제 요청 DTO
 import com.haccp.docs.documents.dto.DocumentApprovalRequest;
 import com.haccp.docs.documents.dto.DocumentDeleteItem;
+import com.haccp.docs.documents.dto.DocumentDetailResponse;
+import com.haccp.docs.documents.dto.DocumentFileRow;
 import com.haccp.docs.documents.dto.HwpDocumentSaveRequest;
 // 역할 — HTTP 요청 원천
 import jakarta.servlet.http.HttpServletRequest;
@@ -64,7 +66,7 @@ public class DocumentController {
      *   3) 성공 시 DB형·HWP형을 구분한 목록 배열
      */
     @GetMapping("/list")
-    public CommonResponse<List<Map<String, Object>>> list(
+    public CommonResponse<List<com.haccp.docs.documents.dto.DocumentListRow>> list(
             // 기준일 시작 YYYYMMDD — 생략하면 전체
             @RequestParam(required = false) String fromDt,
             // 기준일 종료 YYYYMMDD — 생략하면 전체
@@ -90,7 +92,7 @@ public class DocumentController {
      *   3) 성공 시 목록 배열
      */
     @GetMapping("/sign-ready")
-    public CommonResponse<List<Map<String, Object>>> signReady(
+    public CommonResponse<List<com.haccp.docs.documents.dto.DocumentListRow>> signReady(
             // 기준일 시작 YYYYMMDD — 생략하면 전체
             @RequestParam(required = false) String fromDt,
             // 기준일 종료 YYYYMMDD — 생략하면 전체
@@ -112,7 +114,7 @@ public class DocumentController {
      *   3) 성공 시 목록 배열
      */
     @GetMapping("/sign-ok")
-    public CommonResponse<List<Map<String, Object>>> signOk(
+    public CommonResponse<List<com.haccp.docs.documents.dto.DocumentListRow>> signOk(
             // 기준일 시작 YYYYMMDD — 생략하면 전체
             @RequestParam(required = false) String fromDt,
             // 기준일 종료 YYYYMMDD — 생략하면 전체
@@ -134,7 +136,7 @@ public class DocumentController {
      *   3) 성공 시 filePath를 제외한 상세 묶음
      */
     @GetMapping("/{docIdx}")
-    public CommonResponse<Map<String, Object>> detail(
+    public CommonResponse<DocumentDetailResponse> detail(
             // 문서 대리키
             @PathVariable Long docIdx
     ) {
@@ -169,7 +171,7 @@ public class DocumentController {
      *   3) 성공 시 서버 물리 경로를 제외한 파일 메타를 반환한다
      */
     @PostMapping(value = "/{docIdx}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public CommonResponse<Map<String, Object>> upload(
+    public CommonResponse<DocumentFileRow> upload(
             // 연결 문서 idx
             @PathVariable Long docIdx,
             // 파일 분류 HWP_SRC/PDF/ATTACH/PHOTO
@@ -191,7 +193,7 @@ public class DocumentController {
      *   3) 결재 잠금이면 기존 PDF를 재사용하고, 없으면 변환 후 PDF만 등록한다
      */
     @PostMapping("/{docIdx}/export-pdf")
-    public CommonResponse<Map<String, Object>> exportPdf(
+    public CommonResponse<DocumentFileRow> exportPdf(
             // PDF로 내보낼 문서 대리키
             @PathVariable Long docIdx,
             // 감사 IP 추출 원천
@@ -265,11 +267,11 @@ public class DocumentController {
             // 문서 idx
             @PathVariable Long docIdx,
             // { remark } — 빈 문자열이면 지운다
-            @RequestBody Map<String, String> body,
+            @RequestBody com.haccp.docs.documents.dto.DocumentRemarkRequest body,
             // 감사 IP 추출 원천
             HttpServletRequest http
     ) {
-        service.saveRemark(docIdx, body.get("remark"), RequestMeta.of(http));
+        service.saveRemark(docIdx, body == null ? null : body.getRemark(), RequestMeta.of(http));
         return CommonResponse.ok(null);
     }
 
@@ -286,11 +288,11 @@ public class DocumentController {
             // 문서 idx
             @PathVariable Long docIdx,
             // { title } — 빈 문자열이면 지운다
-            @RequestBody Map<String, String> body,
+            @RequestBody com.haccp.docs.documents.dto.DocumentTitleRequest body,
             // 감사 IP 추출 원천
             HttpServletRequest http
     ) {
-        service.saveTitle(docIdx, body.get("title"), RequestMeta.of(http));
+        service.saveTitle(docIdx, body == null ? null : body.getTitle(), RequestMeta.of(http));
         return CommonResponse.ok(null);
     }
 

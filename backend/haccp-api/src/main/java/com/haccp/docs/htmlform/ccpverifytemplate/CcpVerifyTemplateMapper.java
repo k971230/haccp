@@ -13,8 +13,9 @@
 package com.haccp.docs.htmlform.ccpverifytemplate;
 
 import com.haccp.common.validation.DeleteBlocker;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormItemRow;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormVersionRow;
 import java.util.List;
-import java.util.Map;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -29,7 +30,7 @@ public interface CcpVerifyTemplateMapper {
      *   2) 기준관리 좌측이 호출한다
      *   3) verCd·verNm 빈값이면 전체
      */
-    List<Map<String, Object>> selectVersions(
+    List<HtmlFormVersionRow> selectVersions(
             @Param("coCd") String coCd,
             @Param("tmplCd") String tmplCd,
             @Param("verCd") String verCd,
@@ -44,7 +45,7 @@ public interface CcpVerifyTemplateMapper {
      *   2) 우측 A4가 호출한다
      *   3) 없으면 빈 목록
      */
-    List<Map<String, Object>> selectItems(
+    List<HtmlFormItemRow> selectItems(
             @Param("coCd") String coCd,
             @Param("tmplCd") String tmplCd,
             @Param("verNo") int verNo

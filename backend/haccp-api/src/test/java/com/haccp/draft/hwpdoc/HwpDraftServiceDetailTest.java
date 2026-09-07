@@ -18,7 +18,9 @@ import static org.mockito.Mockito.when;
 
 import com.haccp.common.exception.BizException;
 import com.haccp.docs.documents.DocumentService;
-import java.util.Map;
+import com.haccp.docs.documents.dto.DocumentDetailResponse;
+import com.haccp.docs.documents.dto.DocumentHeaderRow;
+import com.haccp.draft.DraftSeenGuard;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -34,20 +36,32 @@ class HwpDraftServiceDetailTest {
     @Mock
     private DocumentService documentService;
 
+    @Mock
+    private DraftSeenGuard seenGuard;
+
     @InjectMocks
     private HwpDraftService service;
 
     @Test
     void html_문서는_상세를_거절한다() {
-        when(documentService.detail(1L)).thenReturn(Map.of("header", Map.of("docKind", "HTML")));
+        when(documentService.detail(1L)).thenReturn(detail("HTML"));
         BizException e = assertThrows(BizException.class, () -> service.detail(1L));
         assertEquals("HWP 문서가 아닙니다.", e.getMessage());
     }
 
     @Test
     void hwp_문서는_헤더를_그대로_돌린다() {
-        Map<String, Object> body = Map.of("header", Map.of("docKind", "HWP"));
+        DocumentDetailResponse body = detail("HWP");
         when(documentService.detail(2L)).thenReturn(body);
         assertEquals(body, service.detail(2L));
+    }
+
+    /** 문서 종류만 채운 상세 — 이 시험은 kind 분기만 본다 */
+    private static DocumentDetailResponse detail(String docKind) {
+        DocumentHeaderRow header = new DocumentHeaderRow();
+        header.setDocKind(docKind);
+        DocumentDetailResponse out = new DocumentDetailResponse();
+        out.setHeader(header);
+        return out;
     }
 }

@@ -12,9 +12,10 @@
  */
 package com.haccp.sys.code.approvalline;
 
-// 역할 — 목록·차단 행 타입
+// 역할 — 삭제 참조 차단 DTO
+import com.haccp.common.validation.DeleteBlocker;
+// 역할 — 목록
 import java.util.List;
-import java.util.Map;
 // 역할 — MyBatis 등록·이름 바인딩
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -60,7 +61,7 @@ public interface ApprovalLineMapper {
      *   2) validate-delete·delete Double Check가 호출한다
      *   3) 참조가 없으면 null
      */
-    Map<String, Object> selectApprovalLineBlocker(
+    DeleteBlocker selectApprovalLineBlocker(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // apprLineCd: 삭제 대상 결재선 코드

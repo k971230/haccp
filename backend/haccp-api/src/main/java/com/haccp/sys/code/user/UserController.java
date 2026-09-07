@@ -14,6 +14,9 @@ package com.haccp.sys.code.user;
 
 // 역할 — API 성공 응답 래퍼
 import com.haccp.common.response.CommonResponse;
+import com.haccp.sys.code.user.dto.UserDeleteItem;
+import com.haccp.sys.code.user.dto.UserRow;
+import com.haccp.sys.code.user.dto.UserSaveRow;
 // 역할 — 생성자 주입
 import lombok.RequiredArgsConstructor;
 // 역할 — REST 매핑
@@ -27,7 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 // 역할 — 화면 행·삭제키 목록
 import java.util.List;
-import java.util.Map;
 
 /** 사용자관리 → /api/v1/sys/code/user-management/* — 형제 5화면과 같은 형태로 base 에 화면 경로를 둔다 */
 @RestController
@@ -47,7 +49,7 @@ public class UserController {
      *   3) 조건에 맞는 사용자가 없으면 빈 배열
      */
     @GetMapping("/list")
-    public CommonResponse<List<Map<String, Object>>> list(
+    public CommonResponse<List<UserRow>> list(
             // 아이디 부분검색어 — 미입력이면 전체
             @RequestParam(required = false, defaultValue = "") String userId,
             // 이름 부분검색어 — 미입력이면 전체
@@ -71,7 +73,7 @@ public class UserController {
     @PutMapping("/save")
     public CommonResponse<Void> save(
             // 변경 행 목록 — idx가 없으면 신규
-            @RequestBody List<Map<String, Object>> rows
+            @RequestBody List<UserSaveRow> rows
     ) {
         userService.save(rows);
         return CommonResponse.ok(null);
@@ -88,7 +90,7 @@ public class UserController {
     @PostMapping("/validate-delete")
     public CommonResponse<Void> validateDelete(
             // 삭제 대상 복합키 배열 — 단건이어도 [{ idx }]
-            @RequestBody List<Map<String, Long>> keys
+            @RequestBody List<UserDeleteItem> keys
     ) {
         userService.validateDelete(keys);
         return CommonResponse.ok(null);
@@ -105,7 +107,7 @@ public class UserController {
     @PostMapping("/delete")
     public CommonResponse<Void> delete(
             // 삭제 대상 복합키 배열 — 단건이어도 [{ idx }]
-            @RequestBody List<Map<String, Long>> keys
+            @RequestBody List<UserDeleteItem> keys
     ) {
         userService.delete(keys);
         return CommonResponse.ok(null);

@@ -32,7 +32,7 @@ public interface LoginHistoryMapper {
      *   2) 화면 진입·조회와 좌측 사용자 트리 선택 시 호출한다
      *   3) 해당 기간에 이력이 없으면 빈 목록
      */
-    List<Map<String, Object>> selectRows(
+    List<com.haccp.sys.logs.loginhistory.dto.LoginHistoryRow> selectRows(
             // JWT 회사코드 — 테넌트 범위. 필수 등가 조건
             @Param("coCd") String coCd,
             // 조회 시작일 YYYYMMDD

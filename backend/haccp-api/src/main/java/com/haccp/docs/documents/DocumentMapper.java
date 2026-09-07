@@ -14,9 +14,11 @@
 package com.haccp.docs.documents;
 
 // 역할 — 문서 파일 메타 DTO
+import com.haccp.docs.documents.dto.DocumentApprovalRow;
 import com.haccp.docs.documents.dto.DocumentFileRow;
-// 역할 — 회사 사용 템플릿·원본 경로 DTO
+import com.haccp.docs.documents.dto.DocumentHeaderRow;
 import com.haccp.docs.documents.dto.DocumentTemplateRow;
+import com.haccp.docs.documents.dto.DocumentVersionRow;
 // 역할 — 삭제 차단 결과
 import com.haccp.common.validation.DeleteBlocker;
 // 역할 — 목록·상세의 가변 필드 맵
@@ -90,7 +92,7 @@ public interface DocumentMapper {
      *   2) document-inbox(status=APV)·attach(writerId=본인)가 호출한다
      *   3) 성공 시 DB형·HWP형 통합 목록. 빈 조건은 SP가 전체로 본다
      */
-    List<Map<String, Object>> selectDocuments(
+    List<com.haccp.docs.documents.dto.DocumentListRow> selectDocuments(
             // JWT 회사코드 — 테넌트 범위
             @Param("coCd") String coCd,
             // 기준일 시작 YYYYMMDD — 공백이면 전체
@@ -115,7 +117,7 @@ public interface DocumentMapper {
      *   2) GET /sign-ready 가 호출한다
      *   3) writerId 는 작성자 칸. keyword 는 문서번호·제목
      */
-    List<Map<String, Object>> selectSignReady(
+    List<com.haccp.docs.documents.dto.DocumentListRow> selectSignReady(
             // JWT 회사코드
             @Param("coCd") String coCd,
             // 로그인 사용자 — 내 차례만
@@ -138,7 +140,7 @@ public interface DocumentMapper {
      *   2) GET /sign-ok 가 호출한다
      *   3) 작성자 자동승인(WRITE)은 넣지 않는다
      */
-    List<Map<String, Object>> selectSignOk(
+    List<com.haccp.docs.documents.dto.DocumentListRow> selectSignOk(
             // JWT 회사코드
             @Param("coCd") String coCd,
             // 로그인 사용자 — 내가 처리한 건만
@@ -161,14 +163,14 @@ public interface DocumentMapper {
      *   2) 상세 API가 묶기 전에 호출한다
      *   3) 없거나 다른 회사이면 null. reviewer 컬럼은 없다
      */
-    Map<String, Object> selectDocument(
+    DocumentHeaderRow selectDocument(
             // JWT 회사코드
             @Param("coCd") String coCd,
             // 문서 대리키
             @Param("docIdx") Long docIdx
     );
 
-    List<Map<String, Object>> selectApprovals(
+    List<DocumentApprovalRow> selectApprovals(
             @Param("coCd") String coCd,
             @Param("docIdx") Long docIdx
     );
@@ -183,7 +185,7 @@ public interface DocumentMapper {
             @Param("fileIdx") Long fileIdx
     );
 
-    List<Map<String, Object>> selectVersions(
+    List<DocumentVersionRow> selectVersions(
             @Param("coCd") String coCd,
             @Param("docIdx") Long docIdx
     );

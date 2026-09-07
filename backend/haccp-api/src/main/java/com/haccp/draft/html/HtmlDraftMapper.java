@@ -8,7 +8,7 @@
  *      매퍼를 둘로 두면 한쪽 SQL 만 고쳐 놓고 다른 하나가 조용히 어긋난다 —
  *      실제로 제목(title) 인자를 넣을 때 두 파일을 따로 고쳐야 했다
  *   2) 그래서 인터페이스는 하나로 두고 XML 이 family 로 SP 를 고른다.
- *      `CcpLogDraftMapper`(포장·가열)가 이미 같은 모양이다
+ *      `CcpPkgDraftMapper`·`CcpHtgDraftMapper` 가 이미 같은 모양이다
  *   3) family 는 `HtmlDraftService.Family.key()` — "hyg" · "chk" 뿐이다
  *
  * **목록 SP 만 인자 형태가 다르다** — `sp_tbl_hyg_process_r_000` 은 10개,
