@@ -153,7 +153,7 @@ test.describe("개선조치관리", () => {
     }
   });
 
-  test("옮긴 URL 이 정본이다 — 옛 경로는 404 다", async ({ request }) => {
+  test("옮긴 URL 이 정본이다 — 옛 경로는 막힌다", async ({ request }) => {
     const { user, pass } = adminCreds();
     const res0 = await request.post(`${API}/api/v1/auth/login`, {
       data: { userId: user, password: pass },
@@ -165,11 +165,12 @@ test.describe("개선조치관리", () => {
     });
     expect(now.status(), "옮긴 경로가 안 돈다").toBe(200);
 
-    // 화면 API 를 패키지 이름으로 여는 길은 없어야 한다
+    // 화면 API 를 패키지 이름으로 여는 길은 없어야 한다.
+    // 맵에 없으면 ScreenAuth 가 403 한다 — 닫힘 인가. Spring 404 까지 안 간다
     const old = await request.get(`${API}/api/v1/tsk/corrective-action-management/list`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    expect(old.status(), "없는 경로가 404 가 아니다").toBe(404);
+    expect(old.status(), "없는 경로가 열려서는 안 된다").toBe(403);
   });
 
   test("이 화면에는 행추가가 없다 — 개선조치는 이탈에서 생긴다", async ({ page }) => {

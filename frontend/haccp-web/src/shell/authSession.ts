@@ -19,7 +19,7 @@ import { useAuthStore } from "@/stores/authStore";
 // 역할 — 열린 탭 목록 스토어 (reset)
 import { useTabStore } from "@/stores/tabStore";
 // 역할 — 복귀 경로 sessionStorage 키
-import { REJECT_TOAST_KEY, RETURN_URL_KEY } from "@/shell/authKeys";
+import { AUTH_FAIL_CODE_KEY, REJECT_TOAST_KEY, RETURN_URL_KEY } from "@/shell/authKeys";
 // 역할 — 타 탭에 로그아웃 알림
 import { broadcastAuthLogout } from "@/shell/authCrossTab";
 // 역할 — Path basename 정합 로그인·복귀 경로
@@ -161,8 +161,17 @@ export function clearAuthSession() {
  */
 export function handleUnauthorized(
   // 복귀할 경로 — browser 전체 경로 또는 라우터 경로. 생략하면 현재 browser 주소
-  redirectPath?: string
+  redirectPath?: string,
+  // 401 구분 코드 — 로그인 화면이 「세션 종료」와 「미로그인」을 가른다
+  failCode?: string
 ) {
+  if (failCode) {
+    try {
+      sessionStorage.setItem(AUTH_FAIL_CODE_KEY, failCode);
+    } catch {
+      // 저장소 거부 — 로그인 문구만 기본값으로 남는다
+    }
+  }
   // window.location 기준 — basename 포함 가능
   const browserPath = redirectPath ?? `${location.pathname}${location.search}`;
   // React Router nav 용으로 base 제거 (/haccp/ccp-... → /ccp-...)

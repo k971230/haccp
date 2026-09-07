@@ -157,6 +157,8 @@ function makeCcpMonitoringApi(
         logRows: logRaw.map((row) => asLogRow(row as Record<string, unknown>)),
         passRows: passRaw.map((row) => asPassRow(row as Record<string, unknown>)),
         corrective: (raw.corrective as DocCorrectiveValue | null) ?? null,
+        // 문서 스탬프 — 저장 때 seenUpdDt 로 되돌린다
+        updDt: typeof raw.updDt === "string" ? raw.updDt : null,
       };
     },
 

@@ -134,7 +134,10 @@ function attachInterceptors(instance: AxiosInstance): void {
           const msg = (data as { message?: unknown }).message;
           if (typeof msg === "string" && msg.trim()) message = msg.trim();
         }
-        handleUnauthorized();
+        const code = data && typeof data === "object" && !(data instanceof Blob)
+          ? (data as { code?: unknown }).code
+          : undefined;
+        handleUnauthorized(undefined, typeof code === "string" ? code : undefined);
         // 전용 예외로 감싸 화면 catch에서 중복 토스트를 억제할 수 있게 한다
         return Promise.reject(new UnauthorizedError(message));
       }

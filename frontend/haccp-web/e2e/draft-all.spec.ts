@@ -81,8 +81,8 @@ test.describe.serial("작성 6화면", () => {
 
     // DB 에 실제로 들어갔는가 — 화면 표시와 별개로 본다
     expect(
-      dbOne(`SELECT COALESCE(r.check_time,'') FROM tbl_ccp_generic_monitor m
-              JOIN tbl_ccp_generic_monitor_row r ON r.monitor_idx = m.idx
+      dbOne(`SELECT COALESCE(r.check_time,'') FROM tbl_ccp_pkg_monitor m
+              JOIN tbl_ccp_pkg_monitor_row r ON r.monitor_idx = m.idx
              WHERE r.row_seq = 1 ORDER BY m.doc_idx DESC LIMIT 1`),
       "저장했는데 DB 에 시각이 없다",
     ).toBe("14:20");

@@ -119,11 +119,13 @@ export const hwpDraftApi: HtmlFormDraftApi = {
       corrective: null,
       // 본문 파일 — rhwp 가 최신 HWP_SRC 를 열 때 쓴다
       files: Array.isArray(raw.files) ? (raw.files as HtmlFormDraftFile[]) : [],
+      // 문서 스탬프 — 저장 때 seenUpdDt 로 되돌린다
+      updDt: typeof raw.updDt === "string" ? raw.updDt : null,
     };
   },
 
   /**
-   * 저장 — 일자·양식코드·이탈여부만 보낸다. 본문 파일은 저장 뒤 따로 올린다.
+   * 저장 — 일자·양식코드·이탈여부·스탬프만 보낸다. 본문 파일은 저장 뒤 따로 올린다.
    *
    * 이탈여부는 지면이 없는 이 화면에서 목록 칸으로 켠다.
    * 서버(HwpDraftService.applyDeviation)가 이 값을 보고 개선조치 행을 만들거나 지운다 —
@@ -137,6 +139,8 @@ export const hwpDraftApi: HtmlFormDraftApi = {
       deviationYn: body.deviationYn ?? "N",
       // 목록 제목 — 빈값이면 서버가 신규는 양식명·수정은 기존값을 쓴다
       title: body.title,
+      // 상세에서 받은 스탬프 — 안 보내면 빈 값 통과라 동시 저장을 못 막는다
+      seenUpdDt: body.seenUpdDt,
     });
     return data.data.docIdx;
   },

@@ -14,6 +14,8 @@
  */
 // 역할 — PDF 변환·파일 다운로드
 import { downloadDocumentFile, exportDocumentPdf } from "@/api/documentApi";
+// 역할 — 인쇄 대화상자 상한. axios 타임아웃과 다르다
+import { PRINT_DIALOG_WAIT_MS } from "./printWaitMs";
 
 /**
  * 개발자: 박승우
@@ -63,7 +65,7 @@ function printPdfBlob(
         return;
       }
       // print() 가 동기 차단이면 afterprint 가 이미 난 뒤다. 아직이면 상한까지 기다린다
-      window.setTimeout(finish, 180_000);
+      window.setTimeout(finish, PRINT_DIALOG_WAIT_MS);
     };
     iframe.onerror = () => {
       iframe.remove();

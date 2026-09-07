@@ -89,6 +89,11 @@ export interface HtmlFormDraftDetail {
    * rhwp 가 이 중 최신 HWP_SRC 를 열어 본문으로 삼는다.
    */
   files?: HtmlFormDraftFile[];
+  /**
+   * 문서 스탬프 — 상세 루트 updDt. 저장 때 seenUpdDt 로 되돌린다.
+   * 신규면 없다
+   */
+  updDt?: string | null;
 }
 
 /** 상단 검색 6개 중 서버 조건 5개 — 결재 여부는 화면이 거른다 */
@@ -135,6 +140,8 @@ export interface HtmlFormDraftSaveRequest {
   passRows?: HtmlFormPassRow[];
   // 목록 제목 — tbl_document.title. 빈값이면 서버가 신규는 양식명·수정은 기존값을 쓴다
   title?: string;
+  // 상세에서 받은 문서 스탬프 — 수정 저장 때 서버가 대조한다. 신규·빈 값은 통과
+  seenUpdDt?: string;
 }
 
 /**

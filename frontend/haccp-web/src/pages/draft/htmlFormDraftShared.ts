@@ -563,6 +563,8 @@ export type HtmlFormDraftBuf = {
   logRows: HtmlFormLogRow[];
   // 금속검출 통과량 표 행 — MTL 만
   passRows: HtmlFormPassRow[];
+  // 상세에서 받은 문서 스탬프 — 저장 때 그대로 되돌린다
+  seenUpdDt: string;
 };
 
 /** 상세 API 응답 최소 모양 — 화면별 api 가 이 형태로 맞춰 준다 */
@@ -573,6 +575,8 @@ export interface HtmlFormDraftDetailLike {
   passRows?: HtmlFormPassRow[];
   // 이탈·개선조치 — 있으면 시그널 체크를 복원한다
   corrective?: { deviationDesc?: string | null; actionDesc?: string | null } | null;
+  // 문서 스탬프 — 서버 상세 루트 updDt
+  updDt?: string | null;
 }
 
 /**
@@ -598,6 +602,7 @@ export function emptyDraftBuf(
     confirmId: "", confirmSignYn: "N",
     deviationYn: false,
     logRows: [], passRows: [],
+    seenUpdDt: "",
   };
 }
 
@@ -684,6 +689,8 @@ export function detailToDraftBuf(
     // 기록행 — CCP 모니터링일지만 채워 온다. 나머지 화면은 빈 배열
     logRows,
     passRows: detail.passRows ?? [],
+    // 스탬프 — 서버가 준 문자열을 그대로 둔다. 화면이 만들지 않는다
+    seenUpdDt: asText(detail.updDt),
   };
 }
 

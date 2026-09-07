@@ -25,6 +25,7 @@ import { applyAuthPersistStorage, useAuthStore } from "@/stores/authStore";
 import { toUserMessage } from "@/shell/errors";
 // 역할 — 토큰 유효성·로그인 후 이동 경로
 import { isTokenValid, resolvePostLoginPath } from "@/shell/authSession";
+import { AUTH_FAIL_CODE_KEY } from "@/shell/authKeys";
 // 역할 — 아이디 저장·자동 로그인 선호값
 import { loadLoginPrefs, saveLoginPrefs } from "@/shell/loginPrefs";
 // 역할 — 중복 제출 방지
@@ -76,7 +77,18 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [saveId, setSaveId] = useState(formInit.saveId);
   const [autoLogin, setAutoLogin] = useState(formInit.autoLogin);
-  const [err, setErr] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(() => {
+    try {
+      const code = sessionStorage.getItem(AUTH_FAIL_CODE_KEY);
+      if (code) sessionStorage.removeItem(AUTH_FAIL_CODE_KEY);
+      if (code === "SESSION_EXPIRED") return "세션이 종료되었습니다.";
+      if (code === "UNAUTHENTICATED") return "로그인이 필요합니다.";
+      if (code === "UNAUTHORIZED") return "인증이 올바르지 않습니다. 다시 로그인하세요.";
+    } catch {
+      // 저장소 거부
+    }
+    return null;
+  });
   const busy = isBusy("login");
 
   // 이미 유효한 토큰이 있으면(= 자동 로그인·주소 직접 입력) 로그인 화면을 건너뛴다
