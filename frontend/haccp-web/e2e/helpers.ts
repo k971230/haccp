@@ -94,6 +94,69 @@ export function readonlyCreds(): { user: string; pass: string } | null {
 
 /**
  * 개발자: 박승우
+ * 일자: 2026-09-07
+ * 코멘트:
+ *   1) 조회만 되는 계정이다. 팀원(rmausr)은 삭제가 있어 403 시험에 쓰면 안 된다
+ *   2) 기본은 smoke. E2E_VIEW_USER 가 있으면 그걸 쓴다
+ *   3) 로그인 실패하면 그 시험을 건너뛴다
+ */
+export function viewerCreds(): { user: string; pass: string } | null {
+  const user = (process.env.E2E_VIEW_USER || "smoke").trim();
+  const pass = (process.env.E2E_VIEW_PASS || process.env.E2E_RO_PASS || "1234").trim();
+  return user && pass ? { user, pass } : null;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-07
+ * 코멘트:
+ *   1) 읽기·쓰기·수정만 되고 삭제는 막힌 계정. 기본 e2erw
+ *   2) 운영에 없으면 E2E_RW_USER 로 대체한다
+ *   3) 삭제 API 403 시험이 쓴다
+ */
+export function writeNoDeleteCreds(): { user: string; pass: string } {
+  const user = (process.env.E2E_RW_USER || "e2erw").trim();
+  const pass = (process.env.E2E_RW_PASS || "1234").trim();
+  return { user, pass };
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-07
+ * 코멘트:
+ *   1) 작성 팝업에서 고를 HWP 양식 접두. 시드는 hwp_sys_, 자사는 hwp_usr_
+ *   2) 회사에 시스템 양식이 없으면 hwp_ 로 자사 양식을 고른다
+ *   3) 접두를 박으면 운영에서 팝업이 비어 시험이 죽는다
+ */
+export function hwpTmplPrefix(): string {
+  const co = sqlLit(loginCoCd());
+  const n = dbOne(
+    `SELECT count(*) FROM tbl_company_template
+      WHERE co_cd='${co}' AND tmpl_cd LIKE 'hwp_sys_%' AND use_yn='Y'`,
+  );
+  return Number(n) > 0 ? "hwp_sys_" : "hwp_";
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-07
+ * 코멘트:
+ *   1) 판정 라디오가 있는 위생 양식 코드. last() 가 TEXT 전용 양식을 집으면 시험이 0라디오로 죽는다
+ *   2) RADIO·RADIO_NUM 항목이 있는 첫 양식을 쓴다
+ *   3) 없으면 접두만 돌려 기존 동작과 같다
+ */
+export function liveHygRadioTmpl(): string {
+  const co = sqlLit(loginCoCd());
+  const cd = dbOne(
+    `SELECT i.tmpl_cd FROM tbl_html_hyg_prc_ver_item i
+      WHERE i.co_cd='${co}' AND i.input_type IN ('RADIO','RADIO_NUM')
+      GROUP BY i.tmpl_cd ORDER BY i.tmpl_cd LIMIT 1`,
+  );
+  return cd || "html_hyg_prc_";
+}
+
+/**
+ * 개발자: 박승우
  * 일자: 2026-08-25
  * 코멘트:
  *   1) 로그인 화면에서 아이디·비밀번호를 넣고 셸이 뜰 때까지 기다린다

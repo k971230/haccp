@@ -167,7 +167,22 @@ SELECT :'co_cd', 'DEFAULT', v.step_no, v.role_cd,
  );
 
 -- ------------------------------------------------------------
--- 8. 사용 양식 — 시스템 제공(sys)만 준다.
+-- 8. 카탈로그 — 이 회사 tbl_template. 이후 조회는 co_cd = 이 회사만 본다
+-- ------------------------------------------------------------
+INSERT INTO tbl_template (
+    co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
+    form_path, default_cycle_cd, default_retention_month, ver_no, impl_yn, sort_no, use_yn, ins_id, ins_dt
+)
+SELECT :'co_cd', s.tmpl_cd, s.tmpl_nm, s.mng_no, s.doc_kind, s.category_cd, s.scrn_cd,
+       s.form_path, s.default_cycle_cd, s.default_retention_month, s.ver_no, s.impl_yn, s.sort_no, s.use_yn, 'system', now()
+  FROM tbl_template s
+ WHERE s.co_cd = :'src_co'
+   AND NOT EXISTS (
+       SELECT 1 FROM tbl_template o WHERE o.co_cd = :'co_cd' AND o.tmpl_cd = s.tmpl_cd
+   );
+
+-- ------------------------------------------------------------
+-- 9. 사용 양식 — 시스템 제공(sys)만 준다.
 --    05_form_seed 는 HTML 표준 지면 항목만 깐다. 실제로 쓸 양식(HWP 27종·HTML sys)은
 --    여기서 원본 업체의 sys 목록을 그대로 물려준다.
 --    usr(그 업체가 직접 만든 양식)은 남의 것이라 복제하지 않는다.
@@ -185,10 +200,10 @@ SELECT :'co_cd', s.tmpl_cd, s.sys_yn, s.use_yn, s.base_use_yn,
         s.tmpl_cd NOT LIKE 'hwp_sys_%'
         OR s.tmpl_cd ~ '^hwp_sys_0(0[1-9]|1[0-9]|2[0-7])$'
    )
-   -- 카탈로그에 없는 코드는 사용양식만 생기면 화면이 빈 파일을 가리킨다
+   -- 카탈로그는 위 8절에서 이 회사에 깐 행만 본다
    AND EXISTS (
        SELECT 1 FROM tbl_template t
-        WHERE t.tmpl_cd = s.tmpl_cd AND t.co_cd IN (:'src_co', '0000')
+        WHERE t.tmpl_cd = s.tmpl_cd AND t.co_cd = :'co_cd'
    )
    AND NOT EXISTS (
        SELECT 1 FROM tbl_company_template o
@@ -196,7 +211,7 @@ SELECT :'co_cd', s.tmpl_cd, s.sys_yn, s.use_yn, s.base_use_yn,
    );
 
 -- ------------------------------------------------------------
--- 9. 문서번호 채번 규칙 — 업체가 쓰는 양식마다 하나. 없으면 문서를 만들 때 번호가 안 붙는다
+-- 10. 문서번호 채번 규칙 — 업체가 쓰는 양식마다 하나. 없으면 문서를 만들 때 번호가 안 붙는다
 -- ------------------------------------------------------------
 INSERT INTO tbl_doc_no_rule (co_cd, tmpl_cd, prefix, date_fmt, seq_len, reset_cycle, last_seq, ins_id, ins_dt)
 SELECT :'co_cd', ct.tmpl_cd, ct.tmpl_cd, 'YYYYMMDD', 3, 'D', 0, 'system', now()

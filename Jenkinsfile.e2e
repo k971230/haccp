@@ -2,11 +2,15 @@
 //  HACCP Playwright E2E (선택 Job — main 배포와 분리)
 //
 //  개발자: 박승우
-//  일자: 2026-08-26
+//  일자: 2026-09-07
 //  코멘트:
-//    1) 스펙 전체를 돌린다(2026-08-26 기준 68건). haccp-deploy 에는 넣지 않는다
-//    2) Credentials: haccp-write-user (Username/Password) — 조회 전용 Job 은 haccp-smoke-user
+//    1) 스펙 전체를 돌린다. haccp-deploy 에는 넣지 않는다
+//    2) Credentials: haccp-write-user = 팀장(작성·상신) → E2E_USER
+//                    haccp-read-user  = 팀원(조회·권한) → E2E_RO_USER
+//       실값(아이디·비밀번호)은 Jenkins Credentials 에만 둔다. 이 파일에 적지 않는다
 //    3) Jenkins 에 Job 을 새로 만들고 이 파일을 스크립트 경로로 지정한다
+//    4) 운영 URL 을 치면 E2E_DB_NAME·E2E_ALLOW_PROD_WRITES 가 필요하다.
+//       빼면 화면은 운영, q.mjs 는 시험 DB 를 본다. 문서를 지운다.
 //
 //  ** DB 대조는 여기서 안 돈다 **
 //    스펙은 저장 결과를 DB 로 직접 확인한다(E2E-001 처럼 서버가 삼킨 실패를 잡으려고).
@@ -27,11 +31,15 @@ pipeline {
   environment {
     // Path 운영 기본 — Job 파라미터로 덮을 수 있다 (trailing slash 는 playwright.config 가 보정)
     E2E_BASE_URL = "${params.E2E_BASE_URL ?: 'https://180.71.58.87/haccp/'}"
+    E2E_API_BASE_URL = "${params.E2E_API_BASE_URL ?: 'http://180.71.58.87'}"
+    E2E_DB_NAME = 'sasshaccp'
+    E2E_ALLOW_PROD_WRITES = '1'
     E2E_INSECURE = '1'
   }
 
   parameters {
     string(name: 'E2E_BASE_URL', defaultValue: 'https://180.71.58.87/haccp/', description: 'FE baseURL (Vite base 포함, trailing slash)')
+    string(name: 'E2E_API_BASE_URL', defaultValue: 'http://180.71.58.87', description: 'API origin — 화면과 같은 호스트')
   }
 
   stages {
@@ -44,12 +52,20 @@ pipeline {
     stage('Playwright E2E') {
       steps {
         dir('frontend/haccp-web') {
-          withCredentials([usernamePassword(
-            // 작성·상신 실측 — Username 은 DEMO 로그인 아이디(예: write). 조회 전용 smoke 와 분리
-            credentialsId: 'haccp-write-user',
-            usernameVariable: 'E2E_USER',
-            passwordVariable: 'E2E_PASS'
-          )]) {
+          withCredentials([
+            usernamePassword(
+              // 팀장 — 작성·상신. Jenkins 에 Username=로그인 ID
+              credentialsId: 'haccp-write-user',
+              usernameVariable: 'E2E_USER',
+              passwordVariable: 'E2E_PASS'
+            ),
+            usernamePassword(
+              // 팀원 — 조회·권한 시험. 없으면 권한 스펙이 skip 된다
+              credentialsId: 'haccp-read-user',
+              usernameVariable: 'E2E_RO_USER',
+              passwordVariable: 'E2E_RO_PASS'
+            )
+          ]) {
             sh '''
               set -euo pipefail
               npm ci --no-audit --no-fund

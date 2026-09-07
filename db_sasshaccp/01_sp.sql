@@ -4732,7 +4732,9 @@ BEGIN
     IF v_nm = '' THEN
         RAISE EXCEPTION '양식명은 필수입니다.' USING ERRCODE = '45000';
     END IF;
-    SELECT * INTO v_src FROM tbl_template WHERE tmpl_cd = 'html_sys_001' AND co_cd = p_co_cd;
+    -- 표준은 이 회사 카탈로그만 본다. 다른 회사(0000 포함)는 보지 않는다
+    SELECT * INTO v_src FROM tbl_template
+     WHERE tmpl_cd = 'html_sys_001' AND co_cd = p_co_cd;
     IF NOT FOUND THEN
         RAISE EXCEPTION '표준 양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
@@ -5849,7 +5851,9 @@ BEGIN
     END IF;
     v_nm := btrim(COALESCE(p_ver_nm, ''));
     IF v_nm = '' THEN RAISE EXCEPTION '양식명은 필수입니다.' USING ERRCODE = '45000'; END IF;
-    SELECT * INTO v_src FROM tbl_template WHERE tmpl_cd = 'html_sys_006' AND co_cd = p_co_cd;
+    -- 표준은 이 회사 카탈로그만 본다. 다른 회사(0000 포함)는 보지 않는다
+    SELECT * INTO v_src FROM tbl_template
+     WHERE tmpl_cd = 'html_sys_006' AND co_cd = p_co_cd;
     IF NOT FOUND THEN RAISE EXCEPTION '표준 양식을 찾을 수 없습니다.' USING ERRCODE = '45000'; END IF;
     v_cycle := COALESCE(NULLIF(btrim(v_src.default_cycle_cd), ''), 'M');
     -- 다음 번호는 이 회사 카탈로그 MAX+1

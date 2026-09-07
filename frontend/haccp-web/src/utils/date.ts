@@ -38,6 +38,25 @@ export const fmtDateTimeMinute = (v?: string | null) =>
 /** 오늘 날짜(로컬) — 검색 기본값·신규행 기본일 */
 export const today = () => dayjs().format("YYYY-MM-DD");
 
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-07
+ * 코멘트:
+ *   1) 작성·개선조치·로그 검색의 기본 기간이다. 오늘이 화요일이면 저번주 화요일~오늘
+ *   2) 오늘 할 일 recentDocRange(오늘 포함 7일=6일 전)와는 하루가 다르다
+ *   3) todayYmd 가 8자리가 아니면(= 테스트 오타) 오늘로 되돌린다
+ */
+export function weekAgoRange(
+  // 구간 끝 YYYYMMDD — 비우면 오늘
+  todayYmd?: string,
+): { fromDt: string; toDt: string } {
+  const toDt = todayYmd && /^\d{8}$/.test(todayYmd)
+    ? todayYmd
+    : dayjs().format("YYYYMMDD");
+  const fromDt = dayjs(toInputDate(toDt)).subtract(7, "day").format("YYYYMMDD");
+  return { fromDt, toDt };
+}
+
 /** 천단위 구분 숫자 — null/undefined/빈문자열이면 빈 문자열 */
 export const fmtNumber = (v?: number | string | null) =>
   v === null || v === undefined || v === "" ? "" : Number(v).toLocaleString();

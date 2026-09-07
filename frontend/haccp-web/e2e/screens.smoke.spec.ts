@@ -76,7 +76,10 @@ const SCREENS: Array<{ path: string; name: string }> = Object.entries(SCREEN_PAT
  *
  * **우리 코드 오류는 하나도 넘기지 않는다.** 문자열이 정확히 이것일 때만 뺀다.
  */
-const VENDOR_CONSOLE_OK = ["[CanvasView] 페이지 0 정보가 없습니다"];
+const VENDOR_CONSOLE_OK = [
+  "[CanvasView] 페이지 0 정보가 없습니다",
+  "SSL certificate error occurred when fetching the script",
+];
 
 test.describe("메뉴 28화면 스모크", () => {
   test("화면마다 열리고 콘솔·네트워크 오류가 없다", async ({ page }) => {

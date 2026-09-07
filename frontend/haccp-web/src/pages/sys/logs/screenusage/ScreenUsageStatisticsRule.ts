@@ -15,9 +15,6 @@ import { listScreenUsage } from "@/api/sys/screenUsageApi";
 // 역할 — 셸 설정 계약·행 타입·트리 헬퍼
 import { collectScrnCds, type LogRow, type LogRule } from "@/components/layout/LogPageShell";
 
-/** 기간 기본값 — 오늘부터 30일 전까지 */
-const RANGE_DAYS = 30;
-
 /** 집계일 YYYYMMDD → YYYY-MM-DD 표시 */
 function toDisplayDate(ymd: string): string {
   return ymd.length === 8 ? `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6)}` : ymd;
@@ -34,7 +31,6 @@ export const SCREEN_USAGE_RULE: LogRule = {
   treeHead: "메뉴 트리",
   // 좌측 트리 — 관리자 메뉴 계층
   treeKind: "menu",
-  rangeDays: RANGE_DAYS,
   // 코드 컬럼 없음 — 공통코드 조회를 하지 않는다
   codeGroup: "",
 

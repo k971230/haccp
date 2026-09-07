@@ -16,7 +16,7 @@
  * PIPELINE[HF130] E2E
  */
 import { expect, test, type Page } from "@playwright/test";
-import { adminCreds, createDraft, login } from "./helpers";
+import { adminCreds, createDraft, liveHygRadioTmpl, login } from "./helpers";
 
 /** 판정을 화면이 적합으로 깔아 주는 네 화면 */
 const SEEDED = [
@@ -106,7 +106,9 @@ async function settledPairs(page: Page, where: string) {
 async function openDraft(page: Page, path: string, tmpl: string): Promise<void> {
   const { user, pass } = adminCreds();
   await login(page, user, pass);
-  await createDraft(page, path, tmpl);
+  // 위생 last() 는 TEXT 전용 양식을 집을 수 있다 — 라디오 있는 코드를 쓴다
+  const pick = path.includes("hyg-process") ? liveHygRadioTmpl() : tmpl;
+  await createDraft(page, path, pick);
 }
 
 test.describe("작성 5화면 — 판정 기본값", () => {

@@ -98,6 +98,12 @@ test.describe.serial("HWP 사용양식관리", () => {
   test("시스템 제공 양식은 지울 수 없다", async ({ page }) => {
     const { user, pass } = adminCreds();
     await login(page, user, pass);
+    const sysOnCo = dbOne(
+      `SELECT tmpl_cd FROM tbl_company_template
+        WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='hwp_sys_001'`,
+    );
+    test.skip(!sysOnCo, "이 회사에 시스템 양식 hwp_sys_001 이 없다");
+
     await openScreen(page, PATH);
     await expect(page.getByRole("button", { name: "조회" })).toBeVisible({ timeout: 30_000 });
 
@@ -189,6 +195,10 @@ test.describe.serial("HWP 사용양식관리", () => {
      * 시험 DB 는 hwp 양식이 전부 sys·Y 라 그대로는 갈리지 않는다 —
      * 두 건을 미사용·자사로 돌려 놓고 보고, 끝나면 되돌린다.
      */
+    test.skip(
+      !dbOne(`SELECT tmpl_cd FROM tbl_company_template WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='hwp_sys_005'`),
+      "시드 시스템 양식(hwp_sys_005)이 이 회사에 없다",
+    );
     const flip = ["hwp_sys_002", "hwp_sys_003"].map((c) => `'${c}'`).join(",");
     dbOne(`UPDATE tbl_company_template SET use_yn='N' WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd IN (${flip})`);
     dbOne(`UPDATE tbl_company_template SET sys_yn='usr' WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='hwp_sys_005'`);
