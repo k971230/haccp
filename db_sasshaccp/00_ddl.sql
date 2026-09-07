@@ -386,10 +386,10 @@ ALTER TABLE sasshaccp.tbl_audit_log ALTER COLUMN idx ADD GENERATED ALWAYS AS IDE
 
 
 --
--- Name: tbl_ccp_generic_monitor; Type: TABLE; Schema: sasshaccp; Owner: -
+-- Name: tbl_ccp_htg_monitor; Type: TABLE; Schema: sasshaccp; Owner: -
 --
 
-CREATE TABLE sasshaccp.tbl_ccp_generic_monitor (
+CREATE TABLE sasshaccp.tbl_ccp_htg_monitor (
     idx bigint NOT NULL,
     co_cd character varying(10) NOT NULL,
     doc_idx bigint NOT NULL,
@@ -410,24 +410,24 @@ CREATE TABLE sasshaccp.tbl_ccp_generic_monitor (
 
 
 --
--- Name: TABLE tbl_ccp_generic_monitor; Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: TABLE tbl_ccp_htg_monitor; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON TABLE sasshaccp.tbl_ccp_generic_monitor IS '공통 CCP 모니터링 헤더 — 가열·세척·소독 등 비특화 공정 기록';
-
-
---
--- Name: COLUMN tbl_ccp_generic_monitor.form_src; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_ccp_generic_monitor.form_src IS '작성 양식 출처 — BASE 또는 CUSTOM. 과거 양식 이력 보존';
+COMMENT ON TABLE sasshaccp.tbl_ccp_htg_monitor IS 'CCP 가열 모니터링 헤더 — 표준기준서 가열공정 기록';
 
 
 --
--- Name: tbl_ccp_generic_monitor_cell; Type: TABLE; Schema: sasshaccp; Owner: -
+-- Name: COLUMN tbl_ccp_htg_monitor.form_src; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-CREATE TABLE sasshaccp.tbl_ccp_generic_monitor_cell (
+COMMENT ON COLUMN sasshaccp.tbl_ccp_htg_monitor.form_src IS '작성 양식 출처 — BASE 또는 CUSTOM. 과거 양식 이력 보존';
+
+
+--
+-- Name: tbl_ccp_htg_monitor_cell; Type: TABLE; Schema: sasshaccp; Owner: -
+--
+
+CREATE TABLE sasshaccp.tbl_ccp_htg_monitor_cell (
     idx bigint NOT NULL,
     co_cd character varying(10) NOT NULL,
     row_idx bigint NOT NULL,
@@ -443,25 +443,25 @@ CREATE TABLE sasshaccp.tbl_ccp_generic_monitor_cell (
 
 
 --
--- Name: TABLE tbl_ccp_generic_monitor_cell; Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: TABLE tbl_ccp_htg_monitor_cell; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON TABLE sasshaccp.tbl_ccp_generic_monitor_cell IS '공통 CCP 측정 셀 — 수치 또는 텍스트 값과 항목별 판정';
-
-
---
--- Name: COLUMN tbl_ccp_generic_monitor_cell.item_cd; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_ccp_generic_monitor_cell.item_cd IS '한계항목 코드 — limit_item_kind 프리셋의 열 식별자';
+COMMENT ON TABLE sasshaccp.tbl_ccp_htg_monitor_cell IS 'CCP 가열 측정 셀 — 수치 또는 텍스트 값과 항목별 판정';
 
 
 --
--- Name: tbl_ccp_generic_monitor_cell_idx_seq; Type: SEQUENCE; Schema: sasshaccp; Owner: -
+-- Name: COLUMN tbl_ccp_htg_monitor_cell.item_cd; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-ALTER TABLE sasshaccp.tbl_ccp_generic_monitor_cell ALTER COLUMN idx ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME sasshaccp.tbl_ccp_generic_monitor_cell_idx_seq
+COMMENT ON COLUMN sasshaccp.tbl_ccp_htg_monitor_cell.item_cd IS '한계항목 코드 — limit_item_kind 프리셋의 열 식별자';
+
+
+--
+-- Name: tbl_ccp_htg_monitor_cell_idx_seq; Type: SEQUENCE; Schema: sasshaccp; Owner: -
+--
+
+ALTER TABLE sasshaccp.tbl_ccp_htg_monitor_cell ALTER COLUMN idx ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME sasshaccp.tbl_ccp_htg_monitor_cell_idx_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -471,11 +471,11 @@ ALTER TABLE sasshaccp.tbl_ccp_generic_monitor_cell ALTER COLUMN idx ADD GENERATE
 
 
 --
--- Name: tbl_ccp_generic_monitor_idx_seq; Type: SEQUENCE; Schema: sasshaccp; Owner: -
+-- Name: tbl_ccp_htg_monitor_idx_seq; Type: SEQUENCE; Schema: sasshaccp; Owner: -
 --
 
-ALTER TABLE sasshaccp.tbl_ccp_generic_monitor ALTER COLUMN idx ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME sasshaccp.tbl_ccp_generic_monitor_idx_seq
+ALTER TABLE sasshaccp.tbl_ccp_htg_monitor ALTER COLUMN idx ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME sasshaccp.tbl_ccp_htg_monitor_idx_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -485,10 +485,10 @@ ALTER TABLE sasshaccp.tbl_ccp_generic_monitor ALTER COLUMN idx ADD GENERATED ALW
 
 
 --
--- Name: tbl_ccp_generic_monitor_row; Type: TABLE; Schema: sasshaccp; Owner: -
+-- Name: tbl_ccp_htg_monitor_row; Type: TABLE; Schema: sasshaccp; Owner: -
 --
 
-CREATE TABLE sasshaccp.tbl_ccp_generic_monitor_row (
+CREATE TABLE sasshaccp.tbl_ccp_htg_monitor_row (
     idx bigint NOT NULL,
     co_cd character varying(10) NOT NULL,
     monitor_idx bigint NOT NULL,
@@ -510,25 +510,177 @@ CREATE TABLE sasshaccp.tbl_ccp_generic_monitor_row (
 
 
 --
--- Name: TABLE tbl_ccp_generic_monitor_row; Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: TABLE tbl_ccp_htg_monitor_row; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON TABLE sasshaccp.tbl_ccp_generic_monitor_row IS '공통 CCP 점검 행 — 시간별 측정·판정·점검자';
-
-
---
--- Name: COLUMN tbl_ccp_generic_monitor_row.sign_img; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_ccp_generic_monitor_row.sign_img IS '행 서명 이미지 바이너리 — 서명 적용 시점 tbl_user.sign_img 스냅샷';
+COMMENT ON TABLE sasshaccp.tbl_ccp_htg_monitor_row IS 'CCP 가열 점검 행 — 시간별 측정·판정·점검자';
 
 
 --
--- Name: tbl_ccp_generic_monitor_row_idx_seq; Type: SEQUENCE; Schema: sasshaccp; Owner: -
+-- Name: COLUMN tbl_ccp_htg_monitor_row.sign_img; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-ALTER TABLE sasshaccp.tbl_ccp_generic_monitor_row ALTER COLUMN idx ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME sasshaccp.tbl_ccp_generic_monitor_row_idx_seq
+COMMENT ON COLUMN sasshaccp.tbl_ccp_htg_monitor_row.sign_img IS '행 서명 이미지 바이너리 — 서명 적용 시점 tbl_user.sign_img 스냅샷';
+
+
+--
+-- Name: tbl_ccp_htg_monitor_row_idx_seq; Type: SEQUENCE; Schema: sasshaccp; Owner: -
+--
+
+ALTER TABLE sasshaccp.tbl_ccp_htg_monitor_row ALTER COLUMN idx ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME sasshaccp.tbl_ccp_htg_monitor_row_idx_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: tbl_ccp_pkg_monitor; Type: TABLE; Schema: sasshaccp; Owner: -
+--
+
+CREATE TABLE sasshaccp.tbl_ccp_pkg_monitor (
+    idx bigint NOT NULL,
+    co_cd character varying(10) NOT NULL,
+    doc_idx bigint NOT NULL,
+    base_dt character varying(8) NOT NULL,
+    tmpl_cd character varying(40) NOT NULL,
+    ccp_cd character varying(30),
+    diary_no character varying(20),
+    limit_item_kind character varying(30),
+    mng_user_id character varying(20),
+    mng_nm character varying(50),
+    form_src character varying(10) DEFAULT 'BASE'::character varying NOT NULL,
+    co_form_idx bigint,
+    ins_id character varying(20),
+    ins_dt timestamp without time zone DEFAULT now() NOT NULL,
+    upd_id character varying(20),
+    upd_dt timestamp without time zone
+);
+
+
+--
+-- Name: TABLE tbl_ccp_pkg_monitor; Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON TABLE sasshaccp.tbl_ccp_pkg_monitor IS 'CCP 포장 모니터링 헤더 — 표준기준서 포장공정 기록';
+
+
+--
+-- Name: COLUMN tbl_ccp_pkg_monitor.form_src; Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON COLUMN sasshaccp.tbl_ccp_pkg_monitor.form_src IS '작성 양식 출처 — BASE 또는 CUSTOM. 과거 양식 이력 보존';
+
+
+--
+-- Name: tbl_ccp_pkg_monitor_cell; Type: TABLE; Schema: sasshaccp; Owner: -
+--
+
+CREATE TABLE sasshaccp.tbl_ccp_pkg_monitor_cell (
+    idx bigint NOT NULL,
+    co_cd character varying(10) NOT NULL,
+    row_idx bigint NOT NULL,
+    item_cd character varying(30) NOT NULL,
+    num_val numeric(14,3),
+    txt_val character varying(500),
+    judge_cd character varying(1),
+    ins_id character varying(20),
+    ins_dt timestamp without time zone DEFAULT now() NOT NULL,
+    upd_id character varying(20),
+    upd_dt timestamp without time zone
+);
+
+
+--
+-- Name: TABLE tbl_ccp_pkg_monitor_cell; Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON TABLE sasshaccp.tbl_ccp_pkg_monitor_cell IS 'CCP 포장 측정 셀 — 수치 또는 텍스트 값과 항목별 판정';
+
+
+--
+-- Name: COLUMN tbl_ccp_pkg_monitor_cell.item_cd; Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON COLUMN sasshaccp.tbl_ccp_pkg_monitor_cell.item_cd IS '한계항목 코드 — limit_item_kind 프리셋의 열 식별자';
+
+
+--
+-- Name: tbl_ccp_pkg_monitor_cell_idx_seq; Type: SEQUENCE; Schema: sasshaccp; Owner: -
+--
+
+ALTER TABLE sasshaccp.tbl_ccp_pkg_monitor_cell ALTER COLUMN idx ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME sasshaccp.tbl_ccp_pkg_monitor_cell_idx_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: tbl_ccp_pkg_monitor_idx_seq; Type: SEQUENCE; Schema: sasshaccp; Owner: -
+--
+
+ALTER TABLE sasshaccp.tbl_ccp_pkg_monitor ALTER COLUMN idx ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME sasshaccp.tbl_ccp_pkg_monitor_idx_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: tbl_ccp_pkg_monitor_row; Type: TABLE; Schema: sasshaccp; Owner: -
+--
+
+CREATE TABLE sasshaccp.tbl_ccp_pkg_monitor_row (
+    idx bigint NOT NULL,
+    co_cd character varying(10) NOT NULL,
+    monitor_idx bigint NOT NULL,
+    row_seq integer NOT NULL,
+    check_time character varying(10),
+    judge_cd character varying(1),
+    judge_mod_yn character varying(1) DEFAULT 'N'::character varying NOT NULL,
+    checker_id character varying(20),
+    checker_nm character varying(50),
+    ins_id character varying(20),
+    ins_dt timestamp without time zone DEFAULT now() NOT NULL,
+    upd_id character varying(20),
+    upd_dt timestamp without time zone,
+    equip_nm character varying(100),
+    product_nm character varying(100),
+    phase_cd character varying(20),
+    sign_img bytea
+);
+
+
+--
+-- Name: TABLE tbl_ccp_pkg_monitor_row; Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON TABLE sasshaccp.tbl_ccp_pkg_monitor_row IS 'CCP 포장 점검 행 — 시간별 측정·판정·점검자';
+
+
+--
+-- Name: COLUMN tbl_ccp_pkg_monitor_row.sign_img; Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON COLUMN sasshaccp.tbl_ccp_pkg_monitor_row.sign_img IS '행 서명 이미지 바이너리 — 서명 적용 시점 tbl_user.sign_img 스냅샷';
+
+
+--
+-- Name: tbl_ccp_pkg_monitor_row_idx_seq; Type: SEQUENCE; Schema: sasshaccp; Owner: -
+--
+
+ALTER TABLE sasshaccp.tbl_ccp_pkg_monitor_row ALTER COLUMN idx ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME sasshaccp.tbl_ccp_pkg_monitor_row_idx_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -5970,27 +6122,51 @@ ALTER TABLE ONLY sasshaccp.tbl_audit_log
 
 
 --
--- Name: tbl_ccp_generic_monitor_cell tbl_ccp_generic_monitor_cell_pkey; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
+-- Name: tbl_ccp_htg_monitor_cell tbl_ccp_htg_monitor_cell_pkey; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
 --
 
-ALTER TABLE ONLY sasshaccp.tbl_ccp_generic_monitor_cell
-    ADD CONSTRAINT tbl_ccp_generic_monitor_cell_pkey PRIMARY KEY (idx);
-
-
---
--- Name: tbl_ccp_generic_monitor tbl_ccp_generic_monitor_pkey; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
---
-
-ALTER TABLE ONLY sasshaccp.tbl_ccp_generic_monitor
-    ADD CONSTRAINT tbl_ccp_generic_monitor_pkey PRIMARY KEY (idx);
+ALTER TABLE ONLY sasshaccp.tbl_ccp_htg_monitor_cell
+    ADD CONSTRAINT tbl_ccp_htg_monitor_cell_pkey PRIMARY KEY (idx);
 
 
 --
--- Name: tbl_ccp_generic_monitor_row tbl_ccp_generic_monitor_row_pkey; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
+-- Name: tbl_ccp_htg_monitor tbl_ccp_htg_monitor_pkey; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
 --
 
-ALTER TABLE ONLY sasshaccp.tbl_ccp_generic_monitor_row
-    ADD CONSTRAINT tbl_ccp_generic_monitor_row_pkey PRIMARY KEY (idx);
+ALTER TABLE ONLY sasshaccp.tbl_ccp_htg_monitor
+    ADD CONSTRAINT tbl_ccp_htg_monitor_pkey PRIMARY KEY (idx);
+
+
+--
+-- Name: tbl_ccp_htg_monitor_row tbl_ccp_htg_monitor_row_pkey; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
+--
+
+ALTER TABLE ONLY sasshaccp.tbl_ccp_htg_monitor_row
+    ADD CONSTRAINT tbl_ccp_htg_monitor_row_pkey PRIMARY KEY (idx);
+
+
+--
+-- Name: tbl_ccp_pkg_monitor_cell tbl_ccp_pkg_monitor_cell_pkey; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
+--
+
+ALTER TABLE ONLY sasshaccp.tbl_ccp_pkg_monitor_cell
+    ADD CONSTRAINT tbl_ccp_pkg_monitor_cell_pkey PRIMARY KEY (idx);
+
+
+--
+-- Name: tbl_ccp_pkg_monitor tbl_ccp_pkg_monitor_pkey; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
+--
+
+ALTER TABLE ONLY sasshaccp.tbl_ccp_pkg_monitor
+    ADD CONSTRAINT tbl_ccp_pkg_monitor_pkey PRIMARY KEY (idx);
+
+
+--
+-- Name: tbl_ccp_pkg_monitor_row tbl_ccp_pkg_monitor_row_pkey; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
+--
+
+ALTER TABLE ONLY sasshaccp.tbl_ccp_pkg_monitor_row
+    ADD CONSTRAINT tbl_ccp_pkg_monitor_row_pkey PRIMARY KEY (idx);
 
 
 --
@@ -6379,27 +6555,51 @@ ALTER TABLE ONLY sasshaccp.tbl_approval_line_step
 
 
 --
--- Name: tbl_ccp_generic_monitor_cell ux_tbl_ccp_generic_monitor_cell; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
+-- Name: tbl_ccp_htg_monitor_cell ux_tbl_ccp_htg_monitor_cell; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
 --
 
-ALTER TABLE ONLY sasshaccp.tbl_ccp_generic_monitor_cell
-    ADD CONSTRAINT ux_tbl_ccp_generic_monitor_cell UNIQUE (row_idx, item_cd);
-
-
---
--- Name: tbl_ccp_generic_monitor ux_tbl_ccp_generic_monitor_doc; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
---
-
-ALTER TABLE ONLY sasshaccp.tbl_ccp_generic_monitor
-    ADD CONSTRAINT ux_tbl_ccp_generic_monitor_doc UNIQUE (doc_idx);
+ALTER TABLE ONLY sasshaccp.tbl_ccp_htg_monitor_cell
+    ADD CONSTRAINT ux_tbl_ccp_htg_monitor_cell UNIQUE (row_idx, item_cd);
 
 
 --
--- Name: tbl_ccp_generic_monitor_row ux_tbl_ccp_generic_monitor_row; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
+-- Name: tbl_ccp_htg_monitor ux_tbl_ccp_htg_monitor_doc; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
 --
 
-ALTER TABLE ONLY sasshaccp.tbl_ccp_generic_monitor_row
-    ADD CONSTRAINT ux_tbl_ccp_generic_monitor_row UNIQUE (monitor_idx, row_seq);
+ALTER TABLE ONLY sasshaccp.tbl_ccp_htg_monitor
+    ADD CONSTRAINT ux_tbl_ccp_htg_monitor_doc UNIQUE (doc_idx);
+
+
+--
+-- Name: tbl_ccp_htg_monitor_row ux_tbl_ccp_htg_monitor_row; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
+--
+
+ALTER TABLE ONLY sasshaccp.tbl_ccp_htg_monitor_row
+    ADD CONSTRAINT ux_tbl_ccp_htg_monitor_row UNIQUE (monitor_idx, row_seq);
+
+
+--
+-- Name: tbl_ccp_pkg_monitor_cell ux_tbl_ccp_pkg_monitor_cell; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
+--
+
+ALTER TABLE ONLY sasshaccp.tbl_ccp_pkg_monitor_cell
+    ADD CONSTRAINT ux_tbl_ccp_pkg_monitor_cell UNIQUE (row_idx, item_cd);
+
+
+--
+-- Name: tbl_ccp_pkg_monitor ux_tbl_ccp_pkg_monitor_doc; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
+--
+
+ALTER TABLE ONLY sasshaccp.tbl_ccp_pkg_monitor
+    ADD CONSTRAINT ux_tbl_ccp_pkg_monitor_doc UNIQUE (doc_idx);
+
+
+--
+-- Name: tbl_ccp_pkg_monitor_row ux_tbl_ccp_pkg_monitor_row; Type: CONSTRAINT; Schema: sasshaccp; Owner: -
+--
+
+ALTER TABLE ONLY sasshaccp.tbl_ccp_pkg_monitor_row
+    ADD CONSTRAINT ux_tbl_ccp_pkg_monitor_row UNIQUE (monitor_idx, row_seq);
 
 
 --
@@ -7052,7 +7252,7 @@ CREATE UNIQUE INDEX ux_tbl_html_ccp_pkg_ver_cd ON sasshaccp.tbl_html_ccp_pkg_ver
 --
 -- 금속검출 감도점검 행의 시각 칸이 varchar(4) 였다. 화면이 보내는 값은 `09:10` 로 5자라
 -- 저장·전송이 전부 22001(문자열 잘림)로 막혔다 — 금속검출 일지를 한 장도 못 썼다.
--- 나머지 CCP 표(tbl_ccp_generic_monitor_row.check_time)는 처음부터 varchar(10) 이고
+-- 나머지 CCP 표(tbl_ccp_pkg_monitor_row.check_time · tbl_ccp_htg_monitor_row.check_time)는 처음부터 varchar(10) 이고
 -- 실제로 `09:00` 5자가 들어 있다. 금속만 좁았다. 그 표에 맞춘다.
 --
 -- 넓히는 방향이라 자료가 깎이지 않는다. 위 CREATE TABLE 은 새 DB 용이고,

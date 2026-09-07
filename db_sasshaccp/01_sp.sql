@@ -32,6 +32,13 @@ DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_menu_sort_encode_u_000(character varyi
 DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_document_appr_inbox_r_000(character varying, character varying, character varying, character varying, character varying);
 DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_document_appr_hist_r_000(character varying, character varying, character varying, character varying, character varying);
 
+DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_generic_monitor_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying, character varying, character varying, jsonb, character varying);
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_generic_monitor_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying, character varying, character varying, jsonb, character varying, character varying);
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_generic_monitor_r_000(character varying, bigint);
+DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_ccp_generic_monitor_d_000(character varying, bigint, character varying);
+
 -- Name: sp_audit_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
@@ -82,12 +89,11 @@ COMMENT ON FUNCTION sasshaccp.sp_audit_log_r_000(p_co_cd character varying, p_fr
 
 
 --
--- Name: sp_ccp_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_ccp_pkg_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
-DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
-CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, title character varying)
+DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_pkg_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_pkg_log_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, title character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx, m.idx,
@@ -97,19 +103,19 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying,
            d.writer_id,
            COALESCE(u.user_nm, d.writer_id, '')::varchar,
            d.status,
-           (SELECT count(*)::int FROM tbl_ccp_generic_monitor_row r WHERE r.monitor_idx = m.idx AND r.co_cd = m.co_cd),
-           (SELECT count(*)::int FROM tbl_ccp_generic_monitor_row r WHERE r.monitor_idx = m.idx AND r.co_cd = m.co_cd AND r.judge_cd = 'F'),
+           (SELECT count(*)::int FROM tbl_ccp_pkg_monitor_row r WHERE r.monitor_idx = m.idx AND r.co_cd = m.co_cd),
+           (SELECT count(*)::int FROM tbl_ccp_pkg_monitor_row r WHERE r.monitor_idx = m.idx AND r.co_cd = m.co_cd AND r.judge_cd = 'F'),
            d.title
       FROM tbl_document d
-      JOIN tbl_ccp_generic_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
+      JOIN tbl_ccp_pkg_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
       -- 카탈로그는 자사 행만. 시드가 업체에 복사한다
       LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd AND t.co_cd = d.co_cd
       LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
       LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
      WHERE d.co_cd = p_co_cd AND d.del_yn = 'N'
        -- 이 화면은 해당 계열 자사 양식만 다룬다. 예시 000 은 제외
-       AND d.tmpl_cd LIKE p_tmpl_pfx || '%'
-       AND d.tmpl_cd <> p_tmpl_pfx || '000'
+       AND d.tmpl_cd LIKE 'html_ccp_pkg_%'
+       AND d.tmpl_cd <> 'html_ccp_pkg_000'
        AND (COALESCE(NULLIF(btrim(p_tmpl_cd), ''), '') = '' OR d.tmpl_cd ILIKE '%' || btrim(p_tmpl_cd) || '%')
        AND (COALESCE(NULLIF(btrim(p_tmpl_nm), ''), '') = ''
             OR COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm, '') ILIKE '%' || btrim(p_tmpl_nm) || '%')
@@ -123,10 +129,57 @@ $$;
 
 
 --
--- Name: FUNCTION sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: FUNCTION sp_ccp_pkg_log_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_ccp_log_r_000(p_co_cd character varying, p_tmpl_pfx character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying) IS 'CCP 포장·가열 작성 목록 — 양식군 접두로 가른다. 자사 양식만. 제목은 tbl_document.title 부분검색';
+COMMENT ON FUNCTION sasshaccp.sp_ccp_pkg_log_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying) IS 'CCP 포장 작성 목록 — 자사 양식만. 제목은 tbl_document.title 부분검색';
+
+
+--
+-- Name: sp_ccp_htg_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+
+DROP FUNCTION IF EXISTS sasshaccp.sp_ccp_htg_log_r_000(character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_htg_log_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying DEFAULT NULL::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, tmpl_cd character varying, tmpl_nm character varying, doc_no character varying, base_dt character varying, checker_nm character varying, writer_id character varying, writer_nm character varying, status character varying, row_cnt integer, ng_cnt integer, title character varying)
+    LANGUAGE sql STABLE
+    AS $$
+    SELECT d.idx, m.idx,
+           d.tmpl_cd,
+           COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm)::varchar,
+           d.doc_no, m.base_dt, m.mng_nm,
+           d.writer_id,
+           COALESCE(u.user_nm, d.writer_id, '')::varchar,
+           d.status,
+           (SELECT count(*)::int FROM tbl_ccp_htg_monitor_row r WHERE r.monitor_idx = m.idx AND r.co_cd = m.co_cd),
+           (SELECT count(*)::int FROM tbl_ccp_htg_monitor_row r WHERE r.monitor_idx = m.idx AND r.co_cd = m.co_cd AND r.judge_cd = 'F'),
+           d.title
+      FROM tbl_document d
+      JOIN tbl_ccp_htg_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
+      -- 카탈로그는 자사 행만. 시드가 업체에 복사한다
+      LEFT JOIN tbl_template t ON t.tmpl_cd = d.tmpl_cd AND t.co_cd = d.co_cd
+      LEFT JOIN tbl_company_template ct ON ct.co_cd = d.co_cd AND ct.tmpl_cd = d.tmpl_cd
+      LEFT JOIN tbl_user u ON u.co_cd = d.co_cd AND u.user_id = d.writer_id
+     WHERE d.co_cd = p_co_cd AND d.del_yn = 'N'
+       -- 이 화면은 해당 계열 자사 양식만 다룬다. 예시 000 은 제외
+       AND d.tmpl_cd LIKE 'html_ccp_htg_%'
+       AND d.tmpl_cd <> 'html_ccp_htg_000'
+       AND (COALESCE(NULLIF(btrim(p_tmpl_cd), ''), '') = '' OR d.tmpl_cd ILIKE '%' || btrim(p_tmpl_cd) || '%')
+       AND (COALESCE(NULLIF(btrim(p_tmpl_nm), ''), '') = ''
+            OR COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm, '') ILIKE '%' || btrim(p_tmpl_nm) || '%')
+       AND (COALESCE(NULLIF(btrim(p_from_dt), ''), '') = '' OR m.base_dt >= btrim(p_from_dt))
+       AND (COALESCE(NULLIF(btrim(p_to_dt), ''), '') = '' OR m.base_dt <= btrim(p_to_dt))
+       AND (COALESCE(NULLIF(btrim(p_writer_id), ''), '') = '' OR COALESCE(d.writer_id, '') ILIKE '%' || btrim(p_writer_id) || '%')
+       AND (COALESCE(NULLIF(btrim(p_writer_nm), ''), '') = '' OR COALESCE(u.user_nm, '') ILIKE '%' || btrim(p_writer_nm) || '%')
+       AND (COALESCE(NULLIF(btrim(p_title), ''), '') = '' OR COALESCE(d.title, '') ILIKE '%' || btrim(p_title) || '%')
+     ORDER BY m.base_dt DESC, d.doc_no DESC;
+$$;
+
+
+--
+-- Name: FUNCTION sp_ccp_htg_log_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_remark character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON FUNCTION sasshaccp.sp_ccp_htg_log_r_000(p_co_cd character varying, p_tmpl_cd character varying, p_tmpl_nm character varying, p_from_dt character varying, p_to_dt character varying, p_writer_id character varying, p_writer_nm character varying, p_title character varying) IS 'CCP 가열 작성 목록 — 자사 양식만. 제목은 tbl_document.title 부분검색';
 
 
 --
@@ -2383,11 +2436,11 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_audit_log_c_000(IN p_co_cd character varyi
 
 
 --
--- Name: sp_tbl_ccp_generic_monitor_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying, character varying, character varying, jsonb, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_ccp_htg_monitor_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying, character varying, character varying, jsonb, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_generic_monitor_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying, character varying, character varying, jsonb, character varying);
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying, p_title character varying DEFAULT NULL::character varying) RETURNS bigint
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_htg_monitor_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying, character varying, character varying, jsonb, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_htg_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying, p_title character varying DEFAULT NULL::character varying) RETURNS bigint
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -2410,7 +2463,7 @@ BEGIN
         RAISE EXCEPTION '점검 행이 없습니다.' USING ERRCODE = '45000';
     END IF;
     -- 양식명·결재선·보존기간 — 자사 양식은 tbl_company_template 오버라이드가 우선
-    SELECT coalesce(nullif(ct.tmpl_nm_ovr, ''), nullif(t.tmpl_nm, ''), '공통 CCP 모니터링'),
+    SELECT coalesce(nullif(ct.tmpl_nm_ovr, ''), nullif(t.tmpl_nm, ''), 'CCP 가열 모니터링'),
            COALESCE(ct.appr_line_cd, 'DEFAULT'),
            COALESCE(ct.retention_month, t.default_retention_month)
       INTO v_title, v_appr, v_retain
@@ -2418,7 +2471,7 @@ BEGIN
       LEFT JOIN tbl_company_template ct ON ct.co_cd = p_co_cd AND ct.tmpl_cd = t.tmpl_cd AND ct.use_yn = 'Y'
      WHERE t.tmpl_cd = p_tmpl_cd AND t.doc_kind = 'HTML' AND t.use_yn = 'Y' AND t.co_cd = p_co_cd;
     IF v_title IS NULL THEN
-        RAISE EXCEPTION '사용할 공통 CCP 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000';
+        RAISE EXCEPTION '사용할 CCP 가열 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000';
     END IF;
 
     IF coalesce(p_doc_idx, 0) <= 0 THEN
@@ -2439,7 +2492,7 @@ BEGIN
             to_char((to_date(p_base_dt, 'YYYYMMDD') + (COALESCE(v_retain, 24) || ' months')::interval)::date, 'YYYYMMDD'),
             'BASE', 'N', p_id
         ) RETURNING idx INTO v_doc_idx;
-        INSERT INTO tbl_ccp_generic_monitor (
+        INSERT INTO tbl_ccp_htg_monitor (
             co_cd, doc_idx, base_dt, tmpl_cd, ccp_cd, diary_no, limit_item_kind, mng_user_id, mng_nm, ins_id
         ) VALUES (
             p_co_cd, v_doc_idx, p_base_dt, p_tmpl_cd, nullif(p_ccp_cd, ''), nullif(p_diary_no, ''),
@@ -2447,7 +2500,7 @@ BEGIN
         ) RETURNING idx INTO v_monitor_idx;
     ELSE
         SELECT m.idx INTO v_monitor_idx
-          FROM tbl_ccp_generic_monitor m
+          FROM tbl_ccp_htg_monitor m
           -- 모니터 행과 문서를 같은 회사로만 잇는다 — idx 만 보면 타사 문서에 붙을 수 있다
           JOIN tbl_document d ON d.idx = m.doc_idx AND d.co_cd = m.co_cd
          WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx AND d.del_yn = 'N' AND d.status IN ('WRK', 'RJT');
@@ -2460,20 +2513,20 @@ BEGIN
             title = COALESCE(NULLIF(btrim(COALESCE(p_title, '')), ''), title),
             upd_id = p_id, upd_dt = now()
          WHERE idx = v_doc_idx AND co_cd = p_co_cd;
-        UPDATE tbl_ccp_generic_monitor
+        UPDATE tbl_ccp_htg_monitor
            SET base_dt = p_base_dt, tmpl_cd = p_tmpl_cd, ccp_cd = nullif(p_ccp_cd, ''),
                diary_no = nullif(p_diary_no, ''), limit_item_kind = nullif(p_limit_item_kind, ''),
                mng_user_id = nullif(p_mng_user_id, ''), mng_nm = nullif(p_mng_nm, ''), upd_id = p_id, upd_dt = now()
          WHERE idx = v_monitor_idx AND co_cd = p_co_cd;
-        DELETE FROM tbl_ccp_generic_monitor_cell c
-         USING tbl_ccp_generic_monitor_row r
+        DELETE FROM tbl_ccp_htg_monitor_cell c
+         USING tbl_ccp_htg_monitor_row r
          WHERE c.row_idx = r.idx AND r.monitor_idx = v_monitor_idx AND r.co_cd = p_co_cd;
-        DELETE FROM tbl_ccp_generic_monitor_row WHERE monitor_idx = v_monitor_idx AND co_cd = p_co_cd;
+        DELETE FROM tbl_ccp_htg_monitor_row WHERE monitor_idx = v_monitor_idx AND co_cd = p_co_cd;
     END IF;
 
     FOR v_row IN SELECT value FROM jsonb_array_elements(p_rows)
     LOOP
-        INSERT INTO tbl_ccp_generic_monitor_row (
+        INSERT INTO tbl_ccp_htg_monitor_row (
             co_cd, monitor_idx, row_seq, phase_cd, check_time, equip_nm, product_nm,
             judge_cd, judge_mod_yn, checker_id, checker_nm, sign_img, ins_id
         ) VALUES (
@@ -2493,7 +2546,7 @@ BEGIN
         ) RETURNING idx INTO v_row_idx;
         FOR v_cell IN SELECT value FROM jsonb_array_elements(coalesce(v_row->'cells', '[]'::jsonb))
         LOOP
-            INSERT INTO tbl_ccp_generic_monitor_cell (
+            INSERT INTO tbl_ccp_htg_monitor_cell (
                 co_cd, row_idx, item_cd, num_val, txt_val, judge_cd, ins_id
             ) VALUES (
                 p_co_cd, v_row_idx, v_cell->>'itemCd',
@@ -2508,17 +2561,17 @@ END$$;
 
 
 --
--- Name: FUNCTION sp_tbl_ccp_generic_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: FUNCTION sp_tbl_ccp_htg_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying, p_title character varying) IS '공통 CCP 저장 — 제목이 있으면 그 값, 없으면 신규는 양식명·수정은 기존 title';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_htg_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying, p_title character varying) IS 'CCP 가열 저장 — 제목이 있으면 그 값, 없으면 신규는 양식명·수정은 기존 title';
 
 
 --
--- Name: sp_tbl_ccp_generic_monitor_d_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_ccp_htg_monitor_d_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_ccp_generic_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_ccp_htg_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -2532,7 +2585,7 @@ BEGIN
     SELECT d.status, m.idx
       INTO v_status, v_monitor_idx
       FROM tbl_document d
-      JOIN tbl_ccp_generic_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
+      JOIN tbl_ccp_htg_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
      WHERE d.co_cd = p_co_cd
        AND d.idx = p_doc_idx
        AND d.del_yn = 'N';
@@ -2550,14 +2603,14 @@ BEGIN
      WHERE co_cd = p_co_cd AND src_doc_idx = p_doc_idx
        AND status <> 'DONE';
 
-    DELETE FROM tbl_ccp_generic_monitor_cell c
-     USING tbl_ccp_generic_monitor_row r
+    DELETE FROM tbl_ccp_htg_monitor_cell c
+     USING tbl_ccp_htg_monitor_row r
      WHERE c.row_idx = r.idx AND r.monitor_idx = v_monitor_idx AND r.co_cd = p_co_cd;
 
-    DELETE FROM tbl_ccp_generic_monitor_row
+    DELETE FROM tbl_ccp_htg_monitor_row
      WHERE monitor_idx = v_monitor_idx AND co_cd = p_co_cd;
 
-    DELETE FROM tbl_ccp_generic_monitor
+    DELETE FROM tbl_ccp_htg_monitor
      WHERE idx = v_monitor_idx AND co_cd = p_co_cd;
 
     DELETE FROM tbl_document_approval
@@ -2573,17 +2626,17 @@ $$;
 
 
 --
--- Name: PROCEDURE sp_tbl_ccp_generic_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: PROCEDURE sp_tbl_ccp_htg_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_ccp_generic_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying) IS '공통 CCP 모니터링 삭제 — 작성중·반려만';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_ccp_htg_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying) IS 'CCP 가열 모니터링 삭제 — 작성중·반려만';
 
 
 --
--- Name: sp_tbl_ccp_generic_monitor_r_000(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_ccp_htg_monitor_r_000(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(doc_idx bigint, doc_no character varying, status character varying, base_dt character varying, tmpl_cd character varying, ccp_cd character varying, diary_no character varying, limit_item_kind character varying, mng_user_id character varying, mng_nm character varying, rows_json jsonb)
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_htg_monitor_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(doc_idx bigint, doc_no character varying, status character varying, base_dt character varying, tmpl_cd character varying, ccp_cd character varying, diary_no character varying, limit_item_kind character varying, mng_user_id character varying, mng_nm character varying, rows_json jsonb)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -2621,25 +2674,285 @@ BEGIN
                                                  'judgeCd', c.judge_cd
                                              ) ORDER BY c.item_cd
                                          )
-                                    FROM tbl_ccp_generic_monitor_cell c
+                                    FROM tbl_ccp_htg_monitor_cell c
                                    WHERE c.row_idx = r.idx AND c.co_cd = r.co_cd
                               ), '[]'::jsonb)
                           ) ORDER BY r.row_seq
                       )
-                 FROM tbl_ccp_generic_monitor_row r
+                 FROM tbl_ccp_htg_monitor_row r
                 WHERE r.monitor_idx = m.idx AND r.co_cd = m.co_cd
            ), '[]'::jsonb) AS rows_json
       FROM tbl_document d
-      JOIN tbl_ccp_generic_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
+      JOIN tbl_ccp_htg_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
      WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.del_yn = 'N';
 END$$;
 
 
 --
--- Name: FUNCTION sp_tbl_ccp_generic_monitor_r_000(p_co_cd character varying, p_doc_idx bigint); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: FUNCTION sp_tbl_ccp_htg_monitor_r_000(p_co_cd character varying, p_doc_idx bigint); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_generic_monitor_r_000(p_co_cd character varying, p_doc_idx bigint) IS '공통 CCP 상세 — 124에서 rows_json 에 phaseCd 추가';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_htg_monitor_r_000(p_co_cd character varying, p_doc_idx bigint) IS 'CCP 가열 상세 — 124에서 rows_json 에 phaseCd 추가';
+
+
+--
+-- Name: sp_tbl_ccp_pkg_monitor_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying, character varying, character varying, jsonb, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_pkg_monitor_c_000(character varying, bigint, character varying, character varying, character varying, character varying, character varying, character varying, character varying, jsonb, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_pkg_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying, p_title character varying DEFAULT NULL::character varying) RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_doc_idx bigint;
+    v_monitor_idx bigint;
+    v_doc_no varchar;
+    v_title varchar(300);
+    v_appr varchar;
+    v_retain int;
+    v_row jsonb;
+    v_cell jsonb;
+    v_row_idx bigint;
+BEGIN
+    -- 형제 저장 SP 셋(sp_ccp_verify_c_000·sp_tbl_ccp_metal_monitor_c_000·sp_tbl_hyg_process_c_000)은
+    -- 다 막는데 여기만 없었다. 아래에서 to_date·채번·varchar(8) 로 그대로 흘러간다
+    IF COALESCE(p_base_dt, '') = '' OR p_base_dt !~ '^[0-9]{8}$' THEN
+        RAISE EXCEPTION '작성일은 YYYYMMDD 8자리로 입력하세요.' USING ERRCODE = '45000';
+    END IF;
+    IF jsonb_typeof(p_rows) <> 'array' OR jsonb_array_length(p_rows) = 0 THEN
+        RAISE EXCEPTION '점검 행이 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    -- 양식명·결재선·보존기간 — 자사 양식은 tbl_company_template 오버라이드가 우선
+    SELECT coalesce(nullif(ct.tmpl_nm_ovr, ''), nullif(t.tmpl_nm, ''), 'CCP 포장 모니터링'),
+           COALESCE(ct.appr_line_cd, 'DEFAULT'),
+           COALESCE(ct.retention_month, t.default_retention_month)
+      INTO v_title, v_appr, v_retain
+      FROM tbl_template t
+      LEFT JOIN tbl_company_template ct ON ct.co_cd = p_co_cd AND ct.tmpl_cd = t.tmpl_cd AND ct.use_yn = 'Y'
+     WHERE t.tmpl_cd = p_tmpl_cd AND t.doc_kind = 'HTML' AND t.use_yn = 'Y' AND t.co_cd = p_co_cd;
+    IF v_title IS NULL THEN
+        RAISE EXCEPTION '사용할 CCP 포장 양식이 등록되어 있지 않습니다.' USING ERRCODE = '45000';
+    END IF;
+
+    IF coalesce(p_doc_idx, 0) <= 0 THEN
+        -- 자사 양식 복사 SP 는 채번 규칙을 만들지 않는다. 없을 때만 기본 규칙을 깐다
+        INSERT INTO tbl_doc_no_rule (co_cd, tmpl_cd, prefix, date_fmt, seq_len, reset_cycle, ins_id, ins_dt)
+        VALUES (p_co_cd, p_tmpl_cd, left(p_tmpl_cd, 20), 'YYYYMMDD', 3, 'D', p_id, now())
+        ON CONFLICT (co_cd, tmpl_cd) DO NOTHING;
+
+        v_doc_no := sp_tbl_doc_no_gen_c_000(p_co_cd, p_tmpl_cd, p_base_dt);
+        INSERT INTO tbl_document (
+            co_cd, tmpl_cd, doc_kind, doc_no, base_dt, title, status, appr_line_cd,
+            writer_id, write_dt, ver_no, retention_until, form_src, del_yn, ins_id
+        ) VALUES (
+            p_co_cd, p_tmpl_cd, 'HTML', v_doc_no, p_base_dt,
+            COALESCE(NULLIF(btrim(COALESCE(p_title, '')), ''), v_title),
+            'WRK', v_appr,
+            p_id, now(), 1,
+            to_char((to_date(p_base_dt, 'YYYYMMDD') + (COALESCE(v_retain, 24) || ' months')::interval)::date, 'YYYYMMDD'),
+            'BASE', 'N', p_id
+        ) RETURNING idx INTO v_doc_idx;
+        INSERT INTO tbl_ccp_pkg_monitor (
+            co_cd, doc_idx, base_dt, tmpl_cd, ccp_cd, diary_no, limit_item_kind, mng_user_id, mng_nm, ins_id
+        ) VALUES (
+            p_co_cd, v_doc_idx, p_base_dt, p_tmpl_cd, nullif(p_ccp_cd, ''), nullif(p_diary_no, ''),
+            nullif(p_limit_item_kind, ''), nullif(p_mng_user_id, ''), nullif(p_mng_nm, ''), p_id
+        ) RETURNING idx INTO v_monitor_idx;
+    ELSE
+        SELECT m.idx INTO v_monitor_idx
+          FROM tbl_ccp_pkg_monitor m
+          -- 모니터 행과 문서를 같은 회사로만 잇는다 — idx 만 보면 타사 문서에 붙을 수 있다
+          JOIN tbl_document d ON d.idx = m.doc_idx AND d.co_cd = m.co_cd
+         WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx AND d.del_yn = 'N' AND d.status IN ('WRK', 'RJT');
+        IF v_monitor_idx IS NULL THEN
+            RAISE EXCEPTION '전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.' USING ERRCODE = '45000';
+        END IF;
+        v_doc_idx := p_doc_idx;
+        -- 제목이 넘어오면 그 값, 없으면 기존 title 유지
+        UPDATE tbl_document SET base_dt = p_base_dt,
+            title = COALESCE(NULLIF(btrim(COALESCE(p_title, '')), ''), title),
+            upd_id = p_id, upd_dt = now()
+         WHERE idx = v_doc_idx AND co_cd = p_co_cd;
+        UPDATE tbl_ccp_pkg_monitor
+           SET base_dt = p_base_dt, tmpl_cd = p_tmpl_cd, ccp_cd = nullif(p_ccp_cd, ''),
+               diary_no = nullif(p_diary_no, ''), limit_item_kind = nullif(p_limit_item_kind, ''),
+               mng_user_id = nullif(p_mng_user_id, ''), mng_nm = nullif(p_mng_nm, ''), upd_id = p_id, upd_dt = now()
+         WHERE idx = v_monitor_idx AND co_cd = p_co_cd;
+        DELETE FROM tbl_ccp_pkg_monitor_cell c
+         USING tbl_ccp_pkg_monitor_row r
+         WHERE c.row_idx = r.idx AND r.monitor_idx = v_monitor_idx AND r.co_cd = p_co_cd;
+        DELETE FROM tbl_ccp_pkg_monitor_row WHERE monitor_idx = v_monitor_idx AND co_cd = p_co_cd;
+    END IF;
+
+    FOR v_row IN SELECT value FROM jsonb_array_elements(p_rows)
+    LOOP
+        INSERT INTO tbl_ccp_pkg_monitor_row (
+            co_cd, monitor_idx, row_seq, phase_cd, check_time, equip_nm, product_nm,
+            judge_cd, judge_mod_yn, checker_id, checker_nm, sign_img, ins_id
+        ) VALUES (
+            p_co_cd, v_monitor_idx, coalesce(nullif(v_row->>'rowSeq', '')::int, 0),
+            -- 작업 전/작업 종료 구분 — 안 넘기면 NULL(기존 heat·sanitize·filter 화면)
+            nullif(v_row->>'phaseCd', ''),
+            nullif(v_row->>'checkTime', ''),
+            nullif(v_row->>'equipNm', ''), nullif(v_row->>'productNm', ''),
+            nullif(v_row->>'judgeCd', ''), coalesce(nullif(v_row->>'judgeModYn', ''), 'N'),
+            nullif(v_row->>'checkerId', ''), nullif(v_row->>'checkerNm', ''),
+            -- 서명은 signYn만 받고 검사자 서명 원본을 그 시점 값으로 복사한다
+            CASE WHEN COALESCE(v_row->>'signYn', 'N') = 'Y'
+                 THEN (SELECT u.sign_img FROM tbl_user u
+                        WHERE u.co_cd = p_co_cd
+                          AND u.user_id = nullif(v_row->>'checkerId', ''))
+                 ELSE NULL END, p_id
+        ) RETURNING idx INTO v_row_idx;
+        FOR v_cell IN SELECT value FROM jsonb_array_elements(coalesce(v_row->'cells', '[]'::jsonb))
+        LOOP
+            INSERT INTO tbl_ccp_pkg_monitor_cell (
+                co_cd, row_idx, item_cd, num_val, txt_val, judge_cd, ins_id
+            ) VALUES (
+                p_co_cd, v_row_idx, v_cell->>'itemCd',
+                nullif(v_cell->>'numVal', '')::numeric,
+                nullif(v_cell->>'txtVal', ''),
+                nullif(v_cell->>'judgeCd', ''), p_id
+            );
+        END LOOP;
+    END LOOP;
+    RETURN v_doc_idx;
+END$$;
+
+
+--
+-- Name: FUNCTION sp_tbl_ccp_pkg_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_pkg_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_tmpl_cd character varying, p_ccp_cd character varying, p_diary_no character varying, p_limit_item_kind character varying, p_mng_user_id character varying, p_mng_nm character varying, p_rows jsonb, p_id character varying, p_title character varying) IS 'CCP 포장 저장 — 제목이 있으면 그 값, 없으면 신규는 양식명·수정은 기존 title';
+
+
+--
+-- Name: sp_tbl_ccp_pkg_monitor_d_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+--
+
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_ccp_pkg_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_status varchar(4);
+    v_monitor_idx bigint;
+BEGIN
+    IF p_doc_idx IS NULL OR p_doc_idx = 0 THEN
+        RAISE EXCEPTION '삭제할 문서를 선택하세요.' USING ERRCODE = '45000';
+    END IF;
+
+    SELECT d.status, m.idx
+      INTO v_status, v_monitor_idx
+      FROM tbl_document d
+      JOIN tbl_ccp_pkg_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
+     WHERE d.co_cd = p_co_cd
+       AND d.idx = p_doc_idx
+       AND d.del_yn = 'N';
+
+    IF v_monitor_idx IS NULL THEN
+        RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    -- 작성중·반려일 때만 삭제 (TMP 폐기 후 WRK 정본)
+    IF v_status NOT IN ('WRK', 'RJT') THEN
+        RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 삭제할 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+
+    -- 완료(DONE)된 개선조치는 원문서를 지워도 남긴다 (형제 _d_000 셋과 같은 기준)
+    DELETE FROM tbl_corrective_action
+     WHERE co_cd = p_co_cd AND src_doc_idx = p_doc_idx
+       AND status <> 'DONE';
+
+    DELETE FROM tbl_ccp_pkg_monitor_cell c
+     USING tbl_ccp_pkg_monitor_row r
+     WHERE c.row_idx = r.idx AND r.monitor_idx = v_monitor_idx AND r.co_cd = p_co_cd;
+
+    DELETE FROM tbl_ccp_pkg_monitor_row
+     WHERE monitor_idx = v_monitor_idx AND co_cd = p_co_cd;
+
+    DELETE FROM tbl_ccp_pkg_monitor
+     WHERE idx = v_monitor_idx AND co_cd = p_co_cd;
+
+    DELETE FROM tbl_document_approval
+     WHERE doc_idx = p_doc_idx AND co_cd = p_co_cd;
+
+    DELETE FROM tbl_document_file
+     WHERE doc_idx = p_doc_idx AND co_cd = p_co_cd;
+
+    DELETE FROM tbl_document
+     WHERE idx = p_doc_idx AND co_cd = p_co_cd;
+END;
+$$;
+
+
+--
+-- Name: PROCEDURE sp_tbl_ccp_pkg_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_ccp_pkg_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying) IS 'CCP 포장 모니터링 삭제 — 작성중·반려만';
+
+
+--
+-- Name: sp_tbl_ccp_pkg_monitor_r_000(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_pkg_monitor_r_000(p_co_cd character varying, p_doc_idx bigint) RETURNS TABLE(doc_idx bigint, doc_no character varying, status character varying, base_dt character varying, tmpl_cd character varying, ccp_cd character varying, diary_no character varying, limit_item_kind character varying, mng_user_id character varying, mng_nm character varying, rows_json jsonb)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT d.idx AS doc_idx,
+           d.doc_no,
+           d.status,
+           m.base_dt,
+           m.tmpl_cd,
+           m.ccp_cd,
+           m.diary_no,
+           m.limit_item_kind,
+           m.mng_user_id,
+           m.mng_nm,
+           COALESCE((
+               SELECT jsonb_agg(
+                          jsonb_build_object(
+                              'rowSeq', r.row_seq,
+                              -- 작업 전/작업 종료 — 재조회 때 같은 영역에 다시 붙는다
+                              'phaseCd', COALESCE(r.phase_cd, ''),
+                              'checkTime', COALESCE(r.check_time, ''),
+                              'equipNm', COALESCE(r.equip_nm, ''),
+                              'productNm', COALESCE(r.product_nm, ''),
+                              'judgeCd', r.judge_cd,
+                              'judgeModYn', r.judge_mod_yn,
+                              'checkerId', COALESCE(r.checker_id, ''),
+                              'checkerNm', COALESCE(r.checker_nm, ''),
+                              'signYn', (CASE WHEN r.sign_img IS NOT NULL THEN 'Y' ELSE 'N' END),
+                              'cells', COALESCE((
+                                  SELECT jsonb_agg(
+                                             jsonb_build_object(
+                                                 'itemCd', c.item_cd,
+                                                 'numVal', c.num_val,
+                                                 'txtVal', COALESCE(c.txt_val, ''),
+                                                 'judgeCd', c.judge_cd
+                                             ) ORDER BY c.item_cd
+                                         )
+                                    FROM tbl_ccp_pkg_monitor_cell c
+                                   WHERE c.row_idx = r.idx AND c.co_cd = r.co_cd
+                              ), '[]'::jsonb)
+                          ) ORDER BY r.row_seq
+                      )
+                 FROM tbl_ccp_pkg_monitor_row r
+                WHERE r.monitor_idx = m.idx AND r.co_cd = m.co_cd
+           ), '[]'::jsonb) AS rows_json
+      FROM tbl_document d
+      JOIN tbl_ccp_pkg_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
+     WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.del_yn = 'N';
+END$$;
+
+
+--
+-- Name: FUNCTION sp_tbl_ccp_pkg_monitor_r_000(p_co_cd character varying, p_doc_idx bigint); Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_pkg_monitor_r_000(p_co_cd character varying, p_doc_idx bigint) IS 'CCP 포장 상세 — 124에서 rows_json 에 phaseCd 추가';
 
 
 --
@@ -2682,7 +2995,7 @@ BEGIN
     FOR r IN SELECT * FROM jsonb_array_elements(p_sens_rows_json) LOOP
         IF COALESCE((r->>'rowSeq')::int,0) <= 0 THEN RAISE EXCEPTION '감도 점검 행 순번이 올바르지 않습니다.' USING ERRCODE='45000'; END IF;
         /*
-         * 판정은 **사람이 정한 값을 그대로** 넣는다. 포장·가열(sp_tbl_ccp_generic_monitor_c_000)과 같다.
+         * 판정은 **사람이 정한 값을 그대로** 넣는다. 포장·가열(sp_tbl_ccp_pkg_monitor_c_000 · sp_tbl_ccp_htg_monitor_c_000)과 같다.
          *
          * 예전에는 감도 5칸으로 여기서 계산했다(O,O,X,O,O 면 적합). 두 가지가 어긋났다 —
          *   1) 뒤 세 열은 양식에서 「해당 없음」이 기본이라 고정행(작업 전·작업 종료)에는
@@ -2799,6 +3112,26 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_r_003(p_co_cd char
 $$;
 
 
+--
+-- Name: sp_tbl_company_r_000(); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_company_r_000() RETURNS TABLE(co_cd character varying)
+    LANGUAGE sql STABLE
+    AS $$
+    -- 활성 회사 — 정기 배치가 각 테넌트 과제를 멱등 생성. 인자가 없다(전 테넌트)
+    SELECT c.co_cd FROM tbl_company c WHERE c.use_yn = 'Y' ORDER BY c.co_cd;
+$$;
+
+
+--
+-- Name: FUNCTION sp_tbl_company_r_000(); Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON FUNCTION sasshaccp.sp_tbl_company_r_000() IS '활성 회사코드 목록 — 일일 과제 배치가 테넌트를 돈다';
+
+
+--
 -- Name: sp_tbl_company_template_delete_blocker_r_000(character varying, character varying[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
@@ -7043,6 +7376,75 @@ $$;
 
 COMMENT ON FUNCTION sasshaccp.sp_tbl_document_delete_blocker_r_000(character varying, bigint[])
     IS '문서 삭제 차단 — 전송·결재완료 문서 첫 건. 작성 6화면·문서 허브 공용';
+
+--
+-- Name: sp_tbl_document_seen_r_000(character varying, bigint); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_seen_r_000(
+    -- p_co_cd: JWT 회사코드 — 테넌트 범위
+    p_co_cd character varying,
+    -- p_doc_idx: tbl_document.idx
+    p_doc_idx bigint
+) RETURNS character varying
+    LANGUAGE sql STABLE
+    AS $$
+    SELECT to_char(COALESCE(d.upd_dt, d.ins_dt), 'YYYY-MM-DD"T"HH24:MI:SS.US')
+      FROM tbl_document d
+     WHERE d.co_cd = p_co_cd
+       AND d.idx = p_doc_idx
+       AND d.del_yn = 'N';
+$$;
+
+COMMENT ON FUNCTION sasshaccp.sp_tbl_document_seen_r_000(character varying, bigint)
+    IS '문서 초안 스탬프 — 상세가 화면에 내려줄 upd_dt(없으면 ins_dt). 작성 4서비스 공용';
+
+--
+-- Name: sp_tbl_document_assert_seen_r_000(character varying, bigint, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+--
+
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_assert_seen_r_000(
+    -- p_co_cd: JWT 회사코드
+    p_co_cd character varying,
+    -- p_doc_idx: tbl_document.idx — 0 이하면 검사 생략
+    p_doc_idx bigint,
+    -- p_seen: 화면이 상세에서 받은 스탬프. 비면 통과(신규·첫 저장)
+    p_seen character varying
+)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    -- 지금 DB 스탬프
+    v_cur character varying;
+BEGIN
+    -- 신규일 때(= 아직 문서 없음) 대조할 행이 없다
+    IF p_doc_idx IS NULL OR p_doc_idx <= 0 THEN
+        RETURN;
+    END IF;
+    -- 빈 스탬프일 때(= 화면이 아직 못 받음) 막지 않는다
+    IF p_seen IS NULL OR btrim(p_seen) = '' THEN
+        RETURN;
+    END IF;
+    SELECT to_char(COALESCE(d.upd_dt, d.ins_dt), 'YYYY-MM-DD"T"HH24:MI:SS.US')
+      INTO v_cur
+      FROM tbl_document d
+     WHERE d.co_cd = p_co_cd
+       AND d.idx = p_doc_idx
+       AND d.del_yn = 'N'
+     FOR UPDATE;
+    -- 없거나 삭제일 때(= 다른 탭이 지움)
+    IF v_cur IS NULL THEN
+        RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    -- 화면이 본 값과 다를 때(= 다른 사용자가 먼저 저장)
+    IF v_cur IS DISTINCT FROM btrim(p_seen) THEN
+        RAISE EXCEPTION '다른 사용자가 먼저 저장했습니다. 다시 조회 후 저장하세요.' USING ERRCODE = '45000';
+    END IF;
+END;
+$$;
+
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_assert_seen_r_000(character varying, bigint, character varying)
+    IS '문서 초안 동시 저장 대조 — 스탬프가 어긋나면 45000. 전 표 version 락이 아니다';
 
 --
 -- Name: sp_tbl_schedule_rule_active_r_000(); Type: FUNCTION; Schema: sasshaccp; Owner: -

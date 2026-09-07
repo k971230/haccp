@@ -3,27 +3,28 @@
 #  HACCP SaaS — PostgreSQL 일괄 적용
 #
 #  개발자: 박승우
-#  일자: 2026-08-26
+#  일자: 2026-09-07
 #  코멘트:
 #    1) 7본을 순서대로 적용한다 — 구조 → SP → 플랫폼 기준 → 공통코드 → 양식 → 업체 개설 → 회사 지면
-#    2) 빈 DB 전용이다. 00_ddl(CREATE SCHEMA·CREATE TABLE 에 IF NOT EXISTS 없음)과
-#       02_seed(ON CONFLICT 0건)가 재실행을 막는다 — 다시 깔려면 스키마부터 지운다.
-#       01_sp 는 CREATE OR REPLACE 라 다시 돌려도 된다
+#    2) 스키마 sasshaccp 가 있으면 00_ddl 을 건너뛰고 01_sp 부터 돌린다.
+#       00_ddl 을 IF NOT EXISTS 로 개작하지 않는다. 02_seed 는 화면 시드가 있으면 건너뛴다.
+#       01_sp 는 CREATE OR REPLACE, 03·05 는 ON CONFLICT, 06·07 은 재실행 안전
 #    3) 접속정보는 환경변수로만 받는다 — 비밀번호를 인자나 파일에 적지 않는다
 #
 #  사용:
 #    # 플랫폼 초기화 (0000 만)
 #    PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** bash apply-all.sh
 #
-#    # 새 업체 개설 — 위를 끝낸 DB 에 업체 하나를 더 얹는다.
-#    # 이 스크립트를 다시 부르면 1단계가 00_ddl 을 돌려 42P06 으로 죽는다.
-#    # 업체분 4본(03·05·06·07)만 직접 돌린다 — 07-haccp-db.mdc 「파일 순서」의 예시
+#    # 같은 DB 에 다시 돌려도 된다 — 스키마가 있으면 00_ddl·02_seed 를 건너뛴다.
+#    # 새 업체만 얹을 때는 업체분 4본(03·05·06·07)만 직접 돌려도 된다.
 #
 #  변경
 #    2026-08-25 — 번호 마이그레이션 133본을 5본으로 접었다. 04 는 구 DB 전용이라 여기서 안 돌린다
 #    2026-08-26 — 06_company_seed(업체 개설) 추가. CO_CD 를 주면 그 업체까지 만든다
 #    2026-08-28 — 07_company_forms(회사 지면) 추가. 이게 없으면 새 업체는 작성 화면에
 #                 고를 양식이 0건이라 아무것도 못 쓴다. 0001 을 열어 보고 알았다
+#    2026-09-07 — 스키마가 있으면 00_ddl·02_seed 를 건너뛴다. 재실행이 죽지 않는다
+#    2026-09-07 — 10·11·12 1회성 본은 시험·운영에 적용한 뒤 지웠다. 정본은 7본이다
 # ============================================================
 set -euo pipefail
 export PGCLIENTENCODING=UTF8
@@ -43,11 +44,28 @@ if ! $PSQL -d "$DBNAME" -c 'SELECT 1' >/dev/null 2>&1; then
     $PSQL -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE \"$DBNAME\""
 fi
 
+# 스키마가 있을 때(= 이미 깐 DB) 00_ddl 을 건너뛴다 — CREATE SCHEMA/TABLE 에 IF NOT EXISTS 가 없다
+HAS_SCHEMA="$($PSQL -d "$DBNAME" -t -A -c "SELECT 1 FROM information_schema.schemata WHERE schema_name='sasshaccp'" 2>/dev/null || true)"
+
 # ── 1. 플랫폼 공통 — 회사코드를 안 받는다
-for f in 00_ddl.sql 01_sp.sql 02_seed.sql; do
-    echo "== $f"
-    run -f "$DIR/$f"
-done
+if [ "$HAS_SCHEMA" = "1" ]; then
+    echo "== 00_ddl.sql 건너뜀 (스키마 sasshaccp 있음)"
+else
+    echo "== 00_ddl.sql"
+    run -f "$DIR/00_ddl.sql"
+fi
+
+echo "== 01_sp.sql"
+run -f "$DIR/01_sp.sql"
+
+# 화면 시드가 있을 때(= 02 를 이미 돌림) 건너뛴다 — ON CONFLICT 0건
+HAS_SEED="$($PSQL -d "$DBNAME" -t -A -c "SELECT 1 FROM sasshaccp.tbl_screen LIMIT 1" 2>/dev/null || true)"
+if [ "$HAS_SEED" = "1" ]; then
+    echo "== 02_seed.sql 건너뜀 (플랫폼 시드 있음)"
+else
+    echo "== 02_seed.sql"
+    run -f "$DIR/02_seed.sql"
+fi
 
 # ── 2. 업체별 — 공통코드·양식 표준
 for f in 03_code_seed.sql 05_form_seed.sql; do
