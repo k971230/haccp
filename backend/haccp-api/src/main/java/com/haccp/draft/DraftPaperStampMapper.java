@@ -12,7 +12,7 @@
  */
 package com.haccp.draft;
 
-import java.util.Map;
+import com.haccp.draft.dto.PaperStampRow;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -27,7 +27,7 @@ public interface DraftPaperStampMapper {
      *   2) CCP detail 조립이 호출한다
      *   3) 문서가 없거나 삭제면 null
      */
-    Map<String, Object> selectPaperStamp(
+    PaperStampRow selectPaperStamp(
             // coCd: JWT 회사코드
             @Param("coCd") String coCd,
             // docIdx: tbl_document.idx

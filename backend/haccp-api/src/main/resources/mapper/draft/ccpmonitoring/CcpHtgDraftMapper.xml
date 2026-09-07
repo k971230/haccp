@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CcpHtgDraftMapper.xml — CCP 가열 작성 SP.
+
+개발자: 박승우
+일자: 2026-09-07
+코멘트:
+  1) 데이터는 tbl_ccp_htg_monitor(+_row·_cell)
+  2) 목록 sp_ccp_htg_log_r_000 — 접두 파라미터 없이 가열만
+  3) 상세/저장/삭제 sp_tbl_ccp_htg_monitor_r_000/_c_000/_d_000
+
+PIPELINE[HB142] CCP 가열 작성 XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.draft.ccpmonitoring.CcpHtgDraftMapper">
+
+    <!--
+      작성 가능 양식 — 양식관리 좌측과 같은 SP.
+      use_yn 은 tbl_company_template.use_yn 이라 「사용여부 = 예」와 같은 값이다.
+      표준 예시 *_000 은 가상행이라 코드로 한 번 더 뺀다.
+    -->
+    <select id="selectForms" resultType="com.haccp.draft.dto.DraftFormRow">
+        SELECT v.tmpl_cd, v.ver_nm, v.ver_no, v.use_yn, v.ins_dt
+          FROM sp_tbl_html_ccp_htg_ver_r_000(#{coCd}, #{stdTmplCd}, '', '') v
+         WHERE upper(v.use_yn) = 'Y'
+           AND v.ver_no &gt; 0
+           AND v.tmpl_cd &lt;&gt; #{stdTmplCd}
+         ORDER BY v.tmpl_cd
+    </select>
+
+    <!-- 양식 항목 — 한계기준·주기·방법·개선조치. 지면 상단이 쓴다 -->
+    <select id="selectFormItems" resultType="com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormItemRow">
+        SELECT * FROM sp_tbl_html_ccp_htg_ver_item_r_000(#{coCd}, #{tmplCd}, #{verNo})
+    </select>
+
+    <!-- 좌측 작성 목록 — 결재 여부는 DOC_STATUS 파생이라 화면이 거른다 -->
+    <select id="selectList" resultType="com.haccp.draft.dto.DraftListRow">
+        SELECT * FROM sp_ccp_htg_log_r_000(
+            #{coCd}, #{tmplCd}, #{tmplNm}, #{fromDt}, #{toDt}, #{writerId}, #{writerNm}, #{title}
+        )
+    </select>
+
+    <!-- 상세 — 헤더 + rows_json(기록행·셀) -->
+    <select id="selectDetail" resultType="com.haccp.draft.ccpmonitoring.dto.CcpMonitorDetailRow">
+        SELECT * FROM sp_tbl_ccp_htg_monitor_r_000(#{coCd}, #{docIdx})
+    </select>
+
+    <!--
+      저장 — ccp_cd·diary_no·limit_item_kind 는 이 화면이 안 쓴다.
+      mng_nm 에 관리자·점검자명을 넣는다.
+    -->
+    <select id="save" resultType="long">
+        SELECT sp_tbl_ccp_htg_monitor_c_000(
+            #{coCd}, #{docIdx}, #{baseDt}, #{tmplCd},
+            '', '', '', '', #{mngNm},
+            CAST(#{rowsJson} AS jsonb), #{userId}, #{title}
+        )
+    </select>
+
+    <!--
+      삭제 차단 — 전송대기(WRK·RJT)가 아닌 문서.
+      target 문구는 이 화면의 3단계 용어(전송/결재완료)로 내린다.
+    -->
+    <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
+        SELECT * FROM sp_tbl_document_delete_blocker_r_000(
+            #{coCd, mode=IN, jdbcType=VARCHAR},
+            <foreach collection="docIdxs" item="id" open="ARRAY[" separator="," close="]::bigint[]">#{id}</foreach>
+        )
+    </select>
+
+    <!-- 삭제 — 기록행·셀·문서 허브 -->
+    <update id="delete" statementType="CALLABLE">
+        CALL sp_tbl_ccp_htg_monitor_d_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{docIdx, jdbcType=BIGINT},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+</mapper>

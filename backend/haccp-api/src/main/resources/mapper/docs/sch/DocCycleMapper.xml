@@ -6,7 +6,7 @@ DocCycleMapper.xml — 문서주기관리 sp_schedule_cycle_management_* 호출.
 일자: 2026-08-20
 코멘트:
   1) 조회는 TABLE FUNCTION, 저장·삭제·재생성은 PostgreSQL PROCEDURE를 호출한다
-  2) Map 결과는 map-underscore-to-camel-case가 적용되지 않으므로 별칭을 camelCase로 직접 붙인다
+  2) DTO 매핑. formTy 는 sys_yn 별칭, details 는 jsonb::text — 빼면 FE/파싱이 깨진다
   3) details·dates는 jsonb라 조회는 ::text, 전달은 CAST(... AS jsonb)로 다룬다
   4) 결재선(apprLineCd)은 114 SP. 주기 없는 양식은 목록 행에서 채운다
 
@@ -22,7 +22,7 @@ PIPELINE[HB94, HB98] 연관 모듈
       useYn은 Y/N 등가, 공백이면 전체다.
       apprLineCd는 주기 없는 양식의 우측 폼이 사용양식 결재선을 채울 때 쓴다.
     -->
-    <select id="selectForms" resultType="map">
+    <select id="selectForms" resultType="com.haccp.docs.sch.dto.DocCycleFormRow">
         SELECT tmpl_cd       AS "tmplCd",
                tmpl_nm       AS "tmplNm",
                sys_yn        AS "formTy",
@@ -45,7 +45,7 @@ PIPELINE[HB94, HB98] 연관 모듈
       부서명·담당자명은 표시 전용이며 저장은 deptCd·userId로만 한다.
       결재선은 사용양식(tbl_company_template.appr_line_cd) 조인. 저장은 apprLineCd.
     -->
-    <select id="selectCycle" resultType="map">
+    <select id="selectCycle" resultType="com.haccp.docs.sch.dto.DocCycleRow">
         SELECT tmpl_cd        AS "tmplCd",
                tmpl_nm        AS "tmplNm",
                base_dt        AS "baseDt",
@@ -112,9 +112,9 @@ PIPELINE[HB94, HB98] 연관 모듈
       배치 재생성 대상 — 회사 전체의 사용 중 주기 + 상세.
       화면 조회와 달리 테넌트 파라미터가 없어 별도 쿼리로 둔다(사용양식이 미사용이면 제외).
     -->
-    <select id="selectActiveCycles" resultType="map">
+    <select id="selectActiveCycles" resultType="com.haccp.docs.sch.dto.DocCycleRow">
         <!--
-          Map 결과는 map-underscore-to-camel-case 가 안 걸려 별칭을 camelCase 로 직접 붙인다.
+          DTO 매핑. details jsonb 별칭은 유지한다.
           업무 SQL 은 SP 가 갖는다 — 예전에는 이 자리에 조인·jsonb_agg 가 그대로 적혀 있었다.
         -->
         SELECT co_cd        AS "coCd",

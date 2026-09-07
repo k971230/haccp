@@ -15,8 +15,8 @@ package com.haccp.flow.ca;
 // 역할 — 삭제 차단 첫 행
 import com.haccp.common.validation.DeleteBlocker;
 // 역할 — 목록 타입
+import com.haccp.flow.ca.dto.CorrectiveRow;
 import java.util.List;
-import java.util.Map;
 // 역할 — MyBatis 매퍼 표식·이름 바인딩
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -25,7 +25,7 @@ import org.apache.ibatis.annotations.Param;
 public interface CorrectiveActionMapper {
 
     /** 기간·양식·작성자 조건 목록 — 공백이면 전체 */
-    List<Map<String, Object>> selectCorrectiveActions(
+    List<CorrectiveRow> selectCorrectiveActions(
             // JWT 회사코드
             @Param("coCd") String coCd,
             // 시작일 YYYYMMDD — 공백이면 전체

@@ -20,7 +20,9 @@ import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.context.RequestMeta;
 import com.haccp.docs.documents.DocumentService;
 import com.haccp.docs.documents.dto.DocumentDeleteItem;
+import com.haccp.docs.documents.dto.DocumentDetailResponse;
 import com.haccp.docs.documents.dto.HwpDocumentSaveRequest;
+import com.haccp.draft.DraftSeenGuard;
 import com.haccp.draft.DraftSupport;
 import com.haccp.draft.dto.DraftDeleteItem;
 import com.haccp.draft.dto.DraftFormRow;
@@ -36,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +49,8 @@ public class HwpDraftService {
 
     private final HwpDraftMapper mapper;
     private final DocumentService documentService;
+    // 초안 동시 저장 스탬프 — 상세에 붙이고 저장 직전에 대조한다
+    private final DraftSeenGuard seenGuard;
     // 이탈여부 칸 — 켜면 개선조치 행을 만들어 이탈·개선조치 화면에 올린다
     private final DocCorrectiveSupport correctiveSupport;
 
@@ -118,21 +123,18 @@ public class HwpDraftService {
      *   2) 좌측 행을 고르면 호출한다
      *   3) 신규(docIdx 없음)는 서버를 부르지 않고 화면이 빈 지면을 연다
      */
-    public Map<String, Object> detail(
+    public DocumentDetailResponse detail(
             // docIdx: tbl_document.idx
             Long docIdx
     ) {
         // 문서 허브는 회사코드만 지킨다. 이 화면은 HWP 만 연다 — HTML 헤더가 섞이면 거절
-        Map<String, Object> out = documentService.detail(docIdx);
-        Object headerObj = out.get("header");
-        String kind = "";
-        if (headerObj instanceof Map<?, ?> header) {
-            Object raw = header.get("docKind");
-            kind = raw == null ? "" : String.valueOf(raw);
-        }
+        DocumentDetailResponse out = documentService.detail(docIdx);
+        String kind = out.getHeader() == null ? "" : String.valueOf(out.getHeader().getDocKind());
         if (!"HWP".equals(kind)) {
             throw new BizException("HWP 문서가 아닙니다.");
         }
+        // 화면이 다시 저장할 때 대조할 스탬프
+        seenGuard.attach(out, docIdx);
         return out;
     }
 
@@ -143,7 +145,11 @@ public class HwpDraftService {
      *   1) 일자·양식코드로 문서 헤더를 만들거나 고친다. 전송하지 않는다
      *   2) 좌측 저장·우측 저장이 모두 호출한다 — 본문 파일은 저장 뒤 업로드 API 가 올린다
      *   3) 일자가 8자리가 아니면 BizException
+     *
+     * 헤더 저장과 이탈 행은 한 트랜잭션이다. 형제는 전부 timeout=60 이 걸려 있다.
+     * 여기만 없으면 이탈 upsert 가 실패해도 문서(와 채번된 doc_no)는 남는다.
      */
+    @Transactional(timeout = 60)
     public Long save(
             // req: 작성 화면 공통 저장 요청 — HWP 는 양식코드·일자·제목만 쓴다
             DraftSaveRequest req,
@@ -153,6 +159,8 @@ public class HwpDraftService {
         if (req == null) {
             throw new BizException("저장할 내용이 없습니다.");
         }
+        // 수정일 때(= docIdx 있음) 다른 탭이 먼저 저장했으면 여기서 막는다
+        seenGuard.assertSeen(req);
         HwpDocumentSaveRequest hwp = new HwpDocumentSaveRequest();
         hwp.setDocIdx(req.getDocIdx());
         hwp.setTmplCd(DraftSupport.nvl(req.getTmplCd()));

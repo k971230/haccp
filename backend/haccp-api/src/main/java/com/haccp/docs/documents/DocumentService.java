@@ -21,8 +21,12 @@ import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteValidation;
 // 역할 — 문서 DTO
 import com.haccp.docs.documents.dto.DocumentApprovalRequest;
+import com.haccp.docs.documents.dto.DocumentApprovalRow;
 import com.haccp.docs.documents.dto.DocumentDeleteItem;
+import com.haccp.docs.documents.dto.DocumentDetailResponse;
 import com.haccp.docs.documents.dto.DocumentFileRow;
+import com.haccp.docs.documents.dto.DocumentHeaderRow;
+import com.haccp.docs.documents.dto.DocumentVersionRow;
 import com.haccp.docs.documents.dto.HwpDocumentSaveRequest;
 // 역할 — HWP → PDF CLI
 import com.haccp.docs.templates.RhwpCliClient;
@@ -70,7 +74,7 @@ public class DocumentService {
      *   2) document-inbox 문서함·관련 문서 선택 팝업에서 호출한다
      *   3) 성공 시 DB형·HWP형이 섞인 목록, 실패 시 SQL 업무 오류
      */
-    public List<Map<String, Object>> list(
+    public List<com.haccp.docs.documents.dto.DocumentListRow> list(
             // 기준일 시작 YYYYMMDD — 공백이면 전체
             String fromDt,
             // 기준일 종료 YYYYMMDD — 공백이면 전체
@@ -92,7 +96,7 @@ public class DocumentService {
                 text(status),
                 text(keyword),
                 text(writerId)
-        ).stream().map(this::camelMap).toList();
+        );
     }
 
     /**
@@ -103,7 +107,7 @@ public class DocumentService {
      *   2) sign-ready 화면과 오늘 할 일 결재 건수가 호출한다
      *   3) 성공 시 목록 배열
      */
-    public List<Map<String, Object>> signReady(
+    public List<com.haccp.docs.documents.dto.DocumentListRow> signReady(
             // 기준일 시작 YYYYMMDD — 공백이면 전체
             String fromDt,
             // 기준일 종료 YYYYMMDD — 공백이면 전체
@@ -120,7 +124,7 @@ public class DocumentService {
                 text(toDt),
                 text(keyword),
                 text(writerId)
-        ).stream().map(this::camelMap).toList();
+        );
     }
 
     /**
@@ -131,7 +135,7 @@ public class DocumentService {
      *   2) sign-ok 화면에서 호출한다
      *   3) 성공 시 목록 배열
      */
-    public List<Map<String, Object>> signOk(
+    public List<com.haccp.docs.documents.dto.DocumentListRow> signOk(
             // 기준일 시작 YYYYMMDD — 공백이면 전체
             String fromDt,
             // 기준일 종료 YYYYMMDD — 공백이면 전체
@@ -148,7 +152,7 @@ public class DocumentService {
                 text(toDt),
                 text(keyword),
                 text(writerId)
-        ).stream().map(this::camelMap).toList();
+        );
     }
 
     /**
@@ -159,22 +163,24 @@ public class DocumentService {
      *   2) 문서함 행 클릭·결재함 상세·양식 공통 패널에서 호출한다
      *   3) 없는 문서는 BizException, 파일 물리 경로는 응답에서 제거한다
      */
-    public Map<String, Object> detail(
+    public DocumentDetailResponse detail(
             // 문서 대리키
             Long docIdx
     ) {
         Long requiredDocIdx = DeleteValidation.requirePositive(docIdx, "문서번호가 올바르지 않습니다.");
         String coCd = LoginUserContext.coCd();
-        Map<String, Object> header = mapper.selectDocument(coCd, requiredDocIdx);
+        DocumentHeaderRow header = mapper.selectDocument(coCd, requiredDocIdx);
         if (header == null) {
             throw new BizException("문서를 찾을 수 없습니다.");
         }
 
-        Map<String, Object> out = new LinkedHashMap<>();
-        out.put("header", camelMap(header));
-        out.put("approvals", mapper.selectApprovals(coCd, requiredDocIdx).stream().map(this::camelMap).toList());
-        out.put("files", publicFiles(mapper.selectFiles(coCd, requiredDocIdx)));
-        out.put("versions", mapper.selectVersions(coCd, requiredDocIdx).stream().map(this::camelMap).toList());
+        DocumentDetailResponse out = new DocumentDetailResponse();
+        out.setHeader(header);
+        List<DocumentApprovalRow> approvals = mapper.selectApprovals(coCd, requiredDocIdx);
+        out.setApprovals(approvals == null ? List.of() : approvals);
+        out.setFiles(mapper.selectFiles(coCd, requiredDocIdx));
+        List<DocumentVersionRow> versions = mapper.selectVersions(coCd, requiredDocIdx);
+        out.setVersions(versions == null ? List.of() : versions);
         return out;
     }
 
@@ -194,7 +200,7 @@ public class DocumentService {
             RequestMeta requestMeta
     ) {
         String coCd = LoginUserContext.coCd();
-        Map<String, Object> before = req.getDocIdx() == null || req.getDocIdx() <= 0
+        DocumentHeaderRow before = req.getDocIdx() == null || req.getDocIdx() <= 0
                 ? null
                 : mapper.selectDocument(coCd, req.getDocIdx());
         Long docIdx = mapper.saveHwpDocument(
@@ -229,7 +235,7 @@ public class DocumentService {
      *   3) ATTACH/PHOTO/PDF는 추가 등록, DB 실패 시 방금 만든 물리 파일을 롤백한다
      */
     @Transactional
-    public Map<String, Object> upload(
+    public DocumentFileRow upload(
             // 연결 문서 idx
             Long docIdx,
             // 파일 분류 HWP_SRC/PDF/ATTACH/PHOTO
@@ -277,7 +283,7 @@ public class DocumentService {
              * 새 저장이 같은 _001 을 집는다 — 그때 이 삭제가 방금 올린 본문을 지운다.
              */
             deleteAfterCommit(oldPaths.stream().filter(old -> !old.equals(path)).toList());
-            return publicFile(saved);
+            return saved;
         } catch (RuntimeException e) {
             // DB 메타 등록이 실패했을 때(= 결재 잠금·SQL 오류) 물리 파일 롤백
             try {
@@ -337,7 +343,7 @@ public class DocumentService {
      *   3) 결재 잠금(REQ/APV)이고 완료본이 있으면 변환 없이 그 PDF를 돌려준다.
      *      없으면 변환 후 등록한다 — SP가 PDF만 잠금에서 뺀다
      */
-    public Map<String, Object> exportPdf(
+    public DocumentFileRow exportPdf(
             // PDF로 내보낼 문서 대리키
             Long docIdx,
             // 감사 로그용 요청 IP
@@ -345,7 +351,7 @@ public class DocumentService {
     ) {
         Long requiredDocIdx = DeleteValidation.requirePositive(docIdx, "문서번호가 올바르지 않습니다.");
         String coCd = LoginUserContext.coCd();
-        Map<String, Object> header = mapper.selectDocument(coCd, requiredDocIdx);
+        DocumentHeaderRow header = mapper.selectDocument(coCd, requiredDocIdx);
         if (header == null) {
             throw new BizException("문서를 찾을 수 없습니다.");
         }
@@ -354,7 +360,7 @@ public class DocumentService {
         if (approvalLocked(headerStatus(header))) {
             DocumentFileRow storedPdf = latestFile(files, "PDF");
             if (storedPdf != null) {
-                return publicFile(storedPdf);
+                return storedPdf;
             }
         }
         DocumentFileRow hwpSrc = latestFile(files, "HWP_SRC");
@@ -366,7 +372,7 @@ public class DocumentService {
         try {
             String pdfName = pdfFileName(hwpSrc.getFileNm(), header);
             TransactionTemplate tx = new TransactionTemplate(transactionManager);
-            Map<String, Object> saved = tx.execute(status -> registerGeneratedPdf(
+            DocumentFileRow saved = tx.execute(status -> registerGeneratedPdf(
                     requiredDocIdx,
                     generatedPdf,
                     pdfName,
@@ -450,7 +456,7 @@ public class DocumentService {
             throw new BizException("결재 처리 구분이 올바르지 않습니다.");
         }
         String coCd = LoginUserContext.coCd();
-        Map<String, Object> before = mapper.selectDocument(coCd, docIdx);
+        DocumentHeaderRow before = mapper.selectDocument(coCd, docIdx);
         if (before == null) {
             throw new BizException("문서를 찾을 수 없습니다.");
         }
@@ -460,7 +466,7 @@ public class DocumentService {
         } else {
             mapper.processApproval(coCd, docIdx, action, text(req.getOpinion()), LoginUserContext.userId());
         }
-        Map<String, Object> after = mapper.selectDocument(coCd, docIdx);
+        DocumentHeaderRow after = mapper.selectDocument(coCd, docIdx);
         audit(
                 "tbl_document",
                 docIdx,
@@ -498,7 +504,7 @@ public class DocumentService {
     ) {
         Long requiredDocIdx = DeleteValidation.requirePositive(docIdx, "문서번호가 올바르지 않습니다.");
         String coCd = LoginUserContext.coCd();
-        Map<String, Object> before = mapper.selectDocument(coCd, requiredDocIdx);
+        DocumentHeaderRow before = mapper.selectDocument(coCd, requiredDocIdx);
         if (before == null) {
             throw new BizException("문서를 찾을 수 없습니다.");
         }
@@ -525,7 +531,7 @@ public class DocumentService {
     ) {
         Long requiredDocIdx = DeleteValidation.requirePositive(docIdx, "문서번호가 올바르지 않습니다.");
         String coCd = LoginUserContext.coCd();
-        Map<String, Object> before = mapper.selectDocument(coCd, requiredDocIdx);
+        DocumentHeaderRow before = mapper.selectDocument(coCd, requiredDocIdx);
         if (before == null) {
             throw new BizException("문서를 찾을 수 없습니다.");
         }
@@ -569,9 +575,12 @@ public class DocumentService {
         // 실물까지 그때 지워 버리면 되살아난 메타가 없는 파일을 가리킨다 — 커밋 뒤에 모아 지운다
         List<String> removed = new ArrayList<>();
         for (DocumentDeleteItem key : keys) {
-            Map<String, Object> header = camelMap(mapper.selectDocument(coCd, key.getDocIdx()));
+            DocumentHeaderRow header = mapper.selectDocument(coCd, key.getDocIdx());
+            if (header == null) {
+                throw new BizException("문서를 찾을 수 없습니다.");
+            }
             // docKind 정본은 HWP/HTML. HWP 만 이 경로에서 지운다
-            if (!"HWP".equals(String.valueOf(header.get("docKind")))) {
+            if (!"HWP".equals(text(header.getDocKind()))) {
                 throw new BizException("DB형 문서는 해당 양식 화면에서 삭제하세요.");
             }
             List<DocumentFileRow> files = mapper.selectFiles(coCd, key.getDocIdx());
@@ -594,10 +603,23 @@ public class DocumentService {
             docIdxs.add(docIdx);
         }
         DeleteValidation.throwIfBlocked(mapper.selectDocumentDeleteBlocker(coCd, docIdxs), "문서");
+        /*
+         * HWP 만 이 허브에서 지운다. delete() 에도 같은 검사가 있다 (Double Check).
+         * 여기 없으면 validate-delete 가 200 을 주고 확인창 뒤에야 실패한다.
+         */
+        for (DocumentDeleteItem key : keys) {
+            DocumentHeaderRow header = mapper.selectDocument(coCd, key.getDocIdx());
+            if (header == null) {
+                throw new BizException("문서를 찾을 수 없습니다.");
+            }
+            if (!"HWP".equals(text(header.getDocKind()))) {
+                throw new BizException("DB형 문서는 해당 양식 화면에서 삭제하세요.");
+            }
+        }
     }
 
     /** CLI가 만든 PDF를 볼륨·DB·감사 로그에 등록하고 API 메타를 반환한다 */
-    private Map<String, Object> registerGeneratedPdf(
+    private DocumentFileRow registerGeneratedPdf(
             // 연결 문서 idx
             Long docIdx,
             // rhwp가 만든 임시 PDF
@@ -635,7 +657,7 @@ public class DocumentService {
                     Map.of("docIdx", docIdx, "fileKind", "PDF", "fileNm", pdfName),
                     null
             );
-            return publicFile(mapper.selectFile(coCd, fileIdx));
+            return mapper.selectFile(coCd, fileIdx);
         } catch (RuntimeException e) {
             // DB 메타 등록 실패 시(= 결재 잠금·SQL 오류) 방금 복사한 물리 PDF를 되돌린다
             try {
@@ -698,16 +720,15 @@ public class DocumentService {
     }
 
     /** HWP_SRC 파일명 또는 문서번호를 바탕으로 PDF 표시 파일명을 만든다 */
-    private String pdfFileName(String sourceName, Map<String, Object> header) {
+    private String pdfFileName(String sourceName, DocumentHeaderRow header) {
         String base = text(sourceName);
         if (base.toLowerCase().endsWith(".hwpx") || base.toLowerCase().endsWith(".hwp")) {
             int dot = base.lastIndexOf('.');
             base = base.substring(0, dot);
         }
         if (base.isBlank()) {
-            Object docNo = header.get("doc_no");
-            if (docNo == null) docNo = header.get("docNo");
-            base = docNo == null ? "document" : String.valueOf(docNo);
+            String docNo = header == null ? "" : text(header.getDocNo());
+            base = docNo.isBlank() ? "document" : docNo;
         }
         return safeOriginalName(base + ".pdf");
     }
@@ -739,13 +760,9 @@ public class DocumentService {
                 .orElse(null);
     }
 
-    /** 헤더 Map의 status — SP는 lower_snake, camelMap 전에도 status 키다 */
-    private String headerStatus(Map<String, Object> header) {
-        Object status = header.get("status");
-        if (status == null) {
-            status = header.get("STATUS");
-        }
-        return status == null ? "" : text(String.valueOf(status));
+    /** 헤더 DTO의 status */
+    private String headerStatus(DocumentHeaderRow header) {
+        return header == null ? "" : text(header.getStatus());
     }
 
     /** 결재 진행·완료일 때(= 본문·사용자첨부 잠금) */
@@ -800,8 +817,8 @@ public class DocumentService {
             // 대상 문서 idx
             Long docIdx
     ) {
-        Map<String, Object> header = camelMap(mapper.selectDocument(coCd, docIdx));
-        return header == null ? "" : text(String.valueOf(header.getOrDefault("tmplCd", "")));
+        DocumentHeaderRow header = mapper.selectDocument(coCd, docIdx);
+        return header == null ? "" : text(header.getTmplCd());
     }
 
     /** MyBatis Map의 DB lower_snake 키를 API camelCase 키로 한 번만 바꾼다 */

@@ -46,7 +46,7 @@ public class ScreenUsageController {
      *   3) 집계가 아직 없으면 빈 배열
      */
     @GetMapping("/list")
-    public CommonResponse<List<Map<String, Object>>> list(
+    public CommonResponse<List<com.haccp.sys.logs.screenusage.dto.ScreenUsageRow>> list(
             // 집계 시작일 — YYYY-MM-DD 또는 YYYYMMDD. 미입력이면 오늘
             @RequestParam(required = false) String fromDt,
             // 집계 종료일 — YYYY-MM-DD 또는 YYYYMMDD. 미입력이면 오늘

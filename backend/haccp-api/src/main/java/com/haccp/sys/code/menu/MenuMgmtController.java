@@ -14,6 +14,9 @@ package com.haccp.sys.code.menu;
 
 // 역할 — API 성공 응답 래퍼
 import com.haccp.common.response.CommonResponse;
+import com.haccp.sys.code.menu.dto.MenuDeleteItem;
+import com.haccp.sys.code.menu.dto.MenuMgmtRow;
+import com.haccp.sys.code.menu.dto.MenuSaveRow;
 // 역할 — 생성자 주입
 import lombok.RequiredArgsConstructor;
 // 역할 — REST 매핑
@@ -27,7 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 // 역할 — 화면 행·삭제키 목록
 import java.util.List;
-import java.util.Map;
 
 /** 메뉴 관리 화면 → /api/v1/sys/code/menu-management/* */
 @RestController
@@ -47,7 +49,7 @@ public class MenuMgmtController {
      *   3) 좌측 트리가 전체 집합을 요구하므로 화면은 검색어 없이 부르고 결과를 화면에서 다시 거른다
      */
     @GetMapping("/list")
-    public CommonResponse<List<Map<String, Object>>> list(
+    public CommonResponse<List<MenuMgmtRow>> list(
             // 메뉴코드 부분검색어 — 미입력이면 전체
             @RequestParam(required = false, defaultValue = "") String menuCd,
             // 메뉴명 부분검색어 — 미입력이면 전체
@@ -69,7 +71,7 @@ public class MenuMgmtController {
     @PutMapping("/save")
     public CommonResponse<Void> save(
             // 변경 행 목록 — 화면에서 행추가는 막혀 있어 대부분 수정이다
-            @RequestBody List<Map<String, Object>> rows
+            @RequestBody List<MenuSaveRow> rows
     ) {
         menuMgmtService.save(rows);
         return CommonResponse.ok(null);
@@ -86,7 +88,7 @@ public class MenuMgmtController {
     @PostMapping("/validate-delete")
     public CommonResponse<Void> validateDelete(
             // 삭제 대상 복합키 배열 — 단건이어도 [{ idx }]
-            @RequestBody List<Map<String, Long>> keys
+            @RequestBody List<MenuDeleteItem> keys
     ) {
         menuMgmtService.validateDelete(keys);
         return CommonResponse.ok(null);
@@ -103,7 +105,7 @@ public class MenuMgmtController {
     @PostMapping("/delete")
     public CommonResponse<Void> delete(
             // 삭제 대상 복합키 배열 — 단건이어도 [{ idx }]
-            @RequestBody List<Map<String, Long>> keys
+            @RequestBody List<MenuDeleteItem> keys
     ) {
         menuMgmtService.delete(keys);
         return CommonResponse.ok(null);

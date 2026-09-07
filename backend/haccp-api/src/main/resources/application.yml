@@ -98,7 +98,7 @@ app:
     # 파일 1건 최대 byte — multipart 설정과 같은 env에서 운영 통제
     max-bytes: ${APP_FILE_MAX_BYTES:20971520}
   document:
-    # 작성 문서·첨부 볼륨 하위 루트 — HaccpLogBooks/{회사코드}/{일자}/{양식코드}
+    # 작성 문서·첨부 볼륨 하위 루트 — HaccpLogBooks/{회사코드}/{양식코드}/{일자}
     logbook-directory: ${APP_DOCUMENT_LOGBOOK_DIRECTORY:HaccpLogBooks}
   template:
     # 전 회사 공통 표준 양식 루트 — HaccpTemplates/{양식코드}/{파일명}

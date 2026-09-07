@@ -41,7 +41,7 @@ public class TaskService {
 
     /** 오늘 과제 생성 보정 뒤 과제 목록을 반환한다. */
     @Transactional
-    public List<Map<String, Object>> todayTasks() {
+    public List<com.haccp.board.dto.TodayTaskRow> todayTasks() {
         String coCd = LoginUserContext.coCd();
         mapper.generateTasks(coCd, today(), LoginUserContext.userId());
         return mapper.selectTodayTasks(coCd, LoginUserContext.userId(), today());
@@ -55,7 +55,7 @@ public class TaskService {
      *   2) 랜딩 최근 문서 패널이 fromDt·toDt·offset·limit 을 넘긴다
      *   3) 응답은 rows + total. total 은 첫 행 totalCnt, 0건이면 0
      */
-    public Map<String, Object> todayTaskDocs(
+    public com.haccp.board.dto.TodayTaskDocsResponse todayTaskDocs(
             // 기준일 시작 YYYYMMDD
             String fromDt,
             // 기준일 종료 YYYYMMDD
@@ -68,24 +68,24 @@ public class TaskService {
         int off = offset == null || offset < 0 ? 0 : offset;
         int lim = limit == null || limit < 1 ? 1 : Math.min(limit, 100);
         // coCd·userId: JWT — SP writer_id 필터로 내가 쓴 문서만
-        List<Map<String, Object>> rows = camelRows(mapper.selectTodayTaskDocs(
-                LoginUserContext.coCd(), LoginUserContext.userId(), text(fromDt), text(toDt), off, lim));
+        List<com.haccp.board.dto.TodayTaskDocRow> rows = mapper.selectTodayTaskDocs(
+                LoginUserContext.coCd(), LoginUserContext.userId(), text(fromDt), text(toDt), off, lim);
+        if (rows == null) rows = List.of();
         int total = 0;
-        if (!rows.isEmpty()) {
-            Object raw = rows.get(0).get("totalCnt");
-            if (raw instanceof Number n) total = n.intValue();
-            for (Map<String, Object> row : rows) {
-                row.remove("totalCnt");
+        if (!rows.isEmpty() && rows.get(0).getTotalCnt() != null) {
+            total = rows.get(0).getTotalCnt();
+            for (com.haccp.board.dto.TodayTaskDocRow row : rows) {
+                row.setTotalCnt(null);
             }
         }
-        Map<String, Object> out = new LinkedHashMap<>();
-        out.put("rows", rows);
-        out.put("total", total);
+        com.haccp.board.dto.TodayTaskDocsResponse out = new com.haccp.board.dto.TodayTaskDocsResponse();
+        out.setRows(rows);
+        out.setTotal(total);
         return out;
     }
 
     /** 로그인 사용자의 알림 목록을 반환한다. */
-    public List<Map<String, Object>> notifications() {
+    public List<com.haccp.board.dto.NotificationRow> notifications() {
         return mapper.selectNotifications(LoginUserContext.coCd(), LoginUserContext.userId());
     }
 

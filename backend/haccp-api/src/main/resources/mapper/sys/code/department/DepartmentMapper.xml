@@ -19,7 +19,7 @@ PIPELINE[HB92] 부서 관리 MyBatis XML
       최상위(상위코드 없음)를 먼저, 그다음 정렬순서·코드 순으로 내려와 FE 트리 조립 순서와 같다
       좌측 트리가 전체 집합을 요구하므로 화면은 검색어를 공백으로 넘긴다
     -->
-    <select id="selectRows" resultType="map">
+    <select id="selectRows" resultType="com.haccp.sys.code.department.dto.DeptRow">
         SELECT * FROM sp_department_management_r_000(
             #{coCd,   jdbcType=VARCHAR},
             #{deptCd, jdbcType=VARCHAR},

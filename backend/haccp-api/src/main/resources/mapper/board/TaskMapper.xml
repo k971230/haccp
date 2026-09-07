@@ -13,14 +13,14 @@ PIPELINE[HB93] 워크플로 작업 매퍼
 -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.haccp.board.TaskMapper">
-    <!-- 활성 회사 — 정기 배치가 각 테넌트 과제를 멱등 생성 -->
-    <select id="selectCompanyCodes" resultType="string">SELECT co_cd FROM tbl_company WHERE use_yn = 'Y'</select>
+    <!-- 활성 회사 — 정기 배치가 각 테넌트 과제를 멱등 생성. 표는 SP 가 읽는다 -->
+    <select id="selectCompanyCodes" resultType="string">SELECT co_cd FROM sp_tbl_company_r_000()</select>
     <!-- 과제 생성·지연 갱신·알림 생성 — SP 내부에서 중복을 차단 -->
     <update id="generateTasks" statementType="CALLABLE">CALL sp_tbl_schedule_task_generate_c_000(#{coCd}, #{baseDt}, #{userId})</update>
     <!-- 오늘 과제와 미완료 개선조치 — 사용자 배정 조건 포함 -->
-    <select id="selectTodayTasks" resultType="map">SELECT * FROM sp_tbl_today_task_r_000(#{coCd}, #{userId}, #{baseDt})</select>
+    <select id="selectTodayTasks" resultType="com.haccp.board.dto.TodayTaskRow">SELECT * FROM sp_tbl_today_task_r_000(#{coCd}, #{userId}, #{baseDt})</select>
     <!-- 오늘 할 일 최근 문서 — 본인 작성분만. OFFSET/LIMIT + total_cnt -->
-    <select id="selectTodayTaskDocs" resultType="map">
+    <select id="selectTodayTaskDocs" resultType="com.haccp.board.dto.TodayTaskDocRow">
         SELECT * FROM sp_tbl_today_task_doc_r_000(
             #{coCd,    jdbcType=VARCHAR},
             #{userId,  jdbcType=VARCHAR},
@@ -31,7 +31,7 @@ PIPELINE[HB93] 워크플로 작업 매퍼
         )
     </select>
     <!-- 로그인 사용자 알림함 -->
-    <select id="selectNotifications" resultType="map">SELECT * FROM sp_tbl_notification_r_000(#{coCd}, #{userId})</select>
+    <select id="selectNotifications" resultType="com.haccp.board.dto.NotificationRow">SELECT * FROM sp_tbl_notification_r_000(#{coCd}, #{userId})</select>
     <!-- 본인 알림 읽음 처리 -->
     <update id="readNotification" statementType="CALLABLE">CALL sp_tbl_notification_u_000(#{coCd}, #{idx}, #{userId})</update>
 </mapper>

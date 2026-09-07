@@ -29,6 +29,7 @@ import com.haccp.common.context.LoginUser;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteBlocker;
+import com.haccp.flow.ca.dto.CaDeleteItem;
 import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +60,13 @@ class CorrectiveActionServiceDeleteTest {
     @InjectMocks
     private CorrectiveActionService service;
 
-    private final List<Map<String, Long>> keys = List.of(Map.of("idx", 5L), Map.of("idx", 6L));
+    private static List<CaDeleteItem> keys() {
+        CaDeleteItem a = new CaDeleteItem();
+        a.setIdx(5L);
+        CaDeleteItem b = new CaDeleteItem();
+        b.setIdx(6L);
+        return List.of(a, b);
+    }
 
     @BeforeEach
     void setUser() {
@@ -84,7 +91,7 @@ class CorrectiveActionServiceDeleteTest {
         givenBlocked();
 
         BizException e = assertThrows(BizException.class,
-                () -> service.validateCorrectiveActionDelete(keys));
+                () -> service.validateCorrectiveActionDelete(keys()));
 
         // 어느 건이 왜 막히는지 문구에 실려야 한다 — 예전에는 이 단계가 통과했다
         assertTrue(e.getMessage().contains("CA-20260904-001"), e.getMessage());
@@ -95,7 +102,7 @@ class CorrectiveActionServiceDeleteTest {
     void 확인창을_지나도_같은_검사를_다시_한다() {
         givenBlocked();
 
-        assertThrows(BizException.class, () -> service.deleteCorrectiveActions(keys));
+        assertThrows(BizException.class, () -> service.deleteCorrectiveActions(keys()));
 
         // 한 건도 지우면 안 된다 — 정상 건까지 롤백되는 일이 없어야 한다
         verify(mapper, never()).deleteCorrectiveAction(anyString(), anyLong(), anyString());
@@ -105,7 +112,7 @@ class CorrectiveActionServiceDeleteTest {
     void 막을_것이_없으면_고른_만큼_지운다() {
         when(mapper.selectDeleteBlocker(anyString(), any())).thenReturn(null);
 
-        service.deleteCorrectiveActions(keys);
+        service.deleteCorrectiveActions(keys());
 
         verify(mapper).deleteCorrectiveAction("0000", 5L, "admin");
         verify(mapper).deleteCorrectiveAction("0000", 6L, "admin");

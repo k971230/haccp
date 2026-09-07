@@ -2,7 +2,8 @@
 
 | 파일 | 역할 |
 |---|---|
-| (목록·단계) | 전용 DTO 를 두지 않는다 — `ApprovalLineMapper.selectApprovalLines` 가 SP 가 만든 JSON 을 `List<String>` 으로 받아 그대로 내린다 |
+| `ApprovalLineRow.java` | 헤더+단계 — 목록·저장 Body |
+| `ApprovalLineStepRow.java` | 단계 1행 |
 | `ApprovalLineDeleteItem.java` | 삭제 키 |
 
 ## 단계와 결재 흐름

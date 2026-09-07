@@ -18,8 +18,11 @@ import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 // 역할 — 삭제 표준 검증
 import com.haccp.common.validation.DeleteValidation;
-// 역할 — 행·삭제키 정규화 공용 유틸
-import com.haccp.sys.SysPayload;
+// 역할 — 저장 행·삭제 키 DTO
+import com.haccp.sys.code.commoncode.dto.CommonCodeDeleteItem;
+import com.haccp.sys.code.commoncode.dto.CommonCodeDetailRow;
+import com.haccp.sys.code.commoncode.dto.CommonCodeGroupRow;
+import com.haccp.sys.code.commoncode.dto.CommonCodeSaveRow;
 // 역할 — 변경 감사 이력 적재
 import com.haccp.sys.logs.auditlog.AuditWriter;
 // 역할 — 생성자 주입
@@ -29,6 +32,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 // 역할 — 화면 행·삭제키 목록
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -54,7 +59,7 @@ public class CommonCodeService {
      *   2) 화면 진입·조회 버튼에서 호출한다
      *   3) 조건에 맞는 대분류가 없으면 빈 목록
      */
-    public List<Map<String, Object>> listGroups(
+    public List<CommonCodeGroupRow> listGroups(
             // 헤더 대분류코드 검색어. 공백이면 전체
             String mainCd,
             // 헤더 대분류명 검색어. 공백이면 전체
@@ -71,7 +76,7 @@ public class CommonCodeService {
      *   2) 대분류 행 선택 시 시스템·사용자 그리드가 각각 호출한다
      *   3) 대분류가 비면 업무 오류
      */
-    public List<Map<String, Object>> listDetails(
+    public List<CommonCodeDetailRow> listDetails(
             // 좌측에서 고른 대분류코드 — 필수
             String mainCd,
             // 시스템/사용자 구분 Y·sys | N·usr. 공백이면 둘 다
@@ -85,35 +90,38 @@ public class CommonCodeService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-12
+     * 일자: 2026-09-07
      * 코멘트:
-     *   1) 변경된 세부코드 행을 순서대로 저장한다
+     *   1) 변경된 세부코드 행을 순서대로 저장한다 — CommonCodeSaveRow
      *   2) 저장 버튼에서 호출한다
      *   3) 한 행이라도 실패하면 전체 롤백된다 — 감사 이력도 함께 되돌아간다
      */
     @Transactional
     public void save(
             // 화면이 보낸 변경 행 목록 — idx가 없으면 신규
-            List<Map<String, Object>> rows
+            List<CommonCodeSaveRow> rows
     ) {
-        SysPayload.requireRows(rows, LABEL);
+        DeleteValidation.requireItems(rows, "저장할 " + LABEL + " 행이 없습니다.");
         String coCd = LoginUserContext.coCd();
         String actor = LoginUserContext.userId();
-        for (Map<String, Object> row : rows) {
-            Long idx = SysPayload.idxOrNull(row);
+        for (CommonCodeSaveRow row : rows) {
+            if (row == null) {
+                throw new BizException("저장할 " + LABEL + " 행이 올바르지 않습니다.");
+            }
+            Long idx = idxOrNull(row.getIdx());
             commonCodeMapper.save(
                     coCd,
                     idx,
-                    SysPayload.text(row, "mainCd"),
-                    SysPayload.text(row, "subCd"),
-                    SysPayload.text(row, "codeNm"),
-                    SysPayload.intOrNull(row, "sortNo"),
-                    SysPayload.text(row, "ref1"),
-                    SysPayload.text(row, "ref2"),
-                    SysPayload.text(row, "useYn"),
+                    text(row.getMainCd()),
+                    text(row.getSubCd()),
+                    text(row.getCodeNm()),
+                    row.getSortNo(),
+                    text(row.getRef1()),
+                    text(row.getRef2()),
+                    text(row.getUseYn()),
                     actor);
             // idx가 null일 때(= 신규 등록) I, 값이 있을 때(= 기존 행 수정) U
-            auditWriter.record(AUDIT_TBL, idx, idx == null ? "I" : "U", row);
+            auditWriter.record(AUDIT_TBL, idx, idx == null ? "I" : "U", auditRow(row, idx));
         }
     }
 
@@ -127,7 +135,7 @@ public class CommonCodeService {
      */
     public void validateDelete(
             // 삭제 대상 복합키 배열 — [{ idx }]
-            List<Map<String, Long>> keys
+            List<CommonCodeDeleteItem> keys
     ) {
         assertDeletable(keys);
     }
@@ -143,7 +151,7 @@ public class CommonCodeService {
     @Transactional
     public void delete(
             // 삭제 대상 복합키 배열 — [{ idx }]
-            List<Map<String, Long>> keys
+            List<CommonCodeDeleteItem> keys
     ) {
         List<Long> idxs = assertDeletable(keys);
         String coCd = LoginUserContext.coCd();
@@ -155,11 +163,34 @@ public class CommonCodeService {
     }
 
     /** 삭제 대상 idx 정규화 + 참조 차단 검사 — validate·delete가 공유한다 */
-    private List<Long> assertDeletable(List<Map<String, Long>> keys) {
-        List<Long> idxs = SysPayload.idxList(keys, LABEL);
+    private List<Long> assertDeletable(List<CommonCodeDeleteItem> keys) {
+        DeleteValidation.requireItems(keys, "삭제할 " + LABEL + " 행을 선택하세요.");
+        List<Long> idxs = new ArrayList<>();
+        for (CommonCodeDeleteItem key : keys) {
+            if (key == null) {
+                throw new BizException("삭제할 " + LABEL + " 키가 올바르지 않습니다.");
+            }
+            idxs.add(DeleteValidation.requirePositive(
+                    key.getIdx(), "삭제할 " + LABEL + " 키가 올바르지 않습니다."));
+        }
         DeleteValidation.throwIfBlocked(
                 commonCodeMapper.selectDeleteBlocker(LoginUserContext.coCd(), idxs), LABEL);
         return idxs;
+    }
+
+    private static Long idxOrNull(Long idx) {
+        return idx != null && idx > 0 ? idx : null;
+    }
+
+    private static Map<String, Object> auditRow(CommonCodeSaveRow row, Long idx) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("idx", idx);
+        out.put("mainCd", row.getMainCd());
+        out.put("subCd", row.getSubCd());
+        out.put("codeNm", row.getCodeNm());
+        out.put("sortNo", row.getSortNo());
+        out.put("useYn", row.getUseYn());
+        return out;
     }
 
     private static String text(String value) {

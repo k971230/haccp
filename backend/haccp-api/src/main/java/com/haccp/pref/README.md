@@ -1,6 +1,6 @@
 # pref
 
-도메인 `pref` — 사용자 환경설정. Controller·Service·Mapper 인터페이스.
+도메인 `pref` — 사용자 환경설정. 조회(list)는 Controller → Mapper 직행. 저장(save)만 `PrefService` (`@Transactional`).
 
 ## 하위
 - `dto/` — `pref` 요청·응답 DTO (JSON camelCase)

@@ -18,7 +18,7 @@ PIPELINE[HB92] 권한그룹 관리 MyBatis XML
       권한그룹 목록 — sp_role_management_r_000
       헤더 코드·명·사용여부는 부분검색어라 공백이면 전체가 나온다
     -->
-    <select id="selectRows" resultType="map">
+    <select id="selectRows" resultType="com.haccp.sys.code.role.dto.RoleRow">
         SELECT * FROM sp_role_management_r_000(
             #{coCd,     jdbcType=VARCHAR},
             #{usrgrpCd, jdbcType=VARCHAR},
@@ -71,7 +71,7 @@ PIPELINE[HB92] 권한그룹 관리 MyBatis XML
       권한그룹별 화면 권한 — sp_role_management_screen_r_000
       tbl_screen 기준 LEFT JOIN이라 아직 설정하지 않은 화면도 N으로 내려온다
     -->
-    <select id="selectScreens" resultType="map">
+    <select id="selectScreens" resultType="com.haccp.sys.code.role.dto.RoleScreenRow">
         SELECT * FROM sp_role_management_screen_r_000(
             #{coCd,     jdbcType=VARCHAR},
             #{usrgrpCd, jdbcType=VARCHAR}

@@ -15,11 +15,13 @@ package com.haccp.docs.sch;
 
 // 역할 — 문서주기 삭제 키 DTO
 import com.haccp.docs.sch.dto.DocCycleDeleteItem;
+import com.haccp.docs.sch.dto.DocCycleFormRow;
+import com.haccp.docs.sch.dto.DocCycleRow;
+import com.haccp.docs.sch.dto.DocCycleSaveRequest;
 // 역할 — 공통 성공 응답
 import com.haccp.common.response.CommonResponse;
 // 역할 — 요청 본문·쿼리 바인딩
 import java.util.List;
-import java.util.Map;
 // 역할 — 생성자 DI
 import lombok.RequiredArgsConstructor;
 // 역할 — Spring REST 매핑
@@ -47,7 +49,7 @@ public class DocCycleController {
      *   3) 성공 시 camelCase 행 배열
      */
     @GetMapping("/forms")
-    public CommonResponse<List<Map<String, Object>>> forms(
+    public CommonResponse<List<DocCycleFormRow>> forms(
             // 양식코드 검색어 — 미지정이면 전체
             @RequestParam(required = false) String tmplCd,
             // 양식명 검색어 — 미지정이면 전체
@@ -67,7 +69,7 @@ public class DocCycleController {
      *   3) 주기 미설정일 때(= 신규 등록 대상) data가 null
      */
     @GetMapping("/get")
-    public CommonResponse<Map<String, Object>> get(
+    public CommonResponse<DocCycleRow> get(
             // 좌측에서 선택한 양식코드 — 필수
             @RequestParam String tmplCd
     ) {
@@ -85,7 +87,7 @@ public class DocCycleController {
     @PutMapping("/save")
     public CommonResponse<Void> save(
             // 화면 폼 1건 — tmplCd·baseDt·cycleCd·nonworkRule·dueTime·deptCd·userId·useYn·details[]
-            @RequestBody Map<String, Object> row
+            @RequestBody DocCycleSaveRequest row
     ) {
         service.save(row);
         return CommonResponse.ok(null);

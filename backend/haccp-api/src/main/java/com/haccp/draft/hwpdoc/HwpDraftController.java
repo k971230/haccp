@@ -16,6 +16,7 @@ package com.haccp.draft.hwpdoc;
 
 import com.haccp.common.response.CommonResponse;
 import com.haccp.common.context.RequestMeta;
+import com.haccp.docs.documents.dto.DocumentDetailResponse;
 import com.haccp.draft.dto.DraftDeleteItem;
 import com.haccp.draft.dto.DraftFormRow;
 import com.haccp.draft.dto.DraftListRow;
@@ -105,7 +106,7 @@ public class HwpDraftController {
      *   3) 성공 시 header·approvals·files·versions
      */
     @GetMapping("/detail")
-    public CommonResponse<Map<String, Object>> detail(
+    public CommonResponse<DocumentDetailResponse> detail(
             // docIdx: 조회할 문서 idx
             @RequestParam Long docIdx
     ) {

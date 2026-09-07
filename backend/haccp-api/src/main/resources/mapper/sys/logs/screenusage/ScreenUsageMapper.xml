@@ -18,7 +18,7 @@ PIPELINE[HB92] 화면 이용 통계 MyBatis XML
       화면 이용 통계 목록 — sp_screen_usage_statistics_r_000
       scrnCd는 좌측 메뉴 트리에서 고른 화면코드이며 공백이면 전체 화면이 나온다
     -->
-    <select id="selectRows" resultType="map">
+    <select id="selectRows" resultType="com.haccp.sys.logs.screenusage.dto.ScreenUsageRow">
         SELECT * FROM sp_screen_usage_statistics_r_000(
             #{coCd,   jdbcType=VARCHAR},
             #{fromDt, jdbcType=VARCHAR},

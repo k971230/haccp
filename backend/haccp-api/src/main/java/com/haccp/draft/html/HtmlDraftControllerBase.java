@@ -19,14 +19,13 @@
 package com.haccp.draft.html;
 
 // 역할 — 상세 원문(JSON)
-import com.fasterxml.jackson.databind.JsonNode;
-// 역할 — 공통 응답 봉투
 import com.haccp.common.response.CommonResponse;
 // 역할 — 작성 목록·양식·저장·삭제 전송 객체
 import com.haccp.draft.dto.DraftDeleteItem;
 import com.haccp.draft.dto.DraftFormRow;
 import com.haccp.draft.dto.DraftListRow;
 import com.haccp.draft.dto.DraftSaveRequest;
+import com.haccp.draft.dto.HtmlFormDraftDetail;
 import java.util.List;
 import java.util.Map;
 // 역할 — 매핑
@@ -95,7 +94,7 @@ public abstract class HtmlDraftControllerBase {
      *   3) header·items·corrective JSON
      */
     @GetMapping("/detail")
-    public CommonResponse<JsonNode> detail(
+    public CommonResponse<HtmlFormDraftDetail> detail(
             // tmplCd: 신규일 때 항목을 깔 양식코드. 필수
             @RequestParam String tmplCd,
             // docIdx: 없으면 신규

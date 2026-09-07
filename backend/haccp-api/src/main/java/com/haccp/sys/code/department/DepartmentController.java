@@ -14,6 +14,9 @@ package com.haccp.sys.code.department;
 
 // 역할 — API 성공 응답 래퍼
 import com.haccp.common.response.CommonResponse;
+import com.haccp.sys.code.department.dto.DeptDeleteItem;
+import com.haccp.sys.code.department.dto.DeptRow;
+import com.haccp.sys.code.department.dto.DeptSaveRow;
 // 역할 — 생성자 주입
 import lombok.RequiredArgsConstructor;
 // 역할 — REST 매핑
@@ -27,7 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 // 역할 — 화면 행·삭제키 목록
 import java.util.List;
-import java.util.Map;
 
 /** 부서 관리 화면 → /api/v1/sys/code/department-management/* */
 @RestController
@@ -47,7 +49,7 @@ public class DepartmentController {
      *   3) 좌측 트리가 전체 집합을 요구하므로 화면은 검색어 없이 부르고 결과를 화면에서 다시 거른다
      */
     @GetMapping("/list")
-    public CommonResponse<List<Map<String, Object>>> list(
+    public CommonResponse<List<DeptRow>> list(
             // 부서코드 부분검색어 — 미입력이면 전체
             @RequestParam(required = false, defaultValue = "") String deptCd,
             // 부서명 부분검색어 — 미입력이면 전체
@@ -69,7 +71,7 @@ public class DepartmentController {
     @PutMapping("/save")
     public CommonResponse<Void> save(
             // 변경 행 목록 — idx가 없으면 신규
-            @RequestBody List<Map<String, Object>> rows
+            @RequestBody List<DeptSaveRow> rows
     ) {
         departmentService.save(rows);
         return CommonResponse.ok(null);
@@ -86,7 +88,7 @@ public class DepartmentController {
     @PostMapping("/validate-delete")
     public CommonResponse<Void> validateDelete(
             // 삭제 대상 복합키 배열 — 단건이어도 [{ idx }]
-            @RequestBody List<Map<String, Long>> keys
+            @RequestBody List<DeptDeleteItem> keys
     ) {
         departmentService.validateDelete(keys);
         return CommonResponse.ok(null);
@@ -103,7 +105,7 @@ public class DepartmentController {
     @PostMapping("/delete")
     public CommonResponse<Void> delete(
             // 삭제 대상 복합키 배열 — 단건이어도 [{ idx }]
-            @RequestBody List<Map<String, Long>> keys
+            @RequestBody List<DeptDeleteItem> keys
     ) {
         departmentService.delete(keys);
         return CommonResponse.ok(null);

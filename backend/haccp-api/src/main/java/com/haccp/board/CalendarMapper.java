@@ -30,7 +30,7 @@ public interface CalendarMapper {
      *   2) 캘린더 화면 진입·월 이동에서 호출한다
      *   3) 담당 여부는 Service가 JWT로 붙인다
      */
-    List<Map<String, Object>> selectTasks(
+    List<com.haccp.board.dto.CalendarTaskRow> selectTasks(
             // JWT 회사코드
             @Param("coCd") String coCd,
             // 조회 시작일 YYYYMMDD

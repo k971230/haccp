@@ -13,10 +13,11 @@
 package com.haccp.board;
 
 // 역할 — 공통 응답
+import com.haccp.board.dto.CalendarMonthResponse;
+import com.haccp.board.dto.CalendarSaveItem;
 import com.haccp.common.response.CommonResponse;
 // 역할 — 목록
 import java.util.List;
-import java.util.Map;
 // 역할 — Spring REST
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,7 +43,7 @@ public class CalendarController {
      *   3) 성공 시 { month, tasks, holidays, workdays }
      */
     @GetMapping("/list")
-    public CommonResponse<Map<String, Object>> list(
+    public CommonResponse<CalendarMonthResponse> list(
             // 조회 월 YYYYMM — 비면 이번 달
             @RequestParam(required = false) String month
     ) {
@@ -60,7 +61,7 @@ public class CalendarController {
     @PutMapping("/save")
     public CommonResponse<Void> save(
             // 변경분 — ymd YYYYMMDD, workYn Y/N
-            @RequestBody List<Map<String, String>> items
+            @RequestBody List<CalendarSaveItem> items
     ) {
         service.save(items);
         service.regenerateAfterSave();

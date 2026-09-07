@@ -15,9 +15,13 @@ package com.haccp.docs.hwp;
 
 // 역할 — 공통 성공 응답
 import com.haccp.common.response.CommonResponse;
+import com.haccp.docs.hwp.dto.HwpTemplateApplyRequest;
+import com.haccp.docs.hwp.dto.HwpTemplateDeleteItem;
+import com.haccp.docs.hwp.dto.HwpTemplateFileRow;
+import com.haccp.docs.hwp.dto.HwpTemplateRow;
+import com.haccp.docs.hwp.dto.HwpTemplateSaveRow;
 // 역할 — 요청 본문·쿼리 바인딩
 import java.util.List;
-import java.util.Map;
 // 역할 — 생성자 DI
 import lombok.RequiredArgsConstructor;
 // 역할 — Spring REST 매핑
@@ -45,7 +49,7 @@ public class HwpTemplateController {
      *   3) 검색어·구분·사용여부는 빈 문자열 허용 — 공백이면 전체 목록
      */
     @GetMapping("/list")
-    public CommonResponse<List<Map<String, Object>>> hwpTemplates(
+    public CommonResponse<List<HwpTemplateRow>> hwpTemplates(
             // 양식코드 검색어 — 공백이면 전체
             @RequestParam(required = false, defaultValue = "") String tmplCd,
             // 양식명 검색어 — 공백이면 전체
@@ -67,7 +71,7 @@ public class HwpTemplateController {
      *   3) 본문 {tmplCd, tmplNm, useYn} — sysYn 은 받아도 무시한다
      */
     @PutMapping("/save")
-    public CommonResponse<Void> saveHwpTemplate(@RequestBody Map<String, Object> row) {
+    public CommonResponse<Void> saveHwpTemplate(@RequestBody HwpTemplateSaveRow row) {
         service.saveHwpTemplate(row);
         return CommonResponse.ok(null);
     }
@@ -81,7 +85,7 @@ public class HwpTemplateController {
      *   3) 삭제된 이력은 제외하고 최근 업로드가 먼저 온다
      */
     @GetMapping("/files")
-    public CommonResponse<List<Map<String, Object>>> hwpTemplateFiles(@RequestParam String tmplCd) {
+    public CommonResponse<List<HwpTemplateFileRow>> hwpTemplateFiles(@RequestParam String tmplCd) {
         return CommonResponse.ok(service.hwpTemplateFiles(tmplCd));
     }
 
@@ -94,7 +98,7 @@ public class HwpTemplateController {
      *   3) 본문 {tmplCd, fileIdx?} — fileIdx 가 없으면 초기화다
      */
     @PostMapping("/apply-file")
-    public CommonResponse<Void> applyHwpTemplateFile(@RequestBody Map<String, Object> row) {
+    public CommonResponse<Void> applyHwpTemplateFile(@RequestBody HwpTemplateApplyRequest row) {
         service.applyHwpTemplateFile(row);
         return CommonResponse.ok(null);
     }
@@ -110,7 +114,7 @@ public class HwpTemplateController {
     @PostMapping("/validate-delete")
     public CommonResponse<Void> validateDelete(
             // 삭제 키 객체 배열 — 단건도 [{ tmplCd }]
-            @RequestBody List<Map<String, Object>> keys
+            @RequestBody List<HwpTemplateDeleteItem> keys
     ) {
         service.validateDelete(keys);
         return CommonResponse.ok(null);
@@ -127,7 +131,7 @@ public class HwpTemplateController {
     @PostMapping("/delete")
     public CommonResponse<Void> delete(
             // 삭제 키 객체 배열 — 단건도 [{ tmplCd }]
-            @RequestBody List<Map<String, Object>> keys
+            @RequestBody List<HwpTemplateDeleteItem> keys
     ) {
         service.delete(keys);
         return CommonResponse.ok(null);

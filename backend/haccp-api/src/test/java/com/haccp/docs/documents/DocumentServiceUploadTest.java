@@ -26,10 +26,10 @@ import static org.mockito.Mockito.when;
 import com.haccp.common.context.LoginUser;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.docs.documents.dto.DocumentFileRow;
+import com.haccp.docs.documents.dto.DocumentHeaderRow;
 import com.haccp.docs.templates.RhwpCliClient;
 import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -91,7 +91,9 @@ class DocumentServiceUploadTest {
         old.setFileNm("old.hwpx");
         old.setFilePath(oldPath);
         when(mapper.selectFiles("0000", 1L)).thenReturn(List.of(old));
-        when(mapper.selectDocument("0000", 1L)).thenReturn(Map.of("tmplCd", "hwp_sys_001"));
+        DocumentHeaderRow header = new DocumentHeaderRow();
+        header.setTmplCd("hwp_sys_001");
+        when(mapper.selectDocument("0000", 1L)).thenReturn(header);
         when(mapper.insertFile(anyString(), anyLong(), anyString(), anyString(), anyString(),
                 anyLong(), anyString(), anyString())).thenReturn(11L);
         DocumentFileRow saved = new DocumentFileRow();

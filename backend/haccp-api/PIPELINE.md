@@ -82,7 +82,7 @@
 |---|---|---|---|
 | 3-11 | `GET /api/v1/menu/list` | `menu/MenuController` → `sp_menu_nav_r_000` | 좌측 메뉴 트리 (업체별 `tbl_menu`) |
 | 3-12 | `GET /api/v1/code` | `code/CodeController` → `sp_common_code_management_r_001` | 공통코드 콤보 |
-| 3-13 | `GET /api/v1/pref/grid` | `pref/PrefController` → `sp_tbl_grid_pref_r_000` | 사용자별 그리드 열 설정 |
+| 3-13 | `GET /api/v1/pref/grid` | `pref/PrefController` → `sp_tbl_grid_pref_r_000` | 사용자별 그리드 열 설정. 조회는 Mapper 직행, 저장은 `PrefService` |
 | 3-14 | `POST /api/v1/log/view/collect` | `log/ViewLogController` → `sp_tbl_view_log_c_000` | 화면 체류 로그 (화면 이동 시 모아 보낸다) |
 
 ---

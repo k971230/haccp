@@ -13,6 +13,8 @@
 package com.haccp.draft;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.haccp.draft.dto.HtmlFormDraftHeader;
+import com.haccp.draft.dto.PaperStampRow;
 import java.util.Map;
 
 public final class DraftPaperStamp {
@@ -58,8 +60,42 @@ public final class DraftPaperStamp {
             if (header.has("checkerId") && !header.get("checkerId").isNull()) {
                 checkerId = header.get("checkerId").asText("");
             }
-            if (checkerId.isBlank() && !writerId.isBlank()) {
-                header.put("checkerId", writerId);
+        if (checkerId.isBlank() && !writerId.isBlank()) {
+            header.put("checkerId", writerId);
+            }
+        }
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-07
+     * 코멘트:
+     *   1) 도장칸 DTO 를 헤더 DTO 에 넣는다
+     *   2) CCP detail 조립이 호출한다
+     *   3) 점검자가 비면 작성자명을 넣는다. stamp 가 null 이면 아무 것도 안 한다
+     */
+    public static void apply(
+            // header: 작성 상세 헤더
+            HtmlFormDraftHeader header,
+            // stamp: 지면 도장칸 1행
+            PaperStampRow stamp
+    ) {
+        if (header == null || stamp == null) {
+            return;
+        }
+        String writerId = DraftSupport.asText(stamp.getWriterId());
+        String writerNm = DraftSupport.asText(stamp.getWriterNm());
+        header.setWriterId(writerId);
+        header.setWriterNm(writerNm);
+        header.setWriterSignYn(signYn(stamp.getWriterSignYn()));
+        header.setApproverId(DraftSupport.asText(stamp.getApproverId()));
+        header.setApproverNm(DraftSupport.asText(stamp.getApproverNm()));
+        header.setApproverSignYn(signYn(stamp.getApproverSignYn()));
+        String checkerNm = DraftSupport.nvl(header.getCheckerNm());
+        if (checkerNm.isBlank() && !writerNm.isBlank()) {
+            header.setCheckerNm(writerNm);
+            if (DraftSupport.nvl(header.getCheckerId()).isBlank() && !writerId.isBlank()) {
+                header.setCheckerId(writerId);
             }
         }
     }

@@ -17,6 +17,7 @@ package com.haccp.sys.code.user;
 import com.haccp.common.context.LoginUserContext;
 // 역할 — API 성공 응답 래퍼
 import com.haccp.common.response.CommonResponse;
+import com.haccp.sys.code.user.dto.UserSignInfoRow;
 // 역할 — 생성자 주입
 import lombok.RequiredArgsConstructor;
 // 역할 — 이미지 응답·REST 매핑
@@ -32,9 +33,8 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-// 역할 — 파일명 인코딩·응답 맵
+// 역할 — 파일명 인코딩
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 
 /** 사용자 서명 → /api/v1/sys/users/* — 화면 API 가 아니라 여러 화면 공용이다 */
 @RestController
@@ -54,7 +54,7 @@ public class UserSignController {
      *   3) 미등록이어도 200이며 signYn='N'이다 — 화면은 이 값으로 업로드 유도를 결정한다
      */
     @GetMapping("/me/sign-info")
-    public CommonResponse<Map<String, Object>> mySignInfo() {
+    public CommonResponse<UserSignInfoRow> mySignInfo() {
         return CommonResponse.ok(userService.mySignInfo());
     }
 

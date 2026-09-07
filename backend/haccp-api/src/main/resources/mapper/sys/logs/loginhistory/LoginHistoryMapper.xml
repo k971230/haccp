@@ -18,7 +18,7 @@ PIPELINE[HB92] 로그인 이력 MyBatis XML
       로그인 이력 목록 — sp_login_history_r_000
       userId는 좌측 사용자 트리 선택값, resultCd는 성공·실패·잠금 필터이며 공백이면 전체다
     -->
-    <select id="selectRows" resultType="map">
+    <select id="selectRows" resultType="com.haccp.sys.logs.loginhistory.dto.LoginHistoryRow">
         SELECT * FROM sp_login_history_r_000(
             #{coCd,     jdbcType=VARCHAR},
             #{fromDt,   jdbcType=VARCHAR},

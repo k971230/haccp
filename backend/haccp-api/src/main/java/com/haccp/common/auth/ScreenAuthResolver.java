@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) FE SCREEN_PATH 와 같은 칸을 /api/v1 앞에 붙인 접두로 화면을 찾는다. 정책 테이블은 없다
  *   2) 문서 허브·서명 /sys/users 는 화면 URL 이 아니라서 여기 예외 맵으로 둔다
- *   3) 맵에 없고 화이트리스트도 아니면 empty — 인터셉터는 통과시키고 로그만 남긴다
+ *   3) 맵에 없고 화이트리스트도 아니면 empty — 인터셉터가 403 한다 (등록 누락은 열린 문)
  *
  * PIPELINE[HB145] 화면 권한 인터셉터
  */
@@ -96,7 +96,7 @@ public final class ScreenAuthResolver {
      * 코멘트:
      *   1) HTTP 메서드와 URI 로 권한 검사 대상을 고른다
      *   2) 인터셉터가 로그인 사용자 권한과 대조하기 전에 호출한다
-     *   3) 화이트리스트·미매핑이면 empty (검사 생략)
+     *   3) 화이트리스트·공용 GET 은 empty(건너뜀). 그 외 empty 는 미등록이라 인터셉터가 막는다
      */
     public static Optional<ScreenAuthMatch> resolve(
             // GET/POST/PUT — OPTIONS 는 호출부가 이미 걸렀다
@@ -224,6 +224,34 @@ public final class ScreenAuthResolver {
      * JWT 이후에도 화면 권한을 보지 않는 경로.
      * /auth/** · 셸 공용 · 본인 서명. UserController 의 /sys/users/me 를 여기 적는다.
      */
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-07
+     * 코멘트:
+     *   1) 화면 권한을 보지 않는 경로인지 판정한다 — 화이트리스트와 공용 GET
+     *   2) 인터셉터가 미등록 API 를 403 하기 전에 호출한다
+     *   3) true 면 통과, false 이고 resolve 가 empty 면 미등록
+     */
+    public static boolean skipScreenAuth(
+            // GET/POST/PUT
+            String method,
+            // 컨텍스트 경로 없는 URI
+            String uri
+    ) {
+        if (uri == null || uri.isBlank()) {
+            return false;
+        }
+        String path = stripQuery(uri);
+        if (isWhitelisted(path)) {
+            return true;
+        }
+        // 양식 원본 GET · 서명 이미지 GET — resolve 가 empty 로 열어 둔 공용 조회
+        if (isGet(method) && path.startsWith("/api/v1/docs/templates/") && path.endsWith("/form")) {
+            return true;
+        }
+        return isGet(method) && path.startsWith("/api/v1/sys/users/") && path.toLowerCase(Locale.ROOT).endsWith("/sign");
+    }
+
     static boolean isWhitelisted(String path) {
         if (path.startsWith("/api/v1/auth/")) return true;
         if (path.startsWith("/api/v1/menu/")) return true;

@@ -13,9 +13,15 @@
 package com.haccp.docs.htmlform.htmltemplate;
 
 import com.haccp.common.response.CommonResponse;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormApplyRequest;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormCopyRequest;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormCopyResult;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormItemRow;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormItemsSaveRequest;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormNameRequest;
 import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormVerDeleteItem;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormVersionRow;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,7 +52,7 @@ public class HtmlTemplateController {
      *   3) 회사는 JWT. tmplCd로 가족 분기. verCd·verNm 빈값이면 전체
      */
     @GetMapping("/versions")
-    public CommonResponse<List<Map<String, Object>>> versions(
+    public CommonResponse<List<HtmlFormVersionRow>> versions(
             // tmplCd: 가족 — html_hyg_prc_000 / html_ccp_chk_000 / html_ccp_pkg_000 / html_ccp_htg_000 / html_ccp_mtl_000
             @RequestParam(required = false) String tmplCd,
             // verCd: 양식코드 부분검색
@@ -66,7 +72,7 @@ public class HtmlTemplateController {
      *   3) html_hyg_prc_000·html_ccp_chk_000·html_ccp_pkg_000·html_ccp_htg_000·html_ccp_mtl_000 이면 시드 표준
      */
     @GetMapping("/items")
-    public CommonResponse<List<Map<String, Object>>> items(
+    public CommonResponse<List<HtmlFormItemRow>> items(
             @RequestParam(required = false) String tmplCd,
             // verNo: 0=표준
             @RequestParam(required = false) Integer verNo
@@ -83,14 +89,15 @@ public class HtmlTemplateController {
      *   3) Body: verNm. data.tmplCd 반환
      */
     @PutMapping("/copy")
-    public CommonResponse<Map<String, Object>> copy(
-            @RequestBody Map<String, Object> body
+    public CommonResponse<HtmlFormCopyResult> copy(
+            @RequestBody HtmlFormCopyRequest body
     ) {
+        HtmlFormCopyRequest req = body == null ? new HtmlFormCopyRequest() : body;
         return CommonResponse.ok(service.copy(
-                str(body.get("tmplCd")),
-                asInt(body.get("srcVerNo")),
-                str(body.get("verCd")),
-                str(body.get("verNm"))
+                req.getTmplCd(),
+                req.getSrcVerNo(),
+                req.getVerCd(),
+                req.getVerNm()
         ));
     }
 
@@ -104,13 +111,10 @@ public class HtmlTemplateController {
      */
     @PutMapping("/items")
     public CommonResponse<Void> saveItems(
-            @RequestBody Map<String, Object> body
+            @RequestBody HtmlFormItemsSaveRequest body
     ) {
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> items = body.get("items") instanceof List<?> list
-                ? (List<Map<String, Object>>) list
-                : List.of();
-        service.saveItems(str(body.get("tmplCd")), asInt(body.get("verNo")), items);
+        HtmlFormItemsSaveRequest req = body == null ? new HtmlFormItemsSaveRequest() : body;
+        service.saveItems(req.getTmplCd(), req.getVerNo(), req.getItems());
         return CommonResponse.ok(null);
     }
 
@@ -124,9 +128,10 @@ public class HtmlTemplateController {
      */
     @PutMapping("/apply")
     public CommonResponse<Void> apply(
-            @RequestBody Map<String, Object> body
+            @RequestBody HtmlFormApplyRequest body
     ) {
-        service.apply(str(body.get("tmplCd")), asInt(body.get("verNo")));
+        HtmlFormApplyRequest req = body == null ? new HtmlFormApplyRequest() : body;
+        service.apply(req.getTmplCd(), req.getVerNo());
         return CommonResponse.ok(null);
     }
 
@@ -140,13 +145,14 @@ public class HtmlTemplateController {
      */
     @PutMapping("/name")
     public CommonResponse<Void> updateVerNm(
-            @RequestBody Map<String, Object> body
+            @RequestBody HtmlFormNameRequest body
     ) {
+        HtmlFormNameRequest req = body == null ? new HtmlFormNameRequest() : body;
         service.updateVerNm(
-                str(body.get("tmplCd")),
-                asInt(body.get("verNo")),
-                str(body.get("verNm")),
-                str(body.get("useYn"))
+                req.getTmplCd(),
+                req.getVerNo(),
+                req.getVerNm(),
+                req.getUseYn()
         );
         return CommonResponse.ok(null);
     }
@@ -183,17 +189,4 @@ public class HtmlTemplateController {
         return CommonResponse.ok(null);
     }
 
-    private static String str(Object value) {
-        return value == null ? "" : String.valueOf(value).trim();
-    }
-
-    private static Integer asInt(Object value) {
-        if (value instanceof Number n) return n.intValue();
-        if (value == null) return 0;
-        try {
-            return Integer.parseInt(String.valueOf(value).trim());
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
 }

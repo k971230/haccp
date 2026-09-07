@@ -31,7 +31,7 @@ PIPELINE[HB89] 결재선 관리 MyBatis XML
     </update>
 
     <!-- 결재선 삭제 사전 차단 — 양식·문서 참조 중 첫 사유 -->
-    <select id="selectApprovalLineBlocker" resultType="map">
+    <select id="selectApprovalLineBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
         SELECT * FROM sp_tbl_approval_line_delete_blocker_r_000(
             #{coCd, jdbcType=VARCHAR},
             #{apprLineCd, jdbcType=VARCHAR}

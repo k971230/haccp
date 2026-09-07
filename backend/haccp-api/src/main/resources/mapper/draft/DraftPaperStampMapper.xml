@@ -15,7 +15,7 @@ PIPELINE[HB135] 양식 작성 공용 유틸
 <mapper namespace="com.haccp.draft.DraftPaperStampMapper">
 
     <!-- 작성자·승인 완료 결재자 — 서명 실물은 SignSlot 이 userId 로 다시 읽는다 -->
-    <select id="selectPaperStamp" resultType="map">
+    <select id="selectPaperStamp" resultType="com.haccp.draft.dto.PaperStampRow">
         SELECT * FROM sp_tbl_document_paper_stamp_r_000(#{coCd}, #{docIdx})
     </select>
 </mapper>

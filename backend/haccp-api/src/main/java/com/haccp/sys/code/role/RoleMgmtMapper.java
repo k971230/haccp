@@ -34,7 +34,7 @@ public interface RoleMgmtMapper {
      *   2) 화면 진입·조회와 사용자 관리 룩업에서 호출한다
      *   3) 조건에 맞는 그룹이 없으면 빈 목록
      */
-    List<Map<String, Object>> selectRows(
+    List<com.haccp.sys.code.role.dto.RoleRow> selectRows(
             // JWT 회사코드 — 테넌트 범위. 필수 등가 조건
             @Param("coCd") String coCd,
             // 헤더 권한그룹코드 검색어. 공백이면 전체
@@ -108,7 +108,7 @@ public interface RoleMgmtMapper {
      *   2) 권한 관리 우측 트리와 로그인 직후 버튼 권한 판정이 호출한다
      *   3) 미설정 화면도 N으로 채워져 전체 화면이 내려온다
      */
-    List<Map<String, Object>> selectScreens(
+    List<com.haccp.sys.code.role.dto.RoleScreenRow> selectScreens(
             // JWT 회사코드
             @Param("coCd") String coCd,
             // 조회할 권한그룹코드

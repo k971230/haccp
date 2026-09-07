@@ -18,7 +18,7 @@ PIPELINE[HB92] 감사 이력 MyBatis XML
       감사 이력 목록 — sp_audit_log_r_000
       menuKey는 좌측 메뉴 트리 선택값, userId·actionCd는 부분검색 필터로 공백이면 전체다
     -->
-    <select id="selectRows" resultType="map">
+    <select id="selectRows" resultType="com.haccp.sys.logs.auditlog.dto.AuditLogRow">
         SELECT * FROM sp_audit_log_r_000(
             #{coCd,     jdbcType=VARCHAR},
             #{fromDt,   jdbcType=VARCHAR},

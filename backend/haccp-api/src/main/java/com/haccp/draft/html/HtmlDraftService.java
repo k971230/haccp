@@ -24,11 +24,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
+import com.haccp.draft.DraftSeenGuard;
 import com.haccp.draft.DraftSupport;
 import com.haccp.draft.dto.DraftDeleteItem;
 import com.haccp.draft.dto.DraftFormRow;
 import com.haccp.draft.dto.DraftListRow;
 import com.haccp.draft.dto.DraftSaveRequest;
+import com.haccp.draft.dto.HtmlFormDraftDetail;
 import com.haccp.flow.ca.DocCorrectiveSupport;
 import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.LinkedHashMap;
@@ -85,6 +87,8 @@ public class HtmlDraftService {
     private final DocCorrectiveSupport correctiveSupport;
     // 작성 저장·삭제 이력 — 이탈 자동생성·서명 스냅샷은 같은 저장의 부수라 따로 안 남긴다
     private final AuditWriter auditWriter;
+    // 초안 동시 저장 스탬프 — 상세에 붙이고 저장 직전에 대조한다
+    private final DraftSeenGuard seenGuard;
 
     /** 감사 로그 대상 표 — 헤더. 본문 표는 남기지 않는다 */
     private static final String AUDIT_TBL = "tbl_document";
@@ -144,7 +148,7 @@ public class HtmlDraftService {
      *   2) 좌측 행 클릭·양식 선택이 호출한다
      *   3) 저장 문서면 이탈 푸터를 붙인다
      */
-    public JsonNode detail(
+    public HtmlFormDraftDetail detail(
             // family: 이 화면이 다루는 양식군
             Family family,
             // tmplCd: 신규일 때 항목을 깔 양식코드. 필수
@@ -154,15 +158,19 @@ public class HtmlDraftService {
     ) {
         String tmpl = DraftSupport.requireUsrTmpl(tmplCd, family.prefix(), family.std());
         try {
-            ObjectNode root = (ObjectNode) objectMapper.readTree(
-                    mapper.selectDetail(family.key(), LoginUserContext.coCd(), tmpl, docIdx));
+            String json = mapper.selectDetail(family.key(), LoginUserContext.coCd(), tmpl, docIdx);
+            HtmlFormDraftDetail root = objectMapper.readValue(json, HtmlFormDraftDetail.class);
+            if (root.getItems() == null) {
+                root.setItems(List.of());
+            }
             // 저장된 문서일 때(= docIdx 있음) 개선조치 푸터를 함께 내린다
             if (docIdx != null && docIdx > 0) {
-                root.set("corrective", objectMapper.valueToTree(
-                        correctiveSupport.load(LoginUserContext.coCd(), docIdx)));
+                root.setCorrective(correctiveSupport.load(LoginUserContext.coCd(), docIdx));
             } else {
-                root.putNull("corrective");
+                root.setCorrective(null);
             }
+            // 화면이 다시 저장할 때 대조할 스탬프
+            seenGuard.attach(root, docIdx);
             return root;
         } catch (JsonProcessingException e) {
             throw new BizException("작성 자료를 읽지 못했습니다.");
@@ -188,6 +196,8 @@ public class HtmlDraftService {
             throw new BizException("일자를 입력하세요.");
         }
         String tmpl = DraftSupport.requireUsrTmpl(req.getTmplCd(), family.prefix(), family.std());
+        // 수정일 때(= docIdx 있음) 다른 탭이 먼저 저장했으면 여기서 막는다
+        seenGuard.assertSeen(req);
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("verNo", req.getVerNo() == null ? 0 : req.getVerNo());
@@ -225,8 +235,8 @@ public class HtmlDraftService {
             );
             // 점검행에 아니오가 하나라도 있을 때(= 부적합) 개선조치를 자동 생성한다
             boolean hasNg = req.getItems() != null && req.getItems().stream().anyMatch(row -> {
-                Object yn = row.get("yn");
-                return yn != null && "N".equalsIgnoreCase(String.valueOf(yn).trim());
+                String yn = row.getYn();
+                return yn != null && "N".equalsIgnoreCase(yn.trim());
             });
             boolean keepCa = hasNg || "Y".equalsIgnoreCase(DraftSupport.nvl(req.getDeviationYn()));
             correctiveSupport.saveAutoIfNg(

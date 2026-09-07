@@ -46,7 +46,7 @@ public class LoginHistoryController {
      *   3) 해당 기간에 이력이 없으면 빈 배열
      */
     @GetMapping("/list")
-    public CommonResponse<List<Map<String, Object>>> list(
+    public CommonResponse<List<com.haccp.sys.logs.loginhistory.dto.LoginHistoryRow>> list(
             // 조회 시작일 — YYYY-MM-DD 또는 YYYYMMDD. 미입력이면 오늘
             @RequestParam(required = false) String fromDt,
             // 조회 종료일 — YYYY-MM-DD 또는 YYYYMMDD. 미입력이면 오늘

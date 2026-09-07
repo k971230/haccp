@@ -32,7 +32,7 @@ public interface ScreenUsageMapper {
      *   2) 화면 진입·조회와 좌측 메뉴 트리 선택 시 호출한다
      *   3) 집계가 아직 없으면 빈 목록
      */
-    List<Map<String, Object>> selectRows(
+    List<com.haccp.sys.logs.screenusage.dto.ScreenUsageRow> selectRows(
             // JWT 회사코드 — 테넌트 범위. 필수 등가 조건
             @Param("coCd") String coCd,
             // 집계 시작일 YYYYMMDD

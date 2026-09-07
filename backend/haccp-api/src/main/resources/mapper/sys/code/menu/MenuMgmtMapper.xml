@@ -19,7 +19,7 @@ PIPELINE[HB92] 메뉴 관리 MyBatis XML
       권한 필터가 없는 관리자 조회이며 sort_no(대중소 인코딩) 순으로 내려온다
       좌측 트리가 전체 집합을 요구하므로 화면은 menuCd·menuNm·useYn을 공백으로 넘긴다
     -->
-    <select id="selectRows" resultType="map">
+    <select id="selectRows" resultType="com.haccp.sys.code.menu.dto.MenuMgmtRow">
         SELECT * FROM sp_menu_management_r_000(
             #{coCd,   jdbcType=VARCHAR},
             #{menuCd, jdbcType=VARCHAR},

@@ -21,16 +21,23 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
+import com.haccp.draft.DraftSeenGuard;
 import com.haccp.draft.DraftSupport;
 import com.haccp.draft.DraftPaperStamp;
 import com.haccp.draft.DraftPaperStampMapper;
 import com.haccp.flow.ca.dto.DocCorrectiveDto;
+import com.haccp.docs.htmlform.htmltemplate.dto.HtmlFormItemRow;
+import com.haccp.draft.ccpmonitoring.dto.CcpMtlHeaderRow;
+import com.haccp.draft.ccpmonitoring.dto.CcpMtlPassRow;
+import com.haccp.draft.ccpmonitoring.dto.CcpMtlSensRow;
+import com.haccp.draft.dto.CcpMonitorDraftDetail;
 import com.haccp.draft.dto.DraftDeleteItem;
 import com.haccp.draft.dto.DraftFormRow;
 import com.haccp.draft.dto.DraftListRow;
 import com.haccp.draft.dto.DraftPassRow;
 import com.haccp.draft.dto.DraftLogRow;
 import com.haccp.draft.dto.DraftSaveRequest;
+import com.haccp.draft.dto.HtmlFormDraftHeader;
 import com.haccp.flow.ca.DocCorrectiveSupport;
 import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.ArrayList;
@@ -68,6 +75,8 @@ public class CcpMtlDraftService {
     private final AuditWriter auditWriter;
     // 지면 작성자·승인자 칸 — 문서함 미리보기가 같은 detail 을 쓴다
     private final DraftPaperStampMapper paperStampMapper;
+    // 초안 동시 저장 스탬프 — 상세에 붙이고 저장 직전에 대조한다
+    private final DraftSeenGuard seenGuard;
 
     /** 감사 로그 대상 표 — 헤더. 감도·통과량 행은 남기지 않는다 */
     private static final String AUDIT_TBL = "tbl_document";
@@ -111,7 +120,7 @@ public class CcpMtlDraftService {
      *   2) 좌측 행 클릭·양식 선택이 호출한다
      *   3) MyBatis Map 은 camelMap 한 뒤 읽는다. 감도행은 phaseCd 를 그대로 내려 화면이 작업 전/후에 붙인다
      */
-    public JsonNode detail(
+    public CcpMonitorDraftDetail detail(
             // tmplCd: 신규일 때 항목을 깔 양식코드. 필수
             String tmplCd,
             // docIdx: tbl_document.idx. null·0 이면 신규
@@ -119,60 +128,68 @@ public class CcpMtlDraftService {
     ) {
         String tmpl = DraftSupport.requireUsrTmpl(tmplCd, USR_TMPL_PREFIX, STD_TMPL_CD);
         String coCd = LoginUserContext.coCd();
-        ObjectNode root = objectMapper.createObjectNode();
-        ObjectNode header = objectMapper.createObjectNode();
-        ArrayNode logRows = objectMapper.createArrayNode();
-        ArrayNode passRows = objectMapper.createArrayNode();
+        CcpMonitorDraftDetail root = new CcpMonitorDraftDetail();
+        HtmlFormDraftHeader header = new HtmlFormDraftHeader();
+        List<DraftLogRow> logRows = new ArrayList<>();
+        List<DraftPassRow> passRows = new ArrayList<>();
 
-        Map<String, Object> head = (docIdx != null && docIdx > 0)
-                ? DraftSupport.camelMap(mapper.selectHeader(coCd, docIdx, tmpl))
+        CcpMtlHeaderRow head = (docIdx != null && docIdx > 0)
+                ? mapper.selectHeader(coCd, docIdx, tmpl)
                 : null;
         // 저장된 문서일 때(= docIdx 있음) 헤더·감도행·통과량행을 서버 값으로 채운다
         if (head != null) {
-            Long hdrIdx = DraftSupport.asLong(head.get("hdrIdx"));
-            header.put("docIdx", DraftSupport.asLong(head.get("docIdx")));
-            header.put("docNo", DraftSupport.asText(head.get("docNo")));
-            header.put("status", DraftSupport.asText(head.get("status")));
-            header.put("baseDt", DraftSupport.asText(head.get("baseDt")));
-            header.put("tmplCd", tmpl);
-            header.put("checkerNm", DraftSupport.asText(head.get("mngNm")));
+            Long hdrIdx = head.getHdrIdx();
+            header.setDocIdx(head.getDocIdx());
+            header.setDocNo(DraftSupport.asText(head.getDocNo()));
+            header.setStatus(DraftSupport.asText(head.getStatus()));
+            header.setBaseDt(DraftSupport.asText(head.getBaseDt()));
+            header.setTmplCd(tmpl);
+            header.setCheckerNm(DraftSupport.asText(head.getMngNm()));
             // 작성자·승인자 — 금속 모니터 헤더에 컬럼이 없어 문서·결재 스냅샷을 붙인다
             DraftPaperStamp.apply(header, paperStampMapper.selectPaperStamp(coCd, docIdx));
-            for (Map<String, Object> row : DraftSupport.camelMaps(mapper.selectSensRows(coCd, hdrIdx))) {
-                logRows.add(toLogRowNode(row));
+            List<CcpMtlSensRow> sens = mapper.selectSensRows(coCd, hdrIdx);
+            if (sens != null) {
+                for (CcpMtlSensRow row : sens) {
+                    logRows.add(toLogRow(row));
+                }
             }
-            for (Map<String, Object> row : DraftSupport.camelMaps(mapper.selectPassRows(coCd, hdrIdx))) {
-                ObjectNode one = objectMapper.createObjectNode();
-                one.put("rowSeq", DraftSupport.asInt(row.get("rowSeq")));
-                one.put("productNm", DraftSupport.asText(row.get("productNm")));
-                one.put("passQty", DraftSupport.asText(row.get("passQty")));
-                one.put("detectQty", DraftSupport.asText(row.get("detectQty")));
-                one.put("remark", DraftSupport.asText(row.get("remark")));
-                passRows.add(one);
+            List<CcpMtlPassRow> pass = mapper.selectPassRows(coCd, hdrIdx);
+            if (pass != null) {
+                for (CcpMtlPassRow row : pass) {
+                    DraftPassRow one = new DraftPassRow();
+                    one.setRowSeq(row.getRowSeq());
+                    one.setProductNm(DraftSupport.asText(row.getProductNm()));
+                    one.setPassQty(DraftSupport.asText(row.getPassQty()));
+                    one.setDetectQty(DraftSupport.asText(row.getDetectQty()));
+                    one.setRemark(DraftSupport.asText(row.getRemark()));
+                    passRows.add(one);
+                }
             }
         } else {
-            header.putNull("docIdx");
-            header.put("docNo", "");
-            header.putNull("status");
-            header.put("baseDt", "");
-            header.put("tmplCd", tmpl);
-            header.put("checkerNm", "");
+            header.setDocIdx(null);
+            header.setDocNo("");
+            header.setStatus(null);
+            header.setBaseDt("");
+            header.setTmplCd(tmpl);
+            header.setCheckerNm("");
             // 신규 — 감도 구간별 1줄, 통과량 기본 4줄. 행이 0건이면 좌측 저장 SP 가 막는다
-            logRows.addAll((ArrayNode) objectMapper.valueToTree(DraftSupport.seedLogRows("BEFORE", "AFTER")));
-            passRows.addAll((ArrayNode) objectMapper.valueToTree(DraftSupport.seedPassRows(PASS_ROW_CNT)));
+            logRows.addAll(DraftSupport.seedLogRows("BEFORE", "AFTER"));
+            passRows.addAll(DraftSupport.seedPassRows(PASS_ROW_CNT));
         }
-        // 양식 항목 — 한계기준·주기·방법·감도열·개선조치. Map 도 camelCase 로 맞춘다
-        root.set("items", objectMapper.valueToTree(DraftSupport.camelMaps(mapper.selectFormItems(coCd, tmpl, 1))));
+        List<HtmlFormItemRow> items = mapper.selectFormItems(coCd, tmpl, 1);
+        root.setItems(items == null ? List.of() : items);
         // 지면 하단 4칸 — 저장할 컬럼이 없어 개선조치 테이블에서 읽는다
         DocCorrectiveDto ca = (docIdx != null && docIdx > 0) ? correctiveSupport.load(coCd, docIdx) : null;
-        header.put("specialNote", ca == null ? "" : DraftSupport.nvl(ca.getDeviationDesc()));
-        header.put("improveNote", ca == null ? "" : DraftSupport.nvl(ca.getActionDesc()));
-        header.put("actionNm", ca == null ? "" : DraftSupport.nvl(ca.getActionUserNm()));
-        header.put("confirmNm", ca == null ? "" : DraftSupport.nvl(ca.getConfirmUserNm()));
-        root.set("header", header);
-        root.set("logRows", logRows);
-        root.set("passRows", passRows);
-        root.set("corrective", objectMapper.valueToTree(ca));
+        header.setSpecialNote(ca == null ? "" : DraftSupport.nvl(ca.getDeviationDesc()));
+        header.setImproveNote(ca == null ? "" : DraftSupport.nvl(ca.getActionDesc()));
+        header.setActionNm(ca == null ? "" : DraftSupport.nvl(ca.getActionUserNm()));
+        header.setConfirmNm(ca == null ? "" : DraftSupport.nvl(ca.getConfirmUserNm()));
+        root.setHeader(header);
+        root.setLogRows(logRows);
+        root.setPassRows(passRows);
+        root.setCorrective(ca);
+        // 화면이 다시 저장할 때 대조할 스탬프
+        seenGuard.attach(root, docIdx);
         return root;
     }
 
@@ -184,22 +201,30 @@ public class CcpMtlDraftService {
      *   2) 상세 조회가 호출한다
      *   3) 5칸 O/X 는 cells 로 접는다 — 화면은 계열과 무관하게 같은 행 타입을 쓴다
      */
-    private ObjectNode toLogRowNode(Map<String, Object> row) {
-        ObjectNode one = objectMapper.createObjectNode();
-        one.put("rowSeq", DraftSupport.asInt(row.get("rowSeq")));
-        one.put("phaseCd", DraftSupport.asText(row.get("phaseCd")));
-        one.put("productNm", DraftSupport.asText(row.get("productNm")));
-        one.put("checkTime", DraftSupport.asText(row.get("checkTime")));
-        one.put("judgeCd", DraftSupport.asText(row.get("judgeCd")));
-        one.put("judgeModYn", DraftSupport.asText(row.get("judgeModYn")));
-        one.put("checkerId", DraftSupport.asText(row.get("checkerId")));
-        one.put("checkerNm", DraftSupport.asText(row.get("checkerNm")));
-        one.put("signYn", "N");
-        ObjectNode cells = objectMapper.createObjectNode();
+    private DraftLogRow toLogRow(CcpMtlSensRow row) {
+        DraftLogRow one = new DraftLogRow();
+        one.setRowSeq(row.getRowSeq());
+        one.setPhaseCd(DraftSupport.asText(row.getPhaseCd()));
+        one.setProductNm(DraftSupport.asText(row.getProductNm()));
+        one.setCheckTime(DraftSupport.asText(row.getCheckTime()));
+        one.setJudgeCd(DraftSupport.asText(row.getJudgeCd()));
+        one.setJudgeModYn(null);
+        one.setCheckerId(DraftSupport.asText(row.getCheckerId()));
+        one.setCheckerNm(DraftSupport.asText(row.getCheckerNm()));
+        one.setSignYn("N");
+        Map<String, String> cells = new LinkedHashMap<>();
         for (String[] pair : SENS_CELLS) {
-            cells.put(pair[0], DraftSupport.asText(row.get(pair[1])));
+            String val = switch (pair[1]) {
+                case "feOnlyCd" -> DraftSupport.asText(row.getFeOnlyCd());
+                case "stsOnlyCd" -> DraftSupport.asText(row.getStsOnlyCd());
+                case "prodOnlyCd" -> DraftSupport.asText(row.getProdOnlyCd());
+                case "feProdCd" -> DraftSupport.asText(row.getFeProdCd());
+                case "stsProdCd" -> DraftSupport.asText(row.getStsProdCd());
+                default -> "";
+            };
+            cells.put(pair[0], val);
         }
-        one.set("cells", cells);
+        one.setCells(cells);
         return one;
     }
 
@@ -225,6 +250,8 @@ public class CcpMtlDraftService {
             throw new BizException("감도 점검 행이 없습니다.");
         }
         String coCd = LoginUserContext.coCd();
+        // 수정일 때(= docIdx 있음) 다른 탭이 먼저 저장했으면 여기서 막는다
+        seenGuard.assertSeen(req);
         try {
             Long docIdx = mapper.save(
                     coCd,

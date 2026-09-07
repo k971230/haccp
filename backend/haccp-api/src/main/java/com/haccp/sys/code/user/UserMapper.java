@@ -19,9 +19,12 @@ import org.apache.ibatis.annotations.Mapper;
 // 역할 — 다중 파라미터 이름 바인딩
 import org.apache.ibatis.annotations.Param;
 
+// 역할 — 사용자 목록·서명 DTO
+import com.haccp.sys.code.user.dto.UserRow;
+import com.haccp.sys.code.user.dto.UserSignBlobRow;
+import com.haccp.sys.code.user.dto.UserSignInfoRow;
 // 역할 — 화면 행 목록
 import java.util.List;
-import java.util.Map;
 
 @Mapper
 public interface UserMapper {
@@ -34,7 +37,7 @@ public interface UserMapper {
      *   2) 화면 진입·조회와 로그인 이력 화면의 사용자 트리에서 호출한다
      *   3) 조건에 맞는 사용자가 없으면 빈 목록
      */
-    List<Map<String, Object>> selectRows(
+    List<UserRow> selectRows(
             // JWT 회사코드 — 테넌트 범위. 필수 등가 조건
             @Param("coCd") String coCd,
             // 헤더 아이디 검색어. 공백이면 전체
@@ -122,7 +125,7 @@ public interface UserMapper {
      *   2) 서명 유무만 알면 되는 경로(CCP 행 서명, 삭제 전 검사)가 쓴다. 바이너리를 내리지 않아 가볍다
      *   3) 다른 회사·없는 아이디면 null, 미등록이면 sign_yn='N'이고 이름·MIME은 빈 문자열
      */
-    Map<String, Object> selectSignInfo(
+    UserSignInfoRow selectSignInfo(
             // JWT 회사코드 — 테넌트 범위
             @Param("coCd") String coCd,
             // 서명 보유여부를 볼 대상 로그인 아이디
@@ -137,7 +140,7 @@ public interface UserMapper {
      *   2) 이미지 실물이 필요할 때만 쓴다(미리보기·클립보드 복사). 유무 판정에는 selectSignInfo를 쓴다
      *   3) 다른 회사·없는 아이디면 null, 미등록이면 sign_img가 null인 맵
      */
-    Map<String, Object> selectSign(
+    UserSignBlobRow selectSign(
             // JWT 회사코드 — 테넌트 범위
             @Param("coCd") String coCd,
             // 서명을 볼 대상 로그인 아이디

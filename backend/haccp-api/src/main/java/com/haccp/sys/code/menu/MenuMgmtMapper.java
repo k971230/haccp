@@ -34,7 +34,7 @@ public interface MenuMgmtMapper {
      *   2) 메뉴 관리 화면과 권한 관리 좌측 트리가 함께 호출한다
      *   3) 트리 조립에 전체 집합이 필요하므로 화면은 검색어를 공백으로 넘긴다
      */
-    List<Map<String, Object>> selectRows(
+    List<com.haccp.sys.code.menu.dto.MenuMgmtRow> selectRows(
             // JWT 회사코드 — 테넌트 범위. 필수 등가 조건
             @Param("coCd") String coCd,
             // 헤더 메뉴코드 검색어. 공백이면 전체

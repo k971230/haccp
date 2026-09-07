@@ -46,7 +46,8 @@ Controller (@RestController)
 - DI: `@RequiredArgsConstructor` + `private final`
 - 업무 검증은 **Service**에서 `BizException`
 - 화면 권한: `ScreenAuthInterceptor` — URL 접두 → `scrnCd` 정적 맵 + `tbl_role_screen`. `@PreAuthorize` 화면마다 붙이지 않는다. ADMIN 전권. `SCREEN_AUTH_ENFORCE`
-- 셸 API(menu·code·pref·log)는 Controller → Mapper 직결 가능
+- 셸 API(menu·code·pref·log)는 **조회 패스스루**면 Controller → Mapper 직결.
+  CUD·`@Transactional` 은 Service (`pref` save). 칸 맞추기용 빈 Service 는 만들지 않는다.
 
 ## 테넌트·사용자
 

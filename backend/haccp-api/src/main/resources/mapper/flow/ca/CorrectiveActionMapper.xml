@@ -6,7 +6,7 @@ CorrectiveActionMapper.xml — 개선조치관리 sp_tbl_corrective_action_* 호
 일자: 2026-08-26
 코멘트:
   1) 조회는 TABLE FUNCTION, 저장·삭제는 PostgreSQL PROCEDURE 를 호출한다
-  2) Map 결과는 snake_case 로 돌아오며 Service camelRows 가 API 계약으로 바꾼다
+  2) 조회 resultType 은 DTO. snake 컬럼은 camel 로 맞춘다
   3) tsk/TaskMapper.xml 에서 옮겼다 — URL 이 /flow/ca 인데 패키지가 tsk 였다
 
 PIPELINE[HB94] 개선조치관리 MyBatis XML
@@ -15,7 +15,7 @@ PIPELINE[HB94] 개선조치관리 MyBatis XML
 <mapper namespace="com.haccp.flow.ca.CorrectiveActionMapper">
 
     <!-- 기간·양식·작성자 조건 목록. 공백 조건은 SP 가 전체로 본다 -->
-    <select id="selectCorrectiveActions" resultType="map">
+    <select id="selectCorrectiveActions" resultType="com.haccp.flow.ca.dto.CorrectiveRow">
         SELECT * FROM sp_tbl_corrective_action_r_000(#{coCd}, #{fromDt}, #{toDt}, #{tmplCd}, #{writer})
     </select>
 

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+DraftSeenMapper.xml — 문서 초안 동시 저장 스탬프 SP.
+
+개발자: 박승우
+일자: 2026-09-07
+코멘트:
+  1) 조회는 FUNCTION, 대조는 PROCEDURE — 둘 다 p_co_cd 가 선두다
+  2) 작성 4서비스가 같은 XML 을 쓴다
+  3) 스탬프 문자열 형식은 SP 가 정한다. 화면은 받은 값을 그대로 되돌린다
+
+PIPELINE[HB135] 양식 작성 공용 XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.draft.DraftSeenMapper">
+
+    <select id="selectSeen" resultType="string">
+        SELECT sp_tbl_document_seen_r_000(
+            #{coCd, mode=IN, jdbcType=VARCHAR},
+            #{docIdx, mode=IN, jdbcType=BIGINT}
+        )
+    </select>
+
+    <update id="assertSeen" statementType="CALLABLE">
+        CALL sp_tbl_document_assert_seen_r_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{docIdx, jdbcType=BIGINT},
+            #{seenUpdDt, jdbcType=VARCHAR}
+        )
+    </update>
+</mapper>

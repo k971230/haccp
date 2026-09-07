@@ -16,8 +16,9 @@ package com.haccp.docs.hwp;
 // 역할 — 삭제 차단 첫 행
 import com.haccp.common.validation.DeleteBlocker;
 // 역할 — 목록 타입
+import com.haccp.docs.hwp.dto.HwpTemplateFileRow;
+import com.haccp.docs.hwp.dto.HwpTemplateRow;
 import java.util.List;
-import java.util.Map;
 // 역할 — MyBatis 매퍼 표식·이름 바인딩
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -33,7 +34,7 @@ public interface HwpTemplateMapper {
      *   2) 화면 진입·조회·저장/삭제 후 호출한다
      *   3) 검색어가 비면 회사 전체
      */
-    List<Map<String, Object>> selectHwpTemplates(
+    List<HwpTemplateRow> selectHwpTemplates(
             // JWT 회사 — 사용양식 범위
             @Param("coCd") String coCd,
             // 양식코드 검색어 — 공백이면 전체
@@ -75,7 +76,7 @@ public interface HwpTemplateMapper {
      *   2) 「불러오기」 팝업에서 호출한다
      *   3) 최근 업로드가 먼저 오고 현재적용·기본제공 표시를 포함한다
      */
-    List<Map<String, Object>> selectHwpTemplateFiles(
+    List<HwpTemplateFileRow> selectHwpTemplateFiles(
             // JWT 회사코드
             @Param("coCd") String coCd,
             // 선택한 양식코드

@@ -14,6 +14,9 @@ package com.haccp.flow.ca;
 
 // 역할 — API 성공 응답 래퍼
 import com.haccp.common.response.CommonResponse;
+import com.haccp.flow.ca.dto.CaDeleteItem;
+import com.haccp.flow.ca.dto.CorrectiveRow;
+import com.haccp.flow.ca.dto.CorrectiveSaveRow;
 // 역할 — 생성자 주입
 import lombok.RequiredArgsConstructor;
 // 역할 — REST 매핑
@@ -27,7 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 // 역할 — 화면 행·삭제키 목록
 import java.util.List;
-import java.util.Map;
 
 /** 개선조치관리 → /api/v1/flow/ca/corrective-action-management/* */
 @RestController
@@ -47,7 +49,7 @@ public class CorrectiveActionController {
      *   3) 조건에 맞는 자료가 없으면 빈 배열
      */
     @GetMapping("/list")
-    public CommonResponse<List<Map<String, Object>>> list(
+    public CommonResponse<List<CorrectiveRow>> list(
             // 시작일 YYYYMMDD — 비면 전체
             @RequestParam(required = false) String fromDt,
             // 종료일 YYYYMMDD — 비면 전체
@@ -71,10 +73,9 @@ public class CorrectiveActionController {
     @PutMapping("/save")
     public CommonResponse<Void> save(
             // 화면 행 — idx 가 있으면 수정
-            @RequestBody Map<String, Object> row
+            @RequestBody CorrectiveSaveRow row
     ) {
-        Object idx = row == null ? null : row.get("idx");
-        service.saveCorrectiveAction(idx instanceof Number n ? n.longValue() : null, row);
+        service.saveCorrectiveAction(row);
         return CommonResponse.ok(null);
     }
 
@@ -89,7 +90,7 @@ public class CorrectiveActionController {
     @PostMapping("/validate-delete")
     public CommonResponse<Void> validateDelete(
             // 삭제 키 객체 배열 — 단건도 [{ idx }]
-            @RequestBody List<Map<String, Long>> keys
+            @RequestBody List<CaDeleteItem> keys
     ) {
         service.validateCorrectiveActionDelete(keys);
         return CommonResponse.ok(null);
@@ -106,7 +107,7 @@ public class CorrectiveActionController {
     @PostMapping("/delete")
     public CommonResponse<Void> delete(
             // 삭제 키 객체 배열 — 단건도 [{ idx }]
-            @RequestBody List<Map<String, Long>> keys
+            @RequestBody List<CaDeleteItem> keys
     ) {
         service.deleteCorrectiveActions(keys);
         return CommonResponse.ok(null);
