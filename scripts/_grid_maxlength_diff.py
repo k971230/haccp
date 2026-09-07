@@ -27,10 +27,10 @@ DDL = r'D:\haccp\db_sasshaccp\00_ddl.sql'
 # 지면 입력칸 — 파일 → [(칸 이름, 표, 컬럼)]. 문자칸이 나오는 순서대로 적는다.
 PAPER = {
     r'\docs\html-form\ccphtgtemplate\CcpHtgPaper.tsx': [
-        ("품명", "tbl_ccp_generic_monitor_row", "product_nm"),
+        ("품명", "tbl_ccp_htg_monitor_row", "product_nm"),
     ],
     r'\docs\html-form\ccppkgtemplate\CcpPkgPaper.tsx': [
-        ("품명", "tbl_ccp_generic_monitor_row", "product_nm"),
+        ("품명", "tbl_ccp_pkg_monitor_row", "product_nm"),
     ],
     r'\docs\html-form\ccpmtltemplate\CcpMtlPaper.tsx': [
         ("품명", "tbl_ccp_metal_sens_row", "product_nm"),

@@ -33,6 +33,7 @@ HACCP 운영·검증 스크립트. 정본 절차는 [`DEPLOY.md`](../DEPLOY.md).
 | `audit_docs_links.sh` | 루트 `docs/` 상대 링크 |
 | `audit_file_size_alignment.sh` | 파일 한도 FE/BE 정합 |
 | `audit_ops_delete.sh` | validate-delete 계약 |
+| `audit_sp_cocd.mjs` | 쓰기 SP/매퍼가 idx 만으로 고치거나 지우는지 |
 | `audit_version_drift.sh` | 버전 드리프트 |
 | `audit_generated_docs.sh` | 생성 문서 drift — 아래 생성기 5본을 `--check` 로 돌린다 |
 | `pre-commit-check-secrets.sh` | 시크릿 커밋 차단 |

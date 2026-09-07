@@ -43,11 +43,8 @@ Jenkins 는 DB 를 안 건드린다. SP 를 바꿨으면 `01_sp.sql` 을 운영�
 PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 ```
 
-**빈 DB 전용이다.** `00_ddl.sql` 은 `CREATE SCHEMA`·`CREATE TABLE` 에 `IF NOT EXISTS` 가 없고
-`02_seed.sql` 은 `ON CONFLICT` 가 없다 — 다시 부르면 `42P06 duplicate schema` 로 죽는다.
-(`01_sp.sql` 만 `CREATE OR REPLACE` 라 재실행된다.)
-
-새 업체를 여는 경우 — `apply-all.sh` 를 다시 부르지 않고 업체분 4본만 돌린다:
+**스키마가 있으면 `00_ddl`·`02_seed` 를 건너뛴다.** `00_ddl` 을 IF NOT EXISTS 로 개작하지 않는다.
+이미 깔린 DB 에 다시 불러도 된다. 업체만 더 얹을 때는 업체분 4본만 직접 돌려도 같다.
 
 ```sh
 cd db_sasshaccp

@@ -15,7 +15,7 @@
 #    HWP 편집기(rhwp)가 /rhwp/sw.js 를 등록하려다 SecurityError 를 낸다 —
 #    프록시 잘못이 아니다(/rhwp/ 도 /rhwp/sw.js 도 200 을 준다).
 #    자체서명으로는 코드로 못 고친다. 도메인 + Let's Encrypt 가 정공법이다.
-#  호출처: 런북 §10 · 로컬 compose 선행
+#  호출처: 환경구축.md §10 · 로컬 compose 선행
 #  성공: CERT_ROOT 아래 pem 생성. 실패: openssl/경로 오류
 #
 #  사용:

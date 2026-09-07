@@ -51,7 +51,7 @@ npx playwright test          # E2E — 화면·API·SP·DB 를 한 줄로 꿴다
 # 백엔드
 cd backend/haccp-api ; ./mvnw -q -o test
 
-# DB — 빈 DB 에 7본을 순서대로 (빈 DB 전용 — 재실행하면 00_ddl 이 duplicate schema 로 죽는다)
+# DB — 7본. 스키마가 있으면 00_ddl·02_seed 를 건너뛴다
 PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 ```
 
