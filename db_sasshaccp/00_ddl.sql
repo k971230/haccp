@@ -1162,7 +1162,6 @@ CREATE TABLE sasshaccp.tbl_ccp_verify_check (
     ins_dt timestamp without time zone DEFAULT now(),
     upd_id character varying(20),
     upd_dt timestamp without time zone,
-    monitor_chk_rmk text,
     ver_no integer DEFAULT 0 NOT NULL,
     checker_sign_img bytea,
     approver_id character varying(20),
@@ -1255,13 +1254,6 @@ COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_check.upd_dt IS '최종수정일시';
 
 
 --
--- Name: COLUMN tbl_ccp_verify_check.monitor_chk_rmk; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_check.monitor_chk_rmk IS '모니터링 일지 확인 — SPAN 입력';
-
-
---
 -- Name: COLUMN tbl_ccp_verify_check.ver_no; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
@@ -1312,18 +1304,11 @@ CREATE TABLE sasshaccp.tbl_ccp_verify_item (
     co_cd character varying(10) NOT NULL,
     hdr_idx bigint NOT NULL,
     row_seq integer NOT NULL,
-    proc_cd character varying(20),
     proc_nm character varying(100),
     item_cd character varying(20),
     verify_desc character varying(500) NOT NULL,
     answer_cd character varying(1),
     record_desc character varying(500),
-    ref_tmpl_cd character varying(20),
-    ref_from_dt character varying(8),
-    ref_to_dt character varying(8),
-    ref_total_cnt integer,
-    ref_ok_cnt integer,
-    ref_ng_cnt integer,
     ins_id character varying(20),
     ins_dt timestamp without time zone DEFAULT now(),
     upd_id character varying(20),
@@ -1338,7 +1323,7 @@ CREATE TABLE sasshaccp.tbl_ccp_verify_item (
 -- Name: TABLE tbl_ccp_verify_item; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON TABLE sasshaccp.tbl_ccp_verify_item IS 'CCP 검증 항목별 결과 — 예/아니오 응답과 근거 기록. 일지 건수는 자동 집계';
+COMMENT ON TABLE sasshaccp.tbl_ccp_verify_item IS 'CCP 검증 항목별 결과 — 예/아니오 응답과 근거 기록';
 
 
 --
@@ -1367,13 +1352,6 @@ COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_item.hdr_idx IS '헤더 idx — tbl_c
 --
 
 COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_item.row_seq IS '행 순번';
-
-
---
--- Name: COLUMN tbl_ccp_verify_item.proc_cd; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_item.proc_cd IS '공정 코드 — 원료육 냉장보관, 금속검출, 완제품 냉장보관';
 
 
 --
@@ -1408,49 +1386,7 @@ COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_item.answer_cd IS '응답 — Y:예, 
 -- Name: COLUMN tbl_ccp_verify_item.record_desc; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_item.record_desc IS '기록 내용 — 확인 근거 서술. 자동 집계 항목은 SP가 문구를 생성해 채운다';
-
-
---
--- Name: COLUMN tbl_ccp_verify_item.ref_tmpl_cd; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_item.ref_tmpl_cd IS '자동 집계 대상 템플릿 코드 — CCP_COLD, CCP_METAL 등. NULL이면(= 수동 입력 항목)';
-
-
---
--- Name: COLUMN tbl_ccp_verify_item.ref_from_dt; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_item.ref_from_dt IS '집계 시작일 YYYYMMDD';
-
-
---
--- Name: COLUMN tbl_ccp_verify_item.ref_to_dt; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_item.ref_to_dt IS '집계 종료일 YYYYMMDD';
-
-
---
--- Name: COLUMN tbl_ccp_verify_item.ref_total_cnt; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_item.ref_total_cnt IS '집계 결과 총 작성 건수';
-
-
---
--- Name: COLUMN tbl_ccp_verify_item.ref_ok_cnt; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_item.ref_ok_cnt IS '집계 결과 정상 건수';
-
-
---
--- Name: COLUMN tbl_ccp_verify_item.ref_ng_cnt; Type: COMMENT; Schema: sasshaccp; Owner: -
---
-
-COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_item.ref_ng_cnt IS '집계 결과 이탈 건수';
+COMMENT ON COLUMN sasshaccp.tbl_ccp_verify_item.record_desc IS '기록 내용 — 확인 근거 서술';
 
 
 --
