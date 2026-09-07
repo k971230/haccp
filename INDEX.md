@@ -3,7 +3,7 @@
 > 개발자: 박승우 · 일자: 2026-09-07
 > **생성기가 만든다** — `node scripts/gen_index.mjs`. 손으로 고치지 않는다.
 
-폴더와 그 폴더 README 의 첫 줄을 실물에서 뽑았다.
+git 이 추적하는 폴더와 그 폴더 README 의 첫 줄을 뽑았다.
 규칙·읽기 순서는 [`CLAUDE.md`](CLAUDE.md) · [`AGENTS.md`](AGENTS.md) 가 정본이다.
 지금 상태는 [`handoff.md`](handoff.md), 문서 색인은 [`docs/README.md`](docs/README.md).
 
@@ -11,8 +11,8 @@
 
 | | |
 |---|---|
-| 목차에 오른 폴더 | 204 |
-| README 있는 폴더 | 180 |
+| 목차에 오른 폴더 | 203 |
+| README 있는 폴더 | 179 |
 | **README 없는데 소스가 있는 폴더** | **24** |
 
 ## 트리
@@ -399,8 +399,6 @@ nginx/
 scripts/
     HACCP 운영·검증 스크립트. 정본 절차는 DEPLOY.md.
 tools/  ← README 없음
-  rhwp/
-      <p align="center">
 ```
 
 ## README 없는 폴더 (24)
@@ -430,7 +428,7 @@ tools/  ← README 없음
 - `backend/haccp-api/src/test/java/com/haccp/draft/hwpdoc` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/flow/ca` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/sys/code/user` — 소스 1본
-- `tools` — 소스 8본
+- `tools` — 소스 4본
 
 ## 관련
 
