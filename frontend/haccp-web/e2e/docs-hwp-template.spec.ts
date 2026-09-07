@@ -2,11 +2,11 @@
  * docs-hwp-template — HWP 사용양식관리 (원본 등록·업로드·버전).
  *
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-09-07
  * 코멘트:
  *   1) 진짜 HWP 파일을 올린다 — 13MB짜리 실물이라 크기 제한·저장 경로가 여기서 드러난다
  *   2) 업로드는 덮어쓰지 않고 버전을 쌓는다. DB 에 버전 행이 늘어야 성공이다
- *   3) 시스템 제공 양식은 삭제할 수 없어야 한다 — 지워지면 다른 회사 배포본이 깨진다
+ *   3) 시스템 제공 양식은 회사마다 카탈로그 1행 — count 는 loginCoCd 만 본다
  *
  * PIPELINE[HF130] E2E
  */
@@ -107,7 +107,10 @@ test.describe.serial("HWP 사용양식관리", () => {
     await openScreen(page, PATH);
     await expect(page.getByRole("button", { name: "조회" })).toBeVisible({ timeout: 30_000 });
 
-    const before = dbOne("SELECT count(*) FROM tbl_template WHERE tmpl_cd='hwp_sys_001'");
+    // 회사마다 카탈로그 1행 — 전역 count 는 업체가 늘면 3, 4가 된다
+    const before = dbOne(
+      `SELECT count(*) FROM tbl_template WHERE tmpl_cd='hwp_sys_001' AND co_cd='${sqlLit(loginCoCd())}'`,
+    );
     expect(before).toBe("1");
 
     const grid = grids(page).first();
@@ -127,7 +130,9 @@ test.describe.serial("HWP 사용양식관리", () => {
     expect(called, "화면이 안 막고 서버까지 갔다").toBe(false);
 
     expect(
-      dbOne("SELECT count(*) FROM tbl_template WHERE tmpl_cd='hwp_sys_001'"),
+      dbOne(
+        `SELECT count(*) FROM tbl_template WHERE tmpl_cd='hwp_sys_001' AND co_cd='${sqlLit(loginCoCd())}'`,
+      ),
       "시스템 제공 양식이 지워졌다",
     ).toBe("1");
   });
@@ -271,6 +276,10 @@ test.describe.serial("HWP 사용양식관리", () => {
     expect(res.status(), "서버가 시스템 양식 삭제를 막지 않는다").toBe(400);
     expect(await res.text()).toContain("시스템 제공 양식");
 
-    expect(dbOne("SELECT count(*) FROM tbl_template WHERE tmpl_cd='hwp_sys_001'")).toBe("1");
+    expect(
+      dbOne(
+        `SELECT count(*) FROM tbl_template WHERE tmpl_cd='hwp_sys_001' AND co_cd='${sqlLit(loginCoCd())}'`,
+      ),
+    ).toBe("1");
   });
 });
