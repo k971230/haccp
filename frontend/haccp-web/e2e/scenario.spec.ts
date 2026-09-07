@@ -23,6 +23,7 @@ import {
   resetDocuments,
   rowOfDoc,
   liveHtmlChkTmpl,
+  hwpTmplPrefix,
   loginCoCd,
   sqlLit,
   visibleRows,
@@ -203,7 +204,7 @@ test.describe.serial("통합 시나리오", () => {
     resetDocuments();
     const { user, pass } = adminCreds();
     await login(page, user, pass);
-    await createDraft(page, "/draft/hwp-doc/hwp-write", "hwp_sys_");
+    await createDraft(page, "/draft/hwp-doc/hwp-write", hwpTmplPrefix());
 
     const list = grids(page).first();
     const heads = (await list.locator("thead th").allInnerTexts()).map((t) => t.trim());

@@ -6,8 +6,8 @@
 --  코멘트:
 --    1) 양식관리 5화면이 「예시(표준)」로 보여 주는 지면 항목이다.
 --       업체는 이걸 복사해 자사 양식(_001 이상)을 만든다
---    2) 표준은 co_cd 를 타지 않는다 — tbl_check_item 은 플랫폼 공용이다.
---       업체별로 뿌릴 것은 tbl_company_template(사용 양식) 뿐이라 아래 2절에서 :co_cd 를 쓴다
+--    2) 지면 항목(tbl_check_item)은 플랫폼 공용이다. 카탈로그(tbl_template)와
+--       사용 목록(tbl_company_template)은 :co_cd 에만 깐다 — 복사 SP 가 다른 회사를 보지 않는다
 --    3) 재실행 안전 — 있으면 이름·정렬·입력유형을 시드에 맞춘다
 --
 --  입력유형(input_type)은 공통코드 HTML_INPUT_TY 와 같은 UPPER_SNAKE 다.
@@ -193,13 +193,26 @@ DELETE FROM tbl_check_item c
    );
 
 -- ------------------------------------------------------------
--- 2. 업체가 쓰는 양식 — 표준을 사용 목록에 올린다
+-- 2. 이 회사 카탈로그 — 복사 SP 는 co_cd = p_co_cd 만 본다
 -- ------------------------------------------------------------
+INSERT INTO tbl_template (
+    co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
+    default_cycle_cd, default_retention_month, ver_no, impl_yn, sort_no, use_yn, ins_id, ins_dt
+)
+SELECT :'co_cd', s.tmpl_cd, s.tmpl_nm, s.mng_no, s.doc_kind, s.category_cd, s.scrn_cd,
+       s.default_cycle_cd, s.default_retention_month, 1, 'Y', s.sort_no, 'Y', 'system', now()
+  FROM (VALUES
+    ('html_sys_001', '일반위생관리 및 공정점검표', '1', 'HTML', 'HYG', 'hygiene-process-check', 'D', 24, 101),
+    ('html_sys_006', '중요관리점(CCP) 검증점검표', 'HA-CCP-07', 'HTML', 'CCP', 'ccp-verification-check', 'M', 24, 4)
+  ) AS s(tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd, default_cycle_cd, default_retention_month, sort_no)
+ WHERE NOT EXISTS (
+     SELECT 1 FROM tbl_template t WHERE t.co_cd = :'co_cd' AND t.tmpl_cd = s.tmpl_cd
+ );
+
+-- 업체가 쓰는 양식 — 표준을 사용 목록에 올린다. 다른 회사는 보지 않는다
 INSERT INTO tbl_company_template(co_cd, tmpl_cd, use_yn, ins_id, ins_dt)
 SELECT :'co_cd', t.tmpl_cd, 'Y', 'system', now()
   FROM (SELECT DISTINCT tmpl_cd FROM tmp_item) t
-  JOIN tbl_template x ON x.tmpl_cd = t.tmpl_cd AND x.co_cd = '0000'
-  -- 표준 지면은 공용 카탈로그(0000) 한 줄. 자사 복사본과 tmpl_cd 가 같아도 여기선 0000 만 본다
 ON CONFLICT DO NOTHING;
 
 COMMIT;

@@ -11,7 +11,7 @@
  * PIPELINE[HF130] E2E
  */
 import { expect, test } from "@playwright/test";
-import { adminCreds, dbOne, login, loginCoCd, openScreen, readonlyCreds, sqlLit, visibleRows } from "./helpers";
+import { adminCreds, dbOne, login, loginCoCd, openScreen, sqlLit, viewerCreds, visibleRows } from "./helpers";
 
 const PATH = "/docs/sch/schedule-cycle-management";
 
@@ -89,14 +89,14 @@ test.describe("문서주기관리", () => {
 
 test.describe("권한 회귀", () => {
   test("조회 전용 계정은 삭제 API 에서 403 이다", async ({ request }) => {
-    const ro = readonlyCreds();
-    test.skip(!ro, "E2E_RO_USER/E2E_RO_PASS 가 없어 건너뛴다");
+    const view = viewerCreds();
+    test.skip(!view, "조회 전용 계정(smoke)이 없어 건너뛴다");
 
     // 화면을 거치지 않고 로그인 API 로 토큰을 받는다 — 저장 키 구조에 매이지 않는다
     // baseURL 은 화면(4173)이라 API(7070) 는 절대 주소로 부른다
     const apiBase = process.env.E2E_API_BASE_URL || "http://localhost:7070";
     const auth = await request.post(`${apiBase}/api/v1/auth/login`, {
-      data: { userId: ro!.user, password: ro!.pass },
+      data: { userId: view!.user, password: view!.pass },
     });
     const token = ((await auth.json())?.data?.token ?? "") as string;
     expect(token, "조회 전용 계정 로그인 실패").not.toBe("");

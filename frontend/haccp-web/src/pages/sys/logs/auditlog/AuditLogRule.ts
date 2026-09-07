@@ -17,9 +17,6 @@ import { fmtDateTimeMinute } from "@/utils/date";
 // 역할 — 셸 설정 계약·행 타입·트리 헬퍼
 import { collectScrnCds, type LogRow, type LogRule } from "@/components/layout/LogPageShell";
 
-/** 기간 기본값 — 오늘부터 30일 전까지 */
-const RANGE_DAYS = 30;
-
 export const AUDIT_LOG_RULE: LogRule = {
   // 화면코드 — 권한·그리드 pref·탭 key
   scrnCd: "audit-log",
@@ -31,7 +28,6 @@ export const AUDIT_LOG_RULE: LogRule = {
   treeHead: "메뉴 트리",
   // 좌측 트리 — 관리자 메뉴 계층
   treeKind: "menu",
-  rangeDays: RANGE_DAYS,
   // 행위 컬럼 코드 대분류 — 등록/수정/삭제
   codeGroup: "AUDIT_RESULT",
 

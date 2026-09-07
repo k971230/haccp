@@ -11,7 +11,7 @@
  * PIPELINE[HF130] E2E
  */
 import { expect, test, type APIRequestContext } from "@playwright/test";
-import { adminCreds, dbOne, loginCoCd, readonlyCreds } from "./helpers";
+import { adminCreds, dbOne, hwpTmplPrefix, loginCoCd, readonlyCreds, sqlLit, writeNoDeleteCreds } from "./helpers";
 
 const API = process.env.E2E_API_BASE_URL || "http://localhost:7070";
 
@@ -58,8 +58,9 @@ test.describe("권한", () => {
   });
 
   test("삭제 권한이 없는 계정은 삭제 API 에서 막힌다", async ({ request }) => {
-    // e2erw — USER 그룹. 읽기·쓰기·수정은 되고 삭제만 N 이다
-    const token = await tokenOf(request, "e2erw", "1234");
+    // USER 그룹. 읽기·쓰기·수정은 되고 삭제만 N 이다
+    const rw = writeNoDeleteCreds();
+    const token = await tokenOf(request, rw.user, rw.pass);
     const res = await request.post(`${API}/api/v1/sys/code/department-management/delete`, {
       headers: { Authorization: `Bearer ${token}` },
       data: [{ deptCd: "QC" }],
@@ -100,14 +101,25 @@ test.describe("상태 전이", () => {
      * 전송대기 문서가 없으면 만든다 — 없다고 건너뛰면 이 검사가 조용히 사라진다.
      * 작성 API 를 그대로 쓴다(화면이 쓰는 것과 같은 길).
      */
-    let idx = dbOne("SELECT idx FROM tbl_document WHERE status='WRK' ORDER BY idx DESC LIMIT 1");
+    const co = sqlLit(loginCoCd());
+    let idx = dbOne(
+      `SELECT idx FROM tbl_document WHERE status='WRK' AND co_cd='${co}' ORDER BY idx DESC LIMIT 1`,
+    );
     if (!idx) {
+      const tmpl = dbOne(
+        `SELECT ct.tmpl_cd FROM tbl_company_template ct
+           JOIN tbl_template t ON t.co_cd=ct.co_cd AND t.tmpl_cd=ct.tmpl_cd
+          WHERE ct.co_cd='${co}' AND ct.use_yn='Y' AND t.doc_kind='HWP'
+          ORDER BY ct.tmpl_cd LIMIT 1`,
+      ) || `${hwpTmplPrefix()}001`;
       const made = await request.put(`${API}/api/v1/draft/hwp-doc/hwp-write/save`, {
         headers: { Authorization: `Bearer ${token}` },
-        data: { tmplCd: "hwp_sys_001", docIdx: null, baseDt: "20260825", deviationYn: "N" },
+        data: { tmplCd: tmpl, docIdx: null, baseDt: "20260825", deviationYn: "N" },
       });
       expect(made.status(), await made.text()).toBe(200);
-      idx = dbOne("SELECT idx FROM tbl_document WHERE status='WRK' ORDER BY idx DESC LIMIT 1");
+      idx = dbOne(
+        `SELECT idx FROM tbl_document WHERE status='WRK' AND co_cd='${co}' ORDER BY idx DESC LIMIT 1`,
+      );
     }
     expect(idx, "전송대기 문서를 만들지 못했다").not.toBe("");
 

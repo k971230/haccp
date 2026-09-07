@@ -17,6 +17,7 @@ import {
   createDraft,
   dbOne,
   grids,
+  hwpTmplPrefix,
   login,
   openScreen,
   resetDocuments,
@@ -29,7 +30,7 @@ const SCREENS = [
   { name: "CCP 포장공정", path: "/draft/ccp-monitoring/ccp-pkg", tmpl: "html_ccp_pkg_" },
   { name: "CCP 가열공정", path: "/draft/ccp-monitoring/ccp-htg", tmpl: "html_ccp_htg_" },
   { name: "CCP 금속검출", path: "/draft/ccp-monitoring/ccp-mtl", tmpl: "html_ccp_mtl_" },
-  { name: "HWP 양식", path: "/draft/hwp-doc/hwp-write", tmpl: "hwp_sys_" },
+  { name: "HWP 양식", path: "/draft/hwp-doc/hwp-write", tmpl: "hwp_" },
 ];
 
 test.describe.serial("작성 6화면", () => {
@@ -99,7 +100,7 @@ test.describe.serial("작성 6화면", () => {
     resetDocuments();
     const { user, pass } = adminCreds();
     await login(page, user, pass);
-    await createDraft(page, "/draft/hwp-doc/hwp-write", "hwp_sys_");
+    await createDraft(page, "/draft/hwp-doc/hwp-write", hwpTmplPrefix());
 
     /*
      * 이탈여부는 tbl_document 의 칸이 아니다 — 켜면 tbl_corrective_action 행이 생긴다.

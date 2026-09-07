@@ -9,7 +9,7 @@
  *   3) 읽을 수 없는 값은 원본을 보여 준다. 「Invalid Date」는 사용자에게 뜻이 없다
  */
 import { describe, expect, it } from "vitest";
-import { fmtDate, fmtDateTime, fmtDateTimeMinute } from "./date";
+import { fmtDate, fmtDateTime, fmtDateTimeMinute, weekAgoRange } from "./date";
 
 describe("fmtDate — 조회 그리드 date 열", () => {
   it("저장형 YYYYMMDD 를 읽는다 — 양식 선택 팝업이 전 행 Invalid Date 였다", () => {
@@ -33,5 +33,11 @@ describe("fmtDate — 조회 그리드 date 열", () => {
 
   it("일시는 시각까지 살린다", () => {
     expect(fmtDateTimeMinute("2026-08-27T18:30:00")).toBe("2026-08-27 18:30");
+  });
+});
+
+describe("weekAgoRange — 검색 기간 기본값", () => {
+  it("화요일이면 저번주 화요일까지다", () => {
+    expect(weekAgoRange("20260907")).toEqual({ fromDt: "20260831", toDt: "20260907" });
   });
 });

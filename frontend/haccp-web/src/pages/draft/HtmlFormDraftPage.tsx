@@ -37,6 +37,8 @@ import { usePageCommands } from "@/shell/pageCommands";
 import { mesConfirm, mesConfirmDanger, mesToast } from "@/shell/dialog";
 // 역할 — 오류 업무 문구
 import { mesError } from "@/shell/errors";
+// 역할 — 검색 기간 기본값 오늘~일주일 전 같은 요일
+import { weekAgoRange } from "@/utils/date";
 // 역할 — 공통 안내 문구
 import { MES } from "@/shell/messages";
 // 역할 — 페이지 카드·검색 영역·좌우 분할
@@ -222,9 +224,10 @@ export function HtmlFormDraftPage({
 
   // 작성 가능 양식 — 사용여부 예인 자사 양식만. 양식 선택 팝업 목록
   const [forms, setForms] = useState<HtmlFormDraftForm[]>([]);
-  // 상단 검색 조건 6개 — 작성 입력과 별개다
-  const [search, setSearch] = useState({
-    fromDt: "", toDt: "", tmplCd: "", tmplNm: "", title: "", sendState: "",
+  // 상단 검색 조건 6개 — 작성 입력과 별개다. 기간은 오늘~저번주 같은 요일
+  const [search, setSearch] = useState(() => {
+    const { fromDt, toDt } = weekAgoRange();
+    return { fromDt, toDt, tmplCd: "", tmplNm: "", title: "", sendState: "" };
   });
   const searchRef = useRef(search);
   searchRef.current = search;

@@ -30,6 +30,9 @@ function lastDocIdx(): string {
   return dbOne("SELECT idx FROM tbl_document ORDER BY idx DESC LIMIT 1");
 }
 
+/** 전송 시험이 만든 문서 — 다음 시험이 최신 idx 를 다시 읽으면 다른 WRK 를 집는다 */
+let attachedIdx = "";
+
 test.describe.serial("결재 첨부 — 전송", () => {
   test.beforeAll(() => resetDocuments());
 
@@ -43,6 +46,7 @@ test.describe.serial("결재 첨부 — 전송", () => {
     await btn(page, "저장").click();
 
     const docIdx = lastDocIdx();
+    attachedIdx = docIdx;
     expect(docIdx, "문서가 안 만들어졌다").not.toBe("");
     expect(
       dbOne(`SELECT status FROM tbl_document WHERE idx=${docIdx}`),
@@ -80,7 +84,7 @@ test.describe.serial("결재 첨부 — 전송", () => {
   test("전송한 문서는 이 화면에서 다시 전송되지 않는다", async ({ page, request }) => {
     const { user, pass } = adminCreds();
     await login(page, user, pass);
-    const docIdx = lastDocIdx();
+    const docIdx = attachedIdx || lastDocIdx();
     expect(dbOne(`SELECT status FROM tbl_document WHERE idx=${docIdx}`)).toBe("REQ");
 
     // 화면을 우회해 한 번 더 REQUEST 를 쳐도 서버가 막아야 한다
@@ -101,7 +105,7 @@ test.describe.serial("결재 첨부 — 전송", () => {
   test("전송취소하면 전송대기로 돌아간다", async ({ page }) => {
     const { user, pass } = adminCreds();
     await login(page, user, pass);
-    const docIdx = lastDocIdx();
+    const docIdx = attachedIdx || lastDocIdx();
 
     await openScreen(page, "/flow/appr/attach");
     await rowOfDoc(page, docIdx).click();

@@ -11,7 +11,6 @@
  * PIPELINE[HF99] 로그 화면 공통 셸
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import dayjs from "dayjs";
 import { MesDataGrid } from "@/components/grid/MesDataGrid";
 import { PageCard } from "@/components/layout/PageCard";
 import { ResizableSplit } from "@/components/layout/ResizableSplit";
@@ -28,6 +27,8 @@ import { pageRootClass } from "@/components/layout/pageClasses";
 import { cn } from "@/lib/cn";
 import { filterTreeByQuery } from "@/lib/treeFilter";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
+// 역할 — 검색 기간 기본값 오늘~일주일 전 같은 요일
+import { weekAgoRange } from "@/utils/date";
 import { useCommonCodes } from "@/hooks/useCommonCodes";
 import { mesError } from "@/shell/errors";
 import { usePageCommands } from "@/shell/pageCommands";
@@ -74,8 +75,6 @@ export interface LogRule {
   treeHead: string;
   /** 좌측 트리 종류 — 사용자 평면 목록 또는 메뉴 계층 */
   treeKind: "user" | "menu";
-  /** 기간 기본값(일) — 오늘부터 며칠 전까지 */
-  rangeDays: number;
   /** 코드 컬럼에 쓸 공통코드 대분류 — 없으면 빈 문자열 */
   codeGroup: string;
   /** 그리드 컬럼 — 코드 컬럼이 있으면 codeMap·codeOptions를 쓴다 */
@@ -87,15 +86,6 @@ export interface LogRule {
   fetchRows: (args: LogFetchArgs) => Promise<LogRow[]>;
 }
 
-/** 오늘 YYYYMMDD */
-function todayYmd(): string {
-  return dayjs().format("YYYYMMDD");
-}
-
-/** n일 전 YYYYMMDD */
-function daysAgoYmd(days: number): string {
-  return dayjs().subtract(days, "day").format("YYYYMMDD");
-}
 
 /** YYYYMMDD → input[type=date] 값 */
 function ymdToInput(ymd: string): string {
@@ -177,8 +167,8 @@ export function LogPageShell({
   const loadSeq = useRef(0);
   const [loading, setLoading] = useState(false);
 
-  const [fromDt, setFromDt] = useState(() => daysAgoYmd(rule.rangeDays));
-  const [toDt, setToDt] = useState(todayYmd);
+  const [fromDt, setFromDt] = useState(() => weekAgoRange().fromDt);
+  const [toDt, setToDt] = useState(() => weekAgoRange().toDt);
   const [rows, setRows] = useState<LogRow[]>([]);
   const [treeSel, setTreeSel] = useState(TREE_ALL);
   const [treeQuery, setTreeQuery] = useState("");

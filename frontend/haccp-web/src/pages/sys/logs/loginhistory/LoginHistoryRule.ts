@@ -17,9 +17,6 @@ import { fmtDateTimeMinute } from "@/utils/date";
 // 역할 — 셸 설정 계약·행 타입
 import { TREE_ALL, type LogRow, type LogRule } from "@/components/layout/LogPageShell";
 
-/** 기간 기본값 — 오늘부터 30일 전까지 */
-const RANGE_DAYS = 30;
-
 export const LOGIN_HISTORY_RULE: LogRule = {
   // 화면코드 — 권한·그리드 pref·탭 key
   scrnCd: "login-history",
@@ -31,7 +28,6 @@ export const LOGIN_HISTORY_RULE: LogRule = {
   treeHead: "사용자",
   // 좌측 트리 — 사용자 평면 목록
   treeKind: "user",
-  rangeDays: RANGE_DAYS,
   // 결과 컬럼 코드 대분류 — 성공/실패/로그아웃
   codeGroup: "LOGIN_RESULT",
 

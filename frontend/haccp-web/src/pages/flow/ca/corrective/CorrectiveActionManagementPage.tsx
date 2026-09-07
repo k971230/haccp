@@ -51,6 +51,8 @@ import { useEditableRows } from "@/hooks/useEditableRows";
 import { usePageCommands } from "@/shell/pageCommands";
 import { mesConfirmDanger, mesToast } from "@/shell/dialog";
 import { mesError } from "@/shell/errors";
+// 역할 — 검색 기간 기본값 오늘~일주일 전 같은 요일
+import { weekAgoRange } from "@/utils/date";
 import { MES } from "@/shell/messages";
 import type { EditableRow } from "@/types/editable";
 // 역할 — 일자 YYYYMMDD ↔ input[type=date]
@@ -82,8 +84,11 @@ export default function CorrectiveActionManagementPage() {
   // 조치자 후보 — 화면 진입 시 한 번만 읽는다
   const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
 
-  // 검색 조건 — 일자 구간·양식·작성자. 다른 작성 화면과 같은 순서다
-  const [search, setSearch] = useState({ fromDt: "", toDt: "", tmplCd: "", writer: "" });
+  // 검색 조건 — 일자 구간·양식·작성자. 기간은 오늘~저번주 같은 요일
+  const [search, setSearch] = useState(() => {
+    const { fromDt, toDt } = weekAgoRange();
+    return { fromDt, toDt, tmplCd: "", writer: "" };
+  });
   const searchRef = useRef(search);
   searchRef.current = search;
 
