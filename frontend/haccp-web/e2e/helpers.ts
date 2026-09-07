@@ -2,11 +2,12 @@
  * helpers — E2E 공통 로그인·화면 열기.
  *
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-09-07
  * 코멘트:
  *   1) 로그인 셀렉터·성공 판정을 한곳에 둔다 — 스펙마다 복제하면 셸이 바뀔 때 전부 깨진다
  *   2) 자격증명은 환경변수로만 받는다. 스펙 코드에 비밀번호를 박지 않는다
  *   3) 화면 경로는 basename /haccp/ 아래 SCREEN_PATH 그대로다. /screen/{scrnCd} 는 없다
+ *   4) 위생 라디오 양식은 사용양식에 있는 것만 고른다 — 고아 복사는 팝업에 없다
  *
  * PIPELINE[HF130] E2E
  */
@@ -142,13 +143,16 @@ export function hwpTmplPrefix(): string {
  * 일자: 2026-09-07
  * 코멘트:
  *   1) 판정 라디오가 있는 위생 양식 코드. last() 가 TEXT 전용 양식을 집으면 시험이 0라디오로 죽는다
- *   2) RADIO·RADIO_NUM 항목이 있는 첫 양식을 쓴다
- *   3) 없으면 접두만 돌려 기존 동작과 같다
+ *   2) 사용양식에 올라 있고 RADIO·RADIO_NUM 항목이 있는 첫 양식을 쓴다
+ *   3) 항목만 남은 고아 복사를 집으면 양식 선택 팝업에 없어 시험이 죽는다
+ *   4) 없으면 접두만 돌려 기존 동작과 같다
  */
 export function liveHygRadioTmpl(): string {
   const co = sqlLit(loginCoCd());
   const cd = dbOne(
     `SELECT i.tmpl_cd FROM tbl_html_hyg_prc_ver_item i
+       JOIN tbl_company_template ct
+         ON ct.co_cd = i.co_cd AND ct.tmpl_cd = i.tmpl_cd
       WHERE i.co_cd='${co}' AND i.input_type IN ('RADIO','RADIO_NUM')
       GROUP BY i.tmpl_cd ORDER BY i.tmpl_cd LIMIT 1`,
   );
