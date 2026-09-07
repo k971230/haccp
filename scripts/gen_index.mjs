@@ -2,16 +2,17 @@
  * gen_index — 저장소 폴더 목차를 INDEX.md 로 만든다.
  *
  * 개발자: 박승우
- * 일자: 2026-09-03
+ * 일자: 2026-09-07
  * 코멘트:
  *   1) 폴더 트리와 각 폴더 README 의 첫 문장을 읽어 「무엇이 어디 있나」한 장을 낸다
  *   2) 손으로 적으면 곧 거짓말이 된다 — 2026-09-03 검수에서 죽은 링크 57본·틀린 숫자 9종이 그 이유로 나왔다
- *   3) README 없는 폴더를 따로 세운다. 규칙(CLAUDE.md)이 폴더마다 README 를 요구한다
+ *   3) git ls-files 만 본다. 디스크를 걷으면 로컬 전용(tools/rhwp 등 gitignore)이 목차에 섞여 Jenkins 가 깨진다
  *
  * 쓰기
  *   node scripts/gen_index.mjs           다시 만든다
  *   node scripts/gen_index.mjs --check   어긋나면 1 로 끝난다 (CI 용)
  */
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,7 +20,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, "INDEX.md");
 
-/** 세지 않는 것 — 빌드 산출물·의존성·로컬 스크래치. .gitignore 와 같은 뜻이다 */
+/** 세지 않는 것 — 빌드 산출물·의존성·로컬 스크래치. 추적돼 있어도 목차에 안 올린다 */
 const SKIP = new Set([
   ".git", "node_modules", "target", "dist", "out", "test-results",
   ".tools", ".playwright-mcp", "grokbot", ".vscode", ".idea", "certs",
@@ -28,26 +29,57 @@ const SKIP = new Set([
 /** 소스가 든 폴더만 목차에 올린다 — 빈 폴더·자료 폴더는 뺀다 */
 const SRC_EXT = /\.(ts|tsx|java|xml|sql|mjs|js|sh|css|yml|yaml)$/;
 
-/** 폴더를 훑어 { rel, readme, files, dirs } 를 모은다 */
-function walk(rel, out = []) {
-  const abs = path.join(ROOT, rel);
-  const entries = fs.readdirSync(abs, { withFileTypes: true });
-  const files = entries.filter((e) => e.isFile()).map((e) => e.name);
-  const dirs = entries
-    .filter((e) => e.isDirectory() && !SKIP.has(e.name))
-    .map((e) => e.name)
-    .sort();
+/**
+ * git 이 추적하는 파일만 모은다 — gitignore·미추적 로컬 파일은 빠진다.
+ * Jenkins 깨끗한 checkout 과 같은 집합이다.
+ */
+function trackedRelPaths() {
+  try {
+    // -z: 경로에 공백이 있어도 한 파일로 자른다. 구분자는 NUL
+    const out = execFileSync("git", ["-C", ROOT, "ls-files", "-z"], {
+      encoding: "utf8",
+      maxBuffer: 16 * 1024 * 1024,
+    });
+    return out.split("\0").filter(Boolean).map((p) => p.replace(/\\/g, "/"));
+  } catch {
+    console.error("gen_index: git ls-files 를 못 읽었다 — INDEX 는 git 추적 파일만 본다");
+    process.exit(1);
+  }
+}
 
-  out.push({
-    rel,
-    depth: rel === "." ? 0 : rel.split("/").length,
-    readme: files.includes("README.md"),
-    srcCount: files.filter((f) => SRC_EXT.test(f)).length,
-    mdCount: files.filter((f) => f.endsWith(".md")).length,
-  });
+/**
+ * 추적 파일에서 폴더 목록을 만든다.
+ * 디스크 walk 를 안 한다 — 로컬에만 있는 tools/rhwp 같은 폴더가 끼지 않는다.
+ */
+function dirsFromGit() {
+  const byDir = new Map();
+  const ensure = (rel) => {
+    if (!byDir.has(rel)) byDir.set(rel, { files: [] });
+    return byDir.get(rel);
+  };
 
-  for (const d of dirs) walk(rel === "." ? d : `${rel}/${d}`, out);
-  return out;
+  for (const f of trackedRelPaths()) {
+    const parts = f.split("/");
+    // 경로 한 칸이라도 SKIP 이면(= 빌드 산출물) 그 파일은 세지 않는다
+    if (parts.some((p) => SKIP.has(p))) continue;
+    let acc = "";
+    for (let i = 0; i < parts.length - 1; i++) {
+      acc = acc ? `${acc}/${parts[i]}` : parts[i];
+      ensure(acc);
+    }
+    const dir = parts.length === 1 ? "." : parts.slice(0, -1).join("/");
+    ensure(dir).files.push(parts[parts.length - 1]);
+  }
+
+  return [...byDir.entries()]
+    .map(([rel, { files }]) => ({
+      rel,
+      depth: rel === "." ? 0 : rel.split("/").length,
+      readme: files.includes("README.md"),
+      srcCount: files.filter((n) => SRC_EXT.test(n)).length,
+      mdCount: files.filter((n) => n.endsWith(".md")).length,
+    }))
+    .sort((a, b) => (a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0));
 }
 
 /**
@@ -67,7 +99,7 @@ function summarize(rel) {
   return "";
 }
 
-const all = walk(".").filter((d) => d.rel !== ".");
+const all = dirsFromGit().filter((d) => d.rel !== ".");
 /** 목차에 올릴 것 — README 가 있거나 소스가 든 폴더 */
 const rows = all.filter((d) => d.readme || d.srcCount > 0);
 const noReadme = all.filter((d) => !d.readme && d.srcCount > 0);
@@ -87,7 +119,7 @@ const doc = `# INDEX — 무엇이 어디 있나
 > 개발자: 박승우 · 일자: ${new Date().toISOString().slice(0, 10)}
 > **생성기가 만든다** — \`node scripts/gen_index.mjs\`. 손으로 고치지 않는다.
 
-폴더와 그 폴더 README 의 첫 줄을 실물에서 뽑았다.
+git 이 추적하는 폴더와 그 폴더 README 의 첫 줄을 뽑았다.
 규칙·읽기 순서는 [\`CLAUDE.md\`](CLAUDE.md) · [\`AGENTS.md\`](AGENTS.md) 가 정본이다.
 지금 상태는 [\`handoff.md\`](handoff.md), 문서 색인은 [\`docs/README.md\`](docs/README.md).
 
