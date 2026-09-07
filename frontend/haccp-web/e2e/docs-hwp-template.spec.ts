@@ -7,6 +7,7 @@
  *   1) 진짜 HWP 파일을 올린다 — 13MB짜리 실물이라 크기 제한·저장 경로가 여기서 드러난다
  *   2) 업로드는 덮어쓰지 않고 버전을 쌓는다. DB 에 버전 행이 늘어야 성공이다
  *   3) 시스템 제공 양식은 회사마다 카탈로그 1행 — count 는 loginCoCd 만 본다
+ *   4) 구분·사용여부 건수는 tbl_template 도 그 회사만 조인한다 — tmpl_cd 만 조인하면 타사 카탈로그까지 센다
  *
  * PIPELINE[HF130] E2E
  */
@@ -63,7 +64,9 @@ test.describe.serial("HWP 사용양식관리", () => {
     await fillCell(grid, at, "양식명", NAME);
     expect(await saveAndConfirm(page, "/hwp-template-management/save")).toBe(200);
 
-    TMPL = dbOne(`SELECT tmpl_cd FROM tbl_template WHERE tmpl_nm='${NAME}' ORDER BY idx DESC LIMIT 1`);
+    TMPL = dbOne(
+      `SELECT tmpl_cd FROM tbl_template WHERE tmpl_nm='${NAME}' AND co_cd='${sqlLit(loginCoCd())}' ORDER BY idx DESC LIMIT 1`,
+    );
     expect(TMPL, "저장했는데 양식이 DB 에 없다").not.toBe("");
     expect(TMPL.startsWith("hwp_usr_"), `자동 채번 규칙에 안 맞는다: ${TMPL}`).toBe(true);
 
@@ -151,7 +154,7 @@ test.describe.serial("HWP 사용양식관리", () => {
     expect(await saveAndConfirm(page, "/hwp-template-management/save")).toBe(200);
 
     const cd = dbOne(
-      `SELECT tmpl_cd FROM tbl_template WHERE tmpl_nm='${DEL_NAME}' ORDER BY idx DESC LIMIT 1`,
+      `SELECT tmpl_cd FROM tbl_template WHERE tmpl_nm='${DEL_NAME}' AND co_cd='${sqlLit(loginCoCd())}' ORDER BY idx DESC LIMIT 1`,
     );
     expect(cd, "자사 양식이 저장되지 않았다").not.toBe("");
     expect(
@@ -189,7 +192,9 @@ test.describe.serial("HWP 사용양식관리", () => {
       )
       .toBe("0");
     expect(
-      dbOne(`SELECT count(*) FROM tbl_template WHERE tmpl_cd='${cd}'`),
+      dbOne(
+        `SELECT count(*) FROM tbl_template WHERE tmpl_cd='${cd}' AND co_cd='${sqlLit(loginCoCd())}'`,
+      ),
       "자사 카탈로그 행이 남았다",
     ).toBe("0");
   });
@@ -209,7 +214,7 @@ test.describe.serial("HWP 사용양식관리", () => {
     dbOne(`UPDATE tbl_company_template SET sys_yn='usr' WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd='hwp_sys_005'`);
     try {
       const total = Number(dbOne(`SELECT count(*) FROM tbl_company_template ct
-                                    JOIN tbl_template t ON t.tmpl_cd = ct.tmpl_cd
+                                    JOIN tbl_template t ON t.co_cd = ct.co_cd AND t.tmpl_cd = ct.tmpl_cd
                                    WHERE ct.co_cd='${sqlLit(loginCoCd())}' AND t.doc_kind='HWP'`));
       const { user, pass } = adminCreds();
       await login(page, user, pass);
@@ -228,7 +233,7 @@ test.describe.serial("HWP 사용양식관리", () => {
        */
       const cnt = (where: string) => Number(dbOne(
         `SELECT count(*) FROM tbl_company_template ct
-           JOIN tbl_template t ON t.tmpl_cd = ct.tmpl_cd
+           JOIN tbl_template t ON t.co_cd = ct.co_cd AND t.tmpl_cd = ct.tmpl_cd
           WHERE ct.co_cd='${sqlLit(loginCoCd())}' AND t.doc_kind='HWP' AND ${where}`,
       ));
       const nCnt = cnt("upper(coalesce(ct.use_yn,'Y')) = 'N'");

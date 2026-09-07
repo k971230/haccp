@@ -2,11 +2,11 @@
  * flow-attach — 결재 첨부 화면의 전송·전송취소.
  *
  * 개발자: 박승우
- * 일자: 2026-08-26
+ * 일자: 2026-09-07
  * 코멘트:
  *   1) 이 화면에도 전송(상신)이 있다 — 작성 화면을 다시 열지 않고 여기서 올릴 수 있어야 한다
  *   2) 전송 뒤에는 첨부·내용이 잠긴다. 잠기지 않으면 결재자가 본 것과 기록이 달라진다
- *   3) 상태 전이는 화면 문구가 아니라 DB DOC_STATUS 로 확인한다
+ *   3) 전송취소는 목록이 그려진 뒤 그 행을 보이게 하고 누른다 — 가상화·스크롤에 가리면 취소까지 못 간다
  *
  * PIPELINE[HF130] E2E
  */
@@ -108,7 +108,10 @@ test.describe.serial("결재 첨부 — 전송", () => {
     const docIdx = attachedIdx || lastDocIdx();
 
     await openScreen(page, "/flow/appr/attach");
-    await rowOfDoc(page, docIdx).click();
+    const row = rowOfDoc(page, docIdx);
+    await expect(row, "전송한 문서가 결재첨부 목록에 없다").toBeVisible({ timeout: 30_000 });
+    await row.scrollIntoViewIfNeeded();
+    await row.click();
 
     await Promise.all([
       page.waitForResponse(
