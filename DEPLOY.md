@@ -35,9 +35,9 @@ bash scripts/install_rhwp.sh    # Docker 볼륨 haccp-rhwp. Windows 로컬은 to
 
 ## 2. DB — 파이프라인이 안 건드린다
 
-스키마 정본은 `db_sasshaccp/` **7본**이고, 배포 담당이 **따로** 돌린다.
-Jenkins 는 DB 를 안 건드린다. SP 를 바꿨으면 `01_sp.sql` 을 운영에 따로 적용한다
-(`CREATE OR REPLACE` 라 재실행된다). 이미 깔린 운영·시험은 2026-09-03 에 맞췄다.
+스키마 정본은 `db_sasshaccp/` **시드 7본 + `00_alter`(항상)** 이고, 배포 담당이 **따로** 돌린다.
+Jenkins 는 DB 를 안 건드린다. SP 를 바꿨으면 `00_alter.sql` 과 `01_sp.sql` 을 운영에 따로 적용한다
+(`00_alter` 는 멱등, `01_sp` 는 `CREATE OR REPLACE` 라 재실행된다). 이미 깔린 운영·시험은 2026-09-08 에 맞췄다.
 
 ```sh
 PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** bash db_sasshaccp/apply-all.sh

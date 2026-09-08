@@ -1,11 +1,12 @@
 # db_sasshaccp
 
-PostgreSQL `sasshaccp` 스키마 **정본**. 여기 7본이 곧 DB 다 — 손으로 친 DDL·데이터는 남기지 않는다.
+PostgreSQL `sasshaccp` 스키마 **정본**. 시드 7본이 곧 데이터다. `00_alter.sql` 은 이미 깐 DB 스키마 보정이고 시드가 아니다.
 
 ## 파이프라인
 
 ```
 00_ddl        구조        표 · 인덱스 · 제약 (수는 docs/10) 회사코드 없음
+00_alter      보정        이미 깐 DB 스키마 진화 (멱등)     회사코드 없음 — 시드 7본이 아니다. apply-all 이 항상 돈다
 01_sp         로직        SP·함수 (수는 docs/9)            회사코드 없음
 02_seed       플랫폼 기준  화면 · 양식 · 0000 업체          0000 고정
      │
@@ -14,7 +15,7 @@ PostgreSQL `sasshaccp` 스키마 **정본**. 여기 7본이 곧 DB 다 — 손�
      ├─ 06_company_seed 업체·계정·결재선·사용양식   -v co_cd=  업체별
      ├─ 07_company_forms 회사 지면 5본 복사         -v co_cd=  업체별
 04_migrate_code_upper  구 DB 1회용 — 신규 설치에는 안 쓴다
-08·09·10·11·12 는 운영·시험에 적용한 뒤 지웠다. 정본은 7본이다.
+08·09·10·11·12 는 운영·시험에 적용한 뒤 지웠다. 시드 정본은 7본이다. 00_alter 는 그 밖에 항상 돈다.
 ```
 
 **업무 로직은 SP 에 둔다.** 백엔드는 SP 를 부르고 결과를 담아 넘기는 일만 한다
@@ -28,6 +29,7 @@ PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** bash apply-all.sh
 
 # 손으로 하려면
 psql -f 00_ddl.sql
+psql -f 00_alter.sql
 psql -f 01_sp.sql
 psql -f 02_seed.sql
 psql -v co_cd=0000 -f 03_code_seed.sql
@@ -35,15 +37,19 @@ psql -v co_cd=0000 -f 05_form_seed.sql
 psql -v co_cd=0000 -f 07_company_forms.sql
 ```
 
+`00_alter` 를 빼면 이미 깐 DB 에 꼬리 ALTER·새 표가 안 간다. 빈 DB 는 `00_ddl` 본문에 같은 꼬리가 있어
+한 번은 들어가지만, 다음부터 `00_ddl` 을 건너뛰므로 **항상 같이 돌린다.**
+
 **`07` 을 빼면 작성 화면에 고를 양식이 0건이다.** 시드는 표준 지면까지만 깔고
 회사 지면 버전은 안 만든다 — `0000` 에도 필요하다 (`apply-all.sh` 4단계).
+`06` 만 돌리고 `07` 을 빼면 로그인은 되는데 양식이 없다.
 `06_company_seed.sql` 은 `0000` 에 안 돌린다. `02_seed.sql` 이 이미 만들어 뒀다.
 
 ## 새 업체를 여는 법 (0004, 0005 …)
 
 **SQL 파일을 새로 만들지 않는다.** `02_seed.sql` 에 업체를 넣지 않는다.
 이미 깔린 DB 에 `apply-all.sh` 를 다시 불러도 된다. 스키마가 있으면 `00_ddl` 과
-`02_seed` 를 건너뛰고 `01_sp` 부터 돈다. 업체만 더 얹을 때는 업체분 4본만 직접 돌려도 된다.
+`02_seed` 를 건너뛰고 `00_alter` → `01_sp` 부터 돈다. 업체만 더 얹을 때는 업체분 4본만 직접 돌려도 된다.
 
 ```sh
 export PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** PGDATABASE=sasshaccp
@@ -100,7 +106,7 @@ $P -v co_cd=0004 -f 07_company_forms.sql
 | 공통코드 | `main_cd`·`sub_cd` 둘 다 **UPPER_SNAKE**. `sub_cd` 는 업무 표에 저장되는 값과 같은 표기 |
 | 업무 오류 | SP 에서 `RAISE ... USING ERRCODE='45000'` → 400 + 그 문구 |
 | 삭제 | HTTP DELETE 를 쓰지 않는다. `validate-delete` → `delete` 2단계 |
-| 재실행 | `apply-all.sh` 는 스키마가 있으면 `00_ddl`·`02_seed` 를 건너뛴다. `01_sp` 는 OR REPLACE, `03`·`05` 는 upsert, `06`·`07` 은 이미 있는 행을 안 건드린다 |
+| 재실행 | `apply-all.sh` 는 스키마가 있으면 `00_ddl`·`02_seed` 를 건너뛴다. `00_alter` 는 항상 돈다. `01_sp` 는 OR REPLACE, `03`·`05` 는 upsert, `06`·`07` 은 이미 있는 행을 안 건드린다 |
 
 ## 손대면 안 되는 것
 

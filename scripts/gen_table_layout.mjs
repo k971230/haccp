@@ -150,8 +150,11 @@ const today = new Date().toISOString().slice(0, 10);
 const colCount = ordered.reduce((a, t) => a + t.cols.length, 0);
 const GROUP_KEYS = [...GROUPS.map((x) => x.key), "미분류"];
 
-/** 표의 삭제 의미 — del_yn / use_yn / 물리 DELETE */
+/** 표의 삭제 의미 — del_yn / use_yn / 물리 DELETE. 컬럼명만 보면 tbl_document 가 거짓이 된다 */
 function deleteSemanticsOf(t) {
+  if (t.name === "tbl_document") {
+    return { kind: "물리 DELETE(WRK·RJT)", recover: "불가 — 전송·결재완료는 차단. del_yn은 목록 숨김" };
+  }
   const names = t.cols.map((c) => c.name);
   if (names.includes("del_yn")) return { kind: "del_yn", recover: "가능 — del_yn=N" };
   if (names.includes("use_yn")) return { kind: "use_yn", recover: "가능 — use_yn=Y" };
@@ -170,6 +173,7 @@ function loadDeleteBlockers() {
     menu_management: "tbl_menu",
     role_management: "tbl_role",
     user_management: "tbl_user",
+    schedule_cycle_management: "tbl_schedule_rule",
   };
   const map = new Map();
   for (const m of spSql.matchAll(/\b(sp_[a-z0-9_]*delete_blocker[a-z0-9_]*)\b/g)) {

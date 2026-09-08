@@ -776,7 +776,8 @@ BEGIN
         RAISE EXCEPTION '시스템 코드는 삭제할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
 
-    DELETE FROM tbl_code WHERE co_cd = p_co_cd AND idx = p_idx;
+    -- 행을 지우지 않는다. 레이아웃·콤보 복구는 use_yn=Y. 시스템 코드는 위에서 이미 막았다
+    UPDATE tbl_code SET use_yn = 'N', upd_dt = now() WHERE co_cd = p_co_cd AND idx = p_idx;
 END$$;
 
 
@@ -784,7 +785,7 @@ END$$;
 -- Name: PROCEDURE sp_common_code_management_d_000(IN p_co_cd character varying, IN p_idx bigint); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_common_code_management_d_000(IN p_co_cd character varying, IN p_idx bigint) IS '공통코드 삭제 — 미존재·시스템코드 차단 후 삭제';
+COMMENT ON PROCEDURE sasshaccp.sp_common_code_management_d_000(IN p_co_cd character varying, IN p_idx bigint) IS '공통코드 삭제 — 미존재·시스템코드 차단 후 use_yn=N. 행은 남긴다';
 
 
 --
@@ -2023,6 +2024,34 @@ COMMENT ON PROCEDURE sasshaccp.sp_schedule_cycle_management_c_000(IN p_co_cd cha
 
 
 --
+-- Name: sp_schedule_cycle_management_delete_blocker_r_000(character varying, character varying[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_schedule_cycle_management_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cds character varying[]) RETURNS TABLE(ref_key character varying, target character varying)
+    LANGUAGE sql
+    STABLE
+    AS $$
+    -- 작성 중인 과제(doc_idx 있음)가 있으면 주기를 지우지 않는다.
+    -- d_000 은 미래 TODO 만 지우고 ING·문서는 남긴다. 그 상태에서 규칙이 사라지면 과제가 고아다.
+    SELECT t.tmpl_cd::varchar AS ref_key,
+           '작성 중인 과제'::varchar AS target
+      FROM tbl_schedule_task t
+     WHERE t.co_cd = p_co_cd
+       AND t.tmpl_cd = ANY(p_tmpl_cds)
+       AND t.status = 'ING'
+       AND t.doc_idx IS NOT NULL
+     LIMIT 1;
+$$;
+
+
+--
+-- Name: FUNCTION sp_schedule_cycle_management_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cds character varying[]); Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON FUNCTION sasshaccp.sp_schedule_cycle_management_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cds character varying[]) IS '문서주기 삭제 차단 — 작성 중인 과제(ING·문서있음) 첫 건. 없으면 통과';
+
+
+--
 -- Name: sp_schedule_cycle_management_d_000(character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
@@ -2973,8 +3002,9 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_pkg_monitor_r_000(p_co_cd character var
 -- Name: sp_tbl_ccp_metal_monitor_c_000(character varying, bigint, character varying, character varying, numeric, numeric, character varying, character varying, jsonb, jsonb, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_metal_monitor_c_000(character varying, bigint, character varying, character varying, numeric, numeric, character varying, character varying, jsonb, jsonb, character varying, character varying, character varying);
 DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_metal_monitor_c_000(character varying, bigint, character varying, character varying, numeric, numeric, character varying, character varying, jsonb, jsonb, character varying, character varying);
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_ccp_cd character varying, p_fe_size numeric, p_sts_size numeric, p_mng_user_id character varying, p_mng_nm character varying, p_sens_rows_json jsonb, p_pass_rows_json jsonb, p_id character varying, p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying, p_title character varying DEFAULT NULL::character varying) RETURNS bigint
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_ccp_cd character varying, p_fe_size numeric, p_sts_size numeric, p_mng_user_id character varying, p_mng_nm character varying, p_sens_rows_json jsonb, p_pass_rows_json jsonb, p_id character varying, p_tmpl_cd character varying, p_title character varying DEFAULT NULL::character varying) RETURNS bigint
     LANGUAGE plpgsql
     AS $$
 DECLARE v_doc_idx bigint; v_hdr_idx bigint; v_status varchar(4); v_name varchar; v_appr varchar; v_retain int; r jsonb;
@@ -2985,6 +3015,10 @@ BEGIN
     -- 포장·가열과 같은 기준. 빈 배열이면 헤더만 남는 빈 문서가 된다
     IF jsonb_array_length(p_sens_rows_json) = 0 THEN
         RAISE EXCEPTION '점검 행이 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    -- 옛 DEFAULT tmpl_ccp-metal-log 는 시드에 없다. 비면 유령 양식으로 헤더만 생긴다
+    IF COALESCE(btrim(p_tmpl_cd), '') = '' THEN
+        RAISE EXCEPTION '양식을 선택하세요.' USING ERRCODE = '45000';
     END IF;
     SELECT COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm), COALESCE(ct.appr_line_cd, 'DEFAULT'), COALESCE(ct.retention_month, t.default_retention_month)
       INTO v_name, v_appr, v_retain FROM tbl_template t LEFT JOIN tbl_company_template ct ON ct.co_cd=p_co_cd AND ct.tmpl_cd=t.tmpl_cd AND ct.use_yn='Y'
@@ -3047,11 +3081,15 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character v
 -- Name: sp_tbl_ccp_metal_monitor_d_000(character varying, bigint, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_ccp_metal_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying, IN p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying)
+DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_ccp_metal_monitor_d_000(character varying, bigint, character varying, character varying);
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_ccp_metal_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying, IN p_tmpl_cd character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_hdr_idx bigint; v_status varchar(4);
 BEGIN
+    IF COALESCE(btrim(p_tmpl_cd), '') = '' THEN
+        RAISE EXCEPTION '양식을 선택하세요.' USING ERRCODE = '45000';
+    END IF;
     SELECT h.idx, d.status INTO v_hdr_idx, v_status
       FROM tbl_document d
       JOIN tbl_ccp_metal_monitor h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
@@ -3086,7 +3124,8 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_ccp_metal_monitor_d_000(IN p_co_cd charact
 -- Name: sp_tbl_ccp_metal_monitor_r_001(character varying, bigint, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_r_001(p_co_cd character varying, p_doc_idx bigint, p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, doc_no character varying, base_dt character varying, ccp_cd character varying, fe_size numeric, sts_size numeric, mng_user_id character varying, mng_nm character varying, status character varying)
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_metal_monitor_r_001(character varying, bigint, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_r_001(p_co_cd character varying, p_doc_idx bigint, p_tmpl_cd character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, doc_no character varying, base_dt character varying, ccp_cd character varying, fe_size numeric, sts_size numeric, mng_user_id character varying, mng_nm character varying, status character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx, h.idx, d.doc_no, h.base_dt, h.ccp_cd, h.fe_size, h.sts_size,

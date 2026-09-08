@@ -46,7 +46,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `draft/html/HtmlDraftMapper.xml` | selectForms | SP 결과에 use_yn·ver_no 필터 |
 | `draft/hwpdoc/HwpDraftMapper.xml` | selectForms | SP 결과에 doc_kind=HWP 필터 |
 
-## 매퍼 → SP → 표 (162건)
+## 매퍼 → SP → 표 (163건)
 
 | 도메인 | SP | 종류 | 매퍼 | 건드리는 표 |
 |---|---|---|---|---|
@@ -135,6 +135,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | docs/hwp | `sp_tbl_company_template_delete_blocker_r_000` | 조회 | `docs/hwp/HwpTemplateMapper.xml` | `tbl_company_template<br>tbl_document` |
 | docs/sch | `sp_schedule_cycle_management_c_000` | 쓰기 | `docs/sch/DocCycleMapper.xml` | `tbl_approval_line<br>tbl_company_template<br>tbl_schedule_rule<br>tbl_schedule_rule_detail` |
 | docs/sch | `sp_schedule_cycle_management_d_000` | 쓰기 | `docs/sch/DocCycleMapper.xml` | `tbl_schedule_rule<br>tbl_schedule_rule_detail<br>tbl_schedule_task` |
+| docs/sch | `sp_schedule_cycle_management_delete_blocker_r_000` | 조회 | `docs/sch/DocCycleMapper.xml` | `tbl_schedule_task` |
 | docs/sch | `sp_schedule_cycle_management_form_r_000` | 조회 | `docs/sch/DocCycleMapper.xml` | `tbl_approval_line<br>tbl_company_template<br>tbl_html_ccp_chk_ver<br>tbl_html_ccp_htg_ver<br>tbl_html_ccp_mtl_ver<br>tbl_html_ccp_pkg_ver<br>tbl_html_hyg_prc_ver<br>tbl_schedule_rule<br>tbl_template` |
 | docs/sch | `sp_schedule_cycle_management_r_000` | 조회 | `docs/sch/DocCycleMapper.xml` | `tbl_approval_line<br>tbl_company_template<br>tbl_dept<br>tbl_schedule_rule<br>tbl_schedule_rule_detail<br>tbl_template<br>tbl_user` |
 | docs/sch | `sp_tbl_notification_task_c_000` | 쓰기 | `docs/sch/DocCycleMapper.xml` | `tbl_company_template<br>tbl_login_log<br>tbl_notification<br>tbl_schedule_task<br>tbl_template<br>tbl_user` |
