@@ -130,7 +130,7 @@ public interface HtmlDraftMapper {
      * 코멘트:
      *   1) 점검자·승인자·확인자 서명을 이름으로 맞춰 스냅샷한다
      *   2) 저장 직후 호출한다
-     *   3) 이름이 사용자와 같고 서명이 있으면 이미지를 복사한다
+     *   3) 이름이 사용자와 같아도 도장 blob 은 p_id(저장 호출자) 본인일 때만 복사한다
      */
     void snapshotSigns(
             // family: 양식군
@@ -144,7 +144,9 @@ public interface HtmlDraftMapper {
             // approverNm: 승인자명
             @Param("approverNm") String approverNm,
             // confirmNm: 확인자명
-            @Param("confirmNm") String confirmNm
+            @Param("confirmNm") String confirmNm,
+            // userId: JWT 작업자 — 본인 도장만 복사
+            @Param("userId") String userId
     );
 
     /**

@@ -224,14 +224,15 @@ public class HtmlDraftService {
             // 점검행은 안 남긴다 — 헤더만. HWP DocumentService 와 같다
             auditWriter.record(AUDIT_TBL, docIdx, req.getDocIdx() == null ? "I" : "U",
                     Map.of("docIdx", docIdx, "tmplCd", tmpl, "baseDt", req.getBaseDt().trim()));
-            // 서명 스냅샷 — 이름=사용자면 blob 복사, 없으면 이름만
+            // 서명 스냅샷 — 이름=사용자여도 도장은 저장 호출자 본인만
             mapper.snapshotSigns(
                     family.key(),
                     LoginUserContext.coCd(),
                     docIdx,
                     DraftSupport.nvl(req.getCheckerNm()),
                     DraftSupport.nvl(req.getApproverNm()),
-                    DraftSupport.nvl(req.getConfirmNm())
+                    DraftSupport.nvl(req.getConfirmNm()),
+                    LoginUserContext.userId()
             );
             // 점검행에 아니오가 하나라도 있을 때(= 부적합) 개선조치를 자동 생성한다
             boolean hasNg = req.getItems() != null && req.getItems().stream().anyMatch(row -> {
