@@ -82,8 +82,8 @@ $P -v co_cd=0001 -f 07_company_forms.sql
 
 ```sh
 # 화면
-https://180.71.58.87/haccp/          → 로그인 화면
-https://180.71.58.87/haccp/login     → 로그아웃 URL
+http://180.71.58.87/haccp/          → 로그인 화면
+http://180.71.58.87/haccp/login     → 로그아웃 URL
 
 # 컨테이너
 ssh 배포서버 'cd /home/ubuntu/haccp && docker compose --env-file .env.docker -f docker-compose.prod.yml ps'

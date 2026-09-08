@@ -1,9 +1,9 @@
 # htmltemplate — HTML 양식 원본
 
-화면 1개 = 패키지 1개. FE `pages/docs/html/htmltemplate/`.
+화면 1개 = 패키지 1개. FE `pages/docs/html-form/htmltemplate/`.
 
 URL `/api/v1/docs/html-form/hyg-process-template/*`
-XML `mapper/docs/html/htmltemplate/HtmlTemplateMapper.xml`
+XML `mapper/docs/htmlform/htmltemplate/HtmlTemplateMapper.xml`
 scrnCd `hyg-process-template`
 
 예시 `html_hyg_prc_000`(시드 `html_sys_001`, 잠금). 자사 저장은 `html_hyg_prc_001`부터 채번하고 `tbl_html_hyg_prc_ver`에 둔다. 삭제는 `use_yn=N` + 주기 행 정리.

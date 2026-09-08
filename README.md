@@ -9,7 +9,7 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 
 ---
 
-## 지금 어디까지 왔나 (2026-09-03)
+## 지금 어디까지 왔나 (2026-09-08)
 
 | 항목 | 값 |
 |---|---|
@@ -124,8 +124,8 @@ PIPELINE 전수 표는 이 파일이 아니라 [`docs/5_PIPELINE_색인.md`](doc
 ```bash
 # DB — 정본은 db_sasshaccp/ 7본이다. 빈 DB 에 순서대로 깔면 끝난다
 #   PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
-#   새 업체:  apply-all.sh 를 다시 부르지 않는다 — 00_ddl 이 42P06 으로 죽는다.
-#             업체분 4본(03·05·06·07)만 직접 돌린다 — db_sasshaccp/README.md 「새 업체를 여는 법」
+#   새 업체: apply-all.sh 를 다시 불러도 된다 — 스키마가 있으면 00_ddl·02_seed 를 건너뛴다.
+#             업체만 얹을 때는 03·05·06·07 만 직접 돌려도 된다 — db_sasshaccp/README.md 「새 업체를 여는 법」
 
 # API — listen 7070 (운영 컨테이너와 동일). CORS Origin = Vite 4173
 cd backend/haccp-api

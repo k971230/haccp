@@ -1,9 +1,9 @@
 # ccppkgtemplate — 중요관리점(CCP-1B) 모니터링일지 양식관리
 
-화면 1개 = 패키지 1개. FE `pages/docs/html/ccppkgtemplate/`.
+화면 1개 = 패키지 1개. FE `pages/docs/html-form/ccppkgtemplate/`.
 
 URL은 화면마다 `/api/v1/docs/html-form/{scrnCd}/*` (Controller는 htmltemplate).
-XML `mapper/docs/html/ccppkgtemplate/CcpPkgTemplateMapper.xml`
+XML `mapper/docs/htmlform/ccppkgtemplate/CcpPkgTemplateMapper.xml`
 scrnCd `ccp-pkg-template`
 
 저장 테이블 `tbl_html_ccp_pkg_ver` · 예시는 `html_ccp_pkg_000`.

@@ -1649,7 +1649,7 @@ COMMENT ON COLUMN sasshaccp.tbl_code.idx IS 'PK 자동 채번 대리키';
 -- Name: COLUMN tbl_code.co_cd; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON COLUMN sasshaccp.tbl_code.co_cd IS '회사코드 — 테넌트 키. 0000일 때(= 플랫폼 표준코드) 전 업체 공용';
+COMMENT ON COLUMN sasshaccp.tbl_code.co_cd IS '회사코드 — 테넌트 키. 0000은 플랫폼·데모 업체. 조회는 로그인 회사만 본다';
 
 
 --
