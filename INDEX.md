@@ -1,6 +1,6 @@
 # INDEX — 무엇이 어디 있나
 
-> 개발자: 박승우 · 일자: 2026-09-07
+> 개발자: 박승우 · 일자: 2026-09-08
 > **생성기가 만든다** — `node scripts/gen_index.mjs`. 손으로 고치지 않는다.
 
 git 이 추적하는 폴더와 그 폴더 README 의 첫 줄을 뽑았다.
@@ -78,15 +78,15 @@ backend/
                 htmlform/
                     기준관리 API는 /api/v1/docs/html-form/{scrnCd} (hyg-process-template · ccp-verify-template · ccp-pkg-template · c…
                   ccphtgtemplate/
-                      화면 1개 = 패키지 1개. FE pages/docs/html/ccphtgtemplate/.
+                      화면 1개 = 패키지 1개. FE pages/docs/html-form/ccphtgtemplate/.
                   ccpmtltemplate/
-                      화면 1개 = 패키지 1개. FE pages/docs/html/ccpmtltemplate/.
+                      화면 1개 = 패키지 1개. FE pages/docs/html-form/ccpmtltemplate/.
                   ccppkgtemplate/
-                      화면 1개 = 패키지 1개. FE pages/docs/html/ccppkgtemplate/.
+                      화면 1개 = 패키지 1개. FE pages/docs/html-form/ccppkgtemplate/.
                   ccpverifytemplate/
-                      화면 1개 = 패키지 1개. FE pages/docs/html/ccpverifytemplate/.
+                      화면 1개 = 패키지 1개. FE pages/docs/html-form/ccpverifytemplate/.
                   htmltemplate/
-                      화면 1개 = 패키지 1개. FE pages/docs/html/htmltemplate/.
+                      화면 1개 = 패키지 1개. FE pages/docs/html-form/htmltemplate/.
                     dto/
                         버전 삭제 키 HtmlFormVerDeleteItem. 복사·이름·적용은 Controller body — 전용 DTO 없음.
                 hwp/

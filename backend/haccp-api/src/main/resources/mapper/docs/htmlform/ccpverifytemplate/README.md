@@ -1,4 +1,4 @@
-# mapper/docs/html/ccpverifytemplate
+# mapper/docs/htmlform/ccpverifytemplate
 
 `CcpVerifyTemplateMapper.xml` — `com.haccp.docs.htmlform.ccpverifytemplate.CcpVerifyTemplateMapper`
 

@@ -1,4 +1,4 @@
-# mapper/docs/html/ccphtgtemplate
+# mapper/docs/htmlform/ccphtgtemplate
 
 `CcpHtgTemplateMapper.xml` — `com.haccp.docs.htmlform.ccphtgtemplate.CcpHtgTemplateMapper`
 

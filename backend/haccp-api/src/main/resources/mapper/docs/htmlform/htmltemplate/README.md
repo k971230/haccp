@@ -1,4 +1,4 @@
-# mapper/docs/html/htmltemplate
+# mapper/docs/htmlform/htmltemplate
 
 `HtmlTemplateMapper.xml` — `com.haccp.docs.htmlform.htmltemplate.HtmlTemplateMapper`
 

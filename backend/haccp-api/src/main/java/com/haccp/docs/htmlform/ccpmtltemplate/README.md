@@ -1,9 +1,9 @@
 # ccpmtltemplate — 중요관리점(CCP-3P) 모니터링일지 양식관리
 
-화면 1개 = 패키지 1개. FE `pages/docs/html/ccpmtltemplate/`.
+화면 1개 = 패키지 1개. FE `pages/docs/html-form/ccpmtltemplate/`.
 
 URL은 화면마다 `/api/v1/docs/html-form/{scrnCd}/*` (Controller는 htmltemplate).
-XML `mapper/docs/html/ccpmtltemplate/CcpMtlTemplateMapper.xml`
+XML `mapper/docs/htmlform/ccpmtltemplate/CcpMtlTemplateMapper.xml`
 scrnCd `ccp-mtl-template`
 
 저장 테이블 `tbl_html_ccp_mtl_ver` · 예시는 `html_ccp_mtl_000`.
