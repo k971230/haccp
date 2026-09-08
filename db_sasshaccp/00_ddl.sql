@@ -2903,7 +2903,7 @@ COMMENT ON COLUMN sasshaccp.tbl_document.retention_until IS '보존 만료일 YY
 -- Name: COLUMN tbl_document.del_yn; Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON COLUMN sasshaccp.tbl_document.del_yn IS '삭제여부 Y/N — 물리 삭제 대신 논리 삭제. 승인 문서는 Y로도 바꿀 수 없다';
+COMMENT ON COLUMN sasshaccp.tbl_document.del_yn IS '삭제여부 Y/N — 목록 숨김. WRK·RJT 화면 삭제는 물리 DELETE. 전송·결재완료는 지우지 않는다';
 
 
 --
@@ -7185,6 +7185,7 @@ CREATE UNIQUE INDEX ux_tbl_html_ccp_pkg_ver_cd ON sasshaccp.tbl_html_ccp_pkg_ver
 
 --
 -- 자리 넓힘 — 이미 도는 DB 를 위한 보정. 다시 돌려도 결과가 같다
+-- apply-all 은 스키마가 있으면 이 꼬리를 건너뛴다. 같은 문장은 00_alter.sql 이 항상 돌린다.
 --
 -- 금속검출 감도점검 행의 시각 칸이 varchar(4) 였다. 화면이 보내는 값은 `09:10` 로 5자라
 -- 저장·전송이 전부 22001(문자열 잘림)로 막혔다 — 금속검출 일지를 한 장도 못 썼다.

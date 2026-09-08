@@ -25,7 +25,7 @@ alwaysApply: true
 |---|---|---|
 | 백엔드 `backend/haccp-api` | **IntelliJ IDEA** | `HaccpApiApplication` Run · 포트 7070 |
 | 프론트 `frontend/haccp-web` | **VSCode / Cursor** | `npm run dev` · 포트 4173 |
-| DB `db_sasshaccp` | DBeaver · psql | `00_ddl` → `01_sp` → `02_seed` → `03_code_seed` → `05_form_seed` → `06_company_seed` → `07_company_forms` (7본. `04_migrate_code_upper` 는 구 DB 전용이라 뺀다 — `07-haccp-db.mdc`) |
+| DB `db_sasshaccp` | DBeaver · psql | `00_ddl` → `00_alter`(항상) → `01_sp` → `02_seed` → `03_code_seed` → `05_form_seed` → `06_company_seed` → `07_company_forms` (시드 7본. `00_alter` 는 시드가 아니다. `04_migrate_code_upper` 는 구 DB 전용이라 뺀다 — `07-haccp-db.mdc`) |
 
 ## 어느 도구에서든 지켜야 하는 것
 

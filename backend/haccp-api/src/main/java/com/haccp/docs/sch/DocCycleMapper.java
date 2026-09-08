@@ -5,7 +5,7 @@
  * 일자: 2026-08-14
  * 코멘트:
  *   1) 85·86·96·114 의 SP만 호출한다. 결재선은 114에서 목록·단건·저장에 붙는다
- *   2) 조회는 FUNCTION(map), 저장·삭제·재생성은 PROCEDURE CALL이다
+ *   2) 조회는 FUNCTION(map), 저장·삭제·재생성은 PROCEDURE CALL이다. 삭제는 delete_blocker 후 d_000
  *   3) coCd·userId는 Service가 JWT에서만 채워 전달한다 (배치는 'system')
  *
  * PIPELINE[HB99] 문서주기 MyBatis 매퍼
@@ -14,6 +14,7 @@
 package com.haccp.docs.sch;
 
 // 역할 — 목록·행 타입
+import com.haccp.common.validation.DeleteBlocker;
 import com.haccp.docs.sch.dto.DocCycleFormRow;
 import com.haccp.docs.sch.dto.DocCycleRow;
 import java.util.List;
@@ -73,6 +74,21 @@ public interface DocCycleMapper {
             @Param("payload") String payload,
             // JWT 작업자 ID — 감사 컬럼
             @Param("userId") String userId
+    );
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-08
+     * 코멘트:
+     *   1) 삭제하면 안 되는 첫 주기 1건을 돌려준다 — 작성 중인 과제
+     *   2) validate-delete·delete 양쪽이 같은 검사를 다시 부른다
+     *   3) 지울 수 있으면 null
+     */
+    DeleteBlocker selectDeleteBlocker(
+            // JWT 회사코드
+            @Param("coCd") String coCd,
+            // 삭제 대상 양식코드 배열
+            @Param("tmplCds") List<String> tmplCds
     );
 
     /**

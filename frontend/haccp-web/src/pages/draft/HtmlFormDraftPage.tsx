@@ -58,8 +58,10 @@ import { MesButton } from "@/components/ui/MesButton";
 import { searchInputClass } from "@/components/ui/Input";
 // 역할 — 지면 공통 props·제목 메타를 뺀 점검 행
 import { paperBodyItems, type HtmlFormPaperProps } from "@/components/form/htmlFormPaperShared";
+// 역할 — 잠긴 HTML 문서 인쇄 — 화면 DOM 이 아니라 서버 상세(승인본) 지면
+import { DocumentPrintLayer, type HtmlPrintJob } from "@/components/document/DocumentPrintLayer";
 // 역할 — 전송(REQUEST)·전송취소(CANCEL) 공통 결재 API
-import { processDocumentApproval, saveDocumentTitle } from "@/api/documentApi";
+import { processDocumentApproval } from "@/api/documentApi";
 // 역할 — 일자 YYYYMMDD ↔ input[type=date]
 import { fromInputDate, toInputDate } from "@/lib/docDateTime";
 // 역할 — 그리드·편집 행 타입
@@ -244,6 +246,8 @@ export function HtmlFormDraftPage({
   const [detailFiles, setDetailFiles] = useState<HtmlFormDraftDetailCtx["files"]>([]);
   // 상세 요청 순번 — 늦게 온 응답이 나중 문서의 첨부를 덮는 것을 막는다
   const detailSeq = useRef(0);
+  // 잠긴 HTML 인쇄 작업 — 있으면 DocumentPrintLayer 가 서버 상세를 찍어 끝낸다
+  const [printJobs, setPrintJobs] = useState<HtmlPrintJob[] | null>(null);
 
   const {
     listRows, activeKey, activeBuffer: buf, addDraft, selectKey, patchActive, patchRow,
@@ -526,6 +530,8 @@ export function HtmlFormDraftPage({
     const savedIdxs: number[] = [];
     // 저장 루프 시점의 활성 행 docIdx — remap 뒤 __new_* 버퍼는 없다
     let savedActiveIdx: number | null = null;
+    // HWP 본문 업로드가 false 일 때(= 편집기가 그 문서를 안 듦) dirty 를 유지한다
+    let bodyUploadFailed = false;
     const err = await saveAll({
       validate,
       saveOne: async (row, b) => {
@@ -533,14 +539,13 @@ export function HtmlFormDraftPage({
         const status = b?.status ?? (row as EditableRow<ListMeta>).status;
         const existingIdx = b?.docIdx ?? (row as EditableRow<ListMeta>).docIdx ?? null;
         const isOpenRow = row._key === activeKeyRef.current;
-        // 전송 이후일 때(= 전송·결재완료) 본문은 못 고친다. 제목만 남긴다
+        // 전송 이후일 때(= 전송·결재완료) 본문·제목 모두 잠긴다. SP 가 REQ/APV 제목을 막는다
         if (existingIdx && !canModifyDoc(status)) {
-          await saveDocumentTitle(existingIdx, title);
           savedIdxs.push(existingIdx);
           if (isOpenRow) savedActiveIdx = existingIdx;
           return {
             docIdx: existingIdx,
-            listMeta: { title },
+            listMeta: {},
           };
         }
         if (!b) throw new Error("편집 내용이 없습니다.");
@@ -577,11 +582,15 @@ export function HtmlFormDraftPage({
          * 충돌(409)까지 났다. 열지 않은 행은 본문이 없는 게 맞다.
          */
         /*
-         * 반환값을 여기서는 안 본다. 이 시점에 api.save 는 이미 서버에 커밋됐다 —
-         * 본문을 못 올렸다고 기본정보 저장까지 실패로 만들 수는 없다.
-         * 「안 올렸다」는 uploadBody 가 띄우는 안내가 사용자에게 전한다.
+         * 헤더 PUT 은 이미 커밋됐다. 본문 업로드가 실패해도 그 커밋을 되돌리지는 않는다.
+         * 다만 afterSave 가 false 면 dirty 를 내리지 않고 persistSave 도 실패로 돌린다 —
+         * 우측 runSaveDetail 과 같은 기준이다. 안 올렸는데 성공이면 빈 문서가 전송된다.
+         * 「안 올렸다」토스트는 uploadBody 가 띄운다.
          */
-        if (afterSave && isOpenRow) await afterSave(saved);
+        if (afterSave && isOpenRow) {
+          const uploaded = await afterSave(saved);
+          if (!uploaded) bodyUploadFailed = true;
+        }
         savedIdxs.push(saved);
         if (isOpenRow) savedActiveIdx = saved;
         return {
@@ -631,6 +640,8 @@ export function HtmlFormDraftPage({
       mesToast(err.message, "warn");
       return false;
     }
+    // 본문을 못 올렸으면 헤더는 커밋됐어도 저장 성공으로 치지 않는다
+    if (bodyUploadFailed) return false;
     // 헤더 PUT 저장이 본문 업로드까지 했으면 dirty 도 같이 내린다
     clearBodyDirty?.();
     return true;
@@ -641,7 +652,7 @@ export function HtmlFormDraftPage({
    * 일자: 2026-08-24
    * 코멘트:
    *   1) 좌측 기본정보(일자·양식코드)와 제목을 저장한다
-   *   2) 좌측 저장 버튼이 호출한다. 전송 이후 행은 제목만 남긴다
+   *   2) 좌측 저장 버튼이 호출한다. 전송 이후 행은 건너뛴다(제목도 잠김)
    *   3) 점검 행 개수는 보지 않는다 — BE 도 items 빈 배열을 허용한다
    */
   const runSaveHeader = useCallback(async (): Promise<boolean> => {
@@ -650,7 +661,7 @@ export function HtmlFormDraftPage({
         const key = row._key;
         if (!key) continue;
         const b = getBuf(key);
-        // 전송 이후일 때(= 전송·결재완료) 제목만 고친다
+        // 전송 이후일 때(= 전송·결재완료) 제목도 못 고친다
         if ((b?.docIdx ?? row.docIdx) && !canModifyDoc(b?.status ?? row.status)) {
           continue;
         }
@@ -1085,12 +1096,35 @@ export function HtmlFormDraftPage({
   // 팝업이 열린 행 — 현재 양식코드를 강조하려고 같이 찾는다
   const lookupRow = lookupKey ? listRows.find((r) => r._key === lookupKey) ?? null : null;
 
+  const handlePrint = useCallback(() => {
+    if (!buf?.docIdx) return mesToast(MES.selectRow, "warn");
+    /*
+     * HWP 우측 편집기는 화면 그대로 찍는다.
+     * HTML 잠긴 문서(REQ/APV)는 화면 버퍼가 아니라 서버 상세 — 문서함이 쓰는 승인본 경로.
+     * WRK/RJT 는 지금 보고 있는 작성 지면이 정본이다.
+     */
+    if (!renderDetail && !canModifyDoc(status)) {
+      setPrintJobs([
+        {
+          // 문서 대리키 — 서버 상세를 다시 받는 키
+          docIdx: buf.docIdx,
+          // 양식코드 — 지면·API 매핑
+          tmplCd: buf.tmplCd,
+          // 양식명 — 지면 제목
+          tmplNm: buf.tmplNm,
+        },
+      ]);
+      return;
+    }
+    window.print();
+  }, [buf, renderDetail, status]);
+
   usePageCommands({
     search: handleSearch,
     add: () => { void handleAdd(); },
     save: () => { void handleSaveDetail(); },
     del: () => { void handleDeleteLeft(); },
-    print: () => { window.print(); },
+    print: () => { handlePrint(); },
     transfer: () => { void handleSend(); },
   });
 
@@ -1464,6 +1498,18 @@ export function HtmlFormDraftPage({
           onSelect={(tmplCd, tmplNm) => { void applyForm(lookupKey, tmplCd, tmplNm); }}
           // 선택 없이 닫기
           onClose={() => setLookupKey(null)}
+        />
+      ) : null}
+      {printJobs ? (
+        <DocumentPrintLayer
+          // 잠긴 HTML 1건 — 서버 상세를 A4 로 쌓아 window.print()
+          jobs={printJobs}
+          // 인쇄 대화상자가 닫히면 레이어를 걷는다
+          onDone={(skipped) => {
+            setPrintJobs(null);
+            // 매핑 없는 구양식·조회 실패
+            if (skipped > 0) mesToast("이 양식은 인쇄 지면이 없습니다.", "warn");
+          }}
         />
       ) : null}
     </div>

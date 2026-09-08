@@ -262,7 +262,7 @@ public class DocumentService {
                     safeOriginalName(file.getOriginalFilename()),
                     path,
                     file.getSize(),
-                    text(file.getContentType()),
+                    guessStoredMime(file.getOriginalFilename()),
                     userId
             );
             audit(
@@ -442,6 +442,7 @@ public class DocumentService {
      *   1) 상신·상신취소·승인·반려·결재취소 중 하나를 처리한다
      *   2) 문서 결재 패널의 버튼이 호출한다
      *   3) 성공 시 문서 상태를 갱신하고 상신·승인·반려·취소를 감사 이력에 남긴다
+     *      결재취소(UNDO)는 완료본 PDF 경로를 미리 모아 커밋 뒤에 실물을 지운다
      */
     @Transactional
     public void processApproval(
@@ -461,7 +462,14 @@ public class DocumentService {
             throw new BizException("문서를 찾을 수 없습니다.");
         }
         // 결재취소는 되돌리기 규칙이 달라 전용 SP 를 탄다 — 전이 SP 는 손대지 않는다
+        // 완료본 PDF 경로는 SP 호출 전에 모아 둔다. 커밋 뒤에 실물을 지운다
+        List<String> undoPdfPaths = List.of();
         if ("UNDO".equals(action)) {
+            undoPdfPaths = mapper.selectFiles(coCd, docIdx).stream()
+                    .filter(row -> "PDF".equalsIgnoreCase(text(row.getFileKind())))
+                    .map(row -> text(row.getFilePath()))
+                    .filter(path -> !path.isEmpty())
+                    .toList();
             mapper.undoApproval(coCd, docIdx, LoginUserContext.userId(), text(req.getOpinion()));
         } else {
             mapper.processApproval(coCd, docIdx, action, text(req.getOpinion()), LoginUserContext.userId());
@@ -483,6 +491,8 @@ public class DocumentService {
                 // 반려·결재취소 사유를 감사 이력 메모로 남긴다. 취소 SP 는 단계 opinion 을 비운다
                 action.equals("REJECT") || action.equals("UNDO") ? text(req.getOpinion()) : null
         );
+        // 메타는 SP 가 지웠다. 실물은 커밋 뒤에 — 롤백되면 메타가 되살아나는데 파일이 먼저 사라지면 안 된다
+        deleteAfterCommit(undoPdfPaths);
     }
 
     /**
@@ -778,6 +788,30 @@ public class DocumentService {
             throw new BizException("파일 구분이 올바르지 않습니다.");
         }
         return kind;
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-08
+     * 코멘트:
+     *   1) 첨부 MIME 은 클라이언트가 보낸 Content-Type 을 쓰지 않는다
+     *   2) 업로드가 호출한다. 다운로드는 이미 attachment 라 업로드 자체는 막지 않는다
+     *   3) 서명 업로드(UserService.guessImageMime)와 같은 이유 — 위조 MIME 으로 브라우저가 실행하지 않게
+     */
+    private static String guessStoredMime(String fileName) {
+        String lower = fileName == null ? "" : fileName.toLowerCase();
+        int dot = lower.lastIndexOf('.');
+        String ext = dot >= 0 ? lower.substring(dot + 1) : "";
+        return switch (ext) {
+            case "pdf" -> "application/pdf";
+            case "png" -> "image/png";
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "gif" -> "image/gif";
+            case "webp" -> "image/webp";
+            case "hwpx" -> "application/hwp+zip";
+            case "hwp" -> "application/x-hwp";
+            default -> "application/octet-stream";
+        };
     }
 
     /** 서버 내부 경로·감사 값은 빼고 API용 메타만 만든다 */

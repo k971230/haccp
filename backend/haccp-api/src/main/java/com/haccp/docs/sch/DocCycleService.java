@@ -5,7 +5,7 @@
  * 일자: 2026-08-14
  * 코멘트:
  *   1) 주기 저장 직후 CycleScheduleGenerator로 예정일을 다시 만들어 화면 저장과 배치 결과가 같게 한다
- *   2) 규칙 검증은 SP(45000 업무 예외)와 이 서비스 양쪽에서 하고, 삭제는 validate-delete·delete Double Check다
+ *   2) 규칙 검증은 SP(45000 업무 예외)와 이 서비스 양쪽에서 하고, 삭제는 validate-delete·delete Double Check(차단 SP)다
  *   3) coCd·작업자는 요청 본문을 믿지 않고 JWT LoginUserContext에서만 읽는다 (배치는 'system')
  *
  * PIPELINE[HB99] 문서주기 업무 서비스
@@ -17,6 +17,8 @@ package com.haccp.docs.sch;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+// 역할 — 삭제 검증
+import com.haccp.common.validation.DeleteValidation;
 // 역할 — 삭제 키 DTO
 import com.haccp.docs.sch.dto.DocCycleDeleteItem;
 import com.haccp.docs.sch.dto.DocCycleDetailRow;
@@ -56,6 +58,8 @@ public class DocCycleService {
 
     /** 감사 로그 대상 표 */
     private static final String AUDIT_TBL = "tbl_schedule_rule";
+    // 삭제 차단 메시지 라벨 — OPS_DELETE 표준 문구의 {label}
+    private static final String LABEL = "문서주기";
 
     // 마감 몇 분 전에 알릴지 — 매직넘버 금지(OPS_GLOBAL_CONFIG), alarm_dt 계산에 그대로 쓴다
     @Value("${app.schedule.alarm-before-minutes:60}")
@@ -305,18 +309,21 @@ public class DocCycleService {
         }
     }
 
-    /** 삭제 키 형식 + 주기 존재 여부 검사 — validate-delete·delete가 같은 메서드를 쓴다. */
+    /** 삭제 키 형식 + 주기 존재 + 작성 중 과제 차단 — validate-delete·delete가 같은 메서드를 쓴다. */
     private void assertDeletable(List<DocCycleDeleteItem> keys) {
-        if (keys == null || keys.isEmpty()) throw new BizException("삭제할 문서주기를 선택하세요.");
+        DeleteValidation.requireItems(keys, "삭제할 문서주기를 선택하세요.");
         String coCd = LoginUserContext.coCd();
+        List<String> tmplCds = new ArrayList<>();
         for (DocCycleDeleteItem key : keys) {
             if (key == null) throw new BizException("삭제할 문서주기 키가 올바르지 않습니다.");
             String tmplCd = requireTmplCd(key.getTmplCd());
+            if (!tmplCds.contains(tmplCd)) tmplCds.add(tmplCd);
             List<DocCycleRow> rows = mapper.selectCycle(coCd, tmplCd);
             if (rows == null || rows.isEmpty()) {
                 throw new BizException("삭제할 문서주기가 없습니다. 양식코드 '" + tmplCd + "'");
             }
         }
+        DeleteValidation.throwIfBlocked(mapper.selectDeleteBlocker(coCd, tmplCds), LABEL);
     }
 
     private String requireTmplCd(String tmplCd) {

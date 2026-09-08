@@ -622,10 +622,11 @@ COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_r_001(p_co_cd character varying, p_t
 
 
 --
--- Name: sp_ccp_verify_sign_u_000(character varying, bigint, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_ccp_verify_sign_u_000(character varying, bigint, character varying, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_ccp_verify_sign_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_checker_nm character varying, IN p_approver_nm character varying, IN p_confirm_nm character varying)
+DROP PROCEDURE IF EXISTS sasshaccp.sp_ccp_verify_sign_u_000(character varying, bigint, character varying, character varying, character varying);
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_ccp_verify_sign_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_checker_nm character varying, IN p_approver_nm character varying, IN p_confirm_nm character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -665,6 +666,10 @@ BEGIN
          ORDER BY CASE WHEN u.sign_img IS NOT NULL THEN 0 ELSE 1 END, u.user_id
          LIMIT 1;
     END IF;
+    -- 저장 호출자 본인이 아닐 때(= 남의 도장) 이미지만 버린다. 이름 글자는 유지한다
+    IF v_chk_id IS DISTINCT FROM p_id THEN v_chk_img := NULL; END IF;
+    IF v_apv_id IS DISTINCT FROM p_id THEN v_apv_img := NULL; END IF;
+    IF v_cfm_id IS DISTINCT FROM p_id THEN v_cfm_img := NULL; END IF;
     UPDATE tbl_ccp_verify_check
        SET checker_id = v_chk_id,
            checker_sign_img = v_chk_img,
@@ -678,10 +683,10 @@ END$$;
 
 
 --
--- Name: PROCEDURE sp_ccp_verify_sign_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_checker_nm character varying, IN p_approver_nm character varying, IN p_confirm_nm character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+-- Name: PROCEDURE sp_ccp_verify_sign_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_checker_nm character varying, IN p_approver_nm character varying, IN p_confirm_nm character varying, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_ccp_verify_sign_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_checker_nm character varying, IN p_approver_nm character varying, IN p_confirm_nm character varying) IS 'CCP 검증점검 점검자·승인자·확인 서명 스냅샷 — 저장 직후. 이름 매칭';
+COMMENT ON PROCEDURE sasshaccp.sp_ccp_verify_sign_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_checker_nm character varying, IN p_approver_nm character varying, IN p_confirm_nm character varying, IN p_id character varying) IS 'CCP 검증점검 점검자·승인자·확인 서명 스냅샷 — 저장 직후. 이름 매칭. 도장은 p_id 본인만';
 
 
 --
@@ -771,7 +776,8 @@ BEGIN
         RAISE EXCEPTION '시스템 코드는 삭제할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
 
-    DELETE FROM tbl_code WHERE co_cd = p_co_cd AND idx = p_idx;
+    -- 행을 지우지 않는다. 레이아웃·콤보 복구는 use_yn=Y. 시스템 코드는 위에서 이미 막았다
+    UPDATE tbl_code SET use_yn = 'N', upd_dt = now() WHERE co_cd = p_co_cd AND idx = p_idx;
 END$$;
 
 
@@ -779,7 +785,7 @@ END$$;
 -- Name: PROCEDURE sp_common_code_management_d_000(IN p_co_cd character varying, IN p_idx bigint); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_common_code_management_d_000(IN p_co_cd character varying, IN p_idx bigint) IS '공통코드 삭제 — 미존재·시스템코드 차단 후 삭제';
+COMMENT ON PROCEDURE sasshaccp.sp_common_code_management_d_000(IN p_co_cd character varying, IN p_idx bigint) IS '공통코드 삭제 — 미존재·시스템코드 차단 후 use_yn=N. 행은 남긴다';
 
 
 --
@@ -2018,6 +2024,34 @@ COMMENT ON PROCEDURE sasshaccp.sp_schedule_cycle_management_c_000(IN p_co_cd cha
 
 
 --
+-- Name: sp_schedule_cycle_management_delete_blocker_r_000(character varying, character varying[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_schedule_cycle_management_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cds character varying[]) RETURNS TABLE(ref_key character varying, target character varying)
+    LANGUAGE sql
+    STABLE
+    AS $$
+    -- 작성 중인 과제(doc_idx 있음)가 있으면 주기를 지우지 않는다.
+    -- d_000 은 미래 TODO 만 지우고 ING·문서는 남긴다. 그 상태에서 규칙이 사라지면 과제가 고아다.
+    SELECT t.tmpl_cd::varchar AS ref_key,
+           '작성 중인 과제'::varchar AS target
+      FROM tbl_schedule_task t
+     WHERE t.co_cd = p_co_cd
+       AND t.tmpl_cd = ANY(p_tmpl_cds)
+       AND t.status = 'ING'
+       AND t.doc_idx IS NOT NULL
+     LIMIT 1;
+$$;
+
+
+--
+-- Name: FUNCTION sp_schedule_cycle_management_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cds character varying[]); Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON FUNCTION sasshaccp.sp_schedule_cycle_management_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cds character varying[]) IS '문서주기 삭제 차단 — 작성 중인 과제(ING·문서있음) 첫 건. 없으면 통과';
+
+
+--
 -- Name: sp_schedule_cycle_management_d_000(character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
@@ -2236,6 +2270,13 @@ BEGIN
     IF jsonb_typeof(COALESCE(p_payload -> 'steps', '[]'::jsonb)) <> 'array'
        OR jsonb_array_length(COALESCE(p_payload -> 'steps', '[]'::jsonb)) = 0 THEN
         RAISE EXCEPTION '결재 단계는 한 건 이상 입력하세요.' USING ERRCODE = '45000';
+    END IF;
+    -- 승인 단계가 둘 이상이면 결재 SP 가 첫 승인에서 문서를 APV 로 닫고 나머지를 롤백한다
+    IF (
+        SELECT count(*) FROM jsonb_array_elements(COALESCE(p_payload -> 'steps', '[]'::jsonb)) s
+         WHERE upper(trim(COALESCE(s.value ->> 'roleCd', ''))) = 'APPROVE'
+    ) > 1 THEN
+        RAISE EXCEPTION '승인 단계는 하나만 둘 수 있습니다.' USING ERRCODE = '45000';
     END IF;
 
     /*
@@ -2537,11 +2578,12 @@ BEGIN
             nullif(v_row->>'equipNm', ''), nullif(v_row->>'productNm', ''),
             nullif(v_row->>'judgeCd', ''), coalesce(nullif(v_row->>'judgeModYn', ''), 'N'),
             nullif(v_row->>'checkerId', ''), nullif(v_row->>'checkerNm', ''),
-            -- 서명은 signYn만 받고 검사자 서명 원본을 그 시점 값으로 복사한다
+            -- 서명은 signYn 이고 그 행 점검자가 저장 호출자 본인일 때만 복사한다. 남의 id 면 NULL
             CASE WHEN COALESCE(v_row->>'signYn', 'N') = 'Y'
+                  AND COALESCE(v_row->>'checkerId', '') = p_id
                  THEN (SELECT u.sign_img FROM tbl_user u
                         WHERE u.co_cd = p_co_cd
-                          AND u.user_id = nullif(v_row->>'checkerId', ''))
+                          AND u.user_id = p_id)
                  ELSE NULL END, p_id
         ) RETURNING idx INTO v_row_idx;
         FOR v_cell IN SELECT value FROM jsonb_array_elements(coalesce(v_row->'cells', '[]'::jsonb))
@@ -2797,11 +2839,12 @@ BEGIN
             nullif(v_row->>'equipNm', ''), nullif(v_row->>'productNm', ''),
             nullif(v_row->>'judgeCd', ''), coalesce(nullif(v_row->>'judgeModYn', ''), 'N'),
             nullif(v_row->>'checkerId', ''), nullif(v_row->>'checkerNm', ''),
-            -- 서명은 signYn만 받고 검사자 서명 원본을 그 시점 값으로 복사한다
+            -- 서명은 signYn 이고 그 행 점검자가 저장 호출자 본인일 때만 복사한다. 남의 id 면 NULL
             CASE WHEN COALESCE(v_row->>'signYn', 'N') = 'Y'
+                  AND COALESCE(v_row->>'checkerId', '') = p_id
                  THEN (SELECT u.sign_img FROM tbl_user u
                         WHERE u.co_cd = p_co_cd
-                          AND u.user_id = nullif(v_row->>'checkerId', ''))
+                          AND u.user_id = p_id)
                  ELSE NULL END, p_id
         ) RETURNING idx INTO v_row_idx;
         FOR v_cell IN SELECT value FROM jsonb_array_elements(coalesce(v_row->'cells', '[]'::jsonb))
@@ -2959,8 +3002,9 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_pkg_monitor_r_000(p_co_cd character var
 -- Name: sp_tbl_ccp_metal_monitor_c_000(character varying, bigint, character varying, character varying, numeric, numeric, character varying, character varying, jsonb, jsonb, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_metal_monitor_c_000(character varying, bigint, character varying, character varying, numeric, numeric, character varying, character varying, jsonb, jsonb, character varying, character varying, character varying);
 DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_metal_monitor_c_000(character varying, bigint, character varying, character varying, numeric, numeric, character varying, character varying, jsonb, jsonb, character varying, character varying);
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_ccp_cd character varying, p_fe_size numeric, p_sts_size numeric, p_mng_user_id character varying, p_mng_nm character varying, p_sens_rows_json jsonb, p_pass_rows_json jsonb, p_id character varying, p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying, p_title character varying DEFAULT NULL::character varying) RETURNS bigint
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_ccp_cd character varying, p_fe_size numeric, p_sts_size numeric, p_mng_user_id character varying, p_mng_nm character varying, p_sens_rows_json jsonb, p_pass_rows_json jsonb, p_id character varying, p_tmpl_cd character varying, p_title character varying DEFAULT NULL::character varying) RETURNS bigint
     LANGUAGE plpgsql
     AS $$
 DECLARE v_doc_idx bigint; v_hdr_idx bigint; v_status varchar(4); v_name varchar; v_appr varchar; v_retain int; r jsonb;
@@ -2968,6 +3012,14 @@ DECLARE v_doc_idx bigint; v_hdr_idx bigint; v_status varchar(4); v_name varchar;
 BEGIN
     IF COALESCE(p_base_dt, '') = '' OR length(p_base_dt) <> 8 THEN RAISE EXCEPTION '작성일은 YYYYMMDD 8자리로 입력하세요.' USING ERRCODE = '45000'; END IF;
     IF p_sens_rows_json IS NULL OR jsonb_typeof(p_sens_rows_json) <> 'array' THEN RAISE EXCEPTION '감도 점검 행 자료가 올바르지 않습니다.' USING ERRCODE = '45000'; END IF;
+    -- 포장·가열과 같은 기준. 빈 배열이면 헤더만 남는 빈 문서가 된다
+    IF jsonb_array_length(p_sens_rows_json) = 0 THEN
+        RAISE EXCEPTION '점검 행이 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    -- 옛 DEFAULT tmpl_ccp-metal-log 는 시드에 없다. 비면 유령 양식으로 헤더만 생긴다
+    IF COALESCE(btrim(p_tmpl_cd), '') = '' THEN
+        RAISE EXCEPTION '양식을 선택하세요.' USING ERRCODE = '45000';
+    END IF;
     SELECT COALESCE(ct.tmpl_nm_ovr, t.tmpl_nm), COALESCE(ct.appr_line_cd, 'DEFAULT'), COALESCE(ct.retention_month, t.default_retention_month)
       INTO v_name, v_appr, v_retain FROM tbl_template t LEFT JOIN tbl_company_template ct ON ct.co_cd=p_co_cd AND ct.tmpl_cd=t.tmpl_cd AND ct.use_yn='Y'
      WHERE t.tmpl_cd=p_tmpl_cd AND t.use_yn='Y' AND t.co_cd = p_co_cd;
@@ -3029,11 +3081,15 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character v
 -- Name: sp_tbl_ccp_metal_monitor_d_000(character varying, bigint, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_ccp_metal_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying, IN p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying)
+DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_ccp_metal_monitor_d_000(character varying, bigint, character varying, character varying);
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_ccp_metal_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying, IN p_tmpl_cd character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE v_hdr_idx bigint; v_status varchar(4);
 BEGIN
+    IF COALESCE(btrim(p_tmpl_cd), '') = '' THEN
+        RAISE EXCEPTION '양식을 선택하세요.' USING ERRCODE = '45000';
+    END IF;
     SELECT h.idx, d.status INTO v_hdr_idx, v_status
       FROM tbl_document d
       JOIN tbl_ccp_metal_monitor h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
@@ -3068,7 +3124,8 @@ COMMENT ON PROCEDURE sasshaccp.sp_tbl_ccp_metal_monitor_d_000(IN p_co_cd charact
 -- Name: sp_tbl_ccp_metal_monitor_r_001(character varying, bigint, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_r_001(p_co_cd character varying, p_doc_idx bigint, p_tmpl_cd character varying DEFAULT 'tmpl_ccp-metal-log'::character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, doc_no character varying, base_dt character varying, ccp_cd character varying, fe_size numeric, sts_size numeric, mng_user_id character varying, mng_nm character varying, status character varying)
+DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_metal_monitor_r_001(character varying, bigint, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_r_001(p_co_cd character varying, p_doc_idx bigint, p_tmpl_cd character varying) RETURNS TABLE(doc_idx bigint, hdr_idx bigint, doc_no character varying, base_dt character varying, ccp_cd character varying, fe_size numeric, sts_size numeric, mng_user_id character varying, mng_nm character varying, status character varying)
     LANGUAGE sql STABLE
     AS $$
     SELECT d.idx, h.idx, d.doc_no, h.base_dt, h.ccp_cd, h.fe_size, h.sts_size,
@@ -3243,6 +3300,13 @@ BEGIN
         INSERT INTO tbl_corrective_action(co_cd, ca_no, src_tmpl_cd, src_doc_idx, occur_dt, occur_place, deviation_desc, action_desc, action_user_id, action_user_nm, action_dt, due_dt, status, ins_id)
         VALUES(p_co_cd, v_no, NULLIF(p_payload->>'srcTmplCd',''), NULLIF(p_payload->>'srcDocIdx','')::bigint, p_payload->>'occurDt', NULLIF(p_payload->>'occurPlace',''), p_payload->>'deviationDesc', NULLIF(p_payload->>'actionDesc',''), NULLIF(p_payload->>'actionUserId',''), NULLIF(p_payload->>'actionUserNm',''), NULLIF(p_payload->>'actionDt',''), NULLIF(p_payload->>'dueDt',''), COALESCE(NULLIF(p_payload->>'status',''),'OPEN'), p_id);
     ELSE
+        -- 완료(DONE)된 개선조치는 관리 화면에서도 고치지 않는다 — 삭제 blocker·문서 SP 와 같은 판정
+        IF EXISTS (
+            SELECT 1 FROM tbl_corrective_action
+             WHERE idx = v_idx AND co_cd = p_co_cd AND status = 'DONE'
+        ) THEN
+            RAISE EXCEPTION '완료된 개선조치는 수정할 수 없습니다.' USING ERRCODE = '45000';
+        END IF;
         -- action_user_nm 은 표에도 있고 읽기 SP 도 내려주고 화면 열도 편집 가능인데 여기서 안 썼다.
         -- 그래서 개선조치 화면에서 조치자를 고치면 저장 성공 토스트만 뜨고 값이 사라졌다
         UPDATE tbl_corrective_action SET occur_place = NULLIF(p_payload->>'occurPlace',''), deviation_desc = p_payload->>'deviationDesc', action_desc = NULLIF(p_payload->>'actionDesc',''), action_user_id = NULLIF(p_payload->>'actionUserId',''), action_user_nm = NULLIF(p_payload->>'actionUserNm',''), action_dt = NULLIF(p_payload->>'actionDt',''), due_dt = NULLIF(p_payload->>'dueDt',''), status = COALESCE(NULLIF(p_payload->>'status',''), status), upd_id = p_id, upd_dt = now()
@@ -3759,6 +3823,133 @@ BEGIN
                 USING ERRCODE = '45000';
         END IF;
 
+        /*
+         * HTML 은 본문이 가족별 표 행이다. 헤더만 있고 행이 없거나, 기록 표 판정이 비면
+         * 화면 검사를 우회한 직접 호출이 빈 문서를 상신한다. 저장(초안)은 막지 않는다.
+         */
+        IF v_kind = 'HTML' THEN
+            -- 본문 헤더가 하나도 없을 때(= 작성 저장을 건너뜀)
+            IF NOT EXISTS (SELECT 1 FROM tbl_hyg_process WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx)
+               AND NOT EXISTS (SELECT 1 FROM tbl_ccp_verify_check WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx)
+               AND NOT EXISTS (SELECT 1 FROM tbl_ccp_metal_monitor WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx)
+               AND NOT EXISTS (SELECT 1 FROM tbl_ccp_pkg_monitor WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx)
+               AND NOT EXISTS (SELECT 1 FROM tbl_ccp_htg_monitor WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx)
+            THEN
+                RAISE EXCEPTION '본문이 저장되지 않았습니다. 작성 화면에서 저장한 뒤 전송하세요.'
+                    USING ERRCODE = '45000';
+            END IF;
+            -- 헤더는 있는데 점검 행이 0건일 때(= 빈 본문)
+            IF EXISTS (
+                    SELECT 1 FROM tbl_hyg_process h
+                     WHERE h.co_cd = p_co_cd AND h.doc_idx = p_doc_idx
+                       AND NOT EXISTS (
+                           SELECT 1 FROM tbl_hyg_process_item i
+                            WHERE i.co_cd = h.co_cd AND i.hdr_idx = h.idx
+                       )
+                )
+                OR EXISTS (
+                    SELECT 1 FROM tbl_ccp_verify_check h
+                     WHERE h.co_cd = p_co_cd AND h.doc_idx = p_doc_idx
+                       AND NOT EXISTS (
+                           SELECT 1 FROM tbl_ccp_verify_item i
+                            WHERE i.co_cd = h.co_cd AND i.hdr_idx = h.idx
+                       )
+                )
+                OR EXISTS (
+                    SELECT 1 FROM tbl_ccp_metal_monitor m
+                     WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx
+                       AND NOT EXISTS (
+                           SELECT 1 FROM tbl_ccp_metal_sens_row r
+                            WHERE r.co_cd = m.co_cd AND r.hdr_idx = m.idx
+                       )
+                )
+                OR EXISTS (
+                    SELECT 1 FROM tbl_ccp_pkg_monitor m
+                     WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx
+                       AND NOT EXISTS (
+                           SELECT 1 FROM tbl_ccp_pkg_monitor_row r
+                            WHERE r.co_cd = m.co_cd AND r.monitor_idx = m.idx
+                       )
+                )
+                OR EXISTS (
+                    SELECT 1 FROM tbl_ccp_htg_monitor m
+                     WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx
+                       AND NOT EXISTS (
+                           SELECT 1 FROM tbl_ccp_htg_monitor_row r
+                            WHERE r.co_cd = m.co_cd AND r.monitor_idx = m.idx
+                       )
+                )
+            THEN
+                RAISE EXCEPTION '본문이 저장되지 않았습니다. 작성 화면에서 저장한 뒤 전송하세요.'
+                    USING ERRCODE = '45000';
+            END IF;
+            -- 기록 표 판정이 비어 있을 때(= 쓰다 만 상신). 저장 단계는 허용한다
+            IF EXISTS (
+                    SELECT 1 FROM tbl_ccp_metal_monitor m
+                    JOIN tbl_ccp_metal_sens_row r ON r.co_cd = m.co_cd AND r.hdr_idx = m.idx
+                     WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx
+                       AND NULLIF(btrim(COALESCE(r.judge_cd, '')), '') IS NULL
+                )
+                OR EXISTS (
+                    SELECT 1 FROM tbl_ccp_pkg_monitor m
+                    JOIN tbl_ccp_pkg_monitor_row r ON r.co_cd = m.co_cd AND r.monitor_idx = m.idx
+                     WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx
+                       AND NULLIF(btrim(COALESCE(r.judge_cd, '')), '') IS NULL
+                )
+                OR EXISTS (
+                    SELECT 1 FROM tbl_ccp_htg_monitor m
+                    JOIN tbl_ccp_htg_monitor_row r ON r.co_cd = m.co_cd AND r.monitor_idx = m.idx
+                     WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx
+                       AND NULLIF(btrim(COALESCE(r.judge_cd, '')), '') IS NULL
+                )
+            THEN
+                RAISE EXCEPTION '판정이 비어 있습니다.' USING ERRCODE = '45000';
+            END IF;
+            -- 부적합인데 이탈내용이 없거나 자동생성 문구로 시작할 때(= 사람이 안 채움)
+            IF (
+                   EXISTS (
+                       SELECT 1 FROM tbl_hyg_process h
+                       JOIN tbl_hyg_process_item i ON i.co_cd = h.co_cd AND i.hdr_idx = h.idx
+                        WHERE h.co_cd = p_co_cd AND h.doc_idx = p_doc_idx
+                          AND upper(btrim(COALESCE(i.yn, ''))) = 'N'
+                   )
+                OR EXISTS (
+                       SELECT 1 FROM tbl_ccp_verify_check h
+                       JOIN tbl_ccp_verify_item i ON i.co_cd = h.co_cd AND i.hdr_idx = h.idx
+                        WHERE h.co_cd = p_co_cd AND h.doc_idx = p_doc_idx
+                          AND upper(btrim(COALESCE(i.answer_cd, ''))) = 'N'
+                   )
+                OR EXISTS (
+                       SELECT 1 FROM tbl_ccp_metal_monitor m
+                       JOIN tbl_ccp_metal_sens_row r ON r.co_cd = m.co_cd AND r.hdr_idx = m.idx
+                        WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx
+                          AND upper(btrim(COALESCE(r.judge_cd, ''))) = 'F'
+                   )
+                OR EXISTS (
+                       SELECT 1 FROM tbl_ccp_pkg_monitor m
+                       JOIN tbl_ccp_pkg_monitor_row r ON r.co_cd = m.co_cd AND r.monitor_idx = m.idx
+                        WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx
+                          AND upper(btrim(COALESCE(r.judge_cd, ''))) = 'F'
+                   )
+                OR EXISTS (
+                       SELECT 1 FROM tbl_ccp_htg_monitor m
+                       JOIN tbl_ccp_htg_monitor_row r ON r.co_cd = m.co_cd AND r.monitor_idx = m.idx
+                        WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx
+                          AND upper(btrim(COALESCE(r.judge_cd, ''))) = 'F'
+                   )
+               )
+               AND NOT EXISTS (
+                    SELECT 1 FROM tbl_corrective_action ca
+                     WHERE ca.co_cd = p_co_cd
+                       AND ca.src_doc_idx = p_doc_idx
+                       AND NULLIF(btrim(COALESCE(ca.deviation_desc, '')), '') IS NOT NULL
+                       AND btrim(ca.deviation_desc) NOT LIKE '자동생성:%'
+               )
+            THEN
+                RAISE EXCEPTION '부적합이 있습니다. 이탈내용을 입력하세요.' USING ERRCODE = '45000';
+            END IF;
+        END IF;
+
         DELETE FROM tbl_document_approval
          WHERE co_cd = p_co_cd
            AND doc_idx = p_doc_idx;
@@ -4115,6 +4306,12 @@ BEGIN
            AND doc_idx = p_doc_idx
            AND ver_no = v_ver
            AND change_reason = '승인 완료본';
+        -- 완료본 PDF 메타. sp_tbl_document_file_d_001 은 REQ 에서 막히므로 여기서 직접 지운다
+        -- 물리 파일은 Java 가 커밋 뒤에 지운다 — 여기서 지우면 롤백 때 메타만 되살아난다
+        DELETE FROM tbl_document_file
+         WHERE co_cd = p_co_cd
+           AND doc_idx = p_doc_idx
+           AND upper(file_kind) = 'PDF';
     END IF;
 END$$;
 
@@ -4595,9 +4792,10 @@ CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_title_u_000(IN p_co_cd cha
     LANGUAGE plpgsql
     AS $$
 DECLARE
+    v_status varchar(3);
     v_writer varchar(20);
 BEGIN
-    SELECT writer_id INTO v_writer
+    SELECT status, writer_id INTO v_status, v_writer
       FROM tbl_document
      WHERE idx = p_doc_idx
        AND co_cd = p_co_cd
@@ -4611,6 +4809,10 @@ BEGIN
     IF v_writer IS DISTINCT FROM p_id THEN
         RAISE EXCEPTION '작성자만 제목을 수정할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
+    -- 전송·결재완료일 때(= 기록 확정 중) 제목도 잠근다. 비고 SP 와 같은 문
+    IF v_status IN ('REQ', 'APV') THEN
+        RAISE EXCEPTION '전송한 문서의 제목은 수정할 수 없습니다. 전송취소 후 수정하세요.' USING ERRCODE = '45000';
+    END IF;
 
     UPDATE tbl_document
        SET title = NULLIF(btrim(COALESCE(p_title, '')), ''),
@@ -4620,7 +4822,7 @@ BEGIN
        AND co_cd = p_co_cd;
 END$$;
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_title_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_title character varying, IN p_id character varying) IS '작성 목록 비고(제목) 저장 — tbl_document.title. 결재 첨부 remark 와 다르다. 상태와 무관';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_title_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_title character varying, IN p_id character varying) IS '작성 목록 비고(제목) 저장 — tbl_document.title. 결재 첨부 remark 와 다르다. 작성중·반려만';
 
 
 --
@@ -5478,10 +5680,11 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_hyg_process_r_001(p_co_cd character varying
 
 
 --
--- Name: sp_tbl_hyg_process_sign_u_000(character varying, bigint, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+-- Name: sp_tbl_hyg_process_sign_u_000(character varying, bigint, character varying, character varying, character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_hyg_process_sign_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_checker_nm character varying, IN p_approver_nm character varying, IN p_confirm_nm character varying)
+DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_hyg_process_sign_u_000(character varying, bigint, character varying, character varying, character varying);
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_hyg_process_sign_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_checker_nm character varying, IN p_approver_nm character varying, IN p_confirm_nm character varying, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -5524,6 +5727,10 @@ BEGIN
          ORDER BY CASE WHEN u.sign_img IS NOT NULL THEN 0 ELSE 1 END, u.user_id
          LIMIT 1;
     END IF;
+    -- 저장 호출자 본인이 아닐 때(= 남의 도장) 이미지만 버린다. 이름 글자는 유지한다
+    IF v_chk_id IS DISTINCT FROM p_id THEN v_chk_img := NULL; END IF;
+    IF v_apv_id IS DISTINCT FROM p_id THEN v_apv_img := NULL; END IF;
+    IF v_cfm_id IS DISTINCT FROM p_id THEN v_cfm_img := NULL; END IF;
     UPDATE tbl_hyg_process
        SET checker_id = v_chk_id,
            checker_sign_img = v_chk_img,
@@ -5534,6 +5741,8 @@ BEGIN
            confirm_sign_img = v_cfm_img
      WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
 END$$;
+
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_hyg_process_sign_u_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_checker_nm character varying, IN p_approver_nm character varying, IN p_confirm_nm character varying, IN p_id character varying) IS '공정점검 점검자·승인자·확인 서명 스냅샷 — 저장 직후. 이름 매칭. 도장은 p_id 본인만';
 
 
 --

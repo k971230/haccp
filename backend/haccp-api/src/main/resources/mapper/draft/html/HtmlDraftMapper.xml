@@ -96,7 +96,7 @@ PIPELINE[HB137] 연관 모듈
         </choose>
     </select>
 
-    <!-- 점검자·승인자·확인 서명 스냅샷 — 이름 매칭. 저장 직후 -->
+    <!-- 점검자·승인자·확인 서명 스냅샷 — 이름 매칭. 도장은 저장 호출자 본인만. 저장 직후 -->
     <update id="snapshotSigns" statementType="CALLABLE">
         <choose>
             <when test="family == 'chk'">
@@ -105,7 +105,8 @@ PIPELINE[HB137] 연관 모듈
                     #{docIdx, jdbcType=BIGINT},
                     #{checkerNm, jdbcType=VARCHAR},
                     #{approverNm, jdbcType=VARCHAR},
-                    #{confirmNm, jdbcType=VARCHAR}
+                    #{confirmNm, jdbcType=VARCHAR},
+                    #{userId, jdbcType=VARCHAR}
                 )
             </when>
             <otherwise>
@@ -114,7 +115,8 @@ PIPELINE[HB137] 연관 모듈
                     #{docIdx, jdbcType=BIGINT},
                     #{checkerNm, jdbcType=VARCHAR},
                     #{approverNm, jdbcType=VARCHAR},
-                    #{confirmNm, jdbcType=VARCHAR}
+                    #{confirmNm, jdbcType=VARCHAR},
+                    #{userId, jdbcType=VARCHAR}
                 )
             </otherwise>
         </choose>

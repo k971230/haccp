@@ -117,6 +117,8 @@ class DocumentServiceUploadTest {
 
         service.upload(1L, "HWP_SRC", hwpx(), null);
 
+        verify(mapper).insertFile(eq("0000"), eq(1L), eq("HWP_SRC"), anyString(), anyString(),
+                anyLong(), eq("application/hwp+zip"), eq("admin"));
         verify(storage).delete(old);
         verify(storage, never()).delete(neu);
     }

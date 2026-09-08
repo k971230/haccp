@@ -1,6 +1,6 @@
 # 9. SP 색인 — 매퍼에서 표까지
 
-> 개발자: 박승우 · 일자: 2026-09-07
+> 개발자: 박승우 · 일자: 2026-09-08
 > `db_sasshaccp/01_sp.sql` 의 정의와 `backend/haccp-api/src/main/resources/mapper` 의 호출을 맞춰 뽑았다.
 
 **「이 화면을 고치면 어느 표가 움직이나」를 검색 없이 알려는 표다.**
@@ -46,7 +46,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `draft/html/HtmlDraftMapper.xml` | selectForms | SP 결과에 use_yn·ver_no 필터 |
 | `draft/hwpdoc/HwpDraftMapper.xml` | selectForms | SP 결과에 doc_kind=HWP 필터 |
 
-## 매퍼 → SP → 표 (162건)
+## 매퍼 → SP → 표 (163건)
 
 | 도메인 | SP | 종류 | 매퍼 | 건드리는 표 |
 |---|---|---|---|---|
@@ -69,9 +69,9 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | docs/documents | `sp_hwp_template_management_file_c_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_company_template<br>tbl_company_template_file` |
 | docs/documents | `sp_sign_ok_r_000` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_document_approval<br>tbl_document_file<br>tbl_template<br>tbl_user` |
 | docs/documents | `sp_sign_ready_r_000` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_document_approval<br>tbl_document_file<br>tbl_template<br>tbl_user` |
-| docs/documents | `sp_tbl_document_approval_c_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_approval_line_step<br>tbl_document<br>tbl_document_approval<br>tbl_document_file<br>tbl_document_version<br>tbl_user` |
+| docs/documents | `sp_tbl_document_approval_c_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_approval_line_step<br>tbl_ccp_htg_monitor<br>tbl_ccp_htg_monitor_row<br>tbl_ccp_metal_monitor<br>tbl_ccp_metal_sens_row<br>tbl_ccp_pkg_monitor<br>tbl_ccp_pkg_monitor_row<br>tbl_ccp_verify_check<br>tbl_ccp_verify_item<br>tbl_corrective_action<br>tbl_document<br>tbl_document_approval<br>tbl_document_file<br>tbl_document_version<br>tbl_hyg_process<br>tbl_hyg_process_item<br>tbl_user` |
 | docs/documents | `sp_tbl_document_approval_r_000` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_document_approval<br>tbl_user` |
-| docs/documents | `sp_tbl_document_approval_u_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_approval_line_step<br>tbl_document<br>tbl_document_approval<br>tbl_document_version` |
+| docs/documents | `sp_tbl_document_approval_u_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_approval_line_step<br>tbl_document<br>tbl_document_approval<br>tbl_document_file<br>tbl_document_version` |
 | docs/documents | `sp_tbl_document_d_000` | 쓰기 | `docs/documents/DocumentMapper.xml` | `tbl_document<br>tbl_document_approval<br>tbl_document_file<br>tbl_document_version` |
 | docs/documents | `sp_tbl_document_delete_blocker_r_000` | 조회 | `docs/documents/DocumentMapper.xml<br>draft/ccpmonitoring/CcpHtgDraftMapper.xml<br>draft/ccpmonitoring/CcpMtlDraftMapper.xml<br>draft/ccpmonitoring/CcpPkgDraftMapper.xml<br>draft/html/HtmlDraftMapper.xml` | `tbl_document` |
 | docs/documents | `sp_tbl_document_file_c_000` | 조회 | `docs/documents/DocumentMapper.xml` | `tbl_document<br>tbl_document_file` |
@@ -135,6 +135,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | docs/hwp | `sp_tbl_company_template_delete_blocker_r_000` | 조회 | `docs/hwp/HwpTemplateMapper.xml` | `tbl_company_template<br>tbl_document` |
 | docs/sch | `sp_schedule_cycle_management_c_000` | 쓰기 | `docs/sch/DocCycleMapper.xml` | `tbl_approval_line<br>tbl_company_template<br>tbl_schedule_rule<br>tbl_schedule_rule_detail` |
 | docs/sch | `sp_schedule_cycle_management_d_000` | 쓰기 | `docs/sch/DocCycleMapper.xml` | `tbl_schedule_rule<br>tbl_schedule_rule_detail<br>tbl_schedule_task` |
+| docs/sch | `sp_schedule_cycle_management_delete_blocker_r_000` | 조회 | `docs/sch/DocCycleMapper.xml` | `tbl_schedule_task` |
 | docs/sch | `sp_schedule_cycle_management_form_r_000` | 조회 | `docs/sch/DocCycleMapper.xml` | `tbl_approval_line<br>tbl_company_template<br>tbl_html_ccp_chk_ver<br>tbl_html_ccp_htg_ver<br>tbl_html_ccp_mtl_ver<br>tbl_html_ccp_pkg_ver<br>tbl_html_hyg_prc_ver<br>tbl_schedule_rule<br>tbl_template` |
 | docs/sch | `sp_schedule_cycle_management_r_000` | 조회 | `docs/sch/DocCycleMapper.xml` | `tbl_approval_line<br>tbl_company_template<br>tbl_dept<br>tbl_schedule_rule<br>tbl_schedule_rule_detail<br>tbl_template<br>tbl_user` |
 | docs/sch | `sp_tbl_notification_task_c_000` | 쓰기 | `docs/sch/DocCycleMapper.xml` | `tbl_company_template<br>tbl_login_log<br>tbl_notification<br>tbl_schedule_task<br>tbl_template<br>tbl_user` |

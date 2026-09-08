@@ -9,9 +9,10 @@
 //    3) disableConcurrentBuilds 로 compose up 충돌을 막는다
 //
 //  ** DB 는 이 파이프라인이 건드리지 않는다 **
-//    스키마 정본은 db_sasshaccp/ 7본이다(00_ddl → 01_sp → 02_seed →
+//    스키마 정본은 db_sasshaccp/ 시드 7본 + 00_alter(항상)이다
+//    (00_ddl → 00_alter → 01_sp → 02_seed →
 //    03_code_seed → 05_form_seed → 06_company_seed → 07_company_forms).
-//    스키마가 있으면 apply-all 이 00_ddl·02_seed 를 건너뛴다. 01_sp 는 항상 돈다.
+//    스키마가 있으면 apply-all 이 00_ddl·02_seed 를 건너뛴다. 00_alter·01_sp 는 항상 돈다.
 //    운영 반영은 배포 담당이 따로 돌린다:
 //      PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 //    자동 적용을 넣지 않는 이유 — 스키마 변경은 되돌리기 어렵고,
