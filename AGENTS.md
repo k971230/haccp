@@ -19,14 +19,7 @@
 
 ## 코드를 만지기 전에
 
-| 하려는 일 | 볼 곳 |
-|---|---|
-| 이 프로젝트가 뭔지 | [`docs/1_시작하기.md`](docs/1_시작하기.md) |
-| 코드가 어떤 순서로 도는지 | [`backend/haccp-api/PIPELINE.md`](backend/haccp-api/PIPELINE.md) · [`frontend/haccp-web/PIPELINE.md`](frontend/haccp-web/PIPELINE.md) |
-| 화면 하나 만들기 | [`docs/2_화면_추가하기.md`](docs/2_화면_추가하기.md) |
-| 지금 있는 화면 | [`docs/3_화면_지도.md`](docs/3_화면_지도.md) |
-| 이름·경로 규칙 | [`docs/4_명명과_경로.md`](docs/4_명명과_경로.md) |
-| 왜 이렇게 돼 있나 | [`docs/8_결정_이력.md`](docs/8_결정_이력.md) |
+하려는 일로 찾는 표는 [`README.md`](README.md) 「어디를 보나」가 정본이다.
 
 ## 특히 자주 어긋나는 것
 
