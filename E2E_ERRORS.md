@@ -159,3 +159,55 @@
 | 영향 | 여기 안 걸리면 일반 API 로 떨어져 **기본 70s** 로 처리된다 — 운영에서 큰 HWP 업로드가 끊긴다. 로컬에서는 안 드러난다 |
 | 조치 | 지금 URL 7개로 맞추고, 일반 API 가 안 걸리는 것까지 정규식으로 대조했다 |
 | 재발 방지 | 이 목록은 **백엔드 컨트롤러의 multipart·download·pdf 매핑과 같아야 한다** — `nginx/README.md` 에 적었다 |
+
+---
+
+# 아직 안 고친 것 (2026-09-08 판단)
+
+번호(`E2E-0xx`)를 새로 매기지 않는다 — 완료 표시가 없는 미해결 항목이라 이력이 아니라 현재 상태다.
+
+## E2E flake — `today-tasks.spec.ts:101`
+
+네 번 실행 중 **네 번 다** 실패한 상수성 결함. `schedule-cycle-management:65` · `sys-common-code:42` 는
+같은 라운드에서만 흔들렸고 단독 실행하면 통과한다 — 같은 라이브 DB 를 사양들이 나눠 쓰는
+상태 격리 문제로 보인다. `today-tasks:101` 만 진짜 상수라 이것부터 판다.
+
+## 보류 5건 — 전면 수정·과설계·의도적 보류라 손대지 않은 것
+
+다음에 손댈 때는 한 건씩, 아래 요지를 그대로 따른다. 새 훅·새 권한 모델을 먼저 만들지 말 것.
+
+1. **HTML·CCP 초안 `writer_id` 미검사.** 같은 회사 동료가 남의 작성중(WRK)·반려(RJT) HTML/CCP 문서를
+   저장·삭제할 수 있다. HWP 저장(`sp_tbl_hyg_process...` 등은 이미 `writer_id = p_id` 로 막혀 있는데
+   HTML·CCP 저장·삭제 SP(`sp_tbl_hyg_process_c/d_000` · `sp_ccp_verify_c/d_000` ·
+   `sp_tbl_ccp_pkg/htg/metal_monitor_c/d_000`)에는 이 검사가 없다. HWP 와 같은 문으로
+   `FOR UPDATE` 뒤 `writer_id = p_id` 아니면 45000. 관리자 예외를 둘지는 그때 물어야 한다.
+2. **권한그룹 조회 하나 = 쓰기·수정·삭제·인쇄 다섯.** `RoleMgmtService`(191~193줄 부근)가 `readYn` 만 보고
+   나머지 4칸을 같은 값으로 채운다. 조회만 켜도 서버가 쓰기·삭제까지 Y 로 넣는다. SP·DTO 는 이미
+   5칸으로 분리돼 있어 FE 5체크 + DTO 5칸 + 서버가 그대로 넘기게 고치면 된다. 기존 DB 행(YYYYY) 마이그레이션
+   여부는 그때 정한다.
+3. **문서 허브 OR 권한(과설계 판단 — 문서별 관리 하지 말 것).** `/api/v1/docs/documents/**` 같은 허브 API 는
+   `ScreenAuthInterceptor`(96~99줄 부근)가 `DOC_HUB_SCREENS`/`HWP_HUB_SCREENS` 묶음 중 하나라도
+   해당 칸이 Y 면 통과시킨다. 문서마다 작성 화면 권한을 AND 로 묶으면 결재자 흐름이 막혀 사용자가
+   과설계로 판단했다. 손댈 때는 최소로 — 허브 **쓰기**만 호출 화면(`X-Haccp-Screen`) 칸을 보고,
+   조회(목록)는 OR 유지, CUD 만 헤더 화면 AND — 이 절충도 그때 물어라.
+4. **결재완료 가짜 PDF.** 결재완료(APV)·승인요청(REQ) 문서에 `file_kind=PDF` 를 사용자가 올리면
+   `DocumentService`(359~364줄 부근) `latestFile` 이 idx 가 큰 쪽을 공식 완료본처럼 돌려준다.
+   사용자 업로드가 변환본보다 늦게 들어가면 그게 이긴다. 사용자 업로드는 `ATTACH`/`PHOTO`/
+   `HWP_SRC`(작성중만) 만 허용하고 `fileKind=PDF` 업로드는 변환 API(`registerGeneratedPdf`) 전용으로
+   막는 쪽이 작다.
+5. **결재첨부 K12 경합.** `ApprovalAttachPage`(181~183줄 부근)에 문서함(`DocumentBoxPage`)이 이미 쓰는
+   `useLatestOnly` 가드가 없다. 왼쪽 문서를 빨리 바꾸면 늦게 온 옛 상세가 오른쪽을 덮고, 그 상태로
+   전송하면 강조된 행이 아니라 덮인 문서가 나간다. 문서함과 같은 패턴으로 복붙 수준 — 새 훅을 만들지 말 것.
+
+## DOWN 8 — 문서·부채 (동작이 당장 안 죽는 문서 어긋남·복붙·생성기 허점)
+
+| # | 무엇 | 근거 |
+|---|---|---|
+| D1 | JDBC `currentSchema` 주석이 `00_schema.sql` 을 가리키는데 그 파일은 없다. 세션 `search_path` 는 `00_ddl.sql` 이 잡는다 | `application.yml` · `00_ddl.sql` |
+| D2 | SP 색인이 FUNCTION 이면 무조건 「조회」다. 쓰기를 FUNCTION 으로 둔 것도 조회로 찍힌다 | `scripts/gen_sp_index.mjs` `kind === "FUNCTION" ? "조회"` |
+| D3 | 메뉴 `use_yn=N` 과 API 노출이 한 뜻이 아니다. 화면이 숨겨도 허브 API 는 남을 수 있다 | `tbl_menu` · `ScreenAuthInterceptor` |
+| D4 | 규칙·주석은 양식 37종. 회사 지면 시드(`07`)가 까는 본은 그보다 적다 | `07-haccp-db.mdc` 「양식 37종」 · `07_company_forms.sql` |
+| D5 | 규칙 본문에 「00_ddl 53표」가 남아 있다. 레이아웃 생성기는 지금 표 수가 다르다 | `07-haccp-db.mdc` · `docs/10_테이블_레이아웃.md` |
+| D6 | HTML 지면 버전이 `form_ver` 와 `hyg_prc_ver`(·CCP 계열) 로 갈라져 있다. 한쪽만 고치면 작성 콤보가 빈다 | `tbl_html_*_ver` · 양식관리 SP |
+| D7 | 같은 이름 SP 를 FUNCTION ↔ PROCEDURE 로 바꿔 `CREATE OR REPLACE` 하면 옛 서명이 남는다. DROP 후 CREATE 가 정본 | `01_sp.sql` 서명 SP `DROP PROCEDURE` 본보기 |
+| D8 | CCP 목록·상세 SP 가 포장·가열·금속끼리 복붙이다. 한 가족만 고치면 나머지가 옛 가드 | `sp_tbl_ccp_*_monitor_*` |

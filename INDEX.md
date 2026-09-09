@@ -11,9 +11,9 @@ git 이 추적하는 폴더와 그 폴더 README 의 첫 줄을 뽑았다.
 
 | | |
 |---|---|
-| 목차에 오른 폴더 | 203 |
-| README 있는 폴더 | 179 |
-| **README 없는데 소스가 있는 폴더** | **24** |
+| 목차에 오른 폴더 | 194 |
+| README 있는 폴더 | 148 |
+| **README 없는데 소스가 있는 폴더** | **46** |
 
 ## 트리
 
@@ -30,33 +30,18 @@ backend/
       HACCP API 서버. Spring Boot 3.3.4 · Java 17 · MyBatis 3.0.3 · PostgreSQL.
     .mvn/
         Maven Wrapper 설정. ./mvnw 가 여기를 읽어 Maven 을 내려받는다.
-      wrapper/
-          Maven Wrapper jar·properties. JDK/Maven 버전을 저장소에 고정한다.
     .run/
         IntelliJ 실행 구성. 팀 공용이라 커밋한다.
-    src/
-        애플리케이션 소스·리소스 루트 (main).
-      main/
-          운영 코드·설정·매퍼 XML·매니페스트.
-        java/
-            Java 소스 루트.
-          com/
-              Java 패키지 네임스페이스 접두 (com).
             haccp/
                 HACCP API 루트 패키지. 화면은 com.haccp.{대}.{중}.
               auth/
                   정본: FE pages/auth/README.md. 골드 AuthService.java. XML mapper/auth/.
-                dto/
-                    auth 요청·응답 DTO (JSON camelCase).
+                dto/  ← README 없음
               board/
                   정본: FE pages/board/README.md. TaskController · CalendarController · DailyTaskGenerationJob. XML mapper/board/.
                 dto/  ← README 없음
-              code/
-                  도메인 code — 공통코드. Controller·Service·Mapper 인터페이스.
-                dto/
-                    code 요청·응답 DTO (JSON camelCase).
-              common/
-                  공통 설정·컨텍스트·예외·응답·검증.
+              code/  ← README 없음
+                dto/  ← README 없음
                 auth/
                     JWT 다음 단계다. 로그인했는지는 JwtFilter 가, 그 화면을 만질 권한이 있는지는 여기가 본다.
                 config/
@@ -65,16 +50,14 @@ backend/
                     LoginUser 등 요청 스코프 컨텍스트.
                 exception/
                     BizException·GlobalExceptionHandler·사용자 메시지.
-                response/
-                    공통 API 응답 래퍼.
+                response/  ← README 없음
                 validation/
                     삭제 검증(DeleteValidation) 등 공통 검증.
               docs/
                   정본: FE frontend/haccp-web/src/pages/docs/README.md
                 documents/
                     화면 경로(/flow/appr/ · /flow/box/document-inbox)와 패키지가 다르다.
-                  dto/
-                      doc 요청·응답 DTO (JSON camelCase).
+                  dto/  ← README 없음
                 htmlform/
                     기준관리 API는 /api/v1/docs/html-form/{scrnCd} (hyg-process-template · ccp-verify-template · ccp-pkg-template · c…
                   ccphtgtemplate/
@@ -115,18 +98,13 @@ backend/
                     두 갈래를 맡는다. 섞지 않는다.
                   dto/
                       작성 화면 저장 요청(DraftSaveRequest.corrective)과 문서 상세 응답이 같은 모양을 쓴다.
-              log/
-                  도메인 log — 화면 조회·UV/PV 로그. Controller·Service·Mapper 인터페이스.
-                dto/
-                    log 요청·응답 DTO (JSON camelCase).
-              menu/
-                  도메인 menu — 메뉴·권한. Controller·Service·Mapper 인터페이스.
-                dto/
-                    menu 요청·응답 DTO (JSON camelCase).
+              log/  ← README 없음
+                dto/  ← README 없음
+              menu/  ← README 없음
+                dto/  ← README 없음
               pref/
                   도메인 pref — 사용자 환경설정. 조회(list)는 Controller → Mapper 직행. 저장(save)만 PrefService (@Transactional).
-                dto/
-                    pref 요청·응답 DTO (JSON camelCase).
+                dto/  ← README 없음
               sys/
                   정본: .cursor/rules/08-haccp-backend.mdc · .cursor/rules/06-operations.mdc · FE 파이프라인 표는 frontend/haccp-web/sr…
                 code/
@@ -162,18 +140,15 @@ backend/
                   screenusage/
                       화면코드 screen-usage-statistics · XML resources/mapper/sys/logs/screenusage/ScreenUsageMapper.xml · SP db_sassh…
                     dto/  ← README 없음
-        resources/
-            application.yml·MyBatis mapper·템플릿 매니페스트.
+        resources/  ← README 없음
           holidays/
               문서주기 비영업일 판정용. 규칙을 이 저장소에서 계산하지 않는다.
           mapper/
               도메인별 MyBatis XML. SP 호출은 lower_snake. 경로는 mapper/{대}/{중}/ —
-            auth/
-                MyBatis XML — auth (인증·로그인·JWT). SP sp_tbl_ 호출.
+            auth/  ← README 없음
             board/
                 MyBatis XML — 게시판(오늘 할 일·일정 캘린더). SP sp_tbl_ · sp_calendar_ 호출.
-            code/
-                MyBatis XML — code (공통코드). SP sp_tbl_ 호출.
+            code/  ← README 없음
             docs/
                 com.haccp.docs. Mapper 인터페이스. 화면(메뉴) 1개 = 폴더 1개.
               documents/
@@ -205,12 +180,9 @@ backend/
                 결재에 딸린 부수 도메인. 결재 자체(상신·승인·반려·취소)는 mapper/docs/documents 다.
               ca/
                   문서 1건에 개선조치 0..1 건. 빈 payload 는 삭제다.
-            log/
-                MyBatis XML — log (화면 조회·UV/PV 로그). SP sp_tbl_ 호출.
-            menu/
-                MyBatis XML — menu (메뉴·권한). SP sp_tbl_ 호출.
-            pref/
-                MyBatis XML — pref (사용자 환경설정). SP sp_tbl_ 호출.
+            log/  ← README 없음
+            menu/  ← README 없음
+            pref/  ← README 없음
             sys/
                 com.haccp.sys. Mapper 인터페이스의 MyBatis 구현. 화면(메뉴) 1개 = 폴더 1개.
               code/
@@ -266,12 +238,8 @@ frontend/
       React 18 · Vite 5 SPA. 로컬 Vite 4173 → API 7070. 가이드: .cursor/rules/09-haccp-frontend.mdc.
     e2e/
         Playwright E2E. 화면이 열리는가가 아니라 업무가 끝까지 도는가를 본다.
-    public/
-        빌드에 그대로 복사되는 정적 자산.
       manual/
           화면별 사용자 매뉴얼 HTML. 빌드가 dist/manual/ 로 그대로 복사한다.
-    scripts/
-        FE 로컬 유틸 스크립트.
     src/
         SPA 소스 루트. 이야기 docs/1_시작하기.md · 태그 docs/5_PIPELINE_색인.md · 경로 docs/4_명명과_경로.md · 찾는 법 docs/3_화면_지도.md.
       api/
@@ -284,8 +252,6 @@ frontend/
             pages/draft/ 양식 작성 화면 전용 API.
         sys/
             /sys 대분류. 베이스는 apiOf(scrnCd) 가 SCREEN_PATH 로 조립한다 — 화면코드와 1:1 이다.
-      components/
-          공용 UI·그리드·폼·문서·레이아웃 컴포넌트.
         common/
             특정 업무에 매이지 않은 UI 조각만 둔다. 업무가 붙으면 components/{form,grid,document} 로 간다.
           modal/
@@ -302,10 +268,8 @@ frontend/
             버튼·모달 등 저수준 UI. 공통코드 sys-yn 배지는 SysYnBadge.
       config/
           envConfig 등 전역 상수(매직넘버 금지).
-      hooks/
-          공용 React hooks.
-      lib/
-          라이브러리 래퍼·유틸 모듈.
+      hooks/  ← README 없음
+      lib/  ← README 없음
       pages/
           화면 페이지. 폴더는 URL 대/중과 같다. 경로 정본 docs/4_명명과_경로.md. 체인 표는 각 영역 README.
         auth/
@@ -380,20 +344,16 @@ frontend/
           React Router·SCREEN_REGISTRY 연동.
       shell/
           정본 이야기: frontend/haccp-web/PIPELINE.md. 태그 HF49 대역 docs/5_PIPELINE_색인.md.
-        gridRules/
-            그리드 편집·저장 규칙.
+        gridRules/  ← README 없음
       static/
           import 로 끌어 쓰는 자원만 둔다. 빌드가 해시를 붙여 dist/assets 로 낸다.
         img/
             큰 이미지는 번들 크기를 그대로 늘린다. 새로 넣기 전에 압축한다.
       stores/
           Zustand 등 클라이언트 상태.
-      styles/
-          전역·테마 CSS.
-      types/
-          공유 TypeScript 타입.
-      utils/
-          순수 유틸 함수.
+      styles/  ← README 없음
+      types/  ← README 없음
+      utils/  ← README 없음
 nginx/
     운영 edge 컨테이너. TLS 를 여기서 끝내지 않는다 — 호스트 Apache(443)가 종단하고
 scripts/
@@ -401,13 +361,23 @@ scripts/
 tools/  ← README 없음
 ```
 
-## README 없는 폴더 (24)
+## README 없는 폴더 (46)
 
 `CLAUDE.md` 는 폴더를 새로 만들면 README 를 같이 만들라고 한다. 아래가 그 규칙 밖이다.
 
+- `backend/haccp-api/src/main/java/com/haccp/auth/dto` — 소스 5본
 - `backend/haccp-api/src/main/java/com/haccp/board/dto` — 소스 8본
+- `backend/haccp-api/src/main/java/com/haccp/code` — 소스 2본
+- `backend/haccp-api/src/main/java/com/haccp/code/dto` — 소스 1본
+- `backend/haccp-api/src/main/java/com/haccp/common/response` — 소스 2본
+- `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto` — 소스 13본
 - `backend/haccp-api/src/main/java/com/haccp/docs/hwp/dto` — 소스 5본
 - `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/dto` — 소스 4본
+- `backend/haccp-api/src/main/java/com/haccp/log` — 소스 4본
+- `backend/haccp-api/src/main/java/com/haccp/log/dto` — 소스 1본
+- `backend/haccp-api/src/main/java/com/haccp/menu` — 소스 2본
+- `backend/haccp-api/src/main/java/com/haccp/menu/dto` — 소스 1본
+- `backend/haccp-api/src/main/java/com/haccp/pref/dto` — 소스 2본
 - `backend/haccp-api/src/main/java/com/haccp/sys/code/department/dto` — 소스 3본
 - `backend/haccp-api/src/main/java/com/haccp/sys/code/menu/dto` — 소스 3본
 - `backend/haccp-api/src/main/java/com/haccp/sys/code/role/dto` — 소스 7본
@@ -415,10 +385,16 @@ tools/  ← README 없음
 - `backend/haccp-api/src/main/java/com/haccp/sys/logs/auditlog/dto` — 소스 1본
 - `backend/haccp-api/src/main/java/com/haccp/sys/logs/loginhistory/dto` — 소스 1본
 - `backend/haccp-api/src/main/java/com/haccp/sys/logs/screenusage/dto` — 소스 1본
+- `backend/haccp-api/src/main/resources` — 소스 1본
+- `backend/haccp-api/src/main/resources/mapper/auth` — 소스 1본
+- `backend/haccp-api/src/main/resources/mapper/code` — 소스 1본
+- `backend/haccp-api/src/main/resources/mapper/log` — 소스 1본
+- `backend/haccp-api/src/main/resources/mapper/menu` — 소스 1본
+- `backend/haccp-api/src/main/resources/mapper/pref` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/auth` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/common/auth` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/common/validation` — 소스 1본
-- `backend/haccp-api/src/test/java/com/haccp/docs/documents` — 소스 3본
+- `backend/haccp-api/src/test/java/com/haccp/docs/documents` — 소스 4본
 - `backend/haccp-api/src/test/java/com/haccp/docs/htmlform/htmltemplate` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/docs/hwp` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/docs/sch` — 소스 2본
@@ -428,6 +404,12 @@ tools/  ← README 없음
 - `backend/haccp-api/src/test/java/com/haccp/draft/hwpdoc` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/flow/ca` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/sys/code/user` — 소스 1본
+- `frontend/haccp-web/src/hooks` — 소스 9본
+- `frontend/haccp-web/src/lib` — 소스 13본
+- `frontend/haccp-web/src/shell/gridRules` — 소스 6본
+- `frontend/haccp-web/src/styles` — 소스 1본
+- `frontend/haccp-web/src/types` — 소스 4본
+- `frontend/haccp-web/src/utils` — 소스 2본
 - `tools` — 소스 4본
 
 ## 관련

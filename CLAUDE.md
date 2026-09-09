@@ -34,10 +34,18 @@ Claude Code 진입점이다. **규칙 본문은 여기 두지 않는다** — �
   **반드시 기동해서** 확인한다 (`mvn compile` 통과가 기동 성공을 뜻하지 않는다)
 - **이모지 금지** · **한국어** · git commit/push 는 사용자가 말할 때만
 
-## 폴더마다 README
+## 폴더마다 README — 할 말이 있을 때만
 
-폴더를 새로 만들면 `README.md` 를 같이 만든다. 그 폴더가 **무엇을 맡고 무엇을 안 맡는지**,
-연결된 API·SP·표, 그리고 최근 변경을 적는다. 상위 README 가 하위를 가리킨다.
+**폴더 이름으로 알 수 있는 것은 적지 않는다.** `dto/` 가 "요청·응답 DTO" 라는 README 는
+읽는 사람에게 아무것도 주지 않고, 고칠 곳만 한 군데 늘린다.
+2026-09-09 에 그런 스텁 31본을 지웠다.
+
+README 를 두는 자리는 그 폴더에 **폴더 이름 밖의 사실**이 있을 때다 —
+연결된 API·SP·표, 무엇을 맡고 무엇을 **안** 맡는지, 남들이 자주 틀리는 것.
+예: `com/haccp/pref/README.md` 는 "조회는 Controller → Mapper 직행, 저장만 `@Transactional`"
+을 적는다. 이건 폴더 이름으로 못 안다.
+
+`INDEX.md` 의 「README 없는 폴더」 절은 **위반 목록이 아니라 현황**이다.
 
 ## 검증
 
@@ -66,14 +74,4 @@ PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 
 ## 코드를 만지기 전에
 
-| 하려는 일 | 볼 곳 |
-|---|---|
-| 이 프로젝트가 뭔지·업무 흐름 | [`docs/1_시작하기.md`](docs/1_시작하기.md) |
-| 코드가 어떤 순서로 도는지 | [`backend/haccp-api/PIPELINE.md`](backend/haccp-api/PIPELINE.md) · [`frontend/haccp-web/PIPELINE.md`](frontend/haccp-web/PIPELINE.md) |
-| 화면 하나 만들기 | [`docs/2_화면_추가하기.md`](docs/2_화면_추가하기.md) |
-| 지금 있는 화면 | [`docs/3_화면_지도.md`](docs/3_화면_지도.md) — 생성기 |
-| 이 표를 고치면 어느 SP 가 걸리나 | [`docs/9_SP_색인.md`](docs/9_SP_색인.md) — 생성기 |
-| 표에 어떤 컬럼이 있나 | [`docs/10_테이블_레이아웃.md`](docs/10_테이블_레이아웃.md) — 생성기 · 엑셀본 동봉 |
-| `PIPELINE[HF130]` 이 무슨 파일인가 | [`docs/5_PIPELINE_색인.md`](docs/5_PIPELINE_색인.md) — 생성기 |
-| 이름·경로 규칙 | [`docs/4_명명과_경로.md`](docs/4_명명과_경로.md) |
-| 왜 이렇게 돼 있나 | [`docs/8_결정_이력.md`](docs/8_결정_이력.md) |
+하려는 일로 찾는 표는 [`README.md`](README.md) 「어디를 보나」가 정본이다.
