@@ -2,7 +2,7 @@
 --  01_sp.sql — 함수·프로시저 정본
 --
 --  개발자: 박승우
---  일자: 2026-08-25
+--  일자: 2026-09-09
 --  코멘트:
 --    1) 화면 단위 sp_{화면명}_* · 테이블 단위 sp_tbl_* (01-project-core)
 --    2) 00_ddl.sql 다음에 적용한다 — 표가 있어야 본문이 검증된다
@@ -238,7 +238,7 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_ccp_verify_c_000(p_co_cd character varyi
     LANGUAGE plpgsql
     AS $_$
 DECLARE
-    v_doc bigint; v_hdr bigint; v_status varchar; v_no varchar; v_name varchar; v_appr varchar; v_retain int;
+    v_doc bigint; v_hdr bigint; v_status varchar; v_writer varchar; v_no varchar; v_name varchar; v_appr varchar; v_retain int;
     v_ver int; e jsonb; v_seq int := 0;
     v_tmpl varchar(40) := btrim(COALESCE(p_tmpl_cd, ''));
     -- 목록 제목 — payload title 이 있으면 그 값, 없으면 신규는 자동값·수정은 기존값
@@ -302,7 +302,7 @@ BEGIN
             NULLIF(p_payload->>'actionNm', ''), NULLIF(p_payload->>'confirmNm', ''), p_id
         ) RETURNING idx INTO v_hdr;
     ELSE
-        SELECT d.idx, d.status, h.idx INTO v_doc, v_status, v_hdr
+        SELECT d.idx, d.status, d.writer_id, h.idx INTO v_doc, v_status, v_writer, v_hdr
           FROM tbl_document d
           JOIN tbl_ccp_verify_check h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
          WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.tmpl_cd = v_tmpl AND d.del_yn = 'N';
@@ -312,6 +312,10 @@ BEGIN
         -- 전송대기(WRK·RJT)가 아닐 때(= 전송·결재완료) 수정 차단. 전송취소를 먼저 해야 한다
         IF v_status NOT IN ('WRK', 'RJT') THEN
             RAISE EXCEPTION '전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.' USING ERRCODE = '45000';
+        END IF;
+        -- 작성자가 아닐 때(= 남의 초안) 수정 차단. HWP 헤더 저장과 같다
+        IF v_writer IS DISTINCT FROM p_id THEN
+            RAISE EXCEPTION '작성자 본인의 작성중 또는 반려 문서만 수정할 수 있습니다.' USING ERRCODE = '45000';
         END IF;
         UPDATE tbl_document SET
             base_dt = p_base_dt,
@@ -363,7 +367,7 @@ END$_$;
 -- Name: FUNCTION sp_ccp_verify_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_checker_nm character varying, p_payload jsonb, p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_checker_nm character varying, p_payload jsonb, p_id character varying) IS 'CCP 검증점검 저장 — 양식별. 신규는 사용여부 Y 만 허용하고 채번 규칙이 없으면 만든다';
+COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_checker_nm character varying, p_payload jsonb, p_id character varying) IS 'CCP 검증점검 저장 — 양식별. 수정은 작성자 본인 WRK·RJT만. 신규는 사용여부 Y 만 허용하고 채번 규칙이 없으면 만든다';
 
 
 --
@@ -2492,6 +2496,8 @@ DECLARE
     v_row jsonb;
     v_cell jsonb;
     v_row_idx bigint;
+    v_writer varchar;
+    v_status varchar(3);
 BEGIN
     -- 형제 저장 SP 셋(sp_ccp_verify_c_000·sp_tbl_ccp_metal_monitor_c_000·sp_tbl_hyg_process_c_000)은
     -- 다 막는데 여기만 없었다. 아래에서 to_date·채번·varchar(8) 로 그대로 흘러간다
@@ -2538,13 +2544,21 @@ BEGIN
             nullif(p_limit_item_kind, ''), nullif(p_mng_user_id, ''), nullif(p_mng_nm, ''), p_id
         ) RETURNING idx INTO v_monitor_idx;
     ELSE
-        SELECT m.idx INTO v_monitor_idx
+        SELECT m.idx, d.writer_id, d.status INTO v_monitor_idx, v_writer, v_status
           FROM tbl_ccp_htg_monitor m
           -- 모니터 행과 문서를 같은 회사로만 잇는다 — idx 만 보면 타사 문서에 붙을 수 있다
           JOIN tbl_document d ON d.idx = m.doc_idx AND d.co_cd = m.co_cd
-         WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx AND d.del_yn = 'N' AND d.status IN ('WRK', 'RJT');
+         WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx AND d.del_yn = 'N';
         IF v_monitor_idx IS NULL THEN
+            RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE = '45000';
+        END IF;
+        -- 전송대기(WRK·RJT)가 아닐 때(= 전송·결재완료) 수정 차단
+        IF v_status NOT IN ('WRK', 'RJT') THEN
             RAISE EXCEPTION '전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.' USING ERRCODE = '45000';
+        END IF;
+        -- 작성자가 아닐 때(= 남의 초안) 수정 차단. HWP 헤더 저장과 같다
+        IF v_writer IS DISTINCT FROM p_id THEN
+            RAISE EXCEPTION '작성자 본인의 작성중 또는 반려 문서만 수정할 수 있습니다.' USING ERRCODE = '45000';
         END IF;
         v_doc_idx := p_doc_idx;
         -- 제목이 넘어오면 그 값, 없으면 기존 title 유지
@@ -2753,6 +2767,8 @@ DECLARE
     v_row jsonb;
     v_cell jsonb;
     v_row_idx bigint;
+    v_writer varchar;
+    v_status varchar(3);
 BEGIN
     -- 형제 저장 SP 셋(sp_ccp_verify_c_000·sp_tbl_ccp_metal_monitor_c_000·sp_tbl_hyg_process_c_000)은
     -- 다 막는데 여기만 없었다. 아래에서 to_date·채번·varchar(8) 로 그대로 흘러간다
@@ -2799,13 +2815,21 @@ BEGIN
             nullif(p_limit_item_kind, ''), nullif(p_mng_user_id, ''), nullif(p_mng_nm, ''), p_id
         ) RETURNING idx INTO v_monitor_idx;
     ELSE
-        SELECT m.idx INTO v_monitor_idx
+        SELECT m.idx, d.writer_id, d.status INTO v_monitor_idx, v_writer, v_status
           FROM tbl_ccp_pkg_monitor m
           -- 모니터 행과 문서를 같은 회사로만 잇는다 — idx 만 보면 타사 문서에 붙을 수 있다
           JOIN tbl_document d ON d.idx = m.doc_idx AND d.co_cd = m.co_cd
-         WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx AND d.del_yn = 'N' AND d.status IN ('WRK', 'RJT');
+         WHERE m.co_cd = p_co_cd AND m.doc_idx = p_doc_idx AND d.del_yn = 'N';
         IF v_monitor_idx IS NULL THEN
+            RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE = '45000';
+        END IF;
+        -- 전송대기(WRK·RJT)가 아닐 때(= 전송·결재완료) 수정 차단
+        IF v_status NOT IN ('WRK', 'RJT') THEN
             RAISE EXCEPTION '전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.' USING ERRCODE = '45000';
+        END IF;
+        -- 작성자가 아닐 때(= 남의 초안) 수정 차단. HWP 헤더 저장과 같다
+        IF v_writer IS DISTINCT FROM p_id THEN
+            RAISE EXCEPTION '작성자 본인의 작성중 또는 반려 문서만 수정할 수 있습니다.' USING ERRCODE = '45000';
         END IF;
         v_doc_idx := p_doc_idx;
         -- 제목이 넘어오면 그 값, 없으면 기존 title 유지
@@ -3005,7 +3029,7 @@ DROP FUNCTION IF EXISTS sasshaccp.sp_tbl_ccp_metal_monitor_c_000(character varyi
 CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_ccp_metal_monitor_c_000(p_co_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_ccp_cd character varying, p_fe_size numeric, p_sts_size numeric, p_mng_user_id character varying, p_mng_nm character varying, p_sens_rows_json jsonb, p_pass_rows_json jsonb, p_id character varying, p_tmpl_cd character varying, p_title character varying DEFAULT NULL::character varying) RETURNS bigint
     LANGUAGE plpgsql
     AS $$
-DECLARE v_doc_idx bigint; v_hdr_idx bigint; v_status varchar(4); v_name varchar; v_appr varchar; v_retain int; r jsonb;
+DECLARE v_doc_idx bigint; v_hdr_idx bigint; v_status varchar(4); v_writer varchar; v_name varchar; v_appr varchar; v_retain int; r jsonb;
     v_in varchar(300); v_auto varchar(300);
 BEGIN
     IF COALESCE(p_base_dt, '') = '' OR length(p_base_dt) <> 8 THEN RAISE EXCEPTION '작성일은 YYYYMMDD 8자리로 입력하세요.' USING ERRCODE = '45000'; END IF;
@@ -3034,9 +3058,11 @@ BEGIN
         VALUES(p_co_cd,p_tmpl_cd,'HTML',sp_tbl_doc_no_gen_c_000(p_co_cd,p_tmpl_cd,p_base_dt),p_base_dt,COALESCE(v_in, v_auto),'WRK',v_appr,p_id,now(),1,to_char((to_date(p_base_dt,'YYYYMMDD')+(COALESCE(v_retain,24)||' months')::interval)::date,'YYYYMMDD'),'N',p_id) RETURNING idx INTO v_doc_idx;
         INSERT INTO tbl_ccp_metal_monitor(co_cd,doc_idx,base_dt,ccp_cd,fe_size,sts_size,mng_user_id,mng_nm,ins_id) VALUES(p_co_cd,v_doc_idx,p_base_dt,p_ccp_cd,p_fe_size,p_sts_size,NULLIF(p_mng_user_id,''),NULLIF(p_mng_nm,''),p_id) RETURNING idx INTO v_hdr_idx;
     ELSE
-        SELECT d.idx,d.status,h.idx INTO v_doc_idx,v_status,v_hdr_idx FROM tbl_document d JOIN tbl_ccp_metal_monitor h ON h.doc_idx=d.idx AND h.co_cd=d.co_cd WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd=p_tmpl_cd AND d.del_yn='N';
+        SELECT d.idx,d.status,d.writer_id,h.idx INTO v_doc_idx,v_status,v_writer,v_hdr_idx FROM tbl_document d JOIN tbl_ccp_metal_monitor h ON h.doc_idx=d.idx AND h.co_cd=d.co_cd WHERE d.co_cd=p_co_cd AND d.idx=p_doc_idx AND d.tmpl_cd=p_tmpl_cd AND d.del_yn='N';
         IF v_doc_idx IS NULL THEN RAISE EXCEPTION '문서를 찾을 수 없습니다.' USING ERRCODE='45000'; END IF;
         IF v_status IN ('REQ','APV') THEN RAISE EXCEPTION '전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.' USING ERRCODE='45000'; END IF;
+        -- 작성자가 아닐 때(= 남의 초안) 수정 차단. HWP 헤더 저장과 같다
+        IF v_writer IS DISTINCT FROM p_id THEN RAISE EXCEPTION '작성자 본인의 작성중 또는 반려 문서만 수정할 수 있습니다.' USING ERRCODE='45000'; END IF;
         UPDATE tbl_document SET base_dt=p_base_dt,title=COALESCE(v_in, title),upd_id=p_id,upd_dt=now() WHERE idx=v_doc_idx AND co_cd=p_co_cd;
         UPDATE tbl_ccp_metal_monitor SET base_dt=p_base_dt,ccp_cd=p_ccp_cd,fe_size=p_fe_size,sts_size=p_sts_size,mng_user_id=NULLIF(p_mng_user_id,''),mng_nm=NULLIF(p_mng_nm,''),upd_id=p_id,upd_dt=now() WHERE idx=v_hdr_idx AND co_cd=p_co_cd;
         DELETE FROM tbl_ccp_metal_sens_row WHERE co_cd=p_co_cd AND hdr_idx=v_hdr_idx;
@@ -4332,8 +4358,9 @@ DECLARE
     v_status varchar(3);
     -- doc_kind 는 varchar(10) — html(4자)이 잘리지 않게 폭을 맞춘다
     v_kind varchar(10);
+    v_writer varchar;
 BEGIN
-    SELECT status, doc_kind INTO v_status, v_kind
+    SELECT status, doc_kind, writer_id INTO v_status, v_kind, v_writer
       FROM tbl_document
      WHERE idx = p_doc_idx
        AND co_cd = p_co_cd
@@ -4350,6 +4377,10 @@ BEGIN
     -- 임시·반려가 아닐 때(= 결재 흐름 또는 보존 대상) 삭제 차단
     IF v_status NOT IN ('WRK', 'RJT') THEN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 삭제할 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    -- 작성자가 아닐 때(= 남의 초안) 삭제 차단. HWP 헤더 저장과 같다
+    IF v_writer IS DISTINCT FROM p_id THEN
+        RAISE EXCEPTION '작성자 본인의 작성중 또는 반려 문서만 삭제할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
 
     DELETE FROM tbl_document_approval
@@ -4371,7 +4402,7 @@ END$$;
 -- Name: PROCEDURE sp_tbl_document_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying) IS '문서형 작성중·반려 문서 삭제 — 첨부·결재·버전 일괄 제거';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying) IS '문서형 작성중·반려 문서 삭제 — 작성자 본인만. 첨부·결재·버전 일괄 제거';
 
 
 --
@@ -4384,9 +4415,10 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_document_file_c_000(p_co_cd characte
 DECLARE
     v_idx bigint;
     v_status varchar(3);
+    v_writer varchar;
     v_cnt int;
 BEGIN
-    SELECT status INTO v_status
+    SELECT status, writer_id INTO v_status, v_writer
       FROM tbl_document
      WHERE idx = p_doc_idx
        AND co_cd = p_co_cd
@@ -4399,6 +4431,10 @@ BEGIN
     -- PDF 완료본은 문서함 인쇄 변환이 남긴다. 본문(HWP_SRC)·첨부(ATTACH/PHOTO)는 그대로 막는다
     IF v_status IN ('REQ', 'APV') AND upper(trim(p_file_kind)) <> 'PDF' THEN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서에는 파일을 추가할 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    -- 본문(HWP_SRC)일 때(= 헤더와 같은 작성 권한) 작성자만 교체. 첨부는 결재첨부 화면이 맡는다
+    IF upper(trim(p_file_kind)) = 'HWP_SRC' AND v_writer IS DISTINCT FROM p_id THEN
+        RAISE EXCEPTION '작성자 본인의 작성중 또는 반려 문서만 수정할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
     -- 사용자 첨부일 때(= 일반첨부·사진) 문서당 5개로 막는다. 화면도 같은 기준으로 먼저 막는다
     IF p_file_kind IN ('ATTACH', 'PHOTO') THEN
@@ -4433,7 +4469,7 @@ END$$;
 -- Name: FUNCTION sp_tbl_document_file_c_000(p_co_cd character varying, p_doc_idx bigint, p_file_kind character varying, p_file_nm character varying, p_file_path character varying, p_file_size bigint, p_mime_type character varying, p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_document_file_c_000(p_co_cd character varying, p_doc_idx bigint, p_file_kind character varying, p_file_nm character varying, p_file_path character varying, p_file_size bigint, p_mime_type character varying, p_id character varying) IS '문서 파일 메타 등록 — 물리 저장 완료 후 호출. 사용자 첨부는 문서당 5개. PDF 완료본은 결재 잠금이어도 등록';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_document_file_c_000(p_co_cd character varying, p_doc_idx bigint, p_file_kind character varying, p_file_nm character varying, p_file_path character varying, p_file_size bigint, p_mime_type character varying, p_id character varying) IS '문서 파일 메타 등록 — 물리 저장 완료 후 호출. HWP_SRC는 작성자만. 사용자 첨부는 문서당 5개. PDF 완료본은 결재 잠금이어도 등록';
 
 
 --
@@ -4445,8 +4481,10 @@ CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_file_d_000(IN p_co_cd char
     AS $$
 DECLARE
     v_status varchar(3);
+    v_writer varchar;
+    v_kind varchar;
 BEGIN
-    SELECT d.status INTO v_status
+    SELECT d.status, d.writer_id, f.file_kind INTO v_status, v_writer, v_kind
       FROM tbl_document_file f
       JOIN tbl_document d ON d.idx = f.doc_idx AND d.co_cd = f.co_cd
      WHERE f.idx = p_file_idx
@@ -4460,6 +4498,10 @@ BEGIN
     IF v_status IN ('REQ', 'APV') THEN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서의 파일은 삭제할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
+    -- 본문(HWP_SRC)일 때(= 헤더와 같은 작성 권한) 작성자만 삭제. 첨부는 결재첨부 화면이 맡는다
+    IF upper(trim(v_kind)) = 'HWP_SRC' AND v_writer IS DISTINCT FROM p_id THEN
+        RAISE EXCEPTION '작성자 본인의 작성중 또는 반려 문서만 수정할 수 있습니다.' USING ERRCODE = '45000';
+    END IF;
 
     DELETE FROM tbl_document_file
      WHERE idx = p_file_idx
@@ -4471,7 +4513,7 @@ END$$;
 -- Name: PROCEDURE sp_tbl_document_file_d_000(IN p_co_cd character varying, IN p_file_idx bigint, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_file_d_000(IN p_co_cd character varying, IN p_file_idx bigint, IN p_id character varying) IS '문서 파일 메타 삭제 — 물리 파일 제거 전 잠금 검사';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_file_d_000(IN p_co_cd character varying, IN p_file_idx bigint, IN p_id character varying) IS '문서 파일 메타 삭제 — 물리 파일 제거 전 잠금 검사. HWP_SRC는 작성자만';
 
 
 --
@@ -4483,8 +4525,9 @@ CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_file_d_001(IN p_co_cd char
     AS $$
 DECLARE
     v_status varchar(3);
+    v_writer varchar;
 BEGIN
-    SELECT d.status INTO v_status
+    SELECT d.status, d.writer_id INTO v_status, v_writer
       FROM tbl_document d
      WHERE d.idx = p_doc_idx
        AND d.co_cd = p_co_cd
@@ -4495,6 +4538,10 @@ BEGIN
     END IF;
     IF v_status IN ('REQ', 'APV') THEN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서의 파일은 삭제할 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    -- 본문(HWP_SRC) 일괄 삭제일 때(= 덮어쓰기 전) 작성자만. 첨부는 결재첨부 화면이 맡는다
+    IF upper(trim(p_file_kind)) = 'HWP_SRC' AND v_writer IS DISTINCT FROM p_id THEN
+        RAISE EXCEPTION '작성자 본인의 작성중 또는 반려 문서만 수정할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
 
     DELETE FROM tbl_document_file
@@ -4508,7 +4555,7 @@ END$$;
 -- Name: PROCEDURE sp_tbl_document_file_d_001(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_file_kind character varying, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_file_d_001(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_file_kind character varying, IN p_id character varying) IS '문서·파일종류별 메타 일괄 삭제 — HWP_SRC 덮어쓰기 전 호출';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_file_d_001(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_file_kind character varying, IN p_id character varying) IS '문서·파일종류별 메타 일괄 삭제 — HWP_SRC 덮어쓰기 전 호출. HWP_SRC는 작성자만';
 
 
 --
@@ -5260,7 +5307,7 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_hyg_process_c_000(p_co_cd character 
     LANGUAGE plpgsql
     AS $$
 DECLARE
-    v_doc bigint; v_hdr bigint; v_status varchar; v_no varchar; v_name varchar; v_appr varchar; v_retain int;
+    v_doc bigint; v_hdr bigint; v_status varchar; v_writer varchar; v_no varchar; v_name varchar; v_appr varchar; v_retain int;
     v_ver int; e jsonb; v_seq int := 0;
     v_tmpl varchar(40) := btrim(COALESCE(p_tmpl_cd, ''));
     -- 목록 제목 — payload title 이 있으면 그 값, 없으면 신규는 자동값·수정은 기존값
@@ -5323,7 +5370,7 @@ BEGIN
             NULLIF(p_payload->>'actionNm', ''), NULLIF(p_payload->>'confirmNm', ''), p_id
         ) RETURNING idx INTO v_hdr;
     ELSE
-        SELECT d.idx, d.status, h.idx INTO v_doc, v_status, v_hdr
+        SELECT d.idx, d.status, d.writer_id, h.idx INTO v_doc, v_status, v_writer, v_hdr
           FROM tbl_document d
           JOIN tbl_hyg_process h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
          WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.tmpl_cd = v_tmpl AND d.del_yn = 'N';
@@ -5333,6 +5380,10 @@ BEGIN
         -- 전송대기(WRK·RJT)가 아닐 때(= 전송·결재완료) 수정 차단. 전송취소를 먼저 해야 한다
         IF v_status NOT IN ('WRK', 'RJT') THEN
             RAISE EXCEPTION '전송한 문서는 수정할 수 없습니다. 전송취소 후 수정하세요.' USING ERRCODE = '45000';
+        END IF;
+        -- 작성자가 아닐 때(= 남의 초안) 수정 차단. HWP 헤더 저장과 같다
+        IF v_writer IS DISTINCT FROM p_id THEN
+            RAISE EXCEPTION '작성자 본인의 작성중 또는 반려 문서만 수정할 수 있습니다.' USING ERRCODE = '45000';
         END IF;
         UPDATE tbl_document SET
             base_dt = p_base_dt,
@@ -5376,7 +5427,7 @@ END$$;
 -- Name: FUNCTION sp_tbl_hyg_process_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_checker_nm character varying, p_payload jsonb, p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_hyg_process_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_checker_nm character varying, p_payload jsonb, p_id character varying) IS '공정점검 저장 — 양식별. 신규는 사용여부 Y 만 허용하고 채번 규칙이 없으면 만든다';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_hyg_process_c_000(p_co_cd character varying, p_tmpl_cd character varying, p_doc_idx bigint, p_base_dt character varying, p_checker_nm character varying, p_payload jsonb, p_id character varying) IS '공정점검 저장 — 양식별. 수정은 작성자 본인 WRK·RJT만. 신규는 사용여부 Y 만 허용하고 채번 규칙이 없으면 만든다';
 
 
 --
