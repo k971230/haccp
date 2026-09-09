@@ -108,3 +108,58 @@ COMMENT ON COLUMN sasshaccp.tbl_workday_override.ins_dt IS '전환 저장 시각
 -- 이미 깐 DB 는 00_ddl COMMENT 를 안 읽으므로 여기서도 맞춘다.
 --
 COMMENT ON COLUMN sasshaccp.tbl_document.del_yn IS '삭제여부 Y/N — 목록 숨김. WRK·RJT 화면 삭제는 물리 DELETE. 전송·결재완료는 지우지 않는다';
+
+
+--
+-- _yn 칸에 Y/N 만 들어가게 막는다 — 이미 도는 DB 와 빈 DB 양쪽. 다시 돌려도 결과가 같다
+--
+-- 왜 있나: varchar(1) 짜리 _yn 칸이 43본인데 CHECK 가 걸린 건 tbl_html_*_ver 6표의 12본뿐이었다.
+-- 나머지 31본은 'X' 든 소문자 'y' 든 그냥 들어간다. 그러면 use_yn = 'y' 인 행이
+-- WHERE use_yn = 'Y' 에 안 걸려 화면에서 조용히 사라진다 — 저장은 됐는데 안 보이는 꼴이다.
+-- 막는 자리는 응용이 아니라 표다. 패턴은 이미 tbl_html_*_ver 가 쓰고 있어서 그것에 맞춘다.
+--
+-- 넣기 전에 확인한 것: 01_sp.sql 의 _yn 쓰기는 'Y'/'N' 뿐이고(97/88건), 시드 7본도 같다.
+-- 'sys'/'usr' 를 갖는 tbl_company_template.sys_yn 은 varchar(10) 이라 여기 대상이 아니다.
+--
+-- 자료가 더러우면 이 문장이 그 표 이름을 대며 멈춘다. 그때는 먼저 아래로 범인을 찾는다.
+--   SELECT 'tbl_user' t, lock_yn v, count(*) FROM tbl_user WHERE lock_yn NOT IN ('Y','N') GROUP BY 2;
+--
+DO $$
+DECLARE
+    -- 표.칸 짝. 새 _yn varchar(1) 칸을 만들면 여기에 한 줄 더한다
+    pairs text[][] := ARRAY[
+        ['tbl_approval_line','use_yn'], ['tbl_approval_line_step','use_yn'],
+        ['tbl_ccp_htg_monitor_row','judge_mod_yn'], ['tbl_ccp_pkg_monitor_row','judge_mod_yn'],
+        ['tbl_ccp_metal_sens_row','judge_mod_yn'], ['tbl_check_item','use_yn'],
+        ['tbl_code','sys_yn'], ['tbl_code','use_yn'],
+        ['tbl_company','use_yn'], ['tbl_company_template','use_yn'],
+        ['tbl_company_template','base_use_yn'], ['tbl_company_template_file','del_yn'],
+        ['tbl_dept','use_yn'], ['tbl_document','del_yn'], ['tbl_menu','use_yn'],
+        ['tbl_notification','read_yn'], ['tbl_role','use_yn'],
+        ['tbl_role_screen','read_yn'], ['tbl_role_screen','write_yn'],
+        ['tbl_role_screen','modify_yn'], ['tbl_role_screen','delete_yn'],
+        ['tbl_role_screen','print_yn'], ['tbl_schedule_rule','use_yn'],
+        ['tbl_schedule_task','alarm_send_yn'], ['tbl_screen','use_yn'],
+        ['tbl_template','impl_yn'], ['tbl_template','use_yn'],
+        ['tbl_user','gridsave_yn'], ['tbl_user','lock_yn'], ['tbl_user','use_yn'],
+        ['tbl_user_noti_pref','recv_yn']
+    ];
+    tbl text; col text; cname text;
+BEGIN
+    FOR i IN 1 .. array_length(pairs, 1) LOOP
+        tbl := pairs[i][1];
+        col := pairs[i][2];
+        cname := 'ck_' || tbl || '_' || col;
+        -- 이미 있으면 건너뛴다 — 다시 돌려도 같은 결과여야 한다
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint c
+              JOIN pg_class t ON t.oid = c.conrelid
+              JOIN pg_namespace n ON n.oid = t.relnamespace
+             WHERE n.nspname = 'sasshaccp' AND t.relname = tbl AND c.conname = cname
+        ) THEN
+            EXECUTE format(
+                'ALTER TABLE sasshaccp.%I ADD CONSTRAINT %I CHECK (%I IN (''Y'', ''N''))',
+                tbl, cname, col);
+        END IF;
+    END LOOP;
+END $$;

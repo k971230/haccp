@@ -18,11 +18,20 @@ HtmlFormCellInput 을 쓴다 — 실제로 CCP 가열·포장·금속의 품명 
 그래서 PAPER 도 같이 본다.
 """
 import io
+import os
 import re
 import sys
 
-BASE = r'D:\haccp\frontend\haccp-web\src\pages'
-DDL = r'D:\haccp\db_sasshaccp\00_ddl.sql'
+# 경로는 이 파일 위치에서 잡는다 — 저장소를 어디에 두든, CI 워크스페이스에서도 돈다.
+# 부르는 audit_grid_maxlength.sh 도 같은 방식(dirname $0/..)으로 루트를 잡는다.
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE = os.path.join(ROOT, 'frontend', 'haccp-web', 'src', 'pages')
+DDL = os.path.join(ROOT, 'db_sasshaccp', '00_ddl.sql')
+
+
+def src_path(rel):
+    """MAP·PAPER 의 키는 역슬래시로 적혀 있다. 도는 OS 의 구분자로 바꿔 붙인다."""
+    return os.path.join(BASE, rel.lstrip('\\').replace('\\', os.sep))
 
 # 지면 입력칸 — 파일 → [(칸 이름, 표, 컬럼)]. 문자칸이 나오는 순서대로 적는다.
 PAPER = {
@@ -107,7 +116,7 @@ def paper_check(widths):
     """
     bad = 0
     for rel, expects in PAPER.items():
-        src = io.open(BASE + rel, encoding='utf-8').read()
+        src = io.open(src_path(rel), encoding='utf-8').read()
         seen = []
         for m in CELL.finditer(src):
             body = m.group(1)
@@ -142,7 +151,7 @@ def main():
     widths = ddl_widths()
     bad = paper_check(widths)
     for rel, fields in MAP.items():
-        src = io.open(BASE + rel, encoding='utf-8').read()
+        src = io.open(src_path(rel), encoding='utf-8').read()
         found = {}
         for m in BLOCK.finditer(src):
             block = m.group(0)

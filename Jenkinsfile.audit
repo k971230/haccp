@@ -4,9 +4,12 @@
 //  개발자: 박승우
 //  일자: 2026-08-10
 //  코멘트:
-//    1) 매일 KST 03:00(UTC 18:00) 에 규약 drift·OPS_DELETE·파일크기·문서링크·생성문서를 검사한다
+//    1) 매일 KST 03:00(UTC 18:00) 에 규약 drift·OPS_DELETE·파일크기·문서링크·생성문서와
+//       화면상한↔DDL폭·1회성 SP 본·테넌트 격리를 검사한다
 //    2) 소스를 고치지 않고 실패 시 GitHub 이슈만 만든다
-//    3) 실행 예산 5분 — 스크립트는 로컬 파일 검사만 한다
+//    3) 실행 예산 5분 — 스크립트는 로컬 파일 검사만 한다. DB 에 붙는 검사는 여기 두지 않는다
+//    4) scripts/audit_* 를 새로 만들면 여기에 한 줄 더한다. 안 부르면 있으나 마나다 —
+//       실제로 grid_maxlength·sp_migration·sp_cocd 셋이 만들어만 두고 1개월 넘게 안 돌았다
 // ============================================================
 pipeline {
   agent any
@@ -38,6 +41,9 @@ pipeline {
           bash scripts/audit_file_size_alignment.sh
           bash scripts/audit_docs_links.sh
           bash scripts/audit_generated_docs.sh
+          bash scripts/audit_grid_maxlength.sh
+          bash scripts/audit_sp_migration.sh
+          node scripts/audit_sp_cocd.mjs
         '''
       }
     }
