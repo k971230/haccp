@@ -121,7 +121,7 @@ const doc = `# INDEX — 무엇이 어디 있나
 
 git 이 추적하는 폴더와 그 폴더 README 의 첫 줄을 뽑았다.
 규칙·읽기 순서는 [\`CLAUDE.md\`](CLAUDE.md) · [\`AGENTS.md\`](AGENTS.md) 가 정본이다.
-지금 상태는 [\`handoff.md\`](handoff.md), 문서 색인은 [\`docs/README.md\`](docs/README.md).
+문서 색인은 [\`docs/README.md\`](docs/README.md).
 
 ## 숫자
 

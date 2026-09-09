@@ -22,7 +22,7 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 
 **남은 일 넷은 사람 손에 있다** — 서명 등록 · 매뉴얼 작성 · 알림 방향 결정 · 현장 한 달 사용.
 **#93 머지 뒤 운영 반영은 Jenkins `haccp-deploy` Build Now.**
-자세한 것은 [`세션_인수인계.md`](세션_인수인계.md).
+지금 커밋은 `git log` · 정본은 [`docs/README.md`](docs/README.md).
 
 > **배포 서버는 `http://` 로 본다.** 지금 인증서가 자체서명이라 `https` 로 열면
 > rhwp 편집기 ServiceWorker 오류가 70건 쌓여 **진짜 신호를 덮는다**(화면·저장은 정상).
@@ -32,9 +32,7 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 
 ## 읽기 순서
 
-**작업을 이어받는 사람은 [`세션_인수인계.md`](세션_인수인계.md) 부터 읽는다.**
-지금 무엇이 되어 있고, 무엇을 조심해야 하고, 어디를 먼저 보는지가 거기 있다.
-**작업이 진행 중이면 [`handoff.md`](handoff.md) 가 그 위에 있다** — 지금 무엇을 하는 중인지.
+**작업을 이어받는 사람은 이 파일과 [`docs/README.md`](docs/README.md) 부터 읽는다.**
 무엇이 어느 폴더에 있는지는 [`INDEX.md`](INDEX.md) (생성기가 만든다).
 
 그다음은 필요한 만큼만 —
@@ -81,7 +79,7 @@ PIPELINE 전수 표는 이 파일이 아니라 [`docs/5_PIPELINE_색인.md`](doc
 | 표에 어떤 칸이 있나 | [`docs/10_테이블_레이아웃.md`](docs/10_테이블_레이아웃.md) — 생성기 · 엑셀본 동봉 |
 | 이 표를 고치면 어느 SP 가 걸리나 | [`docs/9_SP_색인.md`](docs/9_SP_색인.md) — 생성기 |
 | 사용자에게 무엇을 안내하나 | [`사용자_매뉴얼.md`](사용자_매뉴얼.md) |
-| **작업을 이어받는다** | [`세션_인수인계.md`](세션_인수인계.md) — 지금 어디까지 왔고 무엇을 조심하나 |
+| **작업을 이어받는다** | 이 파일 · [`docs/README.md`](docs/README.md) · `git log` |
 
 문서 전체 지도는 [`docs/README.md`](docs/README.md) — **정본 10본**이다.
 양식 HWP(로컬)는 `docs/templates/`. 폴더 역할은 각 디렉터리 `README.md`.
@@ -107,7 +105,7 @@ PIPELINE 전수 표는 이 파일이 아니라 [`docs/5_PIPELINE_색인.md`](doc
 | `scripts/` | 볼륨 초기화·빌드·배포·스모크·감시 |
 | `.cursor/rules/` | 에이전트·운영 규약 (정본. `CLAUDE.md`·`AGENTS.md` 는 여기를 가리킨다) |
 | `.claude/` | Claude Code 서브에이전트·슬래시 명령 (규칙 아님. `.claude/README.md`) |
-| `INDEX.md` · `handoff.md` | 폴더 목차(생성기) · 진행 중인 작업 상태 |
+| `INDEX.md` | 폴더 목차(생성기) |
 | `frontend/haccp-web/e2e/` | Playwright E2E — 화면·API·SP·DB 를 한 줄로 꿴다 |
 
 ## 사전 요구

@@ -1,11 +1,11 @@
 # INDEX — 무엇이 어디 있나
 
-> 개발자: 박승우 · 일자: 2026-09-08
+> 개발자: 박승우 · 일자: 2026-09-09
 > **생성기가 만든다** — `node scripts/gen_index.mjs`. 손으로 고치지 않는다.
 
 git 이 추적하는 폴더와 그 폴더 README 의 첫 줄을 뽑았다.
 규칙·읽기 순서는 [`CLAUDE.md`](CLAUDE.md) · [`AGENTS.md`](AGENTS.md) 가 정본이다.
-지금 상태는 [`handoff.md`](handoff.md), 문서 색인은 [`docs/README.md`](docs/README.md).
+문서 색인은 [`docs/README.md`](docs/README.md).
 
 ## 숫자
 
@@ -253,7 +253,7 @@ backend/
                 ca/  ← README 없음
                   user/  ← README 없음
 db_sasshaccp/
-    PostgreSQL sasshaccp 스키마 정본. 여기 7본이 곧 DB 다 — 손으로 친 DDL·데이터는 남기지 않는다.
+    PostgreSQL sasshaccp 스키마 정본. 시드 7본이 곧 데이터다. 00_alter.sql 은 이미 깐 DB 스키마 보정이고 시드가 아니다.
 docs/
     HACCP SaaS 문서 정본. 10본이다.
   templates/
