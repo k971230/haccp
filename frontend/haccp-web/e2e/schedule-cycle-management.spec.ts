@@ -2,10 +2,10 @@
  * schedule-cycle-management — 문서주기관리.
  *
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-09-09
  * 코멘트:
  *   1) 이 화면은 작성 6화면의 상류다 — 여기가 틀리면 예정일이 통째로 틀어진다
- *   2) 검색 3조건·단일 폼·삭제 2단계·JWT 전용 본문을 본다
+ *   2) 검색 3조건·단일 폼·삭제 2단계·진행·완료 과제 차단·JWT 전용 본문을 본다
  *   3) 좌측은 조회 전용이다. 양식 등록·삭제는 사용양식 관리 몫이라 여기서 보지 않는다
  *
  * PIPELINE[HF130] E2E
@@ -84,6 +84,39 @@ test.describe("문서주기관리", () => {
     ]);
     // HTTP DELETE 를 쓰지 않는다 — 규약
     expect(validate.request().method()).toBe("POST");
+  });
+});
+
+test.describe("삭제 가드", () => {
+  test("진행·완료 과제가 있으면 validate-delete 가 400 이다", async ({ request }) => {
+    /*
+     * 확인창이 가드가 아니다. d_000 이 남기는 행(ING·LATE·APV 또는 문서있음)이 있으면
+     * 확인 전에 막혀야 한다. 자료가 없으면 건너뛴다 — 빈 통과를 만들지 않는다.
+     */
+    const tmplCd = dbOne(
+      `SELECT tmpl_cd FROM tbl_schedule_task
+        WHERE co_cd='${sqlLit(loginCoCd())}'
+          AND (status IN ('ING','LATE','APV') OR doc_idx IS NOT NULL)
+        ORDER BY tmpl_cd LIMIT 1`,
+    );
+    test.skip(!tmplCd, "진행·완료 과제가 없어 건너뛴다");
+
+    const apiBase = process.env.E2E_API_BASE_URL || "http://localhost:7070";
+    const { user, pass } = adminCreds();
+    const auth = await request.post(`${apiBase}/api/v1/auth/login`, {
+      data: { userId: user, password: pass },
+    });
+    const token = ((await auth.json())?.data?.token ?? "") as string;
+    expect(token).not.toBe("");
+
+    const res = await request.post(
+      `${apiBase}/api/v1/docs/sch/schedule-cycle-management/validate-delete`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        data: [{ tmplCd }],
+      },
+    );
+    expect(res.status(), await res.text()).toBe(400);
   });
 });
 

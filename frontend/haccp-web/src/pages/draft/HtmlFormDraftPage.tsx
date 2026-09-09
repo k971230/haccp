@@ -517,7 +517,7 @@ export function HtmlFormDraftPage({
    * 일자: 2026-08-25
    * 코멘트:
    *   1) dirty 전건을 검증·저장한다 — validate 만 좌/우 저장마다 다르다
-   *   2) 전송대기면 본문에 제목을 같이 보낸다. 전송 이후면 제목만. 첨부 remark 가 아니다
+   *   2) 전송대기면 본문에 제목을 같이 보낸다. 전송 이후는 본문·제목 모두 건너뛴다. 첨부 remark 가 아니다
    *   3) 저장 후 목록을 다시 읽고 활성 행을 서버 키로 다시 연다. 임시 키를 getBuffer 하면 버퍼가 없다
    */
   const persistSave = useCallback(async (
@@ -726,7 +726,7 @@ export function HtmlFormDraftPage({
         const key = row._key;
         if (!key) continue;
         const b = getBuf(key);
-        // 전송 이후 행은 본문을 안 고친다. 제목만 persistSave 가 남긴다
+        // 전송 이후 행은 본문·제목 모두 안 고친다. persistSave 가 저장을 건너뛴다
         if ((b?.docIdx ?? row.docIdx) && !canModifyDoc(b?.status ?? row.status)) {
           continue;
         }
@@ -1434,7 +1434,7 @@ export function HtmlFormDraftPage({
                 // 반려 행은 노란색 — 배지(전송대기)로는 구분하지 못한다
                 rowClassName={(row) => draftRejectedRowClass((row as ListMeta).status)}
                 onCellChange={(key, field, cellValue) => {
-                  // 식별 제목 — tbl_document.title. 지면·결재 헤더에 안 실린다. 상태와 무관
+                  // 식별 제목 — tbl_document.title. 지면·결재 헤더에 안 실린다. 전송 이후는 그리드가 칸을 잠근다
                   if (field === "title") {
                     patchRow(key, { title: String(cellValue ?? "") } as Partial<ListMeta>);
                     return;

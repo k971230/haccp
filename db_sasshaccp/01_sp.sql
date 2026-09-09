@@ -2031,15 +2031,13 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_schedule_cycle_management_delete_blocker
     LANGUAGE sql
     STABLE
     AS $$
-    -- 작성 중인 과제(doc_idx 있음)가 있으면 주기를 지우지 않는다.
-    -- d_000 은 미래 TODO 만 지우고 ING·문서는 남긴다. 그 상태에서 규칙이 사라지면 과제가 고아다.
+    -- d_000 은 미래 TODO 만 지운다. 진행·완료·문서 있는 과제가 남으면 규칙만 사라져 고아다.
     SELECT t.tmpl_cd::varchar AS ref_key,
-           '작성 중인 과제'::varchar AS target
+           '진행·완료 과제'::varchar AS target
       FROM tbl_schedule_task t
      WHERE t.co_cd = p_co_cd
        AND t.tmpl_cd = ANY(p_tmpl_cds)
-       AND t.status = 'ING'
-       AND t.doc_idx IS NOT NULL
+       AND (t.status IN ('ING', 'LATE', 'APV') OR t.doc_idx IS NOT NULL)
      LIMIT 1;
 $$;
 
@@ -2048,7 +2046,7 @@ $$;
 -- Name: FUNCTION sp_schedule_cycle_management_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cds character varying[]); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_schedule_cycle_management_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cds character varying[]) IS '문서주기 삭제 차단 — 작성 중인 과제(ING·문서있음) 첫 건. 없으면 통과';
+COMMENT ON FUNCTION sasshaccp.sp_schedule_cycle_management_delete_blocker_r_000(p_co_cd character varying, p_tmpl_cds character varying[]) IS '문서주기 삭제 차단 — 진행·완료 과제(ING·LATE·APV 또는 문서있음) 첫 건. 없으면 통과';
 
 
 --
