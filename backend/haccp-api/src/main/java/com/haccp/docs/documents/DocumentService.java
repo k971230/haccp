@@ -2,11 +2,11 @@
  * DocumentService — 문서 허브·결재·첨부 업무 로직.
  *
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-09-09
  * 코멘트:
  *   1) DB형·HWP형 문서의 공통 목록·상세·결재·첨부·버전 조회를 한 서비스로 묶는다
  *   2) 파일은 물리 저장소와 DB 메타를 순서대로 처리하며, 실패 시 남은 물리 파일을 정리한다
- *   3) 결재·파일·삭제는 LoginUserContext의 coCd·userId만 사용하고 감사 로그를 남긴다
+ *   3) HWP 초안 삭제는 작성자 본인만 — validate-delete와 SP가 같이 막는다
  *
  * PIPELINE[HB86] Service
  * PIPELINE[HB83, HB85, HB51] 연관 모듈
@@ -551,11 +551,11 @@ public class DocumentService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-06
+     * 일자: 2026-09-09
      * 코멘트:
      *   1) 문서형(HWP) 임시·반려 문서 삭제 가능 여부를 검사한다
      *   2) FE confirm 전에 호출하고 delete에서도 다시 호출한다
-     *   3) DB형 문서는 도메인 전용 삭제 API로만 처리하게 차단한다
+     *   3) 작성자가 아니면 확인창 전에 막는다. SP도 같은 문구로 한 번 더 막는다
      */
     public void validateDelete(
             // 삭제 키 객체 배열
@@ -624,6 +624,10 @@ public class DocumentService {
             }
             if (!"HWP".equals(text(header.getDocKind()))) {
                 throw new BizException("DB형 문서는 해당 양식 화면에서 삭제하세요.");
+            }
+            // 작성자가 아닐 때(= 남의 초안) 삭제 차단. SP sp_tbl_document_d_000 과 같다
+            if (!text(LoginUserContext.userId()).equals(text(header.getWriterId()))) {
+                throw new BizException("작성자 본인의 작성중 또는 반려 문서만 삭제할 수 있습니다.");
             }
         }
     }

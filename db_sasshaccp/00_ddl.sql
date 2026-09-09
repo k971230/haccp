@@ -2,7 +2,7 @@
 --  00_ddl.sql — 스키마 정본 (테이블·인덱스·제약·주석)
 --
 --  개발자: 박승우
---  일자: 2026-08-25
+--  일자: 2026-09-09
 --  코멘트:
 --    1) 실 DB(sasshaccp) 를 그대로 뜬 것이다. 누적 마이그레이션 133본을 이 한 본으로 접었다
 --    2) 함수·프로시저는 01_sp.sql, 기초데이터는 02_seed.sql 이다. 이 순서로 적용한다
@@ -7230,7 +7230,7 @@ ALTER TABLE sasshaccp.tbl_template ADD CONSTRAINT ux_tbl_template UNIQUE (co_cd,
 --
 -- 예전에는 테이블명만 남기고 AUDIT_TARGET 공통코드로 화면을 역추적했다.
 -- tbl_document 한 장이 문서함·결재대기·첨부·작성에 공유되어 승인이 문서함에 붙었다.
--- 행에 scrn_cd 가 없으면 화면을 복원할 수 없어 기존 이력은 비운다.
+-- 행에 scrn_cd 가 없어도 이력이다. 헤더 없는 적재(curl·배치)를 최초 적재가 지우지 않는다.
 ALTER TABLE sasshaccp.tbl_audit_log
     ADD COLUMN IF NOT EXISTS scrn_cd character varying(30) DEFAULT ''::character varying NOT NULL;
 COMMENT ON COLUMN sasshaccp.tbl_audit_log.scrn_cd IS '행위 화면코드 — tbl_screen.scrn_cd. 적재 시점에 남긴다. 조회는 이 값으로 메뉴 트리를 가른다';
@@ -7238,8 +7238,7 @@ COMMENT ON COLUMN sasshaccp.tbl_audit_log.action_cd IS '행위 — I:등록, U:�
 COMMENT ON COLUMN sasshaccp.tbl_audit_log.reason IS '사유 — 결재 반려·결재취소 시 입력값';
 CREATE INDEX IF NOT EXISTS ix_tbl_audit_log_scrn
     ON sasshaccp.tbl_audit_log USING btree (co_cd, scrn_cd, ins_dt DESC);
--- 화면코드 없는 옛 행은 메뉴를 복원할 수 없다. 새 적재분만 남긴다.
-DELETE FROM sasshaccp.tbl_audit_log WHERE scrn_cd = '';
+-- 빈 scrn_cd 행은 지우지 않는다. 컬럼 추가만 멱등이다.
 
 
 --
