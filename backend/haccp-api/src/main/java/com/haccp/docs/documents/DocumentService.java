@@ -527,7 +527,7 @@ public class DocumentService {
      * 일자: 2026-09-02
      * 코멘트:
      *   1) 작성 목록 제목을 저장한다 — tbl_document.title 이다. 결재 첨부 remark 가 아니다
-     *   2) 작성 화면 좌측 저장이 호출한다. 전송·결재완료여도 고친다
+     *   2) PUT /title 전용. 작성 화면은 전송 이후 이 API 를 안 부른다. SP 가 REQ/APV 를 막는다
      *   3) 작성자 검증은 SP가 한다
      */
     @Transactional

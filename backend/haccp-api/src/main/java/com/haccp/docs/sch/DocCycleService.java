@@ -309,7 +309,7 @@ public class DocCycleService {
         }
     }
 
-    /** 삭제 키 형식 + 주기 존재 + 작성 중 과제 차단 — validate-delete·delete가 같은 메서드를 쓴다. */
+    /** 삭제 키 형식 + 주기 존재 + 진행·완료 과제 차단 — validate-delete·delete가 같은 메서드를 쓴다. */
     private void assertDeletable(List<DocCycleDeleteItem> keys) {
         DeleteValidation.requireItems(keys, "삭제할 문서주기를 선택하세요.");
         String coCd = LoginUserContext.coCd();

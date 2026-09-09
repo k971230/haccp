@@ -11,14 +11,14 @@ XML `resources/mapper/docs/sch/DocCycleMapper.xml` · SP `db_sasshaccp/01_sp.sql
 | GET | `/api/v1/docs/sch/schedule-cycle-management/forms` | `forms` | `sp_schedule_cycle_management_form_r_000` | `tbl_company_template` `tbl_template` `tbl_schedule_rule` `tbl_approval_line` — HTML 은 사용 중인 지면 버전이 있는 것만 |
 | GET | `/api/v1/docs/sch/schedule-cycle-management/get` | `cycle` | `sp_schedule_cycle_management_r_000` | `tbl_schedule_rule` `tbl_schedule_rule_detail` `tbl_company_template` `tbl_approval_line` |
 | PUT | `/api/v1/docs/sch/schedule-cycle-management/save` | `save` | `sp_schedule_cycle_management_c_000` · `sp_tbl_schedule_task_regen_c_000` | `tbl_schedule_rule` `tbl_schedule_rule_detail` `tbl_schedule_task` `tbl_company_template` |
-| POST | `/api/v1/docs/sch/schedule-cycle-management/validate-delete` | `validateDelete` | `sp_schedule_cycle_management_delete_blocker_r_000` + 존재 확인 | `tbl_schedule_rule` `tbl_schedule_task` |
+| POST | `/api/v1/docs/sch/schedule-cycle-management/validate-delete` | `validateDelete` | `sp_schedule_cycle_management_delete_blocker_r_000` + 존재 확인 | `tbl_schedule_rule` `tbl_schedule_task` — ING·LATE·APV 또는 문서있는 과제면 차단 |
 | POST | `/api/v1/docs/sch/schedule-cycle-management/delete` | `delete` | `sp_schedule_cycle_management_d_000` | `tbl_schedule_rule` |
 | (배치) | `DocumentAlarmScheduler` | `sendAlarms` | `sp_tbl_notification_task_c_000` | `tbl_schedule_task` |
 
 | 파일 | 역할 |
 |------|------|
 | `DocCycleController` | `/api/v1/docs/sch/schedule-cycle-management/{forms,get,save,validate-delete,delete}` |
-| `DocCycleService` | 주기 업서트 + 저장 직후 예정일 재생성. 삭제는 Double Check(존재 + 작성 중 과제 차단) |
+| `DocCycleService` | 주기 업서트 + 저장 직후 예정일 재생성. 삭제는 Double Check(존재 + 진행·완료 과제 차단) |
 | `DocCycleMapper` | 위 SP |
 | `CycleScheduleGenerator` | 규칙 → 예정일 순수 계산. 검증 `src/test/.../docs/sch/CycleScheduleGeneratorTest` |
 | `KoreanHolidayDates` | holidays-kr JSON → 날짜 Set. 공휴일 규칙은 직접 계산하지 않는다 |

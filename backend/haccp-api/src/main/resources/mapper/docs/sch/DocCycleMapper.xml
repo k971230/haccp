@@ -9,7 +9,7 @@ DocCycleMapper.xml — 문서주기관리 sp_schedule_cycle_management_* 호출.
   2) DTO 매핑. formTy 는 sys_yn 별칭, details 는 jsonb::text — 빼면 FE/파싱이 깨진다
   3) details·dates는 jsonb라 조회는 ::text, 전달은 CAST(... AS jsonb)로 다룬다
   4) 결재선(apprLineCd)은 114 SP. 주기 없는 양식은 목록 행에서 채운다
-  5) 삭제는 delete_blocker 후 d_000 — 작성 중인 과제가 있으면 막는다
+  5) 삭제는 delete_blocker 후 d_000 — 진행·완료 과제(ING·LATE·APV 또는 문서있음)가 있으면 막는다
 
 PIPELINE[HB99] 문서주기 MyBatis XML
 PIPELINE[HB94, HB98] 연관 모듈
@@ -81,7 +81,7 @@ PIPELINE[HB94, HB98] 연관 모듈
     </update>
 
     <!--
-      삭제 차단 — 작성 중인 과제(ING·문서있음)가 있으면 주기를 못 지운다.
+      삭제 차단 — 진행·완료 과제(ING·LATE·APV 또는 문서있음)가 있으면 주기를 못 지운다.
       위반 첫 건만 돌아온다. 없으면 null 이라 삭제를 진행한다.
     -->
     <select id="selectDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">

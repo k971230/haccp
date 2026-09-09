@@ -53,7 +53,7 @@
 | 단건 | `getDocCycle` | `sp_schedule_cycle_management_r_000` | `tbl_schedule_rule` `tbl_schedule_rule_detail` `tbl_company_template` `tbl_approval_line` |
 | 저장 | `saveDocCycle` | `sp_schedule_cycle_management_c_000` | `tbl_schedule_rule` `tbl_schedule_rule_detail` `tbl_company_template` |
 | 저장 직후 예정일 재생성 | (Service) | `sp_tbl_schedule_task_regen_c_000` | `tbl_schedule_task` — 관리시작일 이전 미작성 밀린 행과 미래 TODO 를 지운 뒤 생성기 날짜만 다시 깐다 |
-| 삭제 검증 | `validateDeleteDocCycles` | `sp_schedule_cycle_management_delete_blocker_r_000` | `tbl_schedule_rule` `tbl_schedule_task` |
+| 삭제 검증 | `validateDeleteDocCycles` | `sp_schedule_cycle_management_delete_blocker_r_000` | `tbl_schedule_rule` `tbl_schedule_task` — ING·LATE·APV 또는 문서있는 과제면 차단 |
 | 삭제 | `deleteDocCycles` | `sp_schedule_cycle_management_d_000` | `tbl_schedule_rule` |
 | 담당자 룩업 | `userApi.listUsers` | `sp_user_management_r_000` | `tbl_user` `tbl_dept` |
 | 결재선 룩업 | `approvalLineApi.listApprovalLines` | `sp_tbl_approval_line_r_000` | `tbl_approval_line` `tbl_approval_line_step` |

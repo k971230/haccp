@@ -183,21 +183,19 @@ export type HtmlFormDraftRowView = {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-24
+ * 일자: 2026-09-09
  * 코멘트:
  *   1) 일자는 전송대기 행에서 셀 편집한다. 양식코드는 팝업 전용이라 셀 입력을 막는다
  *   2) useGridAccess 에 넘긴다
- *   3) 전송 이후 행은 행을 잠근다. 제목만 화이트리스트로 연다
+ *   3) 전송 이후 행은 제목까지 잠근다. SP 가 REQ/APV 제목 저장을 막는다
  */
 export const htmlFormDraftGridRules: ScreenGridRules = {
   // 팝업·업무상태로만 정해지는 칸 — 셀에서 절대 못 고친다
   alwaysReadonly: ["tmplNm", "writerNm", "sendState", "docNo"],
   // 저장 후에도 바꿀 수 없는 칸 — 양식코드는 팝업(canOpenPopup 이 저장행을 막는다)
   newOnly: ["tmplCd"],
-  // 전송·결재완료 행은 통째로 잠근다. 제목만 예외
+  // 전송·결재완료 행은 제목 포함 통째로 잠근다
   isRowEditLocked: (row) => (row as { sendState?: SendState }).sendState !== "wait",
-  // 식별 제목 = tbl_document.title. 지면·결재 헤더에 안 실린다. 상태와 무관
-  editableWhenLocked: ["title"],
 };
 
 /**
@@ -262,7 +260,7 @@ export function buildDraftListColumns(
       editable: false,
     },
     {
-      // 식별 제목 — 언제·무엇을 썼는지. 지면 제목(양식 hdr-title)과 다르다. 언제든 고친다
+      // 식별 제목 — 언제·무엇을 썼는지. 지면 제목(양식 hdr-title)과 다르다. 전송대기·반려만 고친다
       field: "title",
       header: "제목",
       width: 160,

@@ -2,11 +2,11 @@
  * htmlFormDraftShared.test — 결재 여부 3단계 판정·U/D/전송 잠금·전송 필수값.
  *
  * 개발자: 박승우
- * 일자: 2026-08-24
+ * 일자: 2026-09-09
  * 코멘트:
  *   1) DOC_STATUS → 전송대기/전송/결재완료 묶음이 틀어지면 버튼 잠금이 통째로 어긋난다
  *   2) 전송 필수값은 저장에는 걸리지 않고 전송에만 걸려야 한다
- *   3) HYG·CCP 가 이 함수들을 공유하므로 여기서 한 번만 본다. UI 렌더 없이 순수 함수만 본다
+ *   3) 전송 이후 목록 제목도 잠긴다. HYG·CCP 가 이 규칙을 공유하므로 여기서 한 번만 본다
  *
  * PIPELINE[HF172] 양식 작성 공통 규칙
  */
@@ -262,9 +262,9 @@ describe("htmlFormDraftGridRules — 좌측 셀 편집 잠금", () => {
     }
   });
 
-  it("제목은 전송 이후에도 칸을 연다", () => {
+  it("제목 칸은 전송대기에서만 연다", () => {
     expect(rules.alwaysReadonly ?? []).not.toContain("title");
-    expect(rules.editableWhenLocked ?? []).toContain("title");
+    expect(rules.editableWhenLocked ?? []).not.toContain("title");
     const titleCol = buildDraftListColumns(() => {}).find((c) => c.field === "title");
     expect(titleCol?.header).toBe("제목");
     expect(titleCol?.type).toBe("text");
@@ -272,7 +272,7 @@ describe("htmlFormDraftGridRules — 좌측 셀 편집 잠금", () => {
     expect(titleCol?.maxLength).toBe(300);
   });
 
-  it("전송·결재완료 행은 잠그되 제목만 예외다", () => {
+  it("전송·결재완료 행은 제목까지 잠근다", () => {
     const locked = rules.isRowEditLocked;
     expect(locked).toBeTypeOf("function");
     expect(locked?.({ sendState: "wait" })).toBe(false);
