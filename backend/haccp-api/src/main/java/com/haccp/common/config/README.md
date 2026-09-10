@@ -20,7 +20,7 @@ Spring 설정 — 요청이 컨트롤러에 닿기 전과 응답이 나간 뒤�
 
 2026-08-27 에 서명 업로드가 **올린 쪽이 준 `Content-Type` 을 그대로 저장**했다가
 `inline` 으로 돌려주던 것을 고쳤다. 그 경로는 `UserService` 에서 MIME 을 확장자로 못 박아
-막았고, 이 필터는 나머지 셋까지 덮는 겹이다. 배경은 `배포후_개선점.md` J 절.
+막았고, 이 필터는 나머지 셋까지 덮는 겹이다.
 
 ## 관련
 - 테스트: `common/auth/ScreenAuthResolverTest` · `auth/AuthServiceGuardTest`

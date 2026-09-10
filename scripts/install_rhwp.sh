@@ -8,7 +8,7 @@
 #    1) 바이너리를 이미지에 굽지 않는다 — Docker 는 haccp-rhwp 볼륨, 로컬 IntelliJ 는 tools/rhwp
 #    2) 릴리스 SHA256SUMS.txt 로 무결성 검증 후에만 설치한다
 #    3) Windows Git Bash 에서는 exe 와 (docker 가 떠 있으면) 리눅스 볼륨을 같이 깐다
-#  호출처: DEPLOY.md §1 · 로컬 HWP PDF(문서함 인쇄) 선행
+#  호출처: 04.배포.md §1 · 로컬 HWP PDF(문서함 인쇄) 선행
 #  성공: 해당 환경에서 rhwp 실행 가능. 실패: 다운로드·SHA·필수 대상 설치 오류
 #
 #  사용:

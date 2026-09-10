@@ -163,7 +163,7 @@ npx playwright test    # DB 대조 포함
 - 화면 전수표: [`docs/3_화면_지도.md`](../../docs/3_화면_지도.md) — 생성기가 만든다
 - SP → 표 전수표: [`docs/9_SP_색인.md`](../../docs/9_SP_색인.md) — 생성기가 만든다
 - DB 정본: `db_sasshaccp/README.md`
-- E2E 결과: `E2E.md` · `E2E_ERRORS.md`
+- E2E: `frontend/haccp-web/e2e/README.md` · 돌리는 법 `docs/6_테스트.md`
 
 ## 변경
 

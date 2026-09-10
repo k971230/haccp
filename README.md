@@ -26,7 +26,7 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 
 > **배포 서버는 `http://` 로 본다.** 지금 인증서가 자체서명이라 `https` 로 열면
 > rhwp 편집기 ServiceWorker 오류가 70건 쌓여 **진짜 신호를 덮는다**(화면·저장은 정상).
-> `http` 로는 0건이다. 까닭과 실측은 [`운영.md`](운영.md) 10.2.
+> `http` 로는 0건이다. 까닭과 실측은 [`05.운영.md`](05.운영.md) 10.2.
 
 ---
 
@@ -64,35 +64,25 @@ PIPELINE 전수 표는 이 파일이 아니라 [`docs/5_PIPELINE_색인.md`](doc
 
 | 하려는 일 | 볼 곳 |
 |---|---|
-| PC 를 처음 잡는다 (Jenkins 포함) | [`환경구축.md`](환경구축.md) |
+| PC 를 처음 잡는다 (Jenkins 포함) | [`01.환경구축.md`](01.환경구축.md) |
 | 프로젝트가 뭔지·업무가 어떻게 흐르는지 | [`docs/1_시작하기.md`](docs/1_시작하기.md) |
 | 코드가 어떤 순서로 도는지 | [`backend/haccp-api/PIPELINE.md`](backend/haccp-api/PIPELINE.md) · [`frontend/haccp-web/PIPELINE.md`](frontend/haccp-web/PIPELINE.md) |
-| 브랜치 → PR → main | [`개발.md`](개발.md) · 명령 실습 [`깃.md`](깃.md) |
+| 브랜치 → PR → main | [`02.개발.md`](02.개발.md) · 명령 실습 [`03.깃.md`](03.깃.md) |
 | 화면을 하나 만든다 | [`docs/2_화면_추가하기.md`](docs/2_화면_추가하기.md) |
 | 기존 화면을 고친다 | [`docs/3_화면_지도.md`](docs/3_화면_지도.md) |
 | 이름·경로를 정한다 | [`docs/4_명명과_경로.md`](docs/4_명명과_경로.md) |
 | DB 를 깐다 / 새 업체를 연다 | [`db_sasshaccp/README.md`](db_sasshaccp/README.md) |
-| 배포한다 | [`DEPLOY.md`](DEPLOY.md) |
-| 배포 뒤 감시·장애 대응 | [`운영.md`](운영.md) |
-| 테스트를 돌린다 / 결과를 본다 | [`docs/6_테스트.md`](docs/6_테스트.md) · [`E2E.md`](E2E.md) |
+| 배포한다 | [`04.배포.md`](04.배포.md) |
+| 배포 뒤 감시·장애 대응 | [`05.운영.md`](05.운영.md) |
+| 테스트를 돌린다 / 결과를 본다 | [`docs/6_테스트.md`](docs/6_테스트.md) |
 | 왜 이렇게 돼 있나 | [`docs/8_결정_이력.md`](docs/8_결정_이력.md) |
 | 표에 어떤 칸이 있나 | [`docs/10_테이블_레이아웃.md`](docs/10_테이블_레이아웃.md) — 생성기 · 엑셀본 동봉 |
 | 이 표를 고치면 어느 SP 가 걸리나 | [`docs/9_SP_색인.md`](docs/9_SP_색인.md) — 생성기 |
-| 사용자에게 무엇을 안내하나 | [`사용자_매뉴얼.md`](사용자_매뉴얼.md) |
+| 사용자에게 무엇을 안내하나 | [`frontend/haccp-web/public/manual/`](frontend/haccp-web/public/manual/) |
 | **작업을 이어받는다** | 이 파일 · [`docs/README.md`](docs/README.md) · `git log` |
 
 문서 전체 지도는 [`docs/README.md`](docs/README.md) — **정본 10본**이다.
 양식 HWP(로컬)는 `docs/templates/`. 폴더 역할은 각 디렉터리 `README.md`.
-
-### 지난 회차 기록 (읽을 필요는 없다)
-
-아래는 **그때의 기록**이다. 지금 상태를 알려면 위 표를 본다.
-
-| 파일 | 무엇 |
-|---|---|
-| [`배포전_최종검증_계획.md`](배포전_최종검증_계획.md) · [`배포전_최종검증_결과.md`](배포전_최종검증_결과.md) | 첫 배포 전 점검 |
-| [`배포후_개선점.md`](배포후_개선점.md) | 배포 직후 나온 것들 |
-| [`E2E_ERRORS.md`](E2E_ERRORS.md) | E2E 가 잡아낸 결함 대장 (`E2E-001`…) |
 
 ## 구성
 
@@ -117,7 +107,7 @@ PIPELINE 전수 표는 이 파일이 아니라 [`docs/5_PIPELINE_색인.md`](doc
 
 ## 로컬 기동 (요약)
 
-포트: **API 7070** · **Vite 4173** (MES 5173/8080과 분리). 상세는 [`환경구축.md`](환경구축.md).
+포트: **API 7070** · **Vite 4173** (MES 5173/8080과 분리). 상세는 [`01.환경구축.md`](01.환경구축.md).
 
 ```bash
 # DB — 정본은 db_sasshaccp/ 7본이다. 빈 DB 에 순서대로 깔면 끝난다
@@ -181,9 +171,9 @@ bash scripts/audit_generated_docs.sh
 [`backend/haccp-api/PIPELINE.md`](backend/haccp-api/PIPELINE.md) ·
 [`frontend/haccp-web/PIPELINE.md`](frontend/haccp-web/PIPELINE.md).
 
-E2E 는 화면 문구가 아니라 **DB 를 직접 읽어** 판정한다. 결과와 발견한 결함은
-[`E2E.md`](E2E.md) · [`E2E_ERRORS.md`](E2E_ERRORS.md), 스펙 구조는
-[`frontend/haccp-web/e2e/README.md`](frontend/haccp-web/e2e/README.md).
+E2E 는 화면 문구가 아니라 **DB 를 직접 읽어** 판정한다. 돌리는 법과 스펙 구조는
+[`docs/6_테스트.md`](docs/6_테스트.md) ·
+[`frontend/haccp-web/e2e/README.md`](frontend/haccp-web/e2e/README.md). 건수는 러너가 센다.
 
 ## 시크릿 (필수)
 
@@ -202,10 +192,10 @@ bash scripts/pre-commit-check-secrets.sh
 
 ## Docker / Jenkins
 
-**배포 전 체크리스트: [`DEPLOY.md`](DEPLOY.md)** — Build Now 하나만 누르면 되는 상태인지,
+**배포 전 체크리스트: [`04.배포.md`](04.배포.md)** — Build Now 하나만 누르면 되는 상태인지,
 DB 는 어떻게 반영하는지가 여기 있다.
 
-- 이미지·compose·Nginx: [`docker-compose.prod.yml`](docker-compose.prod.yml) · [`nginx/`](nginx/) · 절차는 [`DEPLOY.md`](DEPLOY.md) · [`운영.md`](운영.md)
+- 이미지·compose·Nginx: [`docker-compose.prod.yml`](docker-compose.prod.yml) · [`nginx/`](nginx/) · 절차는 [`04.배포.md`](04.배포.md) · [`05.운영.md`](05.운영.md)
 - Job: `haccp-deploy` (`Jenkinsfile`) · `haccp-audit` (`Jenkinsfile.audit`)
-- 트리거(현재): localhost Jenkins → **Build Now** (webhook 없음). 설치는 [`환경구축.md`](환경구축.md) §11
+- 트리거(현재): localhost Jenkins → **Build Now** (webhook 없음). 설치는 [`01.환경구축.md`](01.환경구축.md) §11
 - 운영 Path: `/haccp/` · 로그아웃 URL은 `/haccp/login`

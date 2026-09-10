@@ -52,8 +52,8 @@ edge 는 루프백 평문만 받는다.
 
 ## 관련
 
-- 배포 절차: [`DEPLOY.md`](../DEPLOY.md)
-- 장애 대응: [`운영.md`](../운영.md)
+- 배포 절차: [`04.배포.md`](../04.배포.md)
+- 장애 대응: [`05.운영.md`](../05.운영.md)
 - compose: [`docker-compose.prod.yml`](../docker-compose.prod.yml) 의 `edge` 서비스
 
 ## 파일 전송 경로
