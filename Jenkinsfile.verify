@@ -1,0 +1,111 @@
+// ============================================================
+//  HACCP PR·main 검증 파이프라인
+//
+//  개발자: 박승우
+//  일자: 2026-09-10
+//  코멘트:
+//    1) PR 과 main 푸시에서 audit + BE/FE 단위시험만 돌린다. 이미지·배포·스모크는 없다
+//    2) E2E 는 여기 넣지 않는다 — Jenkinsfile.e2e 기본값이 운영 URL 이라 문서를 지운다
+//    3) 에이전트는 배포 Job 과 같은 any. Docker 파이프라인 에이전트는 이 워커에 없다
+//    4) 의존성은 WORKSPACE/.ci-cache 에 둔다. Maven 은 -Dmaven.repo.local 만 쓴다
+//
+//  Job 이름 haccp-verify. Script Path = Jenkinsfile.verify
+// ============================================================
+pipeline {
+  agent any
+
+  options {
+    disableConcurrentBuilds()
+    timeout(time: 30, unit: 'MINUTES')
+    buildDiscarder(logRotator(numToKeepStr: '30'))
+  }
+
+  environment {
+    // npm ci 캐시 — 워크스페이스는 빌드마다 안 지워진다
+    npm_config_cache = "${WORKSPACE}/.ci-cache/npm"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+        sh 'git log -1 --oneline'
+      }
+    }
+
+    stage('Tool versions') {
+      steps {
+        sh '''
+          set -euo pipefail
+          java -version 2>&1 | grep -E 'version "17\\.' >/dev/null \
+            || { echo 'JDK 17 이 아니다. requirements.txt 를 본다.'; java -version; exit 1; }
+          node -v | grep -E '^v20\\.' >/dev/null \
+            || { echo 'Node 20 이 아니다. requirements.txt 를 본다.'; node -v; exit 1; }
+        '''
+      }
+    }
+
+    stage('Audit scripts') {
+      steps {
+        sh '''
+          set -euo pipefail
+          bash scripts/audit_version_drift.sh
+          bash scripts/audit_ops_delete.sh
+          bash scripts/audit_file_size_alignment.sh
+          bash scripts/audit_docs_links.sh
+          bash scripts/audit_generated_docs.sh
+          bash scripts/audit_grid_maxlength.sh
+          bash scripts/audit_sp_migration.sh
+          node scripts/audit_sp_cocd.mjs
+        '''
+      }
+    }
+
+    stage('BE test') {
+      steps {
+        dir('backend/haccp-api') {
+          sh '''
+            set -euo pipefail
+            unset MAVEN_HOME M2_HOME || true
+            sed -i "s/\\r$//" mvnw
+            chmod +x mvnw
+            mkdir -p "$WORKSPACE/.ci-cache/m2"
+            # clean 필수 — 워크스페이스에 옛 test-classes 가 남으면 없는 시험이 통과한다
+            ./mvnw -q -B -DskipITs -Dmaven.repo.local="$WORKSPACE/.ci-cache/m2" clean test
+          '''
+        }
+      }
+      post {
+        always {
+          junit allowEmptyResults: true, testResults: 'backend/haccp-api/target/surefire-reports/*.xml'
+        }
+      }
+    }
+
+    stage('FE test') {
+      steps {
+        dir('frontend/haccp-web') {
+          sh '''
+            set -euo pipefail
+            mkdir -p "$npm_config_cache" test-results
+            npm ci --no-audit --no-fund --cache "$npm_config_cache"
+            npx tsc --noEmit
+            npm run lint
+            # package.json test 는 로컬용. CI 만 JUnit 을 남겨 Jenkins 가 실패 건을 집는다
+            npx vitest run --reporter=default --reporter=junit --outputFile=test-results/junit.xml
+          '''
+        }
+      }
+      post {
+        always {
+          junit allowEmptyResults: true, testResults: 'frontend/haccp-web/test-results/junit.xml'
+        }
+      }
+    }
+  }
+
+  post {
+    success { echo 'verify OK — 배포는 haccp-deploy' }
+    failure { echo 'verify 실패 — 배포 Job 과 섞지 않는다' }
+  }
+}

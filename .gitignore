@@ -83,3 +83,6 @@ grokbot/
 
 # 파이썬 캐시 — scripts/_sp_migration_diff.py 가 남긴다
 __pycache__/
+
+# Jenkins verify 워크스페이스 캐시 — 에이전트에만 둔다
+.ci-cache/
