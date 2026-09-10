@@ -12,6 +12,9 @@
  */
 package com.haccp.common.context;
 
+// 역할 — 테넌트 필수값 누락을 업무 오류로 막는다
+import com.haccp.common.exception.BizException;
+
 /** 요청 스코프 로그인 컨텍스트 보관소 (JwtFilter에서 set, 서비스에서 get). */
 public final class LoginUserContext {
 
@@ -68,6 +71,22 @@ public final class LoginUserContext {
         LoginUser u = HOLDER.get();
         // u가 null일 때(= 인증 전 공개 경로) null 반환 — 호출부가 필수값 검증을 한다
         return u == null ? null : u.getCoCd();
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-10
+     * 코멘트:
+     *   1) 요청 경로 SP 의 p_co_cd 를 채울 때 쓴다 — 공백이면 전사 분기가 열린다
+     *   2) 오늘 할 일·문서 CUD 가 JWT 회사 없이 호출되면 막는다
+     *   3) 배치 Job 은 회사 코드를 직접 넘기므로 이 메서드를 쓰지 않는다
+     */
+    public static String requireCoCd() {
+        String coCd = coCd();
+        if (coCd == null || coCd.isBlank()) {
+            throw new BizException("회사 정보가 없습니다. 다시 로그인하세요.");
+        }
+        return coCd.trim();
     }
 
     /**

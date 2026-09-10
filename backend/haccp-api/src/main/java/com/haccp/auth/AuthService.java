@@ -53,6 +53,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 // 역할 — 구독 종료일 비교용 오늘 날짜
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 // 역할 — 관리자 전권 시 빈 권한 목록
 import java.util.Collections;
@@ -86,6 +87,10 @@ public class AuthService {
     /** 토큰 만료(분) — 로그인 이력의 token_exp_dt 계산에 쓴다. JwtProvider와 같은 설정값을 읽는다 */
     @Value("${app.jwt.expire-minutes:480}")
     private long expireMinutes;
+
+    // 구독 종료일 비교 달력 — JVM 기본 TZ 가 UTC 여도 서울을 쓴다
+    @Value("${app.timezone:Asia/Seoul}")
+    private String timezone = "Asia/Seoul";
 
     /**
      * 개발자: 박승우
@@ -197,7 +202,7 @@ public class AuthService {
         // 구독 종료일 — YYYYMMDD 문자열이라 사전순 비교가 날짜 비교와 같다
         String svcFnDt = row.getSvcFnDt();
         // 종료일이 있고 오늘보다 이전일 때(= 구독 만료) 거절한다. 값이 없으면(= 무기한) 통과시킨다
-        if (svcFnDt != null && !svcFnDt.isBlank() && svcFnDt.compareTo(LocalDate.now().format(YMD)) < 0) {
+        if (svcFnDt != null && !svcFnDt.isBlank() && svcFnDt.compareTo(LocalDate.now(ZoneId.of(timezone)).format(YMD)) < 0) {
             writeLoginLog(row.getCoCd(), row.getUserId(), null, "F", "SERVICE_EXPIRED", meta, null);
             throw new BizException("SERVICE_EXPIRED", "서비스 이용 기간이 만료되었습니다. 관리자에게 문의해 주세요.");
         }

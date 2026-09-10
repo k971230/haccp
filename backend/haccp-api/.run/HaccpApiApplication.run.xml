@@ -2,6 +2,7 @@
   <configuration default="false" name="HaccpApiApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
     <module name="haccp-api" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="com.haccp.HaccpApiApplication" />
+    <option name="VM_PARAMETERS" value="-Duser.timezone=Asia/Seoul" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

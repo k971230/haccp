@@ -2,12 +2,12 @@
  * DocumentApprovalToolbar — 문서·일지 상세 공통 결재 버튼.
  *
  * 개발자: 박승우
- * 일자: 2026-09-03
+ * 일자: 2026-09-10
  * 코멘트:
  *   1) 화면 성격과 문서 상태에 따라 지금 할 수 있는 결재 행위만 버튼으로 낸다
  *      작성·결재첨부: 전송·전송취소 / 결재 대기·완료: 승인·취소·반려
  *   2) 사유가 필요한 반려·결재취소는 ReasonAction 팝업을 연다. 한 줄 input 을 헤더에 두지 않는다
- *   3) 라벨은 버튼에 하드코딩한다 (전송·전송취소·승인·반려·취소). APPR_ACTION 코드는 API 값이다
+ *   3) 결재 버튼은 툴바 안에서 useAsyncAction approval 로 잠근다. 부모가 busy 를 안 넘겨도 연속 클릭이 안 된다
  *
  * PIPELINE[HF103] 문서 결재 툴바
  * PIPELINE[HF82, HF102] 연관 모듈
@@ -26,6 +26,8 @@ import { DOC_STATUS } from "@/lib/docStatus";
 import { useCommonCodes } from "@/hooks/useCommonCodes";
 // 역할 — 사유 팝업
 import { useModalStore } from "@/stores/modalStore";
+// 역할 — 결재 버튼 연속 클릭 잠금
+import { useAsyncAction } from "@/hooks/useAsyncAction";
 
 export type ApprovalAction = "REQUEST" | "CANCEL" | "APPROVE" | "REJECT" | "UNDO";
 
@@ -69,7 +71,7 @@ export interface DocumentApprovalToolbarProps {
 
 /**
  * 개발자: 박승우
- * 일자: 2026-09-03
+ * 일자: 2026-09-10
  * 코멘트:
  *   1) 상태별로 가능한 결재 행위만 버튼으로 보여 준다
  *   2) 문서함 상세 헤더 오른쪽·일지 상세에서 호출한다
@@ -92,6 +94,8 @@ export function DocumentApprovalToolbar({
 }: DocumentApprovalToolbarProps) {
   const { label: statusNm } = useCommonCodes("DOC_STATUS");
   const openModal = useModalStore((s) => s.openModal);
+  const asyncAct = useAsyncAction();
+  const busy = approvalBusy || asyncAct.isBusy("approval");
 
   const run = async (actionCd: ApprovalAction, opinion?: string) => {
     if (!docIdx) return mesToast("먼저 문서를 저장하세요.", "warn");
@@ -114,26 +118,28 @@ export function DocumentApprovalToolbar({
             : "승인하시겠습니까?";
       if (!(await mesConfirm(msg))) return;
     }
-    try {
-      await processDocumentApproval({
-        docIdx,
-        actionCd,
-        // 반려·결재취소는 사유 필수. 취소 사유는 감사 이력에 남긴다
-        opinion: actionCd === "REJECT" || actionCd === "UNDO" ? opinion?.trim() || undefined : undefined,
-      });
-      mesToast(
-        actionCd === "UNDO" ? "결재를 취소했습니다. 문서가 이전 결재 단계로 돌아갔습니다."
-          : actionCd === "REQUEST" ? "전송했습니다."
-          : actionCd === "CANCEL" ? "전송을 취소했습니다."
-            : actionCd === "REJECT" ? "반려했습니다."
-              : "승인했습니다.",
-        "success",
-      );
-      onApproved?.();
-    } catch (error) {
-      mesError(error);
-      throw error;
-    }
+    await asyncAct.run(async () => {
+      try {
+        await processDocumentApproval({
+          docIdx,
+          actionCd,
+          // 반려·결재취소는 사유 필수. 취소 사유는 감사 이력에 남긴다
+          opinion: actionCd === "REJECT" || actionCd === "UNDO" ? opinion?.trim() || undefined : undefined,
+        });
+        mesToast(
+          actionCd === "UNDO" ? "결재를 취소했습니다. 문서가 이전 결재 단계로 돌아갔습니다."
+            : actionCd === "REQUEST" ? "전송했습니다."
+            : actionCd === "CANCEL" ? "전송을 취소했습니다."
+              : actionCd === "REJECT" ? "반려했습니다."
+                : "승인했습니다.",
+          "success",
+        );
+        onApproved?.();
+      } catch (error) {
+        mesError(error);
+        throw error;
+      }
+    }, "approval");
   };
 
   const openReason = (actionCd: "REJECT" | "UNDO") => {
@@ -186,7 +192,7 @@ export function DocumentApprovalToolbar({
           // 전송(REQUEST) — 결재 프로세스 시작. 이후 첨부·본문 잠금
           variant="primary"
           icon="approve"
-          disabled={approvalBusy}
+          disabled={busy}
           onClick={() => void run("REQUEST")}
         >
           전송
@@ -197,7 +203,7 @@ export function DocumentApprovalToolbar({
           // 전송취소(CANCEL) — 전송대기로 되돌린다. 승인이 들어가면 SP 가 막는다
           variant="secondary"
           icon="reset"
-          disabled={approvalBusy}
+          disabled={busy}
           onClick={() => void run("CANCEL")}
         >
           전송취소
@@ -207,7 +213,7 @@ export function DocumentApprovalToolbar({
         <MesButton
           // 승인(APPROVE) — 지정 결재자. 마지막 단계면 APV
           variant="primary"
-          disabled={approvalBusy}
+          disabled={busy}
           onClick={() => void run("APPROVE")}
         >
           승인
@@ -218,7 +224,7 @@ export function DocumentApprovalToolbar({
           // 본인 결재 되돌리기 — 사유는 팝업에서 받는다. 다음 결재자가 처리했으면 SP 가 막는다
           variant="search"
           icon="reset"
-          disabled={approvalBusy}
+          disabled={busy}
           onClick={() => openReason("UNDO")}
         >
           취소
@@ -228,7 +234,7 @@ export function DocumentApprovalToolbar({
         <MesButton
           // 반려 — 사유는 팝업에서 받는다
           variant="danger"
-          disabled={approvalBusy}
+          disabled={busy}
           onClick={() => openReason("REJECT")}
         >
           반려

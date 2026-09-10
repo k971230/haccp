@@ -16,6 +16,8 @@ spring:
   application:
     name: haccp-api
   jackson:
+    # Instant·날짜 JSON 벽시계 — JVM 과 SP now() 와 같은 Asia/Seoul
+    time-zone: ${APP_TIMEZONE:Asia/Seoul}
     # 필드명 그대로 직렬화 — Row DTO는 전부 camelCase(coCd, tmplCd)이므로 getter 명명 규칙을 타지 않게 한다
     visibility:
       field: any
@@ -30,9 +32,10 @@ spring:
   datasource:
     # currentSchema=sasshaccp — SP 본문이 테이블을 스키마 없이 참조하므로 검색경로를 맞춘다
     #   (DB 레벨에도 ALTER DATABASE ... SET search_path 로 이중 고정해 둠 — 00_schema.sql)
+    # options TimeZone=Asia/Seoul — SP now() 와 JVM 벽시계를 맞춘다. 00_alter 도 DB timezone 을 고정한다
     # escapeSyntaxCallMode=callIfNoReturn — MyBatis {call ...} 를 PG CALL 로 실행한다
     driver-class-name: ${DB_DRIVER:org.postgresql.Driver}
-    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sasshaccp}?currentSchema=sasshaccp&escapeSyntaxCallMode=callIfNoReturn}
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sasshaccp}?currentSchema=sasshaccp&escapeSyntaxCallMode=callIfNoReturn&options=-c%20TimeZone%3DAsia%2FSeoul}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     hikari:
