@@ -1,6 +1,6 @@
 # INDEX — 무엇이 어디 있나
 
-> 개발자: 박승우 · 일자: 2026-09-09
+> 개발자: 박승우 · 일자: 2026-09-10
 > **생성기가 만든다** — `node scripts/gen_index.mjs`. 손으로 고치지 않는다.
 
 git 이 추적하는 폴더와 그 폴더 README 의 첫 줄을 뽑았다.
@@ -357,7 +357,7 @@ frontend/
 nginx/
     운영 edge 컨테이너. TLS 를 여기서 끝내지 않는다 — 호스트 Apache(443)가 종단하고
 scripts/
-    HACCP 운영·검증 스크립트. 정본 절차는 DEPLOY.md.
+    HACCP 운영·검증 스크립트. 정본 절차는 04.배포.md.
 tools/  ← README 없음
 ```
 

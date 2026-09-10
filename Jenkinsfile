@@ -173,7 +173,7 @@ pipeline {
 
   post {
     success { echo "배포 성공: TAG=$TAG" }
-    failure { echo "배포 실패: TAG=$TAG — 로그 확인 후 롤백은 DEPLOY.md §5 되돌리기" }
+    failure { echo "배포 실패: TAG=$TAG — 로그 확인 후 롤백은 04.배포.md §5 되돌리기" }
     always  { sh 'docker logout ghcr.io || true' }
   }
 }

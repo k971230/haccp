@@ -1,6 +1,6 @@
 # scripts/
 
-HACCP 운영·검증 스크립트. 정본 절차는 [`DEPLOY.md`](../DEPLOY.md).
+HACCP 운영·검증 스크립트. 정본 절차는 [`04.배포.md`](../04.배포.md).
 
 **여기 파일을 임의로 지우면** Deploy·Prod smoke·nightly audit·로컬 compose 선행이 깨진다.  
 일회성 Path 전환용 `ops_path_gateway_cutover.sh` 는 제거됨 (재실행 대상 아님).
@@ -9,11 +9,11 @@ HACCP 운영·검증 스크립트. 정본 절차는 [`DEPLOY.md`](../DEPLOY.md).
 
 | 스크립트 | 역할 | 호출처 |
 |----------|------|--------|
-| `init_volumes.sh` | 파일·템플릿 볼륨 시드 (rhwp 는 `install_rhwp.sh`) | compose 선행 · `DEPLOY.md` §1 의 1-4 |
+| `init_volumes.sh` | 파일·템플릿 볼륨 시드 (rhwp 는 `install_rhwp.sh`) | compose 선행 · `04.배포.md` §1 의 1-4 |
 | `build_images.sh` | api·web·nginx 이미지 빌드 | `Jenkinsfile` |
 | `deploy_remote.sh` | 원격 rsync·compose up | `Jenkinsfile` |
-| `install_rhwp.sh` | rhwp CLI 주입 — Windows `tools/rhwp` · Docker 볼륨 `haccp-rhwp` | 로컬 HWP PDF · `DEPLOY.md` §1 의 1-4 |
-| `gen_selfsigned.sh` | 로컬 TLS 인증서 | `환경구축.md` §10 |
+| `install_rhwp.sh` | rhwp CLI 주입 — Windows `tools/rhwp` · Docker 볼륨 `haccp-rhwp` | 로컬 HWP PDF · `04.배포.md` §1 의 1-4 |
+| `gen_selfsigned.sh` | 로컬 TLS 인증서 | `01.환경구축.md` §10 |
 
 ## 스모크·DB
 

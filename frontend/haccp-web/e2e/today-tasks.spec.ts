@@ -94,6 +94,7 @@ test.describe("오늘 할 일", () => {
     }
   });
 
+  // 2026-09-08: 전체 라운드에서 네 번 다 실패했다. 단독은 통과하는 다른 스펙과 달리 상수다.
   test("한 번 클릭은 선택만이다 — 화면이 바뀌지 않는다", async ({ page }) => {
     const { user, pass } = adminCreds();
     await login(page, user, pass);

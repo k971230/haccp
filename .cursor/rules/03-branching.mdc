@@ -5,7 +5,7 @@ alwaysApply: true
 
 # 브랜치·커밋·PR 규약
 
-정본은 이 파일이다. [`DEPLOY.md`](../../DEPLOY.md) 는 배포 **절차**만 담는다 — 규약은 없다.
+정본은 이 파일이다. [`04.배포.md`](../../04.배포.md) 는 배포 **절차**만 담는다 — 규약은 없다.
 
 | 구분 | 규약 |
 |------|------|
@@ -13,4 +13,4 @@ alwaysApply: true
 | 커밋 | `<type>(<scope>): <subject>` — type `feat`·`fix`·`chore`·`docs`·`refactor`·`build`·`ci`·`db` / scope `fe`·`be`·`db`·`infra`·`docs` |
 | PR | 제목 `[STEP nn] <type>(<scope>): <subject>` · 본문에 무엇을 왜 바꿨는지 · 리뷰어 없는 self-merge 금지 |
 | 라벨 | priority `P0`~`P3` · area `fe`/`be`/`db`/`infra`/`docs`/`security` · status `blocked`/`in-progress`/`review`/`done` |
-| 태그 | `1.0.<BUILD_NUMBER>` — [`Jenkinsfile`](../../Jenkinsfile):39 가 빌드 번호로 붙인다. SemVer 를 계산하지 않는다. 롤백은 `DEPLOY.md` 「롤백」 |
+| 태그 | `1.0.<BUILD_NUMBER>` — [`Jenkinsfile`](../../Jenkinsfile):39 가 빌드 번호로 붙인다. SemVer 를 계산하지 않는다. 롤백은 `04.배포.md` 「롤백」 |

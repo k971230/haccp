@@ -2,7 +2,7 @@
 
 Playwright E2E. **화면이 열리는가**가 아니라 **업무가 끝까지 도는가**를 본다.
 
-수행 결과와 발견한 결함은 저장소 루트 [`E2E.md`](../../../E2E.md) · [`E2E_ERRORS.md`](../../../E2E_ERRORS.md).
+돌리는 법은 [`docs/6_테스트.md`](../../../docs/6_테스트.md). 건수는 러너가 센다.
 
 ## 파이프라인
 
@@ -114,7 +114,7 @@ Jenkins(`Jenkinsfile.e2e`)는 지금 도구 없이 돌아 DB 대조 시험이 �
 ## 관련
 
 - 정본: `.cursor/rules/09-haccp-frontend.mdc` · `.cursor/rules/06-operations.mdc`
-- 결과: [`E2E.md`](../../../E2E.md) · [`E2E_ERRORS.md`](../../../E2E_ERRORS.md)
+- 돌리는 법: [`docs/6_테스트.md`](../../../docs/6_테스트.md)
 
 ## 변경
 

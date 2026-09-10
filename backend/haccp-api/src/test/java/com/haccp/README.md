@@ -3,7 +3,7 @@
 `./mvnw test` 로 도는 JUnit 5 테스트. **DB·기동 없이** 도는 것만 여기 둔다.
 
 DB 를 붙여야 확인되는 것은 프론트의 Playwright E2E 가 맡는다 —
-`frontend/haccp-web/e2e/`, 결과는 루트 [`E2E.md`](../../../../../../../E2E.md).
+`frontend/haccp-web/e2e/`. 돌리는 법은 [`docs/6_테스트.md`](../../../../../../../docs/6_테스트.md).
 
 ## 무엇을 여기서 보는가
 
