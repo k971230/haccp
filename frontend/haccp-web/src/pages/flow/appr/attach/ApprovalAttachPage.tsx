@@ -21,6 +21,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 // 역할 — 비동기 중복 실행 차단
 import { useAsyncAction } from "@/hooks/useAsyncAction";
+// 역할 — 늦게 온 상세가 최신 선택을 덮지 않게
+import { useLatestOnly } from "@/hooks/useLatestOnly";
 // 역할 — URL ?docIdx= 자동 선택
 import { useDocIdxQuery } from "@/hooks/useDocIdxQuery";
 // 역할 — 문서상태·결재 역할/결과 공통코드
@@ -174,19 +176,30 @@ export default function ApprovalAttachPage() {
     }
   }, [user?.userId]);
 
-  /** 문서 상세·결재단계·첨부를 갱신하고 화면 입력을 서버 값으로 되돌린다 */
+  const beginDetail = useLatestOnly();
+
+  /**
+   * 문서 상세·결재단계·첨부를 갱신하고 화면 입력을 서버 값으로 되돌린다.
+   *
+   * 강조와 상세를 따로 바꾼다. 그 사이 다른 행을 누르면 우측 툴바는 옛 문서다.
+   * 툴바가 그 창에서 전송하면 보고 있던 문서가 아니라 옛 문서가 전송된다.
+   * 문서함과 같이 최신 적재만 상세를 쓴다.
+   */
   const loadDetail = useCallback(async (row: DocumentListRow) => {
+    const isLatest = beginDetail();
+    setSelected(row);
+    setListActiveKey(String(row.docIdx));
+    setDetail(null);
     try {
-      setSelected(row);
-      setListActiveKey(String(row.docIdx));
       const next = await getDocumentDetail(row.docIdx);
+      if (!isLatest()) return;
       setDetail(next);
       setRemark(next.header.remark ?? "");
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (e) {
-      mesError(e);
+      if (isLatest()) mesError(e);
     }
-  }, []);
+  }, [beginDetail]);
 
   useEffect(() => {
     void loadList();

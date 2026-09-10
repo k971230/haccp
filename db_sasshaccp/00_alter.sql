@@ -12,6 +12,15 @@
 
 SET search_path TO sasshaccp;
 
+-- JVM(-Duser.timezone=Asia/Seoul) 과 SP now() 가 같은 벽시계를 보게 한다.
+-- 세션 TZ 가 UTC 로 남으면 ins_dt 는 KST, 감사 now() 는 9시간 전으로 찍힌다.
+-- 시험 DB 이름은 sasshaccp_test 다. 이름을 박으면 다른 DB 를 건드리거나 적용이 실패한다.
+DO $$
+BEGIN
+  EXECUTE format('ALTER DATABASE %I SET timezone TO %L', current_database(), 'Asia/Seoul');
+END
+$$;
+
 --
 -- 자리 넓힘 — 이미 도는 DB 를 위한 보정. 다시 돌려도 결과가 같다
 --

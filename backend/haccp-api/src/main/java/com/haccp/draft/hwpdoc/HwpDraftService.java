@@ -32,11 +32,13 @@ import com.haccp.draft.dto.DraftTaskRow;
 import com.haccp.flow.ca.dto.DocCorrectiveDto;
 import com.haccp.flow.ca.DocCorrectiveSupport;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +51,10 @@ public class HwpDraftService {
 
     private final HwpDraftMapper mapper;
     private final DocumentService documentService;
+
+    // 기준일 기본값 — JVM 기본 TZ 가 UTC 여도 서울을 쓴다
+    @Value("${app.timezone:Asia/Seoul}")
+    private String timezone = "Asia/Seoul";
     // 초안 동시 저장 스탬프 — 상세에 붙이고 저장 직전에 대조한다
     private final DraftSeenGuard seenGuard;
     // 이탈여부 칸 — 켜면 개선조치 행을 만들어 이탈·개선조치 화면에 올린다
@@ -111,7 +117,7 @@ public class HwpDraftService {
         return mapper.selectTasks(
                 LoginUserContext.coCd(),
                 LoginUserContext.userId(),
-                dt.length() == 8 ? dt : LocalDate.now().format(YMD)
+                dt.length() == 8 ? dt : LocalDate.now(ZoneId.of(timezone)).format(YMD)
         );
     }
 

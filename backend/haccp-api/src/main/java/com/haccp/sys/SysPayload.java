@@ -19,6 +19,7 @@ import com.haccp.common.validation.DeleteValidation;
 
 // 역할 — 날짜 기본값·행/키 목록
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -144,7 +145,7 @@ public final class SysPayload {
             String value
     ) {
         if (value == null || value.isBlank()) {
-            return LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+            return LocalDate.now(ZoneId.of("Asia/Seoul")).format(DateTimeFormatter.BASIC_ISO_DATE);
         }
         String normalized = value.replace("-", "").trim();
         if (!normalized.matches("\\d{8}")) {

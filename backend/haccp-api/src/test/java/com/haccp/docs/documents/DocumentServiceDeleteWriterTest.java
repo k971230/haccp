@@ -5,7 +5,7 @@
  * 일자: 2026-09-09
  * 코멘트:
  *   1) attach 삭제 권한으로 허브 OR를 타도 작성자가 아니면 확인창 전에 거절한다
- *   2) SP sp_tbl_document_d_000 과 같은 문구다. 여기서 빠지면 확인 뒤에야 실패한다
+ *   2) SP 와 같은 문구다. ADMIN·HACCP_MASTER 는 퇴사자 초안을 치울 수 있다
  *   3) DB 없이 매퍼만 가짜로 세운다
  *
  * PIPELINE[HB86] Service
@@ -86,8 +86,46 @@ class DocumentServiceDeleteWriterTest {
         DocumentDeleteItem key = new DocumentDeleteItem();
         key.setDocIdx(9L);
         BizException ex = assertThrows(BizException.class, () -> service.validateDelete(List.of(key)));
-        assertEquals("작성자 본인의 작성중 또는 반려 문서만 삭제할 수 있습니다.", ex.getMessage());
+        assertEquals("작성자 본인 또는 관리자만 삭제할 수 있습니다.", ex.getMessage());
         verify(mapper, never()).deleteDocument(any(), any(), any());
+    }
+
+    @Test
+    void ADMIN은_남의_초안도_validateDelete를_통과한다() {
+        LoginUserContext.set(LoginUser.builder()
+                .coCd("0001")
+                .userId("boss")
+                .usrgrpCd("ADMIN")
+                .build());
+        DocumentHeaderRow header = new DocumentHeaderRow();
+        header.setDocIdx(9L);
+        header.setDocKind("HWP");
+        header.setWriterId("user_b");
+        when(mapper.selectDocumentDeleteBlocker(eq("0001"), any())).thenReturn(null);
+        when(mapper.selectDocument("0001", 9L)).thenReturn(header);
+
+        DocumentDeleteItem key = new DocumentDeleteItem();
+        key.setDocIdx(9L);
+        service.validateDelete(List.of(key));
+    }
+
+    @Test
+    void HACCP_MASTER는_남의_초안도_validateDelete를_통과한다() {
+        LoginUserContext.set(LoginUser.builder()
+                .coCd("0001")
+                .userId("master")
+                .usrgrpCd("HACCP_MASTER")
+                .build());
+        DocumentHeaderRow header = new DocumentHeaderRow();
+        header.setDocIdx(9L);
+        header.setDocKind("HWP");
+        header.setWriterId("user_b");
+        when(mapper.selectDocumentDeleteBlocker(eq("0001"), any())).thenReturn(null);
+        when(mapper.selectDocument("0001", 9L)).thenReturn(header);
+
+        DocumentDeleteItem key = new DocumentDeleteItem();
+        key.setDocIdx(9L);
+        service.validateDelete(List.of(key));
     }
 
     @Test

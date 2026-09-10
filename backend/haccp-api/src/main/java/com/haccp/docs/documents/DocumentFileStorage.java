@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.FileAlreadyExistsException;
 // 역할 — 연월 경로
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 // 역할 — Spring 설정값 주입
 import org.springframework.beans.factory.annotation.Value;
@@ -49,6 +50,8 @@ public class DocumentFileStorage {
     private final String logbookDirectory;
     // 업로드 1건 최대 크기 — application.yml/.env에서만 받는다
     private final long maxBytes;
+    // 일자 폴더 달력 — JVM 기본 TZ 가 UTC 여도 서울을 쓴다
+    private final ZoneId zone;
 
     public DocumentFileStorage(
             // 파일 볼륨 루트 — 운영은 Docker named volume 경로
@@ -56,11 +59,14 @@ public class DocumentFileStorage {
             // 작성 문서 루트 폴더명 — 표준·자사 양식 루트와 분리한다
             @Value("${app.document.logbook-directory}") String logbookDirectory,
             // 업로드 파일 최대 크기 byte — multipart 한계와 같은 값으로 맞춘다
-            @Value("${app.file.max-bytes}") long maxBytes
+            @Value("${app.file.max-bytes}") long maxBytes,
+            // 일자 폴더 기준 타임존
+            @Value("${app.timezone:Asia/Seoul}") String timezone
     ) {
         this.root = TemplateFileNames.absoluteRoot(root);
         this.logbookDirectory = TemplateFileNames.segment(logbookDirectory);
         this.maxBytes = maxBytes;
+        this.zone = ZoneId.of(timezone);
     }
 
     /**
@@ -105,7 +111,7 @@ public class DocumentFileStorage {
             // 목적지에 실제로 쓰는 동작 — 이미 있으면 FileAlreadyExistsException 이 나야 한다
             TargetWriter writer
     ) {
-        String dateFolder = FILE_DATE.format(LocalDate.now());
+        String dateFolder = FILE_DATE.format(LocalDate.now(zone));
         String folder = logbookFolder(coCd, tmplCd, dateFolder);
         int dot = safeOriginalName.lastIndexOf('.');
         // 확장자는 원본을 따른다 — hwp·hwpx·pdf·jpg 가 한 저장소를 함께 쓴다

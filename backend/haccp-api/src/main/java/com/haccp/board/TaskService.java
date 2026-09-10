@@ -22,6 +22,7 @@ import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteValidation;
 // 역할 — 날짜·컬렉션
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 // 역할 — Spring 서비스·트랜잭션
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,10 +41,14 @@ public class TaskService {
     private final TaskMapper mapper;
     private final ObjectMapper objectMapper;
 
+    // 오늘 일자 — JVM 기본 TZ 가 UTC 여도 서울 달력을 쓴다
+    @Value("${app.timezone:Asia/Seoul}")
+    private String timezone = "Asia/Seoul";
+
     /** 오늘 과제 생성 보정 뒤 과제 목록을 반환한다. */
     @Transactional
     public List<com.haccp.board.dto.TodayTaskRow> todayTasks() {
-        String coCd = LoginUserContext.coCd();
+        String coCd = LoginUserContext.requireCoCd();
         mapper.generateTasks(coCd, today(), LoginUserContext.userId());
         return mapper.selectTodayTasks(coCd, LoginUserContext.userId(), today());
     }
@@ -69,7 +75,7 @@ public class TaskService {
         int lim = limit == null || limit < 1 ? 1 : Math.min(limit, 100);
         // coCd·userId: JWT — SP writer_id 필터로 내가 쓴 문서만
         List<com.haccp.board.dto.TodayTaskDocRow> rows = mapper.selectTodayTaskDocs(
-                LoginUserContext.coCd(), LoginUserContext.userId(), text(fromDt), text(toDt), off, lim);
+                LoginUserContext.requireCoCd(), LoginUserContext.userId(), text(fromDt), text(toDt), off, lim);
         if (rows == null) rows = List.of();
         int total = 0;
         if (!rows.isEmpty() && rows.get(0).getTotalCnt() != null) {
@@ -108,7 +114,7 @@ public class TaskService {
             key.put("idx", DeleteValidation.requirePositive(key.get("idx"), "삭제할 개선조치 키가 올바르지 않습니다."));
         }
     }
-    private String today() { return LocalDate.now().format(YMD); }
+    private String today() { return LocalDate.now(ZoneId.of(timezone)).format(YMD); }
     private String text(String value) { return value == null ? "" : value.trim(); }
 
     /** 목록 Map 행을 camelCase 키로 복사한다. */

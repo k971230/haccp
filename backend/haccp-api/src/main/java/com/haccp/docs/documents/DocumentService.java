@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) DB형·HWP형 문서의 공통 목록·상세·결재·첨부·버전 조회를 한 서비스로 묶는다
  *   2) 파일은 물리 저장소와 DB 메타를 순서대로 처리하며, 실패 시 남은 물리 파일을 정리한다
- *   3) HWP 초안 삭제는 작성자 본인만 — validate-delete와 SP가 같이 막는다
+ *   3) HWP 초안 삭제는 작성자 또는 같은 회사 ADMIN·HACCP_MASTER — validate-delete와 SP가 같이 막는다
  *
  * PIPELINE[HB86] Service
  * PIPELINE[HB83, HB85, HB51] 연관 모듈
@@ -232,7 +232,7 @@ public class DocumentService {
      * 코멘트:
      *   1) 파일을 물리 볼륨에 저장한 뒤 문서 파일 메타를 등록한다
      *   2) HWP_SRC는 문서당 1건만 유지 — 기존 원본 메타·물리를 제거한 뒤 등록한다
-     *   3) ATTACH/PHOTO/PDF는 추가 등록, DB 실패 시 방금 만든 물리 파일을 롤백한다
+     *   3) ATTACH/PHOTO는 추가 등록. PDF 는 변환 API 만. DB 실패 시 방금 만든 물리 파일을 롤백한다
      */
     @Transactional
     public DocumentFileRow upload(
@@ -249,11 +249,19 @@ public class DocumentService {
         String kind = requireFileKind(fileKind);
         String coCd = LoginUserContext.coCd();
         String userId = LoginUserContext.userId();
+        DocumentHeaderRow header = mapper.selectDocument(coCd, requiredDocIdx);
+        if (header == null) {
+            throw new BizException("문서를 찾을 수 없습니다.");
+        }
+        // 문서 헤더 작성자가 아니고 관리자도 아닐 때(= 남의 초안에 기생 첨부) 차단. SP 와 같다
+        if (!canPurgeDraft(header.getWriterId())) {
+            throw new BizException("작성자 본인 또는 관리자만 파일을 추가할 수 있습니다.");
+        }
         // HWP 본원본일 때(= 문서당 1건) 기존 HWP_SRC 메타를 먼저 제거. 실물은 커밋 뒤에 지운다
         List<String> oldPaths = "HWP_SRC".equals(kind)
                 ? replaceExistingHwpSrc(coCd, requiredDocIdx, userId)
                 : List.of();
-        String path = storage.save(coCd, documentTmplCd(coCd, requiredDocIdx), file);
+        String path = storage.save(coCd, text(header.getTmplCd()), file);
         try {
             Long fileIdx = mapper.insertFile(
                     coCd,
@@ -428,6 +436,14 @@ public class DocumentService {
         DocumentFileRow file = mapper.selectFile(coCd, requiredFileIdx);
         if (file == null) {
             throw new BizException("파일을 찾을 수 없습니다.");
+        }
+        DocumentHeaderRow header = mapper.selectDocument(coCd, file.getDocIdx());
+        if (header == null) {
+            throw new BizException("문서를 찾을 수 없습니다.");
+        }
+        // 문서 헤더 작성자가 아니고 관리자도 아닐 때. 파일 ins_id 는 보지 않는다
+        if (!canPurgeDraft(header.getWriterId())) {
+            throw new BizException("작성자 본인 또는 관리자만 삭제할 수 있습니다.");
         }
         mapper.deleteFile(coCd, requiredFileIdx, LoginUserContext.userId());
         // 실물은 커밋 뒤에. 아래 감사 적재가 실패하면 메타는 되살아나는데 실물은 안 돌아온다
@@ -625,9 +641,9 @@ public class DocumentService {
             if (!"HWP".equals(text(header.getDocKind()))) {
                 throw new BizException("DB형 문서는 해당 양식 화면에서 삭제하세요.");
             }
-            // 작성자가 아닐 때(= 남의 초안) 삭제 차단. SP sp_tbl_document_d_000 과 같다
-            if (!text(LoginUserContext.userId()).equals(text(header.getWriterId()))) {
-                throw new BizException("작성자 본인의 작성중 또는 반려 문서만 삭제할 수 있습니다.");
+            // 작성자가 아니고 관리자도 아닐 때(= 남의 초안) 삭제 차단. SP 와 같다
+            if (!canPurgeDraft(header.getWriterId())) {
+                throw new BizException("작성자 본인 또는 관리자만 삭제할 수 있습니다.");
             }
         }
     }
@@ -785,10 +801,22 @@ public class DocumentService {
         return "REQ".equals(code) || "APV".equals(code);
     }
 
-    /** 파일 종류의 허용값 검증 */
+    /**
+     * 작성자이거나 같은 회사 관리자(ADMIN·HACCP_MASTER)일 때 초안을 지울 수 있다.
+     * isAdmin() 은 ADMIN 만이라 팀장(HACCP_MASTER) 퇴사자 초안이 좀비가 된다.
+     */
+    private boolean canPurgeDraft(String writerId) {
+        if (text(LoginUserContext.userId()).equals(text(writerId))) {
+            return true;
+        }
+        String grp = text(LoginUserContext.usrgrpCd()).toUpperCase();
+        return "ADMIN".equals(grp) || "HACCP_MASTER".equals(grp);
+    }
+
+    /** 업로드 파일 종류 — PDF 는 변환 API 가 등록한다. 완료본 위조를 막는다 */
     private String requireFileKind(String value) {
         String kind = text(value).toUpperCase();
-        if (!List.of("HWP_SRC", "PDF", "ATTACH", "PHOTO").contains(kind)) {
+        if (!List.of("HWP_SRC", "ATTACH", "PHOTO").contains(kind)) {
             throw new BizException("파일 구분이 올바르지 않습니다.");
         }
         return kind;

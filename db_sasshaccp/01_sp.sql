@@ -377,9 +377,9 @@ COMMENT ON FUNCTION sasshaccp.sp_ccp_verify_c_000(p_co_cd character varying, p_t
 CREATE OR REPLACE PROCEDURE sasshaccp.sp_ccp_verify_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
     LANGUAGE plpgsql
     AS $_$
-DECLARE v_status varchar; v_hdr bigint;
+DECLARE v_status varchar; v_hdr bigint; v_writer varchar;
 BEGIN
-    SELECT d.status, h.idx INTO v_status, v_hdr
+    SELECT d.status, h.idx, d.writer_id INTO v_status, v_hdr, v_writer
       FROM tbl_document d
       JOIN tbl_ccp_verify_check h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
      WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.del_yn = 'N'
@@ -390,6 +390,17 @@ BEGIN
     -- 전송대기(WRK·RJT)가 아닐 때(= 전송·결재완료) 삭제 차단. 전송취소를 먼저 해야 한다
     IF v_status NOT IN ('WRK', 'RJT') THEN
         RAISE EXCEPTION '전송한 문서는 삭제할 수 없습니다. 전송취소 후 삭제하세요.' USING ERRCODE = '45000';
+    END IF;
+    -- 작성자가 아니고 관리자도 아닐 때(= 남의 초안) 삭제 차단. 퇴사자 초안은 ADMIN·HACCP_MASTER 가 치운다
+    IF v_writer IS DISTINCT FROM p_id
+       AND NOT EXISTS (
+           SELECT 1 FROM tbl_user u
+            WHERE u.co_cd = p_co_cd
+              AND u.user_id = p_id
+              AND u.use_yn = 'Y'
+              AND upper(u.usrgrp_cd) IN ('ADMIN', 'HACCP_MASTER')
+       ) THEN
+        RAISE EXCEPTION '작성자 본인 또는 관리자만 삭제할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
     -- 완료(DONE)된 개선조치는 원문서를 지워도 남긴다. 조치 기록이 초안 삭제로 사라지면 안 된다.
     -- 개선조치 목록은 LEFT JOIN tbl_document 이라 원문서가 없어도 문서 칸만 빈 채로 보인다
@@ -2643,13 +2654,14 @@ CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_ccp_htg_monitor_d_000(IN p_co_cd ch
 DECLARE
     v_status varchar(4);
     v_monitor_idx bigint;
+    v_writer varchar;
 BEGIN
     IF p_doc_idx IS NULL OR p_doc_idx = 0 THEN
         RAISE EXCEPTION '삭제할 문서를 선택하세요.' USING ERRCODE = '45000';
     END IF;
 
-    SELECT d.status, m.idx
-      INTO v_status, v_monitor_idx
+    SELECT d.status, m.idx, d.writer_id
+      INTO v_status, v_monitor_idx, v_writer
       FROM tbl_document d
       JOIN tbl_ccp_htg_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
      WHERE d.co_cd = p_co_cd
@@ -2662,6 +2674,17 @@ BEGIN
     -- 작성중·반려일 때만 삭제 (TMP 폐기 후 WRK 정본)
     IF v_status NOT IN ('WRK', 'RJT') THEN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 삭제할 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    -- 작성자가 아니고 관리자도 아닐 때(= 남의 초안) 삭제 차단. 퇴사자 초안은 ADMIN·HACCP_MASTER 가 치운다
+    IF v_writer IS DISTINCT FROM p_id
+       AND NOT EXISTS (
+           SELECT 1 FROM tbl_user u
+            WHERE u.co_cd = p_co_cd
+              AND u.user_id = p_id
+              AND u.use_yn = 'Y'
+              AND upper(u.usrgrp_cd) IN ('ADMIN', 'HACCP_MASTER')
+       ) THEN
+        RAISE EXCEPTION '작성자 본인 또는 관리자만 삭제할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
 
     -- 완료(DONE)된 개선조치는 원문서를 지워도 남긴다 (형제 _d_000 셋과 같은 기준)
@@ -2923,13 +2946,14 @@ CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_ccp_pkg_monitor_d_000(IN p_co_cd ch
 DECLARE
     v_status varchar(4);
     v_monitor_idx bigint;
+    v_writer varchar;
 BEGIN
     IF p_doc_idx IS NULL OR p_doc_idx = 0 THEN
         RAISE EXCEPTION '삭제할 문서를 선택하세요.' USING ERRCODE = '45000';
     END IF;
 
-    SELECT d.status, m.idx
-      INTO v_status, v_monitor_idx
+    SELECT d.status, m.idx, d.writer_id
+      INTO v_status, v_monitor_idx, v_writer
       FROM tbl_document d
       JOIN tbl_ccp_pkg_monitor m ON m.doc_idx = d.idx AND m.co_cd = d.co_cd
      WHERE d.co_cd = p_co_cd
@@ -2942,6 +2966,17 @@ BEGIN
     -- 작성중·반려일 때만 삭제 (TMP 폐기 후 WRK 정본)
     IF v_status NOT IN ('WRK', 'RJT') THEN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 삭제할 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    -- 작성자가 아니고 관리자도 아닐 때(= 남의 초안) 삭제 차단. 퇴사자 초안은 ADMIN·HACCP_MASTER 가 치운다
+    IF v_writer IS DISTINCT FROM p_id
+       AND NOT EXISTS (
+           SELECT 1 FROM tbl_user u
+            WHERE u.co_cd = p_co_cd
+              AND u.user_id = p_id
+              AND u.use_yn = 'Y'
+              AND upper(u.usrgrp_cd) IN ('ADMIN', 'HACCP_MASTER')
+       ) THEN
+        RAISE EXCEPTION '작성자 본인 또는 관리자만 삭제할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
 
     -- 완료(DONE)된 개선조치는 원문서를 지워도 남긴다 (형제 _d_000 셋과 같은 기준)
@@ -3139,12 +3174,12 @@ DROP PROCEDURE IF EXISTS sasshaccp.sp_tbl_ccp_metal_monitor_d_000(character vary
 CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_ccp_metal_monitor_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying, IN p_tmpl_cd character varying)
     LANGUAGE plpgsql
     AS $$
-DECLARE v_hdr_idx bigint; v_status varchar(4);
+DECLARE v_hdr_idx bigint; v_status varchar(4); v_writer varchar;
 BEGIN
     IF COALESCE(btrim(p_tmpl_cd), '') = '' THEN
         RAISE EXCEPTION '양식을 선택하세요.' USING ERRCODE = '45000';
     END IF;
-    SELECT h.idx, d.status INTO v_hdr_idx, v_status
+    SELECT h.idx, d.status, d.writer_id INTO v_hdr_idx, v_status, v_writer
       FROM tbl_document d
       JOIN tbl_ccp_metal_monitor h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
      WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.tmpl_cd = p_tmpl_cd AND d.del_yn = 'N';
@@ -3154,6 +3189,17 @@ BEGIN
     -- 전송대기(WRK·RJT)가 아닐 때(= 전송·결재완료) 삭제 차단. 전송취소를 먼저 해야 한다
     IF v_status NOT IN ('WRK', 'RJT') THEN
         RAISE EXCEPTION '전송한 문서는 삭제할 수 없습니다. 전송취소 후 삭제하세요.' USING ERRCODE = '45000';
+    END IF;
+    -- 작성자가 아니고 관리자도 아닐 때(= 남의 초안) 삭제 차단. 퇴사자 초안은 ADMIN·HACCP_MASTER 가 치운다
+    IF v_writer IS DISTINCT FROM p_id
+       AND NOT EXISTS (
+           SELECT 1 FROM tbl_user u
+            WHERE u.co_cd = p_co_cd
+              AND u.user_id = p_id
+              AND u.use_yn = 'Y'
+              AND upper(u.usrgrp_cd) IN ('ADMIN', 'HACCP_MASTER')
+       ) THEN
+        RAISE EXCEPTION '작성자 본인 또는 관리자만 삭제할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
     -- 완료(DONE)된 개선조치는 원문서를 지워도 남긴다. 조치 기록이 초안 삭제로 사라지면 안 된다.
     -- 개선조치 목록은 LEFT JOIN tbl_document 이라 원문서가 없어도 문서 칸만 빈 채로 보인다
@@ -4421,9 +4467,16 @@ BEGIN
     IF v_status NOT IN ('WRK', 'RJT') THEN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서는 삭제할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
-    -- 작성자가 아닐 때(= 남의 초안) 삭제 차단. HWP 헤더 저장과 같다
-    IF v_writer IS DISTINCT FROM p_id THEN
-        RAISE EXCEPTION '작성자 본인의 작성중 또는 반려 문서만 삭제할 수 있습니다.' USING ERRCODE = '45000';
+    -- 작성자가 아니고 관리자도 아닐 때(= 남의 초안) 삭제 차단. 퇴사자 초안은 ADMIN·HACCP_MASTER 가 치운다
+    IF v_writer IS DISTINCT FROM p_id
+       AND NOT EXISTS (
+           SELECT 1 FROM tbl_user u
+            WHERE u.co_cd = p_co_cd
+              AND u.user_id = p_id
+              AND u.use_yn = 'Y'
+              AND upper(u.usrgrp_cd) IN ('ADMIN', 'HACCP_MASTER')
+       ) THEN
+        RAISE EXCEPTION '작성자 본인 또는 관리자만 삭제할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
 
     DELETE FROM tbl_document_approval
@@ -4449,7 +4502,7 @@ END$$;
 -- Name: PROCEDURE sp_tbl_document_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying) IS '문서형 작성중·반려 문서 삭제 — 작성자 본인만. 첨부·결재·버전 일괄 제거';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying) IS '문서형 작성중·반려 문서 삭제 — 작성자 또는 같은 회사 ADMIN·HACCP_MASTER. 첨부·결재·버전 일괄 제거';
 
 
 --
@@ -4479,9 +4532,17 @@ BEGIN
     IF v_status IN ('REQ', 'APV') AND upper(trim(p_file_kind)) <> 'PDF' THEN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서에는 파일을 추가할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
-    -- 본문(HWP_SRC)일 때(= 헤더와 같은 작성 권한) 작성자만 교체. 첨부는 결재첨부 화면이 맡는다
-    IF upper(trim(p_file_kind)) = 'HWP_SRC' AND v_writer IS DISTINCT FROM p_id THEN
-        RAISE EXCEPTION '작성자 본인의 작성중 또는 반려 문서만 수정할 수 있습니다.' USING ERRCODE = '45000';
+    -- PDF 변환은 문서함 인쇄가 남긴다. 본문·첨부는 문서 헤더 작성자 또는 관리자만. 파일 ins_id 는 보지 않는다
+    IF upper(trim(p_file_kind)) <> 'PDF'
+       AND v_writer IS DISTINCT FROM p_id
+       AND NOT EXISTS (
+           SELECT 1 FROM tbl_user u
+            WHERE u.co_cd = p_co_cd
+              AND u.user_id = p_id
+              AND u.use_yn = 'Y'
+              AND upper(u.usrgrp_cd) IN ('ADMIN', 'HACCP_MASTER')
+       ) THEN
+        RAISE EXCEPTION '작성자 본인 또는 관리자만 파일을 추가할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
     -- 사용자 첨부일 때(= 일반첨부·사진) 문서당 5개로 막는다. 화면도 같은 기준으로 먼저 막는다
     IF p_file_kind IN ('ATTACH', 'PHOTO') THEN
@@ -4516,7 +4577,7 @@ END$$;
 -- Name: FUNCTION sp_tbl_document_file_c_000(p_co_cd character varying, p_doc_idx bigint, p_file_kind character varying, p_file_nm character varying, p_file_path character varying, p_file_size bigint, p_mime_type character varying, p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_tbl_document_file_c_000(p_co_cd character varying, p_doc_idx bigint, p_file_kind character varying, p_file_nm character varying, p_file_path character varying, p_file_size bigint, p_mime_type character varying, p_id character varying) IS '문서 파일 메타 등록 — 물리 저장 완료 후 호출. HWP_SRC는 작성자만. 사용자 첨부는 문서당 5개. PDF 완료본은 결재 잠금이어도 등록';
+COMMENT ON FUNCTION sasshaccp.sp_tbl_document_file_c_000(p_co_cd character varying, p_doc_idx bigint, p_file_kind character varying, p_file_nm character varying, p_file_path character varying, p_file_size bigint, p_mime_type character varying, p_id character varying) IS '문서 파일 메타 등록 — 물리 저장 완료 후 호출. HWP_SRC·ATTACH·PHOTO는 문서 작성자 또는 ADMIN·HACCP_MASTER. 사용자 첨부는 문서당 5개. PDF 완료본은 결재 잠금이어도 등록';
 
 
 --
@@ -4545,9 +4606,16 @@ BEGIN
     IF v_status IN ('REQ', 'APV') THEN
         RAISE EXCEPTION '결재 진행 중이거나 완료된 문서의 파일은 삭제할 수 없습니다.' USING ERRCODE = '45000';
     END IF;
-    -- 본문(HWP_SRC)일 때(= 헤더와 같은 작성 권한) 작성자만 삭제. 첨부는 결재첨부 화면이 맡는다
-    IF upper(trim(v_kind)) = 'HWP_SRC' AND v_writer IS DISTINCT FROM p_id THEN
-        RAISE EXCEPTION '작성자 본인의 작성중 또는 반려 문서만 수정할 수 있습니다.' USING ERRCODE = '45000';
+    -- 문서 헤더 작성자 또는 관리자만. 파일 ins_id 는 보지 않는다. 기생 첨부는 작성자가 지운다
+    IF v_writer IS DISTINCT FROM p_id
+       AND NOT EXISTS (
+           SELECT 1 FROM tbl_user u
+            WHERE u.co_cd = p_co_cd
+              AND u.user_id = p_id
+              AND u.use_yn = 'Y'
+              AND upper(u.usrgrp_cd) IN ('ADMIN', 'HACCP_MASTER')
+       ) THEN
+        RAISE EXCEPTION '작성자 본인 또는 관리자만 삭제할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
 
     DELETE FROM tbl_document_file
@@ -4560,7 +4628,7 @@ END$$;
 -- Name: PROCEDURE sp_tbl_document_file_d_000(IN p_co_cd character varying, IN p_file_idx bigint, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_file_d_000(IN p_co_cd character varying, IN p_file_idx bigint, IN p_id character varying) IS '문서 파일 메타 삭제 — 물리 파일 제거 전 잠금 검사. HWP_SRC는 작성자만';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_document_file_d_000(IN p_co_cd character varying, IN p_file_idx bigint, IN p_id character varying) IS '문서 파일 메타 삭제 — 물리 파일 제거 전 잠금 검사. 문서 작성자 또는 ADMIN·HACCP_MASTER. 파일 ins_id 는 보지 않는다';
 
 
 --
@@ -5484,9 +5552,9 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_hyg_process_c_000(p_co_cd character varying
 CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_hyg_process_d_000(IN p_co_cd character varying, IN p_doc_idx bigint, IN p_id character varying)
     LANGUAGE plpgsql
     AS $$
-DECLARE v_status varchar; v_hdr bigint;
+DECLARE v_status varchar; v_hdr bigint; v_writer varchar;
 BEGIN
-    SELECT d.status, h.idx INTO v_status, v_hdr
+    SELECT d.status, h.idx, d.writer_id INTO v_status, v_hdr, v_writer
       FROM tbl_document d
       JOIN tbl_hyg_process h ON h.doc_idx = d.idx AND h.co_cd = d.co_cd
      WHERE d.co_cd = p_co_cd AND d.idx = p_doc_idx AND d.del_yn = 'N';
@@ -5496,6 +5564,17 @@ BEGIN
     -- 전송대기(WRK·RJT)가 아닐 때(= 전송·결재완료) 삭제 차단. 전송취소를 먼저 해야 한다
     IF v_status NOT IN ('WRK', 'RJT') THEN
         RAISE EXCEPTION '전송한 문서는 삭제할 수 없습니다. 전송취소 후 삭제하세요.' USING ERRCODE = '45000';
+    END IF;
+    -- 작성자가 아니고 관리자도 아닐 때(= 남의 초안) 삭제 차단. 퇴사자 초안은 ADMIN·HACCP_MASTER 가 치운다
+    IF v_writer IS DISTINCT FROM p_id
+       AND NOT EXISTS (
+           SELECT 1 FROM tbl_user u
+            WHERE u.co_cd = p_co_cd
+              AND u.user_id = p_id
+              AND u.use_yn = 'Y'
+              AND upper(u.usrgrp_cd) IN ('ADMIN', 'HACCP_MASTER')
+       ) THEN
+        RAISE EXCEPTION '작성자 본인 또는 관리자만 삭제할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
     -- 완료(DONE)된 개선조치는 원문서를 지워도 남긴다. 조치 기록이 초안 삭제로 사라지면 안 된다.
     -- 개선조치 목록은 LEFT JOIN tbl_document 이라 원문서가 없어도 문서 칸만 빈 채로 보인다
@@ -6013,6 +6092,9 @@ CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_schedule_task_generate_c_000(IN p_c
     LANGUAGE plpgsql
     AS $_$
 BEGIN
+    IF COALESCE(p_co_cd, '') = '' THEN
+        RAISE EXCEPTION '과제 생성 대상 회사가 없습니다.' USING ERRCODE = '45000';
+    END IF;
     IF COALESCE(p_base_dt, '') !~ '^[0-9]{8}$' THEN
         RAISE EXCEPTION '과제 생성 기준일 형식이 올바르지 않습니다.' USING ERRCODE = '45000';
     END IF;
@@ -6020,7 +6102,7 @@ BEGIN
     -- 마감 경과 미작성분 지연 처리 — 당일은 마감시각까지 기다린다
     UPDATE tbl_schedule_task
        SET status = 'LATE', upd_id = p_id, upd_dt = now()
-     WHERE (COALESCE(p_co_cd, '') = '' OR co_cd = p_co_cd)
+     WHERE co_cd = p_co_cd
        AND status IN ('TODO', 'ING')
        AND (due_dt < p_base_dt
             OR (due_dt = p_base_dt AND COALESCE(due_time, '2359') < to_char(now(), 'HH24MI')));
@@ -7720,7 +7802,7 @@ CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_document_assert_seen_r_000(
     p_co_cd character varying,
     -- p_doc_idx: tbl_document.idx — 0 이하면 검사 생략
     p_doc_idx bigint,
-    -- p_seen: 화면이 상세에서 받은 스탬프. 비면 통과(신규·첫 저장)
+    -- p_seen: 화면이 상세에서 받은 스탬프. 문서가 있는데 비면 거절
     p_seen character varying
 )
     LANGUAGE plpgsql
@@ -7733,9 +7815,9 @@ BEGIN
     IF p_doc_idx IS NULL OR p_doc_idx <= 0 THEN
         RETURN;
     END IF;
-    -- 빈 스탬프일 때(= 화면이 아직 못 받음) 막지 않는다
+    -- 문서가 있는데 스탬프가 비면(= 화면이 안 보냄) 경합을 못 본다
     IF p_seen IS NULL OR btrim(p_seen) = '' THEN
-        RETURN;
+        RAISE EXCEPTION '다른 사용자가 먼저 저장했습니다. 다시 조회 후 저장하세요.' USING ERRCODE = '45000';
     END IF;
     SELECT to_char(COALESCE(d.upd_dt, d.ins_dt), 'YYYY-MM-DD"T"HH24:MI:SS.US')
       INTO v_cur

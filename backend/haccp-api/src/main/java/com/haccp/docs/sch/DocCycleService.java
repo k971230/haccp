@@ -32,6 +32,7 @@ import com.haccp.common.exception.BizException;
 import com.haccp.sys.logs.auditlog.AuditWriter;
 // 역할 — 날짜 계산·컬렉션
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -72,6 +73,10 @@ public class DocCycleService {
     // 며칠간 로그인이 없으면 휴면으로 보고 알림을 만들지 않을지 — 0 이하면 안 거른다
     @Value("${app.schedule.dormant-days:30}")
     private int dormantDays;
+
+    // 예정일 생성 기준 달력 — JVM 기본 TZ 가 UTC 여도 서울을 쓴다
+    @Value("${app.timezone:Asia/Seoul}")
+    private String timezone = "Asia/Seoul";
 
     /**
      * 개발자: 박승우
@@ -267,15 +272,15 @@ public class DocCycleService {
         Set<LocalDate> workdays = loadWorkdays(coCd);
         // LinkedHashSet — 생성기가 정렬해 주지만 문자열 변환 후에도 중복이 없음을 보장한다
         Set<String> out = new LinkedHashSet<>();
-        for (LocalDate date : generator.generate(spec, LocalDate.now(), generateMonths, workdays)) out.add(date.format(YMD));
+        for (LocalDate date : generator.generate(spec, today(), generateMonths, workdays)) out.add(date.format(YMD));
         return new ArrayList<>(out);
     }
 
     /** 회사 영업일 전환을 LocalDate 집합으로 읽는다. 생성 구간보다 넓게 잡아 이동이 빠지지 않게 한다 */
     private Set<LocalDate> loadWorkdays(String coCd) {
         if (coCd == null || coCd.isBlank()) return Set.of();
-        LocalDate from = LocalDate.now().minusMonths(1);
-        LocalDate to = LocalDate.now().plusMonths(generateMonths + 1);
+        LocalDate from = today().minusMonths(1);
+        LocalDate to = today().plusMonths(generateMonths + 1);
         List<String> rows = mapper.selectWorkdays(coCd, from.format(YMD), to.format(YMD));
         if (rows == null || rows.isEmpty()) return Set.of();
         Set<LocalDate> out = new LinkedHashSet<>();
@@ -330,6 +335,10 @@ public class DocCycleService {
         String code = text(tmplCd);
         if (code.isEmpty()) throw new BizException("양식을 선택하세요.");
         return code;
+    }
+
+    private LocalDate today() {
+        return LocalDate.now(ZoneId.of(timezone));
     }
 
     /** yyyyMMdd 또는 yyyy-MM-dd 를 LocalDate로 바꾼다. 형식이 아니면 null */

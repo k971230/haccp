@@ -23,8 +23,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.haccp.common.context.LoginUser;
 import com.haccp.common.context.LoginUserContext;
+import com.haccp.common.exception.BizException;
 import com.haccp.docs.documents.dto.DocumentFileRow;
 import com.haccp.docs.documents.dto.DocumentHeaderRow;
 import com.haccp.docs.templates.RhwpCliClient;
@@ -93,6 +97,7 @@ class DocumentServiceUploadTest {
         when(mapper.selectFiles("0000", 1L)).thenReturn(List.of(old));
         DocumentHeaderRow header = new DocumentHeaderRow();
         header.setTmplCd("hwp_sys_001");
+        header.setWriterId("admin");
         when(mapper.selectDocument("0000", 1L)).thenReturn(header);
         when(mapper.insertFile(anyString(), anyLong(), anyString(), anyString(), anyString(),
                 anyLong(), anyString(), anyString())).thenReturn(11L);
@@ -160,5 +165,43 @@ class DocumentServiceUploadTest {
         service.upload(1L, "HWP_SRC", hwpx(), null);
 
         verify(storage, never()).delete(eq(same));
+    }
+
+    @Test
+    void 업로드로_PDF를_올리면_막는다() {
+        MockMultipartFile pdf = new MockMultipartFile(
+                "file", "완료.pdf", "application/pdf", new byte[] { 1 });
+        BizException ex = assertThrows(BizException.class, () -> service.upload(1L, "PDF", pdf, null));
+        assertEquals("파일 구분이 올바르지 않습니다.", ex.getMessage());
+    }
+
+    @Test
+    void 남의_초안에_첨부를_올리면_막는다() {
+        DocumentHeaderRow header = new DocumentHeaderRow();
+        header.setTmplCd("hwp_sys_001");
+        header.setWriterId("user_b");
+        when(mapper.selectDocument("0000", 1L)).thenReturn(header);
+        MockMultipartFile att = new MockMultipartFile(
+                "file", "증빙.jpg", "image/jpeg", new byte[] { 1 });
+        BizException ex = assertThrows(BizException.class, () -> service.upload(1L, "ATTACH", att, null));
+        assertEquals("작성자 본인 또는 관리자만 파일을 추가할 수 있습니다.", ex.getMessage());
+        verify(mapper, never()).insertFile(anyString(), anyLong(), anyString(), anyString(),
+                anyString(), anyLong(), anyString(), anyString());
+    }
+
+    @Test
+    void 남의_초안_첨부_삭제는_막는다() {
+        DocumentFileRow file = new DocumentFileRow();
+        file.setIdx(7L);
+        file.setDocIdx(1L);
+        file.setFileKind("ATTACH");
+        file.setFilePath("HaccpLogBooks/0000/a.jpg");
+        when(mapper.selectFile("0000", 7L)).thenReturn(file);
+        DocumentHeaderRow header = new DocumentHeaderRow();
+        header.setWriterId("user_b");
+        when(mapper.selectDocument("0000", 1L)).thenReturn(header);
+        BizException ex = assertThrows(BizException.class, () -> service.deleteFile(7L, null));
+        assertEquals("작성자 본인 또는 관리자만 삭제할 수 있습니다.", ex.getMessage());
+        verify(mapper, never()).deleteFile(any(), any(), any());
     }
 }
