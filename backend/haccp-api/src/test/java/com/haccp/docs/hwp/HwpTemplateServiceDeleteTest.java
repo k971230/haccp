@@ -2,13 +2,14 @@
  * HwpTemplateServiceDeleteTest — 사용양식 삭제.
  *
  * 개발자: 박승우
- * 일자: 2026-08-26
+ * 일자: 2026-09-10
  * 코멘트:
  *   1) 이 경로는 **한 번도 동작한 적이 없었다** — FE 가 부르던 URL 을 서빙하는
  *      컨트롤러가 없어 500 이 났고, 2026-08-26 에 되살렸다 (E2E-008)
  *   2) 그때 시험이 「시스템 양식은 안 지워진다」만 봐서 기능이 죽어도 통과했다.
  *      여기서는 **되는 것과 막는 것을 같이** 본다
  *   3) DB 없이 매퍼를 가짜로 세워 서비스 판단만 본다
+ *   4) 실물은 커밋 뒤에만 지운다 — 트랜잭션 안에서는 저장소를 안 부른다
  *
  * PIPELINE[HB123] 사용양식 업무 서비스
  */
@@ -24,15 +25,18 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.haccp.common.context.LoginUser;
+import com.haccp.common.context.LoginUserContext;
 import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteBlocker;
 import com.haccp.docs.hwp.dto.HwpTemplateDeleteItem;
 import com.haccp.docs.hwp.dto.HwpTemplateSaveRow;
+import com.haccp.docs.templates.TemplateFileStorage;
 import com.haccp.sys.logs.auditlog.AuditWriter;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -40,6 +44,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -51,8 +57,24 @@ class HwpTemplateServiceDeleteTest {
     @Mock
     private AuditWriter auditWriter;
 
+    @Mock
+    private TemplateFileStorage templateFileStorage;
+
     @InjectMocks
     private HwpTemplateService service;
+
+    @BeforeEach
+    void setUser() {
+        LoginUserContext.set(LoginUser.builder().coCd("0003").userId("admin").build());
+    }
+
+    @AfterEach
+    void clearUser() {
+        LoginUserContext.clear();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
 
     private static List<HwpTemplateDeleteItem> key(String tmplCd) {
         HwpTemplateDeleteItem k = new HwpTemplateDeleteItem();
@@ -143,5 +165,24 @@ class HwpTemplateServiceDeleteTest {
 
         verify(mapper, never()).deleteHwpTemplate(any(), any(), any());
         verify(auditWriter, never()).record(any(), any(), any(), any());
+        verify(templateFileStorage, never()).delete(any());
+    }
+
+    @Test
+    void 트랜잭션_안에서는_커밋_전에_실물을_안_지운다() {
+        when(mapper.selectDeleteBlocker(any(), any())).thenReturn(null);
+        when(mapper.selectTemplateFormPaths(eq("0003"), any())).thenReturn(List.of(
+                "CustomTemplates/0003/hwp_usr_001/a.hwpx"));
+        TransactionSynchronizationManager.initSynchronization();
+
+        service.delete(key("hwp_usr_001"));
+
+        verify(mapper).deleteHwpTemplate(eq("0003"), eq("hwp_usr_001"), eq("admin"));
+        verify(templateFileStorage, never()).delete(any());
+
+        for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
+            sync.afterCommit();
+        }
+        verify(templateFileStorage).delete("CustomTemplates/0003/hwp_usr_001/a.hwpx");
     }
 }

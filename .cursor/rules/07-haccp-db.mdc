@@ -48,8 +48,9 @@ alwaysApply: false
   (`db_sasshaccp/00_ddl.sql`)로 세션 기본값을 고정해 둔다 — JDBC `currentSchema`에만 의존하지 않는다
 - 재실행: `01_sp` 는 `CREATE OR REPLACE`. `03`·`05` 시드는 `ON CONFLICT`. `06`·`07` 은 이미 있는 행을 안 건드린다
   — `00_ddl` 53표를 `IF NOT EXISTS` 로 개작하지 않는다. `02_seed` 도 ON CONFLICT 를 안 붙인다
-  **`apply-all.sh` 는 스키마 `sasshaccp` 가 있으면 `00_ddl` 을 건너뛴다.**
+  **`apply-all.sh` 는 스키마 `sasshaccp` 가 있으면 `00_ddl` 전체를 건너뛴다.**
   `00_alter.sql` 은 건너뛰지 않는다 — 꼬리 ALTER·새 표가 이미 깐 DB 에 안 가는 구멍을 막는다.
+  주석은 `00_ddl` 하단 마커 블록을 `00_alter`·`01_sp` 다음에 다시 덮는다.
   `02_seed` 는 `tbl_screen` 이 있으면 건너뛴다. 빈 DB 에는 7본 + `00_alter` 를 깐다
 
 ## 파일 순서 (apply-all.sh)
@@ -60,13 +61,14 @@ alwaysApply: false
 
 | # | 파일 | 무엇 | 회사코드 |
 |---|---|---|---|
-| 1 | `00_ddl.sql` | 표 · 인덱스 · 제약 · 주석 · `search_path` · 자리 넓힘 `ALTER`(빈 DB) | — |
+| 1 | `00_ddl.sql` | 표 · 인덱스 · 제약 · 주석 블록 · `search_path` · 자리 넓힘 `ALTER`(빈 DB) | — |
 | — | `00_alter.sql` | 이미 깐 DB 스키마 보정 (멱등). `00_ddl` skip 과 무관하게 항상 | — |
 | 2 | `01_sp.sql` | SP (`CREATE OR REPLACE` · 이름 전건 유일) — 화면이 늘면 같이 는다. 세는 법은 아래 | — |
-| 3 | `02_seed.sql` | 표준양식 · 화면 · 메뉴 · 공통코드 · 표준 점검항목 | — |
-| 4 | `03_code_seed.sql` | 업체 공통코드 | `-v co_cd` |
-| 5 | `05_form_seed.sql` | 업체 표준양식 · 점검항목 | `-v co_cd` |
-| 6 | `06_company_seed.sql` | 업체 개설 — 회사 · 권한 · 메뉴 · 부서 · 관리자 · 결재선 · 사용양식 · 채번규칙 | `-v co_cd`(≠0000 일 때만) |
+| — | 주석 블록 | `00_ddl` 하단 마커. `00_alter`·`01_sp` 다음. 이미 깐 DB에도 덮는다. `00_alter`에 복제 금지 | — |
+| 3 | `02_seed.sql` | 회사 0000 먼저 · 화면 · 양식 · 메뉴 · 표준 점검항목 | — |
+| 4 | `06_company_seed.sql` | 업체 개설 — 회사 · 권한 · 메뉴 · 부서 · 관리자 · 결재선 · 사용양식 · 채번규칙 | `-v co_cd`(≠0000 일 때만) |
+| 5 | `03_code_seed.sql` | 업체 공통코드 | `-v co_cd` |
+| 6 | `05_form_seed.sql` | 업체 표준양식 · 점검항목 | `-v co_cd` |
 | 7 | `07_company_forms.sql` | **회사 지면 5본** — 표준에서 복사. 없으면 작성 화면에 고를 양식이 0건이다 | `-v co_cd` |
 
 `04_migrate_code_upper.sql` 은 **구 DB 전용**이라 `apply-all.sh` 가 안 돌린다.
@@ -98,9 +100,9 @@ PGHOST=... PGUSER=... PGPASSWORD=*** bash db_sasshaccp/apply-all.sh
 # 이미 깐 DB 에 업체를 더 얹을 때 — apply-all.sh 를 CO_CD=0001 로 다시 불러도 된다
 # (00_ddl·02_seed 는 건너뛴다). 업체분 4본만 직접 돌려도 같다
 P="psql -v ON_ERROR_STOP=1"
+$P -v co_cd=0001 -v co_nm='업체명' -v admin_id=admin0001 -f db_sasshaccp/06_company_seed.sql
 $P -v co_cd=0001 -f db_sasshaccp/03_code_seed.sql
 $P -v co_cd=0001 -f db_sasshaccp/05_form_seed.sql
-$P -v co_cd=0001 -v co_nm='업체명' -v admin_id=admin0001 -f db_sasshaccp/06_company_seed.sql
 $P -v co_cd=0001 -f db_sasshaccp/07_company_forms.sql
 ```
 
@@ -144,12 +146,11 @@ node scripts/gen_table_layout.mjs --check
 - `02_seed.sql` 의 표준 `tbl_template` 은 37행이고 `impl_yn` 은 **전부 `'Y'`** 다
   (`HWP`/`DOC` 27 · `HTML`/`CCP` 6 · `HTML`/`HYG` 4). `'N'` 은 `00_ddl.sql` 컬럼 DEFAULT 에만 남아 있다 —
   "미구현 N종" 을 전제로 카탈로그를 거르지 않는다
-- 표준 양식·점검항목은 **플랫폼 소유**(`co_cd` 없음). 업체별 조정은 `tbl_company_template`,
-  `tbl_company_check_item` 오버라이드 행으로만 처리하고 표준 시드를 직접 수정하지 않는다
-- 신규 테넌트는 온보딩 SP 가 없다. `03_code_seed` + `05_form_seed` + `06_company_seed` + `07_company_forms` 네 본이다 (`sp_tbl_company_init_c_000` 은 `01_sp.sql` 에 없다)
+- 표준 양식·점검항목은 **플랫폼 소유**(`co_cd='0000'`). 업체별 조정은 `tbl_company_template` 오버라이드 행으로만 처리하고 표준 시드를 직접 수정하지 않는다
+- 신규 테넌트는 온보딩 SP 가 없다. `06_company_seed` + `03_code_seed` + `05_form_seed` + `07_company_forms` 네 본이다 (`sp_tbl_company_init_c_000` 은 `01_sp.sql` 에 없다). 회사 행이 먼저다
 - 카탈로그 `tbl_template` 는 업체 행만 본다(`t.co_cd = 문서·사용양식.co_cd`). 0000 폴백 금지 — 시드가 업체에 복사한다
 - 사용양식 구분은 `tbl_company_template.sys_yn` = `sys`(시스템 제공) / `usr`(자사) — **UPDATE 대상이 아니다**. 삭제는 `usr`만 허용하고 SP가 다시 막는다
-- 양식 파일은 덮어쓰지 않는다: `tbl_company_template_file` 이력 + `current_file_idx`(적용) / `default_file_idx`(초기화 복원)
+- 양식 파일은 덮어쓰지 않는다: `tbl_company_template_file` 이력 + `current_yn`(적용) / `default_yn`(초기화 복원). 양식당 Y 는 하나(부분 유니크)
 - 문서주기는 **양식당 1건**(`ux_tbl_schedule_rule_tmpl UNIQUE(co_cd, tmpl_cd)`). 반복 상세는 `tbl_schedule_rule_detail.detail_ty`
   = `week-day` / `month-day` / `month-end` / `quarter-month` / `half-month` / `year-month` (kebab), 비영업일 `nonwork_rule` = `keep|prev|next`
   — `nonwork_rule` 은 **저장이 소문자다.** 유일한 쓰기 경로 `sp_schedule_cycle_management_c_000`(`01_sp.sql`:1864)이 `lower()` 로 접고,
@@ -186,6 +187,7 @@ java -cp "$DRV" tools/ApplyOneSql.java db_sasshaccp/01_sp.sql
 `05-handoff-comments.mdc`와 동일 밀도를 SQL에도 적용한다.
 
 - 파일 머리: 역할 / 개발자 / 일자 / 코멘트 3줄
-- 테이블마다 `COMMENT ON TABLE`, 의미가 자명하지 않은 컬럼마다 `COMMENT ON COLUMN`
+- 표·컬럼 `COMMENT ON` 은 `00_ddl.sql` 하단 마커 블록이 정본이다. 표마다, 컬럼마다 한글명 — 한 줄. `00_alter` 에 복제하지 않는다
+- apply-all 은 `00_alter`·`01_sp` 다음에 그 블록만 다시 덮는다. 마커가 없으면 중단한다
 - SP 파라미터는 선언 바로 위에 `-- p_xxx: 무엇을 받는지 + 비었을 때 동작`
 - 판정·차단 분기는 `조건일 때(= 업무 의미)` 형식

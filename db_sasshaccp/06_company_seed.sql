@@ -17,8 +17,8 @@
 --    psql -v co_cd=0003 -v co_nm='알엠에이' -v admin_id='rmasys' -v writer_id='rmausr' -f 06_company_seed.sql
 --
 --    전체 순서:
---      00_ddl → 00_alter → 01_sp → 02_seed → 03_code_seed(-v co_cd) → 05_form_seed(-v co_cd)
---        → 06_company_seed(-v co_cd) → 07_company_forms(-v co_cd)
+--      00_ddl → 00_alter → 01_sp → 02_seed → 06_company_seed(-v co_cd)
+--        → 03_code_seed(-v co_cd) → 05_form_seed(-v co_cd) → 07_company_forms(-v co_cd)
 --      06 만 돌리고 07 을 빼면 로그인은 되는데 작성 화면에 고를 양식이 0건이다.
 --
 --  초기 비밀번호

@@ -666,9 +666,16 @@ test.describe("커스텀 그리드 — 아이디별 열 저장", () => {
 
   test("열 설정은 아이디별이다 — 다른 사용자 행을 건드리지 않는다", async ({ page }) => {
     const OTHER = '{"v":2,"hidden":{},"order":[],"sizing":{}}';
+    // user_id FK — 없는 아이디로 넣으면 23503. 로그인 회사의 다른 사용자를 쓴다
+    const otherUser = dbOne(
+      `SELECT user_id FROM tbl_user
+        WHERE co_cd='${sqlLit(loginCoCd())}' AND user_id <> '${sqlLit(loginUserId())}'
+        ORDER BY user_id LIMIT 1`,
+    );
+    expect(otherUser, "아이디 분리 시험에 쓸 다른 사용자가 없다").not.toBe("");
     dbOne(
       `INSERT INTO tbl_grid_pref (co_cd, user_id, scrn_cd, grid_id, pref_json, ins_id)
-       VALUES ('${sqlLit(loginCoCd())}','e2e_other','${DATA_SCRN_CD}','${DATA_GRID_ID}','${OTHER}','e2e')`,
+       VALUES ('${sqlLit(loginCoCd())}','${sqlLit(otherUser)}','${DATA_SCRN_CD}','${DATA_GRID_ID}','${OTHER}','e2e')`,
     );
 
     const wrap = await openData(page);
@@ -683,7 +690,7 @@ test.describe("커스텀 그리드 — 아이디별 열 저장", () => {
         `(SELECT count(*) FROM jsonb_each(pref_json::jsonb->'hidden'))`,
         DATA_SCRN_CD,
         DATA_GRID_ID,
-        "e2e_other",
+        otherUser,
       ),
       "다른 사용자의 열 설정을 덮어썼다",
     ).toBe("0");

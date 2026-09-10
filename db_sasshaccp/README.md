@@ -2,17 +2,22 @@
 
 PostgreSQL `sasshaccp` 스키마 **정본**. 시드 7본이 곧 데이터다. `00_alter.sql` 은 이미 깐 DB 스키마 보정이고 시드가 아니다.
 
+질의용 로컬 클라이언트는 17 이어도 된다. **덤프·복원·운영 서버는 postgres 16** 이다.
+로컬 17 `pg_dump` 가 만든 파일은 헤더 1.16 이라 16 `pg_restore` 가 거절한다.
+뽑을 때는 `bash scripts/db_dump.sh`.
+
 ## 파이프라인
 
 ```
-00_ddl        구조        표 · 인덱스 · 제약 (수는 docs/10) 회사코드 없음
+00_ddl        구조        표 · 인덱스 · 제약 · 주석 블록 (수는 docs/10) 회사코드 없음
 00_alter      보정        이미 깐 DB 스키마 진화 (멱등)     회사코드 없음 — 시드 7본이 아니다. apply-all 이 항상 돈다
 01_sp         로직        SP·함수 (수는 docs/9)            회사코드 없음
+주석 블록     설명        00_ddl 하단 마커. 00_alter·01_sp 다음. 이미 깐 DB에도 덮는다
 02_seed       플랫폼 기준  화면 · 양식 · 0000 업체          0000 고정
      │
+     ├─ 06_company_seed 업체·계정·결재선·사용양식   -v co_cd=  업체별 — 회사 행이 먼저
      ├─ 03_code_seed    공통코드                    -v co_cd=  업체별
      ├─ 05_form_seed    HTML 표준 지면 항목         -v co_cd=  업체별
-     ├─ 06_company_seed 업체·계정·결재선·사용양식   -v co_cd=  업체별
      ├─ 07_company_forms 회사 지면 5본 복사         -v co_cd=  업체별
 04_migrate_code_upper  구 DB 1회용 — 신규 설치에는 안 쓴다
 08·09·10·11·12 는 운영·시험에 적용한 뒤 지웠다. 시드 정본은 7본이다. 00_alter 는 그 밖에 항상 돈다.
@@ -49,16 +54,16 @@ psql -v co_cd=0000 -f 07_company_forms.sql
 
 **SQL 파일을 새로 만들지 않는다.** `02_seed.sql` 에 업체를 넣지 않는다.
 이미 깔린 DB 에 `apply-all.sh` 를 다시 불러도 된다. 스키마가 있으면 `00_ddl` 과
-`02_seed` 를 건너뛰고 `00_alter` → `01_sp` 부터 돈다. 업체만 더 얹을 때는 업체분 4본만 직접 돌려도 된다.
+`02_seed` 를 건너뛰고 `00_alter` → `01_sp` → 주석 블록부터 돈다. 업체만 더 얹을 때는 업체분 4본만 직접 돌려도 된다.
 
 ```sh
 export PGHOST=호스트 PGUSER=계정 PGPASSWORD=*** PGDATABASE=sasshaccp
 P="psql -v ON_ERROR_STOP=1"
 
-$P -v co_cd=0004 -f 03_code_seed.sql
-$P -v co_cd=0004 -f 05_form_seed.sql
 $P -v co_cd=0004 -v co_nm='업체한글명' -v admin_id=팀장아이디 -v writer_id=팀원아이디 \
    -f 06_company_seed.sql
+$P -v co_cd=0004 -f 03_code_seed.sql
+$P -v co_cd=0004 -f 05_form_seed.sql
 $P -v co_cd=0004 -f 07_company_forms.sql
 ```
 
@@ -92,7 +97,7 @@ $P -v co_cd=0004 -f 07_company_forms.sql
 
 계정과 결재선은 시드가 이미 넣는다. 화면에서 팀원을 다시 만들거나 `APPROVE` 를 UPDATE 하지 않는다.
 
-`psql` 이 PATH 에 없으면 `apply-all.sh` 가 실패한다. 그때는 같은 네 변수를 넘겨 `03_code_seed.sql` → `05_form_seed.sql` → `06_company_seed.sql` → `07_company_forms.sql` 만 순서대로 적용한다 (`00`·`01`·`02` 는 이미 있는 플랫폼이라 건너뛴다).
+`psql` 이 PATH 에 없으면 `apply-all.sh` 가 실패한다. 그때는 같은 네 변수를 넘겨 `06_company_seed.sql` → `03_code_seed.sql` → `05_form_seed.sql` → `07_company_forms.sql` 만 순서대로 적용한다 (`00`·`01`·`02` 는 이미 있는 플랫폼이라 건너뛴다). 회사 행이 공통코드·양식보다 먼저다.
 
 메뉴·화면권한 INSERT 를 업체마다 손으로 적지 않는다. **0000 을 복제**하므로 화면이 늘면 `02_seed.sql` 한 곳만 고친다.
 
@@ -176,7 +181,7 @@ node ../tools/q.mjs "INSERT INTO tbl_notification(co_cd,noti_type_cd,user_id,tit
 - 규칙: `.cursor/rules/07-haccp-db.mdc`
 - 화면 전수표: [`../docs/3_화면_지도.md`](../docs/3_화면_지도.md) — 생성기가 만든다
 - SP → 표 전수표: [`../docs/9_SP_색인.md`](../docs/9_SP_색인.md) — 생성기가 만든다
-- E2E 결과: [`../E2E.md`](../E2E.md) · [`../E2E_ERRORS.md`](../E2E_ERRORS.md)
+- E2E: [`../docs/6_테스트.md`](../docs/6_테스트.md)
 - 배포: `Dockerfile.migrate` (컨테이너에서 `apply-all.sh` 실행)
 
 ## 변경

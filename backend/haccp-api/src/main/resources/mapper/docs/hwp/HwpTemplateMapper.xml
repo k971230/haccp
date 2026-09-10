@@ -7,7 +7,7 @@ HwpTemplateMapper.xml — 사용양식관리 sp_hwp_template_management_* 호출
 코멘트:
   1) 조회는 TABLE FUNCTION, 저장·적용은 PostgreSQL PROCEDURE를 호출한다
   2) 조회 resultType 은 DTO. map-underscore-to-camel-case 가 snake 컬럼을 맞춘다
-  3) 삭제는 차단 검사(blocker)를 먼저 부르고 sp_tbl_company_template_d_000 으로 지운다
+  3) 삭제는 차단 검사(blocker)를 먼저 부르고, form_path 를 모은 뒤 sp_tbl_company_template_d_000 으로 지운다
 
 PIPELINE[HB123] 사용양식 MyBatis XML
 PIPELINE[HB92, HB88] 연관 모듈
@@ -79,6 +79,22 @@ PIPELINE[HB92, HB88] 연관 모듈
                 #{cd, jdbcType=VARCHAR}
             </foreach>
         )
+    </select>
+
+    <!--
+      삭제 대상 form_path — 이력 del_yn=Y 포함.
+      불러오기 SP 는 산 이력만 줘서, 디스크를 비우려면 표를 직접 읽는다.
+      커밋 뒤에 CustomTemplates 만 지운다. 표준 공유 경로는 저장소가 건너뛴다.
+    -->
+    <select id="selectTemplateFormPaths" resultType="string">
+        SELECT f.form_path
+          FROM tbl_company_template_file f
+         WHERE f.co_cd = #{coCd, jdbcType=VARCHAR}
+           AND f.tmpl_cd IN
+           <foreach collection="tmplCds" item="cd" open="(" separator="," close=")">
+               #{cd, jdbcType=VARCHAR}
+           </foreach>
+           AND NULLIF(btrim(f.form_path), '') IS NOT NULL
     </select>
 
     <!--

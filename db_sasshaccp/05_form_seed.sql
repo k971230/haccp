@@ -26,6 +26,23 @@ SET search_path TO sasshaccp;
 
 BEGIN;
 
+-- 표준 지면(*_000)의 부모 카탈로그. 없으면 check_item FK(fk_tbl_check_item_tmpl)가 선다
+INSERT INTO tbl_template (
+    co_cd, tmpl_cd, tmpl_nm, doc_kind, category_cd, default_cycle_cd,
+    default_retention_month, ver_no, impl_yn, sort_no, use_yn, ins_id, ins_dt
+)
+SELECT v.co_cd, v.tmpl_cd, v.tmpl_nm, 'HTML', 'CCP', v.cycle, 24, 1, 'N', v.sort_no, 'Y', 'system', now()
+  FROM (VALUES
+    ('0000', 'html_ccp_chk_000', 'CCP 검증점검 표준(가상)', 'M', 9001),
+    ('0000', 'html_ccp_htg_000', 'CCP 가열 표준(가상)', 'D', 9002),
+    ('0000', 'html_ccp_mtl_000', 'CCP 금속검출 표준(가상)', 'D', 9003),
+    ('0000', 'html_ccp_pkg_000', 'CCP 포장 표준(가상)', 'D', 9004)
+  ) AS v(co_cd, tmpl_cd, tmpl_nm, cycle, sort_no)
+ WHERE NOT EXISTS (
+   SELECT 1 FROM tbl_template t
+    WHERE t.co_cd = v.co_cd AND t.tmpl_cd = v.tmpl_cd
+ );
+
 -- ------------------------------------------------------------
 -- 1. 표준 지면 항목 — 5종. 플랫폼 공용이라 co_cd 가 없다
 -- ------------------------------------------------------------
@@ -168,8 +185,8 @@ INSERT INTO tmp_item(tmpl_cd, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input
 ○ 공통 : 개선조치 시
  - 문제 발생 시 HACCP팀장에게 보고 후 조치하며, 개선조치 후 모니터링 일지에 기록 후 HACCP팀장에게 승인을 받는다.', 'TEXT', '', 'Y');
 
-INSERT INTO tbl_check_item(tmpl_cd, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, use_yn, ins_id, ins_dt)
-SELECT t.tmpl_cd, t.item_cd, t.sort_no,
+INSERT INTO tbl_check_item(co_cd, tmpl_cd, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, use_yn, ins_id, ins_dt)
+SELECT '0000', t.tmpl_cd, t.item_cd, t.sort_no,
        NULLIF(t.cycle_nm, ''), NULLIF(t.grp_nm, ''), t.item_nm,
        t.input_type, NULLIF(t.unit_nm, ''), t.use_yn, 'system', now()
   FROM tmp_item t
@@ -186,7 +203,8 @@ ON CONFLICT ON CONSTRAINT ux_tbl_check_item DO UPDATE
 
 -- 시드에 없는 표준 항목은 지운다 — 자사 양식(_001 이상)은 대상이 아니다
 DELETE FROM tbl_check_item c
- WHERE c.tmpl_cd IN (SELECT DISTINCT tmpl_cd FROM tmp_item)
+ WHERE c.co_cd = '0000'
+   AND c.tmpl_cd IN (SELECT DISTINCT tmpl_cd FROM tmp_item)
    AND NOT EXISTS (
        SELECT 1 FROM tmp_item t
         WHERE t.tmpl_cd = c.tmpl_cd AND t.item_cd = c.item_cd
@@ -202,8 +220,8 @@ INSERT INTO tbl_template (
 SELECT :'co_cd', s.tmpl_cd, s.tmpl_nm, s.mng_no, s.doc_kind, s.category_cd, s.scrn_cd,
        s.default_cycle_cd, s.default_retention_month, 1, 'Y', s.sort_no, 'Y', 'system', now()
   FROM (VALUES
-    ('html_sys_001', '일반위생관리 및 공정점검표', '1', 'HTML', 'HYG', 'hygiene-process-check', 'D', 24, 101),
-    ('html_sys_006', '중요관리점(CCP) 검증점검표', 'HA-CCP-07', 'HTML', 'CCP', 'ccp-verification-check', 'M', 24, 4)
+    ('html_sys_001', '일반위생관리 및 공정점검표', '1', 'HTML', 'HYG', 'hyg-process', 'D', 24, 101),
+    ('html_sys_006', '중요관리점(CCP) 검증점검표', 'HA-CCP-07', 'HTML', 'CCP', 'ccp-verify', 'M', 24, 4)
   ) AS s(tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd, default_cycle_cd, default_retention_month, sort_no)
  WHERE NOT EXISTS (
      SELECT 1 FROM tbl_template t WHERE t.co_cd = :'co_cd' AND t.tmpl_cd = s.tmpl_cd
