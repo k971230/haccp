@@ -54,8 +54,44 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_tbl_notification_dedup
 -- 예전에는 tmpl_cd 전역 UNIQUE 였다. 0000 이 html_hyg_prc_001~012 를 쓰면
 -- 0003 첫 복사가 013 이 됐다. 자사 HTML 은 회사 안에서 001 부터 채번한다.
 -- 표준(html_sys_001, hwp_sys_*) 은 계속 co_cd=0000 한 줄이다.
-ALTER TABLE sasshaccp.tbl_template DROP CONSTRAINT IF EXISTS ux_tbl_template;
-ALTER TABLE sasshaccp.tbl_template ADD CONSTRAINT ux_tbl_template UNIQUE (co_cd, tmpl_cd);
+--
+-- 자식 FK 가 물면 DROP UNIQUE 가 죽는다. 의존 FK 만 떼고 UK 를 바꾼다.
+-- 옛 FK 정의(tmpl_cd 단독 참조)를 다시 붙이면 새 UK (co_cd, tmpl_cd) 에 안 맞아 또 죽는다.
+-- 재부착은 파일 하단 IF NOT EXISTS 가 새 키로 한다. 중간에 멈춰도 다시 돌리면 스킵+하단이 채운다.
+DO $$
+DECLARE
+  v_cols text[];
+  r record;
+BEGIN
+  SELECT array_agg(a.attname::text ORDER BY u.ord)
+    INTO v_cols
+    FROM pg_constraint c
+    JOIN pg_class t ON t.oid = c.conrelid
+    JOIN pg_namespace n ON n.oid = t.relnamespace
+    JOIN unnest(c.conkey) WITH ORDINALITY AS u(attnum, ord) ON true
+    JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = u.attnum
+   WHERE n.nspname = 'sasshaccp'
+     AND t.relname = 'tbl_template'
+     AND c.conname = 'ux_tbl_template'
+     AND c.contype = 'u';
+  -- 이미 (co_cd, tmpl_cd) 이면 자식 FK 를 떼지 않는다
+  IF v_cols IS NOT NULL AND v_cols = ARRAY['co_cd', 'tmpl_cd']::text[] THEN
+    RETURN;
+  END IF;
+  FOR r IN
+    SELECT n.nspname AS sch, cl.relname AS tbl, con.conname
+      FROM pg_constraint con
+      JOIN pg_class cl ON cl.oid = con.conrelid
+      JOIN pg_namespace n ON n.oid = cl.relnamespace
+     WHERE con.contype = 'f'
+       AND con.confrelid = 'sasshaccp.tbl_template'::regclass
+  LOOP
+    EXECUTE format('ALTER TABLE %I.%I DROP CONSTRAINT IF EXISTS %I', r.sch, r.tbl, r.conname);
+  END LOOP;
+  ALTER TABLE sasshaccp.tbl_template DROP CONSTRAINT IF EXISTS ux_tbl_template;
+  ALTER TABLE sasshaccp.tbl_template ADD CONSTRAINT ux_tbl_template UNIQUE (co_cd, tmpl_cd);
+END
+$$;
 
 --
 -- 변경 감사 로그 — 화면코드 직저. 이미 도는 DB 용. 다시 돌려도 결과가 같다
@@ -106,8 +142,41 @@ ALTER TABLE sasshaccp.tbl_check_item
 UPDATE sasshaccp.tbl_check_item SET co_cd = '0000' WHERE co_cd IS NULL;
 ALTER TABLE sasshaccp.tbl_check_item
     ALTER COLUMN co_cd SET NOT NULL;
-ALTER TABLE sasshaccp.tbl_check_item DROP CONSTRAINT IF EXISTS ux_tbl_check_item;
-ALTER TABLE sasshaccp.tbl_check_item ADD CONSTRAINT ux_tbl_check_item UNIQUE (co_cd, tmpl_cd, item_cd);
+-- 자식 FK 가 생기면 여기도 같은 구멍이다. 의존 FK 만 떼고 UK 를 바꾼다. 재부착은 하단.
+DO $$
+DECLARE
+  v_cols text[];
+  r record;
+BEGIN
+  SELECT array_agg(a.attname::text ORDER BY u.ord)
+    INTO v_cols
+    FROM pg_constraint c
+    JOIN pg_class t ON t.oid = c.conrelid
+    JOIN pg_namespace n ON n.oid = t.relnamespace
+    JOIN unnest(c.conkey) WITH ORDINALITY AS u(attnum, ord) ON true
+    JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = u.attnum
+   WHERE n.nspname = 'sasshaccp'
+     AND t.relname = 'tbl_check_item'
+     AND c.conname = 'ux_tbl_check_item'
+     AND c.contype = 'u';
+  -- 이미 (co_cd, tmpl_cd, item_cd) 이면 자식 FK 를 떼지 않는다
+  IF v_cols IS NOT NULL AND v_cols = ARRAY['co_cd', 'tmpl_cd', 'item_cd']::text[] THEN
+    RETURN;
+  END IF;
+  FOR r IN
+    SELECT n.nspname AS sch, cl.relname AS tbl, con.conname
+      FROM pg_constraint con
+      JOIN pg_class cl ON cl.oid = con.conrelid
+      JOIN pg_namespace n ON n.oid = cl.relnamespace
+     WHERE con.contype = 'f'
+       AND con.confrelid = 'sasshaccp.tbl_check_item'::regclass
+  LOOP
+    EXECUTE format('ALTER TABLE %I.%I DROP CONSTRAINT IF EXISTS %I', r.sch, r.tbl, r.conname);
+  END LOOP;
+  ALTER TABLE sasshaccp.tbl_check_item DROP CONSTRAINT IF EXISTS ux_tbl_check_item;
+  ALTER TABLE sasshaccp.tbl_check_item ADD CONSTRAINT ux_tbl_check_item UNIQUE (co_cd, tmpl_cd, item_cd);
+END
+$$;
 
 ALTER TABLE sasshaccp.tbl_screen
     ADD COLUMN IF NOT EXISTS co_cd character varying(10);
