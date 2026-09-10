@@ -153,9 +153,13 @@ test.describe("HTML 양식 원본 5화면", () => {
      */
     await expect(stdRow, "표준 양식이 목록에서 사라졌다").toBeVisible();
     expect(
-      dbOne(`SELECT count(*) FROM tbl_template WHERE tmpl_cd='${target.std}'`),
-      "표준이 DB 행으로 새로 생겼다 — 복사본이 표준을 덮어쓴 것이다",
+      dbOne(`SELECT count(*) FROM tbl_template WHERE tmpl_cd='${target.std}' AND co_cd='${sqlLit(loginCoCd())}'`),
+      "복사본이 표준 코드를 회사 양식으로 덮어쓴 것이다",
     ).toBe("0");
+    expect(
+      Number(dbOne(`SELECT count(*) FROM tbl_template WHERE tmpl_cd='${target.std}' AND co_cd='0000'`)),
+      "플랫폼 표준 양식 행이 없다",
+    ).toBeGreaterThan(0);
   });
 
   /*

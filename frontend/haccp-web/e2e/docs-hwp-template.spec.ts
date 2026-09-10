@@ -44,6 +44,10 @@ function purge(): void {
                         WHERE tmpl_nm IN ('${NAME}', '${DEL_NAME}')`);
   if (!codes) return;
   dbOne(`DELETE FROM tbl_company_template_file WHERE tmpl_cd IN (${codes})`);
+  dbOne(`DELETE FROM tbl_schedule_task WHERE tmpl_cd IN (${codes})`);
+  dbOne(`DELETE FROM tbl_schedule_rule_detail WHERE tmpl_cd IN (${codes})`);
+  dbOne(`DELETE FROM tbl_schedule_rule WHERE tmpl_cd IN (${codes})`);
+  dbOne(`DELETE FROM tbl_doc_no_rule WHERE tmpl_cd IN (${codes})`);
   dbOne(`DELETE FROM tbl_company_template WHERE tmpl_cd IN (${codes})`);
   dbOne(`DELETE FROM tbl_template WHERE tmpl_cd IN (${codes})`);
 }

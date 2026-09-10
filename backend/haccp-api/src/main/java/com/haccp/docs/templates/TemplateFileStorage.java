@@ -201,6 +201,34 @@ public class TemplateFileStorage {
         }
     }
 
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-10
+     * 코멘트:
+     *   1) 자사 볼륨(CustomTemplates)의 form_path 실물만 지운다 — 이미 없으면 성공
+     *   2) 사용양식 삭제 SP 가 커밋된 뒤에 HwpTemplateService 가 부른다
+     *   3) 표준 공유(HaccpTemplates)는 건너뛴다 — 한 업체 삭제가 전 업체 원본을 지우면 안 된다
+     */
+    public void delete(
+            // DB 에 남은 상대 form_path — 표준·자사 루트 중 하나로 시작
+            String formPath
+    ) {
+        if (formPath == null || formPath.isBlank()) {
+            return;
+        }
+        // allowCreate=true 일 때(= 실물 없어도 경로만 해석) 존재하지 않는 이력도 넘어간다
+        Path target = resolveInsideTemplate(formPath, true);
+        // 표준 공유 루트일 때(= 전 업체가 같은 원본) 지우지 않는다
+        if (!target.startsWith(customRoot)) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(target);
+        } catch (IOException e) {
+            throw new BizException("템플릿 원본 파일을 삭제하지 못했습니다.");
+        }
+    }
+
     private void validateUpload(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BizException("저장할 템플릿 파일을 선택하세요.");

@@ -272,7 +272,7 @@ BEGIN
         RAISE EXCEPTION '사용 중인 양식만 작성할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
 
-    v_ver := COALESCE(NULLIF(p_payload->>'verNo', '')::int, 0);
+    v_ver := NULLIF(NULLIF(p_payload->>'verNo', '')::int, 0);
     v_auto := v_name || ' (' || substr(p_base_dt, 1, 4) || '-' || substr(p_base_dt, 5, 2) || '-' || substr(p_base_dt, 7, 2) || ')';
     v_in := NULLIF(btrim(COALESCE(p_payload->>'title', '')), '');
 
@@ -398,6 +398,9 @@ BEGIN
     DELETE FROM tbl_ccp_verify_check WHERE co_cd = p_co_cd AND idx = v_hdr;
     DELETE FROM tbl_document_approval WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
     DELETE FROM tbl_document_file WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
+    DELETE FROM tbl_document_version WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
+    UPDATE tbl_schedule_task SET doc_idx = NULL WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
+    UPDATE tbl_notification SET link_doc_idx = NULL WHERE co_cd = p_co_cd AND link_doc_idx = p_doc_idx;
     DELETE FROM tbl_document WHERE co_cd = p_co_cd AND idx = p_doc_idx;
 END$_$;
 
@@ -1226,7 +1229,7 @@ COMMENT ON PROCEDURE sasshaccp.sp_hwp_template_management_c_000(IN p_co_cd chara
 --
 -- Name: sp_hwp_template_management_ensure_default_000(character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
--- 시드가 tbl_company_template_file 을 안 넣고 default_file_idx 만 덤프 번호로 남긴 구멍을 메운다.
+-- 시드가 tbl_company_template_file 을 안 넣고 default_yn 만 비운 구멍을 메운다.
 -- 불러오기 목록·초기화가 호출한다. 카탈로그 표준 경로로 SYS 이력 1건을 만든다.
 --
 
@@ -1248,13 +1251,12 @@ BEGIN
         RETURN NULL;
     END IF;
 
-    -- default_file_idx 가 살아 있는 이력과 맞으면 그대로
+    -- default_yn=Y 인 살아 있는 이력이 있으면 그대로
     SELECT f.idx INTO v_idx
-      FROM tbl_company_template ct
-      JOIN tbl_company_template_file f
-        ON f.idx = ct.default_file_idx
-       AND f.co_cd = ct.co_cd AND f.tmpl_cd = ct.tmpl_cd AND f.del_yn = 'N'
-     WHERE ct.co_cd = p_co_cd AND ct.tmpl_cd = p_tmpl_cd;
+      FROM tbl_company_template_file f
+     WHERE f.co_cd = p_co_cd AND f.tmpl_cd = p_tmpl_cd
+       AND f.del_yn = 'N' AND f.default_yn = 'Y'
+     LIMIT 1;
     IF v_idx IS NOT NULL THEN
         RETURN v_idx;
     END IF;
@@ -1267,9 +1269,9 @@ BEGIN
      ORDER BY f.file_seq
      LIMIT 1;
     IF v_idx IS NOT NULL THEN
-        UPDATE tbl_company_template
-           SET default_file_idx = v_idx
-         WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+        UPDATE tbl_company_template_file
+           SET default_yn = CASE WHEN idx = v_idx THEN 'Y' ELSE 'N' END
+         WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND del_yn = 'N';
         RETURN v_idx;
     END IF;
 
@@ -1288,18 +1290,18 @@ BEGIN
       FROM tbl_company_template_file
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
 
-    INSERT INTO tbl_company_template_file(co_cd, tmpl_cd, file_seq, file_nm, form_path, file_size, src_ty, ins_id)
+    INSERT INTO tbl_company_template_file(co_cd, tmpl_cd, file_seq, file_nm, form_path, file_size, src_ty, default_yn, current_yn, ins_id)
     VALUES (
         p_co_cd, p_tmpl_cd, v_seq,
         regexp_replace(v_path, '^.*/', ''),
-        v_path, NULL, 'SYS', 'system'
+        v_path, NULL, 'SYS', 'Y',
+        CASE WHEN NOT EXISTS (
+            SELECT 1 FROM tbl_company_template_file
+             WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND del_yn = 'N' AND current_yn = 'Y'
+        ) THEN 'Y' ELSE 'N' END,
+        'system'
     )
     RETURNING idx INTO v_idx;
-
-    UPDATE tbl_company_template
-       SET default_file_idx = v_idx,
-           current_file_idx = COALESCE(current_file_idx, v_idx)
-     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
 
     RETURN v_idx;
 END$$;
@@ -1328,7 +1330,7 @@ DECLARE
     v_src  varchar(10);
 BEGIN
     v_idx := p_file_idx;
-    -- 초기화일 때(= fileIdx 없음) 끊긴 default_file_idx 를 카탈로그로 다시 붙인다
+    -- 초기화일 때(= fileIdx 없음) default_yn=Y 한 줄을 카탈로그로 다시 붙인다
     IF v_idx IS NULL THEN
         v_idx := sp_hwp_template_management_ensure_default_000(p_co_cd, p_tmpl_cd);
         IF v_idx IS NULL THEN
@@ -1344,10 +1346,12 @@ BEGIN
     END IF;
 
     UPDATE tbl_company_template
-       SET form_path        = CASE WHEN lower(v_src) = 'sys' THEN NULL ELSE v_path END,
-           current_file_idx = v_idx,
+       SET form_path = CASE WHEN lower(v_src) = 'sys' THEN NULL ELSE v_path END,
            upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+    UPDATE tbl_company_template_file
+       SET current_yn = CASE WHEN idx = v_idx THEN 'Y' ELSE 'N' END
+     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND del_yn = 'N';
     IF NOT FOUND THEN
         RAISE EXCEPTION '사용양식을 찾을 수 없습니다.' USING ERRCODE = '45000';
     END IF;
@@ -1384,19 +1388,23 @@ BEGIN
     SELECT COALESCE(MAX(file_seq), 0) + 1 INTO v_seq
       FROM tbl_company_template_file WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
 
-    INSERT INTO tbl_company_template_file(co_cd, tmpl_cd, file_seq, file_nm, form_path, file_size, src_ty, ins_id)
+    INSERT INTO tbl_company_template_file(co_cd, tmpl_cd, file_seq, file_nm, form_path, file_size, src_ty, default_yn, current_yn, ins_id)
     VALUES (            p_co_cd, p_tmpl_cd, v_seq,
             COALESCE(NULLIF(p_file_nm, ''), regexp_replace(p_form_path, '^.*/', '')),
-            p_form_path, p_file_size, 'USR', p_id)
+            p_form_path, p_file_size, 'USR',
+            CASE WHEN NOT EXISTS (
+                SELECT 1 FROM tbl_company_template_file
+                 WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND del_yn = 'N' AND default_yn = 'Y'
+            ) THEN 'Y' ELSE 'N' END,
+            'Y', p_id)
     RETURNING idx INTO v_idx;
 
     UPDATE tbl_company_template
-       SET form_path        = p_form_path,
-           current_file_idx = v_idx,
-           -- 기본 파일이 없을 때(= 자사양식 최초 업로드)만 기본으로 지정한다
-           default_file_idx = COALESCE(default_file_idx, v_idx),
-           upd_id = p_id, upd_dt = now()
+       SET form_path = p_form_path, upd_id = p_id, upd_dt = now()
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+    UPDATE tbl_company_template_file
+       SET current_yn = CASE WHEN idx = v_idx THEN 'Y' ELSE 'N' END
+     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND del_yn = 'N';
 END$$;
 
 
@@ -1422,10 +1430,10 @@ BEGIN
     PERFORM sp_hwp_template_management_ensure_default_000(p_co_cd, p_tmpl_cd);
     RETURN QUERY
     SELECT f.idx, f.file_seq, f.file_nm, f.file_size, upper(f.src_ty)::character varying,
-           -- 현재 적용 파일일 때(= current_file_idx 일치) 그리드 문구
-           (CASE WHEN f.idx = ct.current_file_idx THEN '현재적용' ELSE '' END)::character varying,
-           -- 기본 제공 파일일 때(= default_file_idx 일치) 그리드 문구
-           (CASE WHEN f.idx = ct.default_file_idx THEN '기본양식' ELSE '' END)::character varying,
+           -- 현재 적용 파일일 때(= current_yn=Y) 그리드 문구
+           (CASE WHEN f.current_yn = 'Y' THEN '현재적용' ELSE '' END)::character varying,
+           -- 기본 제공 파일일 때(= default_yn=Y) 그리드 문구
+           (CASE WHEN f.default_yn = 'Y' THEN '기본양식' ELSE '' END)::character varying,
            f.ins_id, f.ins_dt
       FROM tbl_company_template_file f
       JOIN tbl_company_template ct ON ct.co_cd = f.co_cd AND ct.tmpl_cd = f.tmpl_cd
@@ -1475,8 +1483,12 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_hwp_template_management_r_000(
              ELSE regexp_replace(COALESCE(NULLIF(ct.form_path, ''), t.form_path), '^.*/', '')
            END,
            ct.use_yn,
-           ct.default_file_idx,
-           ct.current_file_idx,
+           (SELECT f.idx FROM tbl_company_template_file f
+             WHERE f.co_cd = ct.co_cd AND f.tmpl_cd = ct.tmpl_cd
+               AND f.del_yn = 'N' AND f.default_yn = 'Y' LIMIT 1),
+           (SELECT f.idx FROM tbl_company_template_file f
+             WHERE f.co_cd = ct.co_cd AND f.tmpl_cd = ct.tmpl_cd
+               AND f.del_yn = 'N' AND f.current_yn = 'Y' LIMIT 1),
            (SELECT COUNT(*)::int
               FROM tbl_company_template_file f
              WHERE f.co_cd = ct.co_cd AND f.tmpl_cd = ct.tmpl_cd AND f.del_yn = 'N')
@@ -2673,6 +2685,15 @@ BEGIN
     DELETE FROM tbl_document_file
      WHERE doc_idx = p_doc_idx AND co_cd = p_co_cd;
 
+    DELETE FROM tbl_document_version
+     WHERE doc_idx = p_doc_idx AND co_cd = p_co_cd;
+
+    UPDATE tbl_schedule_task SET doc_idx = NULL
+     WHERE doc_idx = p_doc_idx AND co_cd = p_co_cd;
+
+    UPDATE tbl_notification SET link_doc_idx = NULL
+     WHERE link_doc_idx = p_doc_idx AND co_cd = p_co_cd;
+
     DELETE FROM tbl_document
      WHERE idx = p_doc_idx AND co_cd = p_co_cd;
 END;
@@ -2944,6 +2965,15 @@ BEGIN
     DELETE FROM tbl_document_file
      WHERE doc_idx = p_doc_idx AND co_cd = p_co_cd;
 
+    DELETE FROM tbl_document_version
+     WHERE doc_idx = p_doc_idx AND co_cd = p_co_cd;
+
+    UPDATE tbl_schedule_task SET doc_idx = NULL
+     WHERE doc_idx = p_doc_idx AND co_cd = p_co_cd;
+
+    UPDATE tbl_notification SET link_doc_idx = NULL
+     WHERE link_doc_idx = p_doc_idx AND co_cd = p_co_cd;
+
     DELETE FROM tbl_document
      WHERE idx = p_doc_idx AND co_cd = p_co_cd;
 END;
@@ -3133,6 +3163,9 @@ BEGIN
     DELETE FROM tbl_ccp_metal_monitor WHERE co_cd = p_co_cd AND idx = v_hdr_idx;
     DELETE FROM tbl_document_approval WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
     DELETE FROM tbl_document_file WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
+    DELETE FROM tbl_document_version WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
+    UPDATE tbl_schedule_task SET doc_idx = NULL WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
+    UPDATE tbl_notification SET link_doc_idx = NULL WHERE co_cd = p_co_cd AND link_doc_idx = p_doc_idx;
     DELETE FROM tbl_document WHERE co_cd = p_co_cd AND idx = p_doc_idx;
 END$$;
 
@@ -3276,6 +3309,16 @@ BEGIN
        SET del_yn = 'Y'
      WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd AND del_yn = 'N';
 
+    -- 주기·과제가 사용양식을 물고 있으면 헤더 DELETE 가 23503 이다. HTML 양식 _d_000 과 같다
+    DELETE FROM tbl_schedule_task
+     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+    DELETE FROM tbl_schedule_rule_detail
+     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+    DELETE FROM tbl_schedule_rule
+     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+    DELETE FROM tbl_doc_no_rule
+     WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
+
     DELETE FROM tbl_company_template WHERE co_cd = p_co_cd AND tmpl_cd = p_tmpl_cd;
 
     -- 이 회사가 직접 만든 카탈로그 행이면 함께 정리한다
@@ -3290,7 +3333,7 @@ END$$;
 -- Name: PROCEDURE sp_tbl_company_template_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON PROCEDURE sasshaccp.sp_tbl_company_template_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_id character varying) IS '사용양식 삭제 — 자사양식(usr)만 허용, 시스템 제공분은 차단. 파일 이력은 논리삭제하고 자사 카탈로그 행은 함께 정리';
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_company_template_d_000(IN p_co_cd character varying, IN p_tmpl_cd character varying, IN p_id character varying) IS '사용양식 삭제 — 자사양식(usr)만 허용, 시스템 제공분은 차단. 주기·과제·파일 이력 정리 후 자사 카탈로그 행을 지운다';
 
 
 --
@@ -4392,6 +4435,10 @@ BEGIN
     DELETE FROM tbl_document_file
      WHERE co_cd = p_co_cd
        AND doc_idx = p_doc_idx;
+    UPDATE tbl_schedule_task SET doc_idx = NULL
+     WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
+    UPDATE tbl_notification SET link_doc_idx = NULL
+     WHERE co_cd = p_co_cd AND link_doc_idx = p_doc_idx;
     DELETE FROM tbl_document
      WHERE co_cd = p_co_cd
        AND idx = p_doc_idx;
@@ -5002,7 +5049,7 @@ BEGIN
         co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
         default_cycle_cd, default_retention_month, impl_yn, sort_no, use_yn, ins_id, ins_dt
     ) VALUES (
-        p_co_cd, v_cd, v_nm, v_src.mng_no, 'HTML', v_src.category_cd, 'hygiene-process-check',
+        p_co_cd, v_cd, v_nm, v_src.mng_no, 'HTML', v_src.category_cd, 'hyg-process',
         'D', COALESCE(v_src.default_retention_month, 24), 'Y',
         COALESCE(v_src.sort_no, 101) + v_n, 'Y', p_id, now()
     );
@@ -5017,7 +5064,7 @@ BEGIN
         co_cd, tmpl_cd, ver_no, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, ins_id
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
-      FROM tbl_check_item c WHERE c.tmpl_cd = 'html_sys_001' AND c.use_yn = 'Y';
+      FROM tbl_check_item c WHERE c.co_cd = '0000' AND c.tmpl_cd = 'html_sys_001' AND c.use_yn = 'Y';
     -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
@@ -5090,7 +5137,7 @@ BEGIN
         RETURN QUERY
         SELECT c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm
           FROM tbl_check_item c
-         WHERE c.tmpl_cd = 'html_sys_001' AND c.use_yn = 'Y'
+         WHERE c.co_cd = '0000' AND c.tmpl_cd = 'html_sys_001' AND c.use_yn = 'Y'
          ORDER BY c.sort_no, c.item_cd;
         RETURN;
     END IF;
@@ -5340,7 +5387,7 @@ BEGIN
         RAISE EXCEPTION '사용 중인 양식만 작성할 수 있습니다.' USING ERRCODE = '45000';
     END IF;
 
-    v_ver := COALESCE(NULLIF(p_payload->>'verNo', '')::int, 0);
+    v_ver := NULLIF(NULLIF(p_payload->>'verNo', '')::int, 0);
     v_auto := v_name || ' (' || substr(p_base_dt, 1, 4) || '-' || substr(p_base_dt, 5, 2) || '-' || substr(p_base_dt, 7, 2) || ')';
     v_in := NULLIF(btrim(COALESCE(p_payload->>'title', '')), '');
 
@@ -5457,6 +5504,9 @@ BEGIN
     DELETE FROM tbl_hyg_process WHERE co_cd = p_co_cd AND idx = v_hdr;
     DELETE FROM tbl_document_approval WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
     DELETE FROM tbl_document_file WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
+    DELETE FROM tbl_document_version WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
+    UPDATE tbl_schedule_task SET doc_idx = NULL WHERE co_cd = p_co_cd AND doc_idx = p_doc_idx;
+    UPDATE tbl_notification SET link_doc_idx = NULL WHERE co_cd = p_co_cd AND link_doc_idx = p_doc_idx;
     DELETE FROM tbl_document WHERE co_cd = p_co_cd AND idx = p_doc_idx;
 END$$;
 
@@ -5702,7 +5752,7 @@ BEGIN
                 -- 표준 양식이고 적용 버전이 없을 때(= 시드 그대로) 플랫폼 점검항목
                 SELECT c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm
                   FROM tbl_check_item c
-                 WHERE v_std AND c.tmpl_cd = v_tmpl AND c.use_yn = 'Y' AND v_apply <= 0
+                 WHERE v_std AND c.co_cd = '0000' AND c.tmpl_cd = v_tmpl AND c.use_yn = 'Y' AND v_apply <= 0
                 UNION ALL
                 -- 표준 양식이고 적용 버전이 있을 때(= 회사가 고른 버전) 옛 버전 항목
                 SELECT i.item_cd, i.sort_no, i.cycle_nm, i.grp_nm, i.item_nm, i.input_type, i.unit_nm
@@ -6131,7 +6181,7 @@ BEGIN
         co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
         default_cycle_cd, default_retention_month, impl_yn, sort_no, use_yn, ins_id, ins_dt
     ) VALUES (
-        p_co_cd, v_cd, v_nm, v_src.mng_no, 'HTML', v_src.category_cd, 'ccp-verification-check',
+        p_co_cd, v_cd, v_nm, v_src.mng_no, 'HTML', v_src.category_cd, 'ccp-verify',
         v_cycle, COALESCE(v_src.default_retention_month, 24), 'Y',
         COALESCE(v_src.sort_no, 106) + v_n, 'Y', p_id, now()
     );
@@ -6146,7 +6196,7 @@ BEGIN
         co_cd, tmpl_cd, ver_no, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, ins_id
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
-      FROM tbl_check_item c WHERE c.tmpl_cd = 'html_ccp_chk_000' AND c.use_yn = 'Y';
+      FROM tbl_check_item c WHERE c.co_cd = '0000' AND c.tmpl_cd = 'html_ccp_chk_000' AND c.use_yn = 'Y';
     -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
@@ -6218,7 +6268,7 @@ BEGIN
         RETURN QUERY
         SELECT c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm
           FROM tbl_check_item c
-         WHERE c.tmpl_cd = 'html_ccp_chk_000' AND c.use_yn = 'Y'
+         WHERE c.co_cd = '0000' AND c.tmpl_cd = 'html_ccp_chk_000' AND c.use_yn = 'Y'
          ORDER BY c.sort_no, c.item_cd;
         RETURN;
     END IF;
@@ -6386,7 +6436,7 @@ BEGIN
         co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
         default_cycle_cd, default_retention_month, impl_yn, sort_no, use_yn, ins_id, ins_dt
     ) VALUES (
-        p_co_cd, v_cd, v_nm, 'CCP-2B', 'HTML', 'CCP', 'ccp-htg-monitor',
+        p_co_cd, v_cd, v_nm, 'CCP-2B', 'HTML', 'CCP', 'ccp-htg',
         'D', 24, 'Y', 114 + v_n, 'Y', p_id, now()
     );
     INSERT INTO tbl_company_template (
@@ -6400,7 +6450,7 @@ BEGIN
         co_cd, tmpl_cd, ver_no, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, ins_id
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
-      FROM tbl_check_item c WHERE c.tmpl_cd = 'html_ccp_htg_000' AND c.use_yn = 'Y';
+      FROM tbl_check_item c WHERE c.co_cd = '0000' AND c.tmpl_cd = 'html_ccp_htg_000' AND c.use_yn = 'Y';
     -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
@@ -6472,7 +6522,7 @@ BEGIN
         RETURN QUERY
         SELECT c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm
           FROM tbl_check_item c
-         WHERE c.tmpl_cd = 'html_ccp_htg_000' AND c.use_yn = 'Y'
+         WHERE c.co_cd = '0000' AND c.tmpl_cd = 'html_ccp_htg_000' AND c.use_yn = 'Y'
          ORDER BY c.sort_no, c.item_cd;
         RETURN;
     END IF;
@@ -6640,7 +6690,7 @@ BEGIN
         co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
         default_cycle_cd, default_retention_month, impl_yn, sort_no, use_yn, ins_id, ins_dt
     ) VALUES (
-        p_co_cd, v_cd, v_nm, 'CCP-3P', 'HTML', 'CCP', 'ccp-mtl-monitor',
+        p_co_cd, v_cd, v_nm, 'CCP-3P', 'HTML', 'CCP', 'ccp-mtl',
         'D', 24, 'Y', 115 + v_n, 'Y', p_id, now()
     );
     INSERT INTO tbl_company_template (
@@ -6654,7 +6704,7 @@ BEGIN
         co_cd, tmpl_cd, ver_no, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, ins_id
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
-      FROM tbl_check_item c WHERE c.tmpl_cd = 'html_ccp_mtl_000' AND c.use_yn = 'Y';
+      FROM tbl_check_item c WHERE c.co_cd = '0000' AND c.tmpl_cd = 'html_ccp_mtl_000' AND c.use_yn = 'Y';
     -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
@@ -6726,7 +6776,7 @@ BEGIN
         RETURN QUERY
         SELECT c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm
           FROM tbl_check_item c
-         WHERE c.tmpl_cd = 'html_ccp_mtl_000' AND c.use_yn = 'Y'
+         WHERE c.co_cd = '0000' AND c.tmpl_cd = 'html_ccp_mtl_000' AND c.use_yn = 'Y'
          ORDER BY c.sort_no, c.item_cd;
         RETURN;
     END IF;
@@ -6894,7 +6944,7 @@ BEGIN
         co_cd, tmpl_cd, tmpl_nm, mng_no, doc_kind, category_cd, scrn_cd,
         default_cycle_cd, default_retention_month, impl_yn, sort_no, use_yn, ins_id, ins_dt
     ) VALUES (
-        p_co_cd, v_cd, v_nm, 'CCP-1B', 'HTML', 'CCP', 'ccp-pkg-monitor',
+        p_co_cd, v_cd, v_nm, 'CCP-1B', 'HTML', 'CCP', 'ccp-pkg',
         'D', 24, 'Y', 113 + v_n, 'Y', p_id, now()
     );
     INSERT INTO tbl_company_template (
@@ -6908,7 +6958,7 @@ BEGIN
         co_cd, tmpl_cd, ver_no, item_cd, sort_no, cycle_nm, grp_nm, item_nm, input_type, unit_nm, ins_id
     )
     SELECT p_co_cd, v_cd, 1, c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm, p_id
-      FROM tbl_check_item c WHERE c.tmpl_cd = 'html_ccp_pkg_000' AND c.use_yn = 'Y';
+      FROM tbl_check_item c WHERE c.co_cd = '0000' AND c.tmpl_cd = 'html_ccp_pkg_000' AND c.use_yn = 'Y';
     -- 주기는 문서주기 화면에서만 만든다. 양식 복사는 사용양식·지면만
     RETURN v_cd;
 END$_$;
@@ -6980,7 +7030,7 @@ BEGIN
         RETURN QUERY
         SELECT c.item_cd, c.sort_no, c.cycle_nm, c.grp_nm, c.item_nm, c.input_type, c.unit_nm
           FROM tbl_check_item c
-         WHERE c.tmpl_cd = 'html_ccp_pkg_000' AND c.use_yn = 'Y'
+         WHERE c.co_cd = '0000' AND c.tmpl_cd = 'html_ccp_pkg_000' AND c.use_yn = 'Y'
          ORDER BY c.sort_no, c.item_cd;
         RETURN;
     END IF;

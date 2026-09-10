@@ -119,6 +119,21 @@ public interface HwpTemplateMapper {
 
     /**
      * 개발자: 박승우
+     * 일자: 2026-09-10
+     * 코멘트:
+     *   1) 삭제 대상 양식의 form_path 를 모은다 — 이력 del_yn=Y 도 포함한다
+     *   2) SP 논리삭제 전에 불러 커밋 뒤 디스크 삭제에 넘긴다
+     *   3) 불러오기 목록 SP 는 산 이력만 줘서 여기서는 표를 직접 읽는다
+     */
+    List<String> selectTemplateFormPaths(
+            // JWT 회사코드
+            @Param("coCd") String coCd,
+            // 삭제 대상 양식코드 배열
+            @Param("tmplCds") List<String> tmplCds
+    );
+
+    /**
+     * 개발자: 박승우
      * 일자: 2026-08-26
      * 코멘트:
      *   1) 사용양식 1건을 지운다 — 파일 이력은 논리삭제, 자사 카탈로그 행은 함께 정리

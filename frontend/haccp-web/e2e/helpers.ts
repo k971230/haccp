@@ -674,26 +674,45 @@ export function seedCompany(vars: {
   runDb(body);
 }
 
-/** 업체 하나를 통째로 지운다 — 시드가 만든 표를 역순으로 비운다 */
+/**
+ * 업체 하나를 통째로 지운다.
+ * FK 가 걸린 뒤로는 표 몇 개만 지워서는 안 된다 — 감사·주기·문서 자식이 회사를 물고 있다.
+ * co_cd 칸이 있는 표를 막힐 때까지 반복해 비운 뒤 회사를 지운다.
+ */
 export function purgeCompany(coCd: string): void {
   if (!hasDbTools()) return;
   if (coCd === srcCoCd() || coCd === loginCoCd()) {
     throw new Error("시드 원본·로그인 회사는 지울 수 없다");
   }
   assertTestDb("업체 통째 삭제");
-  for (const t of [
-    "tbl_doc_no_rule",
-    "tbl_company_template",
-    "tbl_approval_line_step",
-    "tbl_approval_line",
-    "tbl_role_screen",
-    "tbl_menu",
-    "tbl_user",
-    "tbl_dept",
-    "tbl_role",
-    "tbl_code",
-    "tbl_company",
-  ]) {
-    runDb(`DELETE FROM ${t} WHERE co_cd = '${coCd}'`);
-  }
+  const raw = coCd.replace(/'/g, "''");
+  runDb(`
+    DO $purge$
+    DECLARE
+      r record;
+      i int;
+    BEGIN
+      IF current_database() IS DISTINCT FROM 'sasshaccp_test' THEN
+        RAISE EXCEPTION '클론이 아니다: %', current_database();
+      END IF;
+      FOR i IN 1..40 LOOP
+        FOR r IN
+          SELECT c.table_name
+            FROM information_schema.columns c
+           WHERE c.table_schema = 'sasshaccp'
+             AND c.column_name = 'co_cd'
+             AND c.table_name LIKE 'tbl\\_%'
+             AND c.table_name <> 'tbl_company'
+        LOOP
+          BEGIN
+            EXECUTE format('DELETE FROM %I WHERE co_cd = %L', r.table_name, '${raw}');
+          EXCEPTION WHEN foreign_key_violation THEN
+            NULL;
+          END;
+        END LOOP;
+      END LOOP;
+      DELETE FROM tbl_company WHERE co_cd = '${raw}';
+    END
+    $purge$;
+  `);
 }

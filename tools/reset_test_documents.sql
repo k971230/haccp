@@ -38,24 +38,33 @@ BEGIN
      *   hdr_idx 등   — 그 아래 행·칸 표 (tbl_hyg_process_item, *_row, *_cell …)
      * 기준정보·양식·사용자 표에는 이 컬럼들이 없어 대상에 들어오지 않는다.
      */
+    -- FK 이후에는 이름순 DELETE 가 헤더를 자식보다 먼저 친다.
+    -- 칸 → 행 → 본문헤더 순으로 세 번 돈다.
     FOR v_tbl IN
-        SELECT DISTINCT c.table_name
-          FROM information_schema.columns c
-         WHERE c.table_schema = 'sasshaccp'
-           AND c.table_name LIKE 'tbl\_%'
-           AND c.column_name IN (
-               'doc_idx', 'hdr_idx', 'monitor_idx', 'row_idx', 'chk_idx', 'src_doc_idx'
-           )
-           -- 양식(기준관리) 표는 문서가 아니다 — 지우면 작성할 양식이 사라진다
-           AND c.table_name NOT LIKE '%\_ver'
-           AND c.table_name NOT IN (
-               'tbl_company_template',
-               'tbl_template',
-               -- 작성 일정은 주기 규칙이 만든 마스터성 데이터다.
-               -- 통째로 지우면 「오늘 할일」이 비므로 아래에서 doc_idx 연결만 끊는다
-               'tbl_schedule_task'
-           )
-         ORDER BY 1
+        SELECT table_name FROM (
+            SELECT DISTINCT c.table_name,
+                   CASE c.column_name
+                     WHEN 'row_idx' THEN 1
+                     WHEN 'hdr_idx' THEN 2
+                     WHEN 'monitor_idx' THEN 2
+                     WHEN 'chk_idx' THEN 2
+                     ELSE 3
+                   END AS ord
+              FROM information_schema.columns c
+             WHERE c.table_schema = 'sasshaccp'
+               AND c.table_name LIKE 'tbl\_%'
+               AND c.column_name IN (
+                   'doc_idx', 'hdr_idx', 'monitor_idx', 'row_idx', 'chk_idx', 'src_doc_idx'
+               )
+               AND c.table_name NOT LIKE '%\_ver'
+               AND c.table_name NOT IN (
+                   'tbl_company_template',
+                   'tbl_template',
+                   'tbl_schedule_task'
+               )
+        ) x
+         GROUP BY table_name
+         ORDER BY min(ord), table_name
     LOOP
         v_sql := format('DELETE FROM %I', v_tbl);
         EXECUTE v_sql;
@@ -65,6 +74,12 @@ BEGIN
             RAISE NOTICE '  % — %건 삭제', rpad(v_tbl, 40), v_cnt;
         END IF;
     END LOOP;
+
+    -- 알림·과제는 문서 FK 가 있어 헤더보다 먼저 끊는다
+    DELETE FROM tbl_notification;
+    GET DIAGNOSTICS v_cnt = ROW_COUNT;
+    v_total := v_total + v_cnt;
+    UPDATE tbl_schedule_task SET doc_idx = NULL WHERE doc_idx IS NOT NULL;
 
     -- 문서 헤더는 마지막에 — 위에서 자식을 다 비운 뒤다
     DELETE FROM tbl_document;
@@ -79,14 +94,6 @@ END$$;
 -- 규칙 행은 남기고 카운터만 0 으로 (규칙을 지우면 문서를 못 만든다)
 UPDATE tbl_doc_no_rule
    SET last_seq = 0, last_reset_key = NULL, upd_dt = now();
-
--- 알림 — 지운 문서를 가리키는 링크가 남는다. link_doc_idx 라 위 루프에 안 잡힌다
-DELETE FROM tbl_notification;
-
--- 작성 일정 — 지운 문서에 매달린 완료 표시를 되돌린다
-UPDATE tbl_schedule_task
-   SET doc_idx = NULL
- WHERE doc_idx IS NOT NULL;
 
 COMMIT;
 

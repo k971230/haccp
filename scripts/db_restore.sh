@@ -3,11 +3,12 @@
 #  db_restore.sh — pg_dump 덤프를 되돌린다
 #
 #  개발자: 박승우
-#  일자: 2026-08-26
+#  일자: 2026-09-10
 #  코멘트:
 #    1) 백업은 있는데 되돌리는 절차가 없었다 — 되돌려 본 적 없는 백업은 백업이 아니다
 #    2) compose 의 backup 프로파일이 뜬 -Fc 덤프를 그대로 받는다
 #    3) 대상 DB 를 **지우고 다시 만든다.** 그래서 이름을 두 번 확인시킨다
+#    4) 헤더 1.16(PG 17) 이면 DROP 전에 멈춘다 — 로컬 17 pg_dump 는 scripts/db_dump.sh 로 다시 뽑는다
 #
 #  실제로 겪는 것
 #    접속이 하나라도 남아 있으면 DROP DATABASE 가 거절된다 —
@@ -26,6 +27,25 @@ DUMP="${1:?usage: db_restore.sh <덤프파일> <대상DB>}"
 TARGET="${2:?usage: db_restore.sh <덤프파일> <대상DB>}"
 
 [ -f "$DUMP" ] || { echo "덤프 파일이 없다: $DUMP"; exit 1; }
+
+# custom 덤프 헤더: PGDMP + major + minor. 1.16 은 PG 17 — postgres:16 pg_restore 가 거절한다
+# DROP 앞에 막는다. 이미 지운 뒤에 알면 대상 DB 가 빈 채로 남는다.
+if [ "$(dd if="$DUMP" bs=1 count=5 2>/dev/null)" = "PGDMP" ]; then
+  # PGDMP 다음 2바이트가 메이저·마이너 — $1/$2(덤프·대상DB)를 덮지 않는다
+  read -r dump_maj dump_min _ <<EOF
+$(od -An -t u1 -j 5 -N 2 "$DUMP")
+EOF
+  if [ "${dump_maj:-}" = "1" ] && [ "${dump_min:-}" = "16" ]; then
+    cat <<MSG
+이 덤프는 PostgreSQL 17 형식(헤더 1.16)이다.
+운영·복원은 postgres:16 만 쓴다. 로컬 17 의 pg_dump 로 뽑으면 16 이 거절한다.
+
+다시 뽑으려면:
+  bash scripts/db_dump.sh ./backup/sasshaccp.dump
+MSG
+    exit 1
+  fi
+fi
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$ROOT/backend/haccp-api/.env"

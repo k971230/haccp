@@ -4,9 +4,10 @@
  * 개발자: 박승우
  * 일자: 2026-08-14
  * 코멘트:
- *   1) 목록·저장·파일이력·불러오기/초기화만 담당한다 — 파일 볼륨 I/O는 TemplateService 몫이다
+ *   1) 목록·저장·파일이력·불러오기/초기화·삭제를 담당한다 — 업로드 I/O는 TemplateService, 삭제 실물은 TemplateFileStorage
  *   2) 신규 저장은 SP가 sys_yn=usr 로 강제하고, 화면이 보낸 sysYn 은 읽지 않는다
  *   3) 삭제는 차단 검사(시스템 제공분·작성된 문서)를 통과한 자사양식만 지운다
+ *      — SP 논리삭제 커밋 뒤에 CustomTemplates 실물만 지운다. 표준 공유는 건너뛴다
  *
  * PIPELINE[HB123] 사용양식 업무 서비스
  * PIPELINE[HB92, HB88] 연관 모듈
@@ -24,6 +25,8 @@ import com.haccp.docs.hwp.dto.HwpTemplateDeleteItem;
 import com.haccp.docs.hwp.dto.HwpTemplateFileRow;
 import com.haccp.docs.hwp.dto.HwpTemplateRow;
 import com.haccp.docs.hwp.dto.HwpTemplateSaveRow;
+// 역할 — 자사 양식 실물 삭제 — 표준 공유 루트는 저장소가 건너뛴다
+import com.haccp.docs.templates.TemplateFileStorage;
 import com.haccp.sys.logs.auditlog.AuditWriter;
 // 역할 — 목록
 import java.util.ArrayList;
@@ -33,6 +36,9 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+// 역할 — 실물 삭제를 커밋 뒤로 미룬다 — 메타 롤백과 Files.delete 를 섞지 않는다
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +52,8 @@ public class HwpTemplateService {
 
     private final HwpTemplateMapper mapper;
     private final AuditWriter auditWriter;
+    // 자사 볼륨만 지운다 — HaccpTemplates 표준 공유는 delete 가 건너뛴다
+    private final TemplateFileStorage templateFileStorage;
 
     /**
      * 개발자: 박승우
@@ -156,11 +164,11 @@ public class HwpTemplateService {
 
     /**
      * 개발자: 박승우
-     * 일자: 2026-08-26
+     * 일자: 2026-09-10
      * 코멘트:
      *   1) validate-delete 와 같은 검사를 다시 한 뒤 지운다 (Double Check)
      *   2) 화면 삭제 확인창에서 호출한다
-     *   3) HTTP DELETE 를 쓰지 않는다 — 키는 객체 배열로만 받는다
+     *   3) form_path 를 모은 뒤 SP 를 부르고, 커밋이 끝난 뒤에만 자사 실물을 지운다
      */
     @Transactional(timeout = 60)
     public void delete(
@@ -170,10 +178,62 @@ public class HwpTemplateService {
         List<String> tmplCds = assertDeletable(keys);
         String coCd = LoginUserContext.coCd();
         String userId = LoginUserContext.userId();
+        // SP 가 이력 행을 논리삭제해도 경로는 남지만, 커밋 전 수집이 문서 삭제와 같은 순서다
+        List<String> formPaths = mapper.selectTemplateFormPaths(coCd, tmplCds);
         for (String tmplCd : tmplCds) {
             mapper.deleteHwpTemplate(coCd, tmplCd, userId);
             // 양식코드는 업무키라 대리키가 없다 — 무엇을 지웠는지는 tgtIdx 대신 사유에 남지 않으므로 null 로 둔다
             auditWriter.record(AUDIT_TBL, null, "D", Map.of("tmplCd", tmplCd));
+        }
+        deleteAfterCommit(formPaths);
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-10
+     * 코멘트:
+     *   1) 실물 파일 삭제를 커밋 뒤로 미룬다 — DocumentService 와 같다
+     *   2) 메타를 지우는 트랜잭션 안에서 부른다
+     *   3) 트랜잭션 밖이면 지금 지운다 — 미룰 커밋이 없다
+     *
+     * 왜 미루나: 메타는 트랜잭션이 되돌리는데 Files.deleteIfExists 는 안 되돌린다.
+     * 둘을 섞으면 둘째 건에서 실패했을 때 첫 건 메타는 되살아나고 실물만 사라진다.
+     */
+    private void deleteAfterCommit(
+            // 지울 form_path — 표준 공유는 저장소가 건너뛴다
+            List<String> formPaths
+    ) {
+        if (formPaths == null || formPaths.isEmpty()) {
+            return;
+        }
+        List<String> targets = formPaths.stream()
+                .filter(path -> path != null && !path.isBlank())
+                .distinct()
+                .toList();
+        if (targets.isEmpty()) {
+            return;
+        }
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            targets.forEach(this::deleteQuietly);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                targets.forEach(HwpTemplateService.this::deleteQuietly);
+            }
+        });
+    }
+
+    /**
+     * 실물 삭제 실패를 삼킨다 — 메타는 이미 지워졌고 남은 파일은 운영 정리 대상이다.
+     * afterCommit 에서 던지면 이미 끝난 작업이 사용자에게 HTTP 오류로 보인다.
+     */
+    private void deleteQuietly(String formPath) {
+        try {
+            templateFileStorage.delete(formPath);
+        } catch (RuntimeException ignored) {
+            // 남은 파일은 운영 정리 대상. 업무는 이미 끝났다
         }
     }
 
