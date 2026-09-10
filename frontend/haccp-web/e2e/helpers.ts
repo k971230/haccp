@@ -219,6 +219,10 @@ export async function tokenOf(page: Page): Promise<string> {
  * 목록에 문서번호 열이 없어 「몇 번째 행이 내 문서인가」를 화면으로는 가릴 수 없다.
  * 그래서 시험 전에 비우고 한 건만 만든다. 로컬 전용이며 tools/ 가 있어야 돈다.
  * 없으면 조용히 건너뛴다 — CI 에서 tools/ 는 git 에 없다.
+ *
+ * DEFAULT 결재선의 승인 단계도 E2E 로그인 사용자로 되돌린다.
+ * 시험 DB 에서 승인자를 바꾸면 전송은 되고 결재대기는 0건이다 — 시드와 어긋난 상태로
+ * document-flow·flow-approval 이 목록에서 행을 못 찾는다.
  */
 export function resetDocuments(): void {
   const root = repoRoot();
@@ -233,6 +237,12 @@ export function resetDocuments(): void {
   // 문서를 전량 지운다 — 운영 DB 면 여기서 멈춘다
   assertTestDb("문서 전량 삭제");
   runDb(`@${sql}`);
+  // 결재대기(sign-ready)는 내 APPROVE 대기만 보여 준다. 로그인 사용자가 아니면 목록이 빈다
+  const co = sqlLit(loginCoCd());
+  const uid = sqlLit(loginUserId());
+  runDb(
+    `UPDATE tbl_approval_line_step SET approver_id='${uid}' WHERE co_cd='${co}' AND appr_line_cd='DEFAULT' AND role_cd='APPROVE'`,
+  );
 }
 
 /** ESM 이라 __dirname 이 없다 — 실행 기준은 항상 frontend/haccp-web 다 */
