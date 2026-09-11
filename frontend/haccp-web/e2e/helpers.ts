@@ -2,12 +2,13 @@
  * helpers — E2E 공통 로그인·화면 열기.
  *
  * 개발자: 박승우
- * 일자: 2026-09-07
+ * 일자: 2026-09-11
  * 코멘트:
  *   1) 로그인 셀렉터·성공 판정을 한곳에 둔다 — 스펙마다 복제하면 셸이 바뀔 때 전부 깨진다
  *   2) 자격증명은 환경변수로만 받는다. 스펙 코드에 비밀번호를 박지 않는다
  *   3) 화면 경로는 basename /haccp/ 아래 SCREEN_PATH 그대로다. /screen/{scrnCd} 는 없다
  *   4) 위생 라디오 양식은 사용양식에 있는 것만 고른다 — 고아 복사는 팝업에 없다
+ *   5) HWP 실물은 docs/templates/new 시드 파일 하나를 쓴다. Downloads 개인 파일은 자리마다 없다
  *
  * PIPELINE[HF130] E2E
  */
@@ -136,6 +137,42 @@ export function hwpTmplPrefix(): string {
       WHERE co_cd='${co}' AND tmpl_cd LIKE 'hwp_sys_%' AND use_yn='Y'`,
   );
   return Number(n) > 0 ? "hwp_sys_" : "hwp_";
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-11
+ * 코멘트:
+ *   1) 작성 팝업에서 고를 HWP 양식 코드. 채번 규칙이 있는 것만
+ *   2) last() 로 접두만 집으면 규칙 없는 뒷번호(hwp_sys_027)가 잡혀 저장이 400 이다
+ *   3) 없으면 시험을 멈춘다. 없는 코드를 만들어 넣지 않는다
+ */
+export function liveHwpTmpl(): string {
+  const co = sqlLit(loginCoCd());
+  const cd = dbOne(
+    `SELECT ct.tmpl_cd FROM tbl_company_template ct
+       JOIN tbl_doc_no_rule r ON r.co_cd = ct.co_cd AND r.tmpl_cd = ct.tmpl_cd
+      WHERE ct.co_cd='${co}' AND ct.use_yn='Y' AND ct.tmpl_cd LIKE 'hwp_%'
+      ORDER BY ct.tmpl_cd LIMIT 1`,
+  );
+  if (!cd) throw new Error("채번 규칙이 있는 HWP 양식이 없다");
+  return cd;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-11
+ * 코멘트:
+ *   1) E2E 가 올리는 HWP 실물이다. docs/templates/new 시드 파일 하나를 고정한다
+ *   2) Downloads 개인 파일을 쓰면 그 PC 에 파일이 없을 때 업로드·작성·이탈이 연쇄로 죽는다
+ *   3) 파일이 없으면 시험을 멈춘다. 빈 경로로 올리면 원인 없는 타임아웃이 된다
+ */
+export function e2eHwpFile(): string {
+  const p = path.join(repoRoot(), "docs", "templates", "new", "00.(시스템)외부인출입기록부.hwp");
+  if (!fs.existsSync(p)) {
+    throw new Error(`E2E HWP 시드가 없다: ${p}`);
+  }
+  return p;
 }
 
 /**
@@ -487,6 +524,21 @@ export async function createDraft(
   await btn(page, /행\s*추가/).click();
 
   /*
+   * HWP 작성은 행추가 직후 「오늘 할일 — HWP 문서주기」가 먼저 뜬다.
+   * 그대로 두면 양식 선택 팝업을 영원히 못 보고 저장이 빈 행으로 나간다.
+   * 취소하면 양식 직접 선택으로 이어진다 (HwpTaskLookupModal.onSkip).
+   */
+  const taskDlg = page.getByRole("dialog").filter({ hasText: "오늘 할일" }).first();
+  const taskOpen = await taskDlg
+    .waitFor({ state: "visible", timeout: 8_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (taskOpen) {
+    await page.getByRole("button", { name: "취소 (양식 직접 선택)" }).click();
+    await expect(taskDlg).toBeHidden({ timeout: 10_000 });
+  }
+
+  /*
    * 행추가는 **스스로** 그 행의 양식 선택 팝업을 연다 (HtmlFormDraftPage.handleAdd → setLookupKey).
    * action.run 안에서 비동기로 도니 클릭 직후가 아니라 잠깐 기다려야 보인다.
    *
@@ -502,7 +554,8 @@ export async function createDraft(
     await pick.click({ force: true });
   }
   // 팝업 안에서만 고른다 — 좌측 목록에도 같은 양식코드 글자가 있어 옛 행이 잡힌다
-  const popupRow = dialog.getByRole("row").filter({ hasText: tmplPrefix }).last();
+  // first — last 는 접두 검색에서 채번 규칙 없는 뒷번호를 집는다
+  const popupRow = dialog.getByRole("row").filter({ hasText: tmplPrefix }).first();
   await expect(popupRow).toBeVisible({ timeout: 20_000 });
   /*
    * **한 번만** 누른다. 이 팝업은 onRowClick 으로 확정하고 곧바로 닫힌다
@@ -518,6 +571,12 @@ export async function createDraft(
     }),
     btn(page, "저장").click(),
   ]);
+  expect(saveRes.status(), `작성 저장이 실패했다 (${saveRes.status()})`).toBeLessThan(400);
+  /*
+   * HWP 는 헤더 저장 뒤에 본문 업로드·목록 재조회가 같은 잠금 안에서 돈다.
+   * 응답만 보고 이탈 칸을 치면 재조회가 체크를 덮어 저장이 N 으로 나간다.
+   */
+  await expect(btn(page, "저장")).toBeEnabled({ timeout: 120_000 });
 
   /*
    * 방금 만든 문서의 idx 를 응답에서 받아 **그 행을** 연다.

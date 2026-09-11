@@ -25,7 +25,7 @@ Playwright E2E. **화면이 열리는가**가 아니라 **업무가 끝까지 �
 | `sys-common-code` `sys-master` `sys-user` `sys-approval-line` | 기준정보 6화면 CRUD·제약 |
 | `sys-logs` | 로그인이력·화면통계·감사로그 (조회 전용 확인 포함) |
 | `doc-cycle` `schedule-cycle-management` | 문서주기 7종·오늘 할 일 연동 |
-| `docs-hwp-template` `docs-html-template` | 양식 원본 6화면. HWP 는 13.5MB 실파일을 올린다 |
+| `docs-hwp-template` `docs-html-template` | 양식 원본 6화면. HWP 는 `docs/templates/new` 시드 실물을 올린다 |
 | `draft-all` | 작성 6화면 + 이탈 → 개선조치 |
 | `document-flow` | 작성 → 전송 → 승인 → 보관 한 바퀴 (회귀 고정) |
 | `flow-approval` | 승인·반려·문서함 |

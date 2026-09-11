@@ -2,16 +2,29 @@
  * today-tasks — 오늘 할 일 랜딩 화면.
  *
  * 개발자: 박승우
- * 일자: 2026-08-26
+ * 일자: 2026-09-11
  * 코멘트:
  *   1) KPI 5장·미완료 체크·기한경과 빨강·더블클릭 이동을 화면에서 확인한다
  *   2) 단위 테스트(TodayTasksRule.test.ts)는 규칙만 본다 — 화면에서 실제로 도는지는 여기가 본다
  *   3) 클릭은 선택만이고 이동은 더블클릭이다. 이 구분이 깨지면 오조작이 난다
+ *   4) 최근 문서는 본인 작성이 없으면 그리드가 없다. 그 시험은 문서를 한 건 만들고 시작한다
  *
  * PIPELINE[HF130] E2E
  */
 import { expect, test } from "@playwright/test";
-import { adminCreds, btn, dbOne, grids, login, loginCoCd, loginUserId, openScreen, sqlLit, visibleRows } from "./helpers";
+import {
+  adminCreds,
+  btn,
+  createDraft,
+  dbOne,
+  grids,
+  login,
+  loginCoCd,
+  loginUserId,
+  openScreen,
+  sqlLit,
+  visibleRows,
+} from "./helpers";
 
 /**
  * 오늘 할 일 화면을 열고 **그리드가 채워질 때까지** 기다린다.
@@ -144,9 +157,15 @@ test.describe("오늘 할 일", () => {
   test("최근 문서도 클릭은 선택, 더블클릭만 문서로 간다", async ({ page }) => {
     const { user, pass } = adminCreds();
     await login(page, user, pass);
-    await openTodayTasks(page);
+    /*
+     * 최근 문서는 본인이 쓴 문서만 나온다. 다른 스펙이 문서를 비우면
+     * 빈 안내만 있고 그리드가 안 그려져 nth(1) 이 0행으로 죽는다.
+     * 이 시험이 문서를 한 건 만들고 시작한다.
+     */
+    await createDraft(page, "/draft/html/hyg-process", "html_hyg_prc_");
+    await openTodayTasks(page, false);
 
-    // 최근 문서는 두 번째 그리드다
+    // 최근 문서는 두 번째 보이는 그리드다 — 빈 안내일 땐 표가 없다
     const docs = grids(page).nth(1);
     await expect
       .poll(async () => docs.locator("tbody tr").count(), { timeout: 30_000 })

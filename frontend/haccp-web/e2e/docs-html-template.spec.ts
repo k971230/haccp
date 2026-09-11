@@ -2,10 +2,10 @@
  * docs-html-template — HTML 양식 원본 5화면.
  *
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-09-11
  * 코멘트:
  *   1) 다섯 화면이 같은 프레임(HtmlFormTemplatePage)을 쓴다 — 한 화면을 깊게 보고 나머지는 뼈대만 본다
- *   2) 행추가는 신규 등록이 아니라 「표준 복사」다. 표준(sys)은 절대 안 바뀌어야 한다
+ *   2) 행추가는 신규 등록이 아니라 「표준 복사」다. 표준 코드는 사용양식으로 실체화되면 안 된다
  *   3) 표준 양식은 수정·삭제가 막혀야 한다 — 뚫리면 다른 회사 배포본이 오염된다
  *
  * PIPELINE[HF130] E2E
@@ -79,6 +79,16 @@ function purge(): void {
   for (const t of [...tables, ...verTables, "tbl_company_template", "tbl_template"]) {
     dbOne(`DELETE FROM ${t} WHERE tmpl_cd IN (${codeSql})`);
   }
+  /*
+   * 표준 코드(*_000)가 사용양식에 남아 있으면 복사를 안 해도
+   * 「표준이 회사 양식이 됐다」가 실패한다. 예전 시드·수동 행이다.
+   * 버전·문서가 없는 표준 코드만 걷는다 — 복사가 다시 만들지 않는지 보기 위해.
+   */
+  const stds = SCREENS.map((s) => `'${s.std}'`).join(",");
+  dbOne(
+    `DELETE FROM tbl_company_template
+      WHERE co_cd='${sqlLit(loginCoCd())}' AND tmpl_cd IN (${stds})`,
+  );
 }
 
 test.describe("HTML 양식 원본 5화면", () => {
@@ -118,15 +128,20 @@ test.describe("HTML 양식 원본 5화면", () => {
 
     const made = dbOne(`SELECT tmpl_cd FROM tbl_template WHERE tmpl_nm='${NAME}' ORDER BY idx DESC LIMIT 1`);
     expect(made, "복사한 양식이 DB 에 없다").not.toBe("");
+    expect(made, "복사본 코드가 표준과 같다 — 표준을 덮어쓴 것이다").not.toBe(target.std);
     // 지면 항목까지 딸려와야 한다 — 껍데기만 복사되면 작성 화면이 빈 종이로 뜬다
     expect(
       Number(dbOne(`SELECT count(*) FROM ${target.itemTbl} WHERE tmpl_cd='${made}'`)),
       "복사했는데 지면 항목이 하나도 안 따라왔다",
     ).toBeGreaterThan(0);
-    // 표준은 DB 행이 없다 — 복사가 표준을 실체화해 덮어쓰면 안 된다
+    /*
+     * 표준 코드(html_ccp_*_000)는 플랫폼 0000 카탈로그에 시드로 있다 — check_item FK 부모다.
+     * 그걸 「회사 양식이 생겼다」로 보면 로그인 회사가 0000 일 때 복사를 안 해도 실패한다.
+     * 복사가 실체화하면 안 되는 것은 사용양식(tbl_company_template) 이다.
+     */
     expect(
-      dbOne(`SELECT count(*) FROM tbl_template WHERE tmpl_cd='${target.std}' AND co_cd='${sqlLit(loginCoCd())}'`),
-      "복사 과정에서 표준이 회사 양식으로 만들어졌다",
+      dbOne(`SELECT count(*) FROM tbl_company_template WHERE tmpl_cd='${target.std}' AND co_cd='${sqlLit(loginCoCd())}'`),
+      "표준 코드가 회사 사용양식으로 실체화됐다",
     ).toBe("0");
   });
   }
@@ -153,12 +168,12 @@ test.describe("HTML 양식 원본 5화면", () => {
      */
     await expect(stdRow, "표준 양식이 목록에서 사라졌다").toBeVisible();
     expect(
-      dbOne(`SELECT count(*) FROM tbl_template WHERE tmpl_cd='${target.std}' AND co_cd='${sqlLit(loginCoCd())}'`),
-      "복사본이 표준 코드를 회사 양식으로 덮어쓴 것이다",
+      dbOne(`SELECT count(*) FROM tbl_company_template WHERE tmpl_cd='${target.std}' AND co_cd='${sqlLit(loginCoCd())}'`),
+      "표준 코드가 회사 사용양식으로 실체화됐다",
     ).toBe("0");
     expect(
-      Number(dbOne(`SELECT count(*) FROM tbl_template WHERE tmpl_cd='${target.std}' AND co_cd='0000'`)),
-      "플랫폼 표준 양식 행이 없다",
+      Number(dbOne(`SELECT count(*) FROM tbl_check_item WHERE tmpl_cd='${target.std}' AND co_cd='0000'`)),
+      "플랫폼 표준 지면이 없다",
     ).toBeGreaterThan(0);
   });
 

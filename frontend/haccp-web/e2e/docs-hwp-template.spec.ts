@@ -2,15 +2,16 @@
  * docs-hwp-template — HWP 사용양식관리 (원본 등록·업로드·버전).
  *
  * 개발자: 박승우
- * 일자: 2026-09-07
+ * 일자: 2026-09-11
  * 코멘트:
- *   1) 진짜 HWP 파일을 올린다 — 13MB짜리 실물이라 크기 제한·저장 경로가 여기서 드러난다
+ *   1) 진짜 HWP 파일을 올린다 — docs/templates/new 시드 실물이라 크기 제한·저장 경로가 여기서 드러난다
  *   2) 업로드는 덮어쓰지 않고 버전을 쌓는다. DB 에 버전 행이 늘어야 성공이다
  *   3) 시스템 제공 양식은 회사마다 카탈로그 1행 — count 는 loginCoCd 만 본다
  *   4) 구분·사용여부 건수는 tbl_template 도 그 회사만 조인한다 — tmpl_cd 만 조인하면 타사 카탈로그까지 센다
  *
  * PIPELINE[HF130] E2E
  */
+import fs from "node:fs";
 import { expect, test } from "@playwright/test";
 import {
   addRow,
@@ -18,6 +19,7 @@ import {
   btn,
   confirmDeleteBtn,
   dbOne,
+  e2eHwpFile,
   fillCell,
   grids,
   login,
@@ -31,7 +33,8 @@ import {
 const PATH = "/docs/hwp/hwp-template-management";
 /** 양식코드는 화면이 자동 채번한다(hwp_usr_NNN) — 저장 뒤에 읽어서 채운다 */
 let TMPL = "";
-const HWP = "C:/Users/user/Downloads/(개정) 소규모업체를 위한 과자_해썹(HACCP)관리(최종).hwp";
+/** E2E HWP 실물 — docs/templates/new 시드. Downloads 개인 파일을 쓰지 않는다 */
+const HWP = e2eHwpFile();
 
 const NAME = "E2E 시험양식";
 
@@ -89,12 +92,12 @@ test.describe.serial("HWP 사용양식관리", () => {
       })
       .toBeGreaterThan(verBefore);
 
-    // 파일 본체는 디스크에 두고 DB 엔 경로·크기만 남는다 — 13MB 가 잘리면 여기서 잡힌다
+    // 파일 본체는 디스크에 두고 DB 엔 경로·크기만 남는다 — 시드 바이트가 잘리면 여기서 잡힌다
     const size = Number(
       dbOne(`SELECT COALESCE(file_size,0) FROM tbl_company_template_file
               WHERE tmpl_cd='${TMPL}' ORDER BY idx DESC LIMIT 1`),
     );
-    expect(size, "올린 파일이 비었거나 잘렸다").toBeGreaterThan(13_000_000);
+    expect(size, "올린 파일이 비었거나 잘렸다").toBe(fs.statSync(HWP).size);
 
     // 경로만 남고 실물이 없으면 열 때 터진다 — 디스크까지 확인한다
     const saved = dbOne(`SELECT form_path FROM tbl_company_template_file

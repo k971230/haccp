@@ -17,7 +17,7 @@ import {
   createDraft,
   dbOne,
   grids,
-  hwpTmplPrefix,
+  liveHwpTmpl,
   login,
   openScreen,
   resetDocuments,
@@ -42,7 +42,7 @@ test.describe.serial("작성 6화면", () => {
 
       const { user, pass } = adminCreds();
       await login(page, user, pass);
-      await createDraft(page, s.path, s.tmpl);
+      await createDraft(page, s.path, s.path.includes("hwp-write") ? liveHwpTmpl() : s.tmpl);
 
       const after = Number(dbOne(`SELECT count(*) FROM tbl_document WHERE tmpl_cd LIKE '${s.tmpl}%'`));
       expect(after, `${s.name} 저장이 DB 에 안 남았다`).toBe(before + 1);
@@ -100,7 +100,7 @@ test.describe.serial("작성 6화면", () => {
     resetDocuments();
     const { user, pass } = adminCreds();
     await login(page, user, pass);
-    await createDraft(page, "/draft/hwp-doc/hwp-write", hwpTmplPrefix());
+    await createDraft(page, "/draft/hwp-doc/hwp-write", liveHwpTmpl());
 
     /*
      * 이탈여부는 tbl_document 의 칸이 아니다 — 켜면 tbl_corrective_action 행이 생긴다.
