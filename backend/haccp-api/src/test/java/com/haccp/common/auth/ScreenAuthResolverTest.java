@@ -177,4 +177,11 @@ class ScreenAuthResolverTest {
         );
         assertEquals("", ScreenAuthResolver.requestScreen(bad));
     }
+
+    @Test
+    void 테넌트_삭제는_화면맵_없이_화이트리스트다() {
+        assertTrue(ScreenAuthResolver.skipScreenAuth("POST", "/api/v1/sys/company/validate-delete"));
+        assertTrue(ScreenAuthResolver.skipScreenAuth("POST", "/api/v1/sys/company/delete"));
+        assertTrue(ScreenAuthResolver.resolve("POST", "/api/v1/sys/company/delete").isEmpty());
+    }
 }

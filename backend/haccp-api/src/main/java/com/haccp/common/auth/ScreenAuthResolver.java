@@ -277,6 +277,11 @@ public final class ScreenAuthResolver {
          */
         if (path.equals("/api/v1/sys/code/user-management/list")) return true;
         if (path.equals("/api/v1/sys/code/approval-line-management/list")) return true;
+        /*
+         * 테넌트 통째 삭제는 화면이 없다. 맵에 없으면 인터셉터가 403 이다.
+         * 권한은 CompanyService 가 플랫폼(0000) ADMIN·HACCP_MASTER 만 연다.
+         */
+        if (path.startsWith("/api/v1/sys/company")) return true;
         return path.startsWith("/api/v1/sys/users/me");
     }
 

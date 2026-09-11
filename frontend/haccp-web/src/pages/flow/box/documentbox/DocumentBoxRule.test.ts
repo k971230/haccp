@@ -57,5 +57,7 @@ describe("buildApprovalLineSteps — 단계 번호 순", () => {
     const steps = buildApprovalLineSteps(rows, () => "승인", (cd) => (cd === "A" ? "승인" : cd), toDisplayDateOnly);
     expect(steps[0].detail).toBe("승인 · 2026-09-03");
     expect(steps[0].detail).not.toContain("16:26");
+    expect(steps[0].resultNm).toBe("승인");
+    expect(steps[0].actDisp).toBe("2026-09-03 16:26");
   });
 });

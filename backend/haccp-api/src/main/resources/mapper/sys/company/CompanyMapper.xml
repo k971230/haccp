@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CompanyMapper.xml — 테넌트 통째 삭제 SP 호출 매퍼.
+
+개발자: 박승우
+일자: 2026-09-11
+코멘트:
+  1) 존재 확인·트리 역순 삭제 SP 만 호출한다 — 네이티브 SQL 금지
+  2) 화면이 없다. 플랫폼(0000) 관리자 API 가 부른다
+  3) 대상 coCd 는 지울 회사다. JWT 회사와 바꿔 넣지 않는다
+
+PIPELINE[HB146] 업체 삭제 MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.sys.company.CompanyMapper">
+
+    <!-- 지울 회사가 있는지 — 0 이면 validate-delete 가 막는다 -->
+    <select id="countCompany" resultType="int">
+        SELECT * FROM sp_tbl_company_exists_r_000(
+            #{coCd, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <!--
+      테넌트 트리 역순 삭제 — co_cd 칸이 있는 표를 막힐 때까지 비운 뒤 회사 행을 지운다
+      플랫폼 0000 은 SP 가 거절한다
+    -->
+    <update id="purgeCompany" statementType="CALLABLE">
+        CALL sp_tbl_company_purge_d_000(
+            #{coCd, jdbcType=VARCHAR},
+            #{userId, jdbcType=VARCHAR}
+        )
+    </update>
+
+</mapper>

@@ -9,7 +9,7 @@
 | `HtmlDocumentPreview.tsx` | HTML 지면 Paper 읽기전용. A4 폭 |
 | `HwpDocumentPreview.tsx` | HWP 본문 rhwp 읽기전용 |
 | `DocumentPreviewPane.tsx` | 미리보기 펼침·접기·높이 드래그 |
-| `ApprovalLineSteps.tsx` | 결재 진행상태 가로 스테퍼. 색은 `stepperTone.ts` |
+| `ApprovalLineSteps.tsx` | 결재 진행상태 가로 스테퍼 + 이력 표. 색은 `stepperTone.ts` |
 | `stepperTone.ts` | 스테퍼 칸 색 정본 — 완료 파랑 · 현재 노랑 · 반려 빨강 |
 | `DocSectionHead.tsx` | 우측 섹션 제목 (파란 배지). 결재 4화면 공용 |
 | `DocReasonBox.tsx` | 반려·결재취소 사유 읽기 전용 |

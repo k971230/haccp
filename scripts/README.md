@@ -36,6 +36,7 @@ HACCP 운영·검증 스크립트. 정본 절차는 [`04.배포.md`](../04.배�
 | `audit_docs_links.sh` | 저장소 전체 `*.md` 상대 링크 (git 무시·양식 원문 제외) |
 | `audit_file_size_alignment.sh` | 파일 한도 FE/BE 정합 |
 | `audit_ops_delete.sh` | validate-delete 계약 |
+| `assert_e2e_pr_safe.sh` | PR 게이트 E2E — 운영 URL·운영 쓰기·비시험 DB 거절 |
 | `audit_sp_cocd.mjs` | idx·file_idx·doc_no·tmpl_cd 단건에 co_cd 가 있는지. 쓰기는 예외 없음. SELECT 는 마스터·플랫폼 화이트리스트 |
 | `audit_version_drift.sh` | 버전 드리프트 |
 | `audit_generated_docs.sh` | 생성 문서 drift — 아래 생성기 5본을 `--check` 로 돌린다 |

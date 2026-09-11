@@ -94,7 +94,11 @@ npx playwright test --last-failed         # 실패만
 `dbOne`·`dbRows`·`resetDocuments` 는 로컬 `tools/`(git 미포함)를 쓴다.
 없으면 그 시험은 **skip** 된다 — 빈 값을 돌려주면 검사가 조용히 통과해 더 나쁘기 때문이다.
 
-Jenkins(`Jenkinsfile.e2e`)는 지금 도구 없이 돌아 DB 대조 시험이 빠진다.
+PR 게이트(`Jenkinsfile.verify`)는 localhost(4173/7070) + 시험 DB 만 돌린다.
+운영 호스트·`E2E_ALLOW_PROD_WRITES` 는 `scripts/assert_e2e_pr_safe.sh` 가 거절한다.
+에이전트에 API(7070)가 떠 있어야 한다. 운영 URL 로 우회하지 않는다.
+
+Jenkins(`Jenkinsfile.e2e`)는 배포 뒤 실측용이고 기본값이 운영 URL 이다. 도구 없이 돌면 DB 대조 시험이 빠진다.
 붙이려면 에이전트에서 아래를 준비한다.
 
 1. `tools/` 를 CI 에 배치하거나(아티팩트·별도 저장소), 같은 일을 하는 psql 래퍼를 둔다

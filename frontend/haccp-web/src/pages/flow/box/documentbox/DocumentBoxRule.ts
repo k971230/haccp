@@ -22,6 +22,8 @@ import { DOC_KIND_HTML, DOC_KIND_HWP } from "@/lib/docKind";
 import { DOC_STATUS_BADGE } from "@/lib/docStatus";
 // 역할 — 결재 스테퍼 칸 타입 — 컴포넌트와 같은 계약
 import type { ApprovalLineStepView, ApprovalLineTone } from "@/components/document/ApprovalLineSteps";
+// 역할 — 이력 표 시각 — 스테퍼 detail 은 날짜만, 표는 시분까지
+import { toDisplayDateTime } from "@/lib/docDateTime";
 
 export type { ApprovalLineStepView, ApprovalLineTone };
 
@@ -165,6 +167,7 @@ export function buildApprovalLineSteps(
     const act = formatActDt ? formatActDt(step.actDt) : "";
     const resultNm = resultLabel(step.resultCd);
     const detail = [resultNm, act && act !== "-" ? act : ""].filter(Boolean).join(" · ");
+    const actDisp = toDisplayDateTime(step.actDt);
     return {
       key: String(step.idx || `${step.roleCd}-${step.stepNo}`),
       label: roleLabel(step.roleCd),
@@ -172,6 +175,9 @@ export function buildApprovalLineSteps(
       caption: (step.approverNm || step.approverId || "").trim(),
       detail,
       opinion: (step.opinion ?? "").trim(),
+      resultNm,
+      // 이력 표 — 스테퍼는 날짜만, 표는 시분까지
+      actDisp: actDisp === "-" ? "" : actDisp,
     };
   });
 }

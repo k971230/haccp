@@ -11,6 +11,7 @@ mapper/sys/
  │   ├ department/ DepartmentMapper.xml
  │   ├ user/       UserMapper.xml
  │   └ approvalline/ ApprovalLineMapper.xml
+ ├ company/    CompanyMapper.xml
  └ logs/
      ├ loginhistory/ LoginHistoryMapper.xml
      ├ auditlog/     AuditLogMapper.xml
@@ -62,6 +63,7 @@ mapper/sys/
 | loginhistory | `sp_login_history_r_000` | `tbl_login_log` `tbl_user` |
 | auditlog | `sp_audit_log_r_000` · `sp_tbl_audit_log_c_000`(AuditWriter 적재) | `tbl_audit_log` `tbl_user` |
 | screenusage | `sp_screen_usage_statistics_r_000` | `tbl_view_stat_daily` `tbl_menu` `tbl_screen` |
+| company | `sp_tbl_company_exists_r_000` · `sp_tbl_company_purge_d_000` | `tbl_company` 및 `co_cd` 칸이 있는 `tbl_*` |
 
 사이드바 트리는 이 폴더가 아니다: `sp_menu_nav_r_000` (`mapper/menu`).
 
