@@ -23,7 +23,7 @@ import {
   resetDocuments,
   rowOfDoc,
   liveHtmlChkTmpl,
-  hwpTmplPrefix,
+  liveHwpTmpl,
   loginCoCd,
   sqlLit,
   visibleRows,
@@ -204,21 +204,19 @@ test.describe.serial("통합 시나리오", () => {
     resetDocuments();
     const { user, pass } = adminCreds();
     await login(page, user, pass);
-    await createDraft(page, "/draft/hwp-doc/hwp-write", hwpTmplPrefix());
+    await createDraft(page, "/draft/hwp-doc/hwp-write", liveHwpTmpl());
 
     const list = grids(page).first();
     const heads = (await list.locator("thead th").allInnerTexts()).map((t) => t.trim());
     const col = heads.indexOf("이탈여부");
     expect(col, "이탈여부 열이 없다").toBeGreaterThanOrEqual(0);
-    await list
-      .locator("tbody tr")
-      .first()
-      .locator("td")
-      .nth(col)
-      .locator('input[type="checkbox"]')
-      .check({ force: true });
+    const cell = list.locator("tbody tr").first().locator("td").nth(col);
+    await cell.locator('input[type="checkbox"]').check({ force: true });
+    await expect(cell.locator('input[type="checkbox"]')).toBeChecked();
     await Promise.all([
-      page.waitForResponse((r) => r.url().includes("/save") && r.request().method() !== "GET"),
+      page.waitForResponse((r) => r.url().includes("/save") && r.request().method() !== "GET", {
+        timeout: 30_000,
+      }),
       btn(page, "저장").click(),
     ]);
 
