@@ -21,6 +21,7 @@ DB 를 붙여야 확인되는 것은 프론트의 Playwright E2E 가 맡는다 �
 | 파일 | 맡는 것 |
 |---|---|
 | `common/auth/ScreenAuthResolverTest` | URL → `scrnCd`·권한 종류 매핑. 화면을 옮기면 여기가 먼저 깨진다 |
+| `sys/company/CompanyServicePurgeTest` | 테넌트 삭제 — 플랫폼만, 0000·자기 회사 차단 |
 | `common/auth/ScreenAuthInterceptorTest` | 권한 없는 호출을 실제로 막는지 (deny 로그 포함) |
 | `docs/sch/CycleScheduleGeneratorTest` | 주기 → 예정일 생성. 월말 보정·비영업일 이동·시작일 이전 제외 |
 | `draft/DraftSupportSeedTest` | 작성 화면 공통 시드 값 정규화 |

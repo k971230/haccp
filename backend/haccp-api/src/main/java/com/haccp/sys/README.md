@@ -15,13 +15,14 @@ com/haccp/sys/
  │   ├ department/ DepartmentController · DepartmentService · DepartmentMapper
  │   ├ user/       UserController · UserService · UserMapper   (서명 포함)
  │   └ approvalline/ ApprovalLineController · Service · Mapper
+ ├ company/    CompanyController · CompanyService · CompanyMapper  (화면 없음 · 테넌트 삭제)
  └ logs/
      ├ loginhistory/ LoginHistoryController · Service · Mapper   (조회 전용)
      ├ auditlog/     AuditLogController · Service · Mapper · AuditWriter
      └ screenusage/  ScreenUsageController · Service · Mapper    (조회 전용)
 ```
 
-XML은 `resources/mapper/sys/{code|logs}/{같은 폴더명}/*.xml` (`mapper/sys/README.md`).
+XML은 `resources/mapper/sys/{code|logs|company}/{같은 폴더명}/*.xml` (`mapper/sys/README.md`).
 구 `SystemController`·`SystemService`·`SystemMapper`·`SystemMapper.xml` 단일 허브는 제거되었다. 되살리지 않는다.
 
 **다른 영역도 이번에 손대는 메뉴는 같은 규약으로 분할한다.** 미리 전 메뉴를 나누지 않는다. 상세 `08-haccp-backend.mdc`.
@@ -57,6 +58,8 @@ POST /api/v1/sys/users/{userId}/sign          업로드 (multipart)
 POST /api/v1/sys/users/{userId}/sign/delete   삭제 (HTTP DELETE 금지)
 GET  /api/v1/sys/users/me/sign                내 서명 이미지 (HWP 클립보드 복사·미리보기)
 GET  /api/v1/sys/users/me/sign-info           내 서명 보유여부·파일명 (CCP 행 서명 — 바이너리 미포함)
+POST /api/v1/sys/company/validate-delete      테넌트 삭제 검사 (화면 없음)
+POST /api/v1/sys/company/delete               테넌트 트리 역순 삭제
 ```
 
 ## 삭제 표준 (`06-operations.mdc` OPS_DELETE)

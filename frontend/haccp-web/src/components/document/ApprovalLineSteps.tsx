@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-09-03
  * 코멘트:
- *   1) 결재 이력 그리드 대신 점·연결선·라벨을 쓴다 — 첨부화면 「결재 진행상태」와 같은 마크업
+ *   1) 결재 이력은 가로 스테퍼 + 그 아래 읽기 표다. 칸 10px 잘림을 표가 보완한다
  *   2) 문서함·결재대기·결재완료 상세가 같은 컴포넌트를 쓴다. 화면마다 복제하지 않는다
  *   3) 칸 수·라벨은 호출측이 넘긴다. 색은 stepperTone 한 곳
  *
@@ -27,6 +27,10 @@ export type ApprovalLineStepView = {
   caption: string;
   detail: string;
   opinion: string;
+  // 이력 표 결과 칸 — 스테퍼 detail 과 달리 시각을 붙이지 않는다
+  resultNm: string;
+  // 이력 표 시각 칸 — YYYY-MM-DD HH:MM. 없으면 빈 문자열
+  actDisp: string;
 };
 
 interface ApprovalLineStepsProps {
@@ -92,6 +96,35 @@ export function ApprovalLineSteps({
           })}
         </ol>
       )}
+      {steps.length > 0 ? (
+        <table
+          // 스테퍼 10px 잘림을 보완하는 읽기 표 — 역할·사람·결과·시각·의견
+          className="mt-4 w-full border-collapse text-sm"
+        >
+          <thead>
+            <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
+              <th className="py-1.5 pr-3 font-medium">역할</th>
+              <th className="py-1.5 pr-3 font-medium">사람</th>
+              <th className="py-1.5 pr-3 font-medium">결과</th>
+              <th className="py-1.5 pr-3 font-medium">시각</th>
+              <th className="py-1.5 font-medium">의견</th>
+            </tr>
+          </thead>
+          <tbody>
+            {steps.map((step) => (
+              <tr key={step.key} className="border-b border-slate-100 align-top">
+                <td className="py-1.5 pr-3 text-slate-700">{step.label}</td>
+                <td className="py-1.5 pr-3 text-slate-700">{step.caption || "-"}</td>
+                <td className="py-1.5 pr-3 text-slate-700">{step.resultNm || "-"}</td>
+                <td className="py-1.5 pr-3 tabular-nums text-slate-700">
+                  {step.actDisp && step.actDisp !== "-" ? step.actDisp : "-"}
+                </td>
+                <td className="py-1.5 whitespace-pre-wrap text-slate-600">{step.opinion || "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
       {hint ? (
         <p className="mt-2 text-xs text-slate-400">{hint}</p>
       ) : null}

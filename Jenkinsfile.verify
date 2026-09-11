@@ -2,10 +2,10 @@
 //  HACCP PR·main 검증 파이프라인
 //
 //  개발자: 박승우
-//  일자: 2026-09-10
+//  일자: 2026-09-11
 //  코멘트:
-//    1) PR 과 main 푸시에서 audit + BE/FE 단위시험만 돌린다. 이미지·배포·스모크는 없다
-//    2) E2E 는 여기 넣지 않는다 — Jenkinsfile.e2e 기본값이 운영 URL 이라 문서를 지운다
+//    1) PR 과 main 푸시에서 audit + BE/FE 단위시험 + localhost E2E 를 돌린다. 이미지·배포는 없다
+//    2) E2E 는 localhost(4173/7070) + 시험 DB(*_test) 만. 운영 URL·E2E_ALLOW_PROD_WRITES 는 즉시 실패
 //    3) 에이전트는 배포 Job 과 같은 any. Docker 파이프라인 에이전트는 이 워커에 없다
 //    4) 의존성은 WORKSPACE/.ci-cache 에 둔다. Maven 은 -Dmaven.repo.local 만 쓴다
 //
@@ -16,13 +16,16 @@ pipeline {
 
   options {
     disableConcurrentBuilds()
-    timeout(time: 30, unit: 'MINUTES')
+    timeout(time: 60, unit: 'MINUTES')
     buildDiscarder(logRotator(numToKeepStr: '30'))
   }
 
   environment {
     // npm ci 캐시 — 워크스페이스는 빌드마다 안 지워진다
     npm_config_cache = "${WORKSPACE}/.ci-cache/npm"
+    // PR E2E 는 로컬 미리보기·로컬 API 만. 운영 호스트를 여기 적지 않는다
+    E2E_BASE_URL = 'http://localhost:4173/haccp/'
+    E2E_API_BASE_URL = 'http://localhost:7070'
   }
 
   stages {
@@ -99,6 +102,54 @@ pipeline {
       post {
         always {
           junit allowEmptyResults: true, testResults: 'frontend/haccp-web/test-results/junit.xml'
+        }
+      }
+    }
+
+    stage('E2E localhost') {
+      steps {
+        withCredentials([
+          usernamePassword(
+            credentialsId: 'haccp-write-user',
+            usernameVariable: 'E2E_USER',
+            passwordVariable: 'E2E_PASS'
+          ),
+          usernamePassword(
+            credentialsId: 'haccp-read-user',
+            usernameVariable: 'E2E_RO_USER',
+            passwordVariable: 'E2E_RO_PASS'
+          )
+        ]) {
+          sh '''
+            set -euo pipefail
+            unset E2E_ALLOW_PROD_WRITES || true
+            bash scripts/assert_e2e_pr_safe.sh
+            curl -sS -o /dev/null --connect-timeout 3 "http://127.0.0.1:7070/" \
+              || { echo 'PR E2E 는 localhost:7070 API 가 떠 있어야 한다. 운영 URL 은 쓰지 않는다.'; exit 1; }
+            cd frontend/haccp-web
+            npm run build
+            npx playwright install chromium --with-deps || npx playwright install chromium
+            if ! curl -sS -o /dev/null --connect-timeout 2 "http://127.0.0.1:4173/haccp/"; then
+              npm run preview -- --host localhost --port 4173 --strictPort &
+              preview_pid=$!
+              trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+              i=0
+              until curl -sS -o /dev/null --connect-timeout 2 "http://127.0.0.1:4173/haccp/"; do
+                i=$((i + 1))
+                if [ "$i" -gt 30 ]; then
+                  echo 'vite preview 4173 이 안 떴다'
+                  exit 1
+                fi
+                sleep 1
+              done
+            fi
+            npm run test:e2e
+          '''
+        }
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'frontend/haccp-web/playwright-report/**', allowEmptyArchive: true
         }
       }
     }

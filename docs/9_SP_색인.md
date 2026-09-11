@@ -47,7 +47,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `draft/html/HtmlDraftMapper.xml` | selectForms | SP 결과에 use_yn·ver_no 필터 |
 | `draft/hwpdoc/HwpDraftMapper.xml` | selectForms | SP 결과에 doc_kind=HWP 필터 |
 
-## 매퍼 → SP → 표 (163건)
+## 매퍼 → SP → 표 (165건)
 
 | 도메인 | SP | 종류 | 매퍼 | 건드리는 표 |
 |---|---|---|---|---|
@@ -210,6 +210,8 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | sys/code/user | `sp_user_management_sign_info_r_000` | 조회 | `sys/code/user/UserMapper.xml` | `tbl_user` |
 | sys/code/user | `sp_user_management_sign_r_000` | 조회 | `sys/code/user/UserMapper.xml` | `tbl_user` |
 | sys/code/user | `sp_user_management_sign_u_000` | 쓰기 | `sys/code/user/UserMapper.xml` | `tbl_user` |
+| sys/company | `sp_tbl_company_exists_r_000` | 조회 | `sys/company/CompanyMapper.xml` | `tbl_company` |
+| sys/company | `sp_tbl_company_purge_d_000` | 쓰기 | `sys/company/CompanyMapper.xml` | `tbl_company` |
 | sys/logs/auditlog | `sp_audit_log_r_000` | 조회 | `sys/logs/auditlog/AuditLogMapper.xml` | `tbl_audit_log<br>tbl_screen<br>tbl_user` |
 | sys/logs/auditlog | `sp_tbl_audit_log_c_000` | 쓰기 | `sys/logs/auditlog/AuditLogMapper.xml` | `tbl_audit_log` |
 | sys/logs/loginhistory | `sp_login_history_r_000` | 조회 | `sys/logs/loginhistory/LoginHistoryMapper.xml` | `tbl_login_log<br>tbl_user` |

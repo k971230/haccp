@@ -3292,6 +3292,85 @@ COMMENT ON FUNCTION sasshaccp.sp_tbl_company_r_000() IS '활성 회사코드 목
 
 
 --
+-- Name: sp_tbl_company_exists_r_000(character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_tbl_company_exists_r_000(p_co_cd character varying) RETURNS integer
+    LANGUAGE sql STABLE
+    AS $$
+    -- 테넌트 삭제 전 존재 확인 — 0 이면 없는 회사
+    SELECT COUNT(*)::int FROM tbl_company WHERE co_cd = p_co_cd;
+$$;
+
+
+--
+-- Name: FUNCTION sp_tbl_company_exists_r_000(p_co_cd character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON FUNCTION sasshaccp.sp_tbl_company_exists_r_000(p_co_cd character varying) IS '회사 존재 건수 — 테넌트 삭제 validate-delete 가 0 이면 거절';
+
+
+--
+-- Name: sp_tbl_company_purge_d_000(character varying, character varying); Type: PROCEDURE; Schema: sasshaccp; Owner: -
+--
+
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_tbl_company_purge_d_000(IN p_co_cd character varying, IN p_id character varying)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    -- 이번에 지울 표 — co_cd 칸이 있는 tbl_*
+    r record;
+    -- FK 에 막히면 순서를 바꿔 다시 돈다
+    i int;
+BEGIN
+    IF COALESCE(p_co_cd, '') = '' THEN
+        RAISE EXCEPTION '삭제할 업체를 선택하세요.' USING ERRCODE = '45000';
+    END IF;
+    IF p_co_cd = '0000' THEN
+        RAISE EXCEPTION '플랫폼 회사는 삭제할 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    -- 이미 없으면 성공 — E2E beforeAll/afterAll 이 두 번 부른다
+    IF NOT EXISTS (SELECT 1 FROM tbl_company WHERE co_cd = p_co_cd) THEN
+        RETURN;
+    END IF;
+
+    -- p_id 는 호출 흔적. 표마다 upd_id 를 남기지 않고 행을 지운다
+    PERFORM p_id;
+
+    -- ponytail: 표×40회 FK 재시도. 순환 참조가 남으면 마지막 회사 DELETE 가 실패한다. 그때 고정 역순 목록으로 바꾼다
+    FOR i IN 1..40 LOOP
+        FOR r IN
+            SELECT c.table_name
+              FROM information_schema.columns c
+              JOIN information_schema.tables t
+                ON t.table_schema = c.table_schema
+               AND t.table_name = c.table_name
+             WHERE c.table_schema = 'sasshaccp'
+               AND c.column_name = 'co_cd'
+               AND c.table_name LIKE 'tbl\_%'
+               AND c.table_name <> 'tbl_company'
+               AND t.table_type = 'BASE TABLE'
+        LOOP
+            BEGIN
+                EXECUTE format('DELETE FROM %I WHERE co_cd = %L', r.table_name, p_co_cd);
+            EXCEPTION WHEN foreign_key_violation THEN
+                NULL;
+            END;
+        END LOOP;
+    END LOOP;
+
+    DELETE FROM tbl_company WHERE co_cd = p_co_cd;
+END$$;
+
+
+--
+-- Name: PROCEDURE sp_tbl_company_purge_d_000(IN p_co_cd character varying, IN p_id character varying); Type: COMMENT; Schema: sasshaccp; Owner: -
+--
+
+COMMENT ON PROCEDURE sasshaccp.sp_tbl_company_purge_d_000(IN p_co_cd character varying, IN p_id character varying) IS '테넌트 트리 역순 삭제 — co_cd 표를 FK 가 풀릴 때까지 비운 뒤 회사 행을 지운다. 0000 금지';
+
+
+--
 -- Name: sp_tbl_company_template_delete_blocker_r_000(character varying, character varying[]); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
