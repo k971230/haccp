@@ -1,6 +1,6 @@
 # INDEX — 무엇이 어디 있나
 
-> 개발자: 박승우 · 일자: 2026-09-10
+> 개발자: 박승우 · 일자: 2026-09-11
 > **생성기가 만든다** — `node scripts/gen_index.mjs`. 손으로 고치지 않는다.
 
 git 이 추적하는 폴더와 그 폴더 README 의 첫 줄을 뽑았다.
@@ -398,7 +398,7 @@ tools/  ← README 없음
 - `backend/haccp-api/src/test/java/com/haccp/docs/htmlform/htmltemplate` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/docs/hwp` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/docs/sch` — 소스 2본
-- `backend/haccp-api/src/test/java/com/haccp/docs/templates` — 소스 1본
+- `backend/haccp-api/src/test/java/com/haccp/docs/templates` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/draft` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/draft/ccpmonitoring` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/draft/hwpdoc` — 소스 1본
