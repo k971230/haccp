@@ -1,6 +1,6 @@
 # 5. PIPELINE 색인 — 태그에서 파일로
 
-> 개발자: 박승우 · 일자: 2026-09-11
+> 개발자: 박승우 · 일자: 2026-09-15
 > 소스의 `PIPELINE[HFn]` / `PIPELINE[HBn]` 주석에서 뽑았다.
 
 코드에 태그를 달아 두고 여기서 파일을 찾는다.
@@ -20,7 +20,7 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 [`backend/haccp-api/PIPELINE.md`](../backend/haccp-api/PIPELINE.md) ·
 [`frontend/haccp-web/PIPELINE.md`](../frontend/haccp-web/PIPELINE.md).
 
-## 프론트 (HF) — 태그 90개 · 파일 290곳
+## 프론트 (HF) — 태그 93개 · 파일 293곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
@@ -314,8 +314,11 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `HF211` | `frontend/haccp-web/src/pages/board/CalendarRule.ts` | 일정 캘린더 규칙 |
 | `HF212` | `frontend/haccp-web/src/pages/board/CalendarPage.tsx` | 일정 캘린더 화면 |
 | `HF213` | `frontend/haccp-web/src/components/common/modal/PasswordChangeModal.tsx` | 비밀번호 변경 팝업 |
+| `HF214` | `frontend/haccp-web/src/api/flow/healthCertApi.ts` | 보건증 API |
+| `HF215` | `frontend/haccp-web/src/pages/flow/box/healthcert/HealthCertManagementRule.ts` | 보건증 규칙 |
+| `HF216` | `frontend/haccp-web/src/pages/flow/box/healthcert/HealthCertManagementPage.tsx` | 보건증 화면 |
 
-## 백엔드 (HB) — 태그 85개 · 파일 375곳
+## 백엔드 (HB) — 태그 90개 · 파일 389곳
 
 | 태그 | 파일 | 무엇 |
 |---|---|---|
@@ -685,6 +688,20 @@ node scripts/gen_pipeline_index.mjs --check   # 어긋나면 실패한다 (CI)
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/company/CompanyService.java` | 업체 삭제 서비스 |
 |  | `backend/haccp-api/src/main/java/com/haccp/sys/company/dto/CompanyDeleteItem.java` | 업체 삭제 DTO |
 |  | `backend/haccp-api/src/main/resources/mapper/sys/company/CompanyMapper.xml` | 업체 삭제 MyBatis XML |
+| `HB147` | `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/HealthCertController.java` | 보건증 Controller |
+| `HB148` | `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/dto/HealthCertAlarmRow.java` | 보건증 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/dto/HealthCertCalRow.java` | 보건증 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/dto/HealthCertDeleteItem.java` | 보건증 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/dto/HealthCertEmpRow.java` | 보건증 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/dto/HealthCertFileMeta.java` | 보건증 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/dto/HealthCertHistRow.java` | 보건증 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/dto/HealthCertMgrRow.java` | 보건증 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/dto/HealthCertMgrSaveRequest.java` | 보건증 DTO |
+|  | `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/HealthCertService.java` | 보건증 Service |
+| `HB149` | `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/HealthCertMapper.java` | 보건증 Mapper |
+|  | `backend/haccp-api/src/main/resources/mapper/flow/box/HealthCertMapper.xml` | 보건증 MyBatis XML |
+| `HB150` | `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/HealthCertFileStorage.java` | 보건증 파일 저장 |
+| `HB151` | `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/dto/HealthCertCanRow.java` | 보건증 DTO |
 | `HB210` | `backend/haccp-api/src/main/java/com/haccp/board/CalendarMapper.java` | 일정 캘린더 매퍼 |
 |  | `backend/haccp-api/src/main/resources/mapper/board/CalendarMapper.xml` | 일정 캘린더 매퍼 |
 | `HB211` | `backend/haccp-api/src/main/java/com/haccp/board/CalendarService.java` | 일정 캘린더 서비스 |

@@ -179,6 +179,29 @@ class ScreenAuthResolverTest {
     }
 
     @Test
+    void 보건증_경로는_health_cert_management_화면이다() {
+        ScreenAuthMatch list = ScreenAuthResolver.resolve(
+                "GET",
+                "/api/v1/flow/box/health-cert-management/emp/list"
+        ).orElseThrow();
+        assertEquals("health-cert-management", list.scrnCd());
+        assertEquals(ScreenAuthAction.READ, list.action());
+
+        ScreenAuthMatch upload = ScreenAuthResolver.resolve(
+                "POST",
+                "/api/v1/flow/box/health-cert-management/hist/upload"
+        ).orElseThrow();
+        assertEquals("health-cert-management", upload.scrnCd());
+        assertEquals(ScreenAuthAction.WRITE, upload.action());
+
+        ScreenAuthMatch del = ScreenAuthResolver.resolve(
+                "POST",
+                "/api/v1/flow/box/health-cert-management/hist/validate-delete"
+        ).orElseThrow();
+        assertEquals(ScreenAuthAction.DELETE, del.action());
+    }
+
+    @Test
     void 테넌트_삭제는_화면맵_없이_화이트리스트다() {
         assertTrue(ScreenAuthResolver.skipScreenAuth("POST", "/api/v1/sys/company/validate-delete"));
         assertTrue(ScreenAuthResolver.skipScreenAuth("POST", "/api/v1/sys/company/delete"));

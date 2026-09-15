@@ -130,6 +130,70 @@ CREATE TABLE IF NOT EXISTS sasshaccp.tbl_workday_override (
 );
 
 --
+-- 보건증(인사) — 이미 깐 DB. apply-all 은 스키마가 있으면 00_ddl 을 건너뛰므로 여기서 만든다.
+-- CREATE 는 반드시 IF NOT EXISTS. 라이브에 두 번 돌려도 표가 이미 있으면 통과한다.
+-- tbl_user 에 칸을 달지 않는다. 파일은 HrDocs 폴더, 이 표는 경로만.
+--
+CREATE TABLE IF NOT EXISTS sasshaccp.tbl_emp_detail (
+    idx bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    co_cd character varying(10) NOT NULL,
+    user_id character varying(20) NOT NULL,
+    health_cert_manage_yn character varying(1) DEFAULT 'N'::character varying NOT NULL,
+    ins_id character varying(20),
+    ins_dt timestamp without time zone DEFAULT now(),
+    upd_id character varying(20),
+    upd_dt timestamp without time zone,
+    CONSTRAINT ux_tbl_emp_detail UNIQUE (co_cd, user_id)
+);
+CREATE TABLE IF NOT EXISTS sasshaccp.tbl_health_cert_hist (
+    idx bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    co_cd character varying(10) NOT NULL,
+    user_id character varying(20) NOT NULL,
+    reg_dt character varying(8) NOT NULL,
+    expire_dt character varying(8) NOT NULL,
+    file_nm character varying(300) NOT NULL,
+    file_path character varying(500) NOT NULL,
+    file_ext character varying(10) NOT NULL,
+    file_size bigint,
+    mime_type character varying(100),
+    wrapped_dek character varying(200),
+    key_version integer DEFAULT 1 NOT NULL,
+    ins_id character varying(20),
+    ins_dt timestamp without time zone DEFAULT now(),
+    upd_id character varying(20),
+    upd_dt timestamp without time zone
+);
+ALTER TABLE sasshaccp.tbl_health_cert_hist
+    ADD COLUMN IF NOT EXISTS wrapped_dek character varying(200);
+ALTER TABLE sasshaccp.tbl_health_cert_hist
+    ADD COLUMN IF NOT EXISTS key_version integer DEFAULT 1 NOT NULL;
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.wrapped_dek IS '마스터 키로 감싼 파일 DEK(hex). 주민번호 아님';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.key_version IS 'DEK 래핑에 쓴 APP_HR_FILE_KEY 세대. 기본 1';
+CREATE INDEX IF NOT EXISTS ix_tbl_health_cert_hist_user
+    ON sasshaccp.tbl_health_cert_hist (co_cd, user_id, idx DESC);
+CREATE TABLE IF NOT EXISTS sasshaccp.tbl_health_cert_mgr (
+    idx bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    co_cd character varying(10) NOT NULL,
+    user_id character varying(20) NOT NULL,
+    ins_id character varying(20),
+    ins_dt timestamp without time zone DEFAULT now(),
+    CONSTRAINT ux_tbl_health_cert_mgr UNIQUE (co_cd, user_id)
+);
+CREATE TABLE IF NOT EXISTS sasshaccp.tbl_health_cert_alarm (
+    idx bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    co_cd character varying(10) NOT NULL,
+    alarm_day_1 integer DEFAULT 30 NOT NULL,
+    alarm_day_2 integer DEFAULT 7 NOT NULL,
+    alarm_day_3 integer DEFAULT 1 NOT NULL,
+    ins_id character varying(20),
+    ins_dt timestamp without time zone DEFAULT now(),
+    upd_id character varying(20),
+    upd_dt timestamp without time zone,
+    CONSTRAINT ux_tbl_health_cert_alarm UNIQUE (co_cd),
+    CONSTRAINT ck_tbl_health_cert_alarm_days CHECK (alarm_day_1 > 0 AND alarm_day_2 > 0 AND alarm_day_3 > 0)
+);
+
+--
 -- FK 를 걸기 위한 스키마 보정 — 이미 도는 DB. 다시 돌려도 결과가 같다
 --
 -- 1) 빠진 co_cd · 화면↔양식 순환 끊기 · 파일 대표를 자식 플래그로
@@ -418,7 +482,8 @@ DECLARE
         ['tbl_schedule_task','alarm_send_yn'], ['tbl_screen','use_yn'],
         ['tbl_template','impl_yn'], ['tbl_template','use_yn'],
         ['tbl_user','gridsave_yn'], ['tbl_user','lock_yn'], ['tbl_user','use_yn'],
-        ['tbl_user_noti_pref','recv_yn']
+        ['tbl_user_noti_pref','recv_yn'],
+        ['tbl_emp_detail','health_cert_manage_yn']
     ];
     tbl text; col text; cname text;
 BEGIN
@@ -1784,3 +1849,126 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_tbl_company_template_file_default
 CREATE UNIQUE INDEX IF NOT EXISTS ux_tbl_company_template_file_current
     ON sasshaccp.tbl_company_template_file (co_cd, tmpl_cd)
     WHERE current_yn = 'Y' AND del_yn = 'N';
+
+--
+-- 보건증 화면·메뉴·권한·알림 기본행 — 이미 깐 DB 는 02_seed 를 건너뛴다
+-- 화면 INSERT 는 today-tasks 가 있을 때만. 빈 DB 에서 한 줄만 넣으면
+-- apply-all 이 02_seed 전체를 건너뛴다
+--
+INSERT INTO sasshaccp.tbl_screen (co_cd, scrn_cd, scrn_nm, module_cd, sort_no, use_yn, ins_id, ins_dt)
+SELECT '0000', 'health-cert-management', '보건증관리', 'APR', 221, 'Y', 'system', now()
+ WHERE EXISTS (
+     SELECT 1 FROM sasshaccp.tbl_screen s WHERE s.scrn_cd = 'today-tasks'
+ )
+   AND NOT EXISTS (
+     SELECT 1 FROM sasshaccp.tbl_screen s WHERE s.scrn_cd = 'health-cert-management'
+ );
+
+INSERT INTO sasshaccp.tbl_menu (co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt)
+SELECT c.co_cd, 'health-cert-management', '보건증관리', 'box', 'health-cert-management', 3202, 'Y', 'system', now()
+  FROM sasshaccp.tbl_company c
+ WHERE NOT EXISTS (
+     SELECT 1 FROM sasshaccp.tbl_menu m
+      WHERE m.co_cd = c.co_cd AND m.menu_cd = 'health-cert-management'
+ );
+
+INSERT INTO sasshaccp.tbl_role_screen (
+    co_cd, usrgrp_cd, scrn_cd, read_yn, write_yn, modify_yn, delete_yn, print_yn, ins_id, ins_dt)
+SELECT r.co_cd, r.usrgrp_cd, 'health-cert-management',
+       'Y',
+       CASE r.usrgrp_cd WHEN 'VIEWER' THEN 'N' ELSE 'Y' END,
+       CASE r.usrgrp_cd WHEN 'VIEWER' THEN 'N' ELSE 'Y' END,
+       CASE r.usrgrp_cd WHEN 'VIEWER' THEN 'N' ELSE 'Y' END,
+       'Y',
+       'system', now()
+  FROM sasshaccp.tbl_role r
+ WHERE NOT EXISTS (
+     SELECT 1 FROM sasshaccp.tbl_role_screen s
+      WHERE s.co_cd = r.co_cd AND s.usrgrp_cd = r.usrgrp_cd
+        AND s.scrn_cd = 'health-cert-management'
+ );
+
+INSERT INTO sasshaccp.tbl_health_cert_alarm (co_cd, alarm_day_1, alarm_day_2, alarm_day_3, ins_id, ins_dt)
+SELECT c.co_cd, 30, 7, 1, 'system', now()
+  FROM sasshaccp.tbl_company c
+ WHERE NOT EXISTS (
+     SELECT 1 FROM sasshaccp.tbl_health_cert_alarm a WHERE a.co_cd = c.co_cd
+ );
+
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint c
+          JOIN pg_namespace n ON n.oid = c.connamespace
+         WHERE n.nspname = 'sasshaccp' AND c.conname = 'fk_tbl_emp_detail_co_cd'
+    ) THEN
+        ALTER TABLE sasshaccp.tbl_emp_detail
+            ADD CONSTRAINT fk_tbl_emp_detail_co_cd FOREIGN KEY (co_cd)
+            REFERENCES sasshaccp.tbl_company(co_cd);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint c
+          JOIN pg_namespace n ON n.oid = c.connamespace
+         WHERE n.nspname = 'sasshaccp' AND c.conname = 'fk_tbl_emp_detail_user'
+    ) THEN
+        ALTER TABLE sasshaccp.tbl_emp_detail
+            ADD CONSTRAINT fk_tbl_emp_detail_user FOREIGN KEY (user_id)
+            REFERENCES sasshaccp.tbl_user(user_id);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint c
+          JOIN pg_namespace n ON n.oid = c.connamespace
+         WHERE n.nspname = 'sasshaccp' AND c.conname = 'fk_tbl_health_cert_hist_co_cd'
+    ) THEN
+        ALTER TABLE sasshaccp.tbl_health_cert_hist
+            ADD CONSTRAINT fk_tbl_health_cert_hist_co_cd FOREIGN KEY (co_cd)
+            REFERENCES sasshaccp.tbl_company(co_cd);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint c
+          JOIN pg_namespace n ON n.oid = c.connamespace
+         WHERE n.nspname = 'sasshaccp' AND c.conname = 'fk_tbl_health_cert_hist_user'
+    ) THEN
+        ALTER TABLE sasshaccp.tbl_health_cert_hist
+            ADD CONSTRAINT fk_tbl_health_cert_hist_user FOREIGN KEY (user_id)
+            REFERENCES sasshaccp.tbl_user(user_id);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint c
+          JOIN pg_namespace n ON n.oid = c.connamespace
+         WHERE n.nspname = 'sasshaccp' AND c.conname = 'fk_tbl_health_cert_mgr_co_cd'
+    ) THEN
+        ALTER TABLE sasshaccp.tbl_health_cert_mgr
+            ADD CONSTRAINT fk_tbl_health_cert_mgr_co_cd FOREIGN KEY (co_cd)
+            REFERENCES sasshaccp.tbl_company(co_cd);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint c
+          JOIN pg_namespace n ON n.oid = c.connamespace
+         WHERE n.nspname = 'sasshaccp' AND c.conname = 'fk_tbl_health_cert_mgr_user'
+    ) THEN
+        ALTER TABLE sasshaccp.tbl_health_cert_mgr
+            ADD CONSTRAINT fk_tbl_health_cert_mgr_user FOREIGN KEY (user_id)
+            REFERENCES sasshaccp.tbl_user(user_id);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint c
+          JOIN pg_namespace n ON n.oid = c.connamespace
+         WHERE n.nspname = 'sasshaccp' AND c.conname = 'fk_tbl_health_cert_alarm_co_cd'
+    ) THEN
+        ALTER TABLE sasshaccp.tbl_health_cert_alarm
+            ADD CONSTRAINT fk_tbl_health_cert_alarm_co_cd FOREIGN KEY (co_cd)
+            REFERENCES sasshaccp.tbl_company(co_cd);
+    END IF;
+END $$;

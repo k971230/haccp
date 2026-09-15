@@ -7663,6 +7663,8 @@ BEGIN
 
     DELETE FROM tbl_user_noti_pref WHERE co_cd = p_co_cd AND user_id = v_user_id;
     DELETE FROM tbl_grid_pref      WHERE co_cd = p_co_cd AND user_id = v_user_id;
+    DELETE FROM tbl_health_cert_mgr WHERE co_cd = p_co_cd AND user_id = v_user_id;
+    DELETE FROM tbl_emp_detail      WHERE co_cd = p_co_cd AND user_id = v_user_id;
     DELETE FROM tbl_user           WHERE co_cd = p_co_cd AND idx = p_idx;
 END$$;
 
@@ -7681,12 +7683,13 @@ COMMENT ON PROCEDURE sasshaccp.sp_user_management_d_000(IN p_co_cd character var
 CREATE OR REPLACE FUNCTION sasshaccp.sp_user_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) RETURNS TABLE(ref_key character varying, target character varying)
     LANGUAGE sql
     AS $$
-    -- 차단 사유 없음 — 시그니처를 맞추기 위해 빈 결과를 반환한다
-    SELECT u.user_id::varchar, ''::varchar
+    -- 보건증 이력이 있으면 사용자를 지우지 않는다 — 인사 파일이 고아가 된다
+    SELECT u.user_id::varchar, '보건증 이력'::varchar
       FROM tbl_user u
+      JOIN tbl_health_cert_hist h ON h.co_cd = u.co_cd AND h.user_id = u.user_id
      WHERE u.co_cd = p_co_cd
        AND u.idx = ANY(p_idxs)
-       AND FALSE;
+     LIMIT 1;
 $$;
 
 
@@ -7694,14 +7697,16 @@ $$;
 -- Name: FUNCTION sp_user_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]); Type: COMMENT; Schema: sasshaccp; Owner: -
 --
 
-COMMENT ON FUNCTION sasshaccp.sp_user_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) IS '사용자 삭제 차단 — 문서는 이력 보존이라 차단 사유 없음(항상 0행)';
+COMMENT ON FUNCTION sasshaccp.sp_user_management_delete_blocker_r_000(p_co_cd character varying, p_idxs bigint[]) IS '사용자 삭제 차단 — 보건증 이력이 있으면 막는다. 문서는 이력 보존';
 
 
 --
 -- Name: sp_user_management_r_000(character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: sasshaccp; Owner: -
 --
 
-CREATE OR REPLACE FUNCTION sasshaccp.sp_user_management_r_000(p_co_cd character varying, p_user_id character varying, p_user_nm character varying, p_dept_cd character varying, p_use_yn character varying) RETURNS TABLE(idx bigint, user_id character varying, co_cd character varying, emp_cd character varying, user_nm character varying, usrgrp_cd character varying, usrgrp_nm character varying, dept_cd character varying, dept_nm character varying, email character varying, mobile character varying, sign_yn character varying, gridsave_yn character varying, last_login_dt timestamp without time zone, login_fail_cnt integer, lock_yn character varying, use_yn character varying)
+DROP FUNCTION IF EXISTS sasshaccp.sp_user_management_r_000(character varying, character varying, character varying, character varying, character varying);
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_user_management_r_000(p_co_cd character varying, p_user_id character varying, p_user_nm character varying, p_dept_cd character varying, p_use_yn character varying) RETURNS TABLE(idx bigint, user_id character varying, co_cd character varying, emp_cd character varying, user_nm character varying, usrgrp_cd character varying, usrgrp_nm character varying, dept_cd character varying, dept_nm character varying, email character varying, mobile character varying, sign_yn character varying, gridsave_yn character varying, last_login_dt timestamp without time zone, login_fail_cnt integer, lock_yn character varying, use_yn character varying, health_cert_manage_yn character varying)
     LANGUAGE sql
     AS $$
     SELECT u.idx, u.user_id, u.co_cd, u.emp_cd, u.user_nm,
@@ -7710,12 +7715,15 @@ CREATE OR REPLACE FUNCTION sasshaccp.sp_user_management_r_000(p_co_cd character 
            -- 서명 보유여부만 내린다 — 16KB급 바이너리를 목록에 실으면 그리드가 무거워진다
            (CASE WHEN u.sign_img IS NOT NULL THEN 'Y' ELSE 'N' END)::varchar,
            u.gridsave_yn,
-           u.last_login_dt, u.login_fail_cnt, u.lock_yn, u.use_yn
+           u.last_login_dt, u.login_fail_cnt, u.lock_yn, u.use_yn,
+           -- 보건증 대상 — tbl_user 가 아니라 인사 부가 표
+           COALESCE(e.health_cert_manage_yn, 'N')::varchar
       FROM tbl_user u
       -- 권한그룹명 — 그리드 표시 전용
       LEFT JOIN tbl_role r ON r.co_cd = u.co_cd AND r.usrgrp_cd = u.usrgrp_cd
       -- 부서명 — 그리드 표시 전용
       LEFT JOIN tbl_dept d ON d.co_cd = u.co_cd AND d.dept_cd   = u.dept_cd
+      LEFT JOIN tbl_emp_detail e ON e.co_cd = u.co_cd AND e.user_id = u.user_id
      WHERE u.co_cd = p_co_cd
        AND u.user_id LIKE CONCAT('%', COALESCE(p_user_id, ''), '%')
        AND u.user_nm LIKE CONCAT('%', COALESCE(p_user_nm, ''), '%')
@@ -8117,3 +8125,530 @@ $$;
 
 COMMENT ON PROCEDURE sasshaccp.sp_auth_password_u_000(character varying, character varying, character varying)
     IS '본인 비밀번호 변경 — JWT 회사·아이디만. 해시는 서비스가 넘긴다';
+
+
+-- ------------------------------------------------------------
+-- 보건증 등록 관리
+-- ------------------------------------------------------------
+
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_emp_detail_health_cert_u_000(
+    IN p_co_cd character varying,
+    IN p_user_id character varying,
+    IN p_health_cert_manage_yn character varying,
+    IN p_id character varying
+)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM tbl_user WHERE co_cd = p_co_cd AND user_id = p_user_id) THEN
+        RAISE EXCEPTION '사용자를 찾을 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    INSERT INTO tbl_emp_detail (co_cd, user_id, health_cert_manage_yn, ins_id, ins_dt)
+    VALUES (p_co_cd, p_user_id, COALESCE(NULLIF(p_health_cert_manage_yn, ''), 'N'), p_id, now())
+    ON CONFLICT (co_cd, user_id) DO UPDATE
+       SET health_cert_manage_yn = EXCLUDED.health_cert_manage_yn,
+           upd_id = p_id,
+           upd_dt = now();
+END$$;
+
+COMMENT ON PROCEDURE sasshaccp.sp_emp_detail_health_cert_u_000(character varying, character varying, character varying, character varying)
+    IS '보건증 대상 여부 upsert — tbl_user 가 아니라 tbl_emp_detail';
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_health_cert_management_can_r_000(
+    p_co_cd character varying,
+    p_actor_id character varying
+) RETURNS TABLE(
+    mgr_yn character varying,
+    admin_yn character varying,
+    expire_window_days integer,
+    alarm_day_1 integer,
+    alarm_day_2 integer,
+    alarm_day_3 integer
+)
+    LANGUAGE sql STABLE
+    AS $$
+    SELECT
+        (CASE WHEN EXISTS (
+            SELECT 1 FROM tbl_health_cert_mgr m
+             WHERE m.co_cd = p_co_cd AND m.user_id = p_actor_id
+        ) THEN 'Y' ELSE 'N' END)::varchar,
+        (CASE WHEN EXISTS (
+            SELECT 1 FROM tbl_user u
+             WHERE u.co_cd = p_co_cd AND u.user_id = p_actor_id AND u.usrgrp_cd = 'ADMIN'
+        ) THEN 'Y' ELSE 'N' END)::varchar,
+        GREATEST(COALESCE(a.alarm_day_1, 30), COALESCE(a.alarm_day_2, 7), COALESCE(a.alarm_day_3, 1)),
+        COALESCE(a.alarm_day_1, 30),
+        COALESCE(a.alarm_day_2, 7),
+        COALESCE(a.alarm_day_3, 1)
+      FROM (SELECT 1) z
+      LEFT JOIN tbl_health_cert_alarm a ON a.co_cd = p_co_cd;
+$$;
+
+COMMENT ON FUNCTION sasshaccp.sp_health_cert_management_can_r_000(character varying, character varying)
+    IS '로그인 사용자 담당·관리 여부와 임박 창(MAX 설정일)';
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_health_cert_management_emp_r_000(
+    p_co_cd character varying,
+    p_actor_id character varying,
+    p_expiring_yn character varying
+) RETURNS TABLE(
+    user_id character varying,
+    user_nm character varying,
+    dept_cd character varying,
+    dept_nm character varying,
+    expire_dt character varying,
+    hist_cnt integer
+)
+    LANGUAGE plpgsql STABLE
+    AS $$
+DECLARE
+    v_is_mgr boolean;
+    v_window int;
+    v_until varchar(8);
+BEGIN
+    v_is_mgr := EXISTS (
+        SELECT 1 FROM tbl_health_cert_mgr m
+         WHERE m.co_cd = p_co_cd AND m.user_id = p_actor_id
+    );
+    SELECT GREATEST(COALESCE(a.alarm_day_1, 30), COALESCE(a.alarm_day_2, 7), COALESCE(a.alarm_day_3, 1))
+      INTO v_window
+      FROM tbl_health_cert_alarm a
+     WHERE a.co_cd = p_co_cd;
+    v_window := COALESCE(v_window, 30);
+    v_until := to_char((now() AT TIME ZONE 'Asia/Seoul')::date + v_window, 'YYYYMMDD');
+
+    RETURN QUERY
+    SELECT u.user_id, u.user_nm, u.dept_cd, d.dept_nm,
+           latest.expire_dt, COALESCE(latest.hist_cnt, 0)::int
+      FROM tbl_user u
+      JOIN tbl_emp_detail e
+        ON e.co_cd = u.co_cd AND e.user_id = u.user_id AND e.health_cert_manage_yn = 'Y'
+      LEFT JOIN tbl_dept d ON d.co_cd = u.co_cd AND d.dept_cd = u.dept_cd
+      LEFT JOIN LATERAL (
+          SELECT h.expire_dt,
+                 (SELECT COUNT(*)::int FROM tbl_health_cert_hist x
+                   WHERE x.co_cd = u.co_cd AND x.user_id = u.user_id) AS hist_cnt
+            FROM tbl_health_cert_hist h
+           WHERE h.co_cd = u.co_cd AND h.user_id = u.user_id
+           ORDER BY h.idx DESC
+           LIMIT 1
+      ) latest ON true
+     WHERE u.co_cd = p_co_cd
+       AND u.use_yn = 'Y'
+       AND (v_is_mgr OR u.user_id = p_actor_id)
+       AND (COALESCE(p_expiring_yn, 'N') <> 'Y'
+            OR (latest.expire_dt IS NOT NULL AND latest.expire_dt <= v_until))
+     ORDER BY u.user_nm, u.user_id;
+END$$;
+
+COMMENT ON FUNCTION sasshaccp.sp_health_cert_management_emp_r_000(character varying, character varying, character varying)
+    IS '보건증 대상 사원 — 담당자면 전원, 아니면 본인. 임박은 MAX(설정일)';
+
+DROP FUNCTION IF EXISTS sasshaccp.sp_health_cert_management_hist_r_000(character varying, character varying, character varying);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_health_cert_management_hist_r_000(
+    p_co_cd character varying,
+    p_actor_id character varying,
+    p_user_id character varying
+) RETURNS TABLE(
+    idx bigint,
+    user_id character varying,
+    reg_dt character varying,
+    expire_dt character varying,
+    file_nm character varying,
+    file_ext character varying,
+    file_size bigint,
+    mime_type character varying,
+    ins_nm character varying,
+    ins_dt timestamp without time zone
+)
+    LANGUAGE plpgsql STABLE
+    AS $$
+DECLARE
+    v_is_mgr boolean;
+BEGIN
+    v_is_mgr := EXISTS (
+        SELECT 1 FROM tbl_health_cert_mgr m
+         WHERE m.co_cd = p_co_cd AND m.user_id = p_actor_id
+    );
+    IF NOT v_is_mgr AND p_user_id IS DISTINCT FROM p_actor_id THEN
+        RETURN;
+    END IF;
+    -- file_path·wrapped_dek 는 목록에 안 내린다
+    RETURN QUERY
+    SELECT h.idx, h.user_id, h.reg_dt, h.expire_dt, h.file_nm,
+           h.file_ext, h.file_size, h.mime_type, u.user_nm, h.ins_dt
+      FROM tbl_health_cert_hist h
+      LEFT JOIN tbl_user u ON u.co_cd = h.co_cd AND u.user_id = h.ins_id
+     WHERE h.co_cd = p_co_cd
+       AND h.user_id = p_user_id
+     ORDER BY h.idx DESC;
+END$$;
+
+DROP PROCEDURE IF EXISTS sasshaccp.sp_health_cert_management_hist_c_000(
+    character varying, character varying, character varying, character varying, character varying,
+    character varying, character varying, character varying, bigint, character varying);
+DROP PROCEDURE IF EXISTS sasshaccp.sp_health_cert_management_hist_c_000(
+    character varying, character varying, character varying, character varying, character varying,
+    character varying, character varying, character varying, bigint, character varying, character varying);
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_health_cert_management_hist_c_000(
+    IN p_co_cd character varying,
+    IN p_actor_id character varying,
+    IN p_user_id character varying,
+    IN p_reg_dt character varying,
+    IN p_expire_dt character varying,
+    IN p_file_nm character varying,
+    IN p_file_path character varying,
+    IN p_file_ext character varying,
+    IN p_file_size bigint,
+    IN p_mime_type character varying,
+    IN p_wrapped_dek character varying,
+    IN p_key_version integer
+)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_is_mgr boolean;
+BEGIN
+    v_is_mgr := EXISTS (
+        SELECT 1 FROM tbl_health_cert_mgr m
+         WHERE m.co_cd = p_co_cd AND m.user_id = p_actor_id
+    );
+    IF NOT v_is_mgr AND p_user_id IS DISTINCT FROM p_actor_id THEN
+        RAISE EXCEPTION '본인 또는 보건증 담당자만 등록할 수 있습니다.' USING ERRCODE = '45000';
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM tbl_emp_detail e
+         WHERE e.co_cd = p_co_cd AND e.user_id = p_user_id AND e.health_cert_manage_yn = 'Y'
+    ) THEN
+        RAISE EXCEPTION '보건증 관리 대상이 아닙니다.' USING ERRCODE = '45000';
+    END IF;
+    IF COALESCE(trim(p_reg_dt), '') = '' OR COALESCE(trim(p_expire_dt), '') = '' THEN
+        RAISE EXCEPTION '등록일과 만료일을 입력하세요.' USING ERRCODE = '45000';
+    END IF;
+    IF COALESCE(trim(p_file_path), '') = '' THEN
+        RAISE EXCEPTION '보건증 파일을 첨부하세요.' USING ERRCODE = '45000';
+    END IF;
+    IF COALESCE(trim(p_wrapped_dek), '') = '' THEN
+        RAISE EXCEPTION '보건증 파일 암호가 없습니다.' USING ERRCODE = '45000';
+    END IF;
+
+    INSERT INTO tbl_health_cert_hist (
+        co_cd, user_id, reg_dt, expire_dt, file_nm, file_path, file_ext, file_size, mime_type, wrapped_dek, key_version, ins_id, ins_dt)
+    VALUES (
+        p_co_cd, p_user_id, p_reg_dt, p_expire_dt, p_file_nm, p_file_path, p_file_ext, p_file_size, p_mime_type, p_wrapped_dek, COALESCE(p_key_version, 1), p_actor_id, now());
+
+    -- 새 보건증을 올리면 그 사원에 대한 미읽음 만료 알림은 끝난 일이다
+    UPDATE tbl_notification
+       SET read_yn = 'Y', read_dt = now()
+     WHERE co_cd = p_co_cd
+       AND noti_type_cd = 'HEALTH_CERT_DUE'
+       AND read_yn = 'N'
+       AND (user_id = p_user_id OR content LIKE p_user_id || '|%');
+END$$;
+
+COMMENT ON PROCEDURE sasshaccp.sp_health_cert_management_hist_c_000(
+    character varying, character varying, character varying, character varying, character varying,
+    character varying, character varying, character varying, bigint, character varying, character varying, integer)
+    IS '보건증 이력 등록 — 최신 행 추가 후 해당 사원 HEALTH_CERT_DUE 미읽음을 읽음 처리';
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_health_cert_management_hist_delete_blocker_r_000(
+    p_co_cd character varying,
+    p_actor_id character varying,
+    p_idxs bigint[]
+) RETURNS TABLE(ref_key character varying, target character varying)
+    LANGUAGE plpgsql STABLE
+    AS $$
+BEGIN
+    -- 참조 차단 행은 없다. 담당자 여부는 Service 가 먼저 가른다.
+    -- 비담당자를 여기 넣으면 DeleteValidation 이 「참조 중」으로 안내한다.
+    RETURN QUERY
+    SELECT NULL::varchar, NULL::varchar WHERE false;
+END$$;
+
+DROP FUNCTION IF EXISTS sasshaccp.sp_health_cert_management_hist_path_r_000(character varying, character varying, bigint[]);
+CREATE OR REPLACE FUNCTION sasshaccp.sp_health_cert_management_hist_path_r_000(
+    p_co_cd character varying,
+    p_actor_id character varying,
+    p_idxs bigint[]
+) RETURNS TABLE(
+    idx bigint,
+    file_path character varying,
+    user_id character varying,
+    wrapped_dek character varying,
+    file_nm character varying,
+    file_ext character varying,
+    key_version integer
+)
+    LANGUAGE plpgsql STABLE
+    AS $$
+DECLARE
+    v_is_mgr boolean;
+BEGIN
+    v_is_mgr := EXISTS (
+        SELECT 1 FROM tbl_health_cert_mgr m
+         WHERE m.co_cd = p_co_cd AND m.user_id = p_actor_id
+    );
+    RETURN QUERY
+    SELECT h.idx, h.file_path, h.user_id, h.wrapped_dek, h.file_nm, h.file_ext, h.key_version
+      FROM tbl_health_cert_hist h
+     WHERE h.co_cd = p_co_cd
+       AND h.idx = ANY(p_idxs)
+       AND (v_is_mgr OR h.user_id = p_actor_id);
+END$$;
+
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_health_cert_management_hist_d_000(
+    IN p_co_cd character varying,
+    IN p_actor_id character varying,
+    IN p_idx bigint
+)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_is_mgr boolean;
+    v_user varchar(20);
+BEGIN
+    v_is_mgr := EXISTS (
+        SELECT 1 FROM tbl_health_cert_mgr m
+         WHERE m.co_cd = p_co_cd AND m.user_id = p_actor_id
+    );
+    SELECT h.user_id INTO v_user
+      FROM tbl_health_cert_hist h
+     WHERE h.co_cd = p_co_cd AND h.idx = p_idx;
+    IF v_user IS NULL THEN
+        RAISE EXCEPTION '삭제할 보건증 이력을 찾을 수 없습니다.' USING ERRCODE = '45000';
+    END IF;
+    IF NOT v_is_mgr THEN
+        RAISE EXCEPTION '보건증 이력은 담당자만 삭제할 수 있습니다.' USING ERRCODE = '45000';
+    END IF;
+    DELETE FROM tbl_health_cert_hist WHERE co_cd = p_co_cd AND idx = p_idx;
+END$$;
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_health_cert_management_mgr_r_000(
+    p_co_cd character varying
+) RETURNS TABLE(user_id character varying, user_nm character varying, dept_nm character varying)
+    LANGUAGE sql STABLE
+    AS $$
+    SELECT m.user_id, u.user_nm, d.dept_nm
+      FROM tbl_health_cert_mgr m
+      JOIN tbl_user u ON u.co_cd = m.co_cd AND u.user_id = m.user_id
+      LEFT JOIN tbl_dept d ON d.co_cd = u.co_cd AND d.dept_cd = u.dept_cd
+     WHERE m.co_cd = p_co_cd
+     ORDER BY u.user_nm;
+$$;
+
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_health_cert_management_mgr_c_000(
+    IN p_co_cd character varying,
+    IN p_actor_id character varying,
+    IN p_user_ids character varying[]
+)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_is_admin boolean;
+    v_id varchar;
+BEGIN
+    v_is_admin := EXISTS (
+        SELECT 1 FROM tbl_user u
+         WHERE u.co_cd = p_co_cd AND u.user_id = p_actor_id AND u.usrgrp_cd = 'ADMIN'
+    );
+    IF NOT v_is_admin THEN
+        RAISE EXCEPTION '관리자만 담당자를 지정할 수 있습니다.' USING ERRCODE = '45000';
+    END IF;
+    DELETE FROM tbl_health_cert_mgr WHERE co_cd = p_co_cd;
+    IF p_user_ids IS NOT NULL THEN
+        FOREACH v_id IN ARRAY p_user_ids LOOP
+            IF COALESCE(trim(v_id), '') = '' THEN
+                CONTINUE;
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM tbl_user WHERE co_cd = p_co_cd AND user_id = v_id) THEN
+                RAISE EXCEPTION '담당자로 지정할 사용자를 찾을 수 없습니다.' USING ERRCODE = '45000';
+            END IF;
+            INSERT INTO tbl_health_cert_mgr (co_cd, user_id, ins_id, ins_dt)
+            VALUES (p_co_cd, v_id, p_actor_id, now());
+        END LOOP;
+    END IF;
+END$$;
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_health_cert_management_alarm_r_000(
+    p_co_cd character varying
+) RETURNS TABLE(alarm_day_1 integer, alarm_day_2 integer, alarm_day_3 integer)
+    LANGUAGE sql STABLE
+    AS $$
+    SELECT COALESCE(a.alarm_day_1, 30), COALESCE(a.alarm_day_2, 7), COALESCE(a.alarm_day_3, 1)
+      FROM (SELECT 1) z
+      LEFT JOIN tbl_health_cert_alarm a ON a.co_cd = p_co_cd;
+$$;
+
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_health_cert_management_alarm_c_000(
+    IN p_co_cd character varying,
+    IN p_actor_id character varying,
+    IN p_alarm_day_1 integer,
+    IN p_alarm_day_2 integer,
+    IN p_alarm_day_3 integer
+)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_is_admin boolean;
+BEGIN
+    v_is_admin := EXISTS (
+        SELECT 1 FROM tbl_user u
+         WHERE u.co_cd = p_co_cd AND u.user_id = p_actor_id AND u.usrgrp_cd = 'ADMIN'
+    );
+    IF NOT v_is_admin THEN
+        RAISE EXCEPTION '관리자만 알림 일수를 바꿀 수 있습니다.' USING ERRCODE = '45000';
+    END IF;
+    IF COALESCE(p_alarm_day_1, 0) <= 0 OR COALESCE(p_alarm_day_2, 0) <= 0 OR COALESCE(p_alarm_day_3, 0) <= 0 THEN
+        RAISE EXCEPTION '알림 일수는 1 이상이어야 합니다.' USING ERRCODE = '45000';
+    END IF;
+    INSERT INTO tbl_health_cert_alarm (co_cd, alarm_day_1, alarm_day_2, alarm_day_3, ins_id, ins_dt)
+    VALUES (p_co_cd, p_alarm_day_1, p_alarm_day_2, p_alarm_day_3, p_actor_id, now())
+    ON CONFLICT (co_cd) DO UPDATE
+       SET alarm_day_1 = EXCLUDED.alarm_day_1,
+           alarm_day_2 = EXCLUDED.alarm_day_2,
+           alarm_day_3 = EXCLUDED.alarm_day_3,
+           upd_id = p_actor_id,
+           upd_dt = now();
+END$$;
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_health_cert_management_cal_r_000(
+    p_co_cd character varying,
+    p_actor_id character varying,
+    p_from_ymd character varying,
+    p_to_ymd character varying
+) RETURNS TABLE(user_id character varying, user_nm character varying, expire_dt character varying)
+    LANGUAGE plpgsql STABLE
+    AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM tbl_health_cert_mgr m
+         WHERE m.co_cd = p_co_cd AND m.user_id = p_actor_id
+    ) THEN
+        RAISE EXCEPTION '보건증 담당자만 일정을 볼 수 있습니다.' USING ERRCODE = '45000';
+    END IF;
+    RETURN QUERY
+    SELECT latest.user_id, u.user_nm, latest.expire_dt
+      FROM (
+          SELECT DISTINCT ON (h.user_id) h.user_id, h.expire_dt
+            FROM tbl_health_cert_hist h
+           WHERE h.co_cd = p_co_cd
+           ORDER BY h.user_id, h.idx DESC
+      ) latest
+      JOIN tbl_user u ON u.co_cd = p_co_cd AND u.user_id = latest.user_id
+     WHERE latest.expire_dt BETWEEN p_from_ymd AND p_to_ymd
+     ORDER BY latest.expire_dt, u.user_nm;
+END$$;
+
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_health_cert_management_alarm_send_c_000(
+    IN p_id character varying,
+    IN p_dormant_days integer DEFAULT NULL
+)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_today varchar(8);
+BEGIN
+    v_today := to_char((now() AT TIME ZONE 'Asia/Seoul')::date, 'YYYYMMDD');
+
+    INSERT INTO tbl_notification(co_cd, noti_type_cd, user_id, title, content, link_scrn_cd, link_doc_idx)
+    SELECT recv.co_cd, 'HEALTH_CERT_DUE', recv.recv_id,
+           '보건증 만료가 임박했습니다.',
+           latest.user_id || '|' || latest.expire_dt || '|' || d.n::text,
+           'health-cert-management',
+           NULL
+      FROM (
+          -- 사원별 최신 이력 1건만 — 구형 보건증으로 알림을 다시 보내지 않는다
+          SELECT DISTINCT ON (h.co_cd, h.user_id)
+                 h.co_cd, h.user_id, h.expire_dt
+            FROM tbl_health_cert_hist h
+           ORDER BY h.co_cd, h.user_id, h.idx DESC
+      ) latest
+      JOIN tbl_health_cert_alarm a ON a.co_cd = latest.co_cd
+      JOIN LATERAL (VALUES (a.alarm_day_1), (a.alarm_day_2), (a.alarm_day_3)) AS d(n) ON true
+      JOIN LATERAL (
+          SELECT latest.user_id AS recv_id, latest.co_cd
+          UNION
+          SELECT m.user_id, m.co_cd
+            FROM tbl_health_cert_mgr m
+           WHERE m.co_cd = latest.co_cd
+      ) recv ON recv.co_cd = latest.co_cd
+     WHERE to_char(
+               (to_date(latest.expire_dt, 'YYYYMMDD') - d.n),
+               'YYYYMMDD') = v_today
+       AND (COALESCE(p_dormant_days, 0) <= 0
+            OR EXISTS (SELECT 1 FROM tbl_login_log l
+                        WHERE l.co_cd = latest.co_cd
+                          AND l.login_dt >= now() - make_interval(days => p_dormant_days)))
+    ON CONFLICT DO NOTHING;
+END$$;
+
+COMMENT ON PROCEDURE sasshaccp.sp_health_cert_management_alarm_send_c_000(character varying, integer)
+    IS '보건증 만료 알림 — 사원별 최신 이력 1건만. N일 전인 날 당사자+담당자에게 1회';
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_health_cert_management_hist_purge_d_000(
+    p_retention_days integer
+) RETURNS TABLE(idx bigint, file_path character varying, user_id character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF COALESCE(p_retention_days, 0) <= 0 THEN
+        RETURN;
+    END IF;
+    RETURN QUERY
+    DELETE FROM tbl_health_cert_hist h
+     WHERE to_date(h.expire_dt, 'YYYYMMDD')
+           < ((now() AT TIME ZONE 'Asia/Seoul')::date - p_retention_days)
+       AND EXISTS (
+           SELECT 1 FROM tbl_health_cert_hist n
+            WHERE n.co_cd = h.co_cd
+              AND n.user_id = h.user_id
+              AND n.idx > h.idx
+       )
+    RETURNING h.idx, h.file_path, h.user_id;
+END$$;
+
+COMMENT ON FUNCTION sasshaccp.sp_health_cert_management_hist_purge_d_000(integer)
+    IS '대체된 보건증 이력 파기 — 최신 1건은 남기고 만료일+보유일수가 지난 행만';
+
+CREATE OR REPLACE FUNCTION sasshaccp.sp_health_cert_management_hist_rewrap_r_000(
+    p_from_version integer
+) RETURNS TABLE(
+    co_cd character varying,
+    idx bigint,
+    wrapped_dek character varying
+)
+    LANGUAGE sql STABLE
+    AS $$
+    SELECT h.co_cd, h.idx, h.wrapped_dek
+      FROM tbl_health_cert_hist h
+     WHERE h.key_version = p_from_version
+       AND COALESCE(trim(h.wrapped_dek), '') <> '';
+$$;
+
+COMMENT ON FUNCTION sasshaccp.sp_health_cert_management_hist_rewrap_r_000(integer)
+    IS '이전 키 세대 wrapped_dek 목록 — 재래핑용. 회사별로 UPDATE 한다';
+
+CREATE OR REPLACE PROCEDURE sasshaccp.sp_health_cert_management_hist_rewrap_u_000(
+    IN p_co_cd character varying,
+    IN p_idx bigint,
+    IN p_wrapped_dek character varying,
+    IN p_key_version integer
+)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF COALESCE(trim(p_co_cd), '') = '' OR COALESCE(p_idx, 0) <= 0 THEN
+        RAISE EXCEPTION '보건증 키가 올바르지 않습니다.' USING ERRCODE = '45000';
+    END IF;
+    UPDATE tbl_health_cert_hist
+       SET wrapped_dek = p_wrapped_dek,
+           key_version = COALESCE(p_key_version, 1),
+           upd_dt = now()
+     WHERE co_cd = p_co_cd
+       AND idx = p_idx;
+END$$;
+
+COMMENT ON PROCEDURE sasshaccp.sp_health_cert_management_hist_rewrap_u_000(
+    character varying, bigint, character varying, integer)
+    IS 'wrapped_dek 재래핑 — co_cd+idx 로만 갱신. 타 회사 행을 건드리지 않는다';
+

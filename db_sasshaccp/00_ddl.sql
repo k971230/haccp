@@ -3010,6 +3010,63 @@ CREATE TABLE sasshaccp.tbl_workday_override (
     CONSTRAINT ux_tbl_workday_override_ymd UNIQUE (co_cd, ymd)
 );
 
+--
+-- 보건증(인사) — 빈 DB 정본. 이미 깐 DB 는 00_ddl 을 건너뛰고 00_alter 의 IF NOT EXISTS 로 만든다.
+-- tbl_user 에 칸을 달지 않는다. 파일은 HrDocs 폴더, 이 표는 경로와 DEK 만. 주민번호 없음.
+--
+CREATE TABLE sasshaccp.tbl_emp_detail (
+    idx bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    co_cd character varying(10) NOT NULL,
+    user_id character varying(20) NOT NULL,
+    health_cert_manage_yn character varying(1) DEFAULT 'N'::character varying NOT NULL,
+    ins_id character varying(20),
+    ins_dt timestamp without time zone DEFAULT now(),
+    upd_id character varying(20),
+    upd_dt timestamp without time zone,
+    CONSTRAINT ux_tbl_emp_detail UNIQUE (co_cd, user_id)
+);
+CREATE TABLE sasshaccp.tbl_health_cert_hist (
+    idx bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    co_cd character varying(10) NOT NULL,
+    user_id character varying(20) NOT NULL,
+    reg_dt character varying(8) NOT NULL,
+    expire_dt character varying(8) NOT NULL,
+    file_nm character varying(300) NOT NULL,
+    file_path character varying(500) NOT NULL,
+    file_ext character varying(10) NOT NULL,
+    file_size bigint,
+    mime_type character varying(100),
+    wrapped_dek character varying(200),
+    key_version integer DEFAULT 1 NOT NULL,
+    ins_id character varying(20),
+    ins_dt timestamp without time zone DEFAULT now(),
+    upd_id character varying(20),
+    upd_dt timestamp without time zone
+);
+CREATE INDEX ix_tbl_health_cert_hist_user
+    ON sasshaccp.tbl_health_cert_hist USING btree (co_cd, user_id, idx DESC);
+CREATE TABLE sasshaccp.tbl_health_cert_mgr (
+    idx bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    co_cd character varying(10) NOT NULL,
+    user_id character varying(20) NOT NULL,
+    ins_id character varying(20),
+    ins_dt timestamp without time zone DEFAULT now(),
+    CONSTRAINT ux_tbl_health_cert_mgr UNIQUE (co_cd, user_id)
+);
+CREATE TABLE sasshaccp.tbl_health_cert_alarm (
+    idx bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    co_cd character varying(10) NOT NULL,
+    alarm_day_1 integer DEFAULT 30 NOT NULL,
+    alarm_day_2 integer DEFAULT 7 NOT NULL,
+    alarm_day_3 integer DEFAULT 1 NOT NULL,
+    ins_id character varying(20),
+    ins_dt timestamp without time zone DEFAULT now(),
+    upd_id character varying(20),
+    upd_dt timestamp without time zone,
+    CONSTRAINT ux_tbl_health_cert_alarm UNIQUE (co_cd),
+    CONSTRAINT ck_tbl_health_cert_alarm_days CHECK (alarm_day_1 > 0 AND alarm_day_2 > 0 AND alarm_day_3 > 0)
+);
+
 -- HACCP_FK_BLOCK
 --
 -- 외래키 — 부모→자식 일방향. ON DELETE 는 RESTRICT(기본)
@@ -3180,6 +3237,24 @@ ALTER TABLE sasshaccp.tbl_view_stat_daily
 
 ALTER TABLE sasshaccp.tbl_workday_override
     ADD CONSTRAINT fk_tbl_workday_override_co_cd FOREIGN KEY (co_cd) REFERENCES sasshaccp.tbl_company(co_cd);
+
+ALTER TABLE sasshaccp.tbl_emp_detail
+    ADD CONSTRAINT fk_tbl_emp_detail_co_cd FOREIGN KEY (co_cd) REFERENCES sasshaccp.tbl_company(co_cd);
+ALTER TABLE sasshaccp.tbl_emp_detail
+    ADD CONSTRAINT fk_tbl_emp_detail_user FOREIGN KEY (user_id) REFERENCES sasshaccp.tbl_user(user_id);
+
+ALTER TABLE sasshaccp.tbl_health_cert_hist
+    ADD CONSTRAINT fk_tbl_health_cert_hist_co_cd FOREIGN KEY (co_cd) REFERENCES sasshaccp.tbl_company(co_cd);
+ALTER TABLE sasshaccp.tbl_health_cert_hist
+    ADD CONSTRAINT fk_tbl_health_cert_hist_user FOREIGN KEY (user_id) REFERENCES sasshaccp.tbl_user(user_id);
+
+ALTER TABLE sasshaccp.tbl_health_cert_mgr
+    ADD CONSTRAINT fk_tbl_health_cert_mgr_co_cd FOREIGN KEY (co_cd) REFERENCES sasshaccp.tbl_company(co_cd);
+ALTER TABLE sasshaccp.tbl_health_cert_mgr
+    ADD CONSTRAINT fk_tbl_health_cert_mgr_user FOREIGN KEY (user_id) REFERENCES sasshaccp.tbl_user(user_id);
+
+ALTER TABLE sasshaccp.tbl_health_cert_alarm
+    ADD CONSTRAINT fk_tbl_health_cert_alarm_co_cd FOREIGN KEY (co_cd) REFERENCES sasshaccp.tbl_company(co_cd);
 
 ALTER TABLE sasshaccp.tbl_menu
     ADD CONSTRAINT fk_tbl_menu_scrn FOREIGN KEY (scrn_cd) REFERENCES sasshaccp.tbl_screen(scrn_cd);
@@ -4256,7 +4331,7 @@ COMMENT ON COLUMN sasshaccp.tbl_audit_log.user_id IS '행위자 로그인 ID';
 COMMENT ON COLUMN sasshaccp.tbl_audit_log.scrn_cd IS '행위 화면코드 — tbl_screen.scrn_cd. 적재 시점에 남긴다. 조회는 이 값으로 메뉴 트리를 가른다';
 COMMENT ON COLUMN sasshaccp.tbl_audit_log.tbl_nm IS '대상 테이블명 — tbl_ 접두 포함';
 COMMENT ON COLUMN sasshaccp.tbl_audit_log.tgt_idx IS '대상 행의 idx';
-COMMENT ON COLUMN sasshaccp.tbl_audit_log.action_cd IS '행위 — I:등록, U:수정, D:삭제, REQ:상신, REV:검토, APV:승인, RJT:반려, CANCEL:상신취소, UNDO:결재취소';
+COMMENT ON COLUMN sasshaccp.tbl_audit_log.action_cd IS '행위 — I:등록, U:수정, D:삭제, VIEW:열람, REQ:상신, REV:검토, APV:승인, RJT:반려, CANCEL:상신취소, UNDO:결재취소';
 COMMENT ON COLUMN sasshaccp.tbl_audit_log.before_json IS '변경 전 값 JSON — 등록(I)일 때는 NULL';
 COMMENT ON COLUMN sasshaccp.tbl_audit_log.after_json IS '변경 후 값 JSON — 삭제(D)일 때는 NULL';
 COMMENT ON COLUMN sasshaccp.tbl_audit_log.reason IS '사유 — 결재 반려·결재취소 시 입력값';
@@ -4275,6 +4350,49 @@ COMMENT ON COLUMN sasshaccp.tbl_notification.link_doc_idx IS '바로가기 문�
 COMMENT ON COLUMN sasshaccp.tbl_notification.read_yn IS '읽음여부 Y/N';
 COMMENT ON COLUMN sasshaccp.tbl_notification.read_dt IS '읽은 일시';
 COMMENT ON COLUMN sasshaccp.tbl_notification.ins_dt IS '발송 일시';
+
+COMMENT ON TABLE sasshaccp.tbl_emp_detail IS '사원 인사 부가 — 인증 표(tbl_user)와 분리. 보건증 대상 여부';
+COMMENT ON COLUMN sasshaccp.tbl_emp_detail.idx IS 'PK 자동 채번 대리키';
+COMMENT ON COLUMN sasshaccp.tbl_emp_detail.co_cd IS '회사코드 — 테넌트 키';
+COMMENT ON COLUMN sasshaccp.tbl_emp_detail.user_id IS '로그인 ID — tbl_user.user_id';
+COMMENT ON COLUMN sasshaccp.tbl_emp_detail.health_cert_manage_yn IS '보건증 관리 대상 Y/N';
+COMMENT ON COLUMN sasshaccp.tbl_emp_detail.ins_id IS '최초입력자 ID';
+COMMENT ON COLUMN sasshaccp.tbl_emp_detail.ins_dt IS '최초입력일시';
+COMMENT ON COLUMN sasshaccp.tbl_emp_detail.upd_id IS '최종수정자 ID';
+COMMENT ON COLUMN sasshaccp.tbl_emp_detail.upd_dt IS '최종수정일시';
+COMMENT ON TABLE sasshaccp.tbl_health_cert_hist IS '보건증 등록 이력 — 재발급은 행 추가. 경로와 wrapped_dek. 주민번호 없음';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.idx IS 'PK 자동 채번 대리키';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.co_cd IS '회사코드 — 테넌트 키';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.user_id IS '대상 사원 로그인 ID';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.reg_dt IS '등록일 YYYYMMDD';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.expire_dt IS '만료일 YYYYMMDD';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.file_nm IS '표시용 원본 파일명. 디스크 이름은 UUID';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.file_path IS 'HrDocs 상대 경로. 디스크 파일명은 UUID';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.file_ext IS '확장자 — pdf 만';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.file_size IS '원본 바이트 수';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.mime_type IS 'MIME — application/pdf';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.wrapped_dek IS '마스터 키로 감싼 파일 DEK(hex). 주민번호 아님';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.key_version IS 'DEK 래핑에 쓴 마스터 키 세대. 기본 1';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.ins_id IS '최초입력자 ID';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.ins_dt IS '최초입력일시';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.upd_id IS '최종수정자 ID';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_hist.upd_dt IS '최종수정일시';
+COMMENT ON TABLE sasshaccp.tbl_health_cert_mgr IS '보건증 담당자 — 업체당 여러 명';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_mgr.idx IS 'PK 자동 채번 대리키';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_mgr.co_cd IS '회사코드 — 테넌트 키';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_mgr.user_id IS '담당자 로그인 ID';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_mgr.ins_id IS '지정자 ID';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_mgr.ins_dt IS '지정 일시';
+COMMENT ON TABLE sasshaccp.tbl_health_cert_alarm IS '보건증 만료 알림 일수 — 업체 1행. 기본 30·7·1';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_alarm.idx IS 'PK 자동 채번 대리키';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_alarm.co_cd IS '회사코드 — 테넌트 키';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_alarm.alarm_day_1 IS '첫 알림 일수 — 만료 N일 전';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_alarm.alarm_day_2 IS '둘째 알림 일수';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_alarm.alarm_day_3 IS '셋째 알림 일수';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_alarm.ins_id IS '최초입력자 ID';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_alarm.ins_dt IS '최초입력일시';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_alarm.upd_id IS '최종수정자 ID';
+COMMENT ON COLUMN sasshaccp.tbl_health_cert_alarm.upd_dt IS '최종수정일시';
 
 -- =================================================================
 -- END_COMMENT_BLOCK

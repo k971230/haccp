@@ -38,4 +38,6 @@ public class UserSaveRow {
     private String lockYn;
     // 사용여부 Y/N
     private String useYn;
+    // 보건증 관리 대상 — tbl_emp_detail. 사용자 SP 가 아니라 별도 upsert
+    private String healthCertManageYn;
 }

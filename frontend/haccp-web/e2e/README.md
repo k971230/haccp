@@ -21,7 +21,7 @@ Playwright E2E. **화면이 열리는가**가 아니라 **업무가 끝까지 �
 | 파일 | 맡는 것 |
 |---|---|
 | `helpers.ts` | 로그인·화면 열기·그리드 조작·DB 조회. 셀렉터 규칙을 여기 한곳에 둔다 |
-| `screens.smoke.spec.ts` | 29화면이 열리고 콘솔·네트워크 오류가 없다 |
+| `screens.smoke.spec.ts` | 30화면이 열리고 콘솔·네트워크 오류가 없다 |
 | `sys-common-code` `sys-master` `sys-user` `sys-approval-line` | 기준정보 6화면 CRUD·제약 |
 | `sys-logs` | 로그인이력·화면통계·감사로그 (조회 전용 확인 포함) |
 | `doc-cycle` `schedule-cycle-management` | 문서주기 7종·오늘 할 일 연동 |
@@ -31,6 +31,7 @@ Playwright E2E. **화면이 열리는가**가 아니라 **업무가 끝까지 �
 | `flow-approval` | 승인·반려·문서함 |
 | `flow-attach` | 결재첨부에서 전송·재전송 차단·전송취소 |
 | `flow-corrective` | 개선조치 조회·수정·삭제차단. 2026-08-26 에 옮긴 URL 이 정본인지도 본다 |
+| `flow-health-cert` | 보건증 PDF 업로드. 가림 없이 저장 차단. 디스크가 평문 `%PDF` 가 아닌지. afterAll 이 삭제 API 로 HrDocs 를 비운다 |
 | `today-tasks` | KPI 5장·미완료 체크·기한경과·클릭/더블클릭 구분·`?add=1` 소비 |
 | `shell-grid` | 셸이 전 화면에 주는 것 — 방향키(제어·비제어)·패널 활성 4케이스 |
 | `screen-permission` | 권한 밖 화면 차단·계정 전환 시 이전 탭 정리 |
@@ -105,7 +106,7 @@ Jenkins(`Jenkinsfile.e2e`)는 배포 뒤 실측용이고 기본값이 운영 URL
 2. DB 접속 Credentials 를 `backend/haccp-api/.env` 형식으로 내려 준다
 3. `hasDbTools()` 가 참이 되면 나머지는 그대로 돈다 — 스펙은 안 고쳐도 된다
 
-도구 없이 도는 것: 29화면 스모크, 인증·권한·테넌트·상태전이(API 직접 호출),
+도구 없이 도는 것: 30화면 스모크, 인증·권한·테넌트·상태전이(API 직접 호출),
 문서함 조회 전용 확인. 도구가 있어야 도는 것: 저장 결과 DB 대조, 문서 흐름, 통합 시나리오.
 
 ## 스펙을 더할 때

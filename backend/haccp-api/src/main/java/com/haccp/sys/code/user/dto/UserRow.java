@@ -34,4 +34,6 @@ public class UserRow {
     private Integer loginFailCnt;
     private String lockYn;
     private String useYn;
+    // 보건증 대상 — tbl_emp_detail. 없으면 N
+    private String healthCertManageYn;
 }

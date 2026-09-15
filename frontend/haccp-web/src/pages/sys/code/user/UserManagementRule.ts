@@ -124,6 +124,14 @@ export function buildUserColumns(
       cellButton: editable ? { title: "부서", onClick: handlers.onDeptLookup } : undefined,
     },
     { field: "email", header: "이메일", width: 160, maxLength: 100, editable, inputMode: "email" },
+    {
+      // 보건증 대상 — tbl_emp_detail. 사용자 표 칸이 아니다
+      field: "healthCertManageYn",
+      header: "보건증대상",
+      width: 90,
+      type: "checkbox",
+      editable,
+    },
     { field: "mobile", header: "휴대폰", width: 120, maxLength: 20, editable, inputMode: "tel" },
     {
       // 서명 등록 여부 + 셀 버튼으로 서명 모달
@@ -173,7 +181,7 @@ export function buildUserColumns(
 
 /** 사용자 신규 행 초기값 — 권한그룹 기본은 일반 사용자(USER) */
 export function newUserRow(): UserRow {
-  return { userId: "", userNm: "", usrgrpCd: "USER", useYn: DEFAULT_USE_YN, _hasSign: "N" };
+  return { userId: "", userNm: "", usrgrpCd: "USER", useYn: DEFAULT_USE_YN, healthCertManageYn: "N", _hasSign: "N" };
 }
 
 /** 헤더 FE 필터 — 아이디·성명 부분일치 + 사용여부 정확일치 */

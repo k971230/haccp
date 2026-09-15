@@ -40,6 +40,7 @@ const SCREEN_NAME: Record<string, string> = {
   "sign-ready": "결재 대기",
   "sign-ok": "결재 완료",
   "document-inbox": "문서함",
+  "health-cert-management": "보건증관리",
   "corrective-action-management": "이탈·개선조치",
   "hyg-process": "일반위생·공정점검 작성",
   "ccp-verify": "CCP 검증점검표 작성",

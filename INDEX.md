@@ -1,6 +1,6 @@
 # INDEX — 무엇이 어디 있나
 
-> 개발자: 박승우 · 일자: 2026-09-11
+> 개발자: 박승우 · 일자: 2026-09-15
 > **생성기가 만든다** — `node scripts/gen_index.mjs`. 손으로 고치지 않는다.
 
 git 이 추적하는 폴더와 그 폴더 README 의 첫 줄을 뽑았다.
@@ -11,9 +11,9 @@ git 이 추적하는 폴더와 그 폴더 README 의 첫 줄을 뽑았다.
 
 | | |
 |---|---|
-| 목차에 오른 폴더 | 194 |
-| README 있는 폴더 | 148 |
-| **README 없는데 소스가 있는 폴더** | **46** |
+| 목차에 오른 폴더 | 204 |
+| README 있는 폴더 | 151 |
+| **README 없는데 소스가 있는 폴더** | **53** |
 
 ## 트리
 
@@ -94,6 +94,9 @@ backend/
                     경로 /api/v1/draft/hwp-doc/hwp-write — FE SCREEN_PATH 와 같은 칸.
               flow/
                   FE pages/flow 와 같은 칸이다. 작성이 끝난 문서의 결재·보관·이탈조치를 맡는다.
+                  healthcert/
+                      화면 /flow/box/health-cert-management.
+                    dto/  ← README 없음
                 ca/
                     두 갈래를 맡는다. 섞지 않는다.
                   dto/
@@ -129,6 +132,9 @@ backend/
                   user/
                       화면코드 user-management · XML resources/mapper/sys/code/user/UserMapper.xml · SP db_sasshaccp/01_sp.sql
                     dto/  ← README 없음
+                company/
+                    테넌트 통째 삭제. 화면이 없다. 회사관리 메뉴는 레지스트리에서 빠져 있다.
+                  dto/  ← README 없음
                 logs/
                     조회 전용 3화면. 쓰기 API 가 없다 — 이력은 다른 경로가 쌓는다.
                   auditlog/
@@ -178,6 +184,7 @@ backend/
                   화면 hwp-write. 문서 본문은 첨부(HWP_SRC)로 붙고 여기는 목록·상세만 본다.
             flow/
                 결재에 딸린 부수 도메인. 결재 자체(상신·승인·반려·취소)는 mapper/docs/documents 다.
+              box/  ← README 없음
               ca/
                   문서 1건에 개선조치 0..1 건. 빈 payload 는 삭제다.
             log/  ← README 없음
@@ -199,6 +206,7 @@ backend/
                     화면 SP 호출만 둔다. 업무 규칙은 SP 안에 있다.
                 user/
                     화면 SP 호출만 둔다. 업무 규칙은 SP 안에 있다.
+              company/  ← README 없음
               logs/
                   조회 전용. 쓰기 SP 가 없다 — 이력은 다른 경로가 쌓는다.
                 auditlog/
@@ -222,8 +230,10 @@ backend/
               draft/  ← README 없음
                 ccpmonitoring/  ← README 없음
                 hwpdoc/  ← README 없음
+                  healthcert/  ← README 없음
                 ca/  ← README 없음
                   user/  ← README 없음
+                company/  ← README 없음
 db_sasshaccp/
     PostgreSQL sasshaccp 스키마 정본. 시드 7본이 곧 데이터다. 00_alter.sql 은 이미 깐 DB 스키마 보정이고 시드가 아니다.
 docs/
@@ -250,6 +260,7 @@ frontend/
             /docs 대분류 화면이 쓰는 API. 베이스는 apiOf(scrnCd) 가 SCREEN_PATH 로 조립한다.
         draft/
             pages/draft/ 양식 작성 화면 전용 API.
+        flow/  ← README 없음
         sys/
             /sys 대분류. 베이스는 apiOf(scrnCd) 가 SCREEN_PATH 로 조립한다 — 화면코드와 1:1 이다.
         common/
@@ -312,6 +323,8 @@ frontend/
               URL /flow/box. 결재까지 끝난 문서를 모아 보는 보관함이다.
             documentbox/
                 정본 파이프라인 요약은 상위 pages/docs/README.md.
+            healthcert/
+                URL /flow/box/health-cert-management. 문서함 아래.
           ca/
               URL /flow/ca. 작성 화면에서 이탈로 등록한 문서를 모아 조치를 적는다.
             corrective/
@@ -361,7 +374,7 @@ scripts/
 tools/  ← README 없음
 ```
 
-## README 없는 폴더 (46)
+## README 없는 폴더 (53)
 
 `CLAUDE.md` 는 폴더를 새로 만들면 README 를 같이 만들라고 한다. 아래가 그 규칙 밖이다.
 
@@ -373,6 +386,7 @@ tools/  ← README 없음
 - `backend/haccp-api/src/main/java/com/haccp/docs/documents/dto` — 소스 13본
 - `backend/haccp-api/src/main/java/com/haccp/docs/hwp/dto` — 소스 5본
 - `backend/haccp-api/src/main/java/com/haccp/draft/ccpmonitoring/dto` — 소스 4본
+- `backend/haccp-api/src/main/java/com/haccp/flow/box/healthcert/dto` — 소스 9본
 - `backend/haccp-api/src/main/java/com/haccp/log` — 소스 4본
 - `backend/haccp-api/src/main/java/com/haccp/log/dto` — 소스 1본
 - `backend/haccp-api/src/main/java/com/haccp/menu` — 소스 2본
@@ -382,15 +396,18 @@ tools/  ← README 없음
 - `backend/haccp-api/src/main/java/com/haccp/sys/code/menu/dto` — 소스 3본
 - `backend/haccp-api/src/main/java/com/haccp/sys/code/role/dto` — 소스 7본
 - `backend/haccp-api/src/main/java/com/haccp/sys/code/user/dto` — 소스 5본
+- `backend/haccp-api/src/main/java/com/haccp/sys/company/dto` — 소스 1본
 - `backend/haccp-api/src/main/java/com/haccp/sys/logs/auditlog/dto` — 소스 1본
 - `backend/haccp-api/src/main/java/com/haccp/sys/logs/loginhistory/dto` — 소스 1본
 - `backend/haccp-api/src/main/java/com/haccp/sys/logs/screenusage/dto` — 소스 1본
 - `backend/haccp-api/src/main/resources` — 소스 1본
 - `backend/haccp-api/src/main/resources/mapper/auth` — 소스 1본
 - `backend/haccp-api/src/main/resources/mapper/code` — 소스 1본
+- `backend/haccp-api/src/main/resources/mapper/flow/box` — 소스 1본
 - `backend/haccp-api/src/main/resources/mapper/log` — 소스 1본
 - `backend/haccp-api/src/main/resources/mapper/menu` — 소스 1본
 - `backend/haccp-api/src/main/resources/mapper/pref` — 소스 1본
+- `backend/haccp-api/src/main/resources/mapper/sys/company` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/auth` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/common/auth` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/common/validation` — 소스 1본
@@ -402,8 +419,11 @@ tools/  ← README 없음
 - `backend/haccp-api/src/test/java/com/haccp/draft` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/draft/ccpmonitoring` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/draft/hwpdoc` — 소스 1본
+- `backend/haccp-api/src/test/java/com/haccp/flow/box/healthcert` — 소스 1본
 - `backend/haccp-api/src/test/java/com/haccp/flow/ca` — 소스 2본
 - `backend/haccp-api/src/test/java/com/haccp/sys/code/user` — 소스 1본
+- `backend/haccp-api/src/test/java/com/haccp/sys/company` — 소스 1본
+- `frontend/haccp-web/src/api/flow` — 소스 1본
 - `frontend/haccp-web/src/hooks` — 소스 9본
 - `frontend/haccp-web/src/lib` — 소스 13본
 - `frontend/haccp-web/src/shell/gridRules` — 소스 6본

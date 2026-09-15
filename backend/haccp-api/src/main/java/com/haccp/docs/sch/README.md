@@ -13,7 +13,7 @@ XML `resources/mapper/docs/sch/DocCycleMapper.xml` · SP `db_sasshaccp/01_sp.sql
 | PUT | `/api/v1/docs/sch/schedule-cycle-management/save` | `save` | `sp_schedule_cycle_management_c_000` · `sp_tbl_schedule_task_regen_c_000` | `tbl_schedule_rule` `tbl_schedule_rule_detail` `tbl_schedule_task` `tbl_company_template` |
 | POST | `/api/v1/docs/sch/schedule-cycle-management/validate-delete` | `validateDelete` | `sp_schedule_cycle_management_delete_blocker_r_000` + 존재 확인 | `tbl_schedule_rule` `tbl_schedule_task` — ING·LATE·APV 또는 문서있는 과제면 차단 |
 | POST | `/api/v1/docs/sch/schedule-cycle-management/delete` | `delete` | `sp_schedule_cycle_management_d_000` | `tbl_schedule_rule` |
-| (배치) | `DocumentAlarmScheduler` | `sendAlarms` | `sp_tbl_notification_task_c_000` | `tbl_schedule_task` |
+| (배치) | `DocumentAlarmScheduler` | `sendAlarms` | `sp_tbl_notification_task_c_000` · `sp_health_cert_management_alarm_send_c_000` | `tbl_schedule_task` · `tbl_health_cert_hist` |
 
 | 파일 | 역할 |
 |------|------|
@@ -33,6 +33,8 @@ XML `resources/mapper/docs/sch/DocCycleMapper.xml` · SP `db_sasshaccp/01_sp.sql
 
 `DocumentAlarmScheduler`(10분) → `DocCycleService.sendTaskAlarms()` → `sp_tbl_notification_task_c_000`.
 **과제당 정확히 한 번**이다 — 적재 직후 `alarm_send_yn='Y'` 로 잠근다.
+같은 cron 이 보건증 만료도 넣는다 — `HealthCertService.sendAlarms` → `sp_health_cert_management_alarm_send_c_000`. 사원별 최신 이력 1건만.
+이어서 `purgeExpired` 가 대체된 이전 이력을 만료일+보유일수 뒤에 지운다.
 
 예전에는 일일 배치(`sp_tbl_schedule_task_generate_c_000`)도 같이 넣었다. 셋이 겹쳐 표가 끝없이 불었다 —
 지연분이 날마다 다시 들어갔고, `NOT EXISTS` 가드가 **같은 INSERT 가 방금 넣은 행을 못 봐서** 한 문장이 여러 행을 넣었고,

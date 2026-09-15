@@ -57,7 +57,7 @@ export const SCREEN_PATH: Record<string, string> = {
 
   // 문서 현황·결재 — 결재 3화면 · 문서함 · 이탈개선조치
   ...paths("/flow/appr", ["attach", "sign-ready", "sign-ok"]),
-  ...paths("/flow/box", ["document-inbox"]),
+  ...paths("/flow/box", ["document-inbox", "health-cert-management"]),
   ...paths("/flow/ca", ["corrective-action-management"]),
 
   // 시스템 — 코드·권한 묶음 / 로그 묶음

@@ -69,7 +69,7 @@ public final class ScreenAuthResolver {
         putAll(pathToScrn, "/draft/html", "hyg-process", "ccp-verify");
         putAll(pathToScrn, "/draft/ccp-monitoring", "ccp-pkg", "ccp-htg", "ccp-mtl");
         putAll(pathToScrn, "/draft/hwp-doc", "hwp-write");
-        putAll(pathToScrn, "/flow/box", "document-inbox");
+        putAll(pathToScrn, "/flow/box", "document-inbox", "health-cert-management");
         putAll(pathToScrn, "/flow/appr", "attach", "sign-ready", "sign-ok");
         putAll(pathToScrn, "/flow/ca", "corrective-action-management");
         putAll(
