@@ -2,10 +2,11 @@
 //  HACCP PR·main 검증 파이프라인
 //
 //  개발자: 박승우
-//  일자: 2026-09-11
+//  일자: 2026-09-15
 //  코멘트:
 //    1) PR 과 main 푸시에서 audit + BE/FE 단위시험 + localhost E2E 를 돌린다. 이미지·배포는 없다
 //    2) E2E 는 localhost(4173/7070) + 시험 DB(*_test) 만. 운영 URL·E2E_ALLOW_PROD_WRITES 는 즉시 실패
+//       워크스페이스에 backend/.env 가 없다(git 미포함). E2E_DB_NAME 을 여기서 박는다
 //    3) 에이전트는 배포 Job 과 같은 any. Docker 파이프라인 에이전트는 이 워커에 없다
 //    4) 의존성은 WORKSPACE/.ci-cache 에 둔다. Maven 은 -Dmaven.repo.local 만 쓴다
 //
@@ -26,6 +27,8 @@ pipeline {
     // PR E2E 는 로컬 미리보기·로컬 API 만. 운영 호스트를 여기 적지 않는다
     E2E_BASE_URL = 'http://localhost:4173/haccp/'
     E2E_API_BASE_URL = 'http://localhost:7070'
+    // checkout 은 .env 를 안 가져온다. 없으면 assert_e2e_pr_safe 가 *_test 검사를 못 한다
+    E2E_DB_NAME = 'sasshaccp_test'
   }
 
   stages {
