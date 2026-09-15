@@ -92,22 +92,19 @@ npx playwright test --last-failed         # 실패만
 
 ## CI 에서 DB 대조하기
 
-`dbOne`·`dbRows`·`resetDocuments` 는 로컬 `tools/`(git 미포함)를 쓴다.
+`dbOne`·`dbRows`·`resetDocuments` 는 `tools/q.mjs`(git 추적) 와 접속정보를 쓴다.
 없으면 그 시험은 **skip** 된다 — 빈 값을 돌려주면 검사가 조용히 통과해 더 나쁘기 때문이다.
 
 PR 게이트(`Jenkinsfile.verify`)는 localhost(4173/7070) + 시험 DB 만 돌린다.
 운영 호스트·`E2E_ALLOW_PROD_WRITES` 는 `scripts/assert_e2e_pr_safe.sh` 가 거절한다.
 에이전트에 API(7070)가 떠 있어야 한다. 운영 URL 로 우회하지 않는다.
 
-Jenkins(`Jenkinsfile.e2e`)는 배포 뒤 실측용이고 기본값이 운영 URL 이다. 도구 없이 돌면 DB 대조 시험이 빠진다.
-붙이려면 에이전트에서 아래를 준비한다.
+접속정보는 Credentials `haccp-api-env`(Secret file) 를 Job 환경 `E2E_DOTENV` 로 넘기거나,
+에이전트 `backend/haccp-api/.env`(git 무시)를 둔다. `hasDbTools()` 가 참이면 선언된 시험이 돈다.
+스펙을 skip 해서 초록을 만들지 않는다.
 
-1. `tools/` 를 CI 에 배치하거나(아티팩트·별도 저장소), 같은 일을 하는 psql 래퍼를 둔다
-2. DB 접속 Credentials 를 `backend/haccp-api/.env` 형식으로 내려 준다
-3. `hasDbTools()` 가 참이 되면 나머지는 그대로 돈다 — 스펙은 안 고쳐도 된다
-
-도구 없이 도는 것: 30화면 스모크, 인증·권한·테넌트·상태전이(API 직접 호출),
-문서함 조회 전용 확인. 도구가 있어야 도는 것: 저장 결과 DB 대조, 문서 흐름, 통합 시나리오.
+Jenkins(`Jenkinsfile.e2e`)는 배포 뒤 실측용이고 기본값이 운영 URL 이다.
+운영 실측도 DB 대조를 하려면 같은 Secret file 을 주고 `E2E_DB_NAME` 을 화면 DB 와 맞춘다.
 
 ## 스펙을 더할 때
 

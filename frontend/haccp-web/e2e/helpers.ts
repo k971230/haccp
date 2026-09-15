@@ -287,38 +287,42 @@ function repoRoot(): string {
   return path.resolve(process.cwd(), "../..");
 }
 
-/** tools/ 는 git 에 없다(로컬 전용) — CI 에서는 DB 대조를 건너뛴다 */
 /**
- * 개발자: 박승우
- * 일자: 2026-08-26
- * 코멘트:
- *   1) DB 를 직접 볼 수 있는 상태인지 본다 — 도구와 접속정보가 **둘 다** 있어야 한다
- *   2) DB 대조가 필요한 시험이 먼저 부른다. 없으면 그 시험을 건너뛴다
- *   3) tools/q.mjs 는 git 에 있어도 backend/.env 는 없다 —
- *      CI 에서 도구만 보고 「있다」고 판정하면 건너뛰던 시험이 실패로 바뀐다
+ * DB 접속 파일 — 로컬은 backend/.env, Jenkins verify 는 Secret file(E2E_DOTENV).
+ * q.mjs 와 같은 경로를 본다. 워크스페이스에 .env 를 복사하지 않는다.
  */
-export function hasDbTools(): boolean {
-  const root = repoRoot();
-  return (
-    fs.existsSync(path.join(root, "tools", "q.mjs"))
-    && fs.existsSync(path.join(root, "backend", "haccp-api", ".env"))
-  );
+function dotenvPath(): string {
+  if (process.env.E2E_DOTENV) return process.env.E2E_DOTENV;
+  return path.join(repoRoot(), "backend", "haccp-api", ".env");
 }
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-26
+ * 일자: 2026-09-15
  * 코멘트:
- *   1) 지금 붙은 DB 이름을 backend/.env 에서 읽는다 — q.mjs 와 같은 출처다
- *   2) 자료를 지우는 헬퍼가 부른다
- *   3) 파일이 없거나 값이 없으면 빈 문자열 — 그 경우 아래에서 막는다
+ *   1) DB 를 직접 볼 수 있는 상태인지 본다 — 도구와 접속정보가 **둘 다** 있어야 한다
+ *   2) DB 대조가 필요한 시험이 먼저 부른다. 없으면 그 시험을 건너뛴다
+ *   3) q.mjs 는 git 에 있다. 접속정보는 로컬 .env 또는 Jenkins haccp-api-env(E2E_DOTENV)
+ */
+export function hasDbTools(): boolean {
+  return fs.existsSync(path.join(repoRoot(), "tools", "q.mjs"))
+    && fs.existsSync(dotenvPath());
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-15
+ * 코멘트:
+ *   1) 지금 붙은 DB 이름을 읽는다 — E2E_DB_NAME 이 있으면 그걸, 없으면 dotenv 의 DB_NAME
+ *   2) 자료를 지우는 헬퍼가 부른다. q.mjs 와 같은 순서다
+ *   3) 값이 없으면 빈 문자열 — 그 경우 assertTestDb 가 막는다
  */
 function currentDbName(): string {
+  // Jenkinsfile.verify 가 E2E_DB_NAME 을 박는다 — 파일보다 앞선다 (q.mjs 와 같은 순서)
+  const fromEnv = (process.env.E2E_DB_NAME || "").trim();
+  if (fromEnv) return fromEnv;
   try {
-    const env = fs.readFileSync(
-      path.join(repoRoot(), "backend", "haccp-api", ".env"),
-      "utf-8",
-    );
+    const env = fs.readFileSync(dotenvPath(), "utf-8");
     const m = env.match(/^DB_NAME=(.*)$/m);
     return m ? m[1].trim() : "";
   } catch {
