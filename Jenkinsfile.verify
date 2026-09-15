@@ -6,7 +6,8 @@
 //  코멘트:
 //    1) PR 과 main 푸시에서 audit + BE/FE 단위시험 + localhost E2E 를 돌린다. 이미지·배포는 없다
 //    2) E2E 는 localhost(4173/7070) + 시험 DB(*_test) 만. 운영 URL·E2E_ALLOW_PROD_WRITES 는 즉시 실패
-//       워크스페이스에 backend/.env 가 없다(git 미포함). E2E_DB_NAME 을 여기서 박는다
+//       DB 접속: Job 환경 E2E_DOTENV(Secret file haccp-api-env) 또는 에이전트 backend/.env
+//       워크스페이스에 시크릿을 아카이브하지 않는다. 스펙 skip 으로 초록을 만들지 않는다
 //    3) 에이전트는 배포 Job 과 같은 any. Docker 파이프라인 에이전트는 이 워커에 없다
 //    4) 의존성은 WORKSPACE/.ci-cache 에 둔다. Maven 은 -Dmaven.repo.local 만 쓴다
 //
@@ -126,6 +127,19 @@ pipeline {
           sh '''
             set -euo pipefail
             unset E2E_ALLOW_PROD_WRITES || true
+            # Secret file haccp-api-env 를 Job 환경 E2E_DOTENV 로 넘기면 그걸 쓴다.
+            # 없으면 워크스페이스 또는 같은 PC 개발 트리의 backend/.env (git 무시)
+            if [ -z "${E2E_DOTENV:-}" ]; then
+              if [ -f "$WORKSPACE/backend/haccp-api/.env" ]; then
+                export E2E_DOTENV="$WORKSPACE/backend/haccp-api/.env"
+              elif [ -f "D:/haccp/backend/haccp-api/.env" ]; then
+                export E2E_DOTENV="D:/haccp/backend/haccp-api/.env"
+              fi
+            fi
+            test -s "${E2E_DOTENV:-}" \
+              || { echo 'DB 접속파일이 없다. Credentials haccp-api-env 또는 backend/haccp-api/.env 를 둔다.'; exit 1; }
+            grep -E '^DB_NAME=.*_test' "$E2E_DOTENV" >/dev/null \
+              || { echo 'E2E_DOTENV 의 DB_NAME 이 *_test 가 아니다. 운영 DB 를 물리지 않는다.'; exit 1; }
             bash scripts/assert_e2e_pr_safe.sh
             curl -sS -o /dev/null --connect-timeout 3 "http://127.0.0.1:7070/" \
               || { echo 'PR E2E 는 localhost:7070 API 가 떠 있어야 한다. 운영 URL 은 쓰지 않는다.'; exit 1; }

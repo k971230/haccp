@@ -1,13 +1,13 @@
 /**
- * q.mjs — SQL 한 덩어리를 실행하고 결과를 표로 찍는다. 로컬 전용, git 미포함.
+ * q.mjs — SQL 한 덩어리를 실행하고 결과를 표로 찍는다.
  *
  * 개발자: 박승우
- * 일자: 2026-08-26
+ * 일자: 2026-09-15
  * 코멘트:
  *   1) Q.java 를 대신한다 — 질의 하나에 JVM 을 띄우던 것이 원격 DB 에서 1.9초씩 붙었고,
  *      execFileSync 가 물리면 Node 이벤트 루프째 막혀 Playwright 타임아웃도 못 살렸다
  *   2) 출력 형식은 Q.java 와 같다 — 헤더 / 구분선 / 값 / "(n rows)". helpers 파싱을 안 고친다
- *   3) 접속·질의에 각각 타임아웃을 준다. 멈추지 않고 실패해야 원인이 보인다
+ *   3) 접속은 backend/.env 또는 E2E_DOTENV(Jenkins Secret file). 시크릿을 이 파일에 박지 않는다
  *
  * 쓰기
  *   node tools/q.mjs "SELECT 1"
@@ -26,10 +26,18 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const require = createRequire(path.join(ROOT, "frontend/haccp-web/package.json"));
 const pg = require("pg");
 
-/** backend/.env 를 읽는다 — DB 접속의 유일한 출처 */
+/**
+ * DB 접속 파일 — Jenkins 는 Secret file 을 E2E_DOTENV 로 넘긴다.
+ * 워크스페이스에 .env 를 복사하지 않는다(브라우저로 워크스페이스를 열면 보인다).
+ */
+function dotenvPath() {
+  return process.env.E2E_DOTENV || path.join(ROOT, "backend", "haccp-api", ".env");
+}
+
+/** backend/.env 또는 E2E_DOTENV 를 읽는다 — DB 접속의 유일한 출처 */
 function loadDotEnv() {
   const out = {};
-  const file = path.join(ROOT, "backend", "haccp-api", ".env");
+  const file = dotenvPath();
   for (const line of fs.readFileSync(file, "utf-8").split(/\r?\n/)) {
     const s = line.trim();
     if (!s || s.startsWith("#")) continue;
