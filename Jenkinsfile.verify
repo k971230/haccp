@@ -132,12 +132,13 @@ pipeline {
             cd frontend/haccp-web
             npm run build
             npx playwright install chromium --with-deps || npx playwright install chromium
-            if ! curl -sS -o /dev/null --connect-timeout 2 "http://127.0.0.1:4173/haccp/"; then
+            # Windows 에서 vite --host localhost 는 [::1] 만 연다. 127.0.0.1 은 타임아웃이다
+            if ! curl -sS -o /dev/null --connect-timeout 2 "http://localhost:4173/haccp/"; then
               npm run preview -- --host localhost --port 4173 --strictPort &
               preview_pid=$!
               trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
               i=0
-              until curl -sS -o /dev/null --connect-timeout 2 "http://127.0.0.1:4173/haccp/"; do
+              until curl -sS -o /dev/null --connect-timeout 2 "http://localhost:4173/haccp/"; do
                 i=$((i + 1))
                 if [ "$i" -gt 30 ]; then
                   echo 'vite preview 4173 이 안 떴다'
