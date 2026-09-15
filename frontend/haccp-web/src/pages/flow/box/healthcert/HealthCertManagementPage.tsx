@@ -247,17 +247,22 @@ export function HealthCertManagementPage() {
     resetUpload();
   }, [asyncAct, resetUpload]);
 
+  const closeMgr = useCallback(() => {
+    if (asyncAct.isBusy("save")) return;
+    setMgrOpen(false);
+  }, [asyncAct]);
+
   useEffect(() => {
-    if (!uploadOpen) return;
+    if (!uploadOpen && !mgrOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        closeUpload();
-      }
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      if (uploadOpen) closeUpload();
+      else closeMgr();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [closeUpload, uploadOpen]);
+  }, [closeMgr, closeUpload, mgrOpen, uploadOpen]);
 
   const handleUpload = useCallback(async () => {
     if (!activeUserId) {
@@ -453,7 +458,8 @@ export function HealthCertManagementPage() {
                 ) : null}
                 {isMgr ? (
                   <MesButton
-                    // 만료 캘린더 토글. 동작은 그대로
+                    // 만료 캘린더 토글 — 일정 이번 달과 같은 초록 틴트
+                    variant="excel"
                     type="button"
                     icon={Calendar}
                     onClick={() => setCalOn((v) => !v)}
@@ -806,28 +812,125 @@ export function HealthCertManagementPage() {
       ) : null}
 
       {mgrOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="w-[480px] rounded bg-white p-4 shadow">
-            <b>보건증 담당자</b>
-            <div className="mt-2 max-h-48 overflow-auto border">
-              {mgrs.map((m) => (
-                <div key={m.userId} className="flex items-center justify-between px-2 py-1 text-sm">
-                  <span>{m.userNm} ({m.deptNm || m.userId})</span>
-                  <MesButton variant="secondary" size="sm" type="button" onClick={() => setMgrs((p) => p.filter((x) => x.userId !== m.userId))}>제외</MesButton>
-                </div>
-              ))}
+        <div
+          // 담당자 팝업 오버레이 — 등록 팝업과 같은 셸
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="보건증 담당자"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeMgr();
+          }}
+        >
+          <form
+            className="flex w-full max-w-md flex-col overflow-hidden rounded border border-slate-200 bg-white shadow-lg"
+            onMouseDown={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              void asyncAct.run(saveMgr, "save", mesError);
+            }}
+          >
+            <div
+              // 모달 헤더 — gridHead h-9
+              className={cn(gridHeadClass, "mes-modal-grid-head")}
+            >
+              <b>보건증 담당자</b>
             </div>
-            <MesButton className="mt-2" type="button" onClick={() => void addMgr()}>직원 추가</MesButton>
-            <div className="mt-3 flex flex-wrap gap-2 text-sm">
-              <label>일 전 <input type="number" min={1} className={cn(searchInputClass, "w-16")} value={alarm1} onChange={(e) => setAlarm1(Number(e.target.value))} /></label>
-              <label>일 전 <input type="number" min={1} className={cn(searchInputClass, "w-16")} value={alarm2} onChange={(e) => setAlarm2(Number(e.target.value))} /></label>
-              <label>일 전 <input type="number" min={1} className={cn(searchInputClass, "w-16")} value={alarm3} onChange={(e) => setAlarm3(Number(e.target.value))} /></label>
+            <div className="flex flex-col gap-2 px-3 py-2.5">
+              <div className="max-h-48 overflow-auto rounded border border-slate-200">
+                {mgrs.length ? mgrs.map((m) => (
+                  <div
+                    key={m.userId}
+                    className="flex items-center justify-between gap-2 border-b border-slate-100 px-2 py-1 last:border-b-0"
+                  >
+                    <span className="min-w-0 truncate text-xs text-slate-700">
+                      {m.userNm} ({m.deptNm || m.userId})
+                    </span>
+                    <MesButton
+                      // 목록에서만 뺀다. 저장 때 서버에 반영
+                      variant="danger"
+                      size="sm"
+                      type="button"
+                      disabled={asyncAct.isBusy("save")}
+                      onClick={() => setMgrs((p) => p.filter((x) => x.userId !== m.userId))}
+                    >
+                      제외
+                    </MesButton>
+                  </div>
+                )) : (
+                  <p className="m-0 px-2 py-2 text-xs text-slate-500">담당자가 없습니다</p>
+                )}
+              </div>
+              <MesButton
+                // 사용자 조회 팝업. 등록의 파일 추가와 같은 노란 틴트
+                variant="add"
+                size="sm"
+                icon="plus"
+                type="button"
+                className="self-start"
+                disabled={asyncAct.isBusy("save")}
+                onClick={() => void addMgr()}
+              >
+                직원 추가
+              </MesButton>
+              <div className="grid grid-cols-3 gap-2">
+                <label className="flex flex-col gap-1 text-xs text-slate-600">
+                  <span>1차(일 전)</span>
+                  <input
+                    type="number"
+                    min={1}
+                    className={cn(searchInputClass, "w-full")}
+                    value={alarm1}
+                    onChange={(e) => setAlarm1(Number(e.target.value))}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-slate-600">
+                  <span>2차(일 전)</span>
+                  <input
+                    type="number"
+                    min={1}
+                    className={cn(searchInputClass, "w-full")}
+                    value={alarm2}
+                    onChange={(e) => setAlarm2(Number(e.target.value))}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-slate-600">
+                  <span>3차(일 전)</span>
+                  <input
+                    type="number"
+                    min={1}
+                    className={cn(searchInputClass, "w-full")}
+                    value={alarm3}
+                    onChange={(e) => setAlarm3(Number(e.target.value))}
+                  />
+                </label>
+              </div>
             </div>
-            <div className="mt-3 flex justify-end gap-2">
-              <MesButton type="button" onClick={() => setMgrOpen(false)}>취소</MesButton>
-              <MesButton type="button" onClick={() => void asyncAct.run(saveMgr, "save")}>저장</MesButton>
+            <div
+              // 푸터 — 저장·취소. 등록 팝업과 같다
+              className="flex shrink-0 items-center justify-end gap-1.5 border-t border-slate-200 bg-slate-50/70 px-3 py-2"
+            >
+              <MesButton
+                // 저장 — 등록과 같은 조회 파란 틴트
+                variant="search"
+                size="sm"
+                type="submit"
+                loading={asyncAct.isBusy("save")}
+              >
+                저장
+              </MesButton>
+              <MesButton
+                // 취소 — 등록과 같은 빨간 틴트
+                variant="danger"
+                size="sm"
+                type="button"
+                disabled={asyncAct.isBusy("save")}
+                onClick={closeMgr}
+              >
+                취소
+              </MesButton>
             </div>
-          </div>
+          </form>
         </div>
       ) : null}
     </div>
