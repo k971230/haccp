@@ -140,6 +140,11 @@ INSERT INTO tmp_code(main_cd, sub_cd, code_nm, sort_no, ref1) VALUES
 ('NOTI_TYPE',   'TASK_LATE', '작성기한 경과',  7, NULL),
 ('NOTI_TYPE',   'HEALTH_CERT_DUE', '보건증 만료 임박', 8, NULL),
 
+-- 보건증 대상 상태 — 화면 검색 콤보. 저장 컬럼은 없다
+('HC_STATUS',   '*',        '보건증 대상 상태', 0, NULL),
+('HC_STATUS',   'DUE',      '임박',        1, NULL),
+('HC_STATUS',   'EXPIRED',  '만료',        2, NULL),
+
 -- 로그인 결과 — tbl_login_log.result_cd
 ('LOGIN_RESULT', '*',       '로그인 결과', 0, NULL),
 ('LOGIN_RESULT', 'S',       '성공',        1, NULL),

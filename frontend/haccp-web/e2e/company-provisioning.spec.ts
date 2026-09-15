@@ -11,7 +11,7 @@
  * PIPELINE[HF130] E2E
  */
 import { expect, test } from "@playwright/test";
-import { dbOne, login, openScreen, purgeCompany, seedCompany, sqlLit, srcCoCd } from "./helpers";
+import { dbOne, hasDbTools, login, openScreen, purgeCompany, seedCompany, sqlLit, srcCoCd } from "./helpers";
 
 /** 시험 전용 업체코드 — 시드 원본·로그인 회사와 겹치지 않게 둔다 */
 const CO = "9099";
@@ -19,6 +19,8 @@ const ADMIN = `admin${CO}`;
 const API = process.env.E2E_API_BASE_URL || "http://localhost:7070";
 
 test.describe.serial("신규 업체 개설", () => {
+  // CI 는 backend/.env 가 없다. 시드 없이 4번만 돌면 없는 계정으로 30s 타임아웃이 난다
+  test.skip(() => !hasDbTools(), "tools/ 또는 backend/.env 가 없어 업체 개설을 건너뛴다");
   test.beforeAll(() => purgeCompany(CO));
   test.afterAll(() => purgeCompany(CO));
 

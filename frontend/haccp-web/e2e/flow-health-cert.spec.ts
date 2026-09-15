@@ -172,7 +172,8 @@ async function purgeUploaded(api: APIRequestContext): Promise<void> {
 
 async function openHealthCert(page: Page): Promise<void> {
   await openScreen(page, PATH);
-  await expect(page.getByText("식품위생법 제40조")).toBeVisible({ timeout: 30_000 });
+  // exact: emptyHint 문장에도 '대상 사원'이 들어 있어 부분일치가 둘을 잡는다
+  await expect(page.getByText("대상 사원", { exact: true })).toBeVisible({ timeout: 30_000 });
 }
 
 async function selectSelf(page: Page): Promise<void> {
@@ -181,7 +182,14 @@ async function selectSelf(page: Page): Promise<void> {
   const row = grids(page).first().locator("tbody tr").filter({ hasText: nm || uid }).first();
   await expect(row, "로그인 사용자가 대상 사원 목록에 없다").toBeVisible({ timeout: 20_000 });
   await row.click();
-  await expect(page.getByText("주민번호 뒷자리를 가린 뒤 올렸습니다")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("보건증 이력", { exact: true })).toBeVisible({ timeout: 10_000 });
+}
+
+async function openUpload(page: Page) {
+  await btn(page, "행추가").click();
+  const dlg = page.getByRole("dialog", { name: "보건증 이력 등록" });
+  await expect(dlg).toBeVisible({ timeout: 10_000 });
+  return dlg;
 }
 
 function ymdDash(d: Date): string {
@@ -211,7 +219,10 @@ test.describe("보건증관리", () => {
     const { user, pass } = adminCreds();
     await login(page, user, pass);
     await openHealthCert(page);
-    await expect(page.getByText("뒷자리가 보이게 올리지 마세요")).toBeVisible();
+    await selectSelf(page);
+    const dlg = await openUpload(page);
+    await expect(dlg.getByText("식품위생법 제40조")).toBeVisible();
+    await expect(dlg.getByText("가림 처리")).toBeVisible();
   });
 
   test("가림 체크 없이 저장하면 이력이 안 생긴다", async ({ page }) => {
@@ -225,18 +236,19 @@ test.describe("보건증관리", () => {
     await login(page, user, pass);
     await openHealthCert(page);
     await selectSelf(page);
+    const dlg = await openUpload(page);
 
     const today = new Date();
     const exp = new Date(today);
     exp.setFullYear(exp.getFullYear() + 1);
-    await page.locator('input[type="date"]').nth(0).fill(ymdDash(today));
-    await page.locator('input[type="date"]').nth(1).fill(ymdDash(exp));
-    await page.locator('input[type="file"]').first().setInputFiles({
+    await dlg.locator('input[type="date"]').nth(0).fill(ymdDash(today));
+    await dlg.locator('input[type="date"]').nth(1).fill(ymdDash(exp));
+    await dlg.locator('input[type="file"]').first().setInputFiles({
       name: FILE_NM,
       mimeType: "application/pdf",
       buffer: MIN_PDF,
     });
-    await btn(page, "저장").click();
+    await dlg.getByRole("button", { name: "저장" }).click();
     await expect(page.getByText("주민번호 뒷자리를 가린 사본만")).toBeVisible({ timeout: 10_000 });
 
     const after = Number(
@@ -253,19 +265,20 @@ test.describe("보건증관리", () => {
     await login(page, user, pass);
     await openHealthCert(page);
     await selectSelf(page);
+    const dlg = await openUpload(page);
 
     const today = new Date();
     const exp = new Date(today);
     exp.setFullYear(exp.getFullYear() + 1);
-    await page.locator('input[type="date"]').nth(0).fill(ymdDash(today));
-    await page.locator('input[type="date"]').nth(1).fill(ymdDash(exp));
-    await page.locator('input[type="file"]').first().setInputFiles({
+    await dlg.locator('input[type="date"]').nth(0).fill(ymdDash(today));
+    await dlg.locator('input[type="date"]').nth(1).fill(ymdDash(exp));
+    await dlg.locator('input[type="file"]').first().setInputFiles({
       name: FILE_NM,
       mimeType: "application/pdf",
       buffer: MIN_PDF,
     });
-    await page.getByRole("checkbox", { name: "주민번호 뒷자리를 가린 뒤 올렸습니다" }).check();
-    expect(await saveAndConfirm(page, "/hist/upload")).toBe(200);
+    await dlg.getByRole("checkbox", { name: "주민번호 뒷자리를 가린 뒤 올렸습니다" }).check();
+    expect(await saveAndConfirm(page, "/hist/upload", dlg.getByRole("button", { name: "저장" }))).toBe(200);
 
     await expect
       .poll(
