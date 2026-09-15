@@ -199,7 +199,7 @@ public class HealthCertService {
      * 개발자: 박승우
      * 일자: 2026-09-15
      * 코멘트:
-     *   1) 만료 사원과 공휴일·영업일 전환을 한 응답으로 내린다
+     *   1) 최신 이력 등록·만료와 공휴일·영업일 전환을 한 응답으로 내린다
      *   2) 공휴일은 KoreanHolidayDates. 영업일은 CalendarMapper.selectWorkdays
      *   3) 일정 화면 API 를 타지 않는다
      */

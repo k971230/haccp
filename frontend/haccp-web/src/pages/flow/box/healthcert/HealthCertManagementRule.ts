@@ -4,7 +4,7 @@
  * 개발자: 박승우
  * 일자: 2026-09-15
  * 코멘트:
- *   1) Page 는 렌더·API 만. 컬럼·검색 거름은 여기
+ *   1) Page 는 렌더·API 만. 컬럼·검색 거름·캘린더 칩은 여기
  *   2) persistId 는 폴더를 옮겨도 고정
  *   3) 상태 콤보는 공통코드 HC_STATUS. 검색어는 사원명만
  *
@@ -12,7 +12,7 @@
  */
 import type { GridColumn } from "@/types/grid";
 import type { ScreenGridRules } from "@/shell/gridRules/types";
-import type { HealthCertEmp, HealthCertHist } from "@/api/flow/healthCertApi";
+import type { HealthCertCal, HealthCertEmp, HealthCertHist } from "@/api/flow/healthCertApi";
 import { todayYmd } from "@/lib/docDateTime";
 
 export const SCRN_CD = "health-cert-management" as const;
@@ -42,6 +42,154 @@ function addDaysYmd(ymd: string, days: number): string {
   const mm = String(dt.getMonth() + 1).padStart(2, "0");
   const dd = String(dt.getDate()).padStart(2, "0");
   return `${yy}${mm}${dd}`;
+}
+
+/** 캘린더 칩 종류 — 등록·만료는 항상, 1·2·3차는 그 사이만 */
+export type HealthCertCalKind = "reg" | "expire" | "a1" | "a2" | "a3";
+
+/** 같은 날·같은 사원 한 행 */
+export type HealthCertCalChip = {
+  userId: string;
+  userNm: string;
+  kinds: HealthCertCalKind[];
+};
+
+export const CAL_CHIP_LABEL: Record<HealthCertCalKind, string> = {
+  reg: "등록",
+  expire: "만료",
+  a1: "1차",
+  a2: "2차",
+  a3: "3차",
+};
+
+/** 일정 캘린더 TASK_TONE_CLASS 와 같은 문법 — 진한 테두리 + 300 틴트 + 검정 글씨 */
+export const CAL_CHIP_TONE: Record<HealthCertCalKind, string> = {
+  reg: "border border-blue-500 bg-blue-300 text-slate-900",
+  expire: "border border-rose-500 bg-rose-300 text-slate-900",
+  a1: "border border-emerald-500 bg-emerald-300 text-slate-900",
+  a2: "border border-amber-500 bg-amber-300 text-slate-900",
+  a3: "border border-orange-500 bg-orange-300 text-slate-900",
+};
+
+/** 헤더 범례 도트 — CalendarPage 와 같은 400 원 */
+export const CAL_CHIP_DOT: Record<HealthCertCalKind, string> = {
+  reg: "bg-blue-400",
+  expire: "bg-rose-400",
+  a1: "bg-emerald-400",
+  a2: "bg-amber-400",
+  a3: "bg-orange-400",
+};
+
+/** 범례 표시 순서 — 등록·만료·1·2·3차 */
+export const CAL_CHIP_LEGEND: HealthCertCalKind[] = ["reg", "expire", "a1", "a2", "a3"];
+
+const TONE_ORDER: HealthCertCalKind[] = ["expire", "reg", "a3", "a2", "a1"];
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-15
+ * 코멘트:
+ *   1) pill 색은 한 줄에 하나. 일정 캘린더와 같다
+ *   2) 만료가 있으면 빨강. 등록만이면 파랑. 1·2·3차는 초록·노랑·주황
+ *   3) 등록+만료 같은 날은 만료 빨강. 글자는 calChipLabel 이 둘 다 남긴다
+ */
+export function calChipTone(
+  // 한 행의 배지 종류
+  kinds: HealthCertCalKind[],
+): string {
+  const k = TONE_ORDER.find((x) => kinds.includes(x));
+  return k ? CAL_CHIP_TONE[k] : "";
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-15
+ * 코멘트:
+ *   1) pill 글자 — 종류 라벨을 · 로 이은 뒤 사원명
+ *   2) 같은 날 등록·만료면 '등록·만료 김보건'
+ *   3) title 과 본문이 같다
+ */
+export function calChipLabel(
+  // 칸의 사원 칩
+  chip: HealthCertCalChip,
+): string {
+  const kinds = chip.kinds.map((k) => CAL_CHIP_LABEL[k]).join("·");
+  return kinds ? `${kinds} ${chip.userNm}` : chip.userNm;
+}
+
+const KIND_ORDER: HealthCertCalKind[] = ["reg", "expire", "a1", "a2", "a3"];
+
+function ymd8(v: string | undefined): string {
+  const s = String(v ?? "").replace(/-/g, "");
+  return s.length === 8 ? s : "";
+}
+
+function alarmN(v: number | undefined, fallback: number): number {
+  return v && v > 0 ? v : fallback;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-15
+ * 코멘트:
+ *   1) 등록·만료는 해당 칸에 항상 둔다. 같으면 한 행
+ *   2) 1·2·3차는 만료-N일. 등록 < 알림 < 만료 일 때만
+ *   3) 칸 맵은 ymd → 사원 칩. 페이지가 렌더만 한다
+ */
+export function buildCalChipMap(
+  // 사원별 최신 이력
+  rows: HealthCertCal[],
+  // 회사 알림 일수 — can. 없으면 30·7·1
+  alarmDays: { alarmDay1?: number; alarmDay2?: number; alarmDay3?: number },
+): Map<string, HealthCertCalChip[]> {
+  const n1 = alarmN(alarmDays.alarmDay1, 30);
+  const n2 = alarmN(alarmDays.alarmDay2, 7);
+  const n3 = alarmN(alarmDays.alarmDay3, 1);
+  const byDayUser = new Map<string, Map<string, HealthCertCalChip>>();
+  const put = (ymd: string, userId: string, userNm: string, kind: HealthCertCalKind) => {
+    if (!ymd || !userId) return;
+    let people = byDayUser.get(ymd);
+    if (!people) {
+      people = new Map();
+      byDayUser.set(ymd, people);
+    }
+    const cur = people.get(userId);
+    if (cur) {
+      if (!cur.kinds.includes(kind)) cur.kinds.push(kind);
+      return;
+    }
+    people.set(userId, { userId, userNm, kinds: [kind] });
+  };
+  for (const r of rows) {
+    const userId = String(r.userId ?? "");
+    const userNm = String(r.userNm ?? userId);
+    const reg = ymd8(r.regDt);
+    const exp = ymd8(r.expireDt);
+    if (reg) put(reg, userId, userNm, "reg");
+    if (exp) put(exp, userId, userNm, "expire");
+    if (reg && exp) {
+      const alarms: [HealthCertCalKind, number][] = [
+        ["a1", n1],
+        ["a2", n2],
+        ["a3", n3],
+      ];
+      for (const [kind, n] of alarms) {
+        const alarm = addDaysYmd(exp, -n);
+        if (alarm.length !== 8) continue;
+        if (reg < alarm && alarm < exp) put(alarm, userId, userNm, kind);
+      }
+    }
+  }
+  const out = new Map<string, HealthCertCalChip[]>();
+  for (const [ymd, people] of byDayUser) {
+    const list = [...people.values()].map((c) => ({
+      ...c,
+      kinds: KIND_ORDER.filter((k) => c.kinds.includes(k)),
+    }));
+    list.sort((a, b) => a.userNm.localeCompare(b.userNm, "ko"));
+    out.set(ymd, list);
+  }
+  return out;
 }
 
 /**
