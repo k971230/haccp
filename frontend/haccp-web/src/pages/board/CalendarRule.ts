@@ -6,7 +6,7 @@
  * 코멘트:
  *   1) Page는 렌더·API만 하고 월 행렬·전환 diff는 여기 둔다
  *   2) 요일은 일~토. 앞뒤 빈 칸은 전월·익월 날짜다
- *   3) 체크 변경분만 저장 본문으로 만든다
+ *   3) 체크 변경분만 저장 본문으로 만든다. 칸 색은 calendarCellSurfaceClass 가 일정·보건증이 같이 쓴다
  *
  * PIPELINE[HF211] 일정 캘린더 규칙
  */
@@ -150,6 +150,70 @@ export function canOverride(
   holidays: Set<string>,
 ): boolean {
   return cell.weekend || holidays.has(cell.ymd);
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-15
+ * 코멘트:
+ *   1) 요일 머리 색 — 일·토만 붉게
+ *   2) 일정·보건증 캘린더가 같이 쓴다
+ *   3) index 0 이 일요일
+ */
+export function calendarWeekdayHeadClass(
+  // WEEKDAY_LABELS 인덱스
+  index: number,
+): string {
+  const tone = index === 0 || index === 6 ? "text-rose-700" : "text-slate-700";
+  return `border-b border-slate-200 px-2 py-1 text-center text-xs font-bold ${tone}`;
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-15
+ * 코멘트:
+ *   1) 하루 칸 배경·오늘 링. 일정 캘린더와 같은 조합이다
+ *   2) 주말 rose · 공휴일 orange · 영업일 전환 emerald · 오늘 파란 링
+ *   3) 보건증은 체크박스 없이 workday 만 넘긴다
+ */
+export function calendarCellSurfaceClass(
+  // 월 행렬 한 칸
+  cell: CalendarCell,
+  // 오늘 YYYYMMDD · 공휴일명 · 영업일 전환 여부
+  opts: { todayYmd: string; holiday?: string | null; workday?: boolean },
+): string {
+  const isToday = cell.inMonth && cell.ymd === opts.todayYmd;
+  const checked = !!opts.workday;
+  const weekendBg = cell.inMonth && cell.weekend && !checked;
+  const holidayBg = cell.inMonth && !!opts.holiday && !cell.weekend && !checked;
+  return [
+    "relative flex min-h-[5.5rem] cursor-default flex-col border-b border-r border-slate-200 p-1 text-xs",
+    !cell.inMonth ? "bg-slate-100 text-slate-500" : "text-slate-800",
+    weekendBg ? "bg-rose-100" : "",
+    holidayBg ? "bg-orange-100" : "",
+    cell.inMonth && checked ? "bg-emerald-50" : "",
+    isToday ? "ring-2 ring-inset ring-blue-500" : "",
+  ].filter(Boolean).join(" ");
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-15
+ * 코멘트:
+ *   1) 일자 숫자 색. 오늘은 파란 원, 주말·공휴일은 붉게
+ *   2) 일정·보건증이 같이 쓴다
+ *   3) 이번 달이 아니면 기본 글색
+ */
+export function calendarDayNumClass(
+  // 월 행렬 한 칸
+  cell: CalendarCell,
+  // 오늘 YYYYMMDD · 공휴일명
+  opts: { todayYmd: string; holiday?: string | null },
+): string {
+  const isToday = cell.inMonth && cell.ymd === opts.todayYmd;
+  const off = cell.inMonth && (cell.weekend || !!opts.holiday);
+  const tone = isToday ? "bg-blue-500 text-white" : off ? "text-rose-700" : "text-slate-800";
+  return `inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 font-bold ${tone}`;
 }
 
 /** 과제 표시 톤 — 완료·밀림·내 담당·오늘 할 일·그 외 */

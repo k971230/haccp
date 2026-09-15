@@ -28,9 +28,9 @@ server {
     listen      7070;
     server_name ${HACCP_SERVER_NAME};
 
-    # 백엔드 multipart 한도(APP_FILE_MAX_REQUEST_SIZE=25MB)보다 크게 잡아
+    # 백엔드 multipart 한도(APP_FILE_MAX_REQUEST_SIZE=55MB)보다 크게 잡아
     # 크기 초과 판정과 사용자 문구를 백엔드가 내도록 한다
-    client_max_body_size 30M;
+    client_max_body_size 60M;
 
     # --------------------------------------------------------
     # 공통 프록시 — location 에서 proxy_set_header 를 다시 쓰면 그 블록은 상속이 끊긴다

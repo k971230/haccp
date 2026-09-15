@@ -54,6 +54,7 @@ alwaysApply: true
 | `VITE_VIEW_LOG_FLUSH_MS` | 30000 | 화면 조회 로그 배치 전송 주기 (`useViewLog.ts`) |
 | `VITE_TOAST_DURATION_MS` | 2600 | 일반 토스트 표시 시간 (`dialog.tsx`) |
 | `VITE_TOAST_ERROR_DURATION_MS` | 5000 | 오류 토스트 표시 시간 (`dialog.tsx`) |
+| `VITE_FILE_MAX_BYTES` | 52428800 | 업로드 1건 최대 byte (`envConfig.ts`). BE `APP_FILE_MAX_BYTES` 와 같다 |
 
 `.env` 변경 후 Vite **재시작**. `.env.example`만 커밋.
 

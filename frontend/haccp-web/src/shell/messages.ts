@@ -84,6 +84,11 @@ export const MES = {
 
   /** 네트워크 단절·타임아웃 */
   networkError: "네트워크 연결을 확인해 주세요.",
+  /**
+   * nginx 413·Spring 업로드 한도 초과.
+   * HTML 원문(Request Entity Too Large)을 사용자에게 보이지 않는다
+   */
+  fileTooLarge: "업로드할 수 있는 파일 크기를 초과했습니다.",
   /** 서버 처리 실패 기본 문구 — 기술 상세는 서버 로그에만 남는다 */
   serverError: "처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
   /** 그리드 입력값 검증 실패 */

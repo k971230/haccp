@@ -14,7 +14,7 @@ package com.haccp.flow.box.healthcert;
 
 import com.haccp.common.response.CommonResponse;
 import com.haccp.flow.box.healthcert.dto.HealthCertAlarmRow;
-import com.haccp.flow.box.healthcert.dto.HealthCertCalRow;
+import com.haccp.flow.box.healthcert.dto.HealthCertCalMonth;
 import com.haccp.flow.box.healthcert.dto.HealthCertCanRow;
 import com.haccp.flow.box.healthcert.dto.HealthCertDeleteItem;
 import com.haccp.flow.box.healthcert.dto.HealthCertEmpRow;
@@ -125,8 +125,10 @@ public class HealthCertController {
     }
 
     @GetMapping("/calendar")
-    public CommonResponse<List<HealthCertCalRow>> calendar(
+    public CommonResponse<HealthCertCalMonth> calendar(
+            // 조회 시작일 YYYYMMDD
             @RequestParam String fromYmd,
+            // 조회 종료일 YYYYMMDD
             @RequestParam String toYmd
     ) {
         return CommonResponse.ok(service.calendar(fromYmd, toYmd));

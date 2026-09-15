@@ -20,7 +20,7 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 | 시험 | `vitest` · `playwright` · `mvnw`. 건수는 문서에 박지 않는다 — 각 러너로 센다 |
 | DB | 정본 7본 + `00_alter`(항상). 표·컬럼 수는 [`docs/10_테이블_레이아웃.md`](docs/10_테이블_레이아웃.md) · SP 는 [`docs/9_SP_색인.md`](docs/9_SP_색인.md) |
 
-**남은 일** — 운영 이미지 반영은 Jenkins `haccp-deploy` Build Now (`Jenkinsfile` 은 DB 를 안 건드린다). 서버 `.env.docker` 에 `APP_HR_FILE_KEY`(16자 이상)가 있어야 보건증 업로드가 된다. 사람 쪽: 서명 등록 · 매뉴얼 · 알림 방향 · 현장 한 달.
+**남은 일** — 사람 쪽: 서명 등록 · 매뉴얼 · 알림 방향 · 현장 한 달. 보건증 키는 2026-09-15 서버 `.env.docker` 에 넣었다. 통로는 [`05.운영.md`](05.운영.md) §9.1.
 지금 커밋은 `git log` · 정본은 [`docs/README.md`](docs/README.md).
 
 > **배포 서버는 `http://` 로 본다.** 지금 인증서가 자체서명이라 `https` 로 열면

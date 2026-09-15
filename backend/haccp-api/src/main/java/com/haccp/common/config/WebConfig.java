@@ -5,6 +5,7 @@
  *     1. /api/** 경로에 CORS 허용 출처·메서드·헤더 등록
  *     2. JwtFilter 401 응답과 동일한 allowed-origins 설정 공유
  *     3. ScreenAuthInterceptor 를 /api/** 에 등록 — JWT 다음 단계의 화면 권한
+ *     4. Tomcat POST·swallow 한도를 커넥터에 직접 넣는다. YAML -1 바인딩만으로는 RST 가 남았다
  *
  * PIPELINE[HB5] Spring 설정
  * PIPELINE[HB3, HB19, HB145] 연관 모듈
@@ -15,8 +16,17 @@ package com.haccp.common.config;
 import com.haccp.common.auth.ScreenAuthInterceptor;
 // 역할 — @Value 설정 주입
 import org.springframework.beans.factory.annotation.Value;
+// 역할 — @Bean 등록
+import org.springframework.context.annotation.Bean;
 // 역할 — @Configuration 등록
 import org.springframework.context.annotation.Configuration;
+// 역할 — 커스터마이저 순서. Boot 기본값(2MB) 뒤에 덮는다
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+// 역할 — 임베디드 Tomcat 공장
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+// 역할 — 웹서버 공장 커스터마이저
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 // 역할 — CORS 매핑 API
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 // 역할 — 인터셉터 등록
@@ -93,5 +103,23 @@ public class WebConfig implements WebMvcConfigurer {
     ) {
         registry.addInterceptor(screenAuthInterceptor)
                 .addPathPatterns("/api/**");
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-15
+     * 코멘트:
+     *   1) YAML max-swallow-size 만 -1 이면 max-http-form-post-size 기본 2MB 가 남아 RST 가 난다
+     *   2) 커넥터에 swallow·POST 한도를 -1 로 직접 넣는다. 실제 용량은 Spring multipart 50·55MB
+     *   3) @Order 최후 — Boot 커스터마이저가 2MB 를 다시 씌우지 못하게
+     */
+    @Bean
+    @Order(Ordered.LOWEST_PRECEDENCE)
+    WebServerFactoryCustomizer<TomcatServletWebServerFactory> tomcatUploadSize() {
+        return factory -> factory.addConnectorCustomizers(connector -> {
+            // -1 일 때(= 무제한). Spring multipart 가 먼저 자른다
+            connector.setProperty("maxSwallowSize", "-1");
+            connector.setMaxPostSize(-1);
+        });
     }
 }

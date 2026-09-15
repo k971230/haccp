@@ -102,7 +102,7 @@ public class HealthCertFileStorage {
             throw new BizException("업로드할 파일을 선택하세요.");
         }
         if (file.getSize() > maxBytes) {
-            throw new BizException("파일 크기가 허용 한도를 초과했습니다.");
+            throw new BizException("업로드할 수 있는 파일 크기를 초과했습니다.");
         }
         byte[] plain;
         try {

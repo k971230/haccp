@@ -2,11 +2,12 @@
  * http — Axios 3계층 인스턴스 + JWT 주입 + 401 처리.
  *
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-09-15
  * 코멘트:
  *   1) OPS_TIMEOUT_TIER — http(일반) / httpBatch(집계·대량 출력) / httpFile(HWPX·PDF) 3계층을 만든다
  *   2) 모든 요청에 Bearer를 붙이고, 401이면 세션을 정리해 로그인 화면으로 보낸다
  *   3) 타임아웃 숫자는 여기에 적지 않는다 — envConfig가 .env에서 읽어 넘긴다(OPS_GLOBAL_CONFIG)
+ *   4) 413 은 MES.fileTooLarge. RST·ABORTED 는 MES.networkError. 마크업을 Error.message 에 넣지 않는다
  *
  * PIPELINE[HF3] HTTP 클라이언트
  */
@@ -18,6 +19,10 @@ import { useAuthStore } from "@/stores/authStore";
 import { useTabStore } from "@/stores/tabStore";
 // 역할 — 401 세션 정리·전용 예외 타입
 import { handleUnauthorized, UnauthorizedError } from "@/shell/authSession";
+// 역할 — nginx HTML·413 을 업무 문구로
+import { sanitizeUserErrorText } from "@/shell/errors";
+// 역할 — 용량 초과·서버 오류 공통 문구
+import { MES } from "@/shell/messages";
 // 역할 — 타임아웃 3계층 설정값 (OPS_GLOBAL_CONFIG)
 import {
   API_TIMEOUT_BATCH_MS,
@@ -33,26 +38,34 @@ const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:7070";
 
 /**
  * 개발자: 박승우
- * 일자: 2026-08-06
+ * 일자: 2026-09-15
  * 코멘트:
  *   1) Axios 오류 본문에서 서버 업무 문구(message)를 꺼낸다
  *   2) responseType=blob·arraybuffer 일 때(= 서명·HWP 다운로드) 오류 JSON도 바이너리로 오므로 text 파싱한다
- *   3) 문구를 못 찾으면 공통 안내를 반환한다
+ *   3) 413 은 본문 전에 용량 안내. JSON이 아닌 HTML 은 sanitizeUserErrorText 가 업무 문구로 바꾼다
  */
 async function resolveErrorMessage(
   // Axios 거부 사유 — response.data 가 object·Blob·string 일 수 있다
   err: {
-    response?: { data?: unknown };
+    response?: { status?: number; data?: unknown };
     message?: string;
+    code?: string;
   }
 ): Promise<string> {
-  const fallback = "요청 처리 중 오류가 발생했습니다.";
+  const status = err.response?.status;
+  // 연결이 끊긴 때(= RST·ABORTED). 본문이 없다
+  if (!err.response && (err.code === "ERR_NETWORK" || err.code === "ECONNABORTED")) {
+    return MES.networkError;
+  }
+  // nginx client_max_body_size — HTML 본문을 파싱하지 않는다
+  if (status === 413) return MES.fileTooLarge;
+
   const data = err.response?.data;
 
   // JSON 객체 응답 — 일반 CRUD
   if (data && typeof data === "object" && !(data instanceof Blob)) {
     const msg = (data as { message?: unknown }).message;
-    if (typeof msg === "string" && msg.trim()) return msg.trim();
+    if (typeof msg === "string" && msg.trim()) return sanitizeUserErrorText(msg, status);
   }
 
   // blob 다운로드 실패 — 서버 ErrorResponse JSON이 Blob으로 온다
@@ -60,13 +73,17 @@ async function resolveErrorMessage(
     try {
       const text = (await data.text()).trim();
       if (text) {
-        const parsed = JSON.parse(text) as { message?: unknown };
-        if (typeof parsed.message === "string" && parsed.message.trim()) {
-          return parsed.message.trim();
+        try {
+          const parsed = JSON.parse(text) as { message?: unknown };
+          if (typeof parsed.message === "string" && parsed.message.trim()) {
+            return sanitizeUserErrorText(parsed.message, status);
+          }
+        } catch {
+          return sanitizeUserErrorText(text, status);
         }
       }
     } catch {
-      // JSON이 아니면 공통 문구
+      // 본문을 못 읽으면 아래 message 분기로
     }
   }
 
@@ -76,30 +93,36 @@ async function resolveErrorMessage(
     try {
       const text = new TextDecoder("utf-8").decode(data).trim();
       if (text) {
-        const parsed = JSON.parse(text) as { message?: unknown };
-        if (typeof parsed.message === "string" && parsed.message.trim()) {
-          return parsed.message.trim();
+        try {
+          const parsed = JSON.parse(text) as { message?: unknown };
+          if (typeof parsed.message === "string" && parsed.message.trim()) {
+            return sanitizeUserErrorText(parsed.message, status);
+          }
+        } catch {
+          return sanitizeUserErrorText(text, status);
         }
       }
     } catch {
-      // JSON이 아니면 공통 문구
+      // 본문을 못 읽으면 아래 message 분기로
     }
   }
 
-  // 문자열 본문
+  // 문자열 본문 — nginx HTML 포함
   if (typeof data === "string" && data.trim()) {
     try {
       const parsed = JSON.parse(data) as { message?: unknown };
       if (typeof parsed.message === "string" && parsed.message.trim()) {
-        return parsed.message.trim();
+        return sanitizeUserErrorText(parsed.message, status);
       }
     } catch {
-      return data.trim();
+      return sanitizeUserErrorText(data, status);
     }
   }
 
-  if (typeof err.message === "string" && err.message.trim()) return err.message.trim();
-  return fallback;
+  if (typeof err.message === "string" && err.message.trim()) {
+    return sanitizeUserErrorText(err.message, status);
+  }
+  return MES.serverError;
 }
 
 /**
