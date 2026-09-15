@@ -2,11 +2,11 @@
  * scenario — 통합 시나리오 A~E.
  *
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-09-15
  * 코멘트:
  *   1) 화면 단위 시험이 다 통과해도 이어 붙이면 깨진다 — 층 사이가 실제로 이어지는지 본다
  *   2) 각 시나리오는 「업무 하나를 끝까지」다. 중간 상태가 아니라 마지막 자리를 확인한다
- *   3) 시나리오끼리 서로의 자료를 밟지 않게 문서를 비우고 시작한다
+ *   3) 시나리오끼리 서로의 자료를 밟지 않게 문서를 비우고 시작한다. 사용자 정리는 purgeUser
  *
  * PIPELINE[HF130] E2E
  */
@@ -20,6 +20,7 @@ import {
   grids,
   login,
   openScreen,
+  purgeUser,
   resetDocuments,
   rowOfDoc,
   liveHtmlChkTmpl,
@@ -94,7 +95,7 @@ test.describe.serial("통합 시나리오", () => {
   test("A. 신규 업체 세팅 — 부서·사용자를 만들면 그 사용자로 로그인된다", async ({ request }) => {
     const DEPT = "E2ESCA";
     const USER = "e2esca";
-    dbOne(`DELETE FROM tbl_user WHERE user_id='${USER}'`);
+    purgeUser(USER);
     dbOne(`DELETE FROM tbl_dept WHERE dept_cd='${DEPT}'`);
 
     const token = await tokenOf(request);
@@ -119,7 +120,7 @@ test.describe.serial("통합 시나리오", () => {
     // 만든 부서가 사용자에게 실제로 붙었다
     expect(dbOne(`SELECT dept_cd FROM tbl_user WHERE user_id='${USER}'`)).toBe(DEPT);
 
-    dbOne(`DELETE FROM tbl_user WHERE user_id='${USER}'`);
+    purgeUser(USER);
     dbOne(`DELETE FROM tbl_dept WHERE dept_cd='${DEPT}'`);
   });
 

@@ -2,11 +2,11 @@
  * sys-user — 사용자관리 CRUD·비밀번호·제약.
  *
  * 개발자: 박승우
- * 일자: 2026-08-25
+ * 일자: 2026-09-15
  * 코멘트:
  *   1) 권한그룹·부서는 셀 버튼으로 여는 팝업이다 — 손으로 못 치는 칸이라 팝업까지 같이 본다
  *   2) 비밀번호가 평문으로 들어가면 안 된다. DB 를 직접 열어 BCrypt 인지 본다
- *   3) 사용자 ID 는 전역 UNIQUE 다 — 같은 ID 를 다시 만들면 막혀야 한다
+ *   3) 사용자 ID 는 전역 UNIQUE 다 — 같은 ID 를 다시 만들면 막혀야 한다. 정리는 purgeUser
  *
  * PIPELINE[HF130] E2E
  */
@@ -20,13 +20,14 @@ import {
   grids,
   login,
   openScreen,
+  purgeUser,
   saveAndConfirm,
 } from "./helpers";
 
 const PATH = "/sys/code/user-management";
 const ID = "e2euser";
 
-const purge = () => dbOne(`DELETE FROM tbl_user WHERE user_id='${ID}'`);
+const purge = () => purgeUser(ID);
 
 /**
  * 셀 버튼으로 팝업을 열고 첫 행을 고른다 — 권한그룹·부서가 같은 구조다.
