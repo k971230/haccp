@@ -18,6 +18,7 @@ import {
   dbOne,
   fillCell,
   grids,
+  hasDbTools,
   login,
   openScreen,
   purgeUser,
@@ -51,6 +52,8 @@ async function pickFromPopup(
 
 // 두 시험이 같은 사용자 하나를 이어서 쓴다 — 병렬로 돌면 서로를 밟는다
 test.describe.serial("사용자관리", () => {
+  // CI 는 backend/.env 가 없다. 정리 없이 저장하면 남은 e2euser 가 중복 400 이다
+  test.skip(() => !hasDbTools(), "tools/ 또는 backend/.env 가 없어 사용자 CRUD 를 건너뛴다");
   test.beforeAll(purge);
   test.afterAll(purge);
 
