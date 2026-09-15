@@ -2,7 +2,7 @@
  * envConfig — .env 값을 한곳에서 파싱하는 전역 설정 (OPS_GLOBAL_CONFIG).
  *
  * 개발자: 박승우
- * 일자: 2026-08-11
+ * 일자: 2026-09-15
  * 코멘트:
  *   1) 타임아웃·페이지 크기·폴링 주기처럼 운영 중 조정될 수 있는 숫자는 전부 여기로 모은다
  *   2) 소스 곳곳에 숫자를 박아두면 운영값을 바꿀 때 재배포가 필요해진다 — 그래서 매직 넘버를 금지한다
@@ -110,4 +110,10 @@ export const TOAST_DURATION_MS = parsePositiveInt(
 export const TOAST_ERROR_DURATION_MS = parsePositiveInt(
   import.meta.env.VITE_TOAST_ERROR_DURATION_MS,
   5_000
+);
+
+/** 업로드 1건 최대 byte — BE APP_FILE_MAX_BYTES(50MB) 와 같다. 초과면 요청 전에 안내 */
+export const FILE_MAX_BYTES = parsePositiveInt(
+  import.meta.env.VITE_FILE_MAX_BYTES,
+  52_428_800
 );

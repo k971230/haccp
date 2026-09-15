@@ -11,6 +11,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildMonthCells,
+  calendarCellSurfaceClass,
+  calendarDayNumClass,
+  calendarWeekdayHeadClass,
   canOpenCalendarTask,
   canOverride,
   compareCalendarTask,
@@ -55,6 +58,17 @@ describe("CalendarRule", () => {
     const day = cells.find((c) => c.ymd === "20260302");
     expect(day).toBeDefined();
     expect(canOverride(day!, new Set(["20260302"]))).toBe(true);
+  });
+
+  it("칸 색은 주말 rose · 공휴일 orange · 오늘 링", () => {
+    const cells = buildMonthCells(2026, 9);
+    const sat = cells.find((c) => c.ymd === "20260905")!;
+    const mon = cells.find((c) => c.ymd === "20260907")!;
+    expect(calendarWeekdayHeadClass(0)).toContain("text-rose-700");
+    expect(calendarCellSurfaceClass(sat, { todayYmd: "20260915" })).toContain("bg-rose-100");
+    expect(calendarCellSurfaceClass(mon, { todayYmd: "20260915", holiday: "추석" })).toContain("bg-orange-100");
+    expect(calendarCellSurfaceClass(mon, { todayYmd: "20260907" })).toContain("ring-blue-500");
+    expect(calendarDayNumClass(sat, { todayYmd: "20260915" })).toContain("text-rose-700");
   });
 
   it("톤은 완료·밀림·내 담당·오늘 할 일·그 외 순", () => {

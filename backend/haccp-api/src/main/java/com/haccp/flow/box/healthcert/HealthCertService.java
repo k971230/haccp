@@ -17,6 +17,10 @@ import com.haccp.common.exception.BizException;
 import com.haccp.common.validation.DeleteValidation;
 import com.haccp.sys.logs.auditlog.AuditWriter;
 import com.haccp.flow.box.healthcert.dto.HealthCertAlarmRow;
+import com.haccp.board.CalendarMapper;
+import com.haccp.board.dto.CalendarHolidayRow;
+import com.haccp.docs.sch.KoreanHolidayDates;
+import com.haccp.flow.box.healthcert.dto.HealthCertCalMonth;
 import com.haccp.flow.box.healthcert.dto.HealthCertCalRow;
 import com.haccp.flow.box.healthcert.dto.HealthCertCanRow;
 import com.haccp.flow.box.healthcert.dto.HealthCertDeleteItem;
@@ -25,6 +29,9 @@ import com.haccp.flow.box.healthcert.dto.HealthCertFileMeta;
 import com.haccp.flow.box.healthcert.dto.HealthCertHistRow;
 import com.haccp.flow.box.healthcert.dto.HealthCertMgrRow;
 import com.haccp.flow.box.healthcert.dto.HealthCertMgrSaveRequest;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -44,10 +51,12 @@ public class HealthCertService {
 
     private static final String LABEL = "보건증 이력";
     private static final Set<String> ALLOWED_EXT = Set.of("pdf");
+    private static final DateTimeFormatter YMD = DateTimeFormatter.BASIC_ISO_DATE;
 
     private final HealthCertMapper mapper;
     private final HealthCertFileStorage storage;
     private final AuditWriter auditWriter;
+    private final CalendarMapper calendarMapper;
 
     @Value("${app.hr.retention-days:730}")
     private int retentionDays;
@@ -186,9 +195,41 @@ public class HealthCertService {
                         "alarmDay3", String.valueOf(req.getAlarmDay3())));
     }
 
-    public List<HealthCertCalRow> calendar(String fromYmd, String toYmd) {
-        return mapper.selectCalendar(LoginUserContext.coCd(), LoginUserContext.userId(),
-                text(fromYmd), text(toYmd));
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-15
+     * 코멘트:
+     *   1) 만료 사원과 공휴일·영업일 전환을 한 응답으로 내린다
+     *   2) 공휴일은 KoreanHolidayDates. 영업일은 CalendarMapper.selectWorkdays
+     *   3) 일정 화면 API 를 타지 않는다
+     */
+    public HealthCertCalMonth calendar(
+            // 조회 시작일 YYYYMMDD — 6주 칸 첫날
+            String fromYmd,
+            // 조회 종료일 YYYYMMDD — 6주 칸 마지막
+            String toYmd
+    ) {
+        String from = text(fromYmd);
+        String to = text(toYmd);
+        String coCd = LoginUserContext.coCd();
+        HealthCertCalMonth out = new HealthCertCalMonth();
+        List<HealthCertCalRow> days = mapper.selectCalendar(coCd, LoginUserContext.userId(), from, to);
+        out.setDays(days == null ? List.of() : days);
+        try {
+            LocalDate start = LocalDate.parse(from, YMD);
+            LocalDate end = LocalDate.parse(to, YMD);
+            List<CalendarHolidayRow> holidays = new ArrayList<>();
+            for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+                if (!KoreanHolidayDates.ALL.contains(d)) continue;
+                holidays.add(new CalendarHolidayRow(d.format(YMD), KoreanHolidayDates.nameOf(d)));
+            }
+            out.setHolidays(holidays);
+        } catch (DateTimeParseException e) {
+            throw new BizException("조회 기간이 올바르지 않습니다.");
+        }
+        List<String> workdays = calendarMapper.selectWorkdays(coCd, from, to);
+        out.setWorkdays(workdays == null ? List.of() : workdays);
+        return out;
     }
 
     public void sendAlarms(int dormantDays) {

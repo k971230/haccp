@@ -2,11 +2,11 @@
  * errors — 예외를 사용자 업무 문구로 바꿔 토스트로 알린다.
  *
  * 개발자: 박승우
- * 일자: 2026-08-05
+ * 일자: 2026-09-15
  * 코멘트:
  *   1) 화면마다 흩어지던 catch 처리(문구 만들기 + 토스트 띄우기)를 한 함수로 모은다
  *   2) 서버가 내려준 업무 문구는 그대로 보여주고, PostgreSQL JDBC가 붙이는 ERROR:·Where: 기술 정보는 잘라낸다
- *   3) 함수명 접두사 mes를 유지한다 — mes-web과 같은 셸 규약을 쓰므로 이름까지 같게 두어 규칙·문서를 공유한다
+ *   3) nginx HTML(413 Request Entity Too Large 등)은 업무 문구로 바꾼다. 마크업을 토스트에 넣지 않는다
  *
  * PIPELINE[HF54] 셸 인프라
  * PIPELINE[HF49] 연관 — 셸
@@ -51,13 +51,51 @@ function stripDbTechnicalMessage(raw: string): string {
   return msg || "처리할 수 없습니다.";
 }
 
+/** nginx·Apache 가 내려주는 HTML 오류 페이지인지 */
+function looksLikeHtml(raw: string): boolean {
+  const t = raw.trimStart();
+  return /^<!DOCTYPE html/i.test(t) || /^<html[\s>]/i.test(t) || /<\/html>/i.test(t);
+}
+
+/** 413 Request Entity Too Large — 상태코드 없이 HTML 원문만 남은 경우 */
+function isPayloadTooLarge(raw: string): boolean {
+  return /request entity too large/i.test(raw);
+}
+
 /**
  * 개발자: 박승우
- * 일자: 2026-08-05
+ * 일자: 2026-09-15
+ * 코멘트:
+ *   1) HTTP 본문·Error.message 에서 사용자에게 보여줄 문구만 남긴다
+ *   2) http 인터셉터와 toUserMessage 가 같이 쓴다 — nginx HTML 을 두 곳에서 다르게 바꾸지 않는다
+ *   3) 413 이면 용량 안내, 그 밖 HTML 은 서버 오류. JSON 업무 문구는 DB 기술 정보만 자른다
+ */
+export function sanitizeUserErrorText(
+  // 서버·프록시가 준 원문 — JSON message 또는 HTML
+  raw: string,
+  // HTTP 상태. 413 이면 본문을 보지 않고 용량 안내
+  status?: number,
+): string {
+  const text = raw.trim();
+  if (!text) return MES.serverError;
+  if (status === 413 || isPayloadTooLarge(text)) return MES.fileTooLarge;
+  if (/^network error$/i.test(text)
+      || /err_connection_reset/i.test(text)
+      || /err_connection_aborted/i.test(text)
+      || /err_connection_refused/i.test(text)) {
+    return MES.networkError;
+  }
+  if (looksLikeHtml(text)) return MES.serverError;
+  return stripDbTechnicalMessage(text);
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-15
  * 코멘트:
  *   1) 예외에서 사용자에게 보여줄 문구만 뽑아낸다 (토스트는 띄우지 않는다)
  *   2) 문구를 화면 안내 영역에만 넣고 싶을 때, 또는 mesError 내부에서 호출한다
- *   3) 서버 업무 문구 → Error.message → fallback 순으로 고른다
+ *   3) 413·HTML 은 sanitizeUserErrorText 가 업무 문구로 바꾼 뒤, 서버 업무 문구 → Error.message → fallback
  */
 export function toUserMessage(
   // 잡은 예외 — 타입을 가리지 않는다
@@ -66,14 +104,26 @@ export function toUserMessage(
   fallback: string = MES.serverError
 ): string {
   // 문자열을 그대로 throw한 경우
-  if (typeof e === "string" && e.trim()) return stripDbTechnicalMessage(e);
+  if (typeof e === "string" && e.trim()) return sanitizeUserErrorText(e);
   if (e && typeof e === "object") {
-    const anyE = e as { response?: { data?: { message?: unknown } }; message?: unknown };
-    // 서버가 내려준 업무 문구가 있으면 최우선
-    const apiMsg = anyE?.response?.data?.message;
-    if (typeof apiMsg === "string" && apiMsg.trim()) return stripDbTechnicalMessage(apiMsg);
+    const anyE = e as {
+      response?: { status?: number; data?: unknown };
+      message?: unknown;
+    };
+    const status = anyE.response?.status;
+    if (status === 413) return MES.fileTooLarge;
+    const data = anyE.response?.data;
+    // nginx HTML 이 response.data 문자열로 남은 경우
+    if (typeof data === "string" && data.trim()) return sanitizeUserErrorText(data, status);
+    const apiMsg =
+      data && typeof data === "object" && !(data instanceof Blob)
+        ? (data as { message?: unknown }).message
+        : undefined;
+    if (typeof apiMsg === "string" && apiMsg.trim()) return sanitizeUserErrorText(apiMsg, status);
     // http 인터셉터가 이미 message로 옮겨 담은 경우
-    if (typeof anyE.message === "string" && anyE.message.trim()) return stripDbTechnicalMessage(anyE.message);
+    if (typeof anyE.message === "string" && anyE.message.trim()) {
+      return sanitizeUserErrorText(anyE.message, status);
+    }
   }
   return fallback;
 }

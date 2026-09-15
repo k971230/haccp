@@ -191,7 +191,7 @@ public class DocumentFileStorage {
             long size = Files.size(source);
             // maxBytes보다 클 때(= 운영 한도 초과) 복사 전 차단
             if (size > maxBytes) {
-                throw new BizException("파일 크기가 허용 한도를 초과했습니다.");
+                throw new BizException("업로드할 수 있는 파일 크기를 초과했습니다.");
             }
             String original = safeName(originalName);
             // REPLACE_EXISTING 을 주지 않아야 이미 있는 이름에서 예외가 나고 연번이 올라간다
@@ -248,7 +248,7 @@ public class DocumentFileStorage {
         }
         // maxBytes보다 클 때(= 운영 한도 초과) 디스크 쓰기 전 차단
         if (file.getSize() > maxBytes) {
-            throw new BizException("파일 크기가 허용 한도를 초과했습니다.");
+            throw new BizException("업로드할 수 있는 파일 크기를 초과했습니다.");
         }
     }
 

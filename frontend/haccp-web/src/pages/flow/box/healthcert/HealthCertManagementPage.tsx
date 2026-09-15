@@ -6,12 +6,12 @@
  * 코멘트:
  *   1) 골격은 결재선과 같다. SearchArea 1행 + 분할. 법조문은 등록 팝업에만 둔다
  *   2) 이력 추가는 행추가 팝업. 삭제 버튼은 canDelete 로 두고, 실행은 담당자만
- *   3) 검색은 상태(HC_STATUS)·사원명. 임박 체크는 두지 않는다
+ *   3) 파일 셀 열람은 새 탭 PDF. 이력 그리드는 access 를 넘기지 않는다. 업로드 오류는 mesError 토스트
  *
  * PIPELINE[HF216] 보건증 화면
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Calendar, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { Calendar, CalendarCheck, ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useGridAccess } from "@/hooks/useGridAccess";
@@ -32,6 +32,7 @@ import { MesButton } from "@/components/ui/MesButton";
 import { cn } from "@/lib/cn";
 import { useModalStore } from "@/stores/modalStore";
 import { mesConfirm, mesToast } from "@/shell/dialog";
+import { mesError } from "@/shell/errors";
 import { MES } from "@/shell/messages";
 import { resolveRowsForDelete } from "@/shell/resolveDelete";
 import { usePageCommands } from "@/shell/pageCommands";
@@ -50,17 +51,23 @@ import {
   validateDeleteHealthCert,
   viewHealthCert,
   type HealthCertCal,
+  type HealthCertCalHoliday,
   type HealthCertCan,
   type HealthCertEmp,
   type HealthCertHist,
   type HealthCertMgr,
 } from "@/api/flow/healthCertApi";
 import { fromInputDate } from "@/lib/docDateTime";
+import { FILE_MAX_BYTES } from "@/config/envConfig";
 import {
   buildMonthCells,
+  calendarCellSurfaceClass,
+  calendarDayNumClass,
+  calendarWeekdayHeadClass,
   parseYearMonth,
   shiftYearMonth,
   thisYearMonth,
+  todayYmd,
   WEEKDAY_LABELS,
 } from "@/pages/board/CalendarRule";
 import type { EditableRow } from "@/types/editable";
@@ -70,7 +77,6 @@ import {
   EMP_STATUS_ALL,
   HC_STATUS_MAIN_CD,
   HIST_PERSIST_ID,
-  HIST_RULES,
   SCRN_CD,
   SPLIT_KEY,
   buildEmpColumns,
@@ -85,7 +91,6 @@ export function HealthCertManagementPage() {
   const canDelete = useAuthStore((s) => s.can(SCRN_CD, "delete"));
   const asyncAct = useAsyncAction();
   const empGrid = useGridAccess(EMP_RULES, { scrnCd: SCRN_CD, gridRole: "master", readOnly: true });
-  const histGrid = useGridAccess(HIST_RULES, { scrnCd: SCRN_CD, gridRole: "detail", readOnly: true });
   const sec = useSection();
   const openModal = useModalStore((s) => s.openModal);
 
@@ -104,6 +109,8 @@ export function HealthCertManagementPage() {
   const [expireDt, setExpireDt] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // 직전에 연 PDF blob URL — 다음 열람 때 revoke 해서 힙을 비운다
+  const blobUrlRef = useRef("");
   const [maskedYn, setMaskedYn] = useState(false);
   const [mgrOpen, setMgrOpen] = useState(false);
   const [mgrs, setMgrs] = useState<HealthCertMgr[]>([]);
@@ -113,15 +120,21 @@ export function HealthCertManagementPage() {
   const [calOn, setCalOn] = useState(false);
   const [month, setMonth] = useState(thisYearMonth);
   const [calRows, setCalRows] = useState<HealthCertCal[]>([]);
+  const [holidays, setHolidays] = useState<HealthCertCalHoliday[]>([]);
+  const [workdays, setWorkdays] = useState<Set<string>>(new Set());
 
   const isMgr = can?.mgrYn === "Y";
   const canAssign = can?.adminYn === "Y";
 
   const loadNotis = useCallback(async () => {
-    const rows = await listNotifications();
-    const due = rows.filter((r) => String(r.notiTypeCd ?? "") === "HEALTH_CERT_DUE" && String(r.readYn ?? "") !== "Y");
-    if (due.length) {
-      mesToast(due[0]?.title || "보건증 만료가 임박한 대상이 있습니다.", "warn");
+    try {
+      const rows = await listNotifications();
+      const due = rows.filter((r) => String(r.notiTypeCd ?? "") === "HEALTH_CERT_DUE" && String(r.readYn ?? "") !== "Y");
+      if (due.length) {
+        mesToast(due[0]?.title || "보건증 만료가 임박한 대상이 있습니다.", "warn");
+      }
+    } catch {
+      // 알림 API 는 today-tasks 권한. 없어도 보건증 조회는 연다
     }
   }, []);
 
@@ -138,19 +151,27 @@ export function HealthCertManagementPage() {
       setHists([]);
       return;
     }
-    const rows = await listHealthCertHist(userId);
-    setHists(rows.map((r) => ({ ...r, _key: histKey(r) })));
-    setActiveHistKey("");
-    setSelKeys([]);
-    setSelReset((n) => n + 1);
+    try {
+      const rows = await listHealthCertHist(userId);
+      setHists(rows.map((r) => ({ ...r, _key: histKey(r) })));
+      setActiveHistKey("");
+      setSelKeys([]);
+      setSelReset((n) => n + 1);
+    } catch (e) {
+      mesError(e);
+    }
   }, []);
 
   const refresh = useCallback(async () => {
-    const [c, rows] = await Promise.all([fetchHealthCertCan(), loadEmps(), loadNotis()]);
-    setCan(c ?? null);
-    if (activeUserId && !rows.some((r) => r.userId === activeUserId)) {
-      setActiveUserId("");
-      setHists([]);
+    try {
+      const [c, rows] = await Promise.all([fetchHealthCertCan(), loadEmps(), loadNotis()]);
+      setCan(c ?? null);
+      if (activeUserId && !rows.some((r) => r.userId === activeUserId)) {
+        setActiveUserId("");
+        setHists([]);
+      }
+    } catch (e) {
+      mesError(e);
     }
   }, [activeUserId, loadEmps, loadNotis]);
 
@@ -174,11 +195,34 @@ export function HealthCertManagementPage() {
     void asyncAct.run(() => loadHist(row.userId), "search");
   }, [asyncAct, loadHist]);
 
+  /**
+   * 개발자: 박승우
+   * 일자: 2026-09-15
+   * 코멘트:
+   *   1) 파일 셀 버튼 클릭으로 보건증 PDF 를 새 탭에서 연다
+   *   2) await 뒤에 window.open 하면 팝업 차단되므로 빈 탭을 먼저 연다
+   *   3) 권한 없음·네트워크 실패는 mesError 토스트
+   */
   const handleView = useCallback(async (row: HealthCertHist) => {
     if (!row.idx) return;
-    const blob = await viewHealthCert(row.idx);
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank", "noopener");
+    // 사용자 제스처 안에서 탭을 연다 — 다운로드 뒤에 열면 브라우저가 막는다
+    const tab = window.open("about:blank", "_blank");
+    try {
+      const blob = await viewHealthCert(row.idx);
+      const pdf = blob.type.includes("pdf") ? blob : new Blob([blob], { type: "application/pdf" });
+      // 이전 blob 은 탭이 이미 연 뒤라 revoke 해도 그 탭은 유지된다
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+      const url = URL.createObjectURL(pdf);
+      blobUrlRef.current = url;
+      if (tab) {
+        tab.location.href = url;
+      } else {
+        window.open(url, "_blank", "noopener");
+      }
+    } catch (e) {
+      tab?.close();
+      mesError(e);
+    }
   }, []);
 
   const resetUpload = useCallback(() => {
@@ -228,21 +272,33 @@ export function HealthCertManagementPage() {
       mesToast("PDF 파일만 업로드할 수 있습니다.", "warn");
       return;
     }
+    if (file.size > FILE_MAX_BYTES) {
+      mesToast(MES.fileTooLarge, "warn");
+      return;
+    }
+    if (fromInputDate(regDt).length !== 8 || fromInputDate(expireDt).length !== 8) {
+      mesToast("등록일과 만료일을 입력하세요.", "warn");
+      return;
+    }
     if (!maskedYn) {
       mesToast("주민번호 뒷자리를 가린 사본만 업로드할 수 있습니다.", "warn");
       return;
     }
-    await uploadHealthCert({
-      userId: activeUserId,
-      regDt: fromInputDate(regDt),
-      expireDt: fromInputDate(expireDt),
-      file,
-      maskedYn: "Y",
-    });
-    mesToast(MES.saveDone, "success");
-    setUploadOpen(false);
-    resetUpload();
-    await Promise.all([loadHist(activeUserId), loadEmps(), loadNotis()]);
+    try {
+      await uploadHealthCert({
+        userId: activeUserId,
+        regDt: fromInputDate(regDt),
+        expireDt: fromInputDate(expireDt),
+        file,
+        maskedYn: "Y",
+      });
+      mesToast(MES.saveDone, "success");
+      setUploadOpen(false);
+      resetUpload();
+      await Promise.all([loadHist(activeUserId), loadEmps(), loadNotis()]);
+    } catch (e) {
+      mesError(e);
+    }
   }, [activeUserId, expireDt, file, loadEmps, loadHist, loadNotis, maskedYn, regDt, resetUpload]);
 
   const handleDelete = useCallback(async () => {
@@ -262,63 +318,85 @@ export function HealthCertManagementPage() {
       mesToast(MES.selectRow, "warn");
       return;
     }
-    await validateDeleteHealthCert(keys);
-    const ok = await mesConfirm(MES.deleteConfirm("보건증 이력"));
-    if (!ok) return;
-    await deleteHealthCert(keys);
-    mesToast(MES.deleteDone, "success");
-    await Promise.all([loadHist(activeUserId), loadEmps()]);
+    try {
+      await validateDeleteHealthCert(keys);
+      const ok = await mesConfirm(MES.deleteConfirm("보건증 이력"));
+      if (!ok) return;
+      await deleteHealthCert(keys);
+      mesToast(MES.deleteDone, "success");
+      await Promise.all([loadHist(activeUserId), loadEmps()]);
+    } catch (e) {
+      mesError(e);
+    }
   }, [activeHistKey, activeUserId, hists, isMgr, loadEmps, loadHist, selKeys]);
 
   const openMgr = useCallback(async () => {
-    const [list, c] = await Promise.all([listHealthCertMgrs(), fetchHealthCertCan()]);
-    setMgrs(list);
-    setAlarm1(c?.alarmDay1 ?? 30);
-    setAlarm2(c?.alarmDay2 ?? 7);
-    setAlarm3(c?.alarmDay3 ?? 1);
-    setMgrOpen(true);
+    try {
+      const [list, c] = await Promise.all([listHealthCertMgrs(), fetchHealthCertCan()]);
+      setMgrs(list);
+      setAlarm1(c?.alarmDay1 ?? 30);
+      setAlarm2(c?.alarmDay2 ?? 7);
+      setAlarm3(c?.alarmDay3 ?? 1);
+      setMgrOpen(true);
+    } catch (e) {
+      mesError(e);
+    }
   }, []);
 
   const addMgr = useCallback(async () => {
-    const users = await listUsers({ useYn: "Y" });
-    openModal("CodeLookup", {
-      title: "담당자 선택",
-      scrnCd: SCRN_CD,
-      options: users.map((u) => ({
-        value: String(u.userId ?? ""),
-        label: u.deptNm ? `${u.userNm} (${u.deptNm})` : String(u.userNm ?? ""),
-      })),
-      value: "",
-      allowEmpty: true,
-      onSelect: (code: string) => {
-        if (!code) return;
-        const u = users.find((x) => String(x.userId) === code);
-        setMgrs((prev) => prev.some((m) => m.userId === code)
-          ? prev
-          : [...prev, { userId: code, userNm: String(u?.userNm ?? code), deptNm: String(u?.deptNm ?? "") }]);
-      },
-    });
+    try {
+      const users = await listUsers({ useYn: "Y" });
+      openModal("CodeLookup", {
+        title: "담당자 선택",
+        scrnCd: SCRN_CD,
+        options: users.map((u) => ({
+          value: String(u.userId ?? ""),
+          label: u.deptNm ? `${u.userNm} (${u.deptNm})` : String(u.userNm ?? ""),
+        })),
+        value: "",
+        allowEmpty: true,
+        onSelect: (code: string) => {
+          if (!code) return;
+          const u = users.find((x) => String(x.userId) === code);
+          setMgrs((prev) => prev.some((m) => m.userId === code)
+            ? prev
+            : [...prev, { userId: code, userNm: String(u?.userNm ?? code), deptNm: String(u?.deptNm ?? "") }]);
+        },
+      });
+    } catch (e) {
+      mesError(e);
+    }
   }, [openModal]);
 
   const saveMgr = useCallback(async () => {
-    await saveHealthCertMgrs({
-      userIds: mgrs.map((m) => m.userId),
-      alarmDay1: alarm1,
-      alarmDay2: alarm2,
-      alarmDay3: alarm3,
-    });
-    mesToast(MES.saveDone, "success");
-    setMgrOpen(false);
-    await refresh();
+    try {
+      await saveHealthCertMgrs({
+        userIds: mgrs.map((m) => m.userId),
+        alarmDay1: alarm1,
+        alarmDay2: alarm2,
+        alarmDay3: alarm3,
+      });
+      mesToast(MES.saveDone, "success");
+      setMgrOpen(false);
+      await refresh();
+    } catch (e) {
+      mesError(e);
+    }
   }, [alarm1, alarm2, alarm3, mgrs, refresh]);
 
   const loadCal = useCallback(async (ym: string) => {
-    const y = Number(ym.slice(0, 4));
-    const m = Number(ym.slice(4, 6));
-    const from = `${ym}01`;
-    const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
-    const to = `${ym}${String(last).padStart(2, "0")}`;
-    setCalRows(await listHealthCertCalendar(from, to));
+    try {
+      const parsed = parseYearMonth(ym);
+      const range = buildMonthCells(parsed.year, parsed.month);
+      const from = range[0]?.ymd ?? `${ym}01`;
+      const to = range[range.length - 1]?.ymd ?? `${ym}31`;
+      const data = await listHealthCertCalendar(from, to);
+      setCalRows(data.days);
+      setHolidays(data.holidays);
+      setWorkdays(new Set(data.workdays));
+    } catch (e) {
+      mesError(e);
+    }
   }, []);
 
   useEffect(() => {
@@ -329,6 +407,12 @@ export function HealthCertManagementPage() {
   const empCols = useMemo(() => buildEmpColumns(), []);
   const ym = useMemo(() => parseYearMonth(month), [month]);
   const cells = useMemo(() => buildMonthCells(ym.year, ym.month), [ym]);
+  const today = todayYmd();
+  const holidayName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const h of holidays) map.set(h.ymd, h.name);
+    return map;
+  }, [holidays]);
   const byDay = useMemo(() => {
     const map = new Map<string, HealthCertCal[]>();
     for (const r of calRows) {
@@ -404,22 +488,112 @@ export function HealthCertManagementPage() {
         )}
       >
         {calOn && isMgr ? (
-          <div className="min-h-0 flex-1">
-            <div className="mb-2 flex items-center gap-2">
-              <MesButton onClick={() => setMonth(shiftYearMonth(month, -1))}><ChevronLeft size={16} /></MesButton>
-              <b>{month.slice(0, 4)}-{month.slice(4)}</b>
-              <MesButton onClick={() => setMonth(shiftYearMonth(month, 1))}><ChevronRight size={16} /></MesButton>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div
+              // 날짜 · 이전 · 다음 · 오늘. 영업일 저장·과제 범례는 두지 않는다
+              className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50/70 px-3 py-2"
+            >
+              <span
+                // 현재 조회 월
+                className="min-w-[7.5rem] text-base font-bold text-slate-800"
+              >
+                {ym.year}년 {ym.month}월
+              </span>
+              <MesButton
+                // 이전 달
+                variant="search"
+                size="sm"
+                icon={ChevronLeft}
+                onClick={() => setMonth(shiftYearMonth(month, -1))}
+              >
+                이전
+              </MesButton>
+              <MesButton
+                // 다음 달
+                variant="search"
+                size="sm"
+                icon={ChevronRight}
+                onClick={() => setMonth(shiftYearMonth(month, 1))}
+              >
+                다음
+              </MesButton>
+              <MesButton
+                // 이번 달
+                variant="excel"
+                size="sm"
+                icon={CalendarCheck}
+                onClick={() => setMonth(thisYearMonth())}
+              >
+                오늘
+              </MesButton>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-xs">
-              {WEEKDAY_LABELS.map((w) => <div key={w} className="text-center font-semibold">{w}</div>)}
-              {cells.map((c) => (
-                <div key={c.ymd} className={`min-h-20 rounded border p-1 ${c.inMonth ? "" : "opacity-40"}`}>
-                  <div>{c.day}</div>
-                  {(byDay.get(c.ymd) ?? []).map((r) => (
-                    <div key={r.userId} className="truncate rounded bg-sky-100 px-1">{r.userNm}</div>
-                  ))}
+            <div
+              // 요일 머리 + 6주 칸 — 일정 캘린더와 같은 격자
+              className="grid min-h-0 flex-1 cursor-default select-none grid-cols-7 grid-rows-[auto_repeat(6,minmax(0,1fr))]"
+            >
+              {WEEKDAY_LABELS.map((label, i) => (
+                <div
+                  // 요일 머리 — 일·토 강조
+                  key={label}
+                  className={calendarWeekdayHeadClass(i)}
+                >
+                  {label}
                 </div>
               ))}
+              {cells.map((cell) => {
+                const holiday = holidayName.get(cell.ymd);
+                const checked = workdays.has(cell.ymd);
+                const isToday = cell.inMonth && cell.ymd === today;
+                const people = byDay.get(cell.ymd) ?? [];
+                return (
+                  <div
+                    // 하루 칸 — 주말 rose · 공휴일 orange · 오늘 파란 링. 영업일 전환은 색만
+                    key={cell.ymd}
+                    className={calendarCellSurfaceClass(cell, {
+                      todayYmd: today,
+                      holiday,
+                      workday: checked,
+                    })}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span
+                        // 일자 — 오늘은 파란 원. 주말·공휴일은 붉게
+                        className={calendarDayNumClass(cell, { todayYmd: today, holiday })}
+                      >
+                        {cell.day}
+                      </span>
+                      {isToday ? (
+                        <span
+                          // 오늘 배지
+                          className="text-[10px] font-bold text-blue-700"
+                        >
+                          오늘
+                        </span>
+                      ) : null}
+                    </div>
+                    {holiday ? (
+                      <div
+                        // 공휴일 명칭
+                        className="truncate text-xs font-bold text-rose-700"
+                        title={holiday}
+                      >
+                        {holiday}
+                      </div>
+                    ) : null}
+                    <div className="mt-0.5 flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden">
+                      {people.map((r) => (
+                        <div
+                          // 만료 사원 칩 — 일정 과제 알약과 달리 이름만
+                          key={r.userId}
+                          className="truncate rounded bg-sky-100 px-1"
+                        >
+                          {r.userNm}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -482,8 +656,6 @@ export function HealthCertManagementPage() {
                   }
                   activeKey={activeHistKey}
                   onActivate={(row) => setActiveHistKey(String(row._key ?? ""))}
-                  access={histGrid.access}
-                  onLockedAttempt={histGrid.onLockedAttempt}
                   onSetActive={() => sec.setSec("d")}
                   selectable
                   onSelectionChange={(rows) => setSelKeys(rows.map((row) => row._key))}
@@ -512,7 +684,7 @@ export function HealthCertManagementPage() {
             onMouseDown={(e) => e.stopPropagation()}
             onSubmit={(e) => {
               e.preventDefault();
-              void asyncAct.run(handleUpload, "save");
+              void asyncAct.run(handleUpload, "save", mesError);
             }}
           >
             <div

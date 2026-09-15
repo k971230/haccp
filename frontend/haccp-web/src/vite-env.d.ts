@@ -21,6 +21,8 @@ interface ImportMetaEnv {
   readonly VITE_VIEW_LOG_FLUSH_MS?: string;
   readonly VITE_TOAST_DURATION_MS?: string;
   readonly VITE_TOAST_ERROR_DURATION_MS?: string;
+  /** 업로드 1건 최대 byte — BE APP_FILE_MAX_BYTES 와 같다 */
+  readonly VITE_FILE_MAX_BYTES?: string;
 }
 interface ImportMeta {
   readonly env: ImportMetaEnv;

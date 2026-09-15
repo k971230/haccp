@@ -42,6 +42,10 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 // 역할 — 응답 쓰던 중 브라우저가 연결을 끊은 경우
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+// 역할 — multipart 한도 초과
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+// 역할 — 그 밖 업로드 본문 오류
+import org.springframework.web.multipart.MultipartException;
 
 // 역할 — JDBC SQL 예외
 import java.sql.SQLException;
@@ -71,6 +75,48 @@ public class GlobalExceptionHandler {
     ) {
         // 400 Bad Request + ErrorResponse(code, message)
         return ResponseEntity.badRequest().body(new ErrorResponse(e.getCode(), e.getMessage()));
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-15
+     * 코멘트:
+     *   1) Spring multipart 한도 초과를 413 업무 문구로 바꾼다
+     *   2) Tomcat 이 RST 하지 않게 max-swallow-size 를 -1 로 둔 뒤에야 이 핸들러가 탄다
+     *   3) FE MES.fileTooLarge 와 같은 문구다
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleUploadTooLarge(
+            // multipart max-file-size·max-request-size 초과
+            MaxUploadSizeExceededException e
+    ) {
+        return payloadTooLarge();
+    }
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-15
+     * 코멘트:
+     *   1) 한도 초과가 원인으로 감싸진 MultipartException 도 413 로 돌린다
+     *   2) 그 밖 깨진 본문은 400. 스택은 남기지 않는다
+     *   3) MaxUploadSizeExceededException 전용 핸들러보다 뒤에 둔다
+     */
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ErrorResponse> handleMultipart(
+            // 업로드 본문 예외 — 한도·형식
+            MultipartException e
+    ) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof MaxUploadSizeExceededException) {
+                return payloadTooLarge();
+            }
+            String name = t.getClass().getName();
+            if (name.contains("SizeLimitExceeded") || name.contains("FileSizeLimitExceeded")) {
+                return payloadTooLarge();
+            }
+        }
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse("VALIDATION", "파일을 읽지 못했습니다."));
     }
 
     /**
@@ -327,6 +373,19 @@ public class GlobalExceptionHandler {
             "23503", "다른 자료가 참조 중입니다. 참조를 먼저 정리하세요.",
             "22P02", "숫자·날짜 형식이 올바르지 않습니다."
     );
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-15
+     * 코멘트:
+     *   1) 413 본문을 한곳에서 만든다 — 핸들러 두 곳이 문구를 갈라 쓰지 않게
+     *   2) FE MES.fileTooLarge 와 같다
+     *   3) 스택은 남기지 않는다. 용량 초과는 입력 오류다
+     */
+    private ResponseEntity<ErrorResponse> payloadTooLarge() {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(new ErrorResponse("PAYLOAD_TOO_LARGE", "업로드할 수 있는 파일 크기를 초과했습니다."));
+    }
 
     /**
      * 개발자: 박승우

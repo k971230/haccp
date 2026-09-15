@@ -49,6 +49,9 @@ import {
   TASK_TONE_CLASS,
   WEEKDAY_LABELS,
   buildMonthCells,
+  calendarCellSurfaceClass,
+  calendarDayNumClass,
+  calendarWeekdayHeadClass,
   canOpenCalendarTask,
   canOverride,
   compareCalendarTask,
@@ -291,9 +294,7 @@ export function CalendarPage() {
             <div
               // 요일 머리 — 일·토 강조
               key={label}
-              className={`border-b border-slate-200 px-2 py-1 text-center text-xs font-bold ${
-                i === 0 || i === 6 ? "text-rose-700" : "text-slate-700"
-              }`}
+              className={calendarWeekdayHeadClass(i)}
             >
               {label}
             </div>
@@ -304,30 +305,22 @@ export function CalendarPage() {
             const off = canOverride(cell, holidaySet);
             const checked = workdays.has(cell.ymd);
             const isToday = cell.inMonth && cell.ymd === today;
-            const weekendBg = cell.inMonth && cell.weekend && !checked;
-            const holidayBg = cell.inMonth && !!holiday && !cell.weekend && !checked;
             const overflow = dayTasks.length >= 4;
             return (
               <div
                 // 하루 칸 — 주말 rose · 오늘 파란 테두리 · 영업일 전환 초록
                 key={cell.ymd}
-                className={`relative flex min-h-[5.5rem] cursor-default flex-col border-b border-r border-slate-200 p-1 text-xs ${
-                  !cell.inMonth ? "bg-slate-100 text-slate-500" : "text-slate-800"
-                } ${weekendBg ? "bg-rose-100" : ""} ${holidayBg ? "bg-orange-100" : ""} ${
-                  cell.inMonth && checked ? "bg-emerald-50" : ""
-                } ${isToday ? "ring-2 ring-inset ring-blue-500" : ""}`}
+                className={calendarCellSurfaceClass(cell, {
+                  todayYmd: today,
+                  holiday,
+                  workday: checked,
+                })}
               >
                 <div className="flex items-center justify-between gap-1">
                   <div className="flex items-center gap-1">
                     <span
                       // 일자 — 오늘은 파란 원. 주말·공휴일은 붉게
-                      className={`inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 font-bold ${
-                        isToday
-                          ? "bg-blue-500 text-white"
-                          : cell.inMonth && (cell.weekend || holiday)
-                            ? "text-rose-700"
-                            : "text-slate-800"
-                      }`}
+                      className={calendarDayNumClass(cell, { todayYmd: today, holiday })}
                     >
                       {cell.day}
                     </span>

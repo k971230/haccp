@@ -1,7 +1,7 @@
 # application.yml — haccp-api Spring Boot 설정
 #
 # 개발자: 박승우
-# 일자: 2026-08-05
+# 일자: 2026-09-15
 # 코멘트:
 #   1) 외부 PostgreSQL sasshaccp DB(스키마 sasshaccp)에 접속하고 sp_tbl_* 저장프로시저만 호출한다
 #   2) mes-api와 포트·DB·스키마가 모두 다르다 — 두 API가 같은 커넥션 풀을 공유하지 않는다
@@ -11,6 +11,14 @@
 server:
   # 로컬·Docker 동일 7070 (운영 컨테이너 listen 과 맞춤). mes-api 8080 과 충돌 없음
   port: ${SERVER_PORT:7070}
+  tomcat:
+    # 기본 2MB 이면 multipart 한도 초과 본문을 삼키지 못하고 RST → Axios Network Error
+    # -1 은 남은 바이트를 읽고 MaxUploadSizeExceededException 을 내게 한다
+    max-swallow-size: -1
+    # 기본 2MB. Spring 문서상 모든 HTTP POST(multipart 포함). swallow 만 -1 이면 여전히 RST
+    max-http-form-post-size: ${APP_FILE_MAX_REQUEST_SIZE:55MB}
+    # 파일 업로드는 FE httpFile 120s 와 맞춘다
+    connection-timeout: ${SERVER_TOMCAT_CONNECTION_TIMEOUT:120s}
 
 spring:
   application:
@@ -44,8 +52,8 @@ spring:
   # HWPX·PDF·사진 multipart 임시 저장·요청 한도 — 파일 API(httpFile 120초)와 짝을 이룬다
   servlet:
     multipart:
-      max-file-size: ${APP_FILE_MAX_SIZE:20MB}
-      max-request-size: ${APP_FILE_MAX_REQUEST_SIZE:25MB}
+      max-file-size: ${APP_FILE_MAX_SIZE:50MB}
+      max-request-size: ${APP_FILE_MAX_REQUEST_SIZE:55MB}
   # OPS_TIMEOUT_DEFENSE 3계층 — CUD @Transactional 기본 타임아웃(초)
   transaction:
     default-timeout: ${TX_DEFAULT_TIMEOUT_SECONDS:60}
@@ -99,7 +107,7 @@ app:
     # 문서·사진·HWPX·PDF 볼륨 루트 — Docker에서는 named volume 마운트 경로로 바꾼다
     root: ${APP_FILE_ROOT:./data/haccp-files}
     # 파일 1건 최대 byte — multipart 설정과 같은 env에서 운영 통제
-    max-bytes: ${APP_FILE_MAX_BYTES:20971520}
+    max-bytes: ${APP_FILE_MAX_BYTES:52428800}
   hr:
     # 보건증 등 인사 서류 하위 루트 — HrDocs/{회사코드}/health-cert/{일자}
     docs-directory: ${APP_HR_DOCS_DIRECTORY:HrDocs}

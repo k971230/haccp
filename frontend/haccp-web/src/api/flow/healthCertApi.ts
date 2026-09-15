@@ -5,7 +5,7 @@
  * 일자: 2026-09-15
  * 코멘트:
  *   1) 회사·사용자는 JWT. 쿼리에 userId 를 실어도 서버가 행을 가른다
- *   2) 파일은 httpFile. 열람은 blob 을 새 탭으로
+ *   2) 파일은 httpFile. 열람은 blob 을 새 탭으로. 캘린더는 days·holidays·workdays
  *   3) 삭제는 validate-delete → delete
  *
  * PIPELINE[HF214] 보건증 API
@@ -48,6 +48,12 @@ export type HealthCertHist = {
 };
 export type HealthCertMgr = { userId: string; userNm?: string; deptNm?: string };
 export type HealthCertCal = { userId: string; userNm?: string; expireDt: string };
+export type HealthCertCalHoliday = { ymd: string; name: string };
+export type HealthCertCalMonth = {
+  days: HealthCertCal[];
+  holidays: HealthCertCalHoliday[];
+  workdays: string[];
+};
 
 export async function fetchHealthCertCan() {
   const { data } = await http.get<CommonResponse<HealthCertCan>>(`${BASE}/can`);
@@ -114,9 +120,30 @@ export const saveHealthCertMgrs = (body: {
   alarmDay3: number;
 }) => http.put(`${BASE}/mgr/save`, body);
 
-export async function listHealthCertCalendar(fromYmd: string, toYmd: string) {
-  const { data } = await http.get<CommonResponse<Record<string, unknown>[]>>(`${BASE}/calendar`, {
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-15
+ * 코멘트:
+ *   1) 만료 사원·공휴일·영업일 전환을 한 번에 받는다
+ *   2) 일정 캘린더 API 를 부르지 않는다
+ *   3) from~to 는 6주 칸
+ */
+export async function listHealthCertCalendar(
+  // 조회 시작일 YYYYMMDD
+  fromYmd: string,
+  // 조회 종료일 YYYYMMDD
+  toYmd: string,
+): Promise<HealthCertCalMonth> {
+  const { data } = await http.get<CommonResponse<Record<string, unknown>>>(`${BASE}/calendar`, {
     params: { fromYmd, toYmd },
   });
-  return camelizeRows<HealthCertCal>(data.data);
+  const raw = (data.data ?? {}) as Record<string, unknown>;
+  const daysRaw = Array.isArray(raw.days) ? raw.days : [];
+  const holRaw = Array.isArray(raw.holidays) ? raw.holidays : [];
+  const wdRaw = Array.isArray(raw.workdays) ? raw.workdays : [];
+  return {
+    days: camelizeRows<HealthCertCal>(daysRaw as Record<string, unknown>[]),
+    holidays: camelizeRows<HealthCertCalHoliday>(holRaw as Record<string, unknown>[]),
+    workdays: wdRaw.map((v) => String(v ?? "")).filter(Boolean),
+  };
 }
