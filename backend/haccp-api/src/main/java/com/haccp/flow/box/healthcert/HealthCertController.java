@@ -53,6 +53,7 @@ public class HealthCertController {
 
     @GetMapping("/emp/list")
     public CommonResponse<List<HealthCertEmpRow>> emps(
+            // 임박 대상만 — "Y"면 오늘~창 끝. 그 외는 전체. FE 가 상태 콤보로 다시 거른다
             @RequestParam(required = false) String expiringYn
     ) {
         return CommonResponse.ok(service.listEmps(expiringYn));
@@ -60,6 +61,7 @@ public class HealthCertController {
 
     @GetMapping("/hist/list")
     public CommonResponse<List<HealthCertHistRow>> hist(
+            // 조회 대상 사원 ID — JWT co_cd 회사의 tbl_user.user_id. SP 가 본인·담당자 가른다
             @RequestParam String userId
     ) {
         return CommonResponse.ok(service.listHist(userId));
@@ -75,10 +77,15 @@ public class HealthCertController {
      */
     @PostMapping("/hist/upload")
     public CommonResponse<Void> upload(
+            // 등록 대상 사원 ID — JWT co_cd 회사의 tbl_user.user_id
             @RequestParam String userId,
+            // 보건증 등록일 YYYYMMDD — varchar(8) DB 저장, 10자 화면 입력은 fromInputDate 변환
             @RequestParam String regDt,
+            // 보건증 만료일 YYYYMMDD — 알림·파기 기준일. 화면 10자를 그대로 보내면 22001
             @RequestParam String expireDt,
+            // 주민번호 마스킹 여부 — Y 아니면 거절. 업로드 책임을 남긴다
             @RequestParam String maskedYn,
+            // PDF 파일 — 확장자·크기 검증 후 마스터 키로 DEK 감싸 암호화 저장
             @RequestPart("file") MultipartFile file
     ) {
         service.upload(userId, regDt, expireDt, file, maskedYn);
@@ -86,7 +93,10 @@ public class HealthCertController {
     }
 
     @GetMapping("/hist/{idx}/view")
-    public ResponseEntity<byte[]> view(@PathVariable Long idx) {
+    public ResponseEntity<byte[]> view(
+            // 열람할 이력 PK — tbl_health_cert_hist.idx. SP 가 본인·담당자 가른다
+            @PathVariable Long idx
+    ) {
         HealthCertService.HealthCertFile file = service.view(idx);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(file.mimeType()));
@@ -97,13 +107,19 @@ public class HealthCertController {
     }
 
     @PostMapping("/hist/validate-delete")
-    public CommonResponse<Void> validateDelete(@RequestBody List<HealthCertDeleteItem> keys) {
+    public CommonResponse<Void> validateDelete(
+            // 삭제 대상 복합키 목록 — UI 단건이어도 1건 배열. [{ idx }]
+            @RequestBody List<HealthCertDeleteItem> keys
+    ) {
         service.validateDelete(keys);
         return CommonResponse.ok(null);
     }
 
     @PostMapping("/hist/delete")
-    public CommonResponse<Void> delete(@RequestBody List<HealthCertDeleteItem> keys) {
+    public CommonResponse<Void> delete(
+            // 삭제 대상 복합키 목록 — Double Check 후 SP 루프 삭제. [{ idx }]
+            @RequestBody List<HealthCertDeleteItem> keys
+    ) {
         service.delete(keys);
         return CommonResponse.ok(null);
     }
@@ -119,16 +135,19 @@ public class HealthCertController {
     }
 
     @PutMapping("/mgr/save")
-    public CommonResponse<Void> saveMgrs(@RequestBody HealthCertMgrSaveRequest req) {
+    public CommonResponse<Void> saveMgrs(
+            // 담당자 user_id 배열 + 알림 일수 3개 — ADMIN 만 저장 가능
+            @RequestBody HealthCertMgrSaveRequest req
+    ) {
         service.saveMgrs(req);
         return CommonResponse.ok(null);
     }
 
     @GetMapping("/calendar")
     public CommonResponse<HealthCertCalMonth> calendar(
-            // 조회 시작일 YYYYMMDD
+            // 조회 시작일 YYYYMMDD — 6주 칸 첫날. parseYearMonth 로 만든 range[0].ymd
             @RequestParam String fromYmd,
-            // 조회 종료일 YYYYMMDD
+            // 조회 종료일 YYYYMMDD — 6주 칸 마지막. range[41].ymd
             @RequestParam String toYmd
     ) {
         return CommonResponse.ok(service.calendar(fromYmd, toYmd));

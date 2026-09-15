@@ -14,6 +14,7 @@ PIPELINE[HB149] 보건증 MyBatis XML
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.haccp.flow.box.healthcert.HealthCertMapper">
 
+    <!-- 권한 조회 — JWT actorId 가 담당자인지, ADMIN인지, 임박 창 일수 반환 -->
     <select id="selectCan" resultType="com.haccp.flow.box.healthcert.dto.HealthCertCanRow">
         SELECT * FROM sp_health_cert_management_can_r_000(
             #{coCd,    jdbcType=VARCHAR},
@@ -21,6 +22,7 @@ PIPELINE[HB149] 보건증 MyBatis XML
         )
     </select>
 
+    <!-- 사원 목록 — 최신 만료일 포함. expiringYn=Y면 오늘~창 끝만. FE 가 상태·검색어로 다시 거른다 -->
     <select id="selectEmps" resultType="com.haccp.flow.box.healthcert.dto.HealthCertEmpRow">
         SELECT * FROM sp_health_cert_management_emp_r_000(
             #{coCd,       jdbcType=VARCHAR},
@@ -29,7 +31,8 @@ PIPELINE[HB149] 보건증 MyBatis XML
         )
     </select>
 
-    <select id="selectHist" resultType="com.haccp.flow.box.healthcert.dto.HealthCertHistRow">
+    <!-- 사원별 이력 목록 — 본인·담당자만 조회 가능. 등록일·만료일·파일명. filePath·wrappedDek 은 안 내린다 -->
+    <select id="selectHist" resultType="com.haccp.flow.box.healthcert.dto.HistRow">
         SELECT * FROM sp_health_cert_management_hist_r_000(
             #{coCd,    jdbcType=VARCHAR},
             #{actorId, jdbcType=VARCHAR},
@@ -37,6 +40,7 @@ PIPELINE[HB149] 보건증 MyBatis XML
         )
     </select>
 
+    <!-- 이력 등록 — 담당자가 사원 보건증 첨부. DEK 는 마스터 키로 감싼다. 파일은 Service 가 먼저 쓴다 -->
     <update id="insertHist" statementType="CALLABLE">
         CALL sp_health_cert_management_hist_c_000(
             #{coCd,      jdbcType=VARCHAR},
@@ -49,12 +53,12 @@ PIPELINE[HB149] 보건증 MyBatis XML
             #{fileExt,    jdbcType=VARCHAR},
             #{fileSize,   jdbcType=BIGINT},
             #{mimeType,   jdbcType=VARCHAR},
-            <!-- 마스터 키로 감싼 파일 DEK. 목록 SP 에는 안 실는다 -->
             #{wrappedDek, jdbcType=VARCHAR},
             #{keyVersion, jdbcType=INTEGER}
         )
     </update>
 
+    <!-- 삭제 검증 — 담당자만 가능. 차단 사유는 없다(단순 권한). ref_key·target 반환 -->
     <select id="selectHistDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
         SELECT ref_key, target
           FROM sp_health_cert_management_hist_delete_blocker_r_000(
@@ -65,6 +69,7 @@ PIPELINE[HB149] 보건증 MyBatis XML
          LIMIT 1
     </select>
 
+    <!-- 삭제 전 경로 조회 — 담당자만 가능. filePath·wrappedDek·keyVersion 반환. 실물 삭제는 커밋 뒤 -->
     <select id="selectHistPaths" resultType="com.haccp.flow.box.healthcert.dto.HealthCertFileMeta">
         SELECT * FROM sp_health_cert_management_hist_path_r_000(
             #{coCd,    jdbcType=VARCHAR},
@@ -73,6 +78,7 @@ PIPELINE[HB149] 보건증 MyBatis XML
         )
     </select>
 
+    <!-- 이력 삭제 — Double Check 후 SP 1건 호출. 실물 삭제는 커밋 뒤 -->
     <update id="deleteHist" statementType="CALLABLE">
         CALL sp_health_cert_management_hist_d_000(
             #{coCd,    jdbcType=VARCHAR},
@@ -81,10 +87,12 @@ PIPELINE[HB149] 보건증 MyBatis XML
         )
     </update>
 
+    <!-- 담당자 목록 — ADMIN 만 조회 가능. userId·userNm·deptNm 반환 -->
     <select id="selectMgrs" resultType="com.haccp.flow.box.healthcert.dto.HealthCertMgrRow">
         SELECT * FROM sp_health_cert_management_mgr_r_000(#{coCd, jdbcType=VARCHAR})
     </select>
 
+    <!-- 담당자 저장 — ADMIN 만 가능. 기존 삭제 후 INSERT. userId 배열 -->
     <update id="saveMgrs" statementType="CALLABLE">
         CALL sp_health_cert_management_mgr_c_000(
             #{coCd,    jdbcType=VARCHAR},
@@ -93,10 +101,12 @@ PIPELINE[HB149] 보건증 MyBatis XML
         )
     </update>
 
+    <!-- 알림 일수 조회 — ADMIN 만. alarmDay1·2·3 반환 -->
     <select id="selectAlarm" resultType="com.haccp.flow.box.healthcert.dto.HealthCertAlarmRow">
         SELECT * FROM sp_health_cert_management_alarm_r_000(#{coCd, jdbcType=VARCHAR})
     </select>
 
+    <!-- 알림 일수 저장 — ADMIN 만. 1·2·3차 알림 일수. 단위는 '만료 전 N일' -->
     <update id="saveAlarm" statementType="CALLABLE">
         CALL sp_health_cert_management_alarm_c_000(
             #{coCd,       jdbcType=VARCHAR},
@@ -107,7 +117,7 @@ PIPELINE[HB149] 보건증 MyBatis XML
         )
     </update>
 
-    <!-- 사원별 최신 이력 등록일·만료일. 칩은 FE -->
+    <!-- 캘린더 — 사원별 최신 이력 등록일·만료일. 담당자만. 칩 종류는 FE buildCalChipMap -->
     <select id="selectCalendar" resultType="com.haccp.flow.box.healthcert.dto.HealthCertCalRow">
         SELECT * FROM sp_health_cert_management_cal_r_000(
             #{coCd,     jdbcType=VARCHAR},
@@ -117,6 +127,7 @@ PIPELINE[HB149] 보건증 MyBatis XML
         )
     </select>
 
+    <!-- 알림 발송 — 배치 전용. dormantDays 는 휴면 사용자 제외 일수. actorId=system -->
     <update id="sendAlarms" statementType="CALLABLE">
         CALL sp_health_cert_management_alarm_send_c_000(
             #{actorId,      jdbcType=VARCHAR},
@@ -124,18 +135,21 @@ PIPELINE[HB149] 보건증 MyBatis XML
         )
     </update>
 
+    <!-- 만료 이력 파기 — 배치 전용. 최신 1건 제외, 만료일+retentionDays 지난 행 삭제. filePath 반환 -->
     <select id="purgeSuperseded" resultType="com.haccp.flow.box.healthcert.dto.HealthCertFileMeta">
         SELECT * FROM sp_health_cert_management_hist_purge_d_000(
             #{retentionDays, jdbcType=INTEGER}
         )
     </select>
 
+    <!-- 키 재감싸기 대상 조회 — 배치 전용. fromVersion 키로 감싼 행. filePath·wrappedDek·keyVersion 반환 -->
     <select id="selectRewrap" resultType="com.haccp.flow.box.healthcert.dto.HealthCertFileMeta">
         SELECT * FROM sp_health_cert_management_hist_rewrap_r_000(
             #{fromVersion, jdbcType=INTEGER}
         )
     </select>
 
+    <!-- 키 재감싸기 — 배치 전용. UPDATE tbl_health_cert_hist SET wrapped_dek, key_version -->
     <update id="updateWrappedDek" statementType="CALLABLE">
         CALL sp_health_cert_management_hist_rewrap_u_000(
             #{coCd,       jdbcType=VARCHAR},
