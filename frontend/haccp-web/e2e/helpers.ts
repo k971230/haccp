@@ -765,10 +765,12 @@ export function purgeCompany(coCd: string): void {
  * 코멘트:
  *   1) 사용자 저장이 tbl_emp_detail 을 upsert 한다. tbl_user 만 지우면 FK 에 막힌다
  *   2) 화면 삭제 SP(sp_user_management_d_000)와 같은 자식 표를 먼저 비운다
- *   3) 시나리오·사용자관리 E2E 가 같은 순서를 쓰게 한곳에 둔다
+ *   3) 도구가 없으면 조용히 넘어가지 않는다 — 정리를 건너뛰고 저장하면 남은 ID 가 400 이다
  */
 export function purgeUser(userId: string): void {
-  if (!hasDbTools()) return;
+  if (!hasDbTools()) {
+    test.skip(true, "tools/ 가 없어 시험 사용자를 정리할 수 없다 (로컬 전용)");
+  }
   assertTestDb("시험 사용자 삭제");
   const id = sqlLit(userId);
   runDb(`DELETE FROM tbl_user_noti_pref WHERE user_id='${id}'`);
