@@ -132,6 +132,16 @@ export function HealthCertManagementPage() {
   const isMgr = can?.mgrYn === "Y";
   const canAssign = can?.adminYn === "Y";
 
+  // 언마운트 시 blob URL 정리 — 메모리 누수 방지
+  useEffect(() => {
+    return () => {
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = "";
+      }
+    };
+  }, []);
+
   const loadNotis = useCallback(async () => {
     try {
       const rows = await listNotifications();
@@ -181,11 +191,22 @@ export function HealthCertManagementPage() {
     }
   }, [activeUserId, loadEmps, loadNotis]);
 
+  // 저장 후 재조회 — 중복 API 호출 통합
+  const reloadAfterSave = useCallback(async (withNotis = true) => {
+    const promises: Promise<unknown>[] = [loadEmps()];
+    if (activeUserId) promises.push(loadHist(activeUserId));
+    if (withNotis) promises.push(loadNotis());
+    await Promise.all(promises);
+  }, [activeUserId, loadEmps, loadHist, loadNotis]);
+
+  // 첫 진입 전용 초기화 — deps 에 refresh 포함하되 초기값만 실행
+  const isInitialMount = useRef(true);
   useEffect(() => {
-    void asyncAct.run(refresh, "search");
-    // 첫 진입만. 상태는 SearchArea 가 다시 조회한다
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      void asyncAct.run(refresh, "refresh");
+    }
+  }, [asyncAct, refresh]);
 
   useEffect(() => {
     if (!isMgr) setCalOn(false);
@@ -198,7 +219,7 @@ export function HealthCertManagementPage() {
 
   const handleSelect = useCallback((row: HealthCertEmp) => {
     setActiveUserId(row.userId);
-    void asyncAct.run(() => loadHist(row.userId), "search");
+    void asyncAct.run(() => loadHist(row.userId), "loadHist");
   }, [asyncAct, loadHist]);
 
   /**
@@ -306,11 +327,16 @@ export function HealthCertManagementPage() {
       mesToast(MES.saveDone, "success");
       setUploadOpen(false);
       resetUpload();
-      await Promise.all([loadHist(activeUserId), loadEmps(), loadNotis()]);
+      await reloadAfterSave(true);
     } catch (e) {
       mesError(e);
     }
-  }, [activeUserId, expireDt, file, loadEmps, loadHist, loadNotis, maskedYn, regDt, resetUpload]);
+  }, [activeUserId, expireDt, file, maskedYn, regDt, reloadAfterSave, resetUpload]);
+
+  // 담당자 제외 — 인라인 화살표 함수 제거
+  const handleRemoveMgr = useCallback((userId: string) => {
+    setMgrs((p) => p.filter((x) => x.userId !== userId));
+  }, []);
 
   const handleDelete = useCallback(async () => {
     // 버튼은 canDelete 로 보인다. 담당자가 아니면 API 전에 거절
@@ -335,11 +361,11 @@ export function HealthCertManagementPage() {
       if (!ok) return;
       await deleteHealthCert(keys);
       mesToast(MES.deleteDone, "success");
-      await Promise.all([loadHist(activeUserId), loadEmps()]);
+      await reloadAfterSave(false);
     } catch (e) {
       mesError(e);
     }
-  }, [activeHistKey, activeUserId, hists, isMgr, loadEmps, loadHist, selKeys]);
+  }, [activeHistKey, activeUserId, hists, isMgr, reloadAfterSave, selKeys]);
 
   const openMgr = useCallback(async () => {
     try {
@@ -410,6 +436,18 @@ export function HealthCertManagementPage() {
     }
   }, []);
 
+  // 캘린더 월 네비게이션 — 인라인 화살표 함수 제거
+  const handlePrevMonth = useCallback(() => setMonth(shiftYearMonth(month, -1)), [month]);
+  const handleNextMonth = useCallback(() => setMonth(shiftYearMonth(month, 1)), [month]);
+  const handleToday = useCallback(() => setMonth(thisYearMonth()), []);
+  const handleToggleCal = useCallback(() => setCalOn((v) => !v), []);
+
+  // 그리드 선택 변경 — 인라인 화살표 함수 제거
+  const handleHistSelectionChange = useCallback(
+    (rows: EditableRow<HealthCertHist>[]) => setSelKeys(rows.map((row) => row._key)),
+    [],
+  );
+
   useEffect(() => {
     // 목록 조회(search)와 겹치지 않게 cal 키. 안 그러면 첫 클릭이 빈 칸이다
     if (calOn && isMgr) void asyncAct.run(() => loadCal(month), "cal");
@@ -425,17 +463,15 @@ export function HealthCertManagementPage() {
     for (const h of holidays) map.set(h.ymd, h.name);
     return map;
   }, [holidays]);
-  const chipMap = useMemo(
-    () => buildCalChipMap(calRows, {
-      alarmDay1: can?.alarmDay1,
-      alarmDay2: can?.alarmDay2,
-      alarmDay3: can?.alarmDay3,
-    }),
-    [calRows, can?.alarmDay1, can?.alarmDay2, can?.alarmDay3],
+  // 알림 일수만 별도 메모이제이션 — can 객체 전체 변경 시 chipMap 재계산 방지
+  const alarmDays = useMemo(
+    () => ({ alarmDay1: can?.alarmDay1, alarmDay2: can?.alarmDay2, alarmDay3: can?.alarmDay3 }),
+    [can?.alarmDay1, can?.alarmDay2, can?.alarmDay3],
   );
+  const chipMap = useMemo(() => buildCalChipMap(calRows, alarmDays), [calRows, alarmDays]);
 
   usePageCommands({
-    search: () => asyncAct.run(refresh, "search"),
+    search: () => asyncAct.run(refresh, "refresh"),
     del: canDelete ? () => asyncAct.run(handleDelete, "del") : undefined,
   });
 
@@ -445,23 +481,23 @@ export function HealthCertManagementPage() {
         search={(
           <SearchArea
             // 조회 — 대상은 서버 전체. 상태·사원명은 FE
-            onSearch={() => { void asyncAct.run(refresh, "search"); }}
+            onSearch={() => { void asyncAct.run(refresh, "refresh"); }}
             actions={(
               <div className="flex items-end gap-1.5">
                 <SearchButton
                   // 조회 busy 스피너
-                  loading={asyncAct.isBusy("search")}
+                  loading={asyncAct.isBusy("refresh")}
                 />
                 {canAssign ? (
-                  <MesButton
-                    // 담당자 지정 — 보라 pass 틴트. ADMIN 만
-                    variant="pass"
-                    type="button"
-                    icon={Users}
-                    onClick={() => void asyncAct.run(openMgr, "search")}
-                  >
-                    담당자
-                  </MesButton>
+                <MesButton
+                  // 담당자 지정 — 보라 pass 틴트. ADMIN 만
+                  variant="pass"
+                  type="button"
+                  icon={Users}
+                  onClick={() => void asyncAct.run(openMgr, "openMgr")}
+                >
+                  담당자
+                </MesButton>
                 ) : null}
                 {isMgr ? (
                   <MesButton
@@ -469,7 +505,7 @@ export function HealthCertManagementPage() {
                     variant="excel"
                     type="button"
                     icon={Calendar}
-                    onClick={() => setCalOn((v) => !v)}
+                    onClick={handleToggleCal}
                   >
                     {calOn ? "목록 보기" : "캘린더"}
                   </MesButton>
@@ -517,7 +553,7 @@ export function HealthCertManagementPage() {
                 variant="search"
                 size="sm"
                 icon={ChevronLeft}
-                onClick={() => setMonth(shiftYearMonth(month, -1))}
+                onClick={handlePrevMonth}
               >
                 이전
               </MesButton>
@@ -526,7 +562,7 @@ export function HealthCertManagementPage() {
                 variant="search"
                 size="sm"
                 icon={ChevronRight}
-                onClick={() => setMonth(shiftYearMonth(month, 1))}
+                onClick={handleNextMonth}
               >
                 다음
               </MesButton>
@@ -535,7 +571,7 @@ export function HealthCertManagementPage() {
                 variant="excel"
                 size="sm"
                 icon={CalendarCheck}
-                onClick={() => setMonth(thisYearMonth())}
+                onClick={handleToday}
               >
                 오늘
               </MesButton>
@@ -640,19 +676,30 @@ export function HealthCertManagementPage() {
               <div {...sec.bind("h", splitPanelClass)}>
                 <div className={gridHeadClass}><b>대상 사원</b></div>
                 <MesEditableGrid
-                  // 열 너비 저장 키 — 폴더를 옮겨도 바꾸지 않는다
+                  // 열 너비·정렬·필터 등 그리드 설정을 저장할 때 쓰는 고유 식별자 — 폴더를 옮겨도 바꾸지 않는다
                   persistId={EMP_PERSIST_ID}
+                  // 그리드 제목 — 상단 헤더 aria-label로도 쓰인다
                   title="대상 사원"
+                  // 그리드에 표시할 행 목록 — 상태·검색어로 FE 거른 사원. 각 객체가 한 행
                   rows={shownEmps as EditableRow<HealthCertEmp>[]}
+                  // 컬럼 정의(필드·너비·편집·렌더) — 사원명·부서·만료일·이력 수
                   columns={empCols}
+                  // 셀 편집 가능 여부 — 조회 전용 그리드이므로 false
                   editable={false}
+                  // 그리드 높이 — 부모 flex 1 을 받아 화면 전체를 채운다
                   height="100%"
-                  loading={asyncAct.isBusy("search")}
+                  // 로딩 스피너 표시 — refresh 진행 중일 때 true
+                  loading={asyncAct.isBusy("refresh")}
+                  // 활성 행 key — 좌측에서 선택한 사원 userId
                   activeKey={activeUserId}
+                  // 행 클릭 핸들러 — 우측 이력을 로드한다
                   onActivate={(row) => handleSelect(row)}
+                  // 그리드 잠금·토스트 제어 — useGridAccess 가 관리
                   access={empGrid.access}
                   onLockedAttempt={empGrid.onLockedAttempt}
+                  // 그리드에 포커스 들어왔을 때 — 단축키 섹션을 h로 전환
                   onSetActive={() => sec.setSec("h")}
+                  // 행 번호 표시 — 좌측 고정 열에 1부터 순번
                   showRowNum
                 />
               </div>
@@ -662,36 +709,50 @@ export function HealthCertManagementPage() {
                 <div className={gridHeadClass}>
                   <b>보건증 이력</b>
                   <GridCrudButtons
+                    // 비동기 작업 래퍼 — asyncAct.run 을 받아 행추가·삭제 버튼이 쓴다
                     run={asyncAct.run}
+                    // 행추가 핸들러 — 쓰기 권한(canWrite)이 있을 때만 표시
                     onAdd={canWrite ? handleAdd : undefined}
+                    // 삭제 핸들러 — 삭제 권한(canDelete)이 있을 때만 표시. 실행은 담당자만
                     onDel={canDelete ? handleDelete : undefined}
+                    // 버튼별 진행 상태 — del 진행 중일 때 스피너
                     busy={{ del: asyncAct.isBusy("del") }}
                   />
                 </div>
                 <MesEditableGrid
-                  // 열 너비 저장 키 — 폴더를 옮겨도 바꾸지 않는다
+                  // 열 너비·정렬·필터 등 그리드 설정을 저장할 때 쓰는 고유 식별자 — 폴더를 옮겨도 바꾸지 않는다
                   persistId={HIST_PERSIST_ID}
-                  // 우측 이력 그리드 제목
+                  // 그리드 제목 — 상단 헤더 aria-label로도 쓰인다
                   title="보건증 이력"
-                  // 선택 사원의 이력. filePath·wrappedDek 은 API 가 안 내린다
+                  // 그리드에 표시할 행 목록 — 선택 사원의 이력. filePath·wrappedDek 은 API 가 안 내린다. 각 객체가 한 행
                   rows={hists as EditableRow<HealthCertHist>[]}
-                  // 등록일·만료일·파일명·열람
+                  // 컬럼 정의(필드·너비·편집·렌더) — 등록일·만료일·파일명·열람 버튼
                   columns={histCols}
-                  // 이력은 첨부로만 쌓인다. 셀 편집 없음
+                  // 셀 편집 가능 여부 — 이력은 첨부로만 쌓인다. 셀 편집 없음
                   editable={false}
+                  // 그리드 높이 — 부모 flex 1 을 받아 화면 전체를 채운다
                   height="100%"
-                  loading={asyncAct.isBusy("search") || asyncAct.isBusy("del")}
+                  // 로딩 스피너 표시 — refresh·loadHist·del 진행 중일 때 true
+                  loading={asyncAct.isBusy("refresh") || asyncAct.isBusy("loadHist") || asyncAct.isBusy("del")}
+                  // 데이터 없을 때 안내 — 사원 선택 전 vs 선택 후
                   emptyHint={
                     activeUserId
                       ? "등록된 보건증이 없습니다."
                       : "대상 사원을 선택하면 보건증 이력이 나타납니다."
                   }
+                  // 활성 행 key — 선택한 이력 _key
                   activeKey={activeHistKey}
+                  // 행 클릭 핸들러 — activeHistKey 설정
                   onActivate={(row) => setActiveHistKey(String(row._key ?? ""))}
+                  // 그리드에 포커스 들어왔을 때 — 단축키 섹션을 d로 전환
                   onSetActive={() => sec.setSec("d")}
+                  // 다중 선택 가능 — 체크박스로 여러 행 선택해 삭제할 수 있다
                   selectable
-                  onSelectionChange={(rows) => setSelKeys(rows.map((row) => row._key))}
+                  // 선택 변경 핸들러 — 선택한 행 _key 배열을 selKeys에 저장
+                  onSelectionChange={handleHistSelectionChange}
+                  // 선택 초기화 키 — 숫자가 바뀔 때마다 그리드 체크박스 전체 해제
                   selectionResetKey={selReset}
+                  // 행 번호 표시 — 좌측 고정 열에 1부터 순번
                   showRowNum
                 />
               </div>
@@ -878,7 +939,7 @@ export function HealthCertManagementPage() {
                       size="sm"
                       type="button"
                       disabled={asyncAct.isBusy("save")}
-                      onClick={() => setMgrs((p) => p.filter((x) => x.userId !== m.userId))}
+                      onClick={() => handleRemoveMgr(m.userId)}
                     >
                       제외
                     </MesButton>
