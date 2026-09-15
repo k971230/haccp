@@ -9,19 +9,18 @@ HACCP 기록·결재 SaaS. MES(`metis`)와 **별도** DB·스키마 `sasshaccp`�
 
 ---
 
-## 지금 어디까지 왔나 (2026-09-08)
+## 지금 어디까지 왔나 (2026-09-15)
 
 | 항목 | 값 |
 |---|---|
-| 단계 | **개발은 어느 정도 끝났다.** 남은 것은 매뉴얼과 현장 검증이다 |
+| 단계 | 보건증관리가 `main` 에 있다. `haccp-verify` #16 은 E2E **160 passed / skip 0**. 운영·시험 DB 에 `apply-all` 반영됨 |
 | 배포 서버 | `http://180.71.58.87/haccp/` — **운영 개시 전**. `https` 로 열지 않는다(아래) |
 | 업무 고리 | 팀원이 쓰고 팀장이 결재하고 **종이에 결재자가 남는** 고리가 두 업체에서 돈다 |
 | 화면 | **30화면.** 전수 URL 은 [`docs/3_화면_지도.md`](docs/3_화면_지도.md) — 생성기가 만든다 |
-| 시험 | `vitest` · `playwright`(스펙 24본) · `mvnw`. 건수는 문서에 박지 않는다 — 각 러너로 센다 |
-| DB | 정본 7본. 표·컬럼 수는 [`docs/10_테이블_레이아웃.md`](docs/10_테이블_레이아웃.md) · SP 는 [`docs/9_SP_색인.md`](docs/9_SP_색인.md) |
+| 시험 | `vitest` · `playwright` · `mvnw`. 건수는 문서에 박지 않는다 — 각 러너로 센다 |
+| DB | 정본 7본 + `00_alter`(항상). 표·컬럼 수는 [`docs/10_테이블_레이아웃.md`](docs/10_테이블_레이아웃.md) · SP 는 [`docs/9_SP_색인.md`](docs/9_SP_색인.md) |
 
-**남은 일 넷은 사람 손에 있다** — 서명 등록 · 매뉴얼 작성 · 알림 방향 결정 · 현장 한 달 사용.
-**#93 머지 뒤 운영 반영은 Jenkins `haccp-deploy` Build Now.**
+**남은 일** — 운영 이미지 반영은 Jenkins `haccp-deploy` Build Now (`Jenkinsfile` 은 DB 를 안 건드린다). 서버 `.env.docker` 에 `APP_HR_FILE_KEY`(16자 이상)가 있어야 보건증 업로드가 된다. 사람 쪽: 서명 등록 · 매뉴얼 · 알림 방향 · 현장 한 달.
 지금 커밋은 `git log` · 정본은 [`docs/README.md`](docs/README.md).
 
 > **배포 서버는 `http://` 로 본다.** 지금 인증서가 자체서명이라 `https` 로 열면
