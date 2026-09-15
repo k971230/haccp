@@ -107,6 +107,7 @@ PIPELINE[HB149] 보건증 MyBatis XML
         )
     </update>
 
+    <!-- 사원별 최신 이력 등록일·만료일. 칩은 FE -->
     <select id="selectCalendar" resultType="com.haccp.flow.box.healthcert.dto.HealthCertCalRow">
         SELECT * FROM sp_health_cert_management_cal_r_000(
             #{coCd,     jdbcType=VARCHAR},

@@ -8511,12 +8511,18 @@ BEGIN
            upd_dt = now();
 END$$;
 
+DROP FUNCTION IF EXISTS sasshaccp.sp_health_cert_management_cal_r_000(character varying, character varying, character varying, character varying);
 CREATE OR REPLACE FUNCTION sasshaccp.sp_health_cert_management_cal_r_000(
     p_co_cd character varying,
     p_actor_id character varying,
     p_from_ymd character varying,
     p_to_ymd character varying
-) RETURNS TABLE(user_id character varying, user_nm character varying, expire_dt character varying)
+) RETURNS TABLE(
+    user_id character varying,
+    user_nm character varying,
+    reg_dt character varying,
+    expire_dt character varying
+)
     LANGUAGE plpgsql STABLE
     AS $$
 BEGIN
@@ -8527,17 +8533,22 @@ BEGIN
         RAISE EXCEPTION '보건증 담당자만 일정을 볼 수 있습니다.' USING ERRCODE = '45000';
     END IF;
     RETURN QUERY
-    SELECT latest.user_id, u.user_nm, latest.expire_dt
+    SELECT latest.user_id, u.user_nm, latest.reg_dt, latest.expire_dt
       FROM (
-          SELECT DISTINCT ON (h.user_id) h.user_id, h.expire_dt
+          SELECT DISTINCT ON (h.user_id) h.user_id, h.reg_dt, h.expire_dt
             FROM tbl_health_cert_hist h
            WHERE h.co_cd = p_co_cd
            ORDER BY h.user_id, h.idx DESC
       ) latest
       JOIN tbl_user u ON u.co_cd = p_co_cd AND u.user_id = latest.user_id
-     WHERE latest.expire_dt BETWEEN p_from_ymd AND p_to_ymd
+     -- 유효구간이 6주 칸과 겹치면 — 만료가 다음 달이어도 이번 달 등록·사이 알림이 나온다
+     WHERE latest.reg_dt <= p_to_ymd
+       AND latest.expire_dt >= p_from_ymd
      ORDER BY latest.expire_dt, u.user_nm;
 END$$;
+
+COMMENT ON FUNCTION sasshaccp.sp_health_cert_management_cal_r_000(character varying, character varying, character varying, character varying)
+    IS '보건증 캘린더 — 사원별 최신 이력 등록일·만료일. 담당자만. 유효구간이 from~to 와 겹치면';
 
 CREATE OR REPLACE PROCEDURE sasshaccp.sp_health_cert_management_alarm_send_c_000(
     IN p_id character varying,

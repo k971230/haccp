@@ -47,7 +47,7 @@ export type HealthCertHist = {
   _key?: string;
 };
 export type HealthCertMgr = { userId: string; userNm?: string; deptNm?: string };
-export type HealthCertCal = { userId: string; userNm?: string; expireDt: string };
+export type HealthCertCal = { userId: string; userNm?: string; regDt?: string; expireDt: string };
 export type HealthCertCalHoliday = { ymd: string; name: string };
 export type HealthCertCalMonth = {
   days: HealthCertCal[];
@@ -124,7 +124,7 @@ export const saveHealthCertMgrs = (body: {
  * 개발자: 박승우
  * 일자: 2026-09-15
  * 코멘트:
- *   1) 만료 사원·공휴일·영업일 전환을 한 번에 받는다
+ *   1) 최신 이력 등록·만료·공휴일·영업일 전환을 한 번에 받는다
  *   2) 일정 캘린더 API 를 부르지 않는다
  *   3) from~to 는 6주 칸
  */

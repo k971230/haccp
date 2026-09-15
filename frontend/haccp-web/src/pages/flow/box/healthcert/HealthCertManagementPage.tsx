@@ -72,6 +72,12 @@ import {
 } from "@/pages/board/CalendarRule";
 import type { EditableRow } from "@/types/editable";
 import {
+  buildCalChipMap,
+  calChipLabel,
+  calChipTone,
+  CAL_CHIP_DOT,
+  CAL_CHIP_LABEL,
+  CAL_CHIP_LEGEND,
   EMP_PERSIST_ID,
   EMP_RULES,
   EMP_STATUS_ALL,
@@ -405,7 +411,8 @@ export function HealthCertManagementPage() {
   }, []);
 
   useEffect(() => {
-    if (calOn && isMgr) void asyncAct.run(() => loadCal(month), "search");
+    // 목록 조회(search)와 겹치지 않게 cal 키. 안 그러면 첫 클릭이 빈 칸이다
+    if (calOn && isMgr) void asyncAct.run(() => loadCal(month), "cal");
   }, [calOn, isMgr, month]);
 
   const histCols = useMemo(() => buildHistColumns((row) => { void handleView(row); }), [handleView]);
@@ -418,14 +425,14 @@ export function HealthCertManagementPage() {
     for (const h of holidays) map.set(h.ymd, h.name);
     return map;
   }, [holidays]);
-  const byDay = useMemo(() => {
-    const map = new Map<string, HealthCertCal[]>();
-    for (const r of calRows) {
-      const k = r.expireDt;
-      map.set(k, [...(map.get(k) ?? []), r]);
-    }
-    return map;
-  }, [calRows]);
+  const chipMap = useMemo(
+    () => buildCalChipMap(calRows, {
+      alarmDay1: can?.alarmDay1,
+      alarmDay2: can?.alarmDay2,
+      alarmDay3: can?.alarmDay3,
+    }),
+    [calRows, can?.alarmDay1, can?.alarmDay2, can?.alarmDay3],
+  );
 
   usePageCommands({
     search: () => asyncAct.run(refresh, "search"),
@@ -496,7 +503,7 @@ export function HealthCertManagementPage() {
         {calOn && isMgr ? (
           <div className="flex min-h-0 flex-1 flex-col">
             <div
-              // 날짜 · 이전 · 다음 · 오늘. 영업일 저장·과제 범례는 두지 않는다
+              // 날짜 · 이전 · 다음 · 오늘. 오른쪽은 등록·만료·1·2·3차 범례
               className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50/70 px-3 py-2"
             >
               <span
@@ -532,6 +539,21 @@ export function HealthCertManagementPage() {
               >
                 오늘
               </MesButton>
+              <div
+                // 범례는 오른쪽. 일정 캘린더와 같은 도트+라벨
+                className="ml-auto flex flex-wrap items-center gap-2"
+              >
+                {CAL_CHIP_LEGEND.map((k) => (
+                  <span
+                    // 종류 한 칸 — 원 색은 CAL_CHIP_DOT, 글자는 CAL_CHIP_LABEL
+                    key={k}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700"
+                  >
+                    <span className={cn("inline-block h-2.5 w-2.5 rounded-full", CAL_CHIP_DOT[k])} />
+                    {CAL_CHIP_LABEL[k]}
+                  </span>
+                ))}
+              </div>
             </div>
             <div
               // 요일 머리 + 6주 칸 — 일정 캘린더와 같은 격자
@@ -550,7 +572,7 @@ export function HealthCertManagementPage() {
                 const holiday = holidayName.get(cell.ymd);
                 const checked = workdays.has(cell.ymd);
                 const isToday = cell.inMonth && cell.ymd === today;
-                const people = byDay.get(cell.ymd) ?? [];
+                const people = chipMap.get(cell.ymd) ?? [];
                 return (
                   <div
                     // 하루 칸 — 주말 rose · 공휴일 orange · 오늘 파란 링. 영업일 전환은 색만
@@ -587,15 +609,19 @@ export function HealthCertManagementPage() {
                       </div>
                     ) : null}
                     <div className="mt-0.5 flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden">
-                      {people.map((r) => (
-                        <div
-                          // 만료 사원 칩 — 일정 과제 알약과 달리 이름만
-                          key={r.userId}
-                          className="truncate rounded bg-sky-100 px-1"
-                        >
-                          {r.userNm}
-                        </div>
-                      ))}
+                      {people.map((r) => {
+                        const label = calChipLabel(r);
+                        return (
+                          <div
+                            // 사원 한 줄 pill — 일정 캘린더 과제 알약과 같다
+                            key={r.userId}
+                            className={cn("truncate rounded-full px-1.5 py-0.5 text-xs font-semibold", calChipTone(r.kinds))}
+                            title={label}
+                          >
+                            {label}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
