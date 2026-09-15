@@ -39,9 +39,9 @@ Playwright E2E. **화면이 열리는가**가 아니라 **업무가 끝까지 �
 | `security-constraints` | 인증·권한·테넌트·상태전이·입력 검증 |
 | `scenario` | 통합 시나리오 A~E |
 
-**선언된 시험이 전부 실제로 돈다 — 건너뛰는 시험은 없다.** 건수는 `npx playwright test --list` 로 센다.
-`test.skip` 으로 조용히 넘어가면 기능이 죽어도 초록이 뜬다.
-(로컬 도구 `tools/` 가 없는 CI 에서 DB 대조가 skip 되는 것은 별개다 — 아래 참조)
+**선언된 시험이 전부 실제로 돈다.** 건수는 `npx playwright test --list` 로 센다.
+`test.skip` 으로 기능을 숨기면 안 된다.
+도구·접속정보가 **없는** 환경에서만 DB 대조를 skip 한다. `haccp-verify` 에는 둘 다 있어 skip 이 0 이어야 한다.
 
 ## 시험이 헛돌기 쉬운 자리
 
@@ -89,11 +89,13 @@ npx playwright test --last-failed         # 실패만
 | `E2E_USER` / `E2E_PASS` | — | 관리자 계정 |
 | `E2E_RO_USER` / `E2E_RO_PASS` | — | 조회 전용 계정. 없으면 권한 시험을 건너뛴다 |
 | `E2E_API_BASE_URL` | `http://localhost:7070` | 백엔드 |
+| `E2E_API_HOME` | 저장소 `backend/haccp-api` | 돌아가는 API 폴더. 보건증 실물 경로를 여기 기준으로 푼다 |
 
 ## CI 에서 DB 대조하기
 
 `dbOne`·`dbRows`·`resetDocuments` 는 `tools/q.mjs`(git 추적) 와 접속정보를 쓴다.
 없으면 그 시험은 **skip** 된다 — 빈 값을 돌려주면 검사가 조용히 통과해 더 나쁘기 때문이다.
+`haccp-verify` 는 도구와 접속정보를 갖춰 **skip 0** 으로 선언된 시험을 전부 돌린다.
 
 PR 게이트(`Jenkinsfile.verify`)는 localhost(4173/7070) + 시험 DB 만 돌린다.
 운영 호스트·`E2E_ALLOW_PROD_WRITES` 는 `scripts/assert_e2e_pr_safe.sh` 가 거절한다.

@@ -254,8 +254,8 @@ export async function tokenOf(page: Page): Promise<string> {
  * 문서를 전부 비운다 — 흐름 시험을 깨끗한 자리에서 시작하려고 쓴다.
  *
  * 목록에 문서번호 열이 없어 「몇 번째 행이 내 문서인가」를 화면으로는 가릴 수 없다.
- * 그래서 시험 전에 비우고 한 건만 만든다. 로컬 전용이며 tools/ 가 있어야 돈다.
- * 없으면 조용히 건너뛴다 — CI 에서 tools/ 는 git 에 없다.
+ * 그래서 시험 전에 비우고 한 건만 만든다. tools/q.mjs 와 접속정보가 있어야 돈다.
+ * 없으면 건너뛴다 — 빈 값으로 통과시키지 않는다. Jenkins verify 에는 둘 다 둔다.
  *
  * DEFAULT 결재선의 승인 단계도 E2E 로그인 사용자로 되돌린다.
  * 시험 DB 에서 승인자를 바꾸면 전송은 되고 결재대기는 0건이다 — 시드와 어긋난 상태로
@@ -269,7 +269,7 @@ export function resetDocuments(): void {
    * 엉뚱한 문서를 보고 통과하거나 실패한다 — 조용히 넘기지 말고 건너뛴다.
    */
   if (!fs.existsSync(sql) || !hasDbTools()) {
-    test.skip(true, "tools/ 가 없어 문서를 비울 수 없다 (로컬 전용)");
+    test.skip(true, "tools/ 또는 접속정보가 없어 문서를 비울 수 없다");
   }
   // 문서를 전량 지운다 — 운영 DB 면 여기서 멈춘다
   assertTestDb("문서 전량 삭제");
@@ -307,6 +307,35 @@ function dotenvPath(): string {
 export function hasDbTools(): boolean {
   return fs.existsSync(path.join(repoRoot(), "tools", "q.mjs"))
     && fs.existsSync(dotenvPath());
+}
+
+/**
+ * 개발자: 박승우
+ * 일자: 2026-09-15
+ * 코멘트:
+ *   1) 보건증 실물은 돌아가는 API 의 APP_FILE_ROOT 에 있다
+ *   2) Jenkins 워크스페이스와 개발 트리가 다르면 cwd 로 풀면 파일이 없다
+ *   3) 상대 경로는 E2E_API_HOME(돌아가는 API 폴더) 기준 — Jenkins 워크스페이스가 아니다
+ */
+export function apiFileRoot(): string {
+  const agentHome = "D:/haccp/backend/haccp-api";
+  // Jenkins 워크스페이스 cwd 가 아니라 실제로 7070 을 띄운 폴더
+  const home = (process.env.E2E_API_HOME || "").trim()
+    || (fs.existsSync(path.join(agentHome, "pom.xml")) ? agentHome : path.join(repoRoot(), "backend", "haccp-api"));
+  let raw = "./data/haccp-files";
+  for (const f of [path.join(home, ".env"), dotenvPath()]) {
+    try {
+      const m = fs.readFileSync(f, "utf-8").match(/^APP_FILE_ROOT=(.*)$/m);
+      if (m && m[1].trim()) {
+        raw = m[1].trim();
+        break;
+      }
+    } catch {
+      /* next */
+    }
+  }
+  if (path.isAbsolute(raw)) return raw;
+  return path.resolve(home, raw);
 }
 
 /**
@@ -379,12 +408,12 @@ function runDb(sql: string): string {
  * 화면·API 응답만 믿으면 서버가 삼킨 오류를 못 본다(E2E-001 이 그랬다).
  * 첫 줄이 열 이름, 이후가 값이며 열 구분자는 " | " 다.
  *
- * 도구가 없으면(= CI. tools/ 는 git 미포함) 그 시험을 **건너뛴다**.
- * 빈 값을 돌려주면 검사가 조용히 통과해 버려 더 나쁘다.
+ * 도구·접속정보가 없으면 그 시험을 **건너뛴다**.
+ * 빈 값을 돌려주면 검사가 조용히 통과해 버려 더 나쁘다. Jenkins verify 에는 둘 다 둔다.
  */
 export function dbRows(sql: string): string[][] {
   if (!hasDbTools()) {
-    test.skip(true, "tools/ 가 없어 DB 대조를 건너뛴다 (로컬 전용)");
+    test.skip(true, "tools/ 또는 접속정보가 없어 DB 대조를 건너뛴다");
   }
   return runDb(sql)
     .split(/\r?\n/)
@@ -714,7 +743,7 @@ export function seedCompany(vars: {
   srcCo?: string;
 }): void {
   if (!hasDbTools()) {
-    test.skip(true, "tools/ 가 없어 업체 개설 시드를 건너뛴다 (로컬 전용)");
+    test.skip(true, "tools/ 또는 접속정보가 없어 업체 개설 시드를 건너뛴다");
   }
   assertTestDb("업체 개설 시드");
   const file = path.join(repoRoot(), "db_sasshaccp", "06_company_seed.sql");
@@ -773,7 +802,7 @@ export function purgeCompany(coCd: string): void {
  */
 export function purgeUser(userId: string): void {
   if (!hasDbTools()) {
-    test.skip(true, "tools/ 가 없어 시험 사용자를 정리할 수 없다 (로컬 전용)");
+    test.skip(true, "tools/ 또는 접속정보가 없어 시험 사용자를 정리할 수 없다");
   }
   assertTestDb("시험 사용자 삭제");
   const id = sqlLit(userId);

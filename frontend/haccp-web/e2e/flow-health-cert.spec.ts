@@ -26,6 +26,7 @@ import {
   openScreen,
   saveAndConfirm,
   sqlLit,
+  apiFileRoot,
 } from "./helpers";
 
 const PATH = "/flow/box/health-cert-management";
@@ -37,20 +38,6 @@ const MIN_PDF = Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n")
 let prevYn = "";
 let seededEmp = false;
 let seededMgr = false;
-
-/** 백엔드 작업 디렉터리 기준 APP_FILE_ROOT. 상대 경로면 haccp-api 아래로 푼다 */
-function fileRoot(): string {
-  const envPath = path.resolve(process.cwd(), "../../backend/haccp-api/.env");
-  let raw = "./data/haccp-files";
-  try {
-    const m = fs.readFileSync(envPath, "utf-8").match(/^APP_FILE_ROOT=(.*)$/m);
-    if (m) raw = m[1].trim();
-  } catch {
-    /* 기본값 */
-  }
-  if (path.isAbsolute(raw)) return raw;
-  return path.resolve(process.cwd(), "../../backend/haccp-api", raw);
-}
 
 function seedActor(): void {
   const co = sqlLit(loginCoCd());
@@ -155,7 +142,7 @@ async function purgeUploaded(api: APIRequestContext): Promise<void> {
   } catch {
     /* API 가 죽어도 아래 unlink·SQL 로 걷는다 */
   }
-  const root = fileRoot();
+  const root = apiFileRoot();
   for (const rel of diskPaths) {
     try {
       fs.unlinkSync(path.join(root, rel));
@@ -300,7 +287,7 @@ test.describe("보건증관리", () => {
     expect(filePath.includes(FILE_NM), "디스크 경로에 원본 파일명이 실렸다").toBe(false);
     expect(/[0-9a-f-]{36}\.pdf$/i.test(filePath.split(/[/\\]/).pop() ?? ""), "파일명이 UUID.pdf 가 아니다").toBe(true);
 
-    const abs = path.join(fileRoot(), filePath);
+    const abs = path.join(apiFileRoot(), filePath);
     expect(fs.existsSync(abs), `실물이 없다: ${abs}`).toBe(true);
     const head = fs.readFileSync(abs).subarray(0, 4).toString("utf8");
     expect(head, "디스크가 평문 PDF 다 — 봉투가 안 씌워졌다").not.toBe("%PDF");
