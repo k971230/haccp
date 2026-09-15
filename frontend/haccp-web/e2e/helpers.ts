@@ -756,3 +756,24 @@ export function purgeCompany(coCd: string): void {
   assertTestDb("업체 통째 삭제");
   runDb(`CALL sp_tbl_company_purge_d_000('${sqlLit(coCd)}', 'e2e')`);
 }
+
+/**
+ * 시험 사용자 한 명을 지운다.
+ *
+ * 개발자: 박승우
+ * 일자: 2026-09-15
+ * 코멘트:
+ *   1) 사용자 저장이 tbl_emp_detail 을 upsert 한다. tbl_user 만 지우면 FK 에 막힌다
+ *   2) 화면 삭제 SP(sp_user_management_d_000)와 같은 자식 표를 먼저 비운다
+ *   3) 시나리오·사용자관리 E2E 가 같은 순서를 쓰게 한곳에 둔다
+ */
+export function purgeUser(userId: string): void {
+  if (!hasDbTools()) return;
+  assertTestDb("시험 사용자 삭제");
+  const id = sqlLit(userId);
+  runDb(`DELETE FROM tbl_user_noti_pref WHERE user_id='${id}'`);
+  runDb(`DELETE FROM tbl_grid_pref WHERE user_id='${id}'`);
+  runDb(`DELETE FROM tbl_health_cert_mgr WHERE user_id='${id}'`);
+  runDb(`DELETE FROM tbl_emp_detail WHERE user_id='${id}'`);
+  runDb(`DELETE FROM tbl_user WHERE user_id='${id}'`);
+}
