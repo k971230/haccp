@@ -12,7 +12,7 @@ URL `/flow`. 작성이 끝난 문서가 결재를 거쳐 보관되기까지의 �
 | 하위 | 중분류 | 화면 |
 |---|---|---|
 | [`appr/`](appr/README.md) | `appr` 결재 | `attach` · `sign-ready` · `sign-ok` |
-| [`box/`](box/README.md) | `box` 문서함 | `document-inbox` |
+| [`box/`](box/README.md) | `box` 문서함 | `document-inbox` · `health-cert-management` |
 | [`ca/`](ca/README.md) | `ca` 이탈·개선조치 | `corrective-action-management` |
 
 문서 상태는 `DOC_STATUS` 하나로 흐른다 — `WRK` 작성중 → `REQ` 승인요청 → `APV` 승인완료 (·`RJT` 반려).

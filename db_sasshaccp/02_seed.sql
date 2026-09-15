@@ -40,6 +40,7 @@ INSERT INTO sasshaccp.tbl_screen (idx, co_cd, scrn_cd, scrn_nm, module_cd, sort_
 INSERT INTO sasshaccp.tbl_screen (idx, co_cd, scrn_cd, scrn_nm, module_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (3710, '0000', 'calendar', '일정 캘린더', 'TSK', 20, 'Y', 'system', '2026-09-03 00:00:00', NULL, NULL);
 INSERT INTO sasshaccp.tbl_screen (idx, co_cd, scrn_cd, scrn_nm, module_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (20, '0000', 'corrective-action-management', '이탈·개선조치', 'APR', 250, 'Y', 'system', '2026-08-05 20:08:12.467336', 'system', '2026-08-11 16:45:40.219243');
 INSERT INTO sasshaccp.tbl_screen (idx, co_cd, scrn_cd, scrn_nm, module_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (18, '0000', 'document-inbox', '문서함', 'APR', 220, 'Y', 'system', '2026-08-05 20:08:12.467336', 'system', '2026-08-11 16:45:40.219243');
+INSERT INTO sasshaccp.tbl_screen (idx, co_cd, scrn_cd, scrn_nm, module_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (3711, '0000', 'health-cert-management', '보건증관리', 'APR', 221, 'Y', 'system', '2026-09-15 00:00:00', NULL, NULL);
 INSERT INTO sasshaccp.tbl_screen (idx, co_cd, scrn_cd, scrn_nm, module_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (3693, '0000', 'hyg-process', '일반위생·공정점검 작성', 'HYG', 4101, 'Y', 'system', '2026-08-24 10:12:43.159752', 'system', '2026-08-24 14:50:57.268054');
 INSERT INTO sasshaccp.tbl_screen (idx, co_cd, scrn_cd, scrn_nm, module_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (3695, '0000', 'ccp-verify', 'CCP 검증점검표 작성', 'CCP', 4201, 'Y', 'system', '2026-08-24 14:50:52.470931', 'system', '2026-08-24 14:51:06.612554');
 INSERT INTO sasshaccp.tbl_screen (idx, co_cd, scrn_cd, scrn_nm, module_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (19, '0000', 'sign-ready', '결재대기', 'APR', 210, 'Y', 'system', '2026-08-05 20:08:12.467336', 'system', '2026-08-25 14:16:23.303645');
@@ -237,6 +238,7 @@ INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd
 INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (2071, '0000', 'hyg-process-template', '일반위생·공정점검 양식관리', 'html-form', 'hyg-process-template', 2701, 'Y', 'system', '2026-08-19 17:49:26.631656', 'system', '2026-08-25 16:44:06.853568');
 INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (2073, '0000', 'ccp-verify-template', 'CCP 검증점검표 양식관리', 'html-form', 'ccp-verify-template', 2702, 'Y', 'system', '2026-08-20 11:25:20.789229', 'system', '2026-08-25 16:44:06.853568');
 INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (2018, '0000', 'document-inbox', '문서함', 'box', 'document-inbox', 3201, 'Y', 'system', '2026-08-19 16:32:04.90388', 'system', '2026-08-25 15:03:14.656149');
+INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (2099, '0000', 'health-cert-management', '보건증관리', 'box', 'health-cert-management', 3202, 'Y', 'system', '2026-09-15 00:00:00', NULL, NULL);
 INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (2052, '0000', 'schedule-cycle-management', '문서주기관리', 'sch', 'schedule-cycle-management', 2501, 'Y', 'system', '2026-08-19 16:32:04.90388', 'system', '2026-08-25 15:03:14.656149');
 INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (2092, '0000', 'ccp-htg', 'CCP 가열공정 작성', 'ccp-monitoring', 'ccp-htg', 4302, 'Y', 'system', '2026-08-24 17:38:26.192586', 'system', '2026-08-24 17:38:26.192586');
 INSERT INTO sasshaccp.tbl_menu (idx, co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt, upd_id, upd_dt) OVERRIDING SYSTEM VALUE VALUES (2093, '0000', 'ccp-mtl', 'CCP 금속검출공정 작성', 'ccp-monitoring', 'ccp-mtl', 4303, 'Y', 'system', '2026-08-24 17:38:26.192586', 'system', '2026-08-24 17:38:26.192586');
@@ -645,10 +647,48 @@ UPDATE sasshaccp.tbl_screen s
         ('role-management', '권한그룹관리'),
         ('department-management', '부서관리'),
         ('user-management', '사용자관리'),
-        ('approval-line-management', '결재선관리')
+        ('approval-line-management', '결재선관리'),
+        ('health-cert-management', '보건증관리')
        ) AS v(cd, nm)
  WHERE s.scrn_cd = v.cd
    AND s.scrn_nm IS DISTINCT FROM v.nm;
+
+-- 보건증 메뉴·권한 — 00_alter 는 회사 표가 있을 때만 넣는다. 빈 DB 는 이 시점에 0000 이 생긴다
+INSERT INTO sasshaccp.tbl_screen (co_cd, scrn_cd, scrn_nm, module_cd, sort_no, use_yn, ins_id, ins_dt)
+SELECT '0000', 'health-cert-management', '보건증관리', 'APR', 221, 'Y', 'system', now()
+ WHERE NOT EXISTS (
+     SELECT 1 FROM sasshaccp.tbl_screen s WHERE s.scrn_cd = 'health-cert-management'
+ );
+
+INSERT INTO sasshaccp.tbl_menu (co_cd, menu_cd, menu_nm, h_menu_cd, scrn_cd, sort_no, use_yn, ins_id, ins_dt)
+SELECT '0000', 'health-cert-management', '보건증관리', 'box', 'health-cert-management', 3202, 'Y', 'system', now()
+ WHERE NOT EXISTS (
+     SELECT 1 FROM sasshaccp.tbl_menu m
+      WHERE m.co_cd = '0000' AND m.menu_cd = 'health-cert-management'
+ );
+
+INSERT INTO sasshaccp.tbl_role_screen (
+    co_cd, usrgrp_cd, scrn_cd, read_yn, write_yn, modify_yn, delete_yn, print_yn, ins_id, ins_dt)
+SELECT r.co_cd, r.usrgrp_cd, 'health-cert-management',
+       'Y',
+       CASE r.usrgrp_cd WHEN 'VIEWER' THEN 'N' ELSE 'Y' END,
+       CASE r.usrgrp_cd WHEN 'VIEWER' THEN 'N' ELSE 'Y' END,
+       CASE r.usrgrp_cd WHEN 'VIEWER' THEN 'N' ELSE 'Y' END,
+       'Y',
+       'system', now()
+  FROM sasshaccp.tbl_role r
+ WHERE r.co_cd = '0000'
+   AND NOT EXISTS (
+       SELECT 1 FROM sasshaccp.tbl_role_screen s
+        WHERE s.co_cd = r.co_cd AND s.usrgrp_cd = r.usrgrp_cd
+          AND s.scrn_cd = 'health-cert-management'
+   );
+
+INSERT INTO sasshaccp.tbl_health_cert_alarm (co_cd, alarm_day_1, alarm_day_2, alarm_day_3, ins_id, ins_dt)
+SELECT '0000', 30, 7, 1, 'system', now()
+ WHERE NOT EXISTS (
+     SELECT 1 FROM sasshaccp.tbl_health_cert_alarm a WHERE a.co_cd = '0000'
+ );
 
 
 

@@ -138,6 +138,7 @@ INSERT INTO tmp_code(main_cd, sub_cd, code_nm, sort_no, ref1) VALUES
 ('NOTI_TYPE',   'CA_DUE',    '개선조치 기한',  5, NULL),
 ('NOTI_TYPE',   'TASK_DUE',  '작성예정 임박',  6, NULL),
 ('NOTI_TYPE',   'TASK_LATE', '작성기한 경과',  7, NULL),
+('NOTI_TYPE',   'HEALTH_CERT_DUE', '보건증 만료 임박', 8, NULL),
 
 -- 로그인 결과 — tbl_login_log.result_cd
 ('LOGIN_RESULT', '*',       '로그인 결과', 0, NULL),
@@ -155,7 +156,8 @@ INSERT INTO tmp_code(main_cd, sub_cd, code_nm, sort_no, ref1) VALUES
 ('AUDIT_RESULT', 'APV',        '승인',      6, NULL),
 ('AUDIT_RESULT', 'RJT',        '반려',      7, NULL),
 ('AUDIT_RESULT', 'CANCEL',     '상신취소',  8, NULL),
-('AUDIT_RESULT', 'UNDO',       '결재취소',  9, NULL);
+('AUDIT_RESULT', 'UNDO',       '결재취소',  9, NULL),
+('AUDIT_RESULT', 'VIEW',       '열람',     10, NULL);
 
 -- 없으면 넣고, 있으면 이름·정렬·사용여부를 시드에 맞춘다
 INSERT INTO tbl_code(co_cd, main_cd, sub_cd, code_nm, sort_no, ref1, sys_yn, use_yn, ins_id, ins_dt)

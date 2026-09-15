@@ -122,6 +122,10 @@ INSERT INTO tbl_dept (co_cd, dept_cd, dept_nm, sort_no, use_yn, ins_id, ins_dt)
 SELECT :'co_cd', 'HQ', '본사', 10, 'Y', 'system', now()
  WHERE NOT EXISTS (SELECT 1 FROM tbl_dept WHERE co_cd = :'co_cd' AND dept_cd = 'HQ');
 
+INSERT INTO tbl_health_cert_alarm (co_cd, alarm_day_1, alarm_day_2, alarm_day_3, ins_id, ins_dt)
+SELECT :'co_cd', 30, 7, 1, 'system', now()
+ WHERE NOT EXISTS (SELECT 1 FROM tbl_health_cert_alarm WHERE co_cd = :'co_cd');
+
 -- ------------------------------------------------------------
 -- 6. 초기 계정 — user_id 는 전역 UNIQUE 다. 업체마다 다른 ID 를 준다
 --    writer_id 가 있으면 0001(별담)과 같다: 팀장 HACCP_MASTER + 팀원 HACCP_TEAM

@@ -1,6 +1,6 @@
 # 9. SP 색인 — 매퍼에서 표까지
 
-> 개발자: 박승우 · 일자: 2026-09-11
+> 개발자: 박승우 · 일자: 2026-09-15
 > `db_sasshaccp/01_sp.sql` 의 정의와 `backend/haccp-api/src/main/resources/mapper` 의 호출을 맞춰 뽑았다.
 
 **「이 화면을 고치면 어느 표가 움직이나」를 검색 없이 알려는 표다.**
@@ -47,7 +47,7 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | `draft/html/HtmlDraftMapper.xml` | selectForms | SP 결과에 use_yn·ver_no 필터 |
 | `draft/hwpdoc/HwpDraftMapper.xml` | selectForms | SP 결과에 doc_kind=HWP 필터 |
 
-## 매퍼 → SP → 표 (165건)
+## 매퍼 → SP → 표 (182건)
 
 | 도메인 | SP | 종류 | 매퍼 | 건드리는 표 |
 |---|---|---|---|---|
@@ -171,6 +171,22 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | draft/html | `sp_tbl_hyg_process_sign_u_000` | 쓰기 | `draft/html/HtmlDraftMapper.xml` | `tbl_hyg_process<br>tbl_user` |
 | draft/hwpdoc | `sp_draft_hwp_r_000` | 조회 | `draft/hwpdoc/HwpDraftMapper.xml` | `tbl_company_template<br>tbl_corrective_action<br>tbl_document<br>tbl_document_file<br>tbl_template<br>tbl_user` |
 | draft/hwpdoc | `sp_draft_hwp_task_r_000` | 조회 | `draft/hwpdoc/HwpDraftMapper.xml` | `tbl_company_template<br>tbl_schedule_task<br>tbl_template` |
+| flow/box | `sp_health_cert_management_alarm_c_000` | 쓰기 | `flow/box/HealthCertMapper.xml` | `tbl_health_cert_alarm<br>tbl_user` |
+| flow/box | `sp_health_cert_management_alarm_r_000` | 조회 | `flow/box/HealthCertMapper.xml` | `tbl_health_cert_alarm` |
+| flow/box | `sp_health_cert_management_alarm_send_c_000` | 쓰기 | `flow/box/HealthCertMapper.xml` | `tbl_health_cert_alarm<br>tbl_health_cert_hist<br>tbl_health_cert_mgr<br>tbl_login_log<br>tbl_notification` |
+| flow/box | `sp_health_cert_management_cal_r_000` | 조회 | `flow/box/HealthCertMapper.xml` | `tbl_health_cert_hist<br>tbl_health_cert_mgr<br>tbl_user` |
+| flow/box | `sp_health_cert_management_can_r_000` | 조회 | `flow/box/HealthCertMapper.xml` | `tbl_health_cert_alarm<br>tbl_health_cert_mgr<br>tbl_user` |
+| flow/box | `sp_health_cert_management_emp_r_000` | 조회 | `flow/box/HealthCertMapper.xml` | `tbl_dept<br>tbl_emp_detail<br>tbl_health_cert_alarm<br>tbl_health_cert_hist<br>tbl_health_cert_mgr<br>tbl_user` |
+| flow/box | `sp_health_cert_management_hist_c_000` | 쓰기 | `flow/box/HealthCertMapper.xml` | `tbl_emp_detail<br>tbl_health_cert_hist<br>tbl_health_cert_mgr<br>tbl_notification` |
+| flow/box | `sp_health_cert_management_hist_d_000` | 쓰기 | `flow/box/HealthCertMapper.xml` | `tbl_health_cert_hist<br>tbl_health_cert_mgr` |
+| flow/box | `sp_health_cert_management_hist_delete_blocker_r_000` | 조회 | `flow/box/HealthCertMapper.xml` | `-` |
+| flow/box | `sp_health_cert_management_hist_path_r_000` | 조회 | `flow/box/HealthCertMapper.xml` | `tbl_health_cert_hist<br>tbl_health_cert_mgr` |
+| flow/box | `sp_health_cert_management_hist_purge_d_000` | 조회 | `flow/box/HealthCertMapper.xml` | `tbl_health_cert_hist` |
+| flow/box | `sp_health_cert_management_hist_r_000` | 조회 | `flow/box/HealthCertMapper.xml` | `tbl_health_cert_hist<br>tbl_health_cert_mgr<br>tbl_user` |
+| flow/box | `sp_health_cert_management_hist_rewrap_r_000` | 조회 | `flow/box/HealthCertMapper.xml` | `tbl_health_cert_hist` |
+| flow/box | `sp_health_cert_management_hist_rewrap_u_000` | 쓰기 | `flow/box/HealthCertMapper.xml` | `tbl_health_cert_hist` |
+| flow/box | `sp_health_cert_management_mgr_c_000` | 쓰기 | `flow/box/HealthCertMapper.xml` | `tbl_health_cert_mgr<br>tbl_user` |
+| flow/box | `sp_health_cert_management_mgr_r_000` | 조회 | `flow/box/HealthCertMapper.xml` | `tbl_dept<br>tbl_health_cert_mgr<br>tbl_user` |
 | flow/ca | `sp_tbl_corrective_action_c_000` | 쓰기 | `flow/ca/CorrectiveActionMapper.xml` | `tbl_corrective_action` |
 | flow/ca | `sp_tbl_corrective_action_d_000` | 쓰기 | `flow/ca/CorrectiveActionMapper.xml` | `tbl_corrective_action` |
 | flow/ca | `sp_tbl_corrective_action_delete_blocker_r_000` | 조회 | `flow/ca/CorrectiveActionMapper.xml` | `tbl_corrective_action` |
@@ -203,10 +219,11 @@ node scripts/gen_sp_index.mjs --check   # 어긋나면 실패한다 (CI)
 | sys/code/role | `sp_role_management_delete_blocker_r_000` | 조회 | `sys/code/role/RoleMgmtMapper.xml` | `tbl_role<br>tbl_user` |
 | sys/code/role | `sp_role_management_r_000` | 조회 | `sys/code/role/RoleMgmtMapper.xml` | `tbl_role` |
 | sys/code/role | `sp_role_management_screen_c_000` | 쓰기 | `sys/code/role/RoleMgmtMapper.xml` | `tbl_role_screen` |
+| sys/code/user | `sp_emp_detail_health_cert_u_000` | 쓰기 | `sys/code/user/UserMapper.xml` | `tbl_emp_detail<br>tbl_user` |
 | sys/code/user | `sp_user_management_c_000` | 쓰기 | `sys/code/user/UserMapper.xml` | `tbl_user` |
-| sys/code/user | `sp_user_management_d_000` | 쓰기 | `sys/code/user/UserMapper.xml` | `tbl_grid_pref<br>tbl_user<br>tbl_user_noti_pref` |
-| sys/code/user | `sp_user_management_delete_blocker_r_000` | 조회 | `sys/code/user/UserMapper.xml` | `tbl_user` |
-| sys/code/user | `sp_user_management_r_000` | 조회 | `sys/code/user/UserMapper.xml` | `tbl_dept<br>tbl_role<br>tbl_user` |
+| sys/code/user | `sp_user_management_d_000` | 쓰기 | `sys/code/user/UserMapper.xml` | `tbl_emp_detail<br>tbl_grid_pref<br>tbl_health_cert_mgr<br>tbl_user<br>tbl_user_noti_pref` |
+| sys/code/user | `sp_user_management_delete_blocker_r_000` | 조회 | `sys/code/user/UserMapper.xml` | `tbl_health_cert_hist<br>tbl_user` |
+| sys/code/user | `sp_user_management_r_000` | 조회 | `sys/code/user/UserMapper.xml` | `tbl_dept<br>tbl_emp_detail<br>tbl_role<br>tbl_user` |
 | sys/code/user | `sp_user_management_sign_info_r_000` | 조회 | `sys/code/user/UserMapper.xml` | `tbl_user` |
 | sys/code/user | `sp_user_management_sign_r_000` | 조회 | `sys/code/user/UserMapper.xml` | `tbl_user` |
 | sys/code/user | `sp_user_management_sign_u_000` | 쓰기 | `sys/code/user/UserMapper.xml` | `tbl_user` |

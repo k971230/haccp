@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+HealthCertMapper.xml — 보건증 화면 SP.
+
+개발자: 박승우
+일자: 2026-09-15
+코멘트:
+  1) 행 통제는 SP 의 p_actor_id
+  2) 알림 발송은 배치 전용
+  3) 삭제는 경로 조회 후 SP 삭제
+
+PIPELINE[HB149] 보건증 MyBatis XML
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.haccp.flow.box.healthcert.HealthCertMapper">
+
+    <select id="selectCan" resultType="com.haccp.flow.box.healthcert.dto.HealthCertCanRow">
+        SELECT * FROM sp_health_cert_management_can_r_000(
+            #{coCd,    jdbcType=VARCHAR},
+            #{actorId, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <select id="selectEmps" resultType="com.haccp.flow.box.healthcert.dto.HealthCertEmpRow">
+        SELECT * FROM sp_health_cert_management_emp_r_000(
+            #{coCd,       jdbcType=VARCHAR},
+            #{actorId,    jdbcType=VARCHAR},
+            #{expiringYn, jdbcType=VARCHAR}
+        )
+    </select>
+
+    <select id="selectHist" resultType="com.haccp.flow.box.healthcert.dto.HealthCertHistRow">
+        SELECT * FROM sp_health_cert_management_hist_r_000(
+            #{coCd,    jdbcType=VARCHAR},
+            #{actorId, jdbcType=VARCHAR},
+            #{userId,  jdbcType=VARCHAR}
+        )
+    </select>
+
+    <update id="insertHist" statementType="CALLABLE">
+        CALL sp_health_cert_management_hist_c_000(
+            #{coCd,      jdbcType=VARCHAR},
+            #{actorId,   jdbcType=VARCHAR},
+            #{userId,    jdbcType=VARCHAR},
+            #{regDt,     jdbcType=VARCHAR},
+            #{expireDt,  jdbcType=VARCHAR},
+            #{fileNm,    jdbcType=VARCHAR},
+            #{filePath,  jdbcType=VARCHAR},
+            #{fileExt,    jdbcType=VARCHAR},
+            #{fileSize,   jdbcType=BIGINT},
+            #{mimeType,   jdbcType=VARCHAR},
+            <!-- 마스터 키로 감싼 파일 DEK. 목록 SP 에는 안 실는다 -->
+            #{wrappedDek, jdbcType=VARCHAR},
+            #{keyVersion, jdbcType=INTEGER}
+        )
+    </update>
+
+    <select id="selectHistDeleteBlocker" resultType="com.haccp.common.validation.DeleteBlocker">
+        SELECT ref_key, target
+          FROM sp_health_cert_management_hist_delete_blocker_r_000(
+              #{coCd,    jdbcType=VARCHAR},
+              #{actorId, jdbcType=VARCHAR},
+              ARRAY[<foreach collection="idxs" item="idx" separator=",">#{idx, jdbcType=BIGINT}</foreach>]::bigint[]
+          )
+         LIMIT 1
+    </select>
+
+    <select id="selectHistPaths" resultType="com.haccp.flow.box.healthcert.dto.HealthCertFileMeta">
+        SELECT * FROM sp_health_cert_management_hist_path_r_000(
+            #{coCd,    jdbcType=VARCHAR},
+            #{actorId, jdbcType=VARCHAR},
+            ARRAY[<foreach collection="idxs" item="idx" separator=",">#{idx, jdbcType=BIGINT}</foreach>]::bigint[]
+        )
+    </select>
+
+    <update id="deleteHist" statementType="CALLABLE">
+        CALL sp_health_cert_management_hist_d_000(
+            #{coCd,    jdbcType=VARCHAR},
+            #{actorId, jdbcType=VARCHAR},
+            #{idx,     jdbcType=BIGINT}
+        )
+    </update>
+
+    <select id="selectMgrs" resultType="com.haccp.flow.box.healthcert.dto.HealthCertMgrRow">
+        SELECT * FROM sp_health_cert_management_mgr_r_000(#{coCd, jdbcType=VARCHAR})
+    </select>
+
+    <update id="saveMgrs" statementType="CALLABLE">
+        CALL sp_health_cert_management_mgr_c_000(
+            #{coCd,    jdbcType=VARCHAR},
+            #{actorId, jdbcType=VARCHAR},
+            ARRAY[<foreach collection="userIds" item="id" separator=",">#{id, jdbcType=VARCHAR}</foreach>]::varchar[]
+        )
+    </update>
+
+    <select id="selectAlarm" resultType="com.haccp.flow.box.healthcert.dto.HealthCertAlarmRow">
+        SELECT * FROM sp_health_cert_management_alarm_r_000(#{coCd, jdbcType=VARCHAR})
+    </select>
+
+    <update id="saveAlarm" statementType="CALLABLE">
+        CALL sp_health_cert_management_alarm_c_000(
+            #{coCd,       jdbcType=VARCHAR},
+            #{actorId,    jdbcType=VARCHAR},
+            #{alarmDay1,  jdbcType=INTEGER},
+            #{alarmDay2,  jdbcType=INTEGER},
+            #{alarmDay3,  jdbcType=INTEGER}
+        )
+    </update>
+
+    <select id="selectCalendar" resultType="com.haccp.flow.box.healthcert.dto.HealthCertCalRow">
+        SELECT * FROM sp_health_cert_management_cal_r_000(
+            #{coCd,     jdbcType=VARCHAR},
+            #{actorId,  jdbcType=VARCHAR},
+            #{fromYmd,  jdbcType=VARCHAR},
+            #{toYmd,    jdbcType=VARCHAR}
+        )
+    </select>
+
+    <update id="sendAlarms" statementType="CALLABLE">
+        CALL sp_health_cert_management_alarm_send_c_000(
+            #{actorId,      jdbcType=VARCHAR},
+            #{dormantDays,  jdbcType=INTEGER}
+        )
+    </update>
+
+    <select id="purgeSuperseded" resultType="com.haccp.flow.box.healthcert.dto.HealthCertFileMeta">
+        SELECT * FROM sp_health_cert_management_hist_purge_d_000(
+            #{retentionDays, jdbcType=INTEGER}
+        )
+    </select>
+
+    <select id="selectRewrap" resultType="com.haccp.flow.box.healthcert.dto.HealthCertFileMeta">
+        SELECT * FROM sp_health_cert_management_hist_rewrap_r_000(
+            #{fromVersion, jdbcType=INTEGER}
+        )
+    </select>
+
+    <update id="updateWrappedDek" statementType="CALLABLE">
+        CALL sp_health_cert_management_hist_rewrap_u_000(
+            #{coCd,       jdbcType=VARCHAR},
+            #{idx,        jdbcType=BIGINT},
+            #{wrappedDek, jdbcType=VARCHAR},
+            #{keyVersion, jdbcType=INTEGER}
+        )
+    </update>
+
+</mapper>

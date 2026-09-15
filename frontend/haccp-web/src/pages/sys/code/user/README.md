@@ -26,10 +26,10 @@
 
 | 동작 | API (`api/sys/userApi.ts`) | SP | 테이블 |
 |---|---|---|---|
-| 조회 | `listUsers` | `sp_user_management_r_000` | `tbl_user` `tbl_dept` `tbl_role` |
-| 저장 | `saveUsers` | `sp_user_management_c_000` | `tbl_user` |
-| 삭제 검증 | `validateDeleteUsers` | `sp_user_management_delete_blocker_r_000` | `tbl_user` `tbl_grid_pref` `tbl_user_noti_pref` |
-| 삭제 | `deleteUsers` | `sp_user_management_d_000` | `tbl_user` `tbl_grid_pref` `tbl_user_noti_pref` |
+| 조회 | `listUsers` | `sp_user_management_r_000` | `tbl_user` `tbl_dept` `tbl_role` `tbl_emp_detail` |
+| 저장 | `saveUsers` | `sp_user_management_c_000` + `sp_emp_detail_health_cert_u_000` | `tbl_user` `tbl_emp_detail` |
+| 삭제 검증 | `validateDeleteUsers` | `sp_user_management_delete_blocker_r_000` | `tbl_user` `tbl_health_cert_hist` |
+| 삭제 | `deleteUsers` | `sp_user_management_d_000` | `tbl_user` `tbl_grid_pref` `tbl_user_noti_pref` `tbl_health_cert_mgr` `tbl_emp_detail` |
 | 서명 유무 확인 | `fetchMySignInfo()` | `sp_user_management_sign_info_r_000` | `tbl_user` |
 | 서명 미리보기 | `fetchUserSignBlob(userId)` | `sp_user_management_sign_r_000` | `tbl_user.sign_img` |
 | 서명 업로드·삭제 | `uploadUserSign` · `deleteUserSign` | `sp_user_management_sign_u_000` | `tbl_user.sign_img` |

@@ -102,6 +102,19 @@ PIPELINE[HB92] 사용자 관리 MyBatis XML
       서명 바이너리 저장·삭제 — sp_user_management_sign_u_000
       signImg가 null이면 서명을 지운다. 대상이 없으면 SP가 45000으로 올려 업무 문구가 된다
     -->
+    <!--
+      보건증 대상 여부 — sp_emp_detail_health_cert_u_000
+      사용자 저장과 같은 트랜잭션. tbl_user 는 안 건드린다
+    -->
+    <update id="upsertHealthCertFlag" statementType="CALLABLE">
+        CALL sp_emp_detail_health_cert_u_000(
+            #{coCd,                jdbcType=VARCHAR},
+            #{userId,              jdbcType=VARCHAR},
+            #{healthCertManageYn,  jdbcType=VARCHAR},
+            #{actorId,             jdbcType=VARCHAR}
+        )
+    </update>
+
     <update id="updateSign" statementType="CALLABLE">
         CALL sp_user_management_sign_u_000(
             #{coCd,     jdbcType=VARCHAR},

@@ -119,6 +119,9 @@ public class UserService {
                     text(row.getLockYn()),
                     text(row.getUseYn()),
                     actor);
+            // 같은 @Transactional — detail 이 실패하면 사용자 저장도 롤백된다
+            userMapper.upsertHealthCertFlag(
+                    coCd, text(row.getUserId()), text(row.getHealthCertManageYn()), actor);
             // idx가 null일 때(= 신규 등록) I, 값이 있을 때(= 기존 행 수정) U
             auditWriter.record(AUDIT_TBL, idx, idx == null ? "I" : "U", auditRow(row, idx));
         }
@@ -317,6 +320,7 @@ public class UserService {
         out.put("mobile", row.getMobile());
         out.put("lockYn", row.getLockYn());
         out.put("useYn", row.getUseYn());
+        out.put("healthCertManageYn", row.getHealthCertManageYn());
         return out;
     }
 

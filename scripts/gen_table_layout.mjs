@@ -69,7 +69,7 @@ const GROUPS = [
     key: "기초코드",
     desc: "회사·사람·권한·코드. 업무가 시작되기 전에 있어야 하는 값이다",
     tables: [
-      "tbl_company", "tbl_dept", "tbl_user", "tbl_role", "tbl_role_screen",
+      "tbl_company", "tbl_dept", "tbl_user", "tbl_emp_detail", "tbl_role", "tbl_role_screen",
       "tbl_screen", "tbl_menu", "tbl_code", "tbl_approval_line", "tbl_approval_line_step",
       "tbl_doc_no_rule", "tbl_grid_pref", "tbl_user_noti_pref",
     ],
@@ -100,6 +100,7 @@ const GROUPS = [
       "tbl_ccp_htg_monitor", "tbl_ccp_htg_monitor_row", "tbl_ccp_htg_monitor_cell",
       "tbl_ccp_metal_monitor", "tbl_ccp_metal_sens_row", "tbl_ccp_metal_pass_row",
       "tbl_corrective_action", "tbl_schedule_task", "tbl_workday_override",
+      "tbl_health_cert_hist", "tbl_health_cert_mgr", "tbl_health_cert_alarm",
     ],
   },
   {
@@ -260,6 +261,7 @@ function loadDeleteBlockers() {
     role_management: "tbl_role",
     user_management: "tbl_user",
     schedule_cycle_management: "tbl_schedule_rule",
+    health_cert_management_hist: "tbl_health_cert_hist",
   };
   const map = new Map();
   for (const m of spSql.matchAll(/\b(sp_[a-z0-9_]*delete_blocker[a-z0-9_]*)\b/g)) {

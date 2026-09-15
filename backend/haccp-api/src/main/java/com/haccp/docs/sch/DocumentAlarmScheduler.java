@@ -13,8 +13,9 @@
  */
 package com.haccp.docs.sch;
 
-// 역할 — 생성자 주입·Spring 스케줄 실행
+import com.haccp.flow.box.healthcert.HealthCertService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,11 @@ public class DocumentAlarmScheduler {
 
     // 마감 임박 알림 적재 서비스 — 발송 플래그 갱신까지 SP가 처리한다
     private final DocCycleService service;
+    // 보건증 만료 알림 — 같은 cron. 사원별 최신 이력만
+    private final HealthCertService healthCertService;
+
+    @Value("${app.schedule.dormant-days:30}")
+    private int dormantDays;
 
     /**
      * 개발자: 박승우
@@ -40,5 +46,7 @@ public class DocumentAlarmScheduler {
     )
     public void sendDocumentAlarms() {
         service.sendTaskAlarms();
+        healthCertService.sendAlarms(dormantDays);
+        healthCertService.purgeExpired();
     }
 }

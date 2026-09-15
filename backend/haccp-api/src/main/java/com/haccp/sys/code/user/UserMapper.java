@@ -169,4 +169,19 @@ public interface UserMapper {
             // JWT 작업자 ID — 감사 컬럼
             @Param("actorId") String actorId
     );
+
+    /**
+     * 개발자: 박승우
+     * 일자: 2026-09-15
+     * 코멘트:
+     *   1) 보건증 대상 여부를 tbl_emp_detail 에 upsert 한다
+     *   2) 사용자 저장과 같은 트랜잭션에서 호출한다
+     *   3) tbl_user 컬럼은 건드리지 않는다
+     */
+    void upsertHealthCertFlag(
+            @Param("coCd") String coCd,
+            @Param("userId") String userId,
+            @Param("healthCertManageYn") String healthCertManageYn,
+            @Param("actorId") String actorId
+    );
 }

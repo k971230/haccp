@@ -52,6 +52,7 @@ import ScheduleCycleManagementPage from "@/pages/docs/sch/ScheduleCycleManagemen
 import TodayTasksPage from "@/pages/board/TodayTasksPage";
 import { CalendarPage } from "@/pages/board/CalendarPage";
 import CorrectiveActionManagementPage from "@/pages/flow/ca/corrective/CorrectiveActionManagementPage";
+import { HealthCertManagementPage } from "@/pages/flow/box/healthcert/HealthCertManagementPage";
 // 역할 — 사용자 관리 그리드
 import UserManagementPage from "@/pages/sys/code/user/UserManagementPage";
 // 역할 — 로그 3화면 (각자 LogPageShell + Rule)
@@ -113,6 +114,7 @@ export const SCREEN_REGISTRY: Record<string, ComponentType> = {
 
   // 문서 현황·결재
   "document-inbox": () => <DocumentBoxPage mode="inbox" />,
+  "health-cert-management": HealthCertManagementPage,
   "sign-ready": () => <DocumentBoxPage mode="approval" />,
   "sign-ok": () => <DocumentBoxPage mode="history" />,
   "attach": ApprovalAttachPage,
