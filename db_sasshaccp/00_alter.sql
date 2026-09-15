@@ -1895,6 +1895,23 @@ SELECT c.co_cd, 30, 7, 1, 'system', now()
      SELECT 1 FROM sasshaccp.tbl_health_cert_alarm a WHERE a.co_cd = c.co_cd
  );
 
+-- 보건증 검색 상태 — 이미 깐 DB 는 03_code_seed 를 안 돌려도 콤보가 안 빔
+INSERT INTO sasshaccp.tbl_code (co_cd, main_cd, sub_cd, code_nm, sort_no, sys_yn, use_yn, ins_id, ins_dt)
+SELECT c.co_cd, v.main_cd, v.sub_cd, v.code_nm, v.sort_no, 'Y', 'Y', 'system', now()
+  FROM sasshaccp.tbl_company c
+ CROSS JOIN (VALUES
+    ('HC_STATUS', '*',       '보건증 대상 상태', 0),
+    ('HC_STATUS', 'DUE',     '임박',             1),
+    ('HC_STATUS', 'EXPIRED', '만료',             2)
+ ) AS v(main_cd, sub_cd, code_nm, sort_no)
+ON CONFLICT ON CONSTRAINT ux_tbl_code DO UPDATE
+   SET code_nm = EXCLUDED.code_nm,
+       sort_no = EXCLUDED.sort_no,
+       sys_yn  = 'Y',
+       use_yn  = 'Y',
+       upd_id  = 'system',
+       upd_dt  = now();
+
 DO $$ BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM pg_constraint c

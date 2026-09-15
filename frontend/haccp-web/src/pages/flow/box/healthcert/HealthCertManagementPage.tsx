@@ -4,14 +4,14 @@
  * 개발자: 박승우
  * 일자: 2026-09-15
  * 코멘트:
- *   1) 레이아웃은 결재선과 같은 ResizableSplit. 행 권한은 서버가 가른다
- *   2) 임박 필터 라벨은 설정 MAX 일수. 알림은 이 화면 상단에 보인다
- *   3) 캘린더는 담당자만
+ *   1) 골격은 결재선과 같다. SearchArea 1행 + 분할. 법조문은 등록 팝업에만 둔다
+ *   2) 이력 추가는 행추가 팝업. 삭제 버튼은 canDelete 로 두고, 실행은 담당자만
+ *   3) 검색은 상태(HC_STATUS)·사원명. 임박 체크는 두지 않는다
  *
  * PIPELINE[HF216] 보건증 화면
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Calendar, ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import { useGridAccess } from "@/hooks/useGridAccess";
@@ -19,16 +19,25 @@ import { MesEditableGrid } from "@/components/grid/MesEditableGrid";
 import { GridCrudButtons } from "@/components/grid/GridCrudButtons";
 import { PageCard } from "@/components/layout/PageCard";
 import { ResizableSplit } from "@/components/layout/ResizableSplit";
-import { SearchArea, SearchButton, SearchCheckbox } from "@/components/layout/SearchArea";
+import {
+  SearchArea,
+  SearchButton,
+  SearchField,
+  SearchSelect,
+} from "@/components/layout/SearchArea";
+import { useCommonCodes } from "@/hooks/useCommonCodes";
 import { gridHeadClass, pageRootClass, splitPanelClass } from "@/components/layout/pageClasses";
+import { searchInputClass } from "@/components/ui/Input";
 import { MesButton } from "@/components/ui/MesButton";
+import { cn } from "@/lib/cn";
 import { useModalStore } from "@/stores/modalStore";
 import { mesConfirm, mesToast } from "@/shell/dialog";
 import { MES } from "@/shell/messages";
+import { resolveRowsForDelete } from "@/shell/resolveDelete";
 import { usePageCommands } from "@/shell/pageCommands";
 import { useSection } from "@/shell/useSection";
 import { listUsers } from "@/api/sys/userApi";
-import { listNotifications, readNotification } from "@/api/board/taskWorkflowApi";
+import { listNotifications } from "@/api/board/taskWorkflowApi";
 import {
   deleteHealthCert,
   fetchHealthCertCan,
@@ -58,6 +67,8 @@ import type { EditableRow } from "@/types/editable";
 import {
   EMP_PERSIST_ID,
   EMP_RULES,
+  EMP_STATUS_ALL,
+  HC_STATUS_MAIN_CD,
   HIST_PERSIST_ID,
   HIST_RULES,
   SCRN_CD,
@@ -65,8 +76,8 @@ import {
   buildEmpColumns,
   buildHistColumns,
   empKey,
-  expiringLabel,
   histKey,
+  matchEmp,
 } from "./HealthCertManagementRule";
 
 export function HealthCertManagementPage() {
@@ -79,16 +90,21 @@ export function HealthCertManagementPage() {
   const openModal = useModalStore((s) => s.openModal);
 
   const [can, setCan] = useState<HealthCertCan | null>(null);
-  const [expiring, setExpiring] = useState(false);
+  const [status, setStatus] = useState(EMP_STATUS_ALL);
+  const hcStatus = useCommonCodes(HC_STATUS_MAIN_CD);
+  const [q, setQ] = useState("");
   const [emps, setEmps] = useState<HealthCertEmp[]>([]);
   const [activeUserId, setActiveUserId] = useState("");
   const [hists, setHists] = useState<HealthCertHist[]>([]);
   const [activeHistKey, setActiveHistKey] = useState("");
+  const [selKeys, setSelKeys] = useState<string[]>([]);
+  const [selReset, setSelReset] = useState(0);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [regDt, setRegDt] = useState("");
   const [expireDt, setExpireDt] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [maskedYn, setMaskedYn] = useState(false);
-  const [notis, setNotis] = useState<{ idx?: number; title?: string; content?: string }[]>([]);
   const [mgrOpen, setMgrOpen] = useState(false);
   const [mgrs, setMgrs] = useState<HealthCertMgr[]>([]);
   const [alarm1, setAlarm1] = useState(30);
@@ -103,15 +119,19 @@ export function HealthCertManagementPage() {
 
   const loadNotis = useCallback(async () => {
     const rows = await listNotifications();
-    setNotis(rows.filter((r) => String(r.notiTypeCd ?? "") === "HEALTH_CERT_DUE" && String(r.readYn ?? "") !== "Y"));
+    const due = rows.filter((r) => String(r.notiTypeCd ?? "") === "HEALTH_CERT_DUE" && String(r.readYn ?? "") !== "Y");
+    if (due.length) {
+      mesToast(due[0]?.title || "보건증 만료가 임박한 대상이 있습니다.", "warn");
+    }
   }, []);
 
   const loadEmps = useCallback(async () => {
-    const rows = await listHealthCertEmps(expiring ? "Y" : "N");
+    // 전체 대상. 임박·만료는 상태 콤보가 FE 에서 거른다
+    const rows = await listHealthCertEmps("N");
     const keyed = rows.map((r) => ({ ...r, _key: empKey(r) }));
     setEmps(keyed);
     return keyed;
-  }, [expiring]);
+  }, []);
 
   const loadHist = useCallback(async (userId: string) => {
     if (!userId) {
@@ -121,6 +141,8 @@ export function HealthCertManagementPage() {
     const rows = await listHealthCertHist(userId);
     setHists(rows.map((r) => ({ ...r, _key: histKey(r) })));
     setActiveHistKey("");
+    setSelKeys([]);
+    setSelReset((n) => n + 1);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -134,13 +156,18 @@ export function HealthCertManagementPage() {
 
   useEffect(() => {
     void asyncAct.run(refresh, "search");
-    // 첫 진입만. 임박 체크는 SearchCheckbox 가 다시 조회한다
+    // 첫 진입만. 상태는 SearchArea 가 다시 조회한다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!isMgr) setCalOn(false);
   }, [isMgr]);
+
+  const shownEmps = useMemo(
+    () => emps.filter((row) => matchEmp(row, q, status, can?.expireWindowDays)),
+    [can?.expireWindowDays, emps, q, status],
+  );
 
   const handleSelect = useCallback((row: HealthCertEmp) => {
     setActiveUserId(row.userId);
@@ -153,6 +180,40 @@ export function HealthCertManagementPage() {
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank", "noopener");
   }, []);
+
+  const resetUpload = useCallback(() => {
+    setRegDt("");
+    setExpireDt("");
+    setFile(null);
+    setMaskedYn(false);
+  }, []);
+
+  const handleAdd = useCallback(() => {
+    if (!activeUserId) {
+      mesToast(MES.selectFirst("사원"), "warn");
+      return;
+    }
+    resetUpload();
+    setUploadOpen(true);
+  }, [activeUserId, resetUpload]);
+
+  const closeUpload = useCallback(() => {
+    if (asyncAct.isBusy("save")) return;
+    setUploadOpen(false);
+    resetUpload();
+  }, [asyncAct, resetUpload]);
+
+  useEffect(() => {
+    if (!uploadOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeUpload();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [closeUpload, uploadOpen]);
 
   const handleUpload = useCallback(async () => {
     if (!activeUserId) {
@@ -178,26 +239,36 @@ export function HealthCertManagementPage() {
       file,
       maskedYn: "Y",
     });
-    setFile(null);
-    setMaskedYn(false);
     mesToast(MES.saveDone, "success");
+    setUploadOpen(false);
+    resetUpload();
     await Promise.all([loadHist(activeUserId), loadEmps(), loadNotis()]);
-  }, [activeUserId, expireDt, file, loadEmps, loadHist, loadNotis, maskedYn, regDt]);
+  }, [activeUserId, expireDt, file, loadEmps, loadHist, loadNotis, maskedYn, regDt, resetUpload]);
 
   const handleDelete = useCallback(async () => {
-    const row = hists.find((h) => h._key === activeHistKey);
-    const idx = row?.idx;
-    if (!idx) {
+    // 버튼은 canDelete 로 보인다. 담당자가 아니면 API 전에 거절
+    if (!isMgr) {
+      mesToast("보건증 이력은 담당자만 삭제할 수 있습니다.", "warn");
+      return;
+    }
+    const targets = resolveRowsForDelete(
+      hists as EditableRow<HealthCertHist>[],
+      activeHistKey || null,
+      () => undefined,
+      selKeys,
+    );
+    const keys = targets.map((r) => r.idx).filter((idx): idx is number => Number(idx) > 0).map((idx) => ({ idx }));
+    if (!keys.length) {
       mesToast(MES.selectRow, "warn");
       return;
     }
-    await validateDeleteHealthCert([{ idx }]);
+    await validateDeleteHealthCert(keys);
     const ok = await mesConfirm(MES.deleteConfirm("보건증 이력"));
     if (!ok) return;
-    await deleteHealthCert([{ idx }]);
+    await deleteHealthCert(keys);
     mesToast(MES.deleteDone, "success");
     await Promise.all([loadHist(activeUserId), loadEmps()]);
-  }, [activeHistKey, activeUserId, hists, loadEmps, loadHist]);
+  }, [activeHistKey, activeUserId, hists, isMgr, loadEmps, loadHist, selKeys]);
 
   const openMgr = useCallback(async () => {
     const [list, c] = await Promise.all([listHealthCertMgrs(), fetchHealthCertCan()]);
@@ -269,8 +340,7 @@ export function HealthCertManagementPage() {
 
   usePageCommands({
     search: () => asyncAct.run(refresh, "search"),
-    save: canWrite ? () => asyncAct.run(handleUpload, "save") : undefined,
-    del: canDelete && isMgr ? () => asyncAct.run(handleDelete, "del") : undefined,
+    del: canDelete ? () => asyncAct.run(handleDelete, "del") : undefined,
   });
 
   return (
@@ -278,61 +348,61 @@ export function HealthCertManagementPage() {
       <PageCard
         search={(
           <SearchArea
-            // 조회·임박 체크 — flushSync 뒤 최신 expiring 으로 다시 읽는다
+            // 조회 — 대상은 서버 전체. 상태·사원명은 FE
             onSearch={() => { void asyncAct.run(refresh, "search"); }}
             actions={(
-              <>
+              <div className="flex items-end gap-1.5">
                 <SearchButton
                   // 조회 busy 스피너
                   loading={asyncAct.isBusy("search")}
                 />
                 {canAssign ? (
                   <MesButton
-                    variant="secondary"
+                    // 담당자 지정 — 보라 pass 틴트. ADMIN 만
+                    variant="pass"
+                    type="button"
+                    icon={Users}
                     onClick={() => void asyncAct.run(openMgr, "search")}
                   >
-                    담당자 추가
+                    담당자
                   </MesButton>
                 ) : null}
                 {isMgr ? (
-                  <MesButton variant="secondary" onClick={() => setCalOn((v) => !v)}>
-                    {calOn ? "목록 보기" : "캘린더 뷰"}
+                  <MesButton
+                    // 만료 캘린더 토글. 동작은 그대로
+                    type="button"
+                    icon={Calendar}
+                    onClick={() => setCalOn((v) => !v)}
+                  >
+                    {calOn ? "목록 보기" : "캘린더"}
                   </MesButton>
                 ) : null}
-              </>
+              </div>
             )}
           >
-            <SearchCheckbox
-              // 임박 창은 설정 3값의 최댓값. 7일 고정이 아니다
-              label={expiringLabel(can?.expireWindowDays)}
-              checked={expiring}
-              onChange={setExpiring}
-            />
+            <SearchSelect
+              // HC_STATUS. 빈값=전체. 만료일 FE 거름
+              label="상태"
+              value={status}
+              onChange={setStatus}
+            >
+              <option value={EMP_STATUS_ALL}>전체</option>
+              {hcStatus.codes.map((code) => (
+                <option key={code.subCd} value={String(code.subCd).toUpperCase()}>{code.codeNm}</option>
+              ))}
+            </SearchSelect>
+            <SearchField label="사원명">
+              <input
+                // 사원명 부분검색 — 조회 때 FE 거름
+                className={searchInputClass}
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="사원명"
+              />
+            </SearchField>
           </SearchArea>
         )}
       >
-        <p className="mb-2 text-xs text-slate-500">
-          식품위생법 제40조 건강진단 이행 관리. 주민번호는 저장하지 않습니다.
-          뒷자리가 보이게 올리지 마세요. 가린 PDF 사본만 등록합니다. 담당자만 열람·삭제합니다.
-          새 보건증으로 대체된 이전 이력은 만료일로부터 2년 후 삭제됩니다.
-        </p>
-        {notis.length > 0 ? (
-          <div className="mb-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
-            {notis.map((n) => (
-              <button
-                key={n.idx}
-                type="button"
-                className="block w-full text-left"
-                onClick={() => {
-                  if (n.idx) void readNotification(n.idx).then(loadNotis);
-                }}
-              >
-                {n.title}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
         {calOn && isMgr ? (
           <div className="min-h-0 flex-1">
             <div className="mb-2 flex items-center gap-2">
@@ -367,7 +437,7 @@ export function HealthCertManagementPage() {
                   // 열 너비 저장 키 — 폴더를 옮겨도 바꾸지 않는다
                   persistId={EMP_PERSIST_ID}
                   title="대상 사원"
-                  rows={emps as EditableRow<HealthCertEmp>[]}
+                  rows={shownEmps as EditableRow<HealthCertEmp>[]}
                   columns={empCols}
                   editable={false}
                   height="100%"
@@ -387,50 +457,11 @@ export function HealthCertManagementPage() {
                   <b>보건증 이력</b>
                   <GridCrudButtons
                     run={asyncAct.run}
-                    onSave={canWrite && activeUserId ? handleUpload : undefined}
-                    onDel={canDelete && isMgr && activeUserId ? handleDelete : undefined}
-                    busy={{ save: asyncAct.isBusy("save"), del: asyncAct.isBusy("del") }}
+                    onAdd={canWrite ? handleAdd : undefined}
+                    onDel={canDelete ? handleDelete : undefined}
+                    busy={{ del: asyncAct.isBusy("del") }}
                   />
                 </div>
-                {activeUserId ? (
-                  <div className="flex flex-wrap items-end gap-2 px-2 py-1 text-sm">
-                    <label>등록일
-                      <input
-                        type="date"
-                        // DB varchar(8) YYYYMMDD. type=date 는 10자, 저장 때 fromInputDate
-                        className="ml-1 border px-1"
-                        value={regDt}
-                        onChange={(e) => setRegDt(e.target.value)}
-                      />
-                    </label>
-                    <label>만료일
-                      <input
-                        type="date"
-                        // 만료일 8자리. 알림·파기 기준. 화면 10자를 그대로 보내면 22001
-                        className="ml-1 border px-1"
-                        value={expireDt}
-                        onChange={(e) => setExpireDt(e.target.value)}
-                      />
-                    </label>
-                    <input
-                      type="file"
-                      // PDF 만 — 원본 서명을 깨지 않으려고 이미지를 받지 않는다
-                      accept=".pdf,application/pdf"
-                      onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                    />
-                    <label className="flex items-center gap-1">
-                      <input
-                        type="checkbox"
-                        // 미체크면 저장 거절. OCR 없이 업로드 책임을 남긴다
-                        checked={maskedYn}
-                        onChange={(e) => setMaskedYn(e.target.checked)}
-                      />
-                      주민번호 뒷자리를 가린 뒤 올렸습니다
-                    </label>
-                  </div>
-                ) : (
-                  <div className="px-2 py-1 text-sm text-neutral-500">왼쪽에서 사원을 선택하세요.</div>
-                )}
                 <MesEditableGrid
                   // 열 너비 저장 키 — 폴더를 옮겨도 바꾸지 않는다
                   persistId={HIST_PERSIST_ID}
@@ -443,13 +474,20 @@ export function HealthCertManagementPage() {
                   // 이력은 첨부로만 쌓인다. 셀 편집 없음
                   editable={false}
                   height="100%"
-                  loading={asyncAct.isBusy("search")}
-                  emptyHint="왼쪽에서 사원을 선택하세요."
+                  loading={asyncAct.isBusy("search") || asyncAct.isBusy("del")}
+                  emptyHint={
+                    activeUserId
+                      ? "등록된 보건증이 없습니다."
+                      : "대상 사원을 선택하면 보건증 이력이 나타납니다."
+                  }
                   activeKey={activeHistKey}
                   onActivate={(row) => setActiveHistKey(String(row._key ?? ""))}
                   access={histGrid.access}
                   onLockedAttempt={histGrid.onLockedAttempt}
                   onSetActive={() => sec.setSec("d")}
+                  selectable
+                  onSelectionChange={(rows) => setSelKeys(rows.map((row) => row._key))}
+                  selectionResetKey={selReset}
                   showRowNum
                 />
               </div>
@@ -457,6 +495,143 @@ export function HealthCertManagementPage() {
           />
         )}
       </PageCard>
+
+      {uploadOpen ? (
+        <div
+          // 등록 팝업 오버레이 — 비밀번호 변경과 같은 셸
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="보건증 이력 등록"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeUpload();
+          }}
+        >
+          <form
+            className="flex w-full max-w-md flex-col overflow-hidden rounded border border-slate-200 bg-white shadow-lg"
+            onMouseDown={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              void asyncAct.run(handleUpload, "save");
+            }}
+          >
+            <div
+              // 모달 헤더 — gridHead h-9
+              className={cn(gridHeadClass, "mes-modal-grid-head")}
+            >
+              <b>보건증 이력 등록</b>
+            </div>
+            <div className="flex flex-col gap-2 px-3 py-2.5">
+              <div className="border-l-2 border-rose-500 pl-2 text-xs leading-relaxed text-slate-600">
+                <p className="m-0 font-semibold">[건강진단결과서(보건증) 등록 안내]</p>
+                <p className="mt-1.5 m-0">
+                  개인정보 보호: 주민등록번호 뒷자리를 마스킹(가림 처리)한 PDF 파일만 등록해 주세요.
+                  시스템에는 주민등록번호를 별도 저장하지 않습니다.
+                </p>
+                <p className="mt-1.5 m-0">
+                  보안 및 열람: 등록된 문서는 권한을 가진 담당자만 열람 및 파기할 수 있습니다.
+                </p>
+                <p className="mt-1.5 m-0">
+                  보관 및 파기: 식품위생법 제40조에 따른 이력 관리 후, 신규 서류로 대체된 이전 이력은
+                  유효기간 만료일로부터 2년 경과 시 자동 영구 삭제됩니다.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs text-slate-600">
+                  <span>등록일<span className="ml-0.5 text-rose-500">*</span></span>
+                  <input
+                    type="date"
+                    // DB varchar(8) YYYYMMDD. type=date 는 10자, 저장 때 fromInputDate
+                    className={cn(searchInputClass, "w-full")}
+                    value={regDt}
+                    onChange={(e) => setRegDt(e.target.value)}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-slate-600">
+                  <span>만료일<span className="ml-0.5 text-rose-500">*</span></span>
+                  <input
+                    type="date"
+                    // 만료일 8자리. 알림·파기 기준. 화면 10자를 그대로 보내면 22001
+                    className={cn(searchInputClass, "w-full")}
+                    value={expireDt}
+                    onChange={(e) => setExpireDt(e.target.value)}
+                  />
+                </label>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-slate-600">
+                  파일 첨부<span className="ml-0.5 text-rose-500">*</span>
+                </span>
+                <div className="flex items-center gap-2">
+                  <input
+                    // 고른 파일은 상태에만 둔다. 저장은 푸터. PDF 만
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const picked = e.target.files?.[0] ?? null;
+                      e.target.value = "";
+                      setFile(picked);
+                    }}
+                  />
+                  <MesButton
+                    // 문서 첨부와 같은 파일 추가. 숨긴 input 을 연다
+                    variant="add"
+                    size="sm"
+                    icon="plus"
+                    type="button"
+                    disabled={asyncAct.isBusy("save")}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    파일 추가
+                  </MesButton>
+                  <span className="min-w-0 truncate text-xs text-slate-500">
+                    {file?.name ?? "선택된 파일 없음"}
+                  </span>
+                </div>
+              </div>
+              <label className="flex items-center gap-1.5 text-xs text-slate-700">
+                <input
+                  type="checkbox"
+                  // 미체크면 저장 거절. OCR 없이 업로드 책임을 남긴다
+                  checked={maskedYn}
+                  onChange={(e) => setMaskedYn(e.target.checked)}
+                />
+                <span>
+                  주민번호 뒷자리를 가린 뒤 올렸습니다
+                  <span className="ml-0.5 text-rose-500">*</span>
+                </span>
+              </label>
+            </div>
+            <div
+              // 푸터 — 저장·취소. 헤더 h-9 를 넘기지 않는다
+              className="flex shrink-0 items-center justify-end gap-1.5 border-t border-slate-200 bg-slate-50/70 px-3 py-2"
+            >
+              <MesButton
+                // 저장 — 비밀번호 변경과 같은 조회 파란 틴트. 파일 없으면 비활성
+                variant="search"
+                size="sm"
+                type="submit"
+                loading={asyncAct.isBusy("save")}
+                disabled={!file || asyncAct.isBusy("save")}
+              >
+                저장
+              </MesButton>
+              <MesButton
+                // 취소 — 비밀번호 변경과 같은 빨간 틴트
+                variant="danger"
+                size="sm"
+                type="button"
+                disabled={asyncAct.isBusy("save")}
+                onClick={closeUpload}
+              >
+                취소
+              </MesButton>
+            </div>
+          </form>
+        </div>
+      ) : null}
 
       {mgrOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
@@ -466,19 +641,19 @@ export function HealthCertManagementPage() {
               {mgrs.map((m) => (
                 <div key={m.userId} className="flex items-center justify-between px-2 py-1 text-sm">
                   <span>{m.userNm} ({m.deptNm || m.userId})</span>
-                  <button type="button" onClick={() => setMgrs((p) => p.filter((x) => x.userId !== m.userId))}>제외</button>
+                  <MesButton variant="secondary" size="sm" type="button" onClick={() => setMgrs((p) => p.filter((x) => x.userId !== m.userId))}>제외</MesButton>
                 </div>
               ))}
             </div>
-            <MesButton className="mt-2" onClick={() => void addMgr()}>직원 추가</MesButton>
+            <MesButton className="mt-2" type="button" onClick={() => void addMgr()}>직원 추가</MesButton>
             <div className="mt-3 flex flex-wrap gap-2 text-sm">
-              <label>일 전 <input type="number" min={1} className="w-16 border px-1" value={alarm1} onChange={(e) => setAlarm1(Number(e.target.value))} /></label>
-              <label>일 전 <input type="number" min={1} className="w-16 border px-1" value={alarm2} onChange={(e) => setAlarm2(Number(e.target.value))} /></label>
-              <label>일 전 <input type="number" min={1} className="w-16 border px-1" value={alarm3} onChange={(e) => setAlarm3(Number(e.target.value))} /></label>
+              <label>일 전 <input type="number" min={1} className={cn(searchInputClass, "w-16")} value={alarm1} onChange={(e) => setAlarm1(Number(e.target.value))} /></label>
+              <label>일 전 <input type="number" min={1} className={cn(searchInputClass, "w-16")} value={alarm2} onChange={(e) => setAlarm2(Number(e.target.value))} /></label>
+              <label>일 전 <input type="number" min={1} className={cn(searchInputClass, "w-16")} value={alarm3} onChange={(e) => setAlarm3(Number(e.target.value))} /></label>
             </div>
             <div className="mt-3 flex justify-end gap-2">
-              <MesButton onClick={() => setMgrOpen(false)}>취소</MesButton>
-              <MesButton onClick={() => void asyncAct.run(saveMgr, "save")}>저장</MesButton>
+              <MesButton type="button" onClick={() => setMgrOpen(false)}>취소</MesButton>
+              <MesButton type="button" onClick={() => void asyncAct.run(saveMgr, "save")}>저장</MesButton>
             </div>
           </div>
         </div>
